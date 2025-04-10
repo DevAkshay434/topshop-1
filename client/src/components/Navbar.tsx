@@ -16,6 +16,7 @@ export default function Navbar() {
     { name: 'Shopify Connection', path: '/shopify-connection' },
     { name: 'Billing Settings', path: '/billing-settings' },
     { name: 'Install App', path: '/install' },
+    { name: 'Partner Install', path: '/partner-install' },
   ];
 
   return (
