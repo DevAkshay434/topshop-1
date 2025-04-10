@@ -640,10 +640,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).send('Missing Shopify API key');
       }
       
-      // Create a redirect URL to the app in production, otherwise use the current host
-      const redirectUri = process.env.NODE_ENV === 'production'
-        ? `https://${host}/shopify/callback`
-        : `http://${host}/shopify/callback`;
+      // Use the exact redirect URL configured in the Shopify Partner Dashboard
+      const redirectUri = `https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/shopify/callback`;
       
       // Create the authorization URL
       const authUrl = createAuthUrl(shop, apiKey, redirectUri, nonce);
