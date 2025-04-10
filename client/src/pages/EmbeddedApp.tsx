@@ -25,12 +25,13 @@ export default function EmbeddedApp() {
           return;
         }
         
-        // For Partner Dashboard installations, create a direct redirect to Shopify admin
+        // For Partner Dashboard installations, redirect to OAuth flow but include host parameter
         if (host) {
-          setStatus(`Detected Partner Dashboard install. Redirecting to ${shop} admin...`);
+          setStatus(`Detected Partner Dashboard install. Starting OAuth flow for ${shop}...`);
           // Give a slight delay to ensure the user sees the message
           setTimeout(() => {
-            window.location.href = `https://${shop}/admin/apps`;
+            // Redirect to OAuth flow with host parameter
+            window.location.href = `/shopify/auth?shop=${shop}&host=${host}`;
           }, 1500);
           return;
         }

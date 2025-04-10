@@ -26,16 +26,39 @@ export default function PartnerInstall() {
     const hostParam = urlParams.get('host');
     const hmacParam = urlParams.get('hmac');
     
-    // If we have shop and hmac parameters, we came from Partner Dashboard
-    if (shopParam && hmacParam) {
-      setDebugInfo(`Detected Partner Dashboard params: shop=${shopParam}, host=${hostParam || 'not provided'}`);
+    // If we have shop parameter, we might be coming from Partner Dashboard
+    if (shopParam) {
+      // First, try to decode the host parameter if it exists
+      let decodedHost = hostParam;
+      
+      if (hostParam) {
+        try {
+          const decoded = Buffer.from(hostParam, 'base64').toString('utf-8');
+          if (decoded.includes('shopify.com')) {
+            decodedHost = decoded;
+          }
+        } catch (err) {
+          console.warn('Failed to decode host parameter:', err);
+        }
+      }
+      
+      setDebugInfo(`Detected Partner Dashboard params: shop=${shopParam}, host=${hostParam || 'not provided'}, decoded host=${decodedHost || 'not decoded'}`);
       setLoading(true);
       
       // Brief delay to allow user to see the loading state
       setTimeout(() => {
-        // For Partner Dashboard installs, redirect directly to Shopify admin
-        window.location.href = `https://${shopParam}/admin/apps`;
-      }, 1500);
+        // Instead of directly redirecting to admin, redirect to the OAuth flow
+        // This ensures the app gets installed properly
+        let authUrl = `/shopify/auth?shop=${shopParam}`;
+        
+        // Add host parameter if available
+        if (hostParam) {
+          authUrl += `&host=${hostParam}`;
+        }
+        
+        console.log(`Redirecting to OAuth flow: ${authUrl}`);
+        window.location.href = authUrl;
+      }, 2000);
     }
   }, []);
 
