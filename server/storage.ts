@@ -594,22 +594,26 @@ export class DatabaseStorage implements IStorage {
 
   // User-store relationship operations
   async getUserStores(userId: number): Promise<ShopifyStore[]> {
-    // Get all stores associated with this user
-    const userStoreRecords = await db.select({
-        storeId: userStores.storeId
+    // Join user_stores with shopify_stores to get all stores for a user
+    const stores = await db.select({
+        id: shopifyStores.id,
+        shopName: shopifyStores.shopName,
+        accessToken: shopifyStores.accessToken,
+        scope: shopifyStores.scope,
+        defaultBlogId: shopifyStores.defaultBlogId,
+        isConnected: shopifyStores.isConnected,
+        lastSynced: shopifyStores.lastSynced,
+        installedAt: shopifyStores.installedAt,
+        uninstalledAt: shopifyStores.uninstalledAt,
+        planName: shopifyStores.planName,
+        chargeId: shopifyStores.chargeId,
+        trialEndsAt: shopifyStores.trialEndsAt
       })
-      .from(userStores)
+      .from(shopifyStores)
+      .innerJoin(userStores, eq(userStores.storeId, shopifyStores.id))
       .where(eq(userStores.userId, userId));
     
-    if (userStoreRecords.length === 0) {
-      return [];
-    }
-    
-    // Get the actual store data
-    const storeIds = userStoreRecords.map(record => record.storeId);
-    return db.select()
-      .from(shopifyStores)
-      .where(inArray(shopifyStores.id, storeIds));
+    return stores;
   }
 
   async createUserStore(userStore: InsertUserStore): Promise<UserStore> {

@@ -729,21 +729,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send('Bad Request');
       }
       
-      // Find the connection and mark it as uninstalled
-      const connection = await storage.getShopifyConnection();
+      // Find the store in our database and mark it as uninstalled
+      const store = await storage.getShopifyStoreByDomain(shop_domain);
       
-      if (connection && connection.storeName === shop_domain) {
-        await storage.updateShopifyConnection({
-          ...connection,
-          isConnected: false
+      if (store) {
+        // Mark the store as uninstalled
+        await storage.updateShopifyStore(store.id, {
+          isConnected: false,
+          uninstalledAt: new Date()
         });
         
         // Create a sync activity
         await storage.createSyncActivity({
+          storeId: store.id,
           activity: "Disconnected from Shopify store",
           status: "info",
           details: `App uninstalled from ${shop_domain}`
         });
+        
+        console.log(`Store ${shop_domain} marked as uninstalled`);
+      } else {
+        // For backward compatibility, check the legacy connection
+        const connection = await storage.getShopifyConnection();
+        
+        if (connection && connection.storeName === shop_domain) {
+          await storage.updateShopifyConnection({
+            ...connection,
+            isConnected: false
+          });
+          
+          // Create a sync activity
+          await storage.createSyncActivity({
+            storeId: null,
+            activity: "Disconnected from Shopify store",
+            status: "info",
+            details: `App uninstalled from ${shop_domain}`
+          });
+          
+          console.log(`Legacy connection for ${shop_domain} marked as disconnected`);
+        } else {
+          console.warn(`Received uninstall webhook for unknown store: ${shop_domain}`);
+        }
       }
       
       // Always return 200 to acknowledge receipt
