@@ -32,9 +32,9 @@ export default function AppInstall() {
     // Redirect to OAuth flow
     setIsLoading(true);
     
-    // Create the auth URL and redirect to it directly
-    // This ensures we're following Shopify's expected OAuth flow
-    window.location.href = `/shopify/auth?shop=${encodeURIComponent(formattedDomain)}`;
+    // Create the auth URL and redirect to it directly with absolute URL
+    // This ensures we're following Shopify's expected OAuth flow and matching the Partner Dashboard config
+    window.location.href = `https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/shopify/auth?shop=${encodeURIComponent(formattedDomain)}`;
     
     toast({
       title: 'Redirecting to Shopify',
