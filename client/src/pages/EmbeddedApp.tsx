@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 import axios from 'axios';
 
 export default function EmbeddedApp() {

@@ -94,10 +94,10 @@ export default function Sidebar() {
                 active={location === "/settings"} 
               />
               <NavItem 
-                href="/shopify-connection" 
+                href="/billing-settings" 
                 icon={<Store size={18} />} 
-                text="Shopify Connection" 
-                active={location === "/shopify-connection"} 
+                text="Billing" 
+                active={location === "/billing-settings"} 
               />
               <NavItem 
                 href="/help" 

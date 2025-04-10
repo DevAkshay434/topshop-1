@@ -26,6 +26,18 @@ function Router() {
     
     // Hide navbar if we're in embedded mode
     setShowNavbar(!isEmbedded);
+    
+    // For embedded apps, add script to handle Shopify admin navigation
+    if (isEmbedded) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.shopify.com/shopifycloud/app-bridge-api/v3.0.0/app-bridge-api.js';
+      script.async = true;
+      document.head.appendChild(script);
+      
+      return () => {
+        document.head.removeChild(script);
+      };
+    }
   }, [location]);
   
   // Check if current URL has embedded params
