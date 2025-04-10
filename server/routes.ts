@@ -648,13 +648,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get shop data from Shopify
       const shopData = await getShopData(shop, accessToken);
       
-      // Create or update the Shopify connection in the legacy storage
+      // Create or update the store in our multi-store database
       try {
-        // First check if we already have a connection
+        // First check if we already have this store
+        let store = await storage.getShopifyStoreByDomain(shop);
+        let storeId: number;
+        
+        if (store) {
+          // Update the existing store
+          store = await storage.updateShopifyStore(store.id, {
+            accessToken,
+            isConnected: true,
+            lastSynced: new Date(),
+            uninstalledAt: null // Clear uninstalled date if previously uninstalled
+          });
+          storeId = store.id;
+          console.log(`Updated existing store: ${shop}`);
+        } else {
+          // Create a new store
+          store = await storage.createShopifyStore({
+            shopName: shop,
+            accessToken,
+            scope: "read_products,write_products,read_content,write_content", // Update with appropriate scopes
+            isConnected: true
+          });
+          storeId = store.id;
+          console.log(`Created new store: ${shop}`);
+          
+          // Create or get a user for this store (using shop data)
+          // For now, we'll use a default system user
+          let user = await storage.getUserByUsername('admin');
+          
+          if (!user) {
+            // Create a default admin user if none exists
+            user = await storage.createUser({
+              username: 'admin',
+              password: crypto.randomBytes(16).toString('hex'), // Generate random password
+              name: 'Admin',
+              email: 'admin@example.com',
+              isAdmin: true
+            });
+            console.log('Created default admin user');
+          }
+          
+          // Create the user-store relationship
+          await storage.createUserStore({
+            userId: user.id,
+            storeId: store.id,
+            role: 'owner'
+          });
+          console.log(`Associated user ${user.id} with store ${store.id}`);
+        }
+        
+        // For backward compatibility, update the legacy connection as well
         const existingConnection = await storage.getShopifyConnection();
         
         if (existingConnection) {
-          // Update the existing connection
           await storage.updateShopifyConnection({
             ...existingConnection,
             storeName: shop,
@@ -663,7 +712,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastSynced: new Date()
           });
         } else {
-          // Create a new connection
           await storage.createShopifyConnection({
             storeName: shop,
             accessToken,
@@ -674,6 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Create a sync activity
         await storage.createSyncActivity({
+          storeId,
           activity: "Connected to Shopify store",
           status: "success",
           details: `Connected to ${shop}`
