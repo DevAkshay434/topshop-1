@@ -35,6 +35,10 @@ export class ShopifyService {
   
   private initializeClient(connection: ShopifyConnection) {
     this.shopName = connection.storeName;
+    
+    console.log(`Initializing Shopify client for store: ${connection.storeName}`);
+    console.log(`Access token (first 5 chars): ${connection.accessToken.substring(0, 5)}...`);
+    
     this.client = axios.create({
       baseURL: `https://${connection.storeName}/admin/api/2023-07`,
       headers: {
@@ -42,6 +46,28 @@ export class ShopifyService {
         'X-Shopify-Access-Token': connection.accessToken
       }
     });
+    
+    // Add request and response interceptors for debugging
+    this.client.interceptors.request.use(config => {
+      console.log(`Shopify API request: ${config.method?.toUpperCase()} ${config.url}`);
+      return config;
+    });
+    
+    this.client.interceptors.response.use(
+      response => {
+        console.log(`Shopify API response: ${response.status} for ${response.config.url}`);
+        return response;
+      },
+      error => {
+        if (error.response) {
+          console.error(`Shopify API error: ${error.response.status} for ${error.config.url}`);
+          console.error(`Error data:`, error.response.data);
+        } else {
+          console.error(`Shopify API error:`, error.message);
+        }
+        return Promise.reject(error);
+      }
+    );
   }
   
   public setConnection(connection: ShopifyConnection) {

@@ -781,6 +781,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: `Connected to ${shop}`
         });
         
+        // Initialize shopifyService with the new connection
+        // This fixes issues where the app installs but can't connect to the API
+        const connectionForService = await storage.getShopifyConnection();
+        if (connectionForService) {
+          shopifyService.setConnection(connectionForService);
+          
+          // Test the connection to verify it works
+          const connected = await shopifyService.testConnection();
+          console.log(`Shopify API connection test: ${connected ? 'SUCCESS' : 'FAILED'}`);
+        }
+        
         // Check if this installation is from the Partner Dashboard
         // Partner Dashboard installations include host parameter in the nonce data
         const isPartnerDashboardInstall = req.query.host !== undefined || (nonceData && 'host' in nonceData);
