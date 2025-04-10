@@ -9,6 +9,7 @@ import BlogPosts from "@/pages/BlogPosts";
 import ScheduledPosts from "@/pages/ScheduledPosts";
 import ShopifyConnection from "@/pages/ShopifyConnection";
 import BillingSettings from "@/pages/BillingSettings";
+import AppInstall from "@/pages/AppInstall";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/billing-callback" component={Dashboard} />
+          <Route path="/install" component={AppInstall} />
           
           {/* AI Templates, Analytics, Settings, and Help routes would go here */}
           

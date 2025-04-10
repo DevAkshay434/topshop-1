@@ -15,6 +15,7 @@ export default function Navbar() {
     { name: 'Scheduled Posts', path: '/scheduled-posts' },
     { name: 'Shopify Connection', path: '/shopify-connection' },
     { name: 'Billing Settings', path: '/billing-settings' },
+    { name: 'Install App', path: '/install' },
   ];
 
   return (
