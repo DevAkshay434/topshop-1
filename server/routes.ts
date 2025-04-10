@@ -11,7 +11,7 @@ import {
   getAccessToken, 
   getShopData 
 } from "./services/oauth";
-import { createSubscription, getSubscriptionStatus, cancelSubscription, PlanType } from './services/billing';
+import { createSubscription, getSubscriptionStatus, cancelSubscription, PlanType, PLANS } from './services/billing';
 import { z } from "zod";
 import { insertBlogPostSchema, insertShopifyConnectionSchema, insertSyncActivitySchema, insertContentGenRequestSchema, insertShopifyStoreSchema } from "@shared/schema";
 import crypto from "crypto";
