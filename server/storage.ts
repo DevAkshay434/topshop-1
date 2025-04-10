@@ -1,6 +1,8 @@
 import { 
   users,
   shopifyConnections,
+  shopifyStores,
+  userStores,
   blogPosts,
   syncActivities,
   contentGenRequests,
@@ -8,6 +10,10 @@ import {
   type InsertUser, 
   type ShopifyConnection, 
   type InsertShopifyConnection,
+  type ShopifyStore,
+  type InsertShopifyStore,
+  type UserStore,
+  type InsertUserStore,
   type BlogPost,
   type InsertBlogPost,
   type SyncActivity,
@@ -16,7 +22,7 @@ import {
   type InsertContentGenRequest
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, lte, gte } from "drizzle-orm";
+import { eq, desc, asc, lte, gte, inArray } from "drizzle-orm";
 
 // Define the storage interface with all CRUD operations
 export interface IStorage {
@@ -25,10 +31,21 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  // Shopify connection operations
+  // Legacy Shopify connection operations (for backward compatibility)
   getShopifyConnection(): Promise<ShopifyConnection | undefined>;
   createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection>;
   updateShopifyConnection(connection: Partial<ShopifyConnection>): Promise<ShopifyConnection | undefined>;
+  
+  // Multi-store Shopify operations (for public app)
+  getShopifyStores(): Promise<ShopifyStore[]>;
+  getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined>;
+  getShopifyStore(id: number): Promise<ShopifyStore | undefined>;
+  createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore>;
+  updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore>;
+  
+  // User-store relationship
+  getUserStores(userId: number): Promise<ShopifyStore[]>;
+  createUserStore(userStore: InsertUserStore): Promise<UserStore>;
   
   // Blog post operations
   getBlogPosts(): Promise<BlogPost[]>;
@@ -515,6 +532,95 @@ export class DatabaseStorage implements IStorage {
   async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
     const [request] = await db.select().from(contentGenRequests).where(eq(contentGenRequests.id, id));
     return request;
+  }
+
+  // Multi-store Shopify operations
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return db.select().from(shopifyStores);
+  }
+
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select()
+      .from(shopifyStores)
+      .where(eq(shopifyStores.shopName, shopDomain));
+    return store;
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select()
+      .from(shopifyStores)
+      .where(eq(shopifyStores.id, id));
+    return store;
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    const [newStore] = await db.insert(shopifyStores)
+      .values({
+        shopName: store.shopName,
+        accessToken: store.accessToken,
+        scope: store.scope,
+        defaultBlogId: store.defaultBlogId || null,
+        isConnected: store.isConnected !== undefined ? store.isConnected : true,
+        planName: store.planName || null,
+        chargeId: store.chargeId || null,
+        trialEndsAt: store.trialEndsAt || null
+      })
+      .returning();
+    return newStore;
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (store.shopName !== undefined) updateData.shopName = store.shopName;
+    if (store.accessToken !== undefined) updateData.accessToken = store.accessToken;
+    if (store.scope !== undefined) updateData.scope = store.scope;
+    if (store.defaultBlogId !== undefined) updateData.defaultBlogId = store.defaultBlogId;
+    if (store.isConnected !== undefined) updateData.isConnected = store.isConnected;
+    if (store.lastSynced !== undefined) updateData.lastSynced = store.lastSynced;
+    if (store.uninstalledAt !== undefined) updateData.uninstalledAt = store.uninstalledAt;
+    if (store.planName !== undefined) updateData.planName = store.planName;
+    if (store.chargeId !== undefined) updateData.chargeId = store.chargeId;
+    if (store.trialEndsAt !== undefined) updateData.trialEndsAt = store.trialEndsAt;
+    
+    const [updatedStore] = await db.update(shopifyStores)
+      .set(updateData)
+      .where(eq(shopifyStores.id, id))
+      .returning();
+    
+    return updatedStore;
+  }
+
+  // User-store relationship operations
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    // Get all stores associated with this user
+    const userStoreRecords = await db.select({
+        storeId: userStores.storeId
+      })
+      .from(userStores)
+      .where(eq(userStores.userId, userId));
+    
+    if (userStoreRecords.length === 0) {
+      return [];
+    }
+    
+    // Get the actual store data
+    const storeIds = userStoreRecords.map(record => record.storeId);
+    return db.select()
+      .from(shopifyStores)
+      .where(inArray(shopifyStores.id, storeIds));
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    const [newUserStore] = await db.insert(userStores)
+      .values({
+        userId: userStore.userId,
+        storeId: userStore.storeId,
+        role: userStore.role || 'member'
+      })
+      .returning();
+    return newUserStore;
   }
 }
 
