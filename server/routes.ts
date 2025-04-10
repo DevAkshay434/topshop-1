@@ -1,4 +1,4 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { shopifyService } from "./services/shopify";
@@ -12,7 +12,8 @@ import {
   getShopData 
 } from "./services/oauth";
 import { z } from "zod";
-import { insertBlogPostSchema, insertShopifyConnectionSchema, insertSyncActivitySchema, insertContentGenRequestSchema } from "@shared/schema";
+import { insertBlogPostSchema, insertShopifyConnectionSchema, insertSyncActivitySchema, insertContentGenRequestSchema, insertShopifyStoreSchema } from "@shared/schema";
+import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes - all prefixed with /api
@@ -545,6 +546,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
+  
+  // --- OAUTH ROUTES ---
+  
+  // Shopify OAuth routes (not prefixed with /api)
+  const oauthRouter = express.Router();
+  
+  // Store the nonce in memory
+  const nonceStore = new Map<string, { shop: string, timestamp: number }>();
+  
+  // Clean up expired nonces (older than 1 hour)
+  setInterval(() => {
+    const now = Date.now();
+    for (const [nonce, data] of nonceStore.entries()) {
+      if (now - data.timestamp > 60 * 60 * 1000) {
+        nonceStore.delete(nonce);
+      }
+    }
+  }, 15 * 60 * 1000); // Run every 15 minutes
+  
+  // Initiate OAuth flow
+  oauthRouter.get("/shopify/auth", async (req: Request, res: Response) => {
+    try {
+      const { shop } = req.query;
+      
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).send('Missing shop parameter');
+      }
+      
+      if (!validateShopDomain(shop)) {
+        return res.status(400).send('Invalid shop domain');
+      }
+      
+      // Generate a nonce for CSRF protection
+      const nonce = generateNonce();
+      nonceStore.set(nonce, { shop, timestamp: Date.now() });
+
+      // Get Shopify API credentials from environment variables
+      const apiKey = process.env.SHOPIFY_API_KEY;
+      const host = req.headers.host;
+      
+      if (!apiKey) {
+        return res.status(500).send('Missing Shopify API key');
+      }
+      
+      // Create a redirect URL to the app in production, otherwise use the current host
+      const redirectUri = process.env.NODE_ENV === 'production'
+        ? `https://${host}/shopify/callback`
+        : `http://${host}/shopify/callback`;
+      
+      // Create the authorization URL
+      const authUrl = createAuthUrl(shop, apiKey, redirectUri, nonce);
+      
+      // Redirect to Shopify for authorization
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('Error initiating OAuth:', error);
+      res.status(500).send('An error occurred while initiating OAuth');
+    }
+  });
+  
+  // OAuth callback
+  oauthRouter.get("/shopify/callback", async (req: Request, res: Response) => {
+    try {
+      const { shop, code, state, hmac } = req.query as Record<string, string>;
+      
+      if (!shop || !code || !state || !hmac) {
+        return res.status(400).send('Missing required parameters');
+      }
+      
+      // Validate the shop domain
+      if (!validateShopDomain(shop)) {
+        return res.status(400).send('Invalid shop domain');
+      }
+      
+      // Get Shopify API credentials from environment variables
+      const apiKey = process.env.SHOPIFY_API_KEY;
+      const apiSecret = process.env.SHOPIFY_API_SECRET;
+      
+      if (!apiKey || !apiSecret) {
+        return res.status(500).send('Missing Shopify API credentials');
+      }
+      
+      // Verify the HMAC
+      if (!validateHmac(req.query as Record<string, string>, apiSecret)) {
+        return res.status(403).send('Invalid HMAC signature');
+      }
+      
+      // Validate the state (nonce)
+      const nonceData = nonceStore.get(state);
+      if (!nonceData || nonceData.shop !== shop) {
+        return res.status(403).send('Invalid state parameter');
+      }
+      
+      // Clean up the used nonce
+      nonceStore.delete(state);
+      
+      // Exchange the code for a permanent access token
+      const accessToken = await getAccessToken(shop, code, apiKey, apiSecret);
+      
+      // Get shop data from Shopify
+      const shopData = await getShopData(shop, accessToken);
+      
+      // Create or update the Shopify connection in the legacy storage
+      try {
+        // First check if we already have a connection
+        const existingConnection = await storage.getShopifyConnection();
+        
+        if (existingConnection) {
+          // Update the existing connection
+          await storage.updateShopifyConnection({
+            ...existingConnection,
+            storeName: shop,
+            accessToken,
+            isConnected: true,
+            lastSynced: new Date()
+          });
+        } else {
+          // Create a new connection
+          await storage.createShopifyConnection({
+            storeName: shop,
+            accessToken,
+            isConnected: true,
+            lastSynced: new Date()
+          });
+        }
+        
+        // Create a sync activity
+        await storage.createSyncActivity({
+          activity: "Connected to Shopify store",
+          status: "success",
+          details: `Connected to ${shop}`
+        });
+        
+        // Redirect to the app
+        if (process.env.NODE_ENV === 'production') {
+          res.redirect(`/dashboard?shop=${encodeURIComponent(shop)}`);
+        } else {
+          res.redirect(`/?shop=${encodeURIComponent(shop)}`);
+        }
+      } catch (error) {
+        console.error('Error storing Shopify connection:', error);
+        res.status(500).send('An error occurred while storing the connection');
+      }
+    } catch (error) {
+      console.error('Error processing OAuth callback:', error);
+      res.status(500).send('An error occurred during OAuth callback processing');
+    }
+  });
+  
+  // App uninstalled webhook
+  oauthRouter.post("/shopify/webhooks/app-uninstalled", async (req: Request, res: Response) => {
+    try {
+      // Verify webhook authenticity
+      const hmac = req.headers['x-shopify-hmac-sha256'] as string;
+      const apiSecret = process.env.SHOPIFY_API_SECRET;
+      
+      if (!apiSecret) {
+        console.error('Missing Shopify API secret');
+        return res.status(401).send('Unauthorized');
+      }
+      
+      // Convert request body to string if it's not already
+      const bodyString = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      
+      // Verify the webhook signature
+      const generatedHash = crypto
+        .createHmac('sha256', apiSecret)
+        .update(bodyString)
+        .digest('base64');
+      
+      if (hmac !== generatedHash) {
+        console.error('Invalid webhook signature');
+        return res.status(401).send('Unauthorized');
+      }
+      
+      // Process the uninstallation
+      const { shop_domain } = req.body;
+      
+      if (!shop_domain) {
+        console.error('Missing shop domain in webhook payload');
+        return res.status(400).send('Bad Request');
+      }
+      
+      // Find the connection and mark it as uninstalled
+      const connection = await storage.getShopifyConnection();
+      
+      if (connection && connection.storeName === shop_domain) {
+        await storage.updateShopifyConnection({
+          ...connection,
+          isConnected: false
+        });
+        
+        // Create a sync activity
+        await storage.createSyncActivity({
+          activity: "Disconnected from Shopify store",
+          status: "info",
+          details: `App uninstalled from ${shop_domain}`
+        });
+      }
+      
+      // Always return 200 to acknowledge receipt
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('Error processing uninstall webhook:', error);
+      // Still return 200 to acknowledge receipt
+      res.status(200).send('Processed with errors');
+    }
+  });
+  
+  // Register OAuth routes
+  app.use(oauthRouter);
   
   // Register the API router with /api prefix
   app.use('/api', apiRouter);
