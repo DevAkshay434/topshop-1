@@ -19,30 +19,33 @@ app.use((req, res, next) => {
   
   const origin = req.headers.origin;
   
-  // Check if request is from Shopify admin or has shop param (assuming it's from a store admin)
-  if (origin && (
-      shopifyDomains.includes(origin) || 
-      origin.endsWith('.myshopify.com') || 
-      req.query.shop
-  )) {
+  // Set headers for ALL requests to enable Shopify embedding
+  // This is more permissive but necessary for proper Shopify iframe embedding
+  if (origin) {
+    // If we have an origin, allow it (needed for both Shopify and non-Shopify sources)
     res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    
-    // Add Content-Security-Policy headers to allow iframe embedding from Shopify domains
-    res.setHeader(
-      'Content-Security-Policy',
-      "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com https://admin.shopify.com https://accounts.shopify.com https://*.shop.app;"
-    );
-    
-    // Add X-Frame-Options header to allow embedding
-    res.setHeader('X-Frame-Options', 'ALLOW-FROM https://admin.shopify.com');
-    
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
+  } else {
+    // If no origin is specified, use a wildcard (less secure but more compatible)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Add Content-Security-Policy headers to allow iframe embedding from ALL Shopify domains
+  // The wildcard ensures compatibility with all possible Shopify admin URLs
+  res.setHeader(
+    'Content-Security-Policy',
+    "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com https://*.shopifyapps.com https://admin.shopify.com https://accounts.shopify.com https://*.shop.app;"
+  );
+  
+  // Remove X-Frame-Options which can conflict with CSP frame-ancestors in some browsers
+  // Modern browsers prefer the CSP policy for framing control
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
   
   next();
