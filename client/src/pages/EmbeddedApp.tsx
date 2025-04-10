@@ -5,6 +5,7 @@ import axios from 'axios';
 export default function EmbeddedApp() {
   const [status, setStatus] = useState('Initializing...');
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
     async function handleEmbeddedInstall() {
@@ -16,8 +17,21 @@ export default function EmbeddedApp() {
         const host = urlParams.get('host');
         const timestamp = urlParams.get('timestamp');
         
+        // Add debug info
+        setDebugInfo(`Shop: ${shop}, Host: ${host}`);
+        
         if (!shop) {
           setError('Shop parameter is missing');
+          return;
+        }
+        
+        // For Partner Dashboard installations, create a direct redirect to Shopify admin
+        if (host) {
+          setStatus(`Detected Partner Dashboard install. Redirecting to ${shop} admin...`);
+          // Give a slight delay to ensure the user sees the message
+          setTimeout(() => {
+            window.location.href = `https://${shop}/admin/apps`;
+          }, 1500);
           return;
         }
         
@@ -35,11 +49,14 @@ export default function EmbeddedApp() {
           return;
         }
         
-        // Not connected yet, redirect to OAuth flow
+        // Not connected yet, redirect to OAuth flow with host parameter if available
         setStatus('Starting installation...');
         
-        // Create the OAuth redirect URL
-        const redirectUrl = `/shopify/auth?shop=${shop}`;
+        // Create the OAuth redirect URL, including host param if present
+        let redirectUrl = `/shopify/auth?shop=${shop}`;
+        if (host) {
+          redirectUrl += `&host=${host}`;
+        }
         
         // Redirect to the OAuth flow
         window.location.href = redirectUrl;
@@ -66,6 +83,12 @@ export default function EmbeddedApp() {
         >
           Try Again
         </button>
+      )}
+      {debugInfo && (
+        <div className="mt-6 p-4 bg-gray-100 rounded text-xs text-gray-600 max-w-md overflow-x-auto">
+          <p>Debug Info:</p>
+          <pre>{debugInfo}</pre>
+        </div>
       )}
     </div>
   );

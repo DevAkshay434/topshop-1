@@ -3,13 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Copy } from 'lucide-react';
+import { Copy, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function PartnerInstall() {
   const [shopDomain, setShopDomain] = useState('');
   const [fullUrl, setFullUrl] = useState('');
   const [currentUrl, setCurrentUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -17,6 +19,24 @@ export default function PartnerInstall() {
     const protocol = window.location.protocol;
     const host = window.location.host;
     setCurrentUrl(`${protocol}//${host}`);
+    
+    // Check if we were redirected from the Shopify Partner Dashboard
+    const urlParams = new URLSearchParams(window.location.search);
+    const shopParam = urlParams.get('shop');
+    const hostParam = urlParams.get('host');
+    const hmacParam = urlParams.get('hmac');
+    
+    // If we have shop and hmac parameters, we came from Partner Dashboard
+    if (shopParam && hmacParam) {
+      setDebugInfo(`Detected Partner Dashboard params: shop=${shopParam}, host=${hostParam || 'not provided'}`);
+      setLoading(true);
+      
+      // Brief delay to allow user to see the loading state
+      setTimeout(() => {
+        // For Partner Dashboard installs, redirect directly to Shopify admin
+        window.location.href = `https://${shopParam}/admin/apps`;
+      }, 1500);
+    }
   }, []);
 
   const handleGenerateUrl = () => {
@@ -59,6 +79,26 @@ export default function PartnerInstall() {
     }
   };
 
+  // If we're in loading state, show loading UI
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <h1 className="text-xl font-semibold">Redirecting to Shopify Admin...</h1>
+        <p className="text-muted-foreground mt-2">
+          You will be redirected to your Shopify admin panel in a moment.
+        </p>
+        {debugInfo && (
+          <div className="mt-6 p-4 bg-gray-100 rounded text-xs text-gray-600 max-w-md overflow-x-auto">
+            <p>Debug Info:</p>
+            <pre>{debugInfo}</pre>
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // Otherwise show normal UI
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
       <Card className="w-full max-w-2xl">
