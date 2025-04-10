@@ -5,6 +5,21 @@ import "./index.css";
 // Set title
 document.title = "Shopify Blog Publisher";
 
+// Special setup for Shopify embedded apps - detect if we're in an iframe
+const isEmbedded = window !== window.parent;
+
+// Set up content security policy dynamically if we're embedded
+if (isEmbedded) {
+  // The app is being embedded in an iframe
+  console.log("App is running in embedded mode");
+  
+  // Add additional meta tags needed for iframe embedding
+  const cspMeta = document.createElement('meta');
+  cspMeta.httpEquiv = 'Content-Security-Policy';
+  cspMeta.content = "frame-ancestors 'self' https://*.myshopify.com https://admin.shopify.com https://accounts.shopify.com;";
+  document.head.appendChild(cspMeta);
+}
+
 // Create a meta description
 const metaDescription = document.createElement("meta");
 metaDescription.name = "description";
