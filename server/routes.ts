@@ -819,9 +819,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.warn('Failed to decode host parameter:', err);
             }
             
-            // Use the app bridge redirect format
+            // Use the app bridge redirect format for embedded apps
             console.log(`Redirecting to Shopify Admin with host parameter: ${decodedHost}`);
-            res.redirect(`https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}`);
+            // The format we're using is important for Shopify's App Bridge to work correctly
+            const appBridgeUrl = `https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}?embedded=1`;
+            console.log(`App Bridge URL: ${appBridgeUrl}`);
+            res.redirect(appBridgeUrl);
           } else {
             // Fallback to regular admin if we don't have host param
             console.log('Redirecting to Shopify Admin apps page (no host parameter)');
