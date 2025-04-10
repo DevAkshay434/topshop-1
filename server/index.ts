@@ -33,8 +33,11 @@ app.use((req, res, next) => {
     // Add Content-Security-Policy headers to allow iframe embedding from Shopify domains
     res.setHeader(
       'Content-Security-Policy',
-      "frame-ancestors 'self' https://*.myshopify.com https://admin.shopify.com https://accounts.shopify.com;"
+      "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com https://admin.shopify.com https://accounts.shopify.com https://*.shop.app;"
     );
+    
+    // Add X-Frame-Options header to allow embedding
+    res.setHeader('X-Frame-Options', 'ALLOW-FROM https://admin.shopify.com');
     
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
