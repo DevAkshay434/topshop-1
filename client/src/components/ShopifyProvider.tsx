@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import createApp from '@shopify/app-bridge';
+import { AppBridgeState } from '@shopify/app-bridge';
+
+// Add type declaration for the global shopifyApp property
+declare global {
+  interface Window {
+    shopifyApp?: AppBridgeState;
+  }
+}
 
 interface ShopifyProviderProps {
   children: React.ReactNode;
@@ -7,15 +15,9 @@ interface ShopifyProviderProps {
 
 /**
  * Shopify App Bridge Provider component
- * Wraps the app with Shopify App Bridge context to enable embedded app functionality
+ * Sets up App Bridge for embedded app functionality
  */
 export function ShopifyProvider({ children }: ShopifyProviderProps) {
-  const [appBridgeConfig, setAppBridgeConfig] = useState<{
-    apiKey: string;
-    host: string;
-    forceRedirect: boolean;
-  } | null>(null);
-
   useEffect(() => {
     // Parse URL query parameters
     const params = new URLSearchParams(window.location.search);
@@ -26,33 +28,34 @@ export function ShopifyProvider({ children }: ShopifyProviderProps) {
     const isEmbedded = Boolean(host && shop);
     
     if (isEmbedded) {
-      // Get API key from environment variables
-      const apiKey = process.env.SHOPIFY_API_KEY || '171d3c09d9299b9f6934c29abb309929';
+      // Get API key from environment or use the one from the Shopify Partners dashboard
+      const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY || '171d3c09d9299b9f6934c29abb309929';
       
-      setAppBridgeConfig({
-        host: host as string,
+      // Configure and initialize App Bridge
+      const appBridgeConfig = {
         apiKey,
+        host: host as string,
         forceRedirect: true
-      });
+      };
       
-      console.log('Initializing Shopify App Bridge with:', {
-        host,
-        apiKey: apiKey.substring(0, 6) + '...',
-        shop
-      });
+      try {
+        // Initialize App Bridge
+        const app = createApp(appBridgeConfig);
+        
+        // Make app available globally for components that need to use it
+        window.shopifyApp = app;
+        
+        console.log('App Bridge initialized successfully');
+      } catch (error) {
+        console.error('Error initializing App Bridge:', error);
+      }
+      
+      console.log('App is running in embedded mode');
     } else {
       console.log('Not in Shopify embedded mode - App Bridge not initialized');
     }
   }, []);
 
-  // If we have config, wrap with AppProvider, otherwise render children directly
-  if (appBridgeConfig) {
-    return (
-      <Provider config={appBridgeConfig}>
-        {children}
-      </Provider>
-    );
-  }
-
+  // Directly render children as we're using the App Bridge instance directly when needed
   return <>{children}</>;
 }

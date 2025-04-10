@@ -1,119 +1,74 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, Check } from 'lucide-react';
-import axios from 'axios';
+import { useLocation } from 'wouter';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
+/**
+ * Embedded App page shown when the app is loaded within the Shopify Admin
+ */
 export default function EmbeddedApp() {
-  const [status, setStatus] = useState('Initializing...');
-  const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('');
-  const [isAppConnected, setIsAppConnected] = useState(false);
-  
-  // Load Shopify's App Bridge script for embedded app
-  useEffect(() => {
-    const loadAppBridge = () => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.shopify.com/shopifycloud/app-bridge-api/v3.0.0/app-bridge-api.js';
-      script.async = true;
-      script.onload = () => {
-        setStatus('App Bridge loaded');
-      };
-      script.onerror = () => {
-        console.error('Failed to load App Bridge script');
-      };
-      document.head.appendChild(script);
-      
-      return () => {
-        document.head.removeChild(script);
-      };
-    };
-    
-    loadAppBridge();
-  }, []);
+  const [location, navigate] = useLocation();
+  const { toast } = useToast();
+  const [shop, setShop] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function handleEmbeddedInstall() {
-      try {
-        // Extract query parameters from the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const shop = urlParams.get('shop');
-        const hmac = urlParams.get('hmac');
-        const host = urlParams.get('host');
-        const timestamp = urlParams.get('timestamp');
-        
-        // Add debug info
-        setDebugInfo(`Shop: ${shop || 'missing'}, Host: ${host || 'missing'}`);
-        
-        if (!shop) {
-          setError('Shop parameter is missing');
-          return;
-        }
-        
-        // For Partner Dashboard installations, redirect to OAuth flow but include host parameter
-        if (host) {
-          setStatus(`Detected Partner Dashboard install. Starting OAuth flow for ${shop}...`);
-          // Give a slight delay to ensure the user sees the message
-          setTimeout(() => {
-            // Redirect to OAuth flow with host parameter
-            window.location.href = `/shopify/auth?shop=${shop}&host=${host}`;
-          }, 1500);
-          return;
-        }
-        
-        // Check if we need to redirect to the OAuth flow
-        setStatus('Checking connection status...');
-        
-        // Check if we already have a connection for this shop
-        const connectionResponse = await axios.get('/api/shopify/connection');
-        const connection = connectionResponse.data.connection;
-        
-        if (connection && connection.storeName === shop && connection.isConnected) {
-          setStatus('Already connected. Redirecting to dashboard...');
-          // Already connected, redirect to internal dashboard
-          window.location.href = `/dashboard`;
-          return;
-        }
-        
-        // Not connected yet, redirect to OAuth flow with host parameter if available
-        setStatus('Starting installation...');
-        
-        // Create the OAuth redirect URL, including host param if present
-        let redirectUrl = `/shopify/auth?shop=${shop}`;
-        if (host) {
-          redirectUrl += `&host=${host}`;
-        }
-        
-        // Redirect to the OAuth flow
-        window.location.href = redirectUrl;
-      } catch (error) {
-        console.error('Error handling embedded install:', error);
-        setError('An error occurred during installation. Please try again.');
-      }
+    // Parse URL query parameters to get shop info
+    const params = new URLSearchParams(window.location.search);
+    const shopParam = params.get('shop');
+    
+    if (shopParam) {
+      setShop(shopParam);
     }
     
-    handleEmbeddedInstall();
+    setIsLoading(false);
   }, []);
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-      <h1 className="text-xl font-semibold">{error || status}</h1>
-      {!error && (
-        <p className="text-muted-foreground mt-2">Please wait while we set up your app connection.</p>
-      )}
-      {error && (
-        <button 
-          className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-          onClick={() => window.location.reload()}
-        >
-          Try Again
-        </button>
-      )}
-      {debugInfo && (
-        <div className="mt-6 p-4 bg-gray-100 rounded text-xs text-gray-600 max-w-md overflow-x-auto">
-          <p>Debug Info:</p>
-          <pre>{debugInfo}</pre>
+  // Effect to handle redirection to Dashboard once embedded
+  useEffect(() => {
+    if (!isLoading && shop) {
+      // Small delay to ensure App Bridge is initialized
+      const timeout = setTimeout(() => {
+        navigate('/dashboard');
+      }, 500);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading, shop, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="h-12 w-12 border-4 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-lg">Loading application...</p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-6xl mx-auto p-6">
+      <Card className="w-full shadow-md">
+        <CardHeader>
+          <CardTitle className="text-2xl">Welcome to Blog Creator</CardTitle>
+          <CardDescription>
+            Your app is now connected to {shop}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4">
+            You'll be redirected to the dashboard automatically.
+          </p>
+          <Button 
+            onClick={() => navigate('/dashboard')}
+            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+          >
+            Go to Dashboard
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
