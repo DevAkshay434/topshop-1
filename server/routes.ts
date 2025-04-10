@@ -11,6 +11,7 @@ import {
   getAccessToken, 
   getShopData 
 } from "./services/oauth";
+import { createSubscription, getSubscriptionStatus, cancelSubscription, PlanType } from './services/billing';
 import { z } from "zod";
 import { insertBlogPostSchema, insertShopifyConnectionSchema, insertSyncActivitySchema, insertContentGenRequestSchema, insertShopifyStoreSchema } from "@shared/schema";
 import crypto from "crypto";
@@ -28,6 +29,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ connection });
     } catch (error) {
       res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Multi-store operations
+  apiRouter.get("/shopify/stores", async (req: Request, res: Response) => {
+    try {
+      // Get query parameters
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      
+      // If userId is provided, get stores for that user
+      // Otherwise get all stores (admin view)
+      let stores;
+      if (userId) {
+        stores = await storage.getUserStores(userId);
+      } else {
+        stores = await storage.getShopifyStores();
+      }
+      
+      res.json({ stores });
+    } catch (error) {
+      console.error('Error getting Shopify stores:', error);
+      res.status(500).json({ error: "An error occurred while fetching Shopify stores" });
+    }
+  });
+  
+  apiRouter.get("/shopify/store/:id", async (req: Request, res: Response) => {
+    try {
+      const storeId = parseInt(req.params.id);
+      const store = await storage.getShopifyStore(storeId);
+      
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      
+      res.json({ store });
+    } catch (error) {
+      console.error('Error getting Shopify store:', error);
+      res.status(500).json({ error: "An error occurred while fetching Shopify store" });
     }
   });
   
@@ -827,6 +866,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error processing uninstall webhook:', error);
       // Still return 200 to acknowledge receipt
       res.status(200).send('Processed with errors');
+    }
+  });
+  
+  // --- BILLING API ROUTES ---
+  
+  // Create a new subscription
+  apiRouter.post("/billing/subscribe", async (req: Request, res: Response) => {
+    try {
+      const { storeId, plan, returnUrl } = req.body;
+      
+      if (!storeId || !plan || !returnUrl) {
+        return res.status(400).json({ 
+          error: "Missing required parameters: storeId, plan, and returnUrl are required" 
+        });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(parseInt(storeId));
+      
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      
+      // Create a subscription
+      const result = await createSubscription(store, plan, returnUrl);
+      
+      // Update store with plan info
+      await storage.updateShopifyStore(store.id, {
+        planName: plan
+      });
+      
+      // Return confirmation URL
+      res.json({ confirmationUrl: result.confirmationUrl });
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
+    }
+  });
+  
+  // Get subscription status
+  apiRouter.get("/billing/status/:storeId", async (req: Request, res: Response) => {
+    try {
+      const storeId = parseInt(req.params.storeId);
+      
+      if (isNaN(storeId)) {
+        return res.status(400).json({ error: "Invalid store ID" });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(storeId);
+      
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      
+      // Get subscription status
+      const status = await getSubscriptionStatus(store);
+      
+      // Update store with plan info if changed
+      if (store.planName !== status.plan) {
+        await storage.updateShopifyStore(store.id, {
+          planName: status.plan,
+          trialEndsAt: status.trialEndsAt ? new Date(status.trialEndsAt) : null
+        });
+      }
+      
+      res.json({ status });
+    } catch (error) {
+      console.error('Error getting subscription status:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
+    }
+  });
+  
+  // Cancel subscription
+  apiRouter.post("/billing/cancel", async (req: Request, res: Response) => {
+    try {
+      const { storeId, subscriptionId } = req.body;
+      
+      if (!storeId || !subscriptionId) {
+        return res.status(400).json({ 
+          error: "Missing required parameters: storeId and subscriptionId are required" 
+        });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(parseInt(storeId));
+      
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      
+      // Cancel the subscription
+      const result = await cancelSubscription(store, subscriptionId);
+      
+      // Update store plan to free
+      if (result) {
+        await storage.updateShopifyStore(store.id, {
+          planName: PlanType.FREE
+        });
+      }
+      
+      res.json({ success: result });
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
     }
   });
   
