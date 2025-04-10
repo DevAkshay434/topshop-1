@@ -31,13 +31,15 @@ export default function AppInstall() {
 
     // Redirect to OAuth flow
     setIsLoading(true);
-    const host = window.location.host;
-    const protocol = window.location.protocol;
-    const redirectUri = `${protocol}//${host}/shopify/callback`;
     
-    // Create OAuth URL - this is a simpler version that redirects to our server endpoint
-    // which will handle the full OAuth process
+    // Create the auth URL and redirect to it directly
+    // This ensures we're following Shopify's expected OAuth flow
     window.location.href = `/shopify/auth?shop=${encodeURIComponent(formattedDomain)}`;
+    
+    toast({
+      title: 'Redirecting to Shopify',
+      description: 'You will be redirected to Shopify to authorize the app',
+    });
   };
 
   return (
