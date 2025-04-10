@@ -71,28 +71,45 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private shopifyConnection: ShopifyConnection | undefined;
+  private shopifyStores: Map<number, ShopifyStore>;
+  private userStores: Map<string, UserStore>; // Composite key: "userId:storeId"
   private blogPosts: Map<number, BlogPost>;
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
   
   private currentUserId: number;
+  private currentStoreId: number;
   private currentBlogPostId: number;
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
 
   constructor() {
     this.users = new Map();
+    this.shopifyStores = new Map();
+    this.userStores = new Map();
     this.blogPosts = new Map();
     this.syncActivities = [];
     this.contentGenRequests = new Map();
     
     this.currentUserId = 1;
+    this.currentStoreId = 1;
     this.currentBlogPostId = 1;
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
     
     // Add some initial data for testing
     const now = new Date();
+    
+    // Add a default user
+    this.users.set(1, {
+      id: 1,
+      username: "admin",
+      password: "admin",
+      email: "admin@example.com",
+      name: "Administrator",
+      createdAt: now,
+      isAdmin: true
+    });
     
     // Add a sample shopify connection
     this.shopifyConnection = {
@@ -104,13 +121,39 @@ export class MemStorage implements IStorage {
       lastSynced: now
     };
     
+    // Add a sample store for multi-store support
+    const defaultStore: ShopifyStore = {
+      id: 1,
+      shopName: "fashion-boutique.myshopify.com",
+      accessToken: "sample_token",
+      scope: "read_products,write_products,read_content,write_content",
+      defaultBlogId: "fashion-blog",
+      isConnected: true,
+      lastSynced: now,
+      installedAt: now,
+      uninstalledAt: null,
+      planName: "free",
+      chargeId: null,
+      trialEndsAt: null
+    };
+    this.shopifyStores.set(1, defaultStore);
+    
+    // Connect user to store
+    this.userStores.set("1:1", {
+      userId: 1,
+      storeId: 1,
+      role: "owner",
+      createdAt: now
+    });
+    
     // Add some sample sync activities
     this.syncActivities.push({
       id: this.currentSyncActivityId++,
       timestamp: now,
       activity: "Sync completed successfully",
       status: "success",
-      details: "Successfully synchronized 5 posts"
+      details: "Successfully synchronized 5 posts",
+      storeId: 1
     });
     
     this.syncActivities.push({
@@ -118,7 +161,8 @@ export class MemStorage implements IStorage {
       timestamp: new Date(now.getTime() - 24 * 60 * 60 * 1000), // yesterday
       activity: "Published \"Summer Collection\"",
       status: "success",
-      details: "Successfully published post to Shopify"
+      details: "Successfully published post to Shopify",
+      storeId: 1
     });
     
     // Add some sample blog posts
@@ -133,7 +177,12 @@ export class MemStorage implements IStorage {
       views: 342,
       featuredImage: "",
       scheduledDate: null,
-      shopifyPostId: "12345"
+      shopifyPostId: "12345",
+      storeId: 1,
+      createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      author: "Administrator",
+      authorId: 1
     };
     
     const post2: BlogPost = {
@@ -147,7 +196,12 @@ export class MemStorage implements IStorage {
       views: 278,
       featuredImage: "",
       scheduledDate: null,
-      shopifyPostId: "12346"
+      shopifyPostId: "12346",
+      storeId: 1,
+      createdAt: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
+      author: "Administrator",
+      authorId: 1
     };
     
     const post3: BlogPost = {
@@ -161,7 +215,12 @@ export class MemStorage implements IStorage {
       scheduledDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
       views: 0,
       featuredImage: "",
-      shopifyPostId: null
+      shopifyPostId: null,
+      storeId: 1,
+      createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      author: "Administrator",
+      authorId: 1
     };
     
     this.blogPosts.set(post1.id, post1);
@@ -182,7 +241,14 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      createdAt: new Date(),
+      email: insertUser.email || null,
+      name: insertUser.name || null,
+      isAdmin: insertUser.isAdmin || false
+    };
     this.users.set(id, user);
     return user;
   }
@@ -323,6 +389,84 @@ export class MemStorage implements IStorage {
   
   async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
     return this.contentGenRequests.get(id);
+  }
+  
+  // Multi-store Shopify operations
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return Array.from(this.shopifyStores.values());
+  }
+  
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    return Array.from(this.shopifyStores.values()).find(
+      (store) => store.shopName === shopDomain
+    );
+  }
+  
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    return this.shopifyStores.get(id);
+  }
+  
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    const id = this.currentStoreId++;
+    const newStore: ShopifyStore = {
+      ...store,
+      id,
+      installedAt: new Date(),
+      lastSynced: new Date(),
+      uninstalledAt: null,
+      chargeId: null,
+      trialEndsAt: null,
+      defaultBlogId: store.defaultBlogId || null,
+      isConnected: store.isConnected !== undefined ? store.isConnected : true,
+      planName: store.planName || null
+    };
+    this.shopifyStores.set(id, newStore);
+    return newStore;
+  }
+  
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    const existingStore = this.shopifyStores.get(id);
+    if (!existingStore) {
+      throw new Error(`Store with ID ${id} not found`);
+    }
+    
+    const updatedStore = { ...existingStore, ...store };
+    this.shopifyStores.set(id, updatedStore);
+    return updatedStore;
+  }
+  
+  // User-store relationship operations
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    // Find all user-store relationships for this user
+    const userStoreIds = Array.from(this.userStores.entries())
+      .filter(([key, value]) => value.userId === userId)
+      .map(([key, value]) => value.storeId);
+    
+    // Get the store objects
+    return userStoreIds
+      .map(storeId => this.shopifyStores.get(storeId))
+      .filter(store => store !== undefined) as ShopifyStore[];
+  }
+  
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    // Create composite key
+    const key = `${userStore.userId}:${userStore.storeId}`;
+    
+    // Check if relationship already exists
+    if (this.userStores.has(key)) {
+      throw new Error('User-store relationship already exists');
+    }
+    
+    // Create new relationship
+    const newUserStore: UserStore = {
+      userId: userStore.userId,
+      storeId: userStore.storeId,
+      role: userStore.role || null,
+      createdAt: new Date()
+    };
+    
+    this.userStores.set(key, newUserStore);
+    return newUserStore;
   }
 }
 
