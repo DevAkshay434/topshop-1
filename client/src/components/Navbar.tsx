@@ -30,17 +30,14 @@ export default function Navbar() {
                 <Link
                   key={item.path}
                   href={item.path}
+                  className={cn(
+                    "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium",
+                    isActive(item.path)
+                      ? "border-primary text-primary"
+                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  )}
                 >
-                  <a
-                    className={cn(
-                      "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium",
-                      isActive(item.path)
-                        ? "border-primary text-primary"
-                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    )}
-                  >
-                    {item.name}
-                  </a>
+                  {item.name}
                 </Link>
               ))}
             </div>
@@ -55,17 +52,14 @@ export default function Navbar() {
             <Link
               key={item.path}
               href={item.path}
+              className={cn(
+                "text-sm font-medium px-2 py-1 rounded-md",
+                isActive(item.path)
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-600 hover:bg-gray-100"
+              )}
             >
-              <a
-                className={cn(
-                  "text-sm font-medium px-2 py-1 rounded-md",
-                  isActive(item.path)
-                    ? "bg-primary/10 text-primary"
-                    : "text-gray-600 hover:bg-gray-100"
-                )}
-              >
-                {item.name}
-              </a>
+              {item.name}
             </Link>
           ))}
         </div>
