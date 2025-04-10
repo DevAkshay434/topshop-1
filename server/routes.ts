@@ -778,12 +778,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: `Connected to ${shop}`
         });
         
-        // Redirect to the app
-        if (process.env.NODE_ENV === 'production') {
-          res.redirect(`/dashboard?shop=${encodeURIComponent(shop)}`);
-        } else {
-          res.redirect(`/?shop=${encodeURIComponent(shop)}`);
-        }
+        // Redirect back to the Shopify Admin
+        res.redirect(`https://${shop}/admin/apps`)
       } catch (error) {
         console.error('Error storing Shopify connection:', error);
         res.status(500).send('An error occurred while storing the connection');
