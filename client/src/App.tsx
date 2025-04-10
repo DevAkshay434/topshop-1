@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,14 +11,35 @@ import ShopifyConnection from "@/pages/ShopifyConnection";
 import BillingSettings from "@/pages/BillingSettings";
 import AppInstall from "@/pages/AppInstall";
 import PartnerInstall from "@/pages/PartnerInstall";
+import EmbeddedApp from "@/pages/EmbeddedApp";
+import { useEffect, useState } from "react";
 
 function Router() {
+  const [location] = useLocation();
+  const [showNavbar, setShowNavbar] = useState(true);
+  
+  useEffect(() => {
+    // Check if the URL has Shopify embedded parameters (hmac, host, shop, timestamp)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasEmbeddedParams = urlParams.has('hmac') && urlParams.has('shop');
+    
+    // Hide navbar if we're in embedded mode
+    setShowNavbar(!hasEmbeddedParams);
+  }, [location]);
+  
+  // Check if current URL has embedded params
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasEmbeddedParams = urlParams.has('hmac') && urlParams.has('shop');
+  
   return (
     <>
-      <Navbar />
+      {showNavbar && <Navbar />}
       <main className="flex-grow p-4 sm:p-6">
         <Switch>
-          <Route path="/" component={Dashboard} />
+          {/* If we're at root with embedded params, show EmbeddedApp */}
+          <Route path="/">
+            {hasEmbeddedParams ? <EmbeddedApp /> : <Dashboard />}
+          </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
