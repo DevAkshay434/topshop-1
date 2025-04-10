@@ -3,6 +3,14 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { shopifyService } from "./services/shopify";
 import { generateBlogContent } from "./services/openai";
+import { 
+  validateShopDomain, 
+  generateNonce, 
+  createAuthUrl, 
+  validateHmac, 
+  getAccessToken, 
+  getShopData 
+} from "./services/oauth";
 import { z } from "zod";
 import { insertBlogPostSchema, insertShopifyConnectionSchema, insertSyncActivitySchema, insertContentGenRequestSchema } from "@shared/schema";
 
