@@ -792,9 +792,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Redirecting to Embedded App URL with host: ${host}`);
           
           if (host) {
-            res.redirect(`https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}?host=${host}`);
+            // For embedded apps, a specific format is required for proper redirection
+            // First, decode the base64 host parameter if needed
+            let decodedHost = host;
+            try {
+              // Check if it's base64 encoded (Partner Dashboard installations)
+              if (typeof host === 'string' && /^[A-Za-z0-9+/=]+$/.test(host)) {
+                const decoded = Buffer.from(host, 'base64').toString('utf-8');
+                if (decoded.includes('shopify.com')) {
+                  decodedHost = decoded;
+                  console.log(`Decoded host parameter: ${decodedHost}`);
+                }
+              }
+            } catch (err) {
+              console.warn('Failed to decode host parameter:', err);
+            }
+            
+            // Use the app bridge redirect format
+            console.log(`Redirecting to Shopify Admin with host parameter: ${decodedHost}`);
+            res.redirect(`https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}`);
           } else {
             // Fallback to regular admin if we don't have host param
+            console.log('Redirecting to Shopify Admin apps page (no host parameter)');
             res.redirect(`https://${shop}/admin/apps`);
           }
         } else {
