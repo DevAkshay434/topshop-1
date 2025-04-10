@@ -821,10 +821,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Use the app bridge redirect format for embedded apps
             console.log(`Redirecting to Shopify Admin with host parameter: ${decodedHost}`);
-            // The format we're using is important for Shopify's App Bridge to work correctly
-            const appBridgeUrl = `https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}?embedded=1`;
-            console.log(`App Bridge URL: ${appBridgeUrl}`);
-            res.redirect(appBridgeUrl);
+            // The format is important for embedded app URL - need proper format with host parameter
+            const appUrl = `https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}`;
+            
+            // If we have base64 host param from Shopify (which we should), construct the proper URL
+            // This ensures the app loads in embedded mode within Shopify admin
+            if (decodedHost && decodedHost.includes('shopify.com')) {
+              const redirectUrl = `https://${decodedHost}/apps/${process.env.SHOPIFY_API_KEY}?embedded=1`;
+              console.log(`Redirecting to embedded app URL: ${redirectUrl}`);
+              res.redirect(redirectUrl);
+            } else {
+              // Fallback to admin/apps URL if host param is missing or invalid
+              console.log(`Host parameter invalid, redirecting to: ${appUrl}`);
+              res.redirect(appUrl);
+            }
           } else {
             // Fallback to regular admin if we don't have host param
             console.log('Redirecting to Shopify Admin apps page (no host parameter)');
