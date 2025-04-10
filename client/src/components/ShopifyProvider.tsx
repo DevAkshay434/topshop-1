@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import createApp from '@shopify/app-bridge';
-import { AppBridgeState } from '@shopify/app-bridge';
+import type { ClientApplication } from '@shopify/app-bridge';
 
 // Add type declaration for the global shopifyApp property
 declare global {
   interface Window {
-    shopifyApp?: AppBridgeState;
+    shopifyApp?: ClientApplication;
   }
 }
 
@@ -28,13 +28,9 @@ export function ShopifyProvider({ children }: ShopifyProviderProps) {
     const isEmbedded = Boolean(host && shop);
     
     if (isEmbedded) {
-      // Use the API key from your Shopify Partners dashboard
-      // Normally we would fetch this securely from the backend, but for this example we'll use a constant
-      // In production, you should use a server endpoint to provide this securely
-      const apiKey = '171d3c09d9299b9f6934c29abb309929'; // Your Shopify API key 
-      
-      // Log API key availability (not the actual key for security)
-      console.log('Using Shopify API key');
+      // Initialize with a fixed API key for now
+      // In production, you would fetch this from a server endpoint
+      const apiKey = '171d3c09d9299b9f6934c29abb309929';
       
       // Configure and initialize App Bridge
       const appBridgeConfig = {

@@ -23,6 +23,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- SHOPIFY CONNECTION ROUTES ---
   
   // Get Shopify connection
+  // Endpoint to get the Shopify API key securely
+  apiRouter.get("/shopify/api-key", async (req: Request, res: Response) => {
+    // Only return the API key if the request is from a trusted origin
+    const origin = req.headers.origin;
+    const trustedOrigins = [
+      'https://admin.shopify.com',
+      req.headers.host ? `https://${req.headers.host}` : undefined,
+    ].filter(Boolean);
+    
+    if (origin && trustedOrigins.includes(origin)) {
+      return res.json({ 
+        apiKey: process.env.SHOPIFY_API_KEY || '171d3c09d9299b9f6934c29abb309929'
+      });
+    }
+    
+    return res.status(403).json({ error: "Unauthorized request" });
+  });
+
   apiRouter.get("/shopify/connection", async (req: Request, res: Response) => {
     try {
       const connection = await storage.getShopifyConnection();
