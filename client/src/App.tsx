@@ -19,26 +19,28 @@ function Router() {
   const [showNavbar, setShowNavbar] = useState(true);
   
   useEffect(() => {
-    // Check if the URL has Shopify embedded parameters (hmac, host, shop, timestamp)
+    // Check if the URL has Shopify embedded parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const hasEmbeddedParams = urlParams.has('hmac') && urlParams.has('shop');
+    const isEmbedded = urlParams.has('shop') && 
+                      (urlParams.has('host') || urlParams.get('embedded') === '1');
     
     // Hide navbar if we're in embedded mode
-    setShowNavbar(!hasEmbeddedParams);
+    setShowNavbar(!isEmbedded);
   }, [location]);
   
   // Check if current URL has embedded params
   const urlParams = new URLSearchParams(window.location.search);
-  const hasEmbeddedParams = urlParams.has('hmac') && urlParams.has('shop');
+  const isEmbedded = urlParams.has('shop') && 
+                   (urlParams.has('host') || urlParams.get('embedded') === '1');
   
   return (
     <>
       {showNavbar && <Navbar />}
-      <main className="flex-grow p-4 sm:p-6">
+      <main className={`flex-grow ${showNavbar ? 'p-4 sm:p-6' : 'p-0'}`}>
         <Switch>
           {/* If we're at root with embedded params, show EmbeddedApp */}
           <Route path="/">
-            {hasEmbeddedParams ? <EmbeddedApp /> : <Dashboard />}
+            {isEmbedded ? <EmbeddedApp /> : <Dashboard />}
           </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
@@ -47,6 +49,8 @@ function Router() {
           <Route path="/billing-callback" component={Dashboard} />
           <Route path="/install" component={AppInstall} />
           <Route path="/partner-install" component={PartnerInstall} />
+          <Route path="/embedded" component={EmbeddedApp} />
+          <Route path="/dashboard" component={Dashboard} />
           
           {/* AI Templates, Analytics, Settings, and Help routes would go here */}
           

@@ -18,7 +18,7 @@ export default function EmbeddedApp() {
         const timestamp = urlParams.get('timestamp');
         
         // Add debug info
-        setDebugInfo(`Shop: ${shop}, Host: ${host}`);
+        setDebugInfo(`Shop: ${shop || 'missing'}, Host: ${host || 'missing'}`);
         
         if (!shop) {
           setError('Shop parameter is missing');
@@ -44,9 +44,9 @@ export default function EmbeddedApp() {
         const connection = connectionResponse.data.connection;
         
         if (connection && connection.storeName === shop && connection.isConnected) {
-          setStatus('Already connected. Redirecting to Shopify admin...');
-          // Already connected, redirect to Shopify admin
-          window.location.href = `https://${shop}/admin/apps`;
+          setStatus('Already connected. Redirecting to dashboard...');
+          // Already connected, redirect to internal dashboard
+          window.location.href = `/dashboard`;
           return;
         }
         
