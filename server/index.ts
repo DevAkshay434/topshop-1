@@ -11,6 +11,8 @@ app.use((req, res, next) => {
   // Allow requests from Shopify domains
   const shopifyDomains = [
     'https://admin.shopify.com',
+    'https://accounts.shopify.com',
+    'https://shop.app',
     'https://partners.shopify.com',
     req.headers.origin // Include the actual origin making the request
   ].filter(Boolean); // Remove null/undefined origins
@@ -27,6 +29,12 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    
+    // Add Content-Security-Policy headers to allow iframe embedding from Shopify domains
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' https://*.myshopify.com https://admin.shopify.com https://accounts.shopify.com;"
+    );
     
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
