@@ -618,7 +618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initiate OAuth flow
   oauthRouter.get("/shopify/auth", async (req: Request, res: Response) => {
     try {
-      const { shop } = req.query;
+      const { shop, host } = req.query;
       
       if (!shop || typeof shop !== 'string') {
         return res.status(400).send('Missing shop parameter');
@@ -630,11 +630,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate a nonce for CSRF protection
       const nonce = generateNonce();
-      nonceStore.set(nonce, { shop, timestamp: Date.now() });
+      
+      // Store the host parameter if it exists (for Partner Dashboard installations)
+      if (host && typeof host === 'string') {
+        nonceStore.set(nonce, { shop, timestamp: Date.now(), host });
+      } else {
+        nonceStore.set(nonce, { shop, timestamp: Date.now() });
+      }
 
       // Get Shopify API credentials from environment variables
       const apiKey = process.env.SHOPIFY_API_KEY;
-      const host = req.headers.host;
       
       if (!apiKey) {
         return res.status(500).send('Missing Shopify API key');
@@ -777,15 +782,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Check if this installation is from the Partner Dashboard
-        // Partner Dashboard installations include a host parameter
-        const isPartnerDashboardInstall = req.query.host !== undefined;
+        // Partner Dashboard installations include host parameter in the nonce data
+        const isPartnerDashboardInstall = req.query.host !== undefined || (nonceData && 'host' in nonceData);
         
         if (isPartnerDashboardInstall) {
           // For Partner Dashboard installs, redirect to the Embedded App URL
-          const host = req.query.host;
-          res.redirect(`https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}?host=${host}`);
+          // Use host from the query params or from the stored nonce data
+          const host = req.query.host || (nonceData && 'host' in nonceData ? nonceData.host : undefined);
+          console.log(`Redirecting to Embedded App URL with host: ${host}`);
+          
+          if (host) {
+            res.redirect(`https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}?host=${host}`);
+          } else {
+            // Fallback to regular admin if we don't have host param
+            res.redirect(`https://${shop}/admin/apps`);
+          }
         } else {
           // For direct installs, redirect to the Shopify Admin apps page
+          console.log(`Redirecting to Shopify Admin apps page`);
           res.redirect(`https://${shop}/admin/apps`);
         }
       } catch (error) {
