@@ -586,6 +586,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get available plans
+  apiRouter.get("/plans", async (req: Request, res: Response) => {
+    try {
+      res.json({
+        plans: PLANS
+      });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
+    }
+  });
+  
   // --- OAUTH ROUTES ---
   
   // Shopify OAuth routes (not prefixed with /api)
