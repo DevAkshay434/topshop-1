@@ -1,23 +1,93 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User schema (from the starter project)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  email: text("email").unique(),
+  name: text("name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isAdmin: boolean("is_admin").default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  email: true,
+  name: true,
+  isAdmin: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Shopify store connection schema
+// Define user relations
+export const usersRelations = relations(users, ({ many }) => ({
+  stores: many(shopifyStores),
+}));
+
+// Shopify stores schema for multi-tenant app
+export const shopifyStores = pgTable("shopify_stores", {
+  id: serial("id").primaryKey(),
+  shopName: text("shop_name").notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  scope: text("scope").notNull(),
+  defaultBlogId: text("default_blog_id"),
+  isConnected: boolean("is_connected").default(true),
+  lastSynced: timestamp("last_synced"),
+  installedAt: timestamp("installed_at").defaultNow().notNull(),
+  uninstalledAt: timestamp("uninstalled_at"),
+  planName: text("plan_name"),
+  chargeId: text("charge_id"),
+  trialEndsAt: timestamp("trial_ends_at"),
+});
+
+export const insertShopifyStoreSchema = createInsertSchema(shopifyStores).pick({
+  shopName: true, 
+  accessToken: true,
+  scope: true,
+  defaultBlogId: true,
+  isConnected: true,
+  planName: true,
+  chargeId: true,
+  trialEndsAt: true,
+});
+
+export type InsertShopifyStore = z.infer<typeof insertShopifyStoreSchema>;
+export type ShopifyStore = typeof shopifyStores.$inferSelect;
+
+// Define store relations
+export const shopifyStoresRelations = relations(shopifyStores, ({ many }) => ({
+  users: many(users),
+  posts: many(blogPosts),
+  activities: many(syncActivities),
+  requests: many(contentGenRequests),
+}));
+
+// User to store mapping for multi-user per store and multi-store per user
+export const userStores = pgTable("user_stores", {
+  userId: integer("user_id").notNull().references(() => users.id),
+  storeId: integer("store_id").notNull().references(() => shopifyStores.id),
+  role: text("role").default("member"), // Could be 'owner', 'admin', 'member', etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.storeId] }),
+}));
+
+export const insertUserStoreSchema = createInsertSchema(userStores).pick({
+  userId: true,
+  storeId: true,
+  role: true,
+});
+
+export type InsertUserStore = z.infer<typeof insertUserStoreSchema>;
+export type UserStore = typeof userStores.$inferSelect;
+
+// For backward compatibility, maintaining the old shopifyConnections table
 export const shopifyConnections = pgTable("shopify_connections", {
   id: serial("id").primaryKey(),
   storeName: text("store_name").notNull(),
@@ -40,6 +110,7 @@ export type ShopifyConnection = typeof shopifyConnections.$inferSelect;
 // Blog post schema
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => shopifyStores.id), // Add store reference for multi-store support
   title: text("title").notNull(),
   content: text("content").notNull(),
   featuredImage: text("featured_image"),
@@ -50,9 +121,14 @@ export const blogPosts = pgTable("blog_posts", {
   publishedDate: timestamp("published_date"),
   shopifyPostId: text("shopify_post_id"),
   views: integer("views").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
+  author: text("author"),
+  authorId: integer("author_id").references(() => users.id),
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts).pick({
+  storeId: true,
   title: true,
   content: true, 
   featuredImage: true,
@@ -62,15 +138,30 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).pick({
   scheduledDate: true,
   publishedDate: true,
   shopifyPostId: true,
-  views: true
+  views: true,
+  author: true,
+  authorId: true
 });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
 
+// Define blog post relations
+export const blogPostsRelations = relations(blogPosts, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [blogPosts.storeId],
+    references: [shopifyStores.id],
+  }),
+  user: one(users, {
+    fields: [blogPosts.authorId],
+    references: [users.id],
+  }),
+}));
+
 // Sync activity schema
 export const syncActivities = pgTable("sync_activities", {
   id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => shopifyStores.id), // Add store reference
   timestamp: timestamp("timestamp").notNull().defaultNow(),
   activity: text("activity").notNull(),
   status: text("status").notNull(), // success, failed
@@ -78,6 +169,7 @@ export const syncActivities = pgTable("sync_activities", {
 });
 
 export const insertSyncActivitySchema = createInsertSchema(syncActivities).pick({
+  storeId: true,
   activity: true,
   status: true,
   details: true,
@@ -86,9 +178,19 @@ export const insertSyncActivitySchema = createInsertSchema(syncActivities).pick(
 export type InsertSyncActivity = z.infer<typeof insertSyncActivitySchema>;
 export type SyncActivity = typeof syncActivities.$inferSelect;
 
+// Define sync activity relations
+export const syncActivitiesRelations = relations(syncActivities, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [syncActivities.storeId],
+    references: [shopifyStores.id],
+  }),
+}));
+
 // Content generation request schema
 export const contentGenRequests = pgTable("content_gen_requests", {
   id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => shopifyStores.id), // Add store reference
+  userId: integer("user_id").references(() => users.id), // Add user reference
   topic: text("topic").notNull(),
   tone: text("tone").notNull(),
   length: text("length").notNull(),
@@ -98,6 +200,8 @@ export const contentGenRequests = pgTable("content_gen_requests", {
 });
 
 export const insertContentGenRequestSchema = createInsertSchema(contentGenRequests).pick({
+  storeId: true,
+  userId: true,
   topic: true,
   tone: true,
   length: true,
@@ -107,5 +211,17 @@ export const insertContentGenRequestSchema = createInsertSchema(contentGenReques
 
 export type InsertContentGenRequest = z.infer<typeof insertContentGenRequestSchema>;
 export type ContentGenRequest = typeof contentGenRequests.$inferSelect;
+
+// Define content gen request relations
+export const contentGenRequestsRelations = relations(contentGenRequests, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [contentGenRequests.storeId],
+    references: [shopifyStores.id],
+  }),
+  user: one(users, {
+    fields: [contentGenRequests.userId],
+    references: [users.id],
+  }),
+}));
 
 // Relations can be added later if needed
