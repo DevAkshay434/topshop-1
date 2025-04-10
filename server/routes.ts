@@ -611,17 +611,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Shopify OAuth routes (not prefixed with /api)
   const oauthRouter = express.Router();
   
-  // Store the nonce in memory
-  const nonceStore = new Map<string, { shop: string, timestamp: number }>();
+  // Store the nonce in memory with type for host parameter
+  interface NonceData {
+    shop: string;
+    timestamp: number;
+    host?: string;
+  }
+  const nonceStore = new Map<string, NonceData>();
   
   // Clean up expired nonces (older than 1 hour)
   setInterval(() => {
     const now = Date.now();
-    for (const [nonce, data] of nonceStore.entries()) {
+    // Use Array.from to convert Iterator to array to avoid TypeScript error
+    Array.from(nonceStore.entries()).forEach(([nonce, data]) => {
       if (now - data.timestamp > 60 * 60 * 1000) {
         nonceStore.delete(nonce);
       }
-    }
+    });
   }, 15 * 60 * 1000); // Run every 15 minutes
   
   // Initiate OAuth flow
@@ -657,8 +663,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the exact redirect URL configured in the Shopify Partner Dashboard
       const redirectUri = `https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/shopify/callback`;
       
-      // Create the authorization URL
-      const authUrl = createAuthUrl(shop, apiKey, redirectUri, nonce);
+      // Create the authorization URL, passing host parameter for embedded apps
+      const authUrl = createAuthUrl(shop, apiKey, redirectUri, nonce, host as string | undefined);
+      
+      console.log(`Redirecting to Shopify for authorization with URL: ${authUrl}`);
       
       // Redirect to Shopify for authorization
       res.redirect(authUrl);

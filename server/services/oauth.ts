@@ -22,13 +22,31 @@ export function generateNonce(): string {
 
 /**
  * Create the authorization URL for a shop
+ * @param shop The Shopify shop domain
+ * @param apiKey The Shopify API key
+ * @param redirectUri The redirect URI after authorization
+ * @param state The state parameter for CSRF protection
+ * @param host Optional host parameter for embedded app installs
  */
-export function createAuthUrl(shop: string, apiKey: string, redirectUri: string, state: string): string {
-  return `https://${shop}/admin/oauth/authorize?` +
+export function createAuthUrl(
+  shop: string, 
+  apiKey: string, 
+  redirectUri: string, 
+  state: string,
+  host?: string
+): string {
+  let url = `https://${shop}/admin/oauth/authorize?` +
     `client_id=${apiKey}&` +
     `scope=${SCOPES}&` +
     `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `state=${state}`;
+  
+  // If host is provided (Partner Dashboard installation), include it
+  if (host) {
+    url += `&host=${encodeURIComponent(host)}`;
+  }
+  
+  return url;
 }
 
 /**
