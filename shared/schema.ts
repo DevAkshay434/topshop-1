@@ -107,3 +107,5 @@ export const insertContentGenRequestSchema = createInsertSchema(contentGenReques
 
 export type InsertContentGenRequest = z.infer<typeof insertContentGenRequestSchema>;
 export type ContentGenRequest = typeof contentGenRequests.$inferSelect;
+
+// Relations can be added later if needed
