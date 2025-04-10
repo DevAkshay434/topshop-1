@@ -776,8 +776,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: `Connected to ${shop}`
         });
         
-        // Redirect back to the Shopify Admin
-        res.redirect(`https://${shop}/admin/apps`)
+        // Check if this installation is from the Partner Dashboard
+        // Partner Dashboard installations include a host parameter
+        const isPartnerDashboardInstall = req.query.host !== undefined;
+        
+        if (isPartnerDashboardInstall) {
+          // For Partner Dashboard installs, redirect to the Embedded App URL
+          const host = req.query.host;
+          res.redirect(`https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}?host=${host}`);
+        } else {
+          // For direct installs, redirect to the Shopify Admin apps page
+          res.redirect(`https://${shop}/admin/apps`);
+        }
       } catch (error) {
         console.error('Error storing Shopify connection:', error);
         res.status(500).send('An error occurred while storing the connection');
