@@ -22,7 +22,7 @@ import {
   type InsertContentGenRequest
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, lte, gte, inArray } from "drizzle-orm";
+import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
 
 // Define the storage interface with all CRUD operations
 export interface IStorage {
