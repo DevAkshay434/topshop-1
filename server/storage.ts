@@ -1,4 +1,9 @@
 import { 
+  users,
+  shopifyConnections,
+  blogPosts,
+  syncActivities,
+  contentGenRequests,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -10,6 +15,8 @@ import {
   type ContentGenRequest,
   type InsertContentGenRequest
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, asc, lte, gte } from "drizzle-orm";
 
 // Define the storage interface with all CRUD operations
 export interface IStorage {
@@ -302,4 +309,214 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database implementation of the storage interface
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+  
+  // Shopify connection operations
+  async getShopifyConnection(): Promise<ShopifyConnection | undefined> {
+    const connections = await db.select().from(shopifyConnections);
+    return connections[0]; // We assume there's only one connection per account
+  }
+  
+  async createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection> {
+    // Check if there's already a connection and delete it
+    const existingConnection = await this.getShopifyConnection();
+    if (existingConnection) {
+      await db.delete(shopifyConnections).where(eq(shopifyConnections.id, existingConnection.id));
+    }
+    
+    const [newConnection] = await db.insert(shopifyConnections)
+      .values({
+        storeName: connection.storeName,
+        accessToken: connection.accessToken,
+        defaultBlogId: connection.defaultBlogId || null,
+        isConnected: connection.isConnected !== undefined ? connection.isConnected : true,
+        lastSynced: new Date()
+      })
+      .returning();
+      
+    return newConnection;
+  }
+  
+  async updateShopifyConnection(connection: Partial<ShopifyConnection>): Promise<ShopifyConnection | undefined> {
+    const existingConnection = await this.getShopifyConnection();
+    if (!existingConnection) {
+      return undefined;
+    }
+    
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (connection.storeName !== undefined) updateData.storeName = connection.storeName;
+    if (connection.accessToken !== undefined) updateData.accessToken = connection.accessToken;
+    if (connection.defaultBlogId !== undefined) updateData.defaultBlogId = connection.defaultBlogId;
+    if (connection.isConnected !== undefined) updateData.isConnected = connection.isConnected;
+    if (connection.lastSynced !== undefined) updateData.lastSynced = connection.lastSynced;
+    
+    const [updatedConnection] = await db.update(shopifyConnections)
+      .set(updateData)
+      .where(eq(shopifyConnections.id, existingConnection.id))
+      .returning();
+      
+    return updatedConnection;
+  }
+  
+  // Blog post operations
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return db.select().from(blogPosts);
+  }
+  
+  async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post;
+  }
+  
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    // Ensure required fields are present and nulls are handled properly
+    const [newPost] = await db.insert(blogPosts)
+      .values({
+        title: post.title,
+        content: post.content,
+        status: post.status || 'draft',
+        featuredImage: post.featuredImage || null,
+        category: post.category || null,
+        tags: post.tags || null,
+        scheduledDate: post.scheduledDate || null,
+        publishedDate: post.publishedDate || null,
+        shopifyPostId: post.shopifyPostId || null,
+        views: post.views || 0
+      })
+      .returning();
+      
+    return newPost;
+  }
+  
+  async updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined> {
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (post.title !== undefined) updateData.title = post.title;
+    if (post.content !== undefined) updateData.content = post.content;
+    if (post.status !== undefined) updateData.status = post.status;
+    if (post.featuredImage !== undefined) updateData.featuredImage = post.featuredImage;
+    if (post.category !== undefined) updateData.category = post.category;
+    if (post.tags !== undefined) updateData.tags = post.tags;
+    if (post.scheduledDate !== undefined) updateData.scheduledDate = post.scheduledDate;
+    if (post.publishedDate !== undefined) updateData.publishedDate = post.publishedDate;
+    if (post.shopifyPostId !== undefined) updateData.shopifyPostId = post.shopifyPostId;
+    if (post.views !== undefined) updateData.views = post.views;
+    
+    const [updatedPost] = await db.update(blogPosts)
+      .set(updateData)
+      .where(eq(blogPosts.id, id))
+      .returning();
+      
+    return updatedPost;
+  }
+  
+  async deleteBlogPost(id: number): Promise<boolean> {
+    const result = await db.delete(blogPosts).where(eq(blogPosts.id, id)).returning({ id: blogPosts.id });
+    return result.length > 0;
+  }
+  
+  async getRecentPosts(limit: number): Promise<BlogPost[]> {
+    // Get posts sorted by published date or scheduled date in descending order
+    return db.select()
+      .from(blogPosts)
+      .orderBy(desc(blogPosts.publishedDate))
+      .limit(limit);
+  }
+  
+  async getScheduledPosts(): Promise<BlogPost[]> {
+    return db.select()
+      .from(blogPosts)
+      .where(eq(blogPosts.status, 'scheduled'))
+      .orderBy(asc(blogPosts.scheduledDate));
+  }
+  
+  async getPublishedPosts(): Promise<BlogPost[]> {
+    return db.select()
+      .from(blogPosts)
+      .where(eq(blogPosts.status, 'published'))
+      .orderBy(desc(blogPosts.publishedDate));
+  }
+  
+  // Sync activity operations
+  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
+    return db.select()
+      .from(syncActivities)
+      .orderBy(desc(syncActivities.timestamp))
+      .limit(limit);
+  }
+  
+  async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
+    const [newActivity] = await db.insert(syncActivities)
+      .values({
+        activity: activity.activity,
+        status: activity.status,
+        details: activity.details || null,
+        timestamp: new Date()
+      })
+      .returning();
+      
+    return newActivity;
+  }
+  
+  // Content generation operations
+  async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
+    const [newRequest] = await db.insert(contentGenRequests)
+      .values({
+        topic: request.topic,
+        tone: request.tone,
+        length: request.length,
+        status: request.status,
+        generatedContent: request.generatedContent || null,
+        timestamp: new Date()
+      })
+      .returning();
+      
+    return newRequest;
+  }
+  
+  async updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined> {
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (request.topic !== undefined) updateData.topic = request.topic;
+    if (request.tone !== undefined) updateData.tone = request.tone;
+    if (request.length !== undefined) updateData.length = request.length;
+    if (request.status !== undefined) updateData.status = request.status;
+    if (request.generatedContent !== undefined) updateData.generatedContent = request.generatedContent;
+    if (request.timestamp !== undefined) updateData.timestamp = request.timestamp;
+    
+    const [updatedRequest] = await db.update(contentGenRequests)
+      .set(updateData)
+      .where(eq(contentGenRequests.id, id))
+      .returning();
+      
+    return updatedRequest;
+  }
+  
+  async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
+    const [request] = await db.select().from(contentGenRequests).where(eq(contentGenRequests.id, id));
+    return request;
+  }
+}
+
+// Switch from MemStorage to DatabaseStorage
+export const storage = new DatabaseStorage();
