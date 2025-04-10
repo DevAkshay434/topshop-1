@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -149,7 +150,9 @@ export default function BillingSettings() {
         <AlertTriangle className="w-8 h-8 text-amber-500 mb-4" />
         <h2 className="text-xl font-semibold mb-2">No Stores Connected</h2>
         <p className="text-muted-foreground mb-4">You need to connect a Shopify store before managing billing.</p>
-        <Button href="#/shopify-connection">Connect a Store</Button>
+        <Link href="/shopify-connection">
+          <Button>Connect a Store</Button>
+        </Link>
       </div>
     );
   }
