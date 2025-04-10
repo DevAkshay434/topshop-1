@@ -59,8 +59,6 @@ function Router() {
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/billing-callback" component={Dashboard} />
-          <Route path="/install" component={AppInstall} />
-          <Route path="/partner-install" component={PartnerInstall} />
           <Route path="/embedded" component={EmbeddedApp} />
           <Route path="/dashboard" component={Dashboard} />
           

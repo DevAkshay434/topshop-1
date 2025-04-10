@@ -6,6 +6,29 @@ export default function EmbeddedApp() {
   const [status, setStatus] = useState('Initializing...');
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [isAppConnected, setIsAppConnected] = useState(false);
+  
+  // Load Shopify's App Bridge script for embedded app
+  useEffect(() => {
+    const loadAppBridge = () => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.shopify.com/shopifycloud/app-bridge-api/v3.0.0/app-bridge-api.js';
+      script.async = true;
+      script.onload = () => {
+        setStatus('App Bridge loaded');
+      };
+      script.onerror = () => {
+        console.error('Failed to load App Bridge script');
+      };
+      document.head.appendChild(script);
+      
+      return () => {
+        document.head.removeChild(script);
+      };
+    };
+    
+    loadAppBridge();
+  }, []);
 
   useEffect(() => {
     async function handleEmbeddedInstall() {
