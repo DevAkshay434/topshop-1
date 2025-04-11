@@ -697,7 +697,7 @@ export default function ContentTemplates() {
           title,
           content,
           status: "draft",
-          tags: tags.join(","),
+          tags: tags, // Send as array, not comma-separated string
           category: selectedTemplate?.category || "General",
           storeId: null,
           author: "Bulk Generation"
