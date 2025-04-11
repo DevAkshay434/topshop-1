@@ -362,6 +362,23 @@ Topic 3"
               </p>
             </div>
           </TabsContent>
+          
+          <TabsContent value="ai-prompt" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="ai-prompt">Custom AI Prompt</Label>
+              <Textarea 
+                id="ai-prompt" 
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)} 
+                className="h-80 resize-none"
+                placeholder="You are a professional writer creating content about [TOPIC]. 
+Write a comprehensive, engaging article that provides value to readers."
+              />
+              <p className="text-sm text-neutral-500">
+                Use [TOPIC] as a placeholder for the topic you'll specify later. This prompt will be used to instruct the AI when generating content with this template.
+              </p>
+            </div>
+          </TabsContent>
         </Tabs>
         
         <DialogFooter className="mt-6">
@@ -483,8 +500,8 @@ function TemplateEditDialog({
   isOpen: boolean, 
   setIsOpen: (open: boolean) => void, 
   template: Template | null,
-  templateContent: { structure: string, topics: string[] } | null,
-  onSave: (templateId: number, structure: string, topics: string[]) => void
+  templateContent: { structure: string, topics: string[], aiPrompt?: string } | null,
+  onSave: (templateId: number, structure: string, topics: string[], aiPrompt: string) => void
 }) {
   const [structure, setStructure] = useState("");
   const [topicsText, setTopicsText] = useState("");
@@ -509,7 +526,7 @@ function TemplateEditDialog({
       .map(t => t.trim())
       .filter(Boolean);
     
-    onSave(template.id, structure, topicsArray);
+    onSave(template.id, structure, topicsArray, aiPrompt);
   };
   
   return (
@@ -523,9 +540,10 @@ function TemplateEditDialog({
         </DialogHeader>
         
         <Tabs defaultValue="structure" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="structure">Template Structure</TabsTrigger>
             <TabsTrigger value="topics">Suggested Topics</TabsTrigger>
+            <TabsTrigger value="ai-prompt">AI Prompt</TabsTrigger>
           </TabsList>
           
           <TabsContent value="structure" className="space-y-4 mt-4">
@@ -566,6 +584,23 @@ Topic 3"
               />
               <p className="text-sm text-neutral-500">
                 These topics will be shown as suggestions when using this template.
+              </p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="ai-prompt" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="ai-prompt">Custom AI Prompt</Label>
+              <Textarea 
+                id="ai-prompt" 
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)} 
+                className="h-80 resize-none"
+                placeholder="You are a professional writer creating content about [TOPIC]. 
+Write a comprehensive, engaging article that provides value to readers."
+              />
+              <p className="text-sm text-neutral-500">
+                Use [TOPIC] as a placeholder for the topic you'll specify later. This prompt will be used to instruct the AI when generating content with this template.
               </p>
             </div>
           </TabsContent>
@@ -945,13 +980,14 @@ export default function ContentTemplates() {
   };
 
   // Save edited template
-  const handleSaveTemplate = (templateId: number, structure: string, topics: string[]) => {
+  const handleSaveTemplate = (templateId: number, structure: string, topics: string[], aiPrompt: string) => {
     if (!templateId) return;
     
     // Update the template content in the templateContent object
     templateContent[templateId] = {
       structure,
-      topics
+      topics,
+      aiPrompt
     };
     
     toast({
@@ -963,7 +999,7 @@ export default function ContentTemplates() {
   };
 
   // Handle creating a new template
-  const handleCreateNewTemplate = (name: string, description: string, category: string, structure: string, topics: string[]) => {
+  const handleCreateNewTemplate = (name: string, description: string, category: string, structure: string, topics: string[], aiPrompt: string) => {
     // Generate a new template ID (max current ID + 1)
     const newId = Math.max(...templates.map(t => t.id)) + 1;
     
@@ -981,7 +1017,8 @@ export default function ContentTemplates() {
     // Add template content
     templateContent[newId] = {
       structure,
-      topics
+      topics,
+      aiPrompt
     };
     
     toast({
