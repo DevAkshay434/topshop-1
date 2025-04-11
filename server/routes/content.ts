@@ -271,92 +271,76 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
         } catch (openAiError: any) {
           console.error(`OpenAI error for topic "${topic}":`, openAiError);
           
-          // Check if it's a quota error with OpenAI
-          if (openAiError.status === 429 || 
-              (openAiError.error && openAiError.error.type === 'insufficient_quota')) {
+          // Always try the fallback regardless of the specific error type
+          // This ensures we can still generate content even if OpenAI has issues
+          console.log(`OpenAI error for "${topic}", falling back to HuggingFace`);
+          
+          try {
+            // Import the HuggingFace generator
+            const { generateBlogContentWithHF } = require("../services/huggingface");
             
-            console.log(`OpenAI quota exceeded for "${topic}", falling back to HuggingFace`);
+            // Fall back to HuggingFace
+            const hfContent = await generateBlogContentWithHF({
+              topic: topic,
+              tone: "professional",
+              length: "medium"
+            });
             
+            // Update request
+            await storage.updateContentGenRequest(contentRequest.id, {
+              status: "completed",
+              generatedContent: JSON.stringify(hfContent)
+            });
+            
+            // Create blog post
+            const post = await storage.createBlogPost({
+              title: hfContent.title,
+              content: hfContent.content || `# ${hfContent.title}\n\nContent for ${topic}`,
+              status: "published",
+              publishedDate: new Date(),
+              author: "Simple Bulk Generator (Fallback)",
+              tags: Array.isArray(hfContent.tags) && hfContent.tags.length > 0 
+                ? hfContent.tags.join(",") 
+                : topic,
+              category: "Generated Content"
+            });
+            
+            // Try to sync to Shopify
             try {
-              // Import the HuggingFace generator
-              const { generateBlogContentWithHF } = require("../services/huggingface");
-              
-              // Fall back to HuggingFace
-              const hfContent = await generateBlogContentWithHF({
-                topic: topic,
-                tone: "professional",
-                length: "medium"
+              await fetch(`http://localhost:5000/api/shopify/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postIds: [post.id] })
               });
-              
-              // Update request
-              await storage.updateContentGenRequest(contentRequest.id, {
-                status: "completed",
-                generatedContent: JSON.stringify(hfContent)
-              });
-              
-              // Create blog post
-              const post = await storage.createBlogPost({
-                title: hfContent.title,
-                content: hfContent.content || `# ${hfContent.title}\n\nContent for ${topic}`,
-                status: "published",
-                publishedDate: new Date(),
-                author: "Simple Bulk Generator (Fallback)",
-                tags: Array.isArray(hfContent.tags) && hfContent.tags.length > 0 
-                  ? hfContent.tags.join(",") 
-                  : topic,
-                category: "Generated Content"
-              });
-              
-              // Try to sync to Shopify
-              try {
-                await fetch(`http://localhost:5000/api/shopify/sync`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ postIds: [post.id] })
-                });
-                console.log(`Post for "${topic}" (fallback) synced to Shopify`);
-              } catch (syncError) {
-                console.error(`Error syncing fallback post for "${topic}" to Shopify:`, syncError);
-              }
-              
-              // Add to results
-              results.push({
-                topic,
-                postId: post.id,
-                title: hfContent.title,
-                content: hfContent.content,
-                status: "success",
-                usesFallback: true
-              });
-              
-            } catch (hfError) {
-              console.error(`HuggingFace fallback also failed for "${topic}":`, hfError);
-              
-              // Update request as failed
-              await storage.updateContentGenRequest(contentRequest.id, {
-                status: "failed",
-                generatedContent: JSON.stringify({ error: hfError instanceof Error ? hfError.message : "Unknown error" })
-              });
-              
-              // Add failed result
-              results.push({
-                topic,
-                status: "failed",
-                error: "Both generation services failed"
-              });
+              console.log(`Post for "${topic}" (fallback) synced to Shopify`);
+            } catch (syncError) {
+              console.error(`Error syncing fallback post for "${topic}" to Shopify:`, syncError);
             }
-          } else {
-            // Not a quota issue, just mark as failed
+            
+            // Add to results
+            results.push({
+              topic,
+              postId: post.id,
+              title: hfContent.title,
+              content: hfContent.content,
+              status: "success",
+              usesFallback: true
+            });
+            
+          } catch (hfError) {
+            console.error(`HuggingFace fallback also failed for "${topic}":`, hfError);
+            
+            // Update request as failed
             await storage.updateContentGenRequest(contentRequest.id, {
               status: "failed",
-              generatedContent: JSON.stringify({ error: openAiError instanceof Error ? openAiError.message : "Unknown error" })
+              generatedContent: JSON.stringify({ error: hfError instanceof Error ? hfError.message : "Unknown error" })
             });
             
             // Add failed result
             results.push({
               topic,
               status: "failed",
-              error: openAiError instanceof Error ? openAiError.message : "Unknown error" 
+              error: "Both generation services failed"
             });
           }
         }
@@ -444,36 +428,30 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         const openAiError = error as any;
         console.error("OpenAI bulk generation failed:", openAiError);
         
-        // Check if it's a quota error
-        if (openAiError.status === 429 || 
-            (openAiError.error && openAiError.error.type === 'insufficient_quota')) {
-          console.log("OpenAI quota exceeded in bulk, falling back to HuggingFace");
-          
-          // Import the HuggingFace generator
-          const { generateBlogContentWithHF } = require("../services/huggingface");
-          
-          // Generate content with HuggingFace for each topic
-          results = await Promise.all(topics.map(async (topic) => {
-            try {
-              return await generateBlogContentWithHF({
-                topic: topic,
-                tone: "professional",
-                length: "medium"
-              });
-            } catch (err) {
-              console.error(`HuggingFace generation failed for topic "${topic}":`, err);
-              // Return a basic structure to prevent the whole batch from failing
-              return {
-                title: `${topic} - Generated Content`,
-                content: `# ${topic}\n\nThis content could not be generated automatically. Please edit to add your content.`,
-                tags: [topic, "Draft", "Needs Editing"]
-              };
-            }
-          }));
-        } else {
-          // If not a quota error, rethrow
-          throw openAiError;
-        }
+        // Always try the fallback regardless of the specific error type
+        console.log("OpenAI error in bulk generation, falling back to HuggingFace");
+        
+        // Import the HuggingFace generator
+        const { generateBlogContentWithHF } = require("../services/huggingface");
+        
+        // Generate content with HuggingFace for each topic
+        results = await Promise.all(topics.map(async (topic) => {
+          try {
+            return await generateBlogContentWithHF({
+              topic: topic,
+              tone: "professional",
+              length: "medium"
+            });
+          } catch (err) {
+            console.error(`HuggingFace generation failed for topic "${topic}":`, err);
+            // Return a basic structure to prevent the whole batch from failing
+            return {
+              title: `${topic} - Generated Content`,
+              content: `# ${topic}\n\nThis content could not be generated automatically. Please edit to add your content.`,
+              tags: [topic, "Draft", "Needs Editing"]
+            };
+          }
+        }));
       }
       
       // Create blog posts from generated content
