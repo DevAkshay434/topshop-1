@@ -128,6 +128,7 @@ export async function generateBlogContentWithHF(request: BlogContentRequest): Pr
     if (request.customPrompt) {
       // Replace topic placeholders in the custom prompt
       const customPromptFormatted = request.customPrompt.replace(/\[TOPIC\]/g, request.topic);
+      console.log(`Using custom prompt format: ${customPromptFormatted}`);
       
       // Analyze the custom prompt to determine what kind of content we should generate
       const isComparison = customPromptFormatted.toLowerCase().includes('compar') || 
