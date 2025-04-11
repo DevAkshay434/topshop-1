@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import StatsCard from "@/components/StatsCard";
 import PostList from "@/components/PostList";
@@ -7,7 +8,7 @@ import ContentGenerator from "@/components/ContentGenerator";
 import ShopifyStoreCard from "@/components/ShopifyStoreCard";
 import CreatePostModal from "@/components/CreatePostModal";
 import { Button } from "@/components/ui/button";
-import { FileText, Clock, Eye, Sparkles, Plus } from "lucide-react";
+import { FileText, Clock, Eye, Sparkles, Plus, Zap } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,6 +20,7 @@ export default function Dashboard() {
     content: string;
     tags: string[];
   } | null>(null);
+  const [, setLocation] = useLocation();
   
   const { data: statsData, isLoading: isStatsLoading } = useQuery<{
     totalPosts: number;
@@ -61,7 +63,11 @@ export default function Dashboard() {
             Manage your blog content and Shopify publication
           </p>
         </div>
-        <div className="mt-4 md:mt-0 md:ml-4">
+        <div className="mt-4 md:mt-0 md:ml-4 flex space-x-2">
+          <Button variant="outline" onClick={() => setLocation("/content-templates")}>
+            <Zap className="mr-2 h-4 w-4" />
+            Bulk Generate
+          </Button>
           <Button onClick={handleCreatePost}>
             <Plus className="mr-2 h-4 w-4" />
             Create New Post
