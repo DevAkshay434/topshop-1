@@ -578,7 +578,7 @@ export default function ContentTemplates() {
         title,
         content,
         status: "draft",
-        tags: tags, // Send as array, not comma-separated string
+        tags: tags.join(","), // Tags is a text field in the schema, so join array to string
         category: selectedTemplate?.category || "General",
         storeId: null, // Use the default store connection
         author: "Template System"
@@ -697,7 +697,7 @@ export default function ContentTemplates() {
           title,
           content,
           status: "draft",
-          tags: tags, // Send as array, not comma-separated string
+          tags: tags.join(","), // Tags is a text field in the schema, so join array to string
           category: selectedTemplate?.category || "General",
           storeId: null,
           author: "Bulk Generation"
