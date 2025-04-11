@@ -11,6 +11,7 @@ import {
 import { storage } from './storage';
 import * as shopifyService from './services/shopify';
 import contentRouter from './routes/content';
+import claudeRouter from './routes/claude';
 import { 
   validateShopDomain, 
   generateNonce, 

@@ -116,18 +116,66 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       } catch (hfError: any) {
         console.error("HuggingFace fallback also failed:", hfError);
         
-        // Update as failed since both services failed
+        // Try one more fallback with Claude if available
+        if (process.env.ANTHROPIC_API_KEY) {
+          try {
+            console.log(`Both OpenAI and HuggingFace failed for "${topic}", trying Claude as final fallback`);
+            
+            // Fall back to Claude with appropriate parameters
+            const claudeContent = await generateBlogContentWithClaude({
+              topic: topic,
+              tone: "professional",
+              length: "medium",
+              customPrompt: customPrompt
+            });
+            
+            // Update content generation request to completed
+            const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
+              status: "completed",
+              generatedContent: JSON.stringify(claudeContent)
+            });
+            
+            // Get the Shopify connection to use as author
+            const connection = await storage.getShopifyConnection();
+            const storeName = connection?.storeName || "Store Owner";
+            
+            // Create a blog post with the Claude-generated content
+            const post = await storage.createBlogPost({
+              title: claudeContent.title,
+              content: claudeContent.content || `# ${claudeContent.title}\n\nContent for ${topic}`,
+              status: "draft", // Default to draft so user can review before publishing
+              author: storeName,
+              tags: Array.isArray(claudeContent.tags) && claudeContent.tags.length > 0 
+                ? claudeContent.tags.join(",") 
+                : topic,
+              category: "Generated Content"
+            });
+            
+            res.json({ 
+              success: true, 
+              requestId: updatedRequest?.id,
+              postId: post.id,
+              ...claudeContent,
+              fallbackUsed: "claude"
+            });
+            return;
+          } catch (claudeError: any) {
+            console.error("Claude final fallback also failed:", claudeError);
+          }
+        }
+        
+        // Update as failed since all services failed
         await storage.updateContentGenRequest(contentRequest.id, {
           status: "failed",
           generatedContent: JSON.stringify({ 
-            error: "Both OpenAI and HuggingFace failed" 
+            error: "All content generation services failed" 
           })
         });
         
         // Return error to the client
         res.status(500).json({
           success: false,
-          error: "Failed to generate content with both services"
+          error: "Failed to generate content with all available services"
         });
       }
     }
@@ -359,7 +407,72 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
           } catch (hfError) {
             console.error(`HuggingFace fallback also failed for "${topic}":`, hfError);
             
-            // Update request as failed
+            // Try Claude as a final fallback if available
+            if (process.env.ANTHROPIC_API_KEY) {
+              try {
+                console.log(`Both OpenAI and HuggingFace failed for "${topic}", trying Claude as final fallback`);
+                
+                // Fall back to Claude with appropriate parameters
+                const claudeContent = await generateBlogContentWithClaude({
+                  topic: topic,
+                  tone: "professional",
+                  length: "medium",
+                  customPrompt: topicPrompt
+                });
+                
+                // Update request
+                await storage.updateContentGenRequest(contentRequest.id, {
+                  status: "completed",
+                  generatedContent: JSON.stringify(claudeContent)
+                });
+                
+                // Get the Shopify connection to use as author
+                const connection = await storage.getShopifyConnection();
+                const storeName = connection?.storeName || "Store Owner";
+                
+                // Create blog post with Claude content
+                const post = await storage.createBlogPost({
+                  title: claudeContent.title,
+                  content: claudeContent.content || `# ${claudeContent.title}\n\nContent for ${topic}`,
+                  status: "published",
+                  publishedDate: new Date(),
+                  author: storeName,
+                  tags: Array.isArray(claudeContent.tags) && claudeContent.tags.length > 0 
+                    ? claudeContent.tags.join(",") 
+                    : topic,
+                  category: "Generated Content"
+                });
+                
+                // Try to sync to Shopify
+                try {
+                  await fetch(`http://localhost:5000/api/shopify/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postIds: [post.id] })
+                  });
+                  console.log(`Post for "${topic}" (Claude fallback) synced to Shopify`);
+                } catch (syncError) {
+                  console.error(`Error syncing Claude fallback post for "${topic}" to Shopify:`, syncError);
+                }
+                
+                // Add to results
+                results.push({
+                  topic,
+                  postId: post.id,
+                  title: claudeContent.title,
+                  content: claudeContent.content,
+                  status: "success",
+                  usesFallback: "claude"
+                });
+                
+                // Continue to next topic
+                continue;
+              } catch (claudeError) {
+                console.error(`Claude final fallback also failed for "${topic}":`, claudeError);
+              }
+            }
+            
+            // Update request as failed if all services failed
             await storage.updateContentGenRequest(contentRequest.id, {
               status: "failed",
               generatedContent: JSON.stringify({ error: hfError instanceof Error ? hfError.message : "Unknown error" })
@@ -369,7 +482,7 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
             results.push({
               topic,
               status: "failed",
-              error: "Both generation services failed"
+              error: "All content generation services failed"
             });
           }
         }
@@ -472,11 +585,34 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
             });
           } catch (err) {
             console.error(`HuggingFace generation failed for topic "${topic}":`, err);
+            
+            // Try Claude as final fallback if available
+            if (process.env.ANTHROPIC_API_KEY) {
+              try {
+                console.log(`OpenAI and HuggingFace failed for "${topic}", trying Claude as final fallback in bulk`);
+                
+                // Use Claude with appropriate parameters
+                const claudeContent = await generateBlogContentWithClaude({
+                  topic: topic,
+                  tone: "professional", 
+                  length: "medium",
+                  customPrompt: effectivePrompt
+                });
+                
+                console.log(`Claude successfully generated content for "${topic}"`);
+                return claudeContent;
+              } catch (claudeErr) {
+                console.error(`Claude final fallback also failed for topic "${topic}":`, claudeErr);
+              }
+            }
+            
             // Return a basic structure to prevent the whole batch from failing
+            // This only happens if both HuggingFace and Claude (if available) fail
             return {
               title: `${topic} - Generated Content`,
               content: `# ${topic}\n\nThis content could not be generated automatically. Please edit to add your content.`,
-              tags: [topic, "Draft", "Needs Editing"]
+              tags: [topic, "Draft", "Needs Editing"],
+              generationFailed: true
             };
           }
         }));
@@ -564,6 +700,43 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
     res.status(400).json({ 
       success: false, 
       error: error.message || "Invalid request"
+    });
+  }
+});
+
+// Add a test route to check Claude API
+contentRouter.get("/test-claude", async (req: Request, res: Response) => {
+  try {
+    // Check if API key is available
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error("Claude API Key is missing");
+      return res.status(500).json({
+        success: false,
+        error: "Claude API Key is missing",
+        details: "API key environment variable is not set"
+      });
+    }
+    
+    // Log the API key status (masked for security)
+    console.log(`Claude API Key status: Present (first 3 chars: ${process.env.ANTHROPIC_API_KEY.substring(0, 3)}...)`);
+    
+    // Test connection to Claude API
+    const testResult = await testClaudeConnection();
+    
+    return res.json({ 
+      success: testResult.success, 
+      message: testResult.message,
+      data: { 
+        model: "claude-3-7-sonnet-20250219",
+        status: testResult.success ? "success" : "error"
+      }
+    });
+  } catch (error) {
+    console.error("Claude API test failed:", error);
+    return res.status(500).json({ 
+      success: false, 
+      error: "Claude API test failed", 
+      details: error instanceof Error ? error.message : String(error) 
     });
   }
 });
