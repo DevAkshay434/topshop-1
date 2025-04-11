@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   FileText, 
   Clock, 
@@ -7,7 +7,8 @@ import {
   BarChart2, 
   MoreVertical, 
   Calendar, 
-  Eye 
+  Eye,
+  Loader2
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
@@ -19,12 +20,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PostListProps {
   queryKey: string;
   title: string;
   viewAllLink?: string;
   limit?: number;
+  page?: number;
+  onPageChange?: (page: number) => void;
+  totalPages?: number;
   onEditPost?: (post: BlogPost) => void;
 }
 
@@ -33,12 +38,17 @@ export default function PostList({
   title, 
   viewAllLink, 
   limit = 10,
+  page = 1,
+  onPageChange,
+  totalPages = 1,
   onEditPost
 }: PostListProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [publishingId, setPublishingId] = useState<number | null>(null);
   
   const { data, isLoading, error } = useQuery<{ posts: BlogPost[] }>({
-    queryKey: [queryKey, limit],
+    queryKey: [queryKey, limit, page],
   });
   
   const handleViewAnalytics = (post: BlogPost) => {
@@ -46,6 +56,41 @@ export default function PostList({
       title: "Analytics",
       description: `Viewing analytics for "${post.title}"`,
     });
+  };
+  
+  const handlePublishPost = async (post: BlogPost) => {
+    if (post.status === 'published') return;
+    
+    setPublishingId(post.id);
+    
+    try {
+      const response = await apiRequest('PUT', `/api/posts/${post.id}`, {
+        status: 'published',
+        publishedDate: new Date().toISOString()
+      });
+      
+      if (response) {
+        toast({
+          title: "Post Published",
+          description: `"${post.title}" has been published successfully.`
+        });
+        
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: [queryKey] });
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/posts/recent'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      }
+    } catch (error) {
+      console.error('Error publishing post:', error);
+      toast({
+        title: "Publication Failed",
+        description: "There was an error publishing the post. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setPublishingId(null);
+    }
   };
   
   const getPostStatusColor = (status: string) => {
@@ -206,8 +251,15 @@ export default function PostList({
                                 View Analytics
                               </DropdownMenuItem>
                               {post.status !== "published" && (
-                                <DropdownMenuItem>
-                                  Publish Now
+                                <DropdownMenuItem onClick={() => handlePublishPost(post)}>
+                                  {publishingId === post.id ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Publishing...
+                                    </>
+                                  ) : (
+                                    "Publish Now"
+                                  )}
                                 </DropdownMenuItem>
                               )}
                               {post.status === "published" && (
@@ -234,6 +286,50 @@ export default function PostList({
           )}
         </ul>
       </div>
+      
+      {/* Pagination UI */}
+      {onPageChange && totalPages > 1 && (
+        <div className="flex items-center justify-center space-x-2 mt-6">
+          <button
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className={`px-3 py-1 rounded-md ${
+              page === 1 
+                ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
+                : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
+            }`}
+          >
+            Previous
+          </button>
+          
+          {/* Page numbers */}
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => onPageChange(i + 1)}
+              className={`px-3 py-1 rounded-md ${
+                page === i + 1
+                  ? 'bg-primary text-white'
+                  : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          
+          <button
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+            disabled={page === totalPages}
+            className={`px-3 py-1 rounded-md ${
+              page === totalPages
+                ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
+                : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

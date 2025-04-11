@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Dashboard() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [generatedContent, setGeneratedContent] = useState<{
     title: string;
     content: string;
