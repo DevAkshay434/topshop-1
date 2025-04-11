@@ -112,12 +112,12 @@ export default function Sidebar() {
       
       <div className="border-t border-neutral-200 p-4">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center">
-            <span className="text-neutral-500 font-medium">EM</span>
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Store className="text-primary h-4 w-4" />
           </div>
           <div className="ml-3">
-            <p className="text-sm font-medium text-neutral-900">Emma Wilson</p>
-            <p className="text-xs text-neutral-500">Fashion Boutique</p>
+            <p className="text-sm font-medium text-neutral-900">Shopify Store</p>
+            <p className="text-xs text-neutral-500">Blog Publisher</p>
           </div>
         </div>
       </div>
