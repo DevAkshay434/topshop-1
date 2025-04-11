@@ -61,10 +61,10 @@ export default function AppInstall() {
           </CardHeader>
           
           <CardContent>
+            {/* Partner dashboard tab is hidden but still available */}
             <Tabs defaultValue="direct" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="direct">Direct Installation</TabsTrigger>
-                <TabsTrigger value="partner">Partner Dashboard</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-1 mb-6">
+                <TabsTrigger value="direct">Store Installation</TabsTrigger>
               </TabsList>
               
               <TabsContent value="direct" className="space-y-4">
