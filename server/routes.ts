@@ -797,6 +797,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Use our dedicated content router for content generation endpoints
   apiRouter.use(contentRouter);
   
+  // Add Claude routes under /api/claude
+  apiRouter.use('/claude', claudeRouter);
+  
   // Get stats for dashboard
   apiRouter.get("/stats", async (req: Request, res: Response) => {
     try {
