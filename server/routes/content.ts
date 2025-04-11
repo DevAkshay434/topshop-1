@@ -67,8 +67,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
             // Update content generation request to completed
             const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
               status: "completed",
-              generatedContent: JSON.stringify(hfContent),
-              provider: "huggingface"
+              generatedContent: JSON.stringify(hfContent)
             });
             
             res.json({ 
@@ -160,11 +159,48 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
     console.log(`Using prompt (first 50 chars): ${effectivePrompt ? effectivePrompt.substring(0, 50) + '...' : 'None'}`);
     
     try {
-      // Generate content for each topic
-      const results = await bulkGenerateBlogContent(topics, effectivePrompt);
+      // Generate content for each topic - use HuggingFace fallback if OpenAI fails
+      let results;
+      try {
+        results = await bulkGenerateBlogContent(topics, effectivePrompt);
+      } catch (openAiError) {
+        console.error("OpenAI bulk generation failed:", openAiError);
+        
+        // Check if it's a quota error
+        if (openAiError.status === 429 || 
+            (openAiError.error && openAiError.error.type === 'insufficient_quota')) {
+          console.log("OpenAI quota exceeded in bulk, falling back to HuggingFace");
+          
+          // Import the HuggingFace generator
+          const { generateBlogContentWithHF } = require("../services/huggingface");
+          
+          // Generate content with HuggingFace for each topic
+          results = await Promise.all(topics.map(async (topic) => {
+            try {
+              return await generateBlogContentWithHF({
+                topic: topic,
+                tone: "professional",
+                length: "medium"
+              });
+            } catch (err) {
+              console.error(`HuggingFace generation failed for topic "${topic}":`, err);
+              // Return a basic structure to prevent the whole batch from failing
+              return {
+                title: `${topic} - Generated Content`,
+                content: `# ${topic}\n\nThis content could not be generated automatically. Please edit to add your content.`,
+                tags: [topic, "Draft", "Needs Editing"]
+              };
+            }
+          }));
+        } else {
+          // If not a quota error, rethrow
+          throw openAiError;
+        }
+      }
       
       // Create blog posts from generated content
       const createdPosts = [];
+      const postIds = [];
       
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
@@ -185,11 +221,26 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
           });
           
           createdPosts.push(post);
+          postIds.push(post.id);
           
           console.log(`Created post: ${post.id} - "${post.title}"`);
         } catch (createError) {
           console.error(`Error creating post for topic "${topic}":`, createError);
         }
+      }
+      
+      // Trigger Shopify sync for all created posts
+      try {
+        // Import shopify client - don't require at the top level to avoid circular dependencies
+        const { syncPostsToShopify } = require("../services/shopify");
+        
+        if (postIds.length > 0) {
+          console.log(`Syncing ${postIds.length} posts to Shopify...`);
+          await syncPostsToShopify(postIds);
+          console.log("Shopify sync completed for bulk generation");
+        }
+      } catch (syncError) {
+        console.error("Error syncing bulk posts to Shopify:", syncError);
       }
       
       res.json({ 

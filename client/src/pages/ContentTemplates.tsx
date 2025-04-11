@@ -825,44 +825,61 @@ export default function ContentTemplates() {
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [editedTemplateContent, setEditedTemplateContent] = useState<string>("");
   const [editedTemplateTopics, setEditedTemplateTopics] = useState<string>("");
-  const [templates, setTemplates] = useState<Template[]>([
-    {
-      id: 1,
-      name: "Product Review",
-      description: "Template for reviewing products with pros, cons, and ratings.",
-      category: "Reviews"
-    },
-    {
-      id: 2,
-      name: "How-To Guide",
-      description: "Step-by-step instructions for teaching a skill or process.",
-      category: "Educational"
-    },
-    {
-      id: 3,
-      name: "Industry News",
-      description: "Format for reporting on industry trends and developments.",
-      category: "News"
-    },
-    {
-      id: 4,
-      name: "Product Comparison",
-      description: "Side-by-side comparison of similar products or services.",
-      category: "Reviews"
-    },
-    {
-      id: 5,
-      name: "Seasonal Promotion",
-      description: "Promotional content for seasonal sales and special events.",
-      category: "Marketing"
-    },
-    {
-      id: 6,
-      name: "Customer Story",
-      description: "Format for highlighting customer success stories.",
-      category: "Case Studies"
+  // Get templates from localStorage if available
+  const getInitialTemplates = (): Template[] => {
+    try {
+      // Try to load templates from localStorage
+      const savedTemplates = localStorage.getItem('contentTemplates');
+      if (savedTemplates) {
+        console.log("Loading templates from localStorage");
+        return JSON.parse(savedTemplates);
+      }
+    } catch (error) {
+      console.error("Error loading templates from localStorage:", error);
     }
-  ]);
+    
+    // Default templates if none in localStorage
+    return [
+      {
+        id: 1,
+        name: "Product Review",
+        description: "Template for reviewing products with pros, cons, and ratings.",
+        category: "Reviews"
+      },
+      {
+        id: 2,
+        name: "How-To Guide",
+        description: "Step-by-step instructions for teaching a skill or process.",
+        category: "Educational"
+      },
+      {
+        id: 3,
+        name: "Industry News",
+        description: "Format for reporting on industry trends and developments.",
+        category: "News"
+      },
+      {
+        id: 4,
+        name: "Product Comparison",
+        description: "Side-by-side comparison of similar products or services.",
+        category: "Reviews"
+      },
+      {
+        id: 5,
+        name: "Seasonal Promotion",
+        description: "Promotional content for seasonal sales and special events.",
+        category: "Marketing"
+      },
+      {
+        id: 6,
+        name: "Customer Story",
+        description: "Format for highlighting customer success stories.",
+        category: "Case Studies"
+      }
+    ];
+  };
+
+  const [templates, setTemplates] = useState<Template[]>(getInitialTemplates());
   const [generationResults, setGenerationResults] = useState<{
     success: number;
     failed: number;
