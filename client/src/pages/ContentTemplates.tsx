@@ -462,11 +462,13 @@ export default function ContentTemplates() {
         content,
         status: "draft",
         tags: tags.join(","),
-        category: selectedTemplate?.category || "General"
+        category: selectedTemplate?.category || "General",
+        storeId: null, // Use the default store connection
+        author: "Template System"
       });
       
-      // Response should have an ID if post was created successfully
-      if (response && typeof response === 'object' && 'id' in response) {
+      // Server returns the created post object
+      if (response) {
         toast({
           title: "Template Applied",
           description: "New draft created from template",
