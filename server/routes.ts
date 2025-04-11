@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { shopifyService } from "./services/shopify";
 import { generateBlogContent } from "./services/openai";
+import { generateBlogContentWithHF } from "./services/huggingface";
 import { 
   validateShopDomain, 
   generateNonce, 
