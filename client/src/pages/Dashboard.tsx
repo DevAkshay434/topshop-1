@@ -124,8 +124,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Posts Section with Pagination */}
-      <PostList
+      {/* Posts Section hidden per user request */}
+      {/* <PostList
         queryKey="/api/posts"
         title="All Blog Posts"
         viewAllLink="/blog-posts"
@@ -134,7 +134,7 @@ export default function Dashboard() {
         onPageChange={handlePageChange}
         totalPages={totalPages}
         onEditPost={handleEditPost}
-      />
+      /> */}
 
       {/* Content Creation & Blog Settings */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

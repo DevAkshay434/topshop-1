@@ -99,18 +99,20 @@ export default function Sidebar() {
             text="Dashboard" 
             active={location === "/"} 
           />
-          <NavItem 
+          {/* Blog Posts link hidden per user request */}
+          {/* <NavItem 
             href="/blog-posts" 
             icon={<FileText size={18} />} 
             text="Blog Posts" 
             active={location === "/blog-posts"} 
-          />
-          <NavItem 
+          /> */}
+          {/* Scheduled Posts link hidden per user request */}
+          {/* <NavItem 
             href="/scheduled-posts" 
             icon={<Clock size={18} />} 
             text="Scheduled Posts" 
             active={location === "/scheduled-posts"} 
-          />
+          /> */}
           <NavItem 
             href="/content-templates" 
             icon={<FileCode size={18} />} 
