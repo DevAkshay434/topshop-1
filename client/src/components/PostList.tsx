@@ -185,7 +185,10 @@ export default function PostList({
           {posts.length > 0 ? (
             posts.map(post => (
               <li key={post.id}>
-                <div className="block hover:bg-neutral-50">
+                <div 
+                  className="block hover:bg-neutral-50 cursor-pointer" 
+                  onClick={() => onEditPost && onEditPost(post)}
+                >
                   <div className="px-4 py-4 sm:px-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -226,32 +229,51 @@ export default function PostList({
                           <button 
                             className="p-1 rounded-full hover:bg-neutral-100" 
                             title="Edit post"
-                            onClick={() => onEditPost && onEditPost(post)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditPost && onEditPost(post);
+                            }}
                           >
                             <EditIcon className="text-neutral-500 h-4 w-4" />
                           </button>
                           <button 
                             className="p-1 rounded-full hover:bg-neutral-100" 
                             title="View analytics"
-                            onClick={() => handleViewAnalytics(post)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewAnalytics(post);
+                            }}
                           >
                             <BarChart2 className="text-neutral-500 h-4 w-4" />
                           </button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button className="p-1 rounded-full hover:bg-neutral-100" title="More options">
+                              <button 
+                                className="p-1 rounded-full hover:bg-neutral-100" 
+                                title="More options"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <MoreVertical className="text-neutral-500 h-4 w-4" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => onEditPost && onEditPost(post)}>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                onEditPost && onEditPost(post);
+                              }}>
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleViewAnalytics(post)}>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewAnalytics(post);
+                              }}>
                                 View Analytics
                               </DropdownMenuItem>
                               {post.status !== "published" && (
-                                <DropdownMenuItem onClick={() => handlePublishPost(post)}>
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePublishPost(post);
+                                }}>
                                   {publishingId === post.id ? (
                                     <>
                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -263,11 +285,14 @@ export default function PostList({
                                 </DropdownMenuItem>
                               )}
                               {post.status === "published" && (
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                                   Unpublish
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem className="text-red-500">
+                              <DropdownMenuItem 
+                                className="text-red-500"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
