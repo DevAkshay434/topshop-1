@@ -52,7 +52,6 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
         toast({
           title: "Content Generated",
           description: "Blog content has been successfully created",
-          variant: "success",
         });
         
         if (onContentGenerated) {

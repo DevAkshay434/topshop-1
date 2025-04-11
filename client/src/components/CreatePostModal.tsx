@@ -161,7 +161,6 @@ export default function CreatePostModal({
         toast({
           title: "Post Updated",
           description: "Blog post has been updated successfully",
-          variant: "success",
         });
       } else {
         // Create new post
@@ -170,7 +169,6 @@ export default function CreatePostModal({
         toast({
           title: "Post Created",
           description: "Blog post has been created successfully",
-          variant: "success",
         });
       }
       

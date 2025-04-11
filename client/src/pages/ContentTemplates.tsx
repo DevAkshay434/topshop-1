@@ -530,6 +530,8 @@ export default function ContentTemplates() {
       const selectedTemplate = templates.find(t => t.id === templateId);
       let title = "";
       
+      console.log("Creating blog post from template with topic:", topic);
+      
       switch (templateId) {
         case 1: // Product Review
           title = `${topic} Review: Is It Worth Your Money?`;
@@ -581,7 +583,10 @@ export default function ContentTemplates() {
         tags: tags.join(","), // Tags is a text field in the schema, so join array to string
         category: selectedTemplate?.category || "General",
         storeId: null, // Use the default store connection
-        author: "Template System"
+        author: "Template System",
+        // Add these fields explicitly to avoid validation errors
+        scheduledDate: null,
+        publishedDate: null
       });
       
       // Server returns the created post object
