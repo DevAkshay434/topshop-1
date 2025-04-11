@@ -9,14 +9,19 @@ export default function Navbar() {
     return location === path;
   };
 
-  const navItems = [
-    { name: 'Dashboard', path: '/' },
-    { name: 'Blog Posts', path: '/blog-posts' },
-    { name: 'Scheduled Posts', path: '/scheduled-posts' },
-    { name: 'Shopify Connection', path: '/shopify-connection' },
-    { name: 'Billing Settings', path: '/billing-settings' },
-    { name: 'Install App', path: '/install' },
+  // Define all available nav items
+  const allNavItems = [
+    { name: 'Dashboard', path: '/', visible: true },
+    { name: 'Blog Posts', path: '/blog-posts', visible: true },
+    { name: 'Scheduled Posts', path: '/scheduled-posts', visible: true },
+    { name: 'Shopify Connection', path: '/shopify-connection', visible: true },
+    { name: 'Billing Settings', path: '/billing-settings', visible: true },
+    { name: 'Install App', path: '/install', visible: true },
+    { name: 'Partner Install', path: '/partner-install', visible: false }, // Hidden but still available via direct URL
   ];
+  
+  // Filter only visible nav items
+  const navItems = allNavItems.filter(item => item.visible);
 
   return (
     <div className="border-b">
