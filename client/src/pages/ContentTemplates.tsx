@@ -57,7 +57,8 @@ Looking for an honest review of [Product Name]? In this comprehensive review, we
 
 ## Final Verdict
 [Summary and rating out of 5 stars]`,
-    topics: ["Fashion Accessories", "Tech Gadgets", "Home Decor", "Beauty Products", "Kitchen Appliances"]
+    topics: ["Fashion Accessories", "Tech Gadgets", "Home Decor", "Beauty Products", "Kitchen Appliances"],
+    aiPrompt: "You are a professional product reviewer. Write a comprehensive, honest review about [TOPIC]. Include pros, cons, and a final verdict with rating. Be objective and support claims with evidence."
   },
   2: {
     structure: `# How to [Accomplish Task]: A Step-by-Step Guide
@@ -86,7 +87,8 @@ Want to learn how to [accomplish task]? This comprehensive guide breaks down the
 
 ## Conclusion
 [Summary of the process and encouragement to try]`,
-    topics: ["DIY Projects", "Digital Marketing", "Personal Finance", "Cooking Techniques", "Product Photography"]
+    topics: ["DIY Projects", "Digital Marketing", "Personal Finance", "Cooking Techniques", "Product Photography"],
+    aiPrompt: "You are an expert educator. Create a detailed, step-by-step guide explaining how to [TOPIC]. Include prerequisites, common mistakes to avoid, and helpful tips for beginners."
   },
   3: {
     structure: `# [Industry] Trends: What's New in [Year]
@@ -111,7 +113,8 @@ The [industry] landscape is constantly evolving. In this article, we'll explore 
 
 ## Looking Ahead
 [Future predictions and preparation strategies]`,
-    topics: ["E-commerce", "Social Media", "Sustainability", "AI and Technology", "Remote Work"]
+    topics: ["E-commerce", "Social Media", "Sustainability", "AI and Technology", "Remote Work"],
+    aiPrompt: "You are an industry analyst. Write a well-researched article about the latest trends in [TOPIC] for this year. Include statistics, expert opinions, and practical insights for businesses."
   },
   4: {
     structure: `# [Product A] vs [Product B]: Which One Should You Choose?
@@ -147,7 +150,8 @@ Trying to decide between [Product A] and [Product B]? This in-depth comparison w
 
 ## Final Verdict
 [Summary and recommendation]`,
-    topics: ["Smartphones", "E-commerce Platforms", "Email Marketing Tools", "CRM Software", "Payment Processors"]
+    topics: ["Smartphones", "E-commerce Platforms", "Email Marketing Tools", "CRM Software", "Payment Processors"],
+    aiPrompt: "You are a product comparison expert. Create a detailed comparison between products or services in the [TOPIC] category. Highlight key differences, analyze value for money, and provide a clear recommendation for different user needs."
   },
   5: {
     structure: `# [Season/Holiday] Special: Exclusive Deals You Can't Miss
@@ -182,7 +186,8 @@ The [season/holiday] season is here, and we're celebrating with special offers o
 
 ## Limited Time Only
 [Urgency reminder with end date]`,
-    topics: ["Winter Holiday Sales", "Back to School", "Black Friday", "Summer Clearance", "Anniversary Sale"]
+    topics: ["Winter Holiday Sales", "Back to School", "Black Friday", "Summer Clearance", "Anniversary Sale"],
+    aiPrompt: "You are a marketing specialist creating a promotional article for the [TOPIC] season. Write compelling copy highlighting special offers, creating urgency, and featuring your best products with appealing descriptions."
   },
   6: {
     structure: `# How [Customer Name] Achieved [Result] with [Your Product/Service]
@@ -212,7 +217,8 @@ The [season/holiday] season is here, and we're celebrating with special offers o
 
 ## Lessons Learned
 [Insights gained from this customer success story]`,
-    topics: ["Small Business Success", "E-commerce Growth", "Marketing ROI", "Customer Retention", "Digital Transformation"]
+    topics: ["Small Business Success", "E-commerce Growth", "Marketing ROI", "Customer Retention", "Digital Transformation"],
+    aiPrompt: "You are a case study writer. Create a detailed success story about a business that achieved impressive results with [TOPIC]. Include specific challenges, solutions, implementation details, and quantifiable outcomes. Use a professional, factual tone."
   }
 };
 
@@ -483,11 +489,14 @@ function TemplateEditDialog({
   const [structure, setStructure] = useState("");
   const [topicsText, setTopicsText] = useState("");
   
+  const [aiPrompt, setAiPrompt] = useState("");
+
   // Load template content when dialog opens
   useEffect(() => {
     if (isOpen && template && templateContent) {
       setStructure(templateContent.structure);
       setTopicsText(templateContent.topics.join('\n'));
+      setAiPrompt(templateContent.aiPrompt || "");
     }
   }, [isOpen, template, templateContent]);
   
