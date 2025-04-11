@@ -99,13 +99,15 @@ export default function CreatePostModal({
   
   useEffect(() => {
     if (generatedContent) {
-      // Format tags array into a comma-separated string
-      formattedTags.current = generatedContent.tags.join(", ");
+      // Format tags array into a comma-separated string (safely handle undefined tags)
+      formattedTags.current = Array.isArray(generatedContent.tags) 
+        ? generatedContent.tags.join(", ") 
+        : generatedContent.title?.split(" ").slice(0, 3).join(", ") || "";
       
       form.reset({
         ...form.getValues(),
-        title: generatedContent.title,
-        content: generatedContent.content,
+        title: generatedContent.title || "New Blog Post",
+        content: generatedContent.content || "",
         tags: formattedTags.current,
       });
     } else if (initialData) {
