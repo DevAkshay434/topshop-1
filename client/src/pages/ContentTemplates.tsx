@@ -896,6 +896,9 @@ export default function ContentTemplates() {
         throw new Error("Template content not found");
       }
       
+      // Get the custom AI prompt for this template
+      const customPrompt = templateData.aiPrompt;
+      
       // Generate a title based on topic and template
       const selectedTemplate = templates.find(t => t.id === templateId);
       let title = "";
@@ -937,6 +940,33 @@ export default function ContentTemplates() {
                        .replace(/\[Season\/Holiday\]/g, topic)
                        .replace(/\[Accomplish Task\]/g, topic)
                        .replace(/\[Year\]/g, new Date().getFullYear().toString());
+      
+      // If using AI-generated content based on the template's custom prompt
+      if (customPrompt) {
+        try {
+          console.log(`Using custom prompt for template: ${selectedTemplate?.name}`);
+          const openaiResponse = await apiRequest({
+            url: "/api/generate-content",
+            method: "POST",
+            data: {
+              topic,
+              customPrompt
+            }
+          });
+          
+          if (openaiResponse && openaiResponse.success) {
+            console.log("Successfully generated content with custom prompt");
+            content = openaiResponse.content;
+            // Use the AI-generated title if available
+            if (openaiResponse.title) {
+              title = openaiResponse.title;
+            }
+          }
+        } catch (promptError) {
+          console.error("Error generating content with custom prompt:", promptError);
+          // Continue with the template content as fallback
+        }
+      }
       
       // Create synthetic tags based on topic and template type
       const tags = [
@@ -1055,6 +1085,7 @@ export default function ContentTemplates() {
     // Get template data
     const templateData = templateContent[templateId];
     const selectedTemplate = templates.find(t => t.id === templateId);
+    const customPrompt = templateData?.aiPrompt;
     
     if (!templateData || !selectedTemplate) {
       toast({
