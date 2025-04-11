@@ -1,38 +1,48 @@
-import express, { type Express, Request, Response, NextFunction } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { shopifyService } from "./services/shopify";
-import { generateBlogContent } from "./services/openai";
-import { generateBlogContentWithHF } from "./services/huggingface";
+import { Express, Request, Response, NextFunction, Router } from 'express';
+import { Server } from 'http';
+import { z } from 'zod';
+import {
+  insertContentGenRequestSchema,
+  insertBlogPostSchema,
+  insertShopifyConnectionSchema,
+  insertShopifyStoreSchema,
+  insertUserStoreSchema,
+} from '@shared/schema';
+import { storage } from './storage';
+import * as shopifyService from './services/shopify';
 import { 
   validateShopDomain, 
   generateNonce, 
   createAuthUrl, 
   validateHmac, 
   getAccessToken, 
-  getShopData 
-} from "./services/oauth";
-import { createSubscription, getSubscriptionStatus, cancelSubscription, PlanType, PLANS } from './services/billing';
-import { z } from "zod";
-import { insertBlogPostSchema, insertShopifyConnectionSchema, insertSyncActivitySchema, insertContentGenRequestSchema, insertShopifyStoreSchema } from "@shared/schema";
-import crypto from "crypto";
+  getShopData,
+  verifyWebhook
+} from './services/oauth';
+import { generateBlogContentWithHF } from './services/huggingface';
+import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // API routes - all prefixed with /api
-  const apiRouter = express.Router();
+/**
+ * Register all API routes for the app
+ */
+export async function registerRoutes(app: Express): Promise<void> {
+  // API router for authenticated endpoints
+  const apiRouter = Router();
   
   // --- SHOPIFY CONNECTION ROUTES ---
   
-  // Get Shopify connection
-  // Endpoint to get the Shopify API key securely
+  // Get Shopify API key for frontend initialization
   apiRouter.get("/shopify/api-key", async (req: Request, res: Response) => {
-    // For simplicity in development, return the API key regardless of origin
-    // In production, you would want to validate origins more strictly
-    return res.json({ 
-      apiKey: process.env.SHOPIFY_API_KEY || '171d3c09d9299b9f6934c29abb309929'
-    });
+    try {
+      res.json({ 
+        apiKey: process.env.SHOPIFY_API_KEY || ''
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   });
-
+  
+  // Get current Shopify connection
   apiRouter.get("/shopify/connection", async (req: Request, res: Response) => {
     try {
       const connection = await storage.getShopifyConnection();
@@ -42,32 +52,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Multi-store operations
+  // Get all connected Shopify stores
   apiRouter.get("/shopify/stores", async (req: Request, res: Response) => {
     try {
-      // Get query parameters
-      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
-      
-      // If userId is provided, get stores for that user
-      // Otherwise get all stores (admin view)
-      let stores;
-      if (userId) {
-        stores = await storage.getUserStores(userId);
-      } else {
-        stores = await storage.getShopifyStores();
-      }
-      
+      const stores = await storage.getShopifyStores();
       res.json({ stores });
     } catch (error) {
-      console.error('Error getting Shopify stores:', error);
-      res.status(500).json({ error: "An error occurred while fetching Shopify stores" });
+      res.status(500).json({ error: error.message });
     }
   });
   
+  // Get a specific Shopify store
   apiRouter.get("/shopify/store/:id", async (req: Request, res: Response) => {
     try {
-      const storeId = parseInt(req.params.id);
-      const store = await storage.getShopifyStore(storeId);
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      const store = await storage.getShopifyStore(id);
       
       if (!store) {
         return res.status(404).json({ error: "Store not found" });
@@ -75,8 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ store });
     } catch (error) {
-      console.error('Error getting Shopify store:', error);
-      res.status(500).json({ error: "An error occurred while fetching Shopify store" });
+      res.status(500).json({ error: error.message });
     }
   });
   
@@ -86,43 +89,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body
       const connectionData = insertShopifyConnectionSchema.parse(req.body);
       
-      // Check if connection already exists
+      // Check if we already have a connection
       const existingConnection = await storage.getShopifyConnection();
       
-      let connection;
       if (existingConnection) {
-        connection = await storage.updateShopifyConnection(connectionData);
-      } else {
-        connection = await storage.createShopifyConnection(connectionData);
-      }
-      
-      // Initialize Shopify service with new connection
-      shopifyService.setConnection(connection);
-      
-      // Test connection
-      const isConnected = await shopifyService.testConnection();
-      
-      if (!isConnected) {
-        // Update connection status
-        connection = await storage.updateShopifyConnection({
-          ...connection,
-          isConnected: false
-        });
+        // Update existing connection
+        const connection = await storage.updateShopifyConnection(connectionData);
         
-        return res.status(400).json({ 
-          error: "Could not connect to Shopify store", 
-          connection 
-        });
+        // Test the connection
+        if (connection.accessToken && connection.isConnected) {
+          try {
+            shopifyService.setConnection(connection);
+            await shopifyService.testConnection();
+          } catch (error) {
+            return res.status(400).json({ error: "Failed to connect to Shopify API" });
+          }
+        }
+        
+        res.json({ connection });
+      } else {
+        // Create new connection
+        const connection = await storage.createShopifyConnection(connectionData);
+        
+        // Test the connection
+        if (connection.accessToken && connection.isConnected) {
+          try {
+            shopifyService.setConnection(connection);
+            await shopifyService.testConnection();
+          } catch (error) {
+            return res.status(400).json({ error: "Failed to connect to Shopify API" });
+          }
+        }
+        
+        res.json({ connection });
       }
-      
-      // Create sync activity
-      await storage.createSyncActivity({
-        activity: "Connected to Shopify store",
-        status: "success",
-        details: `Connected to ${connection.storeName}`
-      });
-      
-      res.json({ connection });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
@@ -131,29 +131,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Disconnect Shopify store
+  // Disconnect from Shopify
   apiRouter.post("/shopify/disconnect", async (req: Request, res: Response) => {
     try {
       const connection = await storage.getShopifyConnection();
       
       if (!connection) {
-        return res.status(404).json({ error: "No Shopify connection found" });
+        return res.status(404).json({ error: "No connection found" });
       }
       
-      // Update connection status
       const updatedConnection = await storage.updateShopifyConnection({
-        ...connection,
+        id: connection.id,
         isConnected: false
       });
       
-      // Create sync activity
-      await storage.createSyncActivity({
-        activity: "Disconnected from Shopify store",
-        status: "success",
-        details: `Disconnected from ${connection.storeName}`
-      });
-      
-      res.json({ connection: updatedConnection });
+      res.json({ success: true, connection: updatedConnection });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -177,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update default blog
+  // Set default blog
   apiRouter.post("/shopify/default-blog", async (req: Request, res: Response) => {
     try {
       const { blogId } = req.body;
@@ -189,51 +181,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const connection = await storage.getShopifyConnection();
       
       if (!connection) {
-        return res.status(404).json({ error: "No Shopify connection found" });
+        return res.status(404).json({ error: "No connection found" });
       }
       
       const updatedConnection = await storage.updateShopifyConnection({
-        ...connection,
+        id: connection.id,
         defaultBlogId: blogId
       });
       
-      res.json({ connection: updatedConnection });
+      res.json({ success: true, connection: updatedConnection });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
   
-  // Sync with Shopify
+  // Sync posts with Shopify
   apiRouter.post("/shopify/sync", async (req: Request, res: Response) => {
     try {
       const connection = await storage.getShopifyConnection();
       
-      if (!connection || !connection.isConnected) {
-        return res.status(400).json({ error: "Not connected to Shopify" });
+      if (!connection || !connection.isConnected || !connection.defaultBlogId) {
+        return res.status(400).json({ error: "Not properly connected to Shopify" });
       }
       
-      // Update last synced timestamp
-      const updatedConnection = await storage.updateShopifyConnection({
-        ...connection,
-        lastSynced: new Date()
-      });
+      // Get published posts that need to be synced
+      const posts = await storage.getBlogPosts();
+      const publishedPosts = posts.filter(post => post.status === 'published' && !post.shopifyPostId);
       
-      // Create sync activity
-      await storage.createSyncActivity({
-        activity: "Sync completed successfully",
-        status: "success",
-        details: `Synchronized with ${connection.storeName}`
-      });
+      if (publishedPosts.length === 0) {
+        return res.json({ success: true, syncedCount: 0, message: "No posts to sync" });
+      }
       
-      res.json({ connection: updatedConnection });
+      shopifyService.setConnection(connection);
+      
+      // Sync each post
+      let syncedCount = 0;
+      for (const post of publishedPosts) {
+        try {
+          const shopifyArticle = await shopifyService.createArticle(connection.defaultBlogId, post);
+          
+          // Update post with Shopify ID
+          await storage.updateBlogPost(post.id, {
+            shopifyPostId: shopifyArticle.id
+          });
+          
+          // Create sync activity
+          await storage.createSyncActivity({
+            activity: `Published "${post.title}"`,
+            status: "success",
+            details: `Successfully published to Shopify`
+          });
+          
+          syncedCount++;
+        } catch (error) {
+          // Log error but continue with next post
+          console.error("Error publishing to Shopify:", error);
+          
+          // Create sync activity
+          await storage.createSyncActivity({
+            activity: `Failed to publish "${post.title}"`,
+            status: "failed",
+            details: error.message
+          });
+        }
+      }
+      
+      res.json({ success: true, syncedCount });
     } catch (error) {
-      // Log failed sync
-      await storage.createSyncActivity({
-        activity: "Sync failed",
-        status: "failed",
-        details: error.message
-      });
-      
       res.status(500).json({ error: error.message });
     }
   });
@@ -250,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get recent posts
+  // Get recent blog posts
   apiRouter.get("/posts/recent", async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
@@ -261,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get scheduled posts
+  // Get scheduled blog posts
   apiRouter.get("/posts/scheduled", async (req: Request, res: Response) => {
     try {
       const posts = await storage.getScheduledPosts();
@@ -271,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get published posts
+  // Get published blog posts
   apiRouter.get("/posts/published", async (req: Request, res: Response) => {
     try {
       const posts = await storage.getPublishedPosts();
@@ -281,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get a single blog post
+  // Get a specific blog post
   apiRouter.get("/posts/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -305,8 +319,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new blog post
   apiRouter.post("/posts", async (req: Request, res: Response) => {
     try {
+      console.log("POST /api/posts - Request body:", JSON.stringify(req.body));
+      
       // Validate request body
-      const postData = insertBlogPostSchema.parse(req.body);
+      let postData;
+      try {
+        postData = insertBlogPostSchema.parse(req.body);
+      } catch (validationError: any) {
+        console.error("Validation error:", JSON.stringify(validationError));
+        return res.status(400).json({ 
+          error: validationError.errors || validationError.message,
+          details: validationError
+        });
+      }
       
       // Save post to storage
       const post = await storage.createBlogPost(postData);
@@ -333,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             return res.json({ post: updatedPost });
-          } catch (shopifyError) {
+          } catch (shopifyError: any) {
             // Log error but don't fail the request
             console.error("Error publishing to Shopify:", shopifyError);
             
@@ -347,8 +372,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      res.json({ post });
-    } catch (error) {
+      // Default response if we didn't return earlier
+      return res.json({ post });
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
@@ -378,6 +404,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update post in storage
       const post = await storage.updateBlogPost(id, postData);
       
+      if (!post) {
+        return res.status(500).json({ error: "Failed to update post" });
+      }
+      
       // If post is published and has a Shopify ID, update in Shopify
       if (post.shopifyPostId && (postData.status === 'published' || existingPost.status === 'published')) {
         const connection = await storage.getShopifyConnection();
@@ -393,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: "success",
               details: `Successfully updated on Shopify`
             });
-          } catch (shopifyError) {
+          } catch (shopifyError: any) {
             // Log error but don't fail the request
             console.error("Error updating in Shopify:", shopifyError);
             
@@ -420,15 +450,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               shopifyPostId: shopifyArticle.id
             });
             
-            // Create sync activity
-            await storage.createSyncActivity({
-              activity: `Published "${post.title}"`,
-              status: "success",
-              details: `Successfully published to Shopify`
-            });
-            
-            return res.json({ post: updatedPost });
-          } catch (shopifyError) {
+            if (updatedPost) {
+              // Create sync activity
+              await storage.createSyncActivity({
+                activity: `Published "${post.title}"`,
+                status: "success",
+                details: `Successfully published to Shopify`
+              });
+              
+              return res.json({ post: updatedPost });
+            }
+          } catch (shopifyError: any) {
             // Log error but don't fail the request
             console.error("Error publishing to Shopify:", shopifyError);
             
@@ -443,7 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ post });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
@@ -482,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: "success",
               details: `Successfully deleted from Shopify`
             });
-          } catch (shopifyError) {
+          } catch (shopifyError: any) {
             // Log error but don't fail the request
             console.error("Error deleting from Shopify:", shopifyError);
             
@@ -504,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
@@ -517,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const activities = await storage.getSyncActivities(limit);
       res.json({ activities });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
@@ -544,13 +576,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
-        // Generate content with Hugging Face (don't fallback to OpenAI which has quota issues)
+        // Generate content with Hugging Face
         let generatedContent;
-        console.log("Generating content with Hugging Face...");
+        console.log(`Generating blog content about "${topic}" with tone "${tone}"`);
         generatedContent = await generateBlogContentWithHF({ topic, tone, length });
         
         // If we reach here, content generation was successful
-
+        
         // Update content generation request
         const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
           status: "completed",
@@ -562,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           requestId: updatedRequest?.id,
           content: generatedContent
         });
-      } catch (aiError) {
+      } catch (aiError: any) {
         console.error("Content generation error:", aiError);
         
         // Provide user-friendly error response
@@ -584,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: errorMessage
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
@@ -608,7 +640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scheduled: scheduledPosts.length,
         totalViews: totalViews
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
@@ -619,7 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         plans: PLANS
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
     }
   });
@@ -627,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- OAUTH ROUTES ---
   
   // Shopify OAuth routes (not prefixed with /api)
-  const oauthRouter = express.Router();
+  const oauthRouter = Router();
   
   // Store the nonce in memory with type for host parameter
   interface NonceData {
@@ -688,7 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Redirect to Shopify for authorization
       res.redirect(authUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error initiating OAuth:', error);
       res.status(500).send('An error occurred while initiating OAuth');
     }
@@ -748,222 +780,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
             accessToken,
             isConnected: true,
             lastSynced: new Date(),
-            uninstalledAt: null // Clear uninstalled date if previously uninstalled
+            uninstalledAt: null // Clear uninstall date if previously uninstalled
           });
           storeId = store.id;
-          console.log(`Updated existing store: ${shop}`);
         } else {
           // Create a new store
+          const storeName = shopData.name || shop;
+          
           store = await storage.createShopifyStore({
-            shopName: shop,
+            storeName,
+            shopDomain: shop,
             accessToken,
-            scope: "read_products,write_products,read_content,write_content", // Update with appropriate scopes
-            isConnected: true
+            isConnected: true,
+            lastSynced: new Date()
           });
           storeId = store.id;
-          console.log(`Created new store: ${shop}`);
           
-          // Create or get a user for this store (using shop data)
-          // For now, we'll use a default system user
-          let user = await storage.getUserByUsername('admin');
-          
-          if (!user) {
-            // Create a default admin user if none exists
-            user = await storage.createUser({
-              username: 'admin',
-              password: crypto.randomBytes(16).toString('hex'), // Generate random password
-              name: 'Admin',
-              email: 'admin@example.com',
-              isAdmin: true
+          // Also update the legacy connection for backward compatibility
+          const existingConnection = await storage.getShopifyConnection();
+          if (existingConnection) {
+            await storage.updateShopifyConnection({
+              id: existingConnection.id,
+              storeName,
+              accessToken,
+              isConnected: true
             });
-            console.log('Created default admin user');
-          }
-          
-          // Create the user-store relationship
-          await storage.createUserStore({
-            userId: user.id,
-            storeId: store.id,
-            role: 'owner'
-          });
-          console.log(`Associated user ${user.id} with store ${store.id}`);
-        }
-        
-        // For backward compatibility, update the legacy connection as well
-        const existingConnection = await storage.getShopifyConnection();
-        
-        if (existingConnection) {
-          await storage.updateShopifyConnection({
-            ...existingConnection,
-            storeName: shop,
-            accessToken,
-            isConnected: true,
-            lastSynced: new Date()
-          });
-        } else {
-          await storage.createShopifyConnection({
-            storeName: shop,
-            accessToken,
-            isConnected: true,
-            lastSynced: new Date()
-          });
-        }
-        
-        // Create a sync activity
-        await storage.createSyncActivity({
-          storeId,
-          activity: "Connected to Shopify store",
-          status: "success",
-          details: `Connected to ${shop}`
-        });
-        
-        // Initialize shopifyService with the new connection
-        // This fixes issues where the app installs but can't connect to the API
-        const connectionForService = await storage.getShopifyConnection();
-        if (connectionForService) {
-          shopifyService.setConnection(connectionForService);
-          
-          // Test the connection to verify it works
-          const connected = await shopifyService.testConnection();
-          console.log(`Shopify API connection test: ${connected ? 'SUCCESS' : 'FAILED'}`);
-        }
-        
-        // Check if this installation is from the Partner Dashboard
-        // Partner Dashboard installations include host parameter in the nonce data
-        const isPartnerDashboardInstall = req.query.host !== undefined || (nonceData && 'host' in nonceData);
-        
-        if (isPartnerDashboardInstall) {
-          // For Partner Dashboard installs, redirect to the Embedded App URL
-          // Use host from the query params or from the stored nonce data
-          const host = req.query.host || (nonceData && 'host' in nonceData ? nonceData.host : undefined);
-          console.log(`Redirecting to Embedded App URL with host: ${host}`);
-          
-          if (host) {
-            // For embedded apps, we need to go through Shopify's admin URLs
-            console.log(`Redirecting to Shopify Admin with host parameter: ${host}`);
-            
-            // Step 1: Keep the host param as-is (no need to decode) when redirecting within Shopify
-            // When Shopify receives this, it handles the embedding properly
-            const redirectUrl = `https://${shop}/admin/apps/${process.env.SHOPIFY_API_KEY}?host=${host}`;
-            
-            console.log(`Redirecting to app in Shopify Admin: ${redirectUrl}`);
-            return res.redirect(redirectUrl);
           } else {
-            // Fallback to regular admin if we don't have host param
-            console.log('Redirecting to Shopify Admin apps page (no host parameter)');
-            res.redirect(`https://${shop}/admin/apps`);
+            await storage.createShopifyConnection({
+              storeName,
+              accessToken,
+              isConnected: true
+            });
           }
-        } else {
-          // For direct installs, redirect to the Shopify Admin apps page
-          console.log(`Redirecting to Shopify Admin apps page`);
-          res.redirect(`https://${shop}/admin/apps`);
         }
-      } catch (error) {
-        console.error('Error storing Shopify connection:', error);
-        res.status(500).send('An error occurred while storing the connection');
+        
+        // Redirect to the app with the shop and host parameters
+        const host = nonceData.host;
+        const redirectUrl = `/embedded?shop=${shop}${host ? `&host=${host}` : ''}`;
+        
+        res.redirect(redirectUrl);
+      } catch (dbError: any) {
+        console.error('Database error:', dbError);
+        res.status(500).send('An error occurred while saving store data');
       }
-    } catch (error) {
-      console.error('Error processing OAuth callback:', error);
-      res.status(500).send('An error occurred during OAuth callback processing');
+    } catch (error: any) {
+      console.error('OAuth callback error:', error);
+      res.status(500).send('An error occurred during the OAuth callback');
     }
   });
   
-  // App uninstalled webhook
+  // Webhook for app uninstalled
   oauthRouter.post("/shopify/webhooks/app-uninstalled", async (req: Request, res: Response) => {
     try {
-      // Verify webhook authenticity
+      // Verify the webhook
       const hmac = req.headers['x-shopify-hmac-sha256'] as string;
       const apiSecret = process.env.SHOPIFY_API_SECRET;
       
       if (!apiSecret) {
-        console.error('Missing Shopify API secret');
-        return res.status(401).send('Unauthorized');
+        console.error('Missing API secret for webhook verification');
+        return res.status(403).send('Unauthorized');
       }
       
-      // Convert request body to string if it's not already
-      const bodyString = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-      
-      // Verify the webhook signature
-      const generatedHash = crypto
-        .createHmac('sha256', apiSecret)
-        .update(bodyString)
-        .digest('base64');
-      
-      if (hmac !== generatedHash) {
+      if (!verifyWebhook(req.headers as Record<string, string>, req.body, apiSecret)) {
         console.error('Invalid webhook signature');
-        return res.status(401).send('Unauthorized');
+        return res.status(403).send('Unauthorized');
       }
       
-      // Process the uninstallation
+      // Extract shop from webhook
       const { shop_domain } = req.body;
       
       if (!shop_domain) {
-        console.error('Missing shop domain in webhook payload');
-        return res.status(400).send('Bad Request');
+        console.error('Missing shop domain in webhook');
+        return res.status(400).send('Bad request');
       }
       
-      // Find the store in our database and mark it as uninstalled
-      const store = await storage.getShopifyStoreByDomain(shop_domain);
-      
-      if (store) {
-        // Mark the store as uninstalled
-        await storage.updateShopifyStore(store.id, {
-          isConnected: false,
-          uninstalledAt: new Date()
-        });
+      // Update store record to mark as uninstalled
+      try {
+        // Find the store
+        const store = await storage.getShopifyStoreByDomain(shop_domain);
         
-        // Create a sync activity
-        await storage.createSyncActivity({
-          storeId: store.id,
-          activity: "Disconnected from Shopify store",
-          status: "info",
-          details: `App uninstalled from ${shop_domain}`
-        });
-        
-        console.log(`Store ${shop_domain} marked as uninstalled`);
-      } else {
-        // For backward compatibility, check the legacy connection
-        const connection = await storage.getShopifyConnection();
-        
-        if (connection && connection.storeName === shop_domain) {
-          await storage.updateShopifyConnection({
-            ...connection,
-            isConnected: false
+        if (store) {
+          // Mark as uninstalled
+          await storage.updateShopifyStore(store.id, {
+            isConnected: false,
+            uninstalledAt: new Date()
           });
           
-          // Create a sync activity
-          await storage.createSyncActivity({
-            storeId: null,
-            activity: "Disconnected from Shopify store",
-            status: "info",
-            details: `App uninstalled from ${shop_domain}`
-          });
+          // Also update the legacy connection for backward compatibility
+          const connection = await storage.getShopifyConnection();
+          if (connection) {
+            await storage.updateShopifyConnection({
+              id: connection.id,
+              isConnected: false
+            });
+          }
           
-          console.log(`Legacy connection for ${shop_domain} marked as disconnected`);
+          console.log(`App uninstalled from ${shop_domain}`);
         } else {
-          console.warn(`Received uninstall webhook for unknown store: ${shop_domain}`);
+          console.warn(`Uninstall webhook received for unknown shop: ${shop_domain}`);
         }
+        
+        // Always return 200 to acknowledge receipt
+        res.status(200).send('OK');
+      } catch (dbError: any) {
+        console.error('Database error processing uninstall webhook:', dbError);
+        // Still return 200 to acknowledge receipt and avoid Shopify retrying
+        res.status(200).send('OK');
       }
-      
-      // Always return 200 to acknowledge receipt
+    } catch (error: any) {
+      console.error('Error processing app uninstalled webhook:', error);
+      // Still return 200 to acknowledge receipt and avoid Shopify retrying
       res.status(200).send('OK');
-    } catch (error) {
-      console.error('Error processing uninstall webhook:', error);
-      // Still return 200 to acknowledge receipt
-      res.status(200).send('Processed with errors');
     }
   });
   
-  // --- BILLING API ROUTES ---
+  // --- BILLING ROUTES ---
   
-  // Create a new subscription
+  // Subscribe to a plan
   apiRouter.post("/billing/subscribe", async (req: Request, res: Response) => {
     try {
-      const { storeId, plan, returnUrl } = req.body;
+      const { storeId, plan } = req.body;
       
-      if (!storeId || !plan || !returnUrl) {
-        return res.status(400).json({ 
-          error: "Missing required parameters: storeId, plan, and returnUrl are required" 
-        });
+      if (!storeId || !plan) {
+        return res.status(400).json({ error: "Store ID and plan are required" });
+      }
+      
+      // Validate plan type
+      if (!Object.values(PlanType).includes(plan as PlanType)) {
+        return res.status(400).json({ error: "Invalid plan type" });
       }
       
       // Get the store
@@ -973,23 +917,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Store not found" });
       }
       
-      // Create a subscription
-      const result = await createSubscription(store, plan, returnUrl);
+      // Create subscription
+      const result = await createSubscription(store, plan as PlanType);
       
-      // Update store with plan info
-      await storage.updateShopifyStore(store.id, {
-        planName: plan
-      });
-      
-      // Return confirmation URL
-      res.json({ confirmationUrl: result.confirmationUrl });
-    } catch (error) {
-      console.error('Error creating subscription:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
   
-  // Get subscription status
+  // Get billing status for a store
   apiRouter.get("/billing/status/:storeId", async (req: Request, res: Response) => {
     try {
       const storeId = parseInt(req.params.storeId);
@@ -1008,18 +945,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get subscription status
       const status = await getSubscriptionStatus(store);
       
-      // Update store with plan info if changed
-      if (store.planName !== status.plan) {
-        await storage.updateShopifyStore(store.id, {
-          planName: status.plan,
-          trialEndsAt: status.trialEndsAt ? new Date(status.trialEndsAt) : null
-        });
-      }
-      
-      res.json({ status });
-    } catch (error) {
-      console.error('Error getting subscription status:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
   
@@ -1029,9 +957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { storeId, subscriptionId } = req.body;
       
       if (!storeId || !subscriptionId) {
-        return res.status(400).json({ 
-          error: "Missing required parameters: storeId and subscriptionId are required" 
-        });
+        return res.status(400).json({ error: "Store ID and subscription ID are required" });
       }
       
       // Get the store
@@ -1041,29 +967,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Store not found" });
       }
       
-      // Cancel the subscription
+      // Cancel subscription
       const result = await cancelSubscription(store, subscriptionId);
       
-      // Update store plan to free
-      if (result) {
-        await storage.updateShopifyStore(store.id, {
-          planName: PlanType.FREE
-        });
-      }
-      
       res.json({ success: result });
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
   
-  // Register OAuth routes
+  // Mount OAuth routes without /api prefix
   app.use(oauthRouter);
   
-  // Register the API router with /api prefix
+  // Mount API routes with /api prefix
   app.use('/api', apiRouter);
-  
-  const httpServer = createServer(app);
-  return httpServer;
 }
