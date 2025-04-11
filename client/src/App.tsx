@@ -13,6 +13,7 @@ import BillingSettings from "@/pages/BillingSettings";
 import AppInstall from "@/pages/AppInstall";
 import PartnerInstall from "@/pages/PartnerInstall";
 import EmbeddedApp from "@/pages/EmbeddedApp";
+import Analytics from "@/pages/Analytics";
 import { useEffect, useState } from "react";
 
 function Router() {
@@ -67,8 +68,7 @@ function Router() {
           <Route path="/partner-install" component={PartnerInstall} />
           <Route path="/shopify/callback" component={Dashboard} />
           <Route path="/shopify/auth/callback" component={Dashboard} />
-          
-          {/* Analytics, Settings, and Help routes would go here */}
+          <Route path="/analytics" component={Analytics} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />
