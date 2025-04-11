@@ -772,5 +772,203 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Switch from MemStorage to DatabaseStorage
-export const storage = new DatabaseStorage();
+// Use MemStorage as the database connection is having issues
+const memStorage = new MemStorage();
+const dbStorage = new DatabaseStorage();
+
+// Create a fallback storage that tries DatabaseStorage first and falls back to MemStorage
+class FallbackStorage implements IStorage {
+  private async tryOrFallback<T>(dbOperation: () => Promise<T>, memOperation: () => Promise<T>): Promise<T> {
+    try {
+      return await dbOperation();
+    } catch (error) {
+      console.warn("Database operation failed, falling back to in-memory storage:", error);
+      return await memOperation();
+    }
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getUser(id),
+      () => memStorage.getUser(id)
+    );
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getUserByUsername(username),
+      () => memStorage.getUserByUsername(username)
+    );
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    return this.tryOrFallback(
+      () => dbStorage.createUser(user),
+      () => memStorage.createUser(user)
+    );
+  }
+
+  async getShopifyConnection(): Promise<ShopifyConnection | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyConnection(),
+      () => memStorage.getShopifyConnection()
+    );
+  }
+
+  async createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection> {
+    return this.tryOrFallback(
+      () => dbStorage.createShopifyConnection(connection),
+      () => memStorage.createShopifyConnection(connection)
+    );
+  }
+
+  async updateShopifyConnection(connection: Partial<ShopifyConnection>): Promise<ShopifyConnection | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateShopifyConnection(connection),
+      () => memStorage.updateShopifyConnection(connection)
+    );
+  }
+
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStores(),
+      () => memStorage.getShopifyStores()
+    );
+  }
+
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStoreByDomain(shopDomain),
+      () => memStorage.getShopifyStoreByDomain(shopDomain)
+    );
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStore(id),
+      () => memStorage.getShopifyStore(id)
+    );
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    return this.tryOrFallback(
+      () => dbStorage.createShopifyStore(store),
+      () => memStorage.createShopifyStore(store)
+    );
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    return this.tryOrFallback(
+      () => dbStorage.updateShopifyStore(id, store),
+      () => memStorage.updateShopifyStore(id, store)
+    );
+  }
+
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getUserStores(userId),
+      () => memStorage.getUserStores(userId)
+    );
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    return this.tryOrFallback(
+      () => dbStorage.createUserStore(userStore),
+      () => memStorage.createUserStore(userStore)
+    );
+  }
+
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getBlogPosts(),
+      () => memStorage.getBlogPosts()
+    );
+  }
+
+  async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getBlogPost(id),
+      () => memStorage.getBlogPost(id)
+    );
+  }
+
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    return this.tryOrFallback(
+      () => dbStorage.createBlogPost(post),
+      () => memStorage.createBlogPost(post)
+    );
+  }
+
+  async updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateBlogPost(id, post),
+      () => memStorage.updateBlogPost(id, post)
+    );
+  }
+
+  async deleteBlogPost(id: number): Promise<boolean> {
+    return this.tryOrFallback(
+      () => dbStorage.deleteBlogPost(id),
+      () => memStorage.deleteBlogPost(id)
+    );
+  }
+
+  async getRecentPosts(limit: number): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getRecentPosts(limit),
+      () => memStorage.getRecentPosts(limit)
+    );
+  }
+
+  async getScheduledPosts(): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getScheduledPosts(),
+      () => memStorage.getScheduledPosts()
+    );
+  }
+
+  async getPublishedPosts(): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getPublishedPosts(),
+      () => memStorage.getPublishedPosts()
+    );
+  }
+
+  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getSyncActivities(limit),
+      () => memStorage.getSyncActivities(limit)
+    );
+  }
+
+  async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
+    return this.tryOrFallback(
+      () => dbStorage.createSyncActivity(activity),
+      () => memStorage.createSyncActivity(activity)
+    );
+  }
+
+  async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
+    return this.tryOrFallback(
+      () => dbStorage.createContentGenRequest(request),
+      () => memStorage.createContentGenRequest(request)
+    );
+  }
+
+  async updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateContentGenRequest(id, request),
+      () => memStorage.updateContentGenRequest(id, request)
+    );
+  }
+
+  async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getContentGenRequest(id),
+      () => memStorage.getContentGenRequest(id)
+    );
+  }
+}
+
+// Export an instance of FallbackStorage that will use MemStorage if DatabaseStorage fails
+export const storage = new FallbackStorage();
