@@ -122,14 +122,16 @@ export default function CreatePostModal({
       // Set status and dates based on publication type
       if (values.publicationType === "publish") {
         postData.status = "published";
-        postData.publishedDate = new Date().toISOString();
+        // Make sure date is properly formatted as ISO string
+        const currentDate = new Date();
+        postData.publishedDate = currentDate;
       } else if (values.publicationType === "schedule") {
         postData.status = "scheduled";
         
         // Combine date and time for scheduled date
         if (values.scheduleDate && values.scheduleTime) {
           const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
-          postData.scheduledDate = scheduledDate.toISOString();
+          postData.scheduledDate = scheduledDate;
         }
       } else {
         postData.status = "draft";
