@@ -160,11 +160,17 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "Not connected to Shopify" });
       }
       
-      shopifyService.setConnection(connection);
-      const blogs = await shopifyService.getBlogs();
+      // Use the compatibility functions with the legacy connection
+      const { setConnection, getBlogsLegacy } = shopifyService;
+      
+      // Set the connection using our wrapper method
+      setConnection(connection);
+      
+      // Get blogs using the legacy method that doesn't require a store parameter
+      const blogs = await getBlogsLegacy();
       
       res.json({ blogs });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
@@ -214,11 +220,34 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       shopifyService.setConnection(connection);
       
+      // Get function references
+      const { setConnection, createArticle } = shopifyService;
+      
+      // Set connection first
+      setConnection(connection);
+      
+      // Create a temporary store object for using with the new API
+      const tempStore = {
+        id: connection.id,
+        shopName: connection.storeName,
+        accessToken: connection.accessToken,
+        scope: '', // Not available in legacy connection
+        defaultBlogId: connection.defaultBlogId,
+        isConnected: connection.isConnected || true,
+        lastSynced: connection.lastSynced,
+        installedAt: new Date(),
+        uninstalledAt: null,
+        planName: null,
+        chargeId: null,
+        trialEndsAt: null
+      };
+      
       // Sync each post
       let syncedCount = 0;
       for (const post of publishedPosts) {
         try {
-          const shopifyArticle = await shopifyService.createArticle(connection.defaultBlogId, post);
+          // Use the legacy compatibility wrapper
+          const shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
           
           // Update post with Shopify ID
           await storage.updateBlogPost(post.id, {
@@ -233,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           });
           
           syncedCount++;
-        } catch (error) {
+        } catch (error: any) {
           // Log error but continue with next post
           console.error("Error publishing to Shopify:", error);
           
@@ -342,8 +371,29 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            shopifyService.setConnection(connection);
-            const shopifyArticle = await shopifyService.createArticle(connection.defaultBlogId, post);
+            // Get function references
+            const { setConnection, createArticle } = shopifyService;
+            
+            // Set connection first
+            setConnection(connection);
+            
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
+            
+            const shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
@@ -414,8 +464,29 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            shopifyService.setConnection(connection);
-            await shopifyService.updateArticle(connection.defaultBlogId, post.shopifyPostId, postData);
+            // Get function references
+            const { setConnection, updateArticle } = shopifyService;
+            
+            // Set connection first
+            setConnection(connection);
+            
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
+            
+            await updateArticle(tempStore, connection.defaultBlogId, post.shopifyPostId, postData);
             
             // Create sync activity
             await storage.createSyncActivity({
@@ -442,8 +513,29 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            shopifyService.setConnection(connection);
-            const shopifyArticle = await shopifyService.createArticle(connection.defaultBlogId, post);
+            // Get function references
+            const { setConnection, createArticle } = shopifyService;
+            
+            // Set connection first
+            setConnection(connection);
+            
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
+            
+            const shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
@@ -505,8 +597,29 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            shopifyService.setConnection(connection);
-            await shopifyService.deleteArticle(connection.defaultBlogId, post.shopifyPostId);
+            // Get function references
+            const { setConnection, deleteArticle } = shopifyService;
+            
+            // Set connection first
+            setConnection(connection);
+            
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
+            
+            await deleteArticle(tempStore, connection.defaultBlogId, post.shopifyPostId);
             
             // Create sync activity
             await storage.createSyncActivity({
