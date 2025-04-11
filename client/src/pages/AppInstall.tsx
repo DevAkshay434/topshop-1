@@ -54,9 +54,14 @@ export default function AppInstall() {
       <div className="w-full max-w-3xl space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Install BlogifyAI for Shopify</CardTitle>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-sm font-bold">
+                TS
+              </div>
+              <CardTitle className="text-2xl font-bold text-center">Install TopShop SEO for Shopify</CardTitle>
+            </div>
             <CardDescription className="text-center text-base">
-              Generate and publish engaging blog posts with AI for your Shopify store
+              Generate and publish SEO-optimized blog posts with AI for your Shopify store
             </CardDescription>
           </CardHeader>
           

@@ -5,17 +5,22 @@ export default function AppInstallationPage() {
   return (
     <div className="container py-12">
       <div className="max-w-3xl mx-auto text-center mb-10">
-        <h1 className="text-3xl font-bold mb-3">Install BlogifyAI on Your Shopify Store</h1>
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <div className="w-12 h-12 flex items-center justify-center bg-blue-500 text-white rounded-sm font-bold text-xl">
+            TS
+          </div>
+          <h1 className="text-3xl font-bold">Install TopShop SEO on Your Shopify Store</h1>
+        </div>
         <p className="text-gray-600">
-          Automatically generate engaging blog content for your Shopify store 
-          using advanced AI technology. Save time and keep your blog fresh with minimal effort.
+          Automatically generate SEO-optimized blog content for your Shopify store 
+          using advanced AI technology. Save time, increase search visibility, and keep your blog fresh with minimal effort.
         </p>
       </div>
       
       <AppInstallationComponent />
       
       <div className="max-w-lg mx-auto mt-10 text-center">
-        <h2 className="text-xl font-medium mb-4">Why Choose BlogifyAI?</h2>
+        <h2 className="text-xl font-medium mb-4">Why Choose TopShop SEO?</h2>
         <ul className="text-left space-y-2 mb-8">
           <li className="flex items-start">
             <span className="mr-2 text-green-500">✓</span>
