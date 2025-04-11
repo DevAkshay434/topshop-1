@@ -302,11 +302,12 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
           console.log(`OpenAI error for "${topic}", falling back to HuggingFace`);
           
           try {
-            // Fall back to HuggingFace
+            // Fall back to HuggingFace with custom prompt if available
             const hfContent = await generateBlogContentWithHF({
               topic: topic,
               tone: "professional",
-              length: "medium"
+              length: "medium",
+              customPrompt: topicPrompt // Pass the custom prompt to HuggingFace
             });
             
             // Update request
@@ -461,10 +462,12 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         // Generate content with HuggingFace for each topic
         results = await Promise.all(topics.map(async (topic) => {
           try {
+            // Pass the effectivePrompt to HuggingFace 
             return await generateBlogContentWithHF({
               topic: topic,
               tone: "professional",
-              length: "medium"
+              length: "medium",
+              customPrompt: effectivePrompt
             });
           } catch (err) {
             console.error(`HuggingFace generation failed for topic "${topic}":`, err);

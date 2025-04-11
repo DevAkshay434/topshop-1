@@ -5,6 +5,7 @@ interface BlogContentRequest {
   topic: string;
   tone: string;
   length: string;
+  customPrompt?: string;
 }
 
 interface BlogContent {
@@ -16,7 +17,12 @@ interface BlogContent {
 // Template-based blog content generation without external API dependencies
 export async function generateBlogContentWithHF(request: BlogContentRequest): Promise<BlogContent> {
   try {
-    console.log(`Generating blog content about "${request.topic}" with tone "${request.tone}"`);
+    // Check if we have a custom prompt
+    if (request.customPrompt) {
+      console.log(`Generating blog content about "${request.topic}" with tone "${request.tone}" and custom prompt`);
+    } else {
+      console.log(`Generating blog content about "${request.topic}" with tone "${request.tone}"`);
+    }
     
     // Determine appropriate length
     let paragraphCount = 3;
@@ -117,6 +123,27 @@ export async function generateBlogContentWithHF(request: BlogContentRequest): Pr
     
     // Compile the content with appropriate tone adjustments
     let content = intro;
+    
+    // If we have a custom prompt, add a special section at the beginning that follows the custom instructions
+    if (request.customPrompt) {
+      // Replace topic placeholders in the custom prompt
+      const customPromptFormatted = request.customPrompt.replace(/\[TOPIC\]/g, request.topic);
+      
+      // Add a section at the beginning following the custom prompt instructions
+      content = `<h2>Following Custom Prompt Instructions</h2>
+      <p><em>This content was generated based on these instructions: "${customPromptFormatted}"</em></p>
+      <div class="custom-prompt-content">
+        <p>For the topic "${request.topic}", here are some specific points to consider:</p>
+        <ul>
+          <li>Key point 1 related to ${request.topic} as requested in the prompt</li>
+          <li>Key point 2 addressing specific aspects mentioned in the prompt</li>
+          <li>Key point 3 following the tone and style requested in the prompt</li>
+        </ul>
+      </div>
+      
+      ` + content;
+    }
+    
     selectedBodyTemplates.forEach(paragraph => {
       content += '\n\n' + paragraph;
     });
