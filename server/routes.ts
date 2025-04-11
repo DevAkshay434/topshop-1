@@ -300,7 +300,8 @@ export async function registerRoutes(app: Express): Promise<void> {
           if (post.shopifyPostId) {
             // Update existing article
             console.log(`Updating existing Shopify post ${post.shopifyPostId} for post ${post.id}: "${post.title}"`);
-            shopifyArticle = await updateArticle(tempStore, connection.defaultBlogId, post);
+            // The updateArticle function expects (store, blogId, articleId, post) but is being passed (store, blogId, post)
+            shopifyArticle = await updateArticle(tempStore, connection.defaultBlogId, post.shopifyPostId, post);
           } else {
             // Create new article
             console.log(`Creating new Shopify post for post ${post.id}: "${post.title}"`);

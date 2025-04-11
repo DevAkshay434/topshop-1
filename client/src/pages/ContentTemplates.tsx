@@ -975,7 +975,13 @@ export default function ContentTemplates() {
                        .replace(/\[Industry\]/g, topic)
                        .replace(/\[Season\/Holiday\]/g, topic)
                        .replace(/\[Accomplish Task\]/g, topic)
-                       .replace(/\[Year\]/g, new Date().getFullYear().toString());
+                       .replace(/\[Year\]/g, new Date().getFullYear().toString())
+                       // Add more comprehensive replacements for all common placeholders
+                       .replace(/\[Trend Name\]/g, `${topic} Optimization`)
+                       .replace(/\[Explanation of the trend and its impact\]/g, `The growing focus on ${topic} has transformed how businesses approach their e-commerce strategy. Companies that effectively optimize for ${topic} see higher conversion rates and customer satisfaction.`)
+                       .replace(/\[Quotes or insights from industry experts\]/g, `Industry expert Jane Smith notes, "${topic} is the future of e-commerce." Meanwhile, John Davis from E-commerce Today predicts that "${topic} adoption will increase by 40% next year."`)
+                       .replace(/\[Practical implications and action steps\]/g, `To stay competitive, implement ${topic} strategies immediately. Start by assessing your current performance, identify gaps, and create a roadmap for improvement.`)
+                       .replace(/\[Future predictions and preparation strategies\]/g, `The ${topic} landscape will continue to evolve rapidly. Stay ahead by subscribing to industry newsletters, attending webinars, and investing in ongoing training for your team.`);
       
       // If using AI-generated content based on the template's custom prompt
       if (customPrompt) {
@@ -1245,7 +1251,13 @@ export default function ContentTemplates() {
                         .replace(/\[Industry\]/g, keyword)
                         .replace(/\[Season\/Holiday\]/g, keyword)
                         .replace(/\[Accomplish Task\]/g, keyword)
-                        .replace(/\[Year\]/g, new Date().getFullYear().toString());
+                        .replace(/\[Year\]/g, new Date().getFullYear().toString())
+                        // Add more comprehensive replacements for all common placeholders
+                        .replace(/\[Trend Name\]/g, `${keyword} Optimization`)
+                        .replace(/\[Explanation of the trend and its impact\]/g, `The growing focus on ${keyword} has transformed how businesses approach their e-commerce strategy. Companies that effectively optimize for ${keyword} see higher conversion rates and customer satisfaction.`)
+                        .replace(/\[Quotes or insights from industry experts\]/g, `Industry expert Jane Smith notes, "${keyword} is the future of e-commerce." Meanwhile, John Davis from E-commerce Today predicts that "${keyword} adoption will increase by 40% next year."`)
+                        .replace(/\[Practical implications and action steps\]/g, `To stay competitive, implement ${keyword} strategies immediately. Start by assessing your current performance, identify gaps, and create a roadmap for improvement.`)
+                        .replace(/\[Future predictions and preparation strategies\]/g, `The ${keyword} landscape will continue to evolve rapidly. Stay ahead by subscribing to industry newsletters, attending webinars, and investing in ongoing training for your team.`);
                         
         // Use AI-generated content with the template's custom prompt if available
         if (customPrompt) {
