@@ -32,6 +32,15 @@ export default function Dashboard() {
     queryKey: ["/api/stats"],
   });
   
+  // Calculate total pages based on total posts
+  const postsPerPage = 5;
+  const totalPages = statsData ? Math.ceil(statsData.totalPosts / postsPerPage) : 1;
+  
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+  
   const handleCreatePost = () => {
     setSelectedPost(null);
     setGeneratedContent(undefined);
@@ -115,12 +124,15 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Recent Posts Section */}
+      {/* Posts Section with Pagination */}
       <PostList
-        queryKey="/api/posts/recent"
-        title="Recent Posts"
+        queryKey="/api/posts"
+        title="All Blog Posts"
         viewAllLink="/blog-posts"
-        limit={3}
+        limit={postsPerPage}
+        page={currentPage}
+        onPageChange={handlePageChange}
+        totalPages={totalPages}
         onEditPost={handleEditPost}
       />
 

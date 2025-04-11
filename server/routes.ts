@@ -283,11 +283,31 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // --- BLOG POST ROUTES ---
   
-  // Get all blog posts
+  // Get all blog posts with pagination
   apiRouter.get("/posts", async (req: Request, res: Response) => {
     try {
-      const posts = await storage.getBlogPosts();
-      res.json({ posts });
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      // Get all posts to calculate total
+      const allPosts = await storage.getBlogPosts();
+      
+      // Calculate pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = page * limit;
+      
+      // Get the paginated posts
+      const posts = allPosts.slice(startIndex, endIndex);
+      
+      res.json({ 
+        posts,
+        pagination: {
+          total: allPosts.length,
+          page,
+          limit,
+          totalPages: Math.ceil(allPosts.length / limit)
+        }
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
