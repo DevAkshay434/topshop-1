@@ -58,6 +58,9 @@ const formSchema = insertBlogPostSchema.extend({
   publicationType: z.enum(["publish", "schedule", "draft"]),
   scheduleDate: z.string().optional(),
   scheduleTime: z.string().optional(),
+  // Override date fields with more flexible handling
+  publishedDate: z.any().optional(),
+  scheduledDate: z.any().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;

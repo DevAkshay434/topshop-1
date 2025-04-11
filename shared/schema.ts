@@ -127,7 +127,11 @@ export const blogPosts = pgTable("blog_posts", {
   authorId: integer("author_id").references(() => users.id),
 });
 
-export const insertBlogPostSchema = createInsertSchema(blogPosts).pick({
+// Create a modified schema that properly handles dates
+export const insertBlogPostSchema = createInsertSchema(blogPosts, {
+  scheduledDate: z.date().nullable().or(z.string().transform(val => val ? new Date(val) : null)),
+  publishedDate: z.date().nullable().or(z.string().transform(val => val ? new Date(val) : null)),
+}).pick({
   storeId: true,
   title: true,
   content: true, 
