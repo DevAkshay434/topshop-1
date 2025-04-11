@@ -169,9 +169,9 @@ export class ShopifyService {
       });
       
       return response.data.article;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error creating article in Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to create article: ${error.message}`);
+      throw new Error(`Failed to create article: ${error?.message || 'Unknown error'}`);
     }
   }
   
@@ -247,9 +247,9 @@ export class ShopifyService {
       });
       
       return response.data.article;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error updating article in Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to update article: ${error.message}`);
+      throw new Error(`Failed to update article: ${error?.message || 'Unknown error'}`);
     }
   }
   
@@ -265,9 +265,9 @@ export class ShopifyService {
       const client = this.getClient(store);
       await client.delete(`/blogs/${blogId}/articles/${articleId}.json`);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error deleting article from Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to delete article: ${error.message}`);
+      throw new Error(`Failed to delete article: ${error?.message || 'Unknown error'}`);
     }
   }
   
@@ -282,9 +282,9 @@ export class ShopifyService {
       const client = this.getClient(store);
       const response = await client.get(`/blogs/${blogId}/articles.json`);
       return response.data.articles;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error fetching articles from Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to fetch articles: ${error.message}`);
+      throw new Error(`Failed to fetch articles: ${error?.message || 'Unknown error'}`);
     }
   }
   

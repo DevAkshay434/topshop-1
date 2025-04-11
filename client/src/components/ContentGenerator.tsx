@@ -74,7 +74,7 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to generate content",
+        description: (error as Error)?.message || "Failed to generate content",
         variant: "destructive",
       });
     } finally {

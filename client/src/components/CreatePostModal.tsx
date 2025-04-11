@@ -204,7 +204,7 @@ export default function CreatePostModal({
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to save post",
+        description: (error as Error)?.message || "Failed to save post",
         variant: "destructive",
       });
     } finally {
