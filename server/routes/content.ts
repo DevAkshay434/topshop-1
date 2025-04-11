@@ -29,20 +29,63 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
     });
     
     try {
-      // Generate content with OpenAI
-      const generatedContent = await generateBlogContent(topic, customPrompt);
-      
-      // Update content generation request to completed
-      const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
-        status: "completed",
-        generatedContent: JSON.stringify(generatedContent)
-      });
-      
-      res.json({ 
-        success: true, 
-        requestId: updatedRequest?.id,
-        ...generatedContent
-      });
+      // Try to generate content with OpenAI
+      try {
+        const generatedContent = await generateBlogContent(topic, customPrompt);
+        
+        // Update content generation request to completed
+        const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
+          status: "completed",
+          generatedContent: JSON.stringify(generatedContent)
+        });
+        
+        res.json({ 
+          success: true, 
+          requestId: updatedRequest?.id,
+          ...generatedContent
+        });
+        return;
+      } catch (openAiError: any) {
+        console.error("OpenAI content generation error:", openAiError);
+        
+        // Check if this is a quota error with OpenAI
+        if (openAiError.status === 429 || 
+            (openAiError.error && openAiError.error.type === 'insufficient_quota')) {
+          console.log("OpenAI quota exceeded, falling back to HuggingFace");
+          
+          // Import the HuggingFace generator
+          const { generateBlogContentWithHF } = require("../services/huggingface");
+          
+          try {
+            // Fall back to HuggingFace when OpenAI fails
+            const hfContent = await generateBlogContentWithHF({
+              topic: topic,
+              tone: "professional",
+              length: "medium"
+            });
+            
+            // Update content generation request to completed
+            const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
+              status: "completed",
+              generatedContent: JSON.stringify(hfContent),
+              provider: "huggingface"
+            });
+            
+            res.json({ 
+              success: true, 
+              requestId: updatedRequest?.id,
+              ...hfContent,
+              fallbackUsed: true
+            });
+            return;
+          } catch (hfError) {
+            console.error("HuggingFace fallback also failed:", hfError);
+            throw openAiError; // Re-throw the original error
+          }
+        } else {
+          throw openAiError; // Re-throw the error if it's not a quota issue
+        }
+      }
     } catch (aiError: any) {
       console.error("Content generation error:", aiError);
       

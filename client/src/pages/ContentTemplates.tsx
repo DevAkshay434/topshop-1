@@ -1040,6 +1040,14 @@ export default function ContentTemplates() {
       // Update the template content directly
       templateContent[templateId] = updatedContent;
       
+      // Save templates to localStorage for persistence
+      try {
+        localStorage.setItem('contentTemplates', JSON.stringify(templates));
+        console.log("Templates saved to localStorage after update");
+      } catch (storageError) {
+        console.error("Error saving templates to localStorage:", storageError);
+      }
+      
       toast({
         title: "Template Updated",
         description: "Template content has been updated successfully.",
@@ -1088,13 +1096,21 @@ export default function ContentTemplates() {
       setTemplates(updatedTemplates);
       
       // In a real app, we would save this to a database
-      // For now, update the local templateContent record
+      // For now, update the local templateContent record and save to localStorage
       console.log(`Setting template content for ID ${newId}`);
       console.log("Template structure:", structure.substring(0, 50) + "...");
       console.log("Template AI prompt:", aiPrompt.substring(0, 50) + "...");
       
       // Add template content to global object - needs careful handling
       templateContent[newId] = newContent;
+      
+      // Save templates to localStorage for persistence
+      try {
+        localStorage.setItem('contentTemplates', JSON.stringify(updatedTemplates));
+        console.log("Templates saved to localStorage");
+      } catch (storageError) {
+        console.error("Error saving templates to localStorage:", storageError);
+      }
       
       toast({
         title: "Template Created",
