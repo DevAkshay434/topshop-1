@@ -19,6 +19,24 @@ import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import Layout from "@/components/Layout";
 
+// Types for result data
+type SuccessResult = {
+  topic: string;
+  postId: number;
+  title: string;
+  contentPreview: string;
+  status: "success";
+  usesFallback: boolean;
+};
+
+type FailedResult = {
+  topic: string;
+  status: "failed";
+  error: string;
+};
+
+type GenerationResult = SuccessResult | FailedResult;
+
 export default function SimpleBulkGeneration() {
   const [topics, setTopics] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>(
@@ -26,7 +44,7 @@ export default function SimpleBulkGeneration() {
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<GenerationResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
@@ -62,6 +80,23 @@ export default function SimpleBulkGeneration() {
       // Show progress as waiting for response
       setProgress(30);
       
+      try {
+        // Test the OpenAI API first to make sure it's working
+        const testResponse = await apiRequest({
+          url: "/api/test-openai",
+          method: "GET"
+        });
+        
+        console.log("OpenAI API test response:", testResponse);
+        
+        if (!testResponse.success) {
+          throw new Error("OpenAI API is not responding correctly: " + testResponse.error);
+        }
+      } catch (apiError) {
+        console.error("OpenAI API test failed:", apiError);
+        // Continue anyway as we have fallback
+      }
+      
       // Make the API request to our bulk endpoint
       const response = await apiRequest({
         url: "/api/generate-content/simple-bulk",
@@ -79,20 +114,20 @@ export default function SimpleBulkGeneration() {
         console.log(`Bulk generation results: ${response.successful} of ${response.totalTopics} successful`);
         
         // Process results for display
-        const processedResults = response.results.map(result => {
+        const processedResults = response.results.map((result: any) => {
           if (result.status === "success") {
             return {
               topic: result.topic,
               postId: result.postId,
               title: result.title,
               contentPreview: result.content ? result.content.substring(0, 100) + "..." : "No content preview available",
-              status: "success",
+              status: "success" as const,
               usesFallback: result.usesFallback
             };
           } else {
             return {
               topic: result.topic,
-              status: "failed",
+              status: "failed" as const,
               error: result.error || "Unknown error"
             };
           }
