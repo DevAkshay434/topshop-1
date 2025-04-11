@@ -137,14 +137,32 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     // Log the error but don't crash the server
-    console.error("Server error:", err);
+    console.error("TopShop SEO - Server error:", err);
     
-    // Send error response
+    // Send branded error response
     return res.status(status).json({ 
+      app: "TopShop SEO",
+      status: "error",
       message,
+      code: status,
+      timestamp: new Date().toISOString(),
+      path: _req.path,
+      // Only include error details in development mode
       error: app.get("env") === "development" ? err.stack : undefined
     });
-    // Don't throw the error after handling it - this was causing crashes
+    // Don't throw the error after handling it
+  });
+
+  // Add a 404 handler for API routes before setting up Vite
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({
+      app: "TopShop SEO",
+      status: "error",
+      message: "API endpoint not found",
+      code: 404,
+      timestamp: new Date().toISOString(),
+      path: req.path
+    });
   });
 
   // importantly only setup vite in development and after
@@ -155,6 +173,28 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+  
+  // Add a final 404 handler for all other routes after setupVite
+  // This will serve our custom 404 page for non-API routes
+  app.use((req, res) => {
+    // Check if it's an HTML request (browser) vs API request
+    const accept = req.headers.accept || '';
+    if (accept.includes('text/html')) {
+      const notFoundPath = fsPath.resolve(process.cwd(), 'public', '404.html');
+      if (fs.existsSync(notFoundPath)) {
+        return res.status(404).sendFile(notFoundPath);
+      }
+    }
+    
+    // Fallback JSON response for non-HTML requests
+    res.status(404).json({
+      app: "TopShop SEO",
+      status: "error",
+      message: "Resource not found",
+      code: 404,
+      path: req.path
+    });
+  });
 
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
@@ -190,9 +230,37 @@ app.use((req, res, next) => {
     // Listen for termination signals
     process.on('SIGINT', handleShutdown);
     process.on('SIGTERM', handleShutdown);
+    
+    // Enhanced error handling
     process.on('uncaughtException', (error) => {
-      console.error('Uncaught exception:', error);
-      handleShutdown();
+      console.error('TopShop SEO - Uncaught exception:', error);
+      
+      // Only terminate for serious errors
+      // This allows the app to continue running for non-critical errors
+      const errorString = error.toString().toLowerCase();
+      const criticalErrors = [
+        'out of memory', 
+        'cannot find module',
+        'database connection',
+        'econnrefused'
+      ];
+      
+      // Check if this is a critical error that requires shutdown
+      const isCriticalError = criticalErrors.some(errText => errorString.includes(errText));
+      
+      if (isCriticalError) {
+        console.error('TopShop SEO - Critical error detected, initiating shutdown');
+        handleShutdown();
+      } else {
+        console.error('TopShop SEO - Non-critical error, continuing execution');
+        // For non-critical errors, we log but don't shut down
+      }
+    });
+    
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('TopShop SEO - Unhandled Promise Rejection:', reason);
+      // Log but don't terminate for promise rejections
     });
   });
 })();
