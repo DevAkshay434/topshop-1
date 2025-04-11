@@ -880,6 +880,25 @@ export default function ContentTemplates() {
   };
 
   const [templates, setTemplates] = useState<Template[]>(getInitialTemplates());
+  
+  // Load template content from localStorage when component mounts
+  useEffect(() => {
+    try {
+      const savedTemplateContent = localStorage.getItem('templateContents');
+      if (savedTemplateContent) {
+        console.log("Loading template content from localStorage");
+        const loadedContent = JSON.parse(savedTemplateContent);
+        // Apply the loaded content to the global templateContent object
+        Object.keys(loadedContent).forEach(key => {
+          const templateId = parseInt(key);
+          templateContent[templateId] = loadedContent[templateId];
+        });
+        console.log("Template content loaded successfully");
+      }
+    } catch (error) {
+      console.error("Error loading template content from localStorage:", error);
+    }
+  }, []);
   const [generationResults, setGenerationResults] = useState<{
     success: number;
     failed: number;
