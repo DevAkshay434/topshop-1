@@ -10,6 +10,7 @@ import {
 } from '@shared/schema';
 import { storage } from './storage';
 import * as shopifyService from './services/shopify';
+import contentRouter from './routes/content';
 import { 
   validateShopDomain, 
   generateNonce, 
