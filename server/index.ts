@@ -2,6 +2,18 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createServer, Server } from "http";
+import * as fsPath from "path";
+import fs from "fs";
+
+// Global maintenance mode flag
+let isMaintenanceMode = false;
+
+// Function to toggle maintenance mode
+export function setMaintenanceMode(active: boolean) {
+  isMaintenanceMode = active;
+  log(`Maintenance mode ${active ? 'enabled' : 'disabled'}`);
+  return isMaintenanceMode;
+}
 
 const app = express();
 app.use(express.json());
@@ -52,9 +64,40 @@ app.use((req, res, next) => {
   next();
 });
 
+// Maintenance mode middleware
+app.use((req, res, next) => {
+  // API for maintenance mode control
+  if (req.path === '/api/maintenance') {
+    if (req.query.action === 'enable') {
+      setMaintenanceMode(true);
+      return res.json({ maintenance: true, message: 'Maintenance mode enabled' });
+    } else if (req.query.action === 'disable') {
+      setMaintenanceMode(false);
+      return res.json({ maintenance: false, message: 'Maintenance mode disabled' });
+    } else {
+      return res.json({ maintenance: isMaintenanceMode });
+    }
+  }
+  
+  // Always allow API requests to pass through
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Serve maintenance page if in maintenance mode
+  if (isMaintenanceMode) {
+    const maintenancePath = fsPath.resolve(process.cwd(), 'public', 'maintenance.html');
+    if (fs.existsSync(maintenancePath)) {
+      return res.sendFile(maintenancePath);
+    }
+  }
+  
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
+  const reqPath = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
@@ -65,8 +108,8 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (reqPath.startsWith("/api")) {
+      let logLine = `${req.method} ${reqPath} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -131,5 +174,25 @@ app.use((req, res, next) => {
         console.error("Health check error:", error);
       }
     }, 5 * 60 * 1000); // 5 minutes
+    
+    // Handle graceful shutdown
+    const handleShutdown = () => {
+      setMaintenanceMode(true);
+      log('Application shutdown initiated - entering maintenance mode');
+      
+      // Delay the actual exit to allow final requests to be served with the maintenance page
+      setTimeout(() => {
+        log('Shutdown complete');
+        process.exit(0);
+      }, 2000);
+    };
+    
+    // Listen for termination signals
+    process.on('SIGINT', handleShutdown);
+    process.on('SIGTERM', handleShutdown);
+    process.on('uncaughtException', (error) => {
+      console.error('Uncaught exception:', error);
+      handleShutdown();
+    });
   });
 })();
