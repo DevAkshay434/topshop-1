@@ -163,7 +163,8 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
       let results;
       try {
         results = await bulkGenerateBlogContent(topics, effectivePrompt);
-      } catch (openAiError) {
+      } catch (error) {
+        const openAiError = error as any;
         console.error("OpenAI bulk generation failed:", openAiError);
         
         // Check if it's a quota error
@@ -207,10 +208,15 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         const topic = topics[i];
         
         try {
-          // Create a blog post
+          // Create a blog post - ensure content isn't empty
+          // Log content for debugging
+          console.log(`Creating post with content ${result.content ? "present" : "MISSING"} - Length: ${result.content ? result.content.length : 0} characters`);
+          
+          const postContent = result.content || `# ${result.title}\n\nContent for ${topic} is being generated. This is placeholder content.`;
+          
           const post = await storage.createBlogPost({
             title: result.title,
-            content: result.content,
+            content: postContent, // Use non-empty content
             status: "published", // Automatically publish
             publishedDate: new Date(),
             author: "Bulk Generation",
@@ -231,13 +237,21 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
       
       // Trigger Shopify sync for all created posts
       try {
-        // Import shopify client - don't require at the top level to avoid circular dependencies
-        const { syncPostsToShopify } = require("../services/shopify");
-        
+        // Import the syncPosts function from routes.ts to avoid circular dependencies
+        // Use dynamic import instead of require
         if (postIds.length > 0) {
           console.log(`Syncing ${postIds.length} posts to Shopify...`);
-          await syncPostsToShopify(postIds);
-          console.log("Shopify sync completed for bulk generation");
+          
+          // Call the API endpoint for syncing instead of direct function call
+          const syncResponse = await fetch(`http://localhost:5000/api/shopify/sync`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ postIds })
+          });
+          
+          console.log("Shopify sync API called for bulk generation");
         }
       } catch (syncError) {
         console.error("Error syncing bulk posts to Shopify:", syncError);

@@ -1265,17 +1265,29 @@ export default function ContentTemplates() {
             
             console.log("Bulk generation response:", bulkResponse);
             
-            if (bulkResponse && bulkResponse.success && 
-                bulkResponse.posts && bulkResponse.posts.length > 0) {
-              // Update with AI-generated content
-              const generatedPost = bulkResponse.posts[0];
-              if (generatedPost) {
-                title = generatedPost.title || title;
-                content = generatedPost.content || content;
-                console.log("Successfully generated content with custom prompt for bulk generation");
+            if (bulkResponse && bulkResponse.success) {
+              console.log("Bulk generation response:", bulkResponse);
+              
+              // Check if there are posts in the response
+              if (bulkResponse.posts && bulkResponse.posts.length > 0) {
+                // Update with AI-generated content
+                const generatedPost = bulkResponse.posts[0];
+                if (generatedPost) {
+                  // Extract content from the generated post
+                  title = generatedPost.title || title;
+                  // Make sure content is not empty
+                  if (generatedPost.content && generatedPost.content.length > 0) {
+                    content = generatedPost.content;
+                    console.log("Successfully extracted content from bulk generation, length:", content.length);
+                  } else {
+                    console.warn("Generated post has empty content!");
+                  }
+                }
+              } else {
+                console.warn("Bulk generation API call succeeded but returned no posts");
               }
             } else {
-              console.warn("Bulk generation API call succeeded but returned no posts or unsuccessful response");
+              console.warn("Bulk generation API call failed or returned unsuccessful response");
             }
           } catch (promptError) {
             console.error("Error generating content with custom prompt for bulk:", promptError);
