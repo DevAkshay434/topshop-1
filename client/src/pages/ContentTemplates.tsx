@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -347,6 +347,111 @@ function TemplateUsageDialog({
   );
 }
 
+// Template edit dialog component
+function TemplateEditDialog({ 
+  isOpen, 
+  setIsOpen, 
+  template, 
+  templateContent,
+  onSave 
+}: { 
+  isOpen: boolean, 
+  setIsOpen: (open: boolean) => void, 
+  template: Template | null,
+  templateContent: { structure: string, topics: string[] } | null,
+  onSave: (templateId: number, structure: string, topics: string[]) => void
+}) {
+  const [structure, setStructure] = useState("");
+  const [topicsText, setTopicsText] = useState("");
+  
+  // Load template content when dialog opens
+  useEffect(() => {
+    if (isOpen && template && templateContent) {
+      setStructure(templateContent.structure);
+      setTopicsText(templateContent.topics.join('\n'));
+    }
+  }, [isOpen, template, templateContent]);
+  
+  const handleSave = () => {
+    if (!template) return;
+    
+    // Convert topics text to array
+    const topicsArray = topicsText
+      .split('\n')
+      .map(t => t.trim())
+      .filter(Boolean);
+    
+    onSave(template.id, structure, topicsArray);
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Template: {template?.name}</DialogTitle>
+          <DialogDescription>
+            Customize the template structure and suggested topics.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Tabs defaultValue="structure" className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="structure">Template Structure</TabsTrigger>
+            <TabsTrigger value="topics">Suggested Topics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="structure" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="structure">Markdown Template</Label>
+              <div className="relative">
+                <Textarea 
+                  id="structure" 
+                  value={structure} 
+                  onChange={(e) => setStructure(e.target.value)}
+                  className="font-mono h-96 resize-none"
+                  placeholder="# Template Title
+
+## Section 1
+[Your content here]
+
+## Section 2
+[Your content here]"
+                />
+              </div>
+              <p className="text-sm text-neutral-500">
+                Use placeholders like [Product Name], [Industry], [Season/Holiday], [Accomplish Task], or [Year] that will be replaced with the specific topic.
+              </p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="topics" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="topics">Suggested Topics (one per line)</Label>
+              <Textarea 
+                id="topics" 
+                value={topicsText}
+                onChange={(e) => setTopicsText(e.target.value)} 
+                className="h-80 resize-none"
+                placeholder="Topic 1
+Topic 2
+Topic 3"
+              />
+              <p className="text-sm text-neutral-500">
+                These topics will be shown as suggestions when using this template.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
+        
+        <DialogFooter className="mt-6">
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+          <Button onClick={handleSave}>Save Changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Bulk content generation dialog
 function BulkGenerationDialog({
   isOpen,
@@ -550,7 +655,10 @@ export default function ContentTemplates() {
   const [, setLocation] = useLocation();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [editedTemplateContent, setEditedTemplateContent] = useState<string>("");
+  const [editedTemplateTopics, setEditedTemplateTopics] = useState<string>("");
   const [generationResults, setGenerationResults] = useState<{
     success: number;
     failed: number;
@@ -571,10 +679,8 @@ export default function ContentTemplates() {
   
   // Handle template editing
   const handleEditTemplate = (template: Template) => {
-    toast({
-      title: "Edit Template",
-      description: `Editing template "${template.name}" is not implemented yet.`,
-    });
+    setSelectedTemplate(template);
+    setIsEditDialogOpen(true);
   };
   
   // Apply template with topic
@@ -667,6 +773,24 @@ export default function ContentTemplates() {
         variant: "destructive",
       });
     }
+  };
+
+  // Save edited template
+  const handleSaveTemplate = (templateId: number, structure: string, topics: string[]) => {
+    if (!templateId) return;
+    
+    // Update the template content in the templateContent object
+    templateContent[templateId] = {
+      structure,
+      topics
+    };
+    
+    toast({
+      title: "Template Updated",
+      description: "Template content has been updated successfully.",
+    });
+    
+    setIsEditDialogOpen(false);
   };
 
   const handleCreateTemplate = () => {
@@ -856,6 +980,15 @@ export default function ContentTemplates() {
         isOpen={isBulkDialogOpen}
         setIsOpen={setIsBulkDialogOpen}
         onGenerate={handleBulkGeneration}
+      />
+      
+      {/* Template editing dialog */}
+      <TemplateEditDialog
+        isOpen={isEditDialogOpen}
+        setIsOpen={setIsEditDialogOpen}
+        template={selectedTemplate}
+        templateContent={selectedTemplate ? templateContent[selectedTemplate.id] : null}
+        onSave={handleSaveTemplate}
       />
       
       {/* Progress indicator (conditionally shown) */}
