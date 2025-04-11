@@ -19,7 +19,7 @@ export default function Dashboard() {
     title: string;
     content: string;
     tags: string[];
-  } | null>(null);
+  } | undefined>(undefined);
   const [, setLocation] = useLocation();
   
   const { data: statsData, isLoading: isStatsLoading } = useQuery<{
@@ -33,13 +33,13 @@ export default function Dashboard() {
   
   const handleCreatePost = () => {
     setSelectedPost(null);
-    setGeneratedContent(null);
+    setGeneratedContent(undefined);
     setCreatePostModalOpen(true);
   };
   
   const handleEditPost = (post: BlogPost) => {
     setSelectedPost(post);
-    setGeneratedContent(null);
+    setGeneratedContent(undefined);
     setCreatePostModalOpen(true);
   };
   
