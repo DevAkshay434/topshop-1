@@ -3,13 +3,17 @@ import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileCode, Pencil, Plus } from "lucide-react";
+import { FileCode, Pencil, Plus, ZapIcon, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { queryClient } from "@/lib/queryClient";
 
 // Template data structure
 interface Template {
@@ -343,6 +347,107 @@ function TemplateUsageDialog({
   );
 }
 
+// Bulk content generation dialog
+function BulkGenerationDialog({
+  isOpen,
+  setIsOpen,
+  onGenerate
+}: {
+  isOpen: boolean,
+  setIsOpen: (open: boolean) => void,
+  onGenerate: (keywords: string[], templateId: number) => Promise<void>
+}) {
+  const [keywords, setKeywords] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  const handleGenerate = async () => {
+    if (!keywords || selectedTemplate === "") return;
+    
+    setIsGenerating(true);
+    const keywordList = keywords
+      .split('\n')
+      .map(k => k.trim())
+      .filter(Boolean);
+      
+    try {
+      await onGenerate(keywordList, Number(selectedTemplate));
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Bulk generation error:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Bulk Content Generation</DialogTitle>
+          <DialogDescription>
+            Enter multiple keywords (one per line) and select a template to generate multiple articles at once.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="template">Select Template</Label>
+            <Select 
+              value={selectedTemplate} 
+              onValueChange={(value: string) => setSelectedTemplate(value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a template" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id.toString()}>
+                    {template.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="keywords">Keywords (one per line)</Label>
+            <Textarea
+              id="keywords"
+              placeholder="Enter keywords, one per line"
+              className="min-h-[150px]"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+            />
+            <p className="text-xs text-neutral-500">
+              {keywords.split('\n').filter(Boolean).length} keywords entered
+            </p>
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isGenerating}>
+            Cancel
+          </Button>
+          <Button onClick={handleGenerate} disabled={!keywords || selectedTemplate === "" || isGenerating}>
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <ZapIcon className="mr-2 h-4 w-4" />
+                Generate Articles
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Template card component
 function TemplateCard({ 
   template, 
@@ -385,6 +490,18 @@ export default function ContentTemplates() {
   const [, setLocation] = useLocation();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [generationResults, setGenerationResults] = useState<{
+    success: number;
+    failed: number;
+    total: number;
+    inProgress: boolean;
+  }>({
+    success: 0,
+    failed: 0,
+    total: 0,
+    inProgress: false
+  });
   
   // Handle template usage
   const handleUseTemplate = (template: Template) => {
@@ -493,6 +610,138 @@ export default function ContentTemplates() {
       description: "Creating new templates is not implemented yet.",
     });
   };
+  
+  // Open bulk generation dialog
+  const handleOpenBulkGeneration = () => {
+    setIsBulkDialogOpen(true);
+  };
+  
+  // Process bulk article generation
+  const handleBulkGeneration = async (keywords: string[], templateId: number) => {
+    // Reset results
+    setGenerationResults({
+      success: 0,
+      failed: 0,
+      total: keywords.length,
+      inProgress: true
+    });
+    
+    let successCount = 0;
+    let failedCount = 0;
+    
+    // Get template data
+    const templateData = templateContent[templateId];
+    const selectedTemplate = templates.find(t => t.id === templateId);
+    
+    if (!templateData || !selectedTemplate) {
+      toast({
+        title: "Error",
+        description: "Template not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Process each keyword
+    for (const keyword of keywords) {
+      try {
+        // Generate title based on template type
+        let title = "";
+        
+        switch (templateId) {
+          case 1: // Product Review
+            title = `${keyword} Review: Is It Worth Your Money?`;
+            break;
+          case 2: // How-To Guide  
+            title = `How to Master ${keyword}: A Complete Guide`;
+            break;
+          case 3: // Industry News
+            title = `${keyword} Trends: What's New in ${new Date().getFullYear()}`;
+            break;
+          case 4: // Product Comparison
+            const parts = keyword.split(' vs ');
+            title = parts.length > 1 
+              ? `${parts[0]} vs ${parts[1]}: Which One is Better?`
+              : `${keyword} Comparison: Finding the Best Option`;
+            break;
+          case 5: // Seasonal Promotion
+            title = `${keyword} Special: Exclusive Deals You Can't Miss`;
+            break;
+          case 6: // Customer Story
+            title = `How Our Customer Achieved Success with ${keyword}`;
+            break;
+          default:
+            title = `${keyword} - ${selectedTemplate?.name || 'Blog Post'}`;
+        }
+        
+        // Create content by replacing placeholders in the template
+        let content = templateData.structure;
+        
+        // Replace topic-related placeholders
+        content = content.replace(/\[Product Name\]/g, keyword)
+                        .replace(/\[Industry\]/g, keyword)
+                        .replace(/\[Season\/Holiday\]/g, keyword)
+                        .replace(/\[Accomplish Task\]/g, keyword)
+                        .replace(/\[Year\]/g, new Date().getFullYear().toString());
+        
+        // Create tags based on topic and template type
+        const tags = [
+          keyword,
+          selectedTemplate?.category || "",
+          selectedTemplate?.name || "",
+          "Bulk Generated"
+        ].filter(Boolean);
+        
+        // Create post
+        await apiRequest("POST", "/api/posts", {
+          title,
+          content,
+          status: "draft",
+          tags: tags.join(","),
+          category: selectedTemplate?.category || "General",
+          storeId: null,
+          author: "Bulk Generation"
+        });
+        
+        successCount++;
+        
+        // Update progress
+        setGenerationResults(prev => ({
+          ...prev,
+          success: successCount,
+          failed: failedCount
+        }));
+      } catch (error) {
+        console.error(`Error generating article for keyword "${keyword}":`, error);
+        failedCount++;
+        
+        // Update progress
+        setGenerationResults(prev => ({
+          ...prev,
+          success: successCount,
+          failed: failedCount
+        }));
+      }
+    }
+    
+    // All done
+    setGenerationResults(prev => ({
+      ...prev,
+      inProgress: false
+    }));
+    
+    // Show result toast
+    toast({
+      title: "Bulk Generation Complete",
+      description: `Generated ${successCount} of ${keywords.length} articles`,
+    });
+    
+    // Invalidate posts query cache
+    queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    
+    // Navigate to blog posts page to see results
+    setLocation("/blog-posts");
+  };
 
   return (
     <Layout>
@@ -503,7 +752,11 @@ export default function ContentTemplates() {
             Use pre-built templates to quickly create blog content
           </p>
         </div>
-        <div className="mt-4 md:mt-0 md:ml-4">
+        <div className="mt-4 md:mt-0 md:ml-4 flex space-x-2">
+          <Button variant="outline" onClick={handleOpenBulkGeneration}>
+            <ZapIcon className="mr-2 h-4 w-4" />
+            Bulk Generate
+          </Button>
           <Button onClick={handleCreateTemplate}>
             <Plus className="mr-2 h-4 w-4" />
             New Template
@@ -522,12 +775,45 @@ export default function ContentTemplates() {
         ))}
       </div>
       
+      {/* Single template usage dialog */}
       <TemplateUsageDialog
         isOpen={isDialogOpen}
         setIsOpen={setIsDialogOpen}
         template={selectedTemplate}
         onApply={handleApplyTemplate}
       />
+      
+      {/* Bulk generation dialog */}
+      <BulkGenerationDialog
+        isOpen={isBulkDialogOpen}
+        setIsOpen={setIsBulkDialogOpen}
+        onGenerate={handleBulkGeneration}
+      />
+      
+      {/* Progress indicator (conditionally shown) */}
+      {generationResults.inProgress && (
+        <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 w-80 border border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-medium">Generating Articles</h3>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              {Math.round((generationResults.success + generationResults.failed) / generationResults.total * 100)}%
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
+                style={{ width: `${((generationResults.success + generationResults.failed) / generationResults.total) * 100}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>Success: {generationResults.success}</span>
+              <span>Failed: {generationResults.failed}</span>
+              <span>Total: {generationResults.total}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
