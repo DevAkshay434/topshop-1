@@ -31,82 +31,72 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
     try {
       // Try to generate content with OpenAI
       console.log(`Attempting to generate content with OpenAI for topic: "${topic}"`);
+      console.log("Calling OpenAI generateBlogContent function...");
+      
+      const generatedContent = await generateBlogContent(topic, customPrompt);
+      
+      // Log the returned content (truncated for readability)
+      console.log(`OpenAI content generated successfully. Title: "${generatedContent.title}", Content length: ${generatedContent.content ? generatedContent.content.length : 0} characters`);
+      
+      // Update content generation request to completed
+      const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
+        status: "completed",
+        generatedContent: JSON.stringify(generatedContent)
+      });
+      
+      res.json({ 
+        success: true, 
+        requestId: updatedRequest?.id,
+        ...generatedContent
+      });
+      
+    } catch (openAiError: any) {
+      console.error("OpenAI content generation error:", openAiError);
+      
+      // Always try the fallback regardless of the specific error type
+      console.log("OpenAI error, falling back to HuggingFace");
+      
       try {
-        // Add explicit logging to track API call
-        console.log("Calling OpenAI generateBlogContent function...");
-        const generatedContent = await generateBlogContent(topic, customPrompt);
+        // Import the HuggingFace generator
+        const { generateBlogContentWithHF } = require("../services/huggingface");
         
-        // Log the returned content (truncated for readability)
-        console.log(`OpenAI content generated successfully. Title: "${generatedContent.title}", Content length: ${generatedContent.content ? generatedContent.content.length : 0} characters`);
+        // Fall back to HuggingFace when OpenAI fails
+        const hfContent = await generateBlogContentWithHF({
+          topic: topic,
+          tone: "professional",
+          length: "medium"
+        });
         
         // Update content generation request to completed
         const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
           status: "completed",
-          generatedContent: JSON.stringify(generatedContent)
+          generatedContent: JSON.stringify(hfContent)
         });
         
         res.json({ 
           success: true, 
           requestId: updatedRequest?.id,
-          ...generatedContent
+          ...hfContent,
+          fallbackUsed: true
         });
-        return;
-      } catch (openAiError: any) {
-        console.error("OpenAI content generation error:", openAiError);
-        console.error("Full error details:", JSON.stringify(openAiError, null, 2));
         
-        // Check if this is a quota error with OpenAI
-        if (openAiError.status === 429 || 
-            (openAiError.error && openAiError.error.type === 'insufficient_quota')) {
-          console.log("OpenAI quota exceeded, falling back to HuggingFace");
-          
-          // Import the HuggingFace generator
-          const { generateBlogContentWithHF } = require("../services/huggingface");
-          
-          try {
-            // Fall back to HuggingFace when OpenAI fails
-            const hfContent = await generateBlogContentWithHF({
-              topic: topic,
-              tone: "professional",
-              length: "medium"
-            });
-            
-            // Update content generation request to completed
-            const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
-              status: "completed",
-              generatedContent: JSON.stringify(hfContent)
-            });
-            
-            res.json({ 
-              success: true, 
-              requestId: updatedRequest?.id,
-              ...hfContent,
-              fallbackUsed: true
-            });
-            return;
-          } catch (hfError) {
-            console.error("HuggingFace fallback also failed:", hfError);
-            throw openAiError; // Re-throw the original error
-          }
-        } else {
-          throw openAiError; // Re-throw the error if it's not a quota issue
-        }
+      } catch (hfError: any) {
+        console.error("HuggingFace fallback also failed:", hfError);
+        
+        // Update as failed since both services failed
+        await storage.updateContentGenRequest(contentRequest.id, {
+          status: "failed",
+          generatedContent: JSON.stringify({ 
+            error: "Both OpenAI and HuggingFace failed" 
+          })
+        });
+        
+        // Return error to the client
+        res.status(500).json({
+          success: false,
+          error: "Failed to generate content with both services"
+        });
       }
-    } catch (aiError: any) {
-      console.error("Content generation error:", aiError);
-      
-      // Update content generation request to failed
-      await storage.updateContentGenRequest(contentRequest.id, {
-        status: "failed",
-        generatedContent: JSON.stringify({ error: aiError.message })
-      });
-      
-      // Provide user-friendly error response
-      const errorMessage = aiError?.message || "Failed to generate content";
-      res.status(500).json({ 
-        success: false, 
-        error: errorMessage
-      });
     }
   } catch (error: any) {
     console.error("Error in content generation endpoint:", error);
