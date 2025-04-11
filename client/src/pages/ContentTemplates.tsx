@@ -27,7 +27,7 @@ interface Template {
 }
 
 // Define the template content structures
-const templateContent: Record<number, {structure: string, topics: string[], aiPrompt?: string}> = {
+const templateContent: Record<number, {structure: string, topics: string[], aiPrompt: string}> = {
   1: {
     structure: `# [Product Name] Review: Is It Worth Your Money?
 
