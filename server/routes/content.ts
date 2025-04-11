@@ -2,8 +2,6 @@ import { Router, Request, Response } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
 import { insertContentGenRequestSchema } from "@shared/schema";
-import { generateBlogContent, bulkGenerateBlogContent } from "../services/openai";
-import { generateBlogContentWithHF } from "../services/huggingface";
 import { generateBlogContentWithClaude, testClaudeConnection } from "../services/claude";
 
 const contentRouter = Router();
@@ -31,14 +29,18 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
     });
     
     try {
-      // Try to generate content with OpenAI
-      console.log(`Attempting to generate content with OpenAI for topic: "${topic}"`);
-      console.log("Calling OpenAI generateBlogContent function...");
+      // Generate content with Claude as the primary service
+      console.log(`Generating content with Claude for topic: "${topic}"`);
       
-      const generatedContent = await generateBlogContent(topic, customPrompt);
+      const generatedContent = await generateBlogContentWithClaude({
+        topic,
+        tone: "professional",
+        length: "medium",
+        customPrompt
+      });
       
       // Log the returned content (truncated for readability)
-      console.log(`OpenAI content generated successfully. Title: "${generatedContent.title}", Content length: ${generatedContent.content ? generatedContent.content.length : 0} characters`);
+      console.log(`Claude content generated successfully. Title: "${generatedContent.title}", Content length: ${generatedContent.content ? generatedContent.content.length : 0} characters`);
       
       // Update content generation request to completed
       const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
@@ -69,115 +71,23 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         ...generatedContent
       });
       
-    } catch (openAiError: any) {
-      console.error("OpenAI content generation error:", openAiError);
+    } catch (claudeError: any) {
+      console.error("Claude content generation error:", claudeError);
       
-      // Always try the fallback regardless of the specific error type
-      console.log(`OpenAI error for "${topic}", falling back to HuggingFace`);
+      // Update as failed since Claude failed
+      await storage.updateContentGenRequest(contentRequest.id, {
+        status: "failed",
+        generatedContent: JSON.stringify({ 
+          error: "Claude content generation failed: " + (claudeError?.message || String(claudeError))
+        })
+      });
       
-      try {
-        // Fall back to HuggingFace when OpenAI fails
-        const hfContent = await generateBlogContentWithHF({
-          topic: topic,
-          tone: "professional",
-          length: "medium"
-        });
-        
-        // Update content generation request to completed
-        const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
-          status: "completed",
-          generatedContent: JSON.stringify(hfContent)
-        });
-        
-        // Get the Shopify connection to use as author
-        const connection = await storage.getShopifyConnection();
-        const storeName = connection?.storeName || "Store Owner";
-        
-        // Create a blog post with the fallback content
-        const post = await storage.createBlogPost({
-          title: hfContent.title,
-          content: hfContent.content || `# ${hfContent.title}\n\nContent for ${topic}`,
-          status: "draft", // Default to draft so user can review before publishing
-          author: storeName,
-          tags: Array.isArray(hfContent.tags) && hfContent.tags.length > 0 
-            ? hfContent.tags.join(",") 
-            : topic,
-          category: "Generated Content"
-        });
-        
-        res.json({ 
-          success: true, 
-          requestId: updatedRequest?.id,
-          postId: post.id,
-          ...hfContent,
-          fallbackUsed: true
-        });
-        
-      } catch (hfError: any) {
-        console.error("HuggingFace fallback also failed:", hfError);
-        
-        // Try one more fallback with Claude if available
-        if (process.env.ANTHROPIC_API_KEY) {
-          try {
-            console.log(`Both OpenAI and HuggingFace failed for "${topic}", trying Claude as final fallback`);
-            
-            // Fall back to Claude with appropriate parameters
-            const claudeContent = await generateBlogContentWithClaude({
-              topic: topic,
-              tone: "professional",
-              length: "medium",
-              customPrompt: customPrompt
-            });
-            
-            // Update content generation request to completed
-            const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
-              status: "completed",
-              generatedContent: JSON.stringify(claudeContent)
-            });
-            
-            // Get the Shopify connection to use as author
-            const connection = await storage.getShopifyConnection();
-            const storeName = connection?.storeName || "Store Owner";
-            
-            // Create a blog post with the Claude-generated content
-            const post = await storage.createBlogPost({
-              title: claudeContent.title,
-              content: claudeContent.content || `# ${claudeContent.title}\n\nContent for ${topic}`,
-              status: "draft", // Default to draft so user can review before publishing
-              author: storeName,
-              tags: Array.isArray(claudeContent.tags) && claudeContent.tags.length > 0 
-                ? claudeContent.tags.join(",") 
-                : topic,
-              category: "Generated Content"
-            });
-            
-            res.json({ 
-              success: true, 
-              requestId: updatedRequest?.id,
-              postId: post.id,
-              ...claudeContent,
-              fallbackUsed: "claude"
-            });
-            return;
-          } catch (claudeError: any) {
-            console.error("Claude final fallback also failed:", claudeError);
-          }
-        }
-        
-        // Update as failed since all services failed
-        await storage.updateContentGenRequest(contentRequest.id, {
-          status: "failed",
-          generatedContent: JSON.stringify({ 
-            error: "All content generation services failed" 
-          })
-        });
-        
-        // Return error to the client
-        res.status(500).json({
-          success: false,
-          error: "Failed to generate content with all available services"
-        });
-      }
+      // Return error to the client
+      res.status(500).json({
+        success: false,
+        error: "Failed to generate content with Claude API",
+        message: claudeError?.message || String(claudeError)
+      });
     }
   } catch (error: any) {
     console.error("Error in content generation endpoint:", error);
@@ -289,14 +199,18 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
         // Replace [TOPIC] in the custom prompt with the actual topic
         const topicPrompt = customPrompt.replace(/\[TOPIC\]/g, topic);
         
-        // Try OpenAI first
         try {
-          console.log(`Calling OpenAI for topic "${topic}"`);
+          console.log(`Generating content with Claude for topic "${topic}"`);
           
-          // Generate content with this topic and customized prompt
-          const generatedContent = await generateBlogContent(topic, topicPrompt);
+          // Generate content with Claude API
+          const generatedContent = await generateBlogContentWithClaude({
+            topic,
+            tone: "professional",
+            length: "medium",
+            customPrompt: topicPrompt
+          });
           
-          console.log(`OpenAI content generated successfully for "${topic}". Title: "${generatedContent.title}"`);
+          console.log(`Claude content generated successfully for "${topic}". Title: "${generatedContent.title}"`);
           
           // Update request record
           await storage.updateContentGenRequest(contentRequest.id, {
@@ -343,148 +257,23 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
             usesFallback: false
           });
           
-        } catch (openAiError: any) {
-          console.error(`OpenAI error for topic "${topic}":`, openAiError);
+        } catch (claudeError: any) {
+          console.error(`Claude API error for topic "${topic}":`, claudeError);
           
-          // Always try the fallback regardless of the specific error type
-          // This ensures we can still generate content even if OpenAI has issues
-          console.log(`OpenAI error for "${topic}", falling back to HuggingFace`);
+          // Update request as failed
+          await storage.updateContentGenRequest(contentRequest.id, {
+            status: "failed",
+            generatedContent: JSON.stringify({ 
+              error: "Claude content generation failed: " + (claudeError?.message || String(claudeError))
+            })
+          });
           
-          try {
-            // Fall back to HuggingFace with custom prompt if available
-            const hfContent = await generateBlogContentWithHF({
-              topic: topic,
-              tone: "professional",
-              length: "medium",
-              customPrompt: topicPrompt // Pass the custom prompt to HuggingFace
-            });
-            
-            // Update request
-            await storage.updateContentGenRequest(contentRequest.id, {
-              status: "completed",
-              generatedContent: JSON.stringify(hfContent)
-            });
-            
-            // Get the Shopify connection to use as author for consistency
-            const connection = await storage.getShopifyConnection();
-            const storeName = connection?.storeName || "Store Owner";
-            
-            // Create blog post
-            const post = await storage.createBlogPost({
-              title: hfContent.title,
-              content: hfContent.content || `# ${hfContent.title}\n\nContent for ${topic}`,
-              status: "published",
-              publishedDate: new Date(),
-              author: storeName,
-              tags: Array.isArray(hfContent.tags) && hfContent.tags.length > 0 
-                ? hfContent.tags.join(",") 
-                : topic,
-              category: "Generated Content"
-            });
-            
-            // Try to sync to Shopify
-            try {
-              await fetch(`http://localhost:5000/api/shopify/sync`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postIds: [post.id] })
-              });
-              console.log(`Post for "${topic}" (fallback) synced to Shopify`);
-            } catch (syncError) {
-              console.error(`Error syncing fallback post for "${topic}" to Shopify:`, syncError);
-            }
-            
-            // Add to results
-            results.push({
-              topic,
-              postId: post.id,
-              title: hfContent.title,
-              content: hfContent.content,
-              status: "success",
-              usesFallback: true
-            });
-            
-          } catch (hfError) {
-            console.error(`HuggingFace fallback also failed for "${topic}":`, hfError);
-            
-            // Try Claude as a final fallback if available
-            if (process.env.ANTHROPIC_API_KEY) {
-              try {
-                console.log(`Both OpenAI and HuggingFace failed for "${topic}", trying Claude as final fallback`);
-                
-                // Fall back to Claude with appropriate parameters
-                const claudeContent = await generateBlogContentWithClaude({
-                  topic: topic,
-                  tone: "professional",
-                  length: "medium",
-                  customPrompt: topicPrompt
-                });
-                
-                // Update request
-                await storage.updateContentGenRequest(contentRequest.id, {
-                  status: "completed",
-                  generatedContent: JSON.stringify(claudeContent)
-                });
-                
-                // Get the Shopify connection to use as author
-                const connection = await storage.getShopifyConnection();
-                const storeName = connection?.storeName || "Store Owner";
-                
-                // Create blog post with Claude content
-                const post = await storage.createBlogPost({
-                  title: claudeContent.title,
-                  content: claudeContent.content || `# ${claudeContent.title}\n\nContent for ${topic}`,
-                  status: "published",
-                  publishedDate: new Date(),
-                  author: storeName,
-                  tags: Array.isArray(claudeContent.tags) && claudeContent.tags.length > 0 
-                    ? claudeContent.tags.join(",") 
-                    : topic,
-                  category: "Generated Content"
-                });
-                
-                // Try to sync to Shopify
-                try {
-                  await fetch(`http://localhost:5000/api/shopify/sync`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postIds: [post.id] })
-                  });
-                  console.log(`Post for "${topic}" (Claude fallback) synced to Shopify`);
-                } catch (syncError) {
-                  console.error(`Error syncing Claude fallback post for "${topic}" to Shopify:`, syncError);
-                }
-                
-                // Add to results
-                results.push({
-                  topic,
-                  postId: post.id,
-                  title: claudeContent.title,
-                  content: claudeContent.content,
-                  status: "success",
-                  usesFallback: "claude"
-                });
-                
-                // Continue to next topic
-                continue;
-              } catch (claudeError) {
-                console.error(`Claude final fallback also failed for "${topic}":`, claudeError);
-              }
-            }
-            
-            // Update request as failed if all services failed
-            await storage.updateContentGenRequest(contentRequest.id, {
-              status: "failed",
-              generatedContent: JSON.stringify({ error: hfError instanceof Error ? hfError.message : "Unknown error" })
-            });
-            
-            // Add failed result
-            results.push({
-              topic,
-              status: "failed",
-              error: "All content generation services failed"
-            });
-          }
+          // Add failed result
+          results.push({
+            topic,
+            status: "failed",
+            error: "Claude content generation failed: " + (claudeError?.message || String(claudeError))
+          });
         }
       } catch (topicError) {
         console.error(`Error processing topic "${topic}":`, topicError);
@@ -562,61 +351,37 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
     console.log(`Using prompt (first 50 chars): ${effectivePrompt ? effectivePrompt.substring(0, 50) + '...' : 'None'}`);
     
     try {
-      // Generate content for each topic - use HuggingFace fallback if OpenAI fails
-      let results;
-      try {
-        results = await bulkGenerateBlogContent(topics, effectivePrompt);
-      } catch (error) {
-        const openAiError = error as any;
-        console.error("OpenAI bulk generation failed:", openAiError);
-        
-        // Always try the fallback regardless of the specific error type
-        console.log("OpenAI error in bulk generation, falling back to HuggingFace");
-        
-        // Generate content with HuggingFace for each topic
-        results = await Promise.all(topics.map(async (topic) => {
-          try {
-            // Pass the effectivePrompt to HuggingFace 
-            return await generateBlogContentWithHF({
-              topic: topic,
-              tone: "professional",
-              length: "medium",
-              customPrompt: effectivePrompt
-            });
-          } catch (err) {
-            console.error(`HuggingFace generation failed for topic "${topic}":`, err);
-            
-            // Try Claude as final fallback if available
-            if (process.env.ANTHROPIC_API_KEY) {
-              try {
-                console.log(`OpenAI and HuggingFace failed for "${topic}", trying Claude as final fallback in bulk`);
-                
-                // Use Claude with appropriate parameters
-                const claudeContent = await generateBlogContentWithClaude({
-                  topic: topic,
-                  tone: "professional", 
-                  length: "medium",
-                  customPrompt: effectivePrompt
-                });
-                
-                console.log(`Claude successfully generated content for "${topic}"`);
-                return claudeContent;
-              } catch (claudeErr) {
-                console.error(`Claude final fallback also failed for topic "${topic}":`, claudeErr);
-              }
-            }
-            
-            // Return a basic structure to prevent the whole batch from failing
-            // This only happens if both HuggingFace and Claude (if available) fail
-            return {
-              title: `${topic} - Generated Content`,
-              content: `# ${topic}\n\nThis content could not be generated automatically. Please edit to add your content.`,
-              tags: [topic, "Draft", "Needs Editing"],
-              generationFailed: true
-            };
-          }
-        }));
-      }
+      // Generate content for each topic with Claude API
+      console.log("Generating content with Claude API for all topics");
+      
+      const results = await Promise.all(topics.map(async (topic) => {
+        try {
+          // Create topic-specific prompt by replacing [TOPIC]
+          const topicPrompt = effectivePrompt ? effectivePrompt.replace(/\[TOPIC\]/g, topic) : undefined;
+          
+          // Generate content with Claude
+          console.log(`Generating Claude content for topic: "${topic}"`);
+          const claudeContent = await generateBlogContentWithClaude({
+            topic: topic,
+            tone: "professional", 
+            length: "medium",
+            customPrompt: topicPrompt
+          });
+          
+          console.log(`Claude successfully generated content for "${topic}"`);
+          return claudeContent;
+        } catch (err) {
+          console.error(`Claude generation failed for topic "${topic}":`, err);
+          
+          // Return a basic structure to prevent the whole batch from failing
+          return {
+            title: `${topic} - Generated Content`,
+            content: `# ${topic}\n\nThis content could not be generated automatically. Please edit to add your content.`,
+            tags: [topic, "Draft", "Needs Editing"],
+            generationFailed: true
+          };
+        }
+      }));
       
       // Create blog posts from generated content
       const createdPosts = [];
