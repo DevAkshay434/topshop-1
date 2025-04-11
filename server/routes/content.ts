@@ -45,12 +45,16 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         generatedContent: JSON.stringify(generatedContent)
       });
       
+      // Get the Shopify connection to use as author
+      const connection = await storage.getShopifyConnection();
+      const storeName = connection?.storeName || "Store Owner";
+      
       // Create a blog post with the generated content
       const post = await storage.createBlogPost({
         title: generatedContent.title,
         content: generatedContent.content || `# ${generatedContent.title}\n\nContent for ${topic}`,
         status: "draft", // Default to draft so user can review before publishing
-        author: "Content Generator",
+        author: storeName,
         tags: Array.isArray(generatedContent.tags) && generatedContent.tags.length > 0 
           ? generatedContent.tags.join(",") 
           : topic,
@@ -84,12 +88,16 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
           generatedContent: JSON.stringify(hfContent)
         });
         
+        // Get the Shopify connection to use as author
+        const connection = await storage.getShopifyConnection();
+        const storeName = connection?.storeName || "Store Owner";
+        
         // Create a blog post with the fallback content
         const post = await storage.createBlogPost({
           title: hfContent.title,
           content: hfContent.content || `# ${hfContent.title}\n\nContent for ${topic}`,
           status: "draft", // Default to draft so user can review before publishing
-          author: "Content Generator (Fallback)",
+          author: storeName,
           tags: Array.isArray(hfContent.tags) && hfContent.tags.length > 0 
             ? hfContent.tags.join(",") 
             : topic,
@@ -247,13 +255,17 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
             generatedContent: JSON.stringify(generatedContent)
           });
           
+          // Get the Shopify connection to use as author
+          const connection = await storage.getShopifyConnection();
+          const storeName = connection?.storeName || "Store Owner";
+          
           // Create a blog post with this content
           const post = await storage.createBlogPost({
             title: generatedContent.title,
             content: generatedContent.content || `# ${generatedContent.title}\n\nContent for ${topic}`,
             status: "published", 
             publishedDate: new Date(),
-            author: "Simple Bulk Generator",
+            author: storeName,
             tags: Array.isArray(generatedContent.tags) && generatedContent.tags.length > 0 
               ? generatedContent.tags.join(",") 
               : topic,
@@ -303,13 +315,17 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
               generatedContent: JSON.stringify(hfContent)
             });
             
+            // Get the Shopify connection to use as author for consistency
+            const connection = await storage.getShopifyConnection();
+            const storeName = connection?.storeName || "Store Owner";
+            
             // Create blog post
             const post = await storage.createBlogPost({
               title: hfContent.title,
               content: hfContent.content || `# ${hfContent.title}\n\nContent for ${topic}`,
               status: "published",
               publishedDate: new Date(),
-              author: "Simple Bulk Generator (Fallback)",
+              author: storeName,
               tags: Array.isArray(hfContent.tags) && hfContent.tags.length > 0 
                 ? hfContent.tags.join(",") 
                 : topic,
@@ -477,12 +493,16 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
           
           const postContent = result.content || `# ${result.title}\n\nContent for ${topic} is being generated. This is placeholder content.`;
           
+          // Get the Shopify connection to use as author
+          const connection = await storage.getShopifyConnection();
+          const storeName = connection?.storeName || "Store Owner";
+          
           const post = await storage.createBlogPost({
             title: result.title,
             content: postContent, // Use non-empty content
             status: "published", // Automatically publish
             publishedDate: new Date(),
-            author: "Bulk Generation",
+            author: storeName,
             tags: Array.isArray(result.tags) && result.tags.length > 0 
               ? result.tags.join(",") 
               : `${topic},Educational,How-To Guide,Bulk Generated`,
