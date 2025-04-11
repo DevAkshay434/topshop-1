@@ -45,9 +45,22 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         generatedContent: JSON.stringify(generatedContent)
       });
       
+      // Create a blog post with the generated content
+      const post = await storage.createBlogPost({
+        title: generatedContent.title,
+        content: generatedContent.content || `# ${generatedContent.title}\n\nContent for ${topic}`,
+        status: "draft", // Default to draft so user can review before publishing
+        author: "Content Generator",
+        tags: Array.isArray(generatedContent.tags) && generatedContent.tags.length > 0 
+          ? generatedContent.tags.join(",") 
+          : topic,
+        category: "Generated Content"
+      });
+      
       res.json({ 
         success: true, 
         requestId: updatedRequest?.id,
+        postId: post.id,
         ...generatedContent
       });
       
@@ -55,7 +68,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       console.error("OpenAI content generation error:", openAiError);
       
       // Always try the fallback regardless of the specific error type
-      console.log("OpenAI error, falling back to HuggingFace");
+      console.log(`OpenAI error for "${topic}", falling back to HuggingFace`);
       
       try {
         // Fall back to HuggingFace when OpenAI fails
@@ -71,9 +84,22 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
           generatedContent: JSON.stringify(hfContent)
         });
         
+        // Create a blog post with the fallback content
+        const post = await storage.createBlogPost({
+          title: hfContent.title,
+          content: hfContent.content || `# ${hfContent.title}\n\nContent for ${topic}`,
+          status: "draft", // Default to draft so user can review before publishing
+          author: "Content Generator (Fallback)",
+          tags: Array.isArray(hfContent.tags) && hfContent.tags.length > 0 
+            ? hfContent.tags.join(",") 
+            : topic,
+          category: "Generated Content"
+        });
+        
         res.json({ 
           success: true, 
           requestId: updatedRequest?.id,
+          postId: post.id,
           ...hfContent,
           fallbackUsed: true
         });
