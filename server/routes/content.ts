@@ -83,9 +83,10 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
     console.log(`Bulk generating content for ${topics.length} topics ${customPrompt ? 'with custom prompt' : ''}`);
     
     // Get the template content if template ID is provided
+    // Use the custom prompt if provided, otherwise use default prompt
     let effectivePrompt = customPrompt;
     
-    if (templateId) {
+    if (!effectivePrompt && templateId) {
       // In a real implementation, we would fetch the template from the database
       // and use its customPrompt field if available
       console.log(`Using template ID: ${templateId}`);
@@ -111,6 +112,9 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         console.error("Error getting template prompt:", promptError);
       }
     }
+    
+    // Log the effective prompt for debugging
+    console.log(`Using prompt (first 50 chars): ${effectivePrompt ? effectivePrompt.substring(0, 50) + '...' : 'None'}`);
     
     try {
       // Generate content for each topic

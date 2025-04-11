@@ -1015,52 +1015,101 @@ export default function ContentTemplates() {
 
   // Save edited template
   const handleSaveTemplate = (templateId: number, structure: string, topics: string[], aiPrompt: string) => {
-    if (!templateId) return;
-    
-    // Update the template content in the templateContent object
-    templateContent[templateId] = {
-      structure,
-      topics,
-      aiPrompt
-    };
-    
-    toast({
-      title: "Template Updated",
-      description: "Template content has been updated successfully.",
-    });
-    
-    setIsEditDialogOpen(false);
+    try {
+      if (!templateId) {
+        throw new Error("Invalid template ID");
+      }
+      
+      console.log(`Saving template ${templateId} with updated content`);
+      console.log("Updated structure (first 50 chars):", structure.substring(0, 50) + "...");
+      console.log("Updated AI prompt (first 50 chars):", aiPrompt.substring(0, 50) + "...");
+      
+      // Create a deep copy to ensure state update
+      const updatedContent = {
+        structure: structure,
+        topics: [...topics],
+        aiPrompt: aiPrompt
+      };
+      
+      // In a real app with a database, we would save this via an API
+      // For now, update the local templateContent object
+      // Create a new reference to ensure React detects the change
+      const newTemplateContent = { ...templateContent };
+      newTemplateContent[templateId] = updatedContent;
+      
+      // Update the template content directly
+      templateContent[templateId] = updatedContent;
+      
+      toast({
+        title: "Template Updated",
+        description: "Template content has been updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast({
+        title: "Error Updating Template",
+        description: "There was a problem updating the template. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsEditDialogOpen(false);
+    }
   };
 
   // Handle creating a new template
   const handleCreateNewTemplate = (name: string, description: string, category: string, structure: string, topics: string[], aiPrompt: string) => {
-    // Generate a new template ID (max current ID + 1)
-    const newId = Math.max(...templates.map(t => t.id)) + 1;
-    
-    // Create new template
-    const newTemplate: Template = {
-      id: newId,
-      name,
-      description,
-      category
-    };
-    
-    // Add to templates list
-    setTemplates([...templates, newTemplate]);
-    
-    // Add template content
-    templateContent[newId] = {
-      structure,
-      topics,
-      aiPrompt
-    };
-    
-    toast({
-      title: "Template Created",
-      description: `New template "${name}" has been created successfully.`,
-    });
-    
-    setIsCreateDialogOpen(false);
+    try {
+      // Generate a new template ID (max current ID + 1)
+      const newId = Math.max(...templates.map(t => t.id), 0) + 1;
+      
+      console.log(`Creating new template with ID ${newId}: ${name}`);
+      
+      // Create new template object
+      const newTemplate: Template = {
+        id: newId,
+        name,
+        description,
+        category
+      };
+      
+      // Create deep copy of template content to prevent reference issues
+      const newContent = {
+        structure: structure,
+        topics: [...topics],
+        aiPrompt: aiPrompt
+      };
+      
+      // Create a new templates array and a new templateContent object to ensure state updates
+      const updatedTemplates = [...templates, newTemplate];
+      const updatedTemplateContent = { ...templateContent };
+      updatedTemplateContent[newId] = newContent;
+      
+      // Update state with the new values
+      setTemplates(updatedTemplates);
+      
+      // In a real app, we would save this to a database
+      // For now, update the local templateContent record
+      console.log(`Setting template content for ID ${newId}`);
+      console.log("Template structure:", structure.substring(0, 50) + "...");
+      console.log("Template AI prompt:", aiPrompt.substring(0, 50) + "...");
+      
+      // Add template content to global object - needs careful handling
+      templateContent[newId] = newContent;
+      
+      toast({
+        title: "Template Created",
+        description: `New template "${name}" has been created successfully.`,
+      });
+    } catch (error) {
+      console.error("Error creating template:", error);
+      toast({
+        title: "Error Creating Template",
+        description: "There was a problem creating the template. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreateDialogOpen(false);
+    }
   };
 
   const handleCreateTemplate = () => {
@@ -1149,7 +1198,7 @@ export default function ContentTemplates() {
             
             // Use the bulkGenerateContent method from the OpenAI service
             const bulkResponse = await apiRequest({
-              url: "/api/generate-content/bulk",
+              url: "/api/content/generate-content/bulk",
               method: "POST",
               data: {
                 topics: [keyword],
@@ -1157,6 +1206,8 @@ export default function ContentTemplates() {
                 customPrompt: customPrompt
               }
             });
+            
+            console.log("Bulk generation response:", bulkResponse);
             
             if (bulkResponse && bulkResponse.success && 
                 bulkResponse.posts && bulkResponse.posts.length > 0) {
@@ -1167,11 +1218,15 @@ export default function ContentTemplates() {
                 content = generatedPost.content || content;
                 console.log("Successfully generated content with custom prompt for bulk generation");
               }
+            } else {
+              console.warn("Bulk generation API call succeeded but returned no posts or unsuccessful response");
             }
           } catch (promptError) {
             console.error("Error generating content with custom prompt for bulk:", promptError);
             // Continue with the template content as fallback
           }
+        } else {
+          console.log("No custom prompt provided for template", templateId);
         }
         
         // Create tags based on topic and template type
