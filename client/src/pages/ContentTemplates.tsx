@@ -1128,7 +1128,7 @@ export default function ContentTemplates() {
             title = `${keyword} - ${selectedTemplate?.name || 'Blog Post'}`;
         }
         
-        // Create content by replacing placeholders in the template
+        // Create initial content by replacing placeholders in the template
         let content = templateData.structure;
         
         // Replace topic-related placeholders
@@ -1137,6 +1137,38 @@ export default function ContentTemplates() {
                         .replace(/\[Season\/Holiday\]/g, keyword)
                         .replace(/\[Accomplish Task\]/g, keyword)
                         .replace(/\[Year\]/g, new Date().getFullYear().toString());
+                        
+        // Use AI-generated content with the template's custom prompt if available
+        if (customPrompt) {
+          try {
+            console.log(`Using custom prompt for bulk generation with template: ${selectedTemplate?.name}`);
+            
+            // Use the bulkGenerateContent method from the OpenAI service
+            const bulkResponse = await apiRequest({
+              url: "/api/generate-content/bulk",
+              method: "POST",
+              data: {
+                topics: [keyword],
+                templateId: templateId,
+                customPrompt: customPrompt
+              }
+            });
+            
+            if (bulkResponse && bulkResponse.success && 
+                bulkResponse.posts && bulkResponse.posts.length > 0) {
+              // Update with AI-generated content
+              const generatedPost = bulkResponse.posts[0];
+              if (generatedPost) {
+                title = generatedPost.title || title;
+                content = generatedPost.content || content;
+                console.log("Successfully generated content with custom prompt for bulk generation");
+              }
+            }
+          } catch (promptError) {
+            console.error("Error generating content with custom prompt for bulk:", promptError);
+            // Continue with the template content as fallback
+          }
+        }
         
         // Create tags based on topic and template type
         const tags = [
@@ -1147,25 +1179,33 @@ export default function ContentTemplates() {
         ].filter(Boolean);
         
         // Create post with published status for Shopify sync
-        const postResponse = await apiRequest("POST", "/api/posts", {
-          title,
-          content,
-          // Mark as published now, so it gets pushed to Shopify
-          scheduledDate: null,
-          publishedDate: new Date().toISOString(),
-          status: "published", // Changed from "draft" to "published"
-          tags: tags.join(","), // Tags is a text field in the schema, so join array to string
-          category: selectedTemplate?.category || "General",
-          storeId: null,
-          author: "Bulk Generation"
+        const postResponse = await apiRequest({
+          url: "/api/posts",
+          method: "POST",
+          data: {
+            title,
+            content,
+            // Mark as published now, so it gets pushed to Shopify
+            scheduledDate: null,
+            publishedDate: new Date().toISOString(),
+            status: "published", // Changed from "draft" to "published"
+            tags: tags.join(","), // Tags is a text field in the schema, so join array to string
+            category: selectedTemplate?.category || "General",
+            storeId: null,
+            author: "Bulk Generation"
+          }
         });
         
         // If the post was created successfully, trigger Shopify sync
         if (postResponse && postResponse.post && postResponse.post.id) {
           try {
             // Trigger sync to Shopify
-            await apiRequest("POST", "/api/shopify/sync", {
-              postIds: [postResponse.post.id]
+            await apiRequest({
+              url: "/api/shopify/sync",
+              method: "POST",
+              data: {
+                postIds: [postResponse.post.id]
+              }
             });
             
             console.log(`Post "${title}" synced to Shopify successfully`);
