@@ -93,8 +93,15 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Log the error but don't crash the server
+    console.error("Server error:", err);
+    
+    // Send error response
+    return res.status(status).json({ 
+      message,
+      error: app.get("env") === "development" ? err.stack : undefined
+    });
+    // Don't throw the error after handling it - this was causing crashes
   });
 
   // importantly only setup vite in development and after
@@ -112,5 +119,17 @@ app.use((req, res, next) => {
   const port = 5000;
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
+    
+    // Set up a keep-alive interval to prevent app from sleeping in Replit
+    setInterval(() => {
+      // Ping ourselves every 5 minutes
+      try {
+        fetch(`http://localhost:${port}/api/health`)
+          .then(res => res.ok ? log("Health check successful") : log(`Health check failed: ${res.status}`))
+          .catch(err => console.error("Health check error:", err));
+      } catch (error) {
+        console.error("Health check error:", error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
   });
 })();
