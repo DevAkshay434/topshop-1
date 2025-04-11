@@ -23,6 +23,12 @@ export async function generateBlogContent(
   console.log(`Generating blog content for topic: "${topic}" ${customPrompt ? "with custom prompt" : ""}`);
   
   try {
+    // Log the OpenAI key status (not the actual key)
+    const apiKeyStatus = process.env.OPENAI_API_KEY ? 
+      `API key present (starts with: ${process.env.OPENAI_API_KEY.substring(0, 3)}...)` : 
+      "API key missing";
+    console.log(`OpenAI API status: ${apiKeyStatus}`);
+    
     // Create a system prompt based on whether a custom prompt was provided
     let systemPrompt = "";
     
@@ -48,8 +54,11 @@ Respond with JSON that includes the following fields:
 - tags: An array of 3-5 relevant tags/keywords for this content`;
     }
     
+    console.log("Preparing to call OpenAI API with prompt...");
+    
     // Call OpenAI API to generate the content
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+    console.log("Calling OpenAI Chat Completions API...");
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -59,6 +68,8 @@ Respond with JSON that includes the following fields:
       temperature: 0.7,
       response_format: { type: "json_object" }
     });
+    
+    console.log("Received response from OpenAI API");
     
     // Parse the response
     const generatedText = response.choices[0].message.content;

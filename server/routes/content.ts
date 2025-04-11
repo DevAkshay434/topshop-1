@@ -30,8 +30,14 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
     
     try {
       // Try to generate content with OpenAI
+      console.log(`Attempting to generate content with OpenAI for topic: "${topic}"`);
       try {
+        // Add explicit logging to track API call
+        console.log("Calling OpenAI generateBlogContent function...");
         const generatedContent = await generateBlogContent(topic, customPrompt);
+        
+        // Log the returned content (truncated for readability)
+        console.log(`OpenAI content generated successfully. Title: "${generatedContent.title}", Content length: ${generatedContent.content ? generatedContent.content.length : 0} characters`);
         
         // Update content generation request to completed
         const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
@@ -47,6 +53,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         return;
       } catch (openAiError: any) {
         console.error("OpenAI content generation error:", openAiError);
+        console.error("Full error details:", JSON.stringify(openAiError, null, 2));
         
         // Check if this is a quota error with OpenAI
         if (openAiError.status === 429 || 

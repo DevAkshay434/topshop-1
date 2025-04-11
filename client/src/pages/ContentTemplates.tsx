@@ -987,6 +987,9 @@ export default function ContentTemplates() {
       if (customPrompt) {
         try {
           console.log(`Using custom prompt for template: ${selectedTemplate?.name}`);
+          console.log(`Custom prompt content: ${customPrompt}`);
+          
+          console.log("Making API request to /api/generate-content");
           const openaiResponse = await apiRequest({
             url: "/api/generate-content",
             method: "POST",
@@ -996,18 +999,35 @@ export default function ContentTemplates() {
             }
           });
           
+          console.log("API Response received:", openaiResponse);
+          
           if (openaiResponse && openaiResponse.success) {
             console.log("Successfully generated content with custom prompt");
-            content = openaiResponse.content;
+            
+            if (openaiResponse.content) {
+              console.log(`Content received, length: ${openaiResponse.content.length} characters`);
+              console.log("Content preview:", openaiResponse.content.substring(0, 100) + "...");
+              content = openaiResponse.content;
+            } else {
+              console.error("API returned success but content is missing");
+            }
+            
             // Use the AI-generated title if available
             if (openaiResponse.title) {
+              console.log(`Using AI-generated title: "${openaiResponse.title}"`);
               title = openaiResponse.title;
+            } else {
+              console.log("API response missing title, using default");
             }
+          } else {
+            console.error("API call failed or returned unsuccessful status:", openaiResponse);
           }
         } catch (promptError) {
           console.error("Error generating content with custom prompt:", promptError);
           // Continue with the template content as fallback
         }
+      } else {
+        console.log("No custom prompt provided, using template content only");
       }
       
       // Create synthetic tags based on topic and template type
