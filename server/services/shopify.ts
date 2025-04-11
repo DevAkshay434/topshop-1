@@ -188,8 +188,31 @@ export class ShopifyService {
       const client = this.getClient(store);
       const article: any = {};
       
-      if (post.title) article.title = post.title;
-      if (post.content) article.body_html = post.content;
+      // Log the post data to help diagnose issues
+      console.log("Updating Shopify article with post data:", JSON.stringify({
+        id: post.id,
+        title: post.title,
+        contentLength: post.content ? post.content.length : 0,
+        tags: post.tags,
+        status: post.status
+      }));
+      
+      // Make sure we have required fields
+      if (!post.title) {
+        console.warn("No title provided for Shopify article update!");
+        article.title = "Untitled Post";
+      } else {
+        article.title = post.title;
+      }
+      
+      // Handle content with fallback
+      if (post.content && post.content.length > 0) {
+        article.body_html = post.content;
+      } else {
+        console.warn("Empty content for Shopify article update!");
+        article.body_html = `<p>Content for "${article.title}" is being updated.</p>`;
+      }
+      
       if (post.tags) article.tags = post.tags;
       
       // Properly handle date formatting for Shopify API
@@ -209,6 +232,8 @@ export class ShopifyService {
       }
       
       if (post.featuredImage) article.image = { src: post.featuredImage };
+      
+      console.log(`Sending article update to Shopify: ${JSON.stringify(article)}`);
       
       const response = await client.put(`/blogs/${blogId}/articles/${articleId}.json`, {
         article
