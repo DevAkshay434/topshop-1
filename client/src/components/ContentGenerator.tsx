@@ -42,13 +42,11 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
         description: "This might take a minute...",
       });
       
-      const response = await apiRequest("POST", "/api/generate-content", {
+      const data = await apiRequest("POST", "/api/generate-content", {
         topic,
         tone,
         length
       });
-      
-      const data = await response.json();
       
       if (data.success && data.content) {
         toast({

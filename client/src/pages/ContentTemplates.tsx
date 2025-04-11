@@ -696,6 +696,9 @@ export default function ContentTemplates() {
         await apiRequest("POST", "/api/posts", {
           title,
           content,
+          // Add these fields explicitly to avoid validation errors
+          scheduledDate: null,
+          publishedDate: null,
           status: "draft",
           tags: tags.join(","), // Tags is a text field in the schema, so join array to string
           category: selectedTemplate?.category || "General",
