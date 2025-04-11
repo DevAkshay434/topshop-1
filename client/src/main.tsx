@@ -1,9 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-// Set title
-document.title = "Shopify Blog Publisher";
+// Set title 
+document.title = "TopShop SEO";
 
 // Special setup for Shopify embedded apps - detect if we're in an iframe
 const isEmbedded = window !== window.parent;
@@ -23,7 +24,7 @@ if (isEmbedded) {
 // Create a meta description
 const metaDescription = document.createElement("meta");
 metaDescription.name = "description";
-metaDescription.content = "Automatically generate and publish blog posts to your Shopify store";
+metaDescription.content = "TopShop SEO - Automatically generate, optimize, and publish blog posts to increase your Shopify store's search visibility";
 document.head.appendChild(metaDescription);
 
 // Add favicon
@@ -33,4 +34,8 @@ favicon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' vie
 document.head.appendChild(favicon);
 
 // Create and render the app
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
