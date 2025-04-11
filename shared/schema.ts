@@ -129,8 +129,8 @@ export const blogPosts = pgTable("blog_posts", {
 
 // Create a modified schema that properly handles dates
 export const insertBlogPostSchema = createInsertSchema(blogPosts, {
-  scheduledDate: z.date().nullable().or(z.string().transform(val => val ? new Date(val) : null)),
-  publishedDate: z.date().nullable().or(z.string().transform(val => val ? new Date(val) : null)),
+  scheduledDate: z.date().nullable().or(z.string().transform(val => val ? new Date(val) : null)).or(z.null()),
+  publishedDate: z.date().nullable().or(z.string().transform(val => val ? new Date(val) : null)).or(z.null()),
 }).pick({
   storeId: true,
   title: true,

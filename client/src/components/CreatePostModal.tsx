@@ -128,6 +128,8 @@ export default function CreatePostModal({
         // Make sure date is properly formatted as ISO string
         const currentDate = new Date();
         postData.publishedDate = currentDate;
+        // For publish, still need to set scheduledDate to null explicitly
+        postData.scheduledDate = null;
       } else if (values.publicationType === "schedule") {
         postData.status = "scheduled";
         
@@ -135,9 +137,19 @@ export default function CreatePostModal({
         if (values.scheduleDate && values.scheduleTime) {
           const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
           postData.scheduledDate = scheduledDate;
+        } else {
+          // Default scheduling to tomorrow if not specified
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          postData.scheduledDate = tomorrow;
         }
+        // For schedule, still set publishedDate to null
+        postData.publishedDate = null;
       } else {
         postData.status = "draft";
+        // For draft, set both dates to null explicitly
+        postData.scheduledDate = null;
+        postData.publishedDate = null;
       }
       
       let response;
