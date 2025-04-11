@@ -61,6 +61,10 @@ function Router() {
           <Route path="/billing-callback" component={Dashboard} />
           <Route path="/embedded" component={EmbeddedApp} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/install" component={AppInstall} />
+          <Route path="/partner-install" component={PartnerInstall} />
+          <Route path="/shopify/callback" component={Dashboard} />
+          <Route path="/shopify/auth/callback" component={Dashboard} />
           
           {/* AI Templates, Analytics, Settings, and Help routes would go here */}
           

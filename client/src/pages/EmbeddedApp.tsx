@@ -1,74 +1,66 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { useLocation, Redirect } from 'wouter';
+import { Loader2 } from 'lucide-react';
 
 /**
- * Embedded App page shown when the app is loaded within the Shopify Admin
+ * EmbeddedApp component - serves as the entry point for embedded Shopify applications
+ * Detects if it's running embedded in Shopify Admin and redirects to the appropriate page
  */
 export default function EmbeddedApp() {
-  const [location, navigate] = useLocation();
-  const { toast } = useToast();
-  const [shop, setShop] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, navigate] = useLocation();
+  const [loading, setLoading] = useState(true);
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    // Parse URL query parameters to get shop info
+    // Parse URL query parameters to understand the embedded app context
     const params = new URLSearchParams(window.location.search);
-    const shopParam = params.get('shop');
+    const host = params.get('host');
+    const shop = params.get('shop');
     
-    if (shopParam) {
-      setShop(shopParam);
-    }
-    
-    setIsLoading(false);
-  }, []);
+    // Determine if we're in an embedded context
+    const isEmbedded = Boolean(host);
 
-  // Effect to handle redirection to Dashboard once embedded
-  useEffect(() => {
-    if (!isLoading && shop) {
-      // Small delay to ensure App Bridge is initialized
-      const timeout = setTimeout(() => {
-        navigate('/dashboard');
-      }, 500);
+    if (isEmbedded) {
+      // For embedded apps, redirect to the Dashboard with the original params
+      console.log('App is embedded, redirecting to Dashboard');
       
-      return () => clearTimeout(timeout);
+      // Keep the Shopify parameters in the URL to maintain embed context
+      const dashboardURL = `/dashboard?${params.toString()}`;
+      
+      // Short timeout to ensure App Bridge has time to initialize
+      setTimeout(() => {
+        navigate(dashboardURL);
+        setLoading(false);
+        setAppReady(true);
+      }, 300);
+    } else {
+      // If not embedded, just go to the main app page
+      console.log('Not in embedded mode, redirecting to main app');
+      setTimeout(() => {
+        navigate('/dashboard');
+        setLoading(false);
+        setAppReady(true);
+      }, 300);
     }
-  }, [isLoading, shop, navigate]);
+  }, [navigate]);
 
-  if (isLoading) {
+  // Show loading spinner while determining redirect
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-12 w-12 border-4 border-t-primary rounded-full animate-spin"></div>
-          <p className="text-lg">Loading application...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-lg font-medium">Initializing app...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="container max-w-6xl mx-auto p-6">
-      <Card className="w-full shadow-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Welcome to Blog Creator</CardTitle>
-          <CardDescription>
-            Your app is now connected to {shop}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-4">
-            You'll be redirected to the dashboard automatically.
-          </p>
-          <Button 
-            onClick={() => navigate('/dashboard')}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-          >
-            Go to Dashboard
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Failsafe redirect to dashboard if something goes wrong
+  if (!loading && !appReady) {
+    return <Redirect to="/dashboard" />;
+  }
+
+  // This is a transition component, should not directly render content
+  return null;
 }
