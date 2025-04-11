@@ -53,102 +53,66 @@ export default function SimpleBulkGeneration() {
       
       console.log(`Generating content for ${topicList.length} topics`);
       
-      // Process each topic sequentially to avoid rate limits
-      const generatedResults = [];
-      let completed = 0;
+      // Set initial progress
+      setProgress(10);
       
-      for (const topic of topicList) {
-        try {
-          console.log(`Generating content for topic: "${topic}"`);
-          
-          // Call the API to generate content for this topic
-          const response = await apiRequest({
-            url: "/api/generate-content",
-            method: "POST",
-            data: {
-              topic,
-              customPrompt
-            }
-          });
-          
-          if (response && response.success) {
-            console.log(`Successfully generated content for "${topic}"`);
-            
-            // Create a blog post with this content
-            const postResponse = await apiRequest({
-              url: "/api/posts",
-              method: "POST",
-              data: {
-                title: response.title || `Article about ${topic}`,
-                content: response.content || "Content not available",
-                status: "published",
-                publishedDate: new Date().toISOString(),
-                tags: Array.isArray(response.tags) ? response.tags.join(",") : topic,
-                category: "Generated Content",
-                author: "Bulk Generator",
-                storeId: null,
-              }
-            });
-            
-            if (postResponse && postResponse.post) {
-              console.log(`Created post ID ${postResponse.post.id} for "${topic}"`);
-              
-              // Add to results
-              generatedResults.push({
-                topic,
-                postId: postResponse.post.id,
-                title: response.title,
-                contentPreview: response.content ? response.content.substring(0, 100) + "..." : "No content",
-                status: "success"
-              });
-              
-              // Automatically sync to Shopify
-              try {
-                await apiRequest({
-                  url: "/api/shopify/sync",
-                  method: "POST",
-                  data: {
-                    postIds: [postResponse.post.id]
-                  }
-                });
-                console.log(`Post for "${topic}" synced to Shopify`);
-              } catch (syncError) {
-                console.error(`Error syncing post for "${topic}" to Shopify:`, syncError);
-              }
-            }
-          } else {
-            console.error(`Failed to generate content for "${topic}"`, response);
-            generatedResults.push({
-              topic,
-              status: "failed",
-              error: response?.error || "Unknown error"
-            });
-          }
-        } catch (topicError) {
-          console.error(`Error processing topic "${topic}":`, topicError);
-          generatedResults.push({
-            topic,
-            status: "failed",
-            error: topicError instanceof Error ? topicError.message : "Unknown error"
-          });
+      // Use our simplified bulk generation endpoint that handles everything
+      console.log(`Sending ${topicList.length} topics to simple-bulk endpoint`);
+      
+      // Show progress as waiting for response
+      setProgress(30);
+      
+      // Make the API request to our bulk endpoint
+      const response = await apiRequest({
+        url: "/api/generate-content/simple-bulk",
+        method: "POST",
+        data: {
+          topics: topicList,
+          customPrompt
         }
-        
-        // Update progress
-        completed++;
-        const newProgress = Math.round((completed / topicList.length) * 100);
-        setProgress(newProgress);
-        setResults([...generatedResults]);
-      }
-      
-      // All done
-      toast({
-        title: "Content Generation Complete",
-        description: `Generated ${generatedResults.filter(r => r.status === "success").length} of ${topicList.length} articles`,
       });
       
-      // Invalidate posts query to refresh any lists
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      // Update progress
+      setProgress(90);
       
+      if (response && response.success) {
+        console.log(`Bulk generation results: ${response.successful} of ${response.totalTopics} successful`);
+        
+        // Process results for display
+        const processedResults = response.results.map(result => {
+          if (result.status === "success") {
+            return {
+              topic: result.topic,
+              postId: result.postId,
+              title: result.title,
+              contentPreview: result.content ? result.content.substring(0, 100) + "..." : "No content preview available",
+              status: "success",
+              usesFallback: result.usesFallback
+            };
+          } else {
+            return {
+              topic: result.topic,
+              status: "failed",
+              error: result.error || "Unknown error"
+            };
+          }
+        });
+        
+        // Update UI
+        setResults(processedResults);
+        setProgress(100);
+        
+        // Show success message
+        toast({
+          title: "Content Generation Complete",
+          description: `Generated ${response.successful} of ${response.totalTopics} articles`,
+        });
+        
+        // Invalidate posts query to refresh any lists
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      } else {
+        throw new Error(response?.error || "Failed to generate content");
+      }
     } catch (e) {
       console.error("Error generating content:", e);
       setError(e instanceof Error ? e.message : "An unknown error occurred");
@@ -269,7 +233,14 @@ How to choose the right running shoes"
                   <div className="text-sm mt-1">
                     {result.status === "success" ? (
                       <>
-                        <p className="text-green-700">Successfully generated</p>
+                        <p className="text-green-700 flex items-center">
+                          Successfully generated
+                          {result.usesFallback && (
+                            <span className="ml-2 text-amber-600 text-xs px-2 py-0.5 bg-amber-50 rounded-full border border-amber-200">
+                              Fallback model used
+                            </span>
+                          )}
+                        </p>
                         {result.contentPreview && (
                           <p className="mt-1 text-neutral-600">{result.contentPreview}</p>
                         )}

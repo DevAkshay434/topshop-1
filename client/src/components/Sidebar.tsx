@@ -9,7 +9,8 @@ import {
   Store, 
   HelpCircle,
   FileCode,
-  Sparkles
+  Sparkles,
+  Zap
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShopifyConnection } from "@shared/schema";
@@ -115,6 +116,12 @@ export default function Sidebar() {
             icon={<FileCode size={18} />} 
             text="Content Templates" 
             active={location === "/content-templates"} 
+          />
+          <NavItem 
+            href="/simple-bulk-generation" 
+            icon={<Zap size={18} />} 
+            text="Bulk Generation" 
+            active={location === "/simple-bulk-generation"} 
           />
           <NavItem 
             href="/analytics" 
