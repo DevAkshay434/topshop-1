@@ -1,15 +1,18 @@
 import { useLocation, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Edit, 
   FileText, 
   Clock, 
-  Sparkles, 
   BarChart3, 
   Settings, 
   Store, 
   HelpCircle,
-  LogOut
+  FileCode,
+  Sparkles
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ShopifyConnection } from "@shared/schema";
 
 interface NavItemProps {
   href: string;
@@ -32,6 +35,42 @@ function NavItem({ href, icon, text, active }: NavItemProps) {
         {text}
       </a>
     </Link>
+  );
+}
+
+function StoreInfo() {
+  const { data: connectionData, isLoading } = useQuery<{ connection: ShopifyConnection }>({
+    queryKey: ["/api/shopify/connection"],
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="ml-3">
+        <Skeleton className="h-4 w-24 mb-1" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+    );
+  }
+  
+  const connection = connectionData?.connection;
+  
+  if (!connection || !connection.isConnected) {
+    return (
+      <div className="ml-3">
+        <p className="text-sm font-medium text-neutral-900">Shopify</p>
+        <p className="text-xs text-neutral-500">Not connected</p>
+      </div>
+    );
+  }
+  
+  // Extract store name without myshopify.com domain
+  const displayName = connection.storeName.replace('.myshopify.com', '');
+  
+  return (
+    <div className="ml-3">
+      <p className="text-sm font-medium text-neutral-900">{displayName}</p>
+      <p className="text-xs text-neutral-500">Shopify Store</p>
+    </div>
   );
 }
 
@@ -70,10 +109,10 @@ export default function Sidebar() {
             active={location === "/scheduled-posts"} 
           />
           <NavItem 
-            href="/ai-templates" 
-            icon={<Sparkles size={18} />} 
-            text="AI Templates" 
-            active={location === "/ai-templates"} 
+            href="/content-templates" 
+            icon={<FileCode size={18} />} 
+            text="Content Templates" 
+            active={location === "/content-templates"} 
           />
           <NavItem 
             href="/analytics" 
@@ -115,10 +154,7 @@ export default function Sidebar() {
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <Store className="text-primary h-4 w-4" />
           </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-neutral-900">Shopify Store</p>
-            <p className="text-xs text-neutral-500">Blog Publisher</p>
-          </div>
+          <StoreInfo />
         </div>
       </div>
     </div>
