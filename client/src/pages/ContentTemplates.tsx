@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileCode, Pencil, Plus, ZapIcon, Loader2 } from "lucide-react";
+import { FileCode, Pencil, Plus, Zap, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -437,7 +437,7 @@ function BulkGenerationDialog({
               </>
             ) : (
               <>
-                <ZapIcon className="mr-2 h-4 w-4" />
+                <Zap className="mr-2 h-4 w-4" />
                 Generate Articles
               </>
             )}
@@ -754,7 +754,7 @@ export default function ContentTemplates() {
         </div>
         <div className="mt-4 md:mt-0 md:ml-4 flex space-x-2">
           <Button variant="outline" onClick={handleOpenBulkGeneration}>
-            <ZapIcon className="mr-2 h-4 w-4" />
+            <Zap className="mr-2 h-4 w-4" />
             Bulk Generate
           </Button>
           <Button onClick={handleCreateTemplate}>
