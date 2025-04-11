@@ -7,15 +7,42 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Define options interface for new method signature
+interface ApiRequestOptions {
+  url: string;
+  method: string;
+  data?: unknown;
+}
+
 export async function apiRequest<T = any>(
-  method: string,
-  url: string,
+  methodOrOptions: string | ApiRequestOptions,
+  urlOrData?: string | unknown,
   data?: unknown | undefined,
 ): Promise<T> {
+  // Handle both calling conventions:
+  // 1. apiRequest({ url: '/api/posts', method: 'POST', data: {...} })
+  // 2. apiRequest('POST', '/api/posts', {...})
+  
+  let url: string;
+  let method: string;
+  let requestData: unknown | undefined;
+  
+  if (typeof methodOrOptions === 'object') {
+    // New style: options object
+    url = methodOrOptions.url;
+    method = methodOrOptions.method;
+    requestData = methodOrOptions.data;
+  } else {
+    // Old style: separate arguments
+    method = methodOrOptions;
+    url = urlOrData as string;
+    requestData = data;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    headers: requestData ? { "Content-Type": "application/json" } : {},
+    body: requestData ? JSON.stringify(requestData) : undefined,
     credentials: "include",
   });
 
