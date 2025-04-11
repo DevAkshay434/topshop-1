@@ -1065,19 +1065,34 @@ export default function ContentTemplates() {
           "Bulk Generated"
         ].filter(Boolean);
         
-        // Create post
-        await apiRequest("POST", "/api/posts", {
+        // Create post with published status for Shopify sync
+        const postResponse = await apiRequest("POST", "/api/posts", {
           title,
           content,
-          // Add these fields explicitly to avoid validation errors
+          // Mark as published now, so it gets pushed to Shopify
           scheduledDate: null,
-          publishedDate: null,
-          status: "draft",
+          publishedDate: new Date().toISOString(),
+          status: "published", // Changed from "draft" to "published"
           tags: tags.join(","), // Tags is a text field in the schema, so join array to string
           category: selectedTemplate?.category || "General",
           storeId: null,
           author: "Bulk Generation"
         });
+        
+        // If the post was created successfully, trigger Shopify sync
+        if (postResponse && postResponse.post && postResponse.post.id) {
+          try {
+            // Trigger sync to Shopify
+            await apiRequest("POST", "/api/shopify/sync", {
+              postIds: [postResponse.post.id]
+            });
+            
+            console.log(`Post "${title}" synced to Shopify successfully`);
+          } catch (syncError) {
+            console.error(`Error syncing post to Shopify:`, syncError);
+            // Don't count as failed, as post was created successfully
+          }
+        }
         
         successCount++;
         

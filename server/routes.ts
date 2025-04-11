@@ -223,24 +223,53 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Sync posts with Shopify
   apiRouter.post("/shopify/sync", async (req: Request, res: Response) => {
     try {
+      console.log("Syncing posts to Shopify:", JSON.stringify(req.body));
+      
+      // Get the Shopify connection
       const connection = await storage.getShopifyConnection();
       
       if (!connection || !connection.isConnected || !connection.defaultBlogId) {
         return res.status(400).json({ error: "Not properly connected to Shopify" });
       }
       
-      // Get published posts that need to be synced
-      const posts = await storage.getBlogPosts();
-      const publishedPosts = posts.filter(post => post.status === 'published' && !post.shopifyPostId);
+      // Get posts to sync - either specific postIds or all published posts
+      let postsToSync = [];
       
-      if (publishedPosts.length === 0) {
+      if (req.body && req.body.postIds && Array.isArray(req.body.postIds) && req.body.postIds.length > 0) {
+        // Get specific posts by ID
+        const postIds = req.body.postIds.map((id: string | number) => Number(id));
+        console.log(`Looking for specific posts with IDs: ${postIds.join(', ')}`);
+        
+        // Get all the requested posts
+        const allPosts = await storage.getBlogPosts();
+        
+        // Filter by requested IDs
+        postsToSync = allPosts.filter(post => {
+          const included = postIds.includes(post.id);
+          // Force sync even if already synced
+          if (included && post.shopifyPostId) {
+            console.log(`Will update existing Shopify post: ${post.id} (${post.shopifyPostId})`);
+          }
+          return included;
+        });
+      } else {
+        // Get all published posts that need to be synced (no specific IDs provided)
+        const posts = await storage.getBlogPosts();
+        postsToSync = posts.filter(post => post.status === 'published' && !post.shopifyPostId);
+      }
+      
+      if (postsToSync.length === 0) {
         return res.json({ success: true, syncedCount: 0, message: "No posts to sync" });
       }
       
+      console.log(`Preparing to sync ${postsToSync.length} posts to Shopify`);
+      
+      // Set up Shopify connection
+      console.log(`Using Shopify connection: store=${connection.storeName}, blogId=${connection.defaultBlogId}`);
       shopifyService.setConnection(connection);
       
       // Get function references
-      const { setConnection, createArticle } = shopifyService;
+      const { setConnection, createArticle, updateArticle } = shopifyService;
       
       // Set connection first
       setConnection(connection);
@@ -263,15 +292,24 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       // Sync each post
       let syncedCount = 0;
-      for (const post of publishedPosts) {
+      for (const post of postsToSync) {
         try {
-          // Use the legacy compatibility wrapper
-          const shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
+          let shopifyArticle;
           
-          // Update post with Shopify ID
-          await storage.updateBlogPost(post.id, {
-            shopifyPostId: shopifyArticle.id
-          });
+          if (post.shopifyPostId) {
+            // Update existing article
+            console.log(`Updating existing Shopify post ${post.shopifyPostId} for post ${post.id}: "${post.title}"`);
+            shopifyArticle = await updateArticle(tempStore, connection.defaultBlogId, post);
+          } else {
+            // Create new article
+            console.log(`Creating new Shopify post for post ${post.id}: "${post.title}"`);
+            shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
+            
+            // Update post with Shopify ID
+            await storage.updateBlogPost(post.id, {
+              shopifyPostId: shopifyArticle.id
+            });
+          }
           
           // Create sync activity
           await storage.createSyncActivity({
