@@ -4,6 +4,7 @@ import { z } from "zod";
 import { insertContentGenRequestSchema } from "@shared/schema";
 import { generateBlogContent, bulkGenerateBlogContent } from "../services/openai";
 import { generateBlogContentWithHF } from "../services/huggingface";
+import { generateBlogContentWithClaude, testClaudeConnection } from "../services/claude";
 
 const contentRouter = Router();
 
