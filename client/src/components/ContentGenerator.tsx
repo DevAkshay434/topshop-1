@@ -48,14 +48,25 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
         length
       });
       
-      if (data.success && data.content) {
+      if (data.success) {
         toast({
           title: "Content Generated",
-          description: "Blog content has been successfully created",
+          description: data.fallbackUsed 
+            ? "Blog content has been created using our fallback system" 
+            : "Blog content has been successfully created",
         });
         
+        // Invalidate posts query to show new post
+        queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+        
         if (onContentGenerated) {
-          onContentGenerated(data.content);
+          // Extract the content directly from data since our API returns it at the top level
+          const contentData = {
+            title: data.title || "",
+            content: data.content || "",
+            tags: Array.isArray(data.tags) ? data.tags : []
+          };
+          onContentGenerated(contentData);
         }
       } else {
         throw new Error(data.error || "Failed to generate content");
