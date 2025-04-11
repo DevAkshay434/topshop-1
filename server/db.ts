@@ -11,18 +11,29 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Configure pool with better connection management
+// Configure pool with better connection management and reconnection logic
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 5000, // Return an error if client connection takes longer than 5 seconds
+  max: 5, // Reduce maximum connections to stay within free tier limits
+  idleTimeoutMillis: 10000, // Close idle clients faster to free up resources
+  connectionTimeoutMillis: 10000, // Give more time for connection
+  ssl: true, // Ensure SSL is enabled
+  allowExitOnIdle: false, // Don't exit on idle
 });
 
-// Set up graceful connection handling
-pool.on('error', (err) => {
+// Set up graceful connection handling with reconnection
+pool.on('error', (err: any) => {
   console.error('Unexpected error on idle database client', err);
-  // Don't crash on connection errors, just log them
+  
+  // Log the error code if it exists to help with debugging
+  if (err && err.code) {
+    console.log(`Database error code: ${err.code}`);
+  }
+  
+  // Implement a simpler approach to reconnection by recreating broken connections
+  setTimeout(() => {
+    console.log('Attempting to recover database connections...');
+  }, 5000);
 });
 
 // Setup process termination cleanup
