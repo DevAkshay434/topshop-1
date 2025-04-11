@@ -64,16 +64,16 @@ export async function generateBlogContentWithHF(request: BlogContentRequest): Pr
     // Process the response to extract title, content and tags
     const text = response.generated_text.trim();
     
-    // Extract title (between "TITLE:" and "CONTENT:")
-    const titleMatch = text.match(/TITLE:\s*(.*?)(?=\s*CONTENT:|$)/s);
+    // Extract title (between "TITLE:" and "CONTENT:") - avoid 's' flag for compatibility
+    const titleMatch = text.match(/TITLE:\s*([\s\S]*?)(?=\s*CONTENT:|$)/);
     const title = titleMatch ? titleMatch[1].trim() : "Generated Blog Post";
     
-    // Extract content (between "CONTENT:" and "TAGS:")
-    const contentMatch = text.match(/CONTENT:\s*(.*?)(?=\s*TAGS:|$)/s);
+    // Extract content (between "CONTENT:" and "TAGS:") - avoid 's' flag for compatibility
+    const contentMatch = text.match(/CONTENT:\s*([\s\S]*?)(?=\s*TAGS:|$)/);
     const content = contentMatch ? contentMatch[1].trim() : text;
     
-    // Extract tags (after "TAGS:")
-    const tagsMatch = text.match(/TAGS:\s*(.*?)$/s);
+    // Extract tags (after "TAGS:") - avoid 's' flag for compatibility
+    const tagsMatch = text.match(/TAGS:\s*([\s\S]*?)$/i);
     let tags: string[] = [];
     
     if (tagsMatch && tagsMatch[1]) {
@@ -110,8 +110,11 @@ export async function generateBlogContentWithHF(request: BlogContentRequest): Pr
       content,
       tags
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating blog content with Hugging Face:", error);
-    throw new Error(`Failed to generate blog content: ${error.message}`);
+    const errorMessage = error && typeof error === 'object' && 'message' in error 
+      ? error.message 
+      : 'Unknown error during content generation';
+    throw new Error(`Failed to generate blog content: ${errorMessage}`);
   }
 }

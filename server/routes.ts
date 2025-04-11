@@ -544,9 +544,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
-        // Generate content with OpenAI
-        const generatedContent = await generateBlogContent({ topic, tone, length });
-        
+        // First attempt to generate content with Hugging Face
+        let generatedContent;
+        try {
+          console.log("Attempting to generate content with Hugging Face...");
+          generatedContent = await generateBlogContentWithHF({ topic, tone, length });
+        } catch (hfError) {
+          console.error("Hugging Face content generation failed:", hfError);
+          
+          // Fallback to OpenAI if available
+          if (process.env.OPENAI_API_KEY) {
+            console.log("Falling back to OpenAI...");
+            generatedContent = await generateBlogContent({ topic, tone, length });
+          } else {
+            // If no fallback is available, rethrow the error
+            throw hfError;
+          }
+        }
+
         // Update content generation request
         const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
           status: "completed",
@@ -555,17 +570,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.json({ 
           success: true, 
-          requestId: updatedRequest.id,
+          requestId: updatedRequest?.id,
           content: generatedContent
         });
       } catch (aiError) {
+        console.error("Content generation error:", aiError);
+        
+        // Provide user-friendly error response
+        const errorMessage = aiError && typeof aiError === 'object' && 'message' in aiError ? 
+          aiError.message as string : 'An error occurred during content generation';
+        
         // Update content generation request with error
         await storage.updateContentGenRequest(contentRequest.id, {
           status: "failed",
-          generatedContent: aiError.message
+          generatedContent: JSON.stringify({
+            error: errorMessage,
+            timestamp: new Date().toISOString()
+          })
         });
         
-        throw aiError;
+        // Return error to client rather than throwing
+        return res.status(500).json({
+          success: false,
+          error: errorMessage
+        });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
