@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import BlogPosts from "@/pages/BlogPosts";
 import ScheduledPosts from "@/pages/ScheduledPosts";
+import ContentTemplates from "@/pages/ContentTemplates";
 import ShopifyConnection from "@/pages/ShopifyConnection";
 import BillingSettings from "@/pages/BillingSettings";
 import AppInstall from "@/pages/AppInstall";
@@ -56,6 +57,7 @@ function Router() {
           </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
+          <Route path="/content-templates" component={ContentTemplates} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/billing-callback" component={Dashboard} />
@@ -66,7 +68,7 @@ function Router() {
           <Route path="/shopify/callback" component={Dashboard} />
           <Route path="/shopify/auth/callback" component={Dashboard} />
           
-          {/* AI Templates, Analytics, Settings, and Help routes would go here */}
+          {/* Analytics, Settings, and Help routes would go here */}
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />
