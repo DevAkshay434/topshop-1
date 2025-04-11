@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import StatsCard from "@/components/StatsCard";
 import PostList from "@/components/PostList";
 import ContentGenerator from "@/components/ContentGenerator";
-import ShopifyConnectionCard from "@/components/ShopifyConnectionCard";
+import ShopifyStoreCard from "@/components/ShopifyStoreCard";
 import CreatePostModal from "@/components/CreatePostModal";
 import { Button } from "@/components/ui/button";
 import { FileText, Clock, Eye, Sparkles, Plus } from "lucide-react";
@@ -117,10 +117,10 @@ export default function Dashboard() {
         onEditPost={handleEditPost}
       />
 
-      {/* Content Creation & Shop Connection */}
+      {/* Content Creation & Blog Settings */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ContentGenerator onContentGenerated={handleContentGenerated} />
-        <ShopifyConnectionCard />
+        <ShopifyStoreCard />
       </div>
       
       {/* Create Post Modal */}
