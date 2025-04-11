@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { z } from "zod";
 import { insertContentGenRequestSchema } from "@shared/schema";
 import { generateBlogContent, bulkGenerateBlogContent } from "../services/openai";
+import { generateBlogContentWithHF } from "../services/huggingface";
 
 const contentRouter = Router();
 
@@ -57,9 +58,6 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       console.log("OpenAI error, falling back to HuggingFace");
       
       try {
-        // Import the HuggingFace generator
-        const { generateBlogContentWithHF } = require("../services/huggingface");
-        
         // Fall back to HuggingFace when OpenAI fails
         const hfContent = await generateBlogContentWithHF({
           topic: topic,
@@ -266,9 +264,6 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
           console.log(`OpenAI error for "${topic}", falling back to HuggingFace`);
           
           try {
-            // Import the HuggingFace generator
-            const { generateBlogContentWithHF } = require("../services/huggingface");
-            
             // Fall back to HuggingFace
             const hfContent = await generateBlogContentWithHF({
               topic: topic,
@@ -420,9 +415,6 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         
         // Always try the fallback regardless of the specific error type
         console.log("OpenAI error in bulk generation, falling back to HuggingFace");
-        
-        // Import the HuggingFace generator
-        const { generateBlogContentWithHF } = require("../services/huggingface");
         
         // Generate content with HuggingFace for each topic
         results = await Promise.all(topics.map(async (topic) => {
