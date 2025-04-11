@@ -11,12 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { 
+  Button,
+  Textarea,
+  Input,
+  Label,
+  Spinner
+} from "@/components/ui";
 import { Progress } from "@/components/ui/progress";
-import { Spinner } from "@/components/ui/spinner";
 import Layout from "@/components/Layout";
 
 // Types for result data
@@ -80,22 +82,9 @@ export default function SimpleBulkGeneration() {
       // Show progress as waiting for response
       setProgress(30);
       
-      try {
-        // Test the OpenAI API first to make sure it's working
-        const testResponse = await apiRequest({
-          url: "/api/test-openai",
-          method: "GET"
-        });
-        
-        console.log("OpenAI API test response:", testResponse);
-        
-        if (!testResponse.success) {
-          throw new Error("OpenAI API is not responding correctly: " + testResponse.error);
-        }
-      } catch (apiError) {
-        console.error("OpenAI API test failed:", apiError);
-        // Continue anyway as we have fallback
-      }
+      // Skip API test since we have server-side fallback
+      // The test was causing issues and we don't need it since the server handles
+      // OpenAI errors gracefully and falls back to HuggingFace
       
       // Make the API request to our bulk endpoint
       const response = await apiRequest({
