@@ -29,6 +29,25 @@ export async function registerRoutes(app: Express): Promise<void> {
   // API router for authenticated endpoints
   const apiRouter = Router();
   
+  // Health check endpoint for server monitoring and keep-alive
+  apiRouter.get("/health", async (req: Request, res: Response) => {
+    try {
+      // Simple response to confirm server is running
+      res.status(200).json({ 
+        status: "ok", 
+        message: "Server is healthy", 
+        timestamp: new Date().toISOString() 
+      });
+    } catch (error) {
+      console.error("Health check error:", error);
+      res.status(500).json({ 
+        status: "error", 
+        message: "Server error", 
+        timestamp: new Date().toISOString() 
+      });
+    }
+  });
+  
   // --- SHOPIFY CONNECTION ROUTES ---
   
   // Get Shopify API key for frontend initialization
