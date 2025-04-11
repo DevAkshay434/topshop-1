@@ -215,45 +215,160 @@ The [season/holiday] season is here, and we're celebrating with special offers o
   }
 };
 
-// Sample template data
-const templates: Template[] = [
-  {
-    id: 1,
-    name: "Product Review",
-    description: "Template for reviewing products with pros, cons, and ratings.",
-    category: "Reviews"
-  },
-  {
-    id: 2,
-    name: "How-To Guide",
-    description: "Step-by-step instructions for teaching a skill or process.",
-    category: "Educational"
-  },
-  {
-    id: 3,
-    name: "Industry News",
-    description: "Format for reporting on industry trends and developments.",
-    category: "News"
-  },
-  {
-    id: 4,
-    name: "Product Comparison",
-    description: "Side-by-side comparison of similar products or services.",
-    category: "Reviews"
-  },
-  {
-    id: 5,
-    name: "Seasonal Promotion",
-    description: "Promotional content for seasonal sales and special events.",
-    category: "Marketing"
-  },
-  {
-    id: 6,
-    name: "Customer Story",
-    description: "Format for highlighting customer success stories.",
-    category: "Case Studies"
-  }
-];
+// Template creation dialog component
+function TemplateCreateDialog({ 
+  isOpen, 
+  setIsOpen, 
+  onSave 
+}: { 
+  isOpen: boolean, 
+  setIsOpen: (open: boolean) => void,
+  onSave: (name: string, description: string, category: string, structure: string, topics: string[]) => void
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [structure, setStructure] = useState("");
+  const [topicsText, setTopicsText] = useState("");
+  
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setName("");
+      setDescription("");
+      setCategory("");
+      setStructure(`# [Title]
+
+## Introduction
+[Introduction text]
+
+## Section 1
+[Content for section 1]
+
+## Section 2
+[Content for section 2]
+
+## Conclusion
+[Conclusion text]`);
+      setTopicsText("");
+    }
+  }, [isOpen]);
+  
+  const handleSave = () => {
+    if (!name || !description || !category || !structure) return;
+    
+    // Convert topics text to array
+    const topicsArray = topicsText
+      .split('\n')
+      .map(t => t.trim())
+      .filter(Boolean);
+    
+    onSave(name, description, category, structure, topicsArray);
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Template</DialogTitle>
+          <DialogDescription>
+            Create a custom content template for generating blog posts.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Tabs defaultValue="details" className="mt-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="details">Template Details</TabsTrigger>
+            <TabsTrigger value="structure">Template Structure</TabsTrigger>
+            <TabsTrigger value="topics">Suggested Topics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="space-y-4 mt-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Template Name</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Product Review, Tutorial, Case Study"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="A brief description of what this template is used for"
+                  className="resize-none h-24"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="e.g., Reviews, Educational, Marketing"
+                />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="structure" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="structure">Markdown Template</Label>
+              <div className="relative">
+                <Textarea 
+                  id="structure" 
+                  value={structure} 
+                  onChange={(e) => setStructure(e.target.value)}
+                  className="font-mono h-96 resize-none"
+                />
+              </div>
+              <p className="text-sm text-neutral-500">
+                Use placeholders like [Product Name], [Industry], [Season/Holiday], [Accomplish Task], or [Year] that will be replaced with the specific topic.
+              </p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="topics" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="topics">Suggested Topics (one per line)</Label>
+              <Textarea 
+                id="topics" 
+                value={topicsText}
+                onChange={(e) => setTopicsText(e.target.value)} 
+                className="h-80 resize-none"
+                placeholder="Topic 1
+Topic 2
+Topic 3"
+              />
+              <p className="text-sm text-neutral-500">
+                These topics will be shown as suggestions when using this template.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
+        
+        <DialogFooter className="mt-6">
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSave}
+            disabled={!name || !description || !category || !structure}
+          >
+            Create Template
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Sample template data - moved to state in the component
 
 // Template usage dialog component
 function TemplateUsageDialog({ 
@@ -456,11 +571,13 @@ Topic 3"
 function BulkGenerationDialog({
   isOpen,
   setIsOpen,
-  onGenerate
+  onGenerate,
+  templates
 }: {
   isOpen: boolean,
   setIsOpen: (open: boolean) => void,
-  onGenerate: (keywords: string[], templateId: number) => Promise<void>
+  onGenerate: (keywords: string[], templateId: number) => Promise<void>,
+  templates: Template[]
 }) {
   const { toast } = useToast();
   const [niche, setNiche] = useState<string>("");
@@ -656,9 +773,48 @@ export default function ContentTemplates() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [editedTemplateContent, setEditedTemplateContent] = useState<string>("");
   const [editedTemplateTopics, setEditedTemplateTopics] = useState<string>("");
+  const [templates, setTemplates] = useState<Template[]>([
+    {
+      id: 1,
+      name: "Product Review",
+      description: "Template for reviewing products with pros, cons, and ratings.",
+      category: "Reviews"
+    },
+    {
+      id: 2,
+      name: "How-To Guide",
+      description: "Step-by-step instructions for teaching a skill or process.",
+      category: "Educational"
+    },
+    {
+      id: 3,
+      name: "Industry News",
+      description: "Format for reporting on industry trends and developments.",
+      category: "News"
+    },
+    {
+      id: 4,
+      name: "Product Comparison",
+      description: "Side-by-side comparison of similar products or services.",
+      category: "Reviews"
+    },
+    {
+      id: 5,
+      name: "Seasonal Promotion",
+      description: "Promotional content for seasonal sales and special events.",
+      category: "Marketing"
+    },
+    {
+      id: 6,
+      name: "Customer Story",
+      description: "Format for highlighting customer success stories.",
+      category: "Case Studies"
+    }
+  ]);
   const [generationResults, setGenerationResults] = useState<{
     success: number;
     failed: number;
@@ -793,11 +949,39 @@ export default function ContentTemplates() {
     setIsEditDialogOpen(false);
   };
 
-  const handleCreateTemplate = () => {
+  // Handle creating a new template
+  const handleCreateNewTemplate = (name: string, description: string, category: string, structure: string, topics: string[]) => {
+    // Generate a new template ID (max current ID + 1)
+    const newId = Math.max(...templates.map(t => t.id)) + 1;
+    
+    // Create new template
+    const newTemplate: Template = {
+      id: newId,
+      name,
+      description,
+      category
+    };
+    
+    // Add to templates list
+    setTemplates([...templates, newTemplate]);
+    
+    // Add template content
+    templateContent[newId] = {
+      structure,
+      topics
+    };
+    
     toast({
-      title: "Create Template",
-      description: "Creating new templates is not implemented yet.",
+      title: "Template Created",
+      description: `New template "${name}" has been created successfully.`,
     });
+    
+    setIsCreateDialogOpen(false);
+  };
+
+  const handleCreateTemplate = () => {
+    setSelectedTemplate(null);
+    setIsCreateDialogOpen(true);
   };
   
   // Open bulk generation dialog
@@ -980,6 +1164,7 @@ export default function ContentTemplates() {
         isOpen={isBulkDialogOpen}
         setIsOpen={setIsBulkDialogOpen}
         onGenerate={handleBulkGeneration}
+        templates={templates}
       />
       
       {/* Template editing dialog */}
@@ -989,6 +1174,13 @@ export default function ContentTemplates() {
         template={selectedTemplate}
         templateContent={selectedTemplate ? templateContent[selectedTemplate.id] : null}
         onSave={handleSaveTemplate}
+      />
+      
+      {/* Template creation dialog */}
+      <TemplateCreateDialog
+        isOpen={isCreateDialogOpen}
+        setIsOpen={setIsCreateDialogOpen}
+        onSave={handleCreateNewTemplate}
       />
       
       {/* Progress indicator (conditionally shown) */}
