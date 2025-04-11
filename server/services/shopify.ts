@@ -95,13 +95,23 @@ export class ShopifyService {
     }
     
     try {
+      // Properly handle the date formatting for Shopify API
+      // Use current date if no publishedDate is provided
+      let publishedAt: string | undefined = undefined;
+      
+      if (post.status === 'published') {
+        publishedAt = post.publishedDate 
+          ? new Date(post.publishedDate).toISOString() 
+          : new Date().toISOString();
+      }
+      
       const article = {
         title: post.title,
         author: "Blog Publisher App",
         body_html: post.content,
         tags: post.tags || "",
         published: post.status === 'published',
-        published_at: post.publishedDate ? post.publishedDate.toISOString() : undefined,
+        published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
@@ -127,12 +137,23 @@ export class ShopifyService {
       if (post.title) article.title = post.title;
       if (post.content) article.body_html = post.content;
       if (post.tags) article.tags = post.tags;
+      
+      // Properly handle date formatting for Shopify API
       if (post.status === 'published') {
         article.published = true;
-        article.published_at = post.publishedDate ? post.publishedDate.toISOString() : new Date().toISOString();
+        
+        // Make sure the date is properly formatted as an ISO string
+        let publishedAt: string;
+        if (post.publishedDate) {
+          publishedAt = new Date(post.publishedDate).toISOString();
+        } else {
+          publishedAt = new Date().toISOString();
+        }
+        article.published_at = publishedAt;
       } else if (post.status === 'draft') {
         article.published = false;
       }
+      
       if (post.featuredImage) article.image = { src: post.featuredImage };
       
       const response = await this.client.put(`/blogs/${blogId}/articles/${articleId}.json`, {
