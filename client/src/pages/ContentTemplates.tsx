@@ -976,17 +976,21 @@ export default function ContentTemplates() {
       ].filter(Boolean);
       
       // Create a new post draft with this content
-      const response = await apiRequest("POST", "/api/posts", {
-        title,
-        content,
-        status: "draft",
-        tags: tags.join(","), // Tags is a text field in the schema, so join array to string
-        category: selectedTemplate?.category || "General",
-        storeId: null, // Use the default store connection
-        author: "Template System",
-        // Add these fields explicitly to avoid validation errors
-        scheduledDate: null,
-        publishedDate: null
+      const response = await apiRequest({
+        url: "/api/posts",
+        method: "POST",
+        data: {
+          title,
+          content,
+          status: "draft",
+          tags: tags.join(","), // Tags is a text field in the schema, so join array to string
+          category: selectedTemplate?.category || "General",
+          storeId: null, // Use the default store connection
+          author: "Template System",
+          // Add these fields explicitly to avoid validation errors
+          scheduledDate: null,
+          publishedDate: null
+        }
       });
       
       // Server returns the created post object
