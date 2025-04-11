@@ -23,10 +23,11 @@ interface Template {
   category: string;
   contentStructure?: string;
   topics?: string[];
+  aiPrompt?: string; // Custom prompt for AI content generation
 }
 
 // Define the template content structures
-const templateContent: Record<number, {structure: string, topics: string[]}> = {
+const templateContent: Record<number, {structure: string, topics: string[], aiPrompt?: string}> = {
   1: {
     structure: `# [Product Name] Review: Is It Worth Your Money?
 
@@ -223,13 +224,14 @@ function TemplateCreateDialog({
 }: { 
   isOpen: boolean, 
   setIsOpen: (open: boolean) => void,
-  onSave: (name: string, description: string, category: string, structure: string, topics: string[]) => void
+  onSave: (name: string, description: string, category: string, structure: string, topics: string[], aiPrompt: string) => void
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [structure, setStructure] = useState("");
   const [topicsText, setTopicsText] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
   
   // Reset form when dialog opens
   useEffect(() => {
@@ -251,6 +253,7 @@ function TemplateCreateDialog({
 ## Conclusion
 [Conclusion text]`);
       setTopicsText("");
+      setAiPrompt("You are a professional blog writer creating a comprehensive article about [TOPIC]. Write a detailed, engaging, and informative article that provides value to the reader. Include specific examples, actionable tips, and cite relevant statistics or research when appropriate. Format the content with proper headings, bullet points, and paragraphs for easy readability.");
     }
   }, [isOpen]);
   
@@ -263,7 +266,7 @@ function TemplateCreateDialog({
       .map(t => t.trim())
       .filter(Boolean);
     
-    onSave(name, description, category, structure, topicsArray);
+    onSave(name, description, category, structure, topicsArray, aiPrompt);
   };
   
   return (
@@ -277,10 +280,11 @@ function TemplateCreateDialog({
         </DialogHeader>
         
         <Tabs defaultValue="details" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details">Template Details</TabsTrigger>
             <TabsTrigger value="structure">Template Structure</TabsTrigger>
             <TabsTrigger value="topics">Suggested Topics</TabsTrigger>
+            <TabsTrigger value="ai-prompt">AI Prompt</TabsTrigger>
           </TabsList>
           
           <TabsContent value="details" className="space-y-4 mt-4">
