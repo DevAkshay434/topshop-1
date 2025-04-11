@@ -792,73 +792,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Generate blog content
-  apiRouter.post("/generate-content", async (req: Request, res: Response) => {
-    try {
-      // Validate request body
-      const { topic, tone, length } = insertContentGenRequestSchema.pick({
-        topic: true,
-        tone: true,
-        length: true
-      }).parse(req.body);
-      
-      // Create content generation request
-      const contentRequest = await storage.createContentGenRequest({
-        topic,
-        tone,
-        length,
-        status: "pending",
-        generatedContent: null
-      });
-      
-      try {
-        // Generate content with Hugging Face
-        let generatedContent;
-        console.log(`Generating blog content about "${topic}" with tone "${tone}"`);
-        generatedContent = await generateBlogContentWithHF({ topic, tone, length });
-        
-        // If we reach here, content generation was successful
-        
-        // Update content generation request
-        const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
-          status: "completed",
-          generatedContent: JSON.stringify(generatedContent)
-        });
-        
-        res.json({ 
-          success: true, 
-          requestId: updatedRequest?.id,
-          content: generatedContent
-        });
-      } catch (aiError: any) {
-        console.error("Content generation error:", aiError);
-        
-        // Provide user-friendly error response
-        const errorMessage = aiError && typeof aiError === 'object' && 'message' in aiError ? 
-          aiError.message as string : 'An error occurred during content generation';
-        
-        // Update content generation request with error
-        await storage.updateContentGenRequest(contentRequest.id, {
-          status: "failed",
-          generatedContent: JSON.stringify({
-            error: errorMessage,
-            timestamp: new Date().toISOString()
-          })
-        });
-        
-        // Return error to client rather than throwing
-        return res.status(500).json({
-          success: false,
-          error: errorMessage
-        });
-      }
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: error.message });
-    }
-  });
+  // Use our dedicated content router for content generation endpoints
+  apiRouter.use(contentRouter);
   
   // Get stats for dashboard
   apiRouter.get("/stats", async (req: Request, res: Response) => {
