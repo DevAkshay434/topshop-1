@@ -85,9 +85,9 @@ export default function Sidebar() {
       <div className="flex items-center justify-between px-4 h-16 border-b border-neutral-200">
         <div className="flex items-center space-x-2">
           <div className="bg-primary w-8 h-8 rounded flex items-center justify-center">
-            <Edit className="text-white text-lg" />
+            <Sparkles className="text-white text-lg" />
           </div>
-          <h1 className="font-semibold text-lg">Blog Publisher</h1>
+          <h1 className="font-semibold text-lg">TopShop SEO</h1>
         </div>
       </div>
       
