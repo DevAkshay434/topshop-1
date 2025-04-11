@@ -108,8 +108,28 @@ export default function CreatePostModal({
         content: generatedContent.content,
         tags: formattedTags.current,
       });
+    } else if (initialData) {
+      // Make sure form gets reset with initial data when editing an existing post
+      form.reset({
+        title: initialData.title || "",
+        content: initialData.content || "",
+        category: initialData.category || "Fashion",
+        tags: initialData.tags || "",
+        publicationType: initialData.status === "published" 
+          ? "publish" 
+          : initialData.status === "scheduled" 
+            ? "schedule" 
+            : "draft",
+        scheduleDate: initialData.scheduledDate 
+          ? new Date(initialData.scheduledDate).toISOString().split('T')[0] 
+          : new Date().toISOString().split('T')[0],
+        scheduleTime: initialData.scheduledDate 
+          ? new Date(initialData.scheduledDate).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) 
+          : "09:00",
+        status: initialData.status || "draft"
+      });
     }
-  }, [generatedContent, form]);
+  }, [generatedContent, initialData, form]);
   
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
