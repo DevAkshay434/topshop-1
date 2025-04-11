@@ -84,8 +84,8 @@ export default function Sidebar() {
     <div className="bg-white border-r border-neutral-200 w-full md:w-64 md:flex md:flex-col md:fixed md:inset-y-0 z-10">
       <div className="flex items-center justify-between px-4 h-16 border-b border-neutral-200">
         <div className="flex items-center space-x-2">
-          <div className="bg-primary w-8 h-8 rounded flex items-center justify-center">
-            <Sparkles className="text-white text-lg" />
+          <div className="w-8 h-8 flex items-center justify-center">
+            <img src="/images/topshop-logo.jpg" alt="TopShop SEO Logo" className="w-full h-auto" />
           </div>
           <h1 className="font-semibold text-lg">TopShop SEO</h1>
         </div>

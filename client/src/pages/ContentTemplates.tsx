@@ -1418,7 +1418,7 @@ export default function ContentTemplates() {
     <Layout>
       <div className="md:flex md:items-center md:justify-between mb-6">
         <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-semibold text-neutral-900">Content Templates</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900">TopShop SEO Content Templates</h2>
           <p className="mt-1 text-sm text-neutral-500">
             Use pre-built templates to quickly create blog content
           </p>
