@@ -1198,7 +1198,7 @@ export default function ContentTemplates() {
             
             // Use the bulkGenerateContent method from the OpenAI service
             const bulkResponse = await apiRequest({
-              url: "/api/content/generate-content/bulk",
+              url: "/api/generate-content/bulk",
               method: "POST",
               data: {
                 topics: [keyword],
