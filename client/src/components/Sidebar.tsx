@@ -85,7 +85,7 @@ export default function Sidebar() {
       <div className="flex items-center justify-between px-4 h-16 border-b border-neutral-200">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 flex items-center justify-center">
-            <img src="/images/topshop-logo.jpg" alt="TopShop SEO Logo" className="w-full h-auto" />
+            <img src="/assets/topshop-logo.jpg" alt="TopShop SEO Logo" className="w-full h-auto rounded-sm" />
           </div>
           <h1 className="font-semibold text-lg">TopShop SEO</h1>
         </div>

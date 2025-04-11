@@ -24,13 +24,13 @@ if (isEmbedded) {
 // Create a meta description
 const metaDescription = document.createElement("meta");
 metaDescription.name = "description";
-metaDescription.content = "TopShop SEO - Automatically generate, optimize, and publish blog posts to increase your Shopify store's search visibility";
+metaDescription.content = "TopShop SEO - Automatically generate, optimize, and publish SEO-friendly blog posts to increase your Shopify store's search visibility";
 document.head.appendChild(metaDescription);
 
 // Add favicon
 const favicon = document.createElement("link");
 favicon.rel = "icon";
-favicon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23008060' stroke='%23008060' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 19l7-7 3 3-7 7-3-3z'%3E%3C/path%3E%3Cpath d='M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z'%3E%3C/path%3E%3Cpath d='M2 2l7.586 7.586'%3E%3C/path%3E%3Ccircle cx='11' cy='11' r='2'%3E%3C/circle%3E%3C/svg%3E";
+favicon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300A3E0' stroke='%2300A3E0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4h10v4h-10V4zM11 12h10v4h-10v-4zM11 20h10v4h-10v-4z'%3E%3C/path%3E%3Cpath d='M3 8L7 4L7 8L3 8Z'%3E%3C/path%3E%3Cpath d='M3 12l4 5l0 -5l-4 0z'%3E%3C/path%3E%3C/svg%3E";
 document.head.appendChild(favicon);
 
 // Create and render the app

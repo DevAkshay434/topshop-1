@@ -127,9 +127,9 @@ export class ShopifyService {
       const client = this.getClient(store);
       const response = await client.get('/blogs.json');
       return response.data.blogs;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error fetching blogs from Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to fetch blogs: ${error.message}`);
+      throw new Error(`Failed to fetch blogs: ${error?.message || 'Unknown error'}`);
     }
   }
   
