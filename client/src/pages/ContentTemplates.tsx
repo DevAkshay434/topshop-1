@@ -1059,8 +1059,10 @@ export default function ContentTemplates() {
       
       // Save templates to localStorage for persistence
       try {
+        // Need to save both templates and templateContent
         localStorage.setItem('contentTemplates', JSON.stringify(templates));
-        console.log("Templates saved to localStorage after update");
+        localStorage.setItem('templateContents', JSON.stringify(templateContent));
+        console.log("Templates and content saved to localStorage after update");
       } catch (storageError) {
         console.error("Error saving templates to localStorage:", storageError);
       }
@@ -1123,8 +1125,10 @@ export default function ContentTemplates() {
       
       // Save templates to localStorage for persistence
       try {
+        // Need to save both templates and templateContent
         localStorage.setItem('contentTemplates', JSON.stringify(updatedTemplates));
-        console.log("Templates saved to localStorage");
+        localStorage.setItem('templateContents', JSON.stringify(templateContent));
+        console.log("Templates and content saved to localStorage after create");
       } catch (storageError) {
         console.error("Error saving templates to localStorage:", storageError);
       }
