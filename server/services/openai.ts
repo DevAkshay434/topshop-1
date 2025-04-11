@@ -1,11 +1,9 @@
 import OpenAI from "openai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const MODEL = "gpt-4o";
-
+// Initialize the OpenAI client with API key from environment
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Type for blog content response
+// Define the structure of blog content
 export interface BlogContent {
   title: string;
   content: string;
@@ -22,73 +20,85 @@ export async function generateBlogContent(
   topic: string,
   customPrompt?: string
 ): Promise<BlogContent> {
+  console.log(`Generating blog content for topic: "${topic}" ${customPrompt ? "with custom prompt" : ""}`);
+  
   try {
-    // Ensure API key is present
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("Missing OPENAI_API_KEY environment variable");
-      throw new Error("OpenAI API key is missing");
-    }
+    // Create a system prompt based on whether a custom prompt was provided
+    let systemPrompt = "";
+    
+    if (customPrompt) {
+      // Replace [TOPIC] placeholder with the actual topic in the custom prompt
+      systemPrompt = customPrompt.replace(/\[TOPIC\]/g, topic);
+      
+      // Add default instructions if they're not in the custom prompt
+      if (!systemPrompt.includes("JSON")) {
+        systemPrompt += "\n\nRespond with JSON that includes 'title', 'content', and 'tags' fields.";
+      }
+    } else {
+      // Default system prompt
+      systemPrompt = `You are a professional blog writer creating a high-quality blog post about "${topic}".
+      
+Write a well-structured blog post that is informative, engaging, and optimized for SEO.
+Include a compelling title, an introduction that hooks the reader, several subheadings with detailed content, and a conclusion.
+Make the content approximately 500-800 words, with proper formatting including paragraphs and subheadings.
 
-    // Default prompt if none is provided
-    const defaultPrompt = 
-      "You are an expert blog writer with deep knowledge in various industries. " +
-      "Write a comprehensive, engaging blog post about [TOPIC]. " +
-      "The content should be well-structured with clear headings, informative, and SEO-friendly. " +
-      "Include practical tips and actionable advice. " +
-      "Format your response as a JSON object with 'title' and 'content' fields. " +
-      "The content should be in Markdown format with proper headings, lists, and emphasis. " +
-      "Keep it around 1000-1500 words.";
+Respond with JSON that includes the following fields:
+- title: A catchy, SEO-friendly title for the blog post
+- content: The full blog post content with proper formatting (HTML is acceptable)
+- tags: An array of 3-5 relevant tags/keywords for this content`;
+    }
     
-    // Use custom prompt if provided, replacing [TOPIC] placeholder with the actual topic
-    const prompt = customPrompt 
-      ? customPrompt.replace(/\[TOPIC\]/g, topic) 
-      : defaultPrompt.replace(/\[TOPIC\]/g, topic);
-    
-    console.log(`Generating content about "${topic}" ${customPrompt ? "with custom prompt" : "with default prompt"}`);
-    
+    // Call OpenAI API to generate the content
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const response = await openai.chat.completions.create({
-      model: MODEL,
+      model: "gpt-4o",
       messages: [
-        {
-          role: "system",
-          content: prompt
-        },
-        {
-          role: "user",
-          content: `Please write a blog post about "${topic}". Format the response as JSON with "title" and "content" fields.`
-        }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Write a blog post about "${topic}"` }
       ],
+      temperature: 0.7,
       response_format: { type: "json_object" }
     });
     
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      console.error("No content received from OpenAI");
-      throw new Error("Failed to generate content");
+    // Parse the response
+    const generatedText = response.choices[0].message.content;
+    
+    if (!generatedText) {
+      throw new Error("OpenAI returned empty content");
     }
     
     try {
-      const parsed = JSON.parse(content);
-      if (!parsed.title || !parsed.content) {
-        console.error("Invalid response format from OpenAI:", content);
-        throw new Error("Invalid response format");
+      // Parse the JSON response
+      const blogContent: BlogContent = JSON.parse(generatedText);
+      
+      // Validate the required fields
+      if (!blogContent.title || !blogContent.content) {
+        throw new Error("Generated content missing required fields");
       }
       
-      // Extract tags from content if available
-      const tags = parsed.tags || [];
+      // Ensure tags is always an array
+      if (!blogContent.tags) {
+        blogContent.tags = generateDefaultTags(topic);
+      }
       
-      return {
-        title: parsed.title,
-        content: parsed.content,
-        tags
-      };
+      return blogContent;
     } catch (parseError) {
-      console.error("Failed to parse JSON response:", content, parseError);
-      throw new Error("Failed to process generated content");
+      console.error("Error parsing OpenAI response:", parseError);
+      console.log("Raw response:", generatedText);
+      
+      // Handle the case where the response is not valid JSON
+      // Create a fallback structure with the raw text
+      return {
+        title: `Blog Post about ${topic}`,
+        content: generatedText,
+        tags: generateDefaultTags(topic)
+      };
     }
-  } catch (error) {
-    console.error("Error generating blog content:", error);
-    throw error;
+  } catch (error: any) {
+    console.error("OpenAI API error:", error);
+    
+    // Rethrow with a more specific error message
+    throw new Error(`Failed to generate content: ${error.message}`);
   }
 }
 
@@ -102,15 +112,21 @@ export async function bulkGenerateBlogContent(
   topics: string[],
   customPrompt?: string
 ): Promise<BlogContent[]> {
+  console.log(`Bulk generating content for ${topics.length} topics ${customPrompt ? "with custom prompt" : ""}`);
+  
+  // Generate content for each topic sequentially
   const results: BlogContent[] = [];
   
   for (const topic of topics) {
     try {
       const content = await generateBlogContent(topic, customPrompt);
       results.push(content);
+      
+      // Add a short delay between API calls to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
       console.error(`Error generating content for topic "${topic}":`, error);
-      // Continue with the next topic instead of failing completely
+      // Continue with the next topic instead of failing the entire batch
     }
   }
   
@@ -125,75 +141,78 @@ export async function generateTopicSuggestions(
   count: number = 10
 ): Promise<string[]> {
   try {
-    // Ensure API key is present
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("Missing OPENAI_API_KEY environment variable");
-      // Return fallback topics instead of throwing error
-      return [
-        `${niche} Best Practices`,
-        `Top 10 ${niche} Trends`,
-        `How to Improve Your ${niche} Strategy`,
-        `${niche} for Beginners`,
-        `Advanced ${niche} Techniques`,
-        `The Future of ${niche}`,
-        `${niche} Case Studies`,
-        `${niche} Tools and Resources`,
-        `${niche} vs Traditional Methods`,
-        `${niche} ROI Calculation`
-      ].slice(0, count);
-    }
-
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const response = await openai.chat.completions.create({
-      model: MODEL,
+      model: "gpt-4o",
       messages: [
-        {
-          role: "system",
-          content: 
-            "You are a blog content strategist that specializes in generating highly engaging, SEO-optimized blog topics. " +
-            "Your suggestions should be specific, actionable, and have clear value for readers. " +
-            "Format your response as a JSON object with a 'topics' array of strings with no additional text. Example: {\"topics\": [\"Topic 1\", \"Topic 2\"]}"
+        { 
+          role: "system", 
+          content: `You are a blog content strategist. Generate ${count} blog topic ideas for the ${niche} niche. 
+          Focus on topics that will drive traffic and engage readers. 
+          Create topics that would be helpful for the target audience.
+          
+          Respond with a JSON array of strings, with each string being a topic idea.`
         },
-        {
-          role: "user",
-          content: `Generate ${count} blog topic ideas related to ${niche}. These should be topics that would help drive traffic, generate leads, and establish thought leadership in this space.`
+        { 
+          role: "user", 
+          content: `Generate ${count} blog topic ideas for the ${niche} niche.` 
         }
       ],
+      temperature: 0.8,
       response_format: { type: "json_object" }
     });
     
-    const content = response.choices[0]?.message?.content;
+    const content = response.choices[0].message.content;
+    
     if (!content) {
-      console.error("No content received from OpenAI");
-      throw new Error("Failed to generate topics");
+      throw new Error("OpenAI returned an empty response");
     }
     
     try {
-      const parsed = JSON.parse(content);
-      if (!parsed.topics || !Array.isArray(parsed.topics)) {
-        console.error("Invalid response format from OpenAI:", content);
-        throw new Error("Invalid response format");
+      // Parse the JSON response
+      const parsedResponse = JSON.parse(content);
+      
+      // Check if the response has a topics array
+      if (Array.isArray(parsedResponse.topics)) {
+        return parsedResponse.topics;
       }
       
-      return parsed.topics;
+      // If the response is an array directly
+      if (Array.isArray(parsedResponse)) {
+        return parsedResponse;
+      }
+      
+      // If there's no proper array, extract any string array property
+      const firstArrayProperty = Object.values(parsedResponse).find(value => 
+        Array.isArray(value) && value.length > 0 && typeof value[0] === 'string'
+      );
+      
+      if (firstArrayProperty) {
+        return firstArrayProperty as string[];
+      }
+      
+      throw new Error("Could not find topics array in response");
     } catch (parseError) {
-      console.error("Failed to parse JSON response:", content, parseError);
-      throw new Error("Failed to process generated topics");
+      console.error("Error parsing topic suggestions:", parseError);
+      throw new Error("Failed to parse topic suggestions");
     }
-  } catch (error) {
-    console.error("Error generating topic suggestions:", error);
-    
-    // Return fallback topics instead of throwing error
-    return [
-      `${niche} Best Practices`,
-      `Top 10 ${niche} Trends`,
-      `How to Improve Your ${niche} Strategy`,
-      `${niche} for Beginners`,
-      `Advanced ${niche} Techniques`,
-      `The Future of ${niche}`,
-      `${niche} Case Studies`,
-      `${niche} Tools and Resources`,
-      `${niche} vs Traditional Methods`,
-      `${niche} ROI Calculation`
-    ].slice(0, count);
+  } catch (error: any) {
+    console.error("OpenAI API error:", error);
+    throw new Error(`Failed to generate topic suggestions: ${error.message}`);
   }
+}
+
+/**
+ * Generate default tags based on a topic
+ * @param topic The blog post topic
+ * @returns Array of default tags
+ */
+function generateDefaultTags(topic: string): string[] {
+  // Convert the topic to tags
+  const mainTag = topic.toLowerCase()
+    .replace(/[^\w\s]/g, '') // Remove special characters
+    .trim();
+  
+  // Add some generic tags
+  return [mainTag, 'blog', 'article', 'guide'];
 }
