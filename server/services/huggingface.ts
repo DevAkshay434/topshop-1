@@ -49,9 +49,9 @@ export async function generateBlogContentWithHF(request: BlogContentRequest): Pr
     `;
 
     // Use the Hugging Face model for text generation
-    // We'll use meta-llama/Llama-2-70b-chat-hf, a good open model for this task
+    // Use a model that doesn't require special permissions for inference
     const response = await hf.textGeneration({
-      model: 'mistralai/Mistral-7B-Instruct-v0.2', // Free accessible model
+      model: 'gpt2', // Simpler model that works with free API access
       inputs: prompt,
       parameters: {
         max_new_tokens: 1024,

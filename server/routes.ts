@@ -544,23 +544,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
-        // First attempt to generate content with Hugging Face
+        // Generate content with Hugging Face (don't fallback to OpenAI which has quota issues)
         let generatedContent;
-        try {
-          console.log("Attempting to generate content with Hugging Face...");
-          generatedContent = await generateBlogContentWithHF({ topic, tone, length });
-        } catch (hfError) {
-          console.error("Hugging Face content generation failed:", hfError);
-          
-          // Fallback to OpenAI if available
-          if (process.env.OPENAI_API_KEY) {
-            console.log("Falling back to OpenAI...");
-            generatedContent = await generateBlogContent({ topic, tone, length });
-          } else {
-            // If no fallback is available, rethrow the error
-            throw hfError;
-          }
-        }
+        console.log("Generating content with Hugging Face...");
+        generatedContent = await generateBlogContentWithHF({ topic, tone, length });
+        
+        // If we reach here, content generation was successful
 
         // Update content generation request
         const updatedRequest = await storage.updateContentGenRequest(contentRequest.id, {
