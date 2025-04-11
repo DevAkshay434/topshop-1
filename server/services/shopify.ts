@@ -156,7 +156,7 @@ export class ShopifyService {
       
       const article = {
         title: post.title,
-        author: "Blog Publisher App",
+        author: post.author || store.shopName,
         body_html: post.content,
         tags: post.tags || "",
         published: post.status === 'published',
@@ -214,6 +214,13 @@ export class ShopifyService {
       }
       
       if (post.tags) article.tags = post.tags;
+      
+      // Set the author if provided
+      if (post.author) {
+        article.author = post.author;
+      } else {
+        article.author = store.shopName;
+      }
       
       // Properly handle date formatting for Shopify API
       if (post.status === 'published') {

@@ -59,11 +59,22 @@ Respond with JSON that includes the following fields:
     // Call OpenAI API to generate the content
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     console.log("Calling OpenAI Chat Completions API...");
+    
+    let userPrompt = "";
+    if (customPrompt) {
+      // If we have a custom prompt, use a simple user message to avoid conflicting instructions
+      userPrompt = `Generate content for "${topic}" using the instructions provided.`;
+      console.log("Using custom prompt in system message with simplified user message");
+    } else {
+      // With the default system prompt, use a more specific user message
+      userPrompt = `Write a blog post about "${topic}"`;
+    }
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Write a blog post about "${topic}"` }
+        { role: "user", content: userPrompt }
       ],
       temperature: 0.7,
       response_format: { type: "json_object" }
