@@ -689,6 +689,27 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // --- CONTENT GENERATION ROUTES ---
   
+  // Generate topic suggestions
+  apiRouter.get("/topic-suggestions", async (req: Request, res: Response) => {
+    try {
+      const { niche, count = "5" } = req.query;
+      
+      if (!niche || typeof niche !== 'string') {
+        return res.status(400).json({ error: "Niche parameter is required" });
+      }
+      
+      // Import the OpenAI service here to avoid loading during startup if not needed
+      const { generateTopicSuggestions } = await import("./services/openai");
+      
+      const topics = await generateTopicSuggestions(niche, parseInt(count as string));
+      
+      res.json({ topics });
+    } catch (error: any) {
+      console.error("Error generating topic suggestions:", error);
+      res.status(500).json({ error: error.message || "Failed to generate topic suggestions" });
+    }
+  });
+
   // Generate blog content
   apiRouter.post("/generate-content", async (req: Request, res: Response) => {
     try {
