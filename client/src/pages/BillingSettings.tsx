@@ -214,8 +214,13 @@ export default function BillingSettings() {
   return (
     <div className="max-w-6xl mx-auto p-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Subscription Management</h1>
-        <p className="text-muted-foreground">Manage your app subscription and billing settings.</p>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 flex items-center justify-center bg-blue-500 text-white rounded-sm font-bold">
+            TS
+          </div>
+          <h1 className="text-3xl font-bold">TopShop SEO Subscription</h1>
+        </div>
+        <p className="text-muted-foreground">Manage your TopShop SEO subscription and billing settings.</p>
       </div>
 
       {/* Current Plan */}
