@@ -357,12 +357,52 @@ function BulkGenerationDialog({
   setIsOpen: (open: boolean) => void,
   onGenerate: (keywords: string[], templateId: number) => Promise<void>
 }) {
-  const [keywords, setKeywords] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
+  const [niche, setNiche] = useState<string>("");
+  const [keywords, setKeywords] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("1"); // Default to Product Review template
+
+  // Fetch topic suggestions based on niche
+  const handleGetSuggestions = async () => {
+    if (!niche.trim()) {
+      toast({
+        title: "Please enter a niche",
+        description: "Enter your industry or topic area to get AI suggestions",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/topic-suggestions?niche=${encodeURIComponent(niche)}&count=10`);
+      const data = await response.json();
+      
+      if (data.topics && Array.isArray(data.topics)) {
+        setSuggestions(data.topics);
+        
+        // Automatically add suggestions to keywords textarea
+        setKeywords(data.topics.join('\n'));
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      toast({
+        title: "Failed to get suggestions",
+        description: "There was an error generating topic suggestions",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const handleGenerate = async () => {
-    if (!keywords || selectedTemplate === "") return;
+    if (!keywords) return;
     
     setIsGenerating(true);
     const keywordList = keywords
@@ -384,21 +424,55 @@ function BulkGenerationDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Bulk Content Generation</DialogTitle>
+          <DialogTitle>AI-Powered Content Generation</DialogTitle>
           <DialogDescription>
-            Enter multiple keywords (one per line) and select a template to generate multiple articles at once.
+            Generate blog post ideas with AI or enter your own topics to generate multiple articles at once.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="template">Select Template</Label>
+            <Label htmlFor="niche">Your Business Niche/Industry</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="niche"
+                placeholder="e.g., skincare, organic food, fitness"
+                value={niche}
+                onChange={(e) => setNiche(e.target.value)}
+              />
+              <Button onClick={handleGetSuggestions} disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Get Ideas"}
+              </Button>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="keywords">Topics to Generate</Label>
+              <span className="text-xs text-neutral-500">
+                {keywords.split('\n').filter(Boolean).length} topics
+              </span>
+            </div>
+            <Textarea
+              id="keywords"
+              placeholder="Enter topics one per line, or use the 'Get Ideas' button to generate suggestions"
+              className="min-h-[150px]"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+            />
+            <p className="text-xs text-neutral-500">
+              Each line will become a separate blog post
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="template">Content Style</Label>
             <Select 
-              value={selectedTemplate} 
+              value={selectedTemplate}
               onValueChange={(value: string) => setSelectedTemplate(value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Choose a template" />
+                <SelectValue placeholder="Choose a style" />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((template) => (
@@ -409,36 +483,22 @@ function BulkGenerationDialog({
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="keywords">Keywords (one per line)</Label>
-            <Textarea
-              id="keywords"
-              placeholder="Enter keywords, one per line"
-              className="min-h-[150px]"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-            />
-            <p className="text-xs text-neutral-500">
-              {keywords.split('\n').filter(Boolean).length} keywords entered
-            </p>
-          </div>
         </div>
         
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isGenerating}>
             Cancel
           </Button>
-          <Button onClick={handleGenerate} disabled={!keywords || selectedTemplate === "" || isGenerating}>
+          <Button onClick={handleGenerate} disabled={!keywords || isGenerating}>
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                Generating Articles...
               </>
             ) : (
               <>
                 <Zap className="mr-2 h-4 w-4" />
-                Generate Articles
+                Generate {keywords.split('\n').filter(Boolean).length} Articles
               </>
             )}
           </Button>
