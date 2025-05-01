@@ -6,9 +6,17 @@ import {
   CardDescription, 
   CardFooter,
   CardHeader,
-
   CardTitle 
 } from '@/components/ui/card';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Tabs,
   TabsContent,
@@ -100,10 +108,25 @@ interface ServiceStatus {
   pixaway: boolean;
 }
 
+// Interface for Pixabay image 
+interface PixabayImage {
+  id: string;
+  url: string;
+  width: number;
+  height: number;
+  alt?: string;
+  selected?: boolean;
+}
+
 export default function AdminPanel() {
   const [selectedTab, setSelectedTab] = useState("generate");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [isSearchingImages, setIsSearchingImages] = useState(false);
+  const [imageSearchQuery, setImageSearchQuery] = useState('');
+  const [searchedImages, setSearchedImages] = useState<PixabayImage[]>([]);
+  const [selectedImages, setSelectedImages] = useState<PixabayImage[]>([]);
+  const [showImageDialog, setShowImageDialog] = useState(false);
   const { toast } = useToast();
 
   // Default form values
@@ -185,15 +208,93 @@ export default function AdminPanel() {
     enabled: selectedTab === "connections"
   });
 
+  // Handle image search using Pixabay API
+  const searchImages = async (query: string) => {
+    if (!query || query.trim() === '') {
+      toast({
+        title: "Search query required",
+        description: "Please enter a search term to find images",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSearchingImages(true);
+    
+    try {
+      const response = await apiRequest({
+        url: '/api/admin/generate-images',
+        method: 'POST',
+        data: {
+          prompt: query,
+          count: 6 // Request multiple images to choose from
+        }
+      });
+      
+      if (response.success && response.images) {
+        setSearchedImages(response.images.map((img: any) => ({
+          ...img,
+          selected: false
+        })));
+      } else {
+        toast({
+          title: "No images found",
+          description: "Try a different search term",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      console.error("Image search error:", error);
+      toast({
+        title: "Error searching images",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearchingImages(false);
+    }
+  };
+  
+  // Toggle image selection
+  const toggleImageSelection = (imageId: string) => {
+    setSearchedImages(prev => 
+      prev.map(img => 
+        img.id === imageId 
+          ? { ...img, selected: !img.selected } 
+          : img
+      )
+    );
+  };
+  
+  // Handle image selection confirmation
+  const confirmImageSelection = () => {
+    const selected = searchedImages.filter(img => img.selected);
+    setSelectedImages(selected);
+    setShowImageDialog(false);
+    
+    toast({
+      title: `${selected.length} image(s) selected`,
+      description: "Images will be included in your content",
+      variant: "default"
+    });
+  };
+  
+  // Handle content generation form submission
   const handleSubmit = async (values: ContentFormValues) => {
     setIsGenerating(true);
     setGeneratedContent(null);
     
     try {
+      // Add selected image IDs to form data
+      const submitData = {
+        ...values,
+        selectedImageIds: selectedImages.map(img => img.id)
+      };
+      
       const response = await apiRequest({
         url: '/api/admin/generate-content',
         method: 'POST',
-        data: values
+        data: submitData
       });
       
       setGeneratedContent(response);
@@ -609,12 +710,105 @@ export default function AdminPanel() {
                                 Generate Images
                               </FormLabel>
                               <FormDescription>
-                                Create AI-generated images for the content
+                                Select images for your content from Pixabay
                               </FormDescription>
+                              {field.value && (
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  className="mt-2" 
+                                  onClick={() => setShowImageDialog(true)}
+                                >
+                                  {selectedImages.length > 0 
+                                    ? `${selectedImages.length} Image(s) Selected` 
+                                    : "Search & Select Images"}
+                                </Button>
+                              )}
                             </div>
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Image Selection Dialog */}
+                      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+                        <DialogContent className="sm:max-w-[700px]">
+                          <DialogHeader>
+                            <DialogTitle>Select Images for Your Content</DialogTitle>
+                            <DialogDescription>
+                              Search for images related to your content. Click on images to select them.
+                            </DialogDescription>
+                          </DialogHeader>
+                          
+                          <div className="grid gap-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                placeholder="Search for images (e.g., 'business meeting', 'online shopping')"
+                                value={imageSearchQuery}
+                                onChange={(e) => setImageSearchQuery(e.target.value)}
+                                className="flex-1"
+                              />
+                              <Button 
+                                type="button" 
+                                onClick={() => searchImages(imageSearchQuery)}
+                                disabled={isSearchingImages}
+                              >
+                                {isSearchingImages ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Searching...
+                                  </>
+                                ) : "Search"}
+                              </Button>
+                            </div>
+                            
+                            {searchedImages.length > 0 ? (
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-1">
+                                {searchedImages.map(image => (
+                                  <div 
+                                    key={image.id}
+                                    className={`relative rounded-md overflow-hidden cursor-pointer border-2 ${
+                                      image.selected ? 'border-blue-500' : 'border-transparent'
+                                    }`}
+                                    onClick={() => toggleImageSelection(image.id)}
+                                  >
+                                    <img 
+                                      src={image.url} 
+                                      alt={image.alt || 'Content image'} 
+                                      className="w-full h-32 object-cover"
+                                    />
+                                    {image.selected && (
+                                      <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-1">
+                                        <CheckCircle className="h-4 w-4 text-white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="py-8 text-center text-muted-foreground">
+                                {isSearchingImages ? "Searching for images..." : "Search for images to display results"}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <DialogFooter>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              onClick={() => setShowImageDialog(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              type="button"
+                              onClick={confirmImageSelection}
+                              disabled={!searchedImages.some(img => img.selected)}
+                            >
+                              Use Selected Images
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     
                     <Button 
