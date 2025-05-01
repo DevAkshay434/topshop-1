@@ -662,6 +662,18 @@ export default function AdminPanel() {
                       )}
                     </div>
                     
+                    {/* Display featured image if available */}
+                    {generatedContent.featuredImage && (
+                      <div className="mb-4">
+                        <img 
+                          src={generatedContent.featuredImage.url} 
+                          alt={generatedContent.featuredImage.alt || generatedContent.title} 
+                          className="w-full h-auto rounded-md border"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Featured image generated for this post</p>
+                      </div>
+                    )}
+                    
                     <div className="border rounded-md p-4 max-h-[60vh] overflow-y-auto">
                       <div dangerouslySetInnerHTML={{ __html: generatedContent.content }} />
                     </div>

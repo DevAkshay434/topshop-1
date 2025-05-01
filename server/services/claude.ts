@@ -13,7 +13,7 @@ interface BlogContent {
   title: string;
   content: string;
   tags: string[];
-  metaDescription?: string;
+  metaDescription: string;
 }
 
 // Initialize the Anthropic client
@@ -37,17 +37,25 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       contentLength = "approximately 1200-1500 words";
     }
     
-    // Base prompt for Claude
-    let promptText = `Generate a well-structured, engaging blog post about ${request.topic} in a ${request.tone} tone, ${contentLength}.
+    // Enhanced base prompt for Claude with proper structure
+    let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${request.tone} tone, ${contentLength}.
     
-    The blog post should include:
-    1. A compelling title
-    2. Clear section headings
-    3. Well-organized paragraphs
-    4. HTML formatting (h1, h2, p, ul, li, etc.)
-    5. A conclusion with a call to action
+    The blog post MUST follow this exact structure:
+    1. A compelling title that includes main keywords
+    2. Multiple clearly defined sections with H2 headings
+    3. Appropriate H3 subheadings within each section where needed
+    4. Well-organized paragraphs (2-4 paragraphs per section)
+    5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
+    6. Lists and tables where appropriate to improve readability
+    7. A conclusion with a clear call to action
     
-    Also suggest 5-7 relevant tags for the post, focusing on SEO value.`;
+    IMPORTANT FORMATTING REQUIREMENTS:
+    - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
+    - DO NOT use <h1> tags, as this will be the post title
+    - Make sure sections flow logically and coherently
+    - Include a meta description of 155-160 characters
+    
+    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
     
     // Add custom prompt if provided
     if (request.customPrompt) {
@@ -60,10 +68,10 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       The content must directly address these instructions while maintaining a ${request.tone} tone and proper blog structure.`;
     }
     
-    // Make API call to Claude
+    // Make API call to Claude with increased token limit for longer content
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 4000,
+      max_tokens: 8000,
       messages: [
         {
           role: 'user',
@@ -73,7 +81,8 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
           {
             "title": "The title of the blog post",
             "content": "The complete HTML content of the blog post",
-            "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+            "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+            "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
           }
           
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
@@ -99,7 +108,8 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     return {
       title: jsonContent.title,
       content: jsonContent.content,
-      tags: jsonContent.tags
+      tags: jsonContent.tags,
+      metaDescription: jsonContent.metaDescription || ''
     };
   } catch (error: any) {
     console.error("Error generating content with Claude:", error);

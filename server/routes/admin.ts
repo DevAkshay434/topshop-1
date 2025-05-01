@@ -452,10 +452,18 @@ Please suggest a meta description at the end of your response.
       } else {
         // Create page in Shopify
         try {
+          // Prepare content with featured image if available
+          let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
+          
+          // Add featured image at the beginning if generated
+          if (featuredImage) {
+            finalContent = `<img src="${featuredImage.url}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n\n${finalContent}`;
+          }
+          
           const page = await createPage(
             store,
             generatedContent.title || requestData.title,
-            generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`,
+            finalContent,
             requestData.postStatus === 'publish'
           );
           
@@ -475,7 +483,8 @@ Please suggest a meta description at the end of your response.
         content: generatedContent.content,
         title: generatedContent.title,
         tags: generatedContent.tags,
-        metaDescription: generatedContent.metaDescription || ''
+        metaDescription: generatedContent.metaDescription || '',
+        featuredImage: featuredImage
       });
       
     } catch (error: any) {
