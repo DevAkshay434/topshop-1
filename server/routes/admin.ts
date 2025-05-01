@@ -175,10 +175,12 @@ adminRouter.get("/blogs", async (_req: Request, res: Response) => {
 // Get keywords for a product URL using DataForSEO
 adminRouter.post("/keywords-for-product", async (req: Request, res: Response) => {
   try {
-    // Validate request
+    // Validate request - allow either direct topic or URL
     const schema = z.object({
-      productUrl: z.string().url(),
+      productUrl: z.string().optional(),
       topic: z.string().optional() // Allow direct keyword entry
+    }).refine(data => data.productUrl || data.topic, {
+      message: "Either productUrl or topic must be provided"
     });
     
     const { productUrl, topic } = schema.parse(req.body);
@@ -192,10 +194,12 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       });
     }
     
-    // Get keywords - either from the product URL or directly from the topic
-    const keywords = topic 
-      ? await dataForSEOService.getKeywordsForProduct(topic) 
-      : await dataForSEOService.getKeywordsForProduct(productUrl);
+    // Determine search query - prefer topic if provided
+    const searchQuery = topic || productUrl || "";
+    console.log(`Searching keywords for: "${searchQuery}"`);
+    
+    // Get keywords
+    const keywords = await dataForSEOService.getKeywordsForProduct(searchQuery);
     
     res.json({
       success: true,

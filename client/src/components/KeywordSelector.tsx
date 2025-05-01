@@ -73,31 +73,41 @@ export default function KeywordSelector({
     setKeywords(updatedKeywords);
   };
 
-  // Fetch keywords based on product URL
+  // Fetch keywords based on product URL or direct topic
   const fetchKeywords = async () => {
     if (!productUrl && !directTopic) {
       return;
     }
 
     setIsLoading(true);
+    setKeywords([]); // Clear previous keywords when starting a new search
 
     try {
+      console.log(`Fetching keywords for ${directTopic ? 'topic' : 'URL'}: ${directTopic || productUrl}`);
+      
+      const requestData: any = {};
+      if (directTopic) {
+        requestData.topic = directTopic;
+      } else if (productUrl) {
+        requestData.productUrl = productUrl;
+      }
+
       const response = await apiRequest<{ success: boolean; keywords: KeywordData[] }>({
         url: "/api/admin/keywords-for-product",
         method: "POST",
-        data: {
-          productUrl: productUrl || "https://example.com/placeholder",
-          topic: directTopic || undefined
-        }
+        data: requestData
       });
 
-      if (response.success && response.keywords) {
+      if (response.success && response.keywords && response.keywords.length > 0) {
         // Add selected flag to each keyword
         const keywordsWithSelection = response.keywords.map(kw => ({
           ...kw,
           selected: false
         }));
         setKeywords(keywordsWithSelection);
+        console.log(`Received ${keywordsWithSelection.length} keywords from API`);
+      } else {
+        console.log("No keywords returned from API");
       }
     } catch (error) {
       console.error("Error fetching keywords:", error);
