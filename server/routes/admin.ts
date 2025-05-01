@@ -11,7 +11,7 @@ import {
   shopifyService
 } from "../services/shopify";
 import { dataForSEOService, KeywordData } from "../services/dataforseo";
-import { pixabayService } from "../services/pixabay";
+import { pixabayService, type PixabayImage } from "../services/pixabay";
 import { generateBlogContentWithClaude } from "../services/claude";
 
 const adminRouter = Router();
@@ -453,12 +453,70 @@ Please suggest a meta description at the end of your response.
           throw new Error('Blog ID is required for blog posts');
         }
         
-        // Prepare content with featured image if available
+        // Prepare content with featured image and additional images throughout the content
         let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
         
-        // Add featured image at the beginning if generated
+        // Add featured image at the beginning if available
         if (featuredImage) {
           finalContent = `<img src="${featuredImage.url}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n\n${finalContent}`;
+        }
+        
+        // Insert additional images throughout the content, after subheadings (<h2> and <h3> tags)
+        if (additionalImages.length > 0) {
+          // Find all heading locations in the content using a compatible approach instead of matchAll
+          const headingRegex = /<h[23][^>]*>(.*?)<\/h[23]>/g;
+          const headingMatches: Array<{index: number, match: string}> = [];
+          let match;
+          
+          // Manually collect all matches
+          while ((match = headingRegex.exec(finalContent)) !== null) {
+            headingMatches.push({
+              index: match.index,
+              match: match[0]
+            });
+          }
+          
+          if (headingMatches.length > 0) {
+            // Create a copy of the content to modify
+            let contentWithImages = finalContent;
+            let imageIndex = 0;
+            let insertOffset = 0;
+            
+            // Insert images after some headings (not all, to maintain good content flow)
+            for (let i = 0; i < headingMatches.length && imageIndex < additionalImages.length; i++) {
+              // Only insert after approximately every second heading
+              if (i % 2 === 1) {
+                const match = headingMatches[i];
+                if (match.index !== undefined) {
+                  const insertPosition = match.index + match.match.length + insertOffset;
+                  const image = additionalImages[imageIndex];
+                  const imageHtml = `\n\n<img src="${image.url}" alt="${image.alt || 'Content image'}" class="content-image" />\n\n`;
+                  
+                  // Insert the image HTML after the heading
+                  contentWithImages = 
+                    contentWithImages.substring(0, insertPosition) + 
+                    imageHtml + 
+                    contentWithImages.substring(insertPosition);
+                  
+                  // Track the offset as we're modifying the string
+                  insertOffset += imageHtml.length;
+                  imageIndex++;
+                }
+              }
+            }
+            
+            // If we still have images left but ran out of headings, append them to the end
+            if (imageIndex < additionalImages.length) {
+              contentWithImages += '\n\n<div class="additional-images">\n';
+              for (let i = imageIndex; i < additionalImages.length; i++) {
+                const image = additionalImages[i];
+                contentWithImages += `<img src="${image.url}" alt="${image.alt || 'Additional content image'}" class="content-image" />\n`;
+              }
+              contentWithImages += '</div>\n';
+            }
+            
+            finalContent = contentWithImages;
+          }
         }
         
         // Create blog post in DB
@@ -496,12 +554,70 @@ Please suggest a meta description at the end of your response.
       } else {
         // Create page in Shopify
         try {
-          // Prepare content with featured image if available
+          // Prepare content with featured image and additional images throughout the content
           let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
           
-          // Add featured image at the beginning if generated
+          // Add featured image at the beginning if available
           if (featuredImage) {
             finalContent = `<img src="${featuredImage.url}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n\n${finalContent}`;
+          }
+          
+          // Insert additional images throughout the content, after subheadings (<h2> and <h3> tags)
+          if (additionalImages.length > 0) {
+            // Find all heading locations in the content using a compatible approach instead of matchAll
+            const headingRegex = /<h[23][^>]*>(.*?)<\/h[23]>/g;
+            const headingMatches: Array<{index: number, match: string}> = [];
+            let match;
+            
+            // Manually collect all matches
+            while ((match = headingRegex.exec(finalContent)) !== null) {
+              headingMatches.push({
+                index: match.index,
+                match: match[0]
+              });
+            }
+            
+            if (headingMatches.length > 0) {
+              // Create a copy of the content to modify
+              let contentWithImages = finalContent;
+              let imageIndex = 0;
+              let insertOffset = 0;
+              
+              // Insert images after some headings (not all, to maintain good content flow)
+              for (let i = 0; i < headingMatches.length && imageIndex < additionalImages.length; i++) {
+                // Only insert after approximately every second heading
+                if (i % 2 === 1) {
+                  const match = headingMatches[i];
+                  if (match.index !== undefined) {
+                    const insertPosition = match.index + match.match.length + insertOffset;
+                    const image = additionalImages[imageIndex];
+                    const imageHtml = `\n\n<img src="${image.url}" alt="${image.alt || 'Content image'}" class="content-image" />\n\n`;
+                    
+                    // Insert the image HTML after the heading
+                    contentWithImages = 
+                      contentWithImages.substring(0, insertPosition) + 
+                      imageHtml + 
+                      contentWithImages.substring(insertPosition);
+                    
+                    // Track the offset as we're modifying the string
+                    insertOffset += imageHtml.length;
+                    imageIndex++;
+                  }
+                }
+              }
+              
+              // If we still have images left but ran out of headings, append them to the end
+              if (imageIndex < additionalImages.length) {
+                contentWithImages += '\n\n<div class="additional-images">\n';
+                for (let i = imageIndex; i < additionalImages.length; i++) {
+                  const image = additionalImages[i];
+                  contentWithImages += `<img src="${image.url}" alt="${image.alt || 'Additional content image'}" class="content-image" />\n`;
+                }
+                contentWithImages += '</div>\n';
+              }
+              
+              finalContent = contentWithImages;
+            }
           }
           
           const page = await createPage(
