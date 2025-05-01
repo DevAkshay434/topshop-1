@@ -48,8 +48,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import KeywordSelector from '@/components/KeywordSelector';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -127,6 +128,8 @@ export default function AdminPanel() {
   const [searchedImages, setSearchedImages] = useState<PixabayImage[]>([]);
   const [selectedImages, setSelectedImages] = useState<PixabayImage[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showKeywordSelector, setShowKeywordSelector] = useState(false);
+  const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Default form values
@@ -290,16 +293,34 @@ export default function AdminPanel() {
     });
   };
   
+  // Handle keyword selection
+  const handleKeywordsSelected = (keywords: any[]) => {
+    setSelectedKeywords(keywords);
+    setShowKeywordSelector(false);
+    
+    // Update form with selected keywords
+    const keywordStrings = keywords.map(k => k.keyword);
+    form.setValue('keywords', keywordStrings);
+    
+    toast({
+      title: `${keywords.length} keyword(s) selected`,
+      description: "Keywords will be used to optimize your content",
+      variant: "default"
+    });
+  };
+  
   // Handle content generation form submission
   const handleSubmit = async (values: ContentFormValues) => {
     setIsGenerating(true);
     setGeneratedContent(null);
     
     try {
-      // Add selected image IDs to form data
+      // Add selected image IDs and keywords to form data
       const submitData = {
         ...values,
-        selectedImageIds: selectedImages.map(img => img.id)
+        selectedImageIds: selectedImages.map(img => img.id),
+        // Include full keyword data (not just strings) for analysis on the server
+        selectedKeywordData: selectedKeywords
       };
       
       const response = await apiRequest({
@@ -676,6 +697,44 @@ export default function AdminPanel() {
                       </div>
                     </div>
                     
+                    {/* Keywords section */}
+                    <div className="space-y-4 pt-4">
+                      <h3 className="text-lg font-medium flex items-center">
+                        <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
+                        Keywords
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Select keywords to optimize your content for SEO
+                      </p>
+                        
+                      <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2">
+                        {selectedKeywords.length > 0 ? (
+                          selectedKeywords.map((keyword, idx) => (
+                            <Badge key={idx} variant="secondary" className="flex items-center gap-1">
+                              {keyword.keyword}
+                              {keyword.searchVolume && (
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  ({keyword.searchVolume.toLocaleString()})
+                                </span>
+                              )}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No keywords selected yet</span>
+                        )}
+                      </div>
+                        
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowKeywordSelector(true)}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {selectedKeywords.length > 0 ? 'Change Keywords' : 'Select Keywords'}
+                      </Button>
+                    </div>
+                    
                     {/* Publication section */}
                     <div className="space-y-4 pt-4">
                       <h3 className="text-lg font-medium">Publication</h3>
@@ -915,6 +974,18 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Keyword Selector Dialog */}
+          <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <KeywordSelector
+                initialKeywords={selectedKeywords}
+                onKeywordsSelected={handleKeywordsSelected}
+                onClose={() => setShowKeywordSelector(false)}
+                title="Select Keywords for SEO Optimization"
+              />
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Connections Tab */}
