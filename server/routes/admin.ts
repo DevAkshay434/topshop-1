@@ -302,8 +302,8 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     
     try {
       // 1. Fetch product and collection details if IDs provided
-      let productsInfo = [];
-      let collectionsInfo = [];
+      let productsInfo: Array<any> = [];
+      let collectionsInfo: Array<any> = [];
       
       if (requestData.productIds && requestData.productIds.length > 0) {
         // Note: In a full implementation, we would fetch each product individually
@@ -402,7 +402,7 @@ Please suggest a meta description at the end of your response.
           author: connection.storeName.replace('.myshopify.com', ''),
           tags: generatedContent.tags?.join(',') || '',
           category: "Generated Content",
-          shopifyArticleId: null,
+          shopifyPostId: null,
           shopifyBlogId: blogId
         });
         

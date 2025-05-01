@@ -13,6 +13,7 @@ interface BlogContent {
   title: string;
   content: string;
   tags: string[];
+  metaDescription?: string;
 }
 
 // Initialize the Anthropic client
