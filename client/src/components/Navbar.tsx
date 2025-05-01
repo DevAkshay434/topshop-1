@@ -15,6 +15,7 @@ export default function Navbar() {
     { name: 'Blog Posts', path: '/blog-posts', visible: true },
     { name: 'Scheduled Posts', path: '/scheduled-posts', visible: true },
     { name: 'Shopify Connection', path: '/shopify-connection', visible: true },
+    { name: 'Admin Panel', path: '/admin', visible: true },
     { name: 'Billing Settings', path: '/billing-settings', visible: true },
     { name: 'Install App', path: '/install', visible: true },
     { name: 'Partner Install', path: '/partner-install', visible: false }, // Hidden but still available via direct URL
