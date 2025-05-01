@@ -41,11 +41,14 @@ export class PixabayService {
 
     try {
       // Make API request to search for images
+      // Ensure per_page is within Pixabay's valid range (3-200)
+      const validCount = Math.max(3, Math.min(200, count));
+      
       const response = await axios.get(`${this.apiUrl}`, {
         params: {
           key: this.apiKey,
           q: prompt,
-          per_page: count,
+          per_page: validCount,
           image_type: 'photo',
           safesearch: true
         }
@@ -129,7 +132,8 @@ export class PixabayService {
         params: {
           key: this.apiKey,
           q: 'test',
-          per_page: 1
+          per_page: 3, // Minimum value accepted by Pixabay API
+          image_type: 'photo'
         }
       });
       

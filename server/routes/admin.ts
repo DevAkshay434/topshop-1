@@ -256,6 +256,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       enableCitations: z.boolean().default(true),
       mainImageIds: z.array(z.string()).optional(),
       internalImageIds: z.array(z.string()).optional(),
+      selectedImageIds: z.array(z.string()).optional(), // Added for user-selected Pixabay images
       toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]).default("friendly"),
       postStatus: z.enum(["publish", "draft"]).default("draft"),
       generateImages: z.boolean().default(true)
@@ -383,9 +384,42 @@ Please suggest a meta description at the end of your response.
         generatedContent: JSON.stringify(generatedContent)
       });
       
-      // 5. Generate images if requested
+      // 5. Handle images based on user selection or generate if needed
       let featuredImage = null;
-      if (requestData.generateImages) {
+      
+      // If user has selected specific images, use those
+      if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
+        try {
+          // Here we can directly use the selected image IDs
+          // In a more complete implementation, we would fetch the full image data from storage
+          // For now, we'll simply use the first selected image as the featured image
+          
+          // We need to search for the image to get the URL
+          console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
+          
+          // Search for the image to get its full data
+          // Note: In a real implementation, we'd store these images in a database
+          const { images } = await pixabayService.safeGenerateImages(requestData.title, 6);
+          
+          // Find the selected image by ID
+          const selectedImage = images.find(img => 
+            requestData.selectedImageIds && 
+            requestData.selectedImageIds.includes(img.id)
+          );
+          
+          if (selectedImage) {
+            featuredImage = selectedImage;
+            console.log(`Using user-selected featured image: ${featuredImage.url}`);
+          } else {
+            console.log(`Selected image not found, will generate a new one`);
+          }
+        } catch (imageError) {
+          console.error('Error retrieving selected images:', imageError);
+        }
+      }
+      
+      // If we still don't have a featured image (no selection or error), generate one
+      if (!featuredImage && requestData.generateImages) {
         try {
           console.log(`Generating images for: "${requestData.title}"`);
           const { images, fallbackUsed } = await pixabayService.safeGenerateImages(requestData.title, 1);
