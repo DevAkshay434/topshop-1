@@ -78,6 +78,10 @@ export default function Dashboard() {
             <Zap className="mr-2 h-4 w-4" />
             Bulk Generate
           </Button>
+          <Button variant="outline" onClick={() => setLocation("/admin")}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Admin Panel
+          </Button>
           <Button onClick={handleCreatePost}>
             <Plus className="mr-2 h-4 w-4" />
             Create New Post

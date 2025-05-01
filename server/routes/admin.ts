@@ -177,10 +177,11 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
   try {
     // Validate request
     const schema = z.object({
-      productUrl: z.string().url()
+      productUrl: z.string().url(),
+      topic: z.string().optional() // Allow direct keyword entry
     });
     
-    const { productUrl } = schema.parse(req.body);
+    const { productUrl, topic } = schema.parse(req.body);
     
     // Check if DataForSEO API key is set
     if (!dataForSEOService.hasValidCredentials()) {
@@ -191,8 +192,10 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       });
     }
     
-    // Get keywords
-    const keywords = await dataForSEOService.getKeywordsForProduct(productUrl);
+    // Get keywords - either from the product URL or directly from the topic
+    const keywords = topic 
+      ? await dataForSEOService.getKeywordsForProduct(topic) 
+      : await dataForSEOService.getKeywordsForProduct(productUrl);
     
     res.json({
       success: true,
@@ -203,6 +206,40 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     res.status(500).json({
       success: false,
       error: error.message || "Failed to fetch keywords"
+    });
+  }
+});
+
+// Save selected keywords for content generation
+adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) => {
+  try {
+    // Validate request
+    const schema = z.object({
+      contentRequestId: z.number().optional(),
+      selectedKeywords: z.array(z.object({
+        keyword: z.string(),
+        searchVolume: z.number().optional(),
+        competition: z.number().optional(),
+        competitionLevel: z.string().optional(),
+        difficulty: z.number().optional()
+      }))
+    });
+    
+    const { contentRequestId, selectedKeywords } = schema.parse(req.body);
+    
+    // Here you would typically save the selected keywords to the database
+    // For this implementation, we'll just return them back with a success flag
+    
+    res.json({
+      success: true,
+      contentRequestId,
+      selectedKeywords
+    });
+  } catch (error: any) {
+    console.error("Error saving selected keywords:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to save selected keywords"
     });
   }
 });

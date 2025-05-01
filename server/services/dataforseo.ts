@@ -7,7 +7,11 @@ export interface KeywordData {
   searchVolume?: number;
   cpc?: number;
   competition?: number;
+  competitionLevel?: string; // Low, Medium, High
   intent?: string;
+  trend?: number[]; // Monthly trend data
+  difficulty?: number; // Keyword difficulty score (0-100)
+  selected?: boolean; // For frontend selection
 }
 
 // Class for DataForSEO API integration
@@ -73,12 +77,25 @@ export class DataForSEOService {
       
       for (const result of results) {
         for (const item of result.items || []) {
+          // Get competition level based on competition value
+          const competitionLevel = this.getCompetitionLevel(item.competition || 0);
+          
+          // Process monthly trend data if available
+          const trend = item.monthly_searches?.map((monthData: any) => monthData.search_volume) || [];
+          
+          // Calculate keyword difficulty if not provided directly
+          const difficulty = item.keyword_difficulty || this.calculateKeywordDifficulty(item);
+          
           keywordData.push({
             keyword: item.keyword || '',
             searchVolume: item.search_volume || 0,
             cpc: item.cpc || 0,
             competition: item.competition || 0,
-            intent: this.determineIntent(item)
+            competitionLevel,
+            intent: this.determineIntent(item),
+            trend,
+            difficulty,
+            selected: false // Default to not selected
           });
         }
       }
@@ -131,6 +148,43 @@ export class DataForSEOService {
     } else {
       return 'Navigational';
     }
+  }
+
+  /**
+   * Get competition level description from competition value
+   * @param competition Competition value from 0-1
+   * @returns Competition level description (Low, Medium, High)
+   */
+  private getCompetitionLevel(competition: number): string {
+    if (competition < 0.33) {
+      return "Low";
+    } else if (competition < 0.66) {
+      return "Medium";
+    } else {
+      return "High";
+    }
+  }
+
+  /**
+   * Calculate keyword difficulty based on available metrics
+   * @param keywordItem Keyword data item
+   * @returns Keyword difficulty score from 0-100
+   */
+  private calculateKeywordDifficulty(keywordItem: any): number {
+    // This is a simplified calculation
+    // In a real implementation, this would be more sophisticated
+    
+    // Use competition as a base factor (0-1)
+    const competitionFactor = keywordItem.competition || 0;
+    
+    // Factor in search volume (more searches = more difficult)
+    const volumeFactor = Math.min(1, (keywordItem.search_volume || 0) / 10000);
+    
+    // Factor in CPC (higher CPC = more difficult)
+    const cpcFactor = Math.min(1, (keywordItem.cpc || 0) / 5);
+    
+    // Calculate and return difficulty score from 0-100
+    return Math.round((competitionFactor * 0.5 + volumeFactor * 0.3 + cpcFactor * 0.2) * 100);
   }
 
   /**
