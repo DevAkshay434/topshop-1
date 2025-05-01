@@ -194,17 +194,30 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       });
     }
     
-    // Determine search query - prefer topic if provided
-    const searchQuery = topic || productUrl || "";
-    console.log(`Searching keywords for: "${searchQuery}"`);
-    
-    // Get keywords
-    const keywords = await dataForSEOService.getKeywordsForProduct(searchQuery);
-    
-    res.json({
-      success: true,
-      keywords
-    });
+    try {
+      // Determine search query - prefer topic if provided
+      const searchQuery = topic || productUrl || "";
+      console.log(`Searching keywords for: "${searchQuery}"`);
+      
+      // Get keywords - might use real API or fallback depending on credentials
+      const keywords = await dataForSEOService.getKeywordsForProduct(searchQuery);
+      
+      // Log success for debugging
+      console.log(`Successfully found ${keywords.length} keywords for "${searchQuery}"`);
+      
+      res.json({
+        success: true,
+        keywords,
+        usingFallback: !dataForSEOService.hasValidCredentials()
+      });
+    } catch (apiError: any) {
+      console.error("API error when fetching keywords:", apiError);
+      
+      res.status(500).json({
+        success: false,
+        error: apiError.message || "Failed to fetch keywords"
+      });
+    }
   } catch (error: any) {
     console.error("Error fetching keywords:", error);
     res.status(500).json({

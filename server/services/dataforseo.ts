@@ -41,109 +41,119 @@ export class DataForSEOService {
    * @returns Array of keyword data
    */
   public async getKeywordsForProduct(productUrl: string): Promise<KeywordData[]> {
-    if (!this.hasValidCredentials()) {
-      throw new Error('DataForSEO credentials not set');
-    }
-
     try {
-      // Create basic auth header
-      const auth = {
-        username: this.username,
-        password: this.password
-      };
-
       // Extract keyword from URL or use as direct input
       const keyword = this.extractKeywordFromUrl(productUrl);
       console.log(`DataForSEO search for keyword: "${keyword}"`);
-      console.log(`Using DataForSEO credentials - username: ${this.username.substring(0, 5)}...`);
 
-      // Prepare request payload
-      const requestData = [{
-        keyword: keyword,
-        language_code: "en",
-        location_code: 2840, // United States
-        limit: 20
-      }];
-
-      console.log("DataForSEO request payload:", JSON.stringify(requestData));
-
-      // POST request to DataForSEO API to get related keywords
-      const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/related_keywords/live`,
-        requestData,
-        { auth }
-      );
-
-      console.log(`DataForSEO API status code: ${response.status}`);
-      
-      // Additional logging to troubleshoot issues
-      if (response.data?.status_code) {
-        console.log(`DataForSEO API response status code: ${response.data.status_code}`);
-        console.log(`DataForSEO API response status message: ${response.data.status_message || 'No message'}`);
+      // Check if we should use API or fallback directly
+      if (!this.hasValidCredentials()) {
+        console.log("No valid DataForSEO credentials, using fallback keyword generation");
+        return this.generateFallbackKeywords(keyword);
       }
 
-      // Full response logging for debugging
-      console.log("DataForSEO API full response:", JSON.stringify(response.data));
+      try {
+        // Create basic auth header
+        const auth = {
+          username: this.username,
+          password: this.password
+        };
 
-      // Return fallback data if the API response doesn't have the expected format
-      if (!response.data?.tasks || !Array.isArray(response.data.tasks) || response.data.tasks.length === 0) {
-        console.log("No tasks in response, generating fallback keywords for:", keyword);
+        console.log(`Using DataForSEO credentials - username: ${this.username.substring(0, 5)}...`);
+
+        // Prepare request payload
+        const requestData = [{
+          keyword: keyword,
+          language_code: "en",
+          location_code: 2840, // United States
+          limit: 20
+        }];
+
+        console.log("DataForSEO request payload:", JSON.stringify(requestData));
+
+        // POST request to DataForSEO API to get related keywords
+        const response = await axios.post(
+          `${this.apiUrl}/v3/keywords_data/google/related_keywords/live`,
+          requestData,
+          { auth }
+        );
+
+        console.log(`DataForSEO API status code: ${response.status}`);
         
-        // Generate related keywords based on the input
-        return this.generateFallbackKeywords(keyword);
-      }
-
-      // Check if the response is successful
-      if (response.data.tasks[0]?.status_code !== 20000) {
-        console.log(`API error: ${response.data.tasks[0]?.status_message || 'Unknown error'}`);
-        
-        // If API error, use fallback data
-        return this.generateFallbackKeywords(keyword);
-      }
-
-      // Extract keyword data from response
-      const keywordData: KeywordData[] = [];
-      const results = response.data.tasks[0]?.result || [];
-      
-      if (results.length === 0) {
-        console.log("No results in response, generating fallback keywords");
-        return this.generateFallbackKeywords(keyword);
-      }
-      
-      for (const result of results) {
-        for (const item of result.items || []) {
-          // Get competition level based on competition value
-          const competitionLevel = this.getCompetitionLevel(item.competition || 0);
-          
-          // Process monthly trend data if available
-          const trend = item.monthly_searches?.map((monthData: any) => monthData.search_volume) || [];
-          
-          // Calculate keyword difficulty if not provided directly
-          const difficulty = item.keyword_difficulty || this.calculateKeywordDifficulty(item);
-          
-          keywordData.push({
-            keyword: item.keyword || '',
-            searchVolume: item.search_volume || 0,
-            cpc: item.cpc || 0,
-            competition: item.competition || 0,
-            competitionLevel,
-            intent: this.determineIntent(item),
-            trend,
-            difficulty,
-            selected: false // Default to not selected
-          });
+        // Additional logging to troubleshoot issues
+        if (response.data?.status_code) {
+          console.log(`DataForSEO API response status code: ${response.data.status_code}`);
+          console.log(`DataForSEO API response status message: ${response.data.status_message || 'No message'}`);
         }
-      }
-      
-      // If no keywords were found, return fallback data
-      if (keywordData.length === 0) {
-        console.log("No keywords found in results, generating fallback keywords");
+
+        // Full response logging for debugging
+        console.log("DataForSEO API full response:", JSON.stringify(response.data));
+
+        // Return fallback data if the API response doesn't have the expected format
+        if (!response.data?.tasks || !Array.isArray(response.data.tasks) || response.data.tasks.length === 0) {
+          console.log("No tasks in response, generating fallback keywords for:", keyword);
+          
+          // Generate related keywords based on the input
+          return this.generateFallbackKeywords(keyword);
+        }
+
+        // Check if the response is successful
+        if (response.data.tasks[0]?.status_code !== 20000) {
+          console.log(`API error: ${response.data.tasks[0]?.status_message || 'Unknown error'}`);
+          
+          // If API error, use fallback data
+          return this.generateFallbackKeywords(keyword);
+        }
+
+        // Extract keyword data from response
+        const keywordData: KeywordData[] = [];
+        const results = response.data.tasks[0]?.result || [];
+        
+        if (results.length === 0) {
+          console.log("No results in response, generating fallback keywords");
+          return this.generateFallbackKeywords(keyword);
+        }
+        
+        for (const result of results) {
+          for (const item of result.items || []) {
+            // Get competition level based on competition value
+            const competitionLevel = this.getCompetitionLevel(item.competition || 0);
+            
+            // Process monthly trend data if available
+            const trend = item.monthly_searches?.map((monthData: any) => monthData.search_volume) || [];
+            
+            // Calculate keyword difficulty if not provided directly
+            const difficulty = item.keyword_difficulty || this.calculateKeywordDifficulty(item);
+            
+            keywordData.push({
+              keyword: item.keyword || '',
+              searchVolume: item.search_volume || 0,
+              cpc: item.cpc || 0,
+              competition: item.competition || 0,
+              competitionLevel,
+              intent: this.determineIntent(item),
+              trend,
+              difficulty,
+              selected: false // Default to not selected
+            });
+          }
+        }
+        
+        // If no keywords were found, return fallback data
+        if (keywordData.length === 0) {
+          console.log("No keywords found in results, generating fallback keywords");
+          return this.generateFallbackKeywords(keyword);
+        }
+
+        return keywordData;
+      } catch (apiError: any) {
+        // If any error occurs during API call, log it and use fallback
+        console.error('Error fetching keywords from DataForSEO API:', apiError.message);
+        console.log('Using fallback keyword generation due to API error');
         return this.generateFallbackKeywords(keyword);
       }
-
-      return keywordData;
     } catch (error: any) {
-      console.error('Error fetching keywords from DataForSEO:', error);
+      console.error('Error in keyword processing:', error);
       throw new Error(`Failed to fetch keywords: ${error.message}`);
     }
   }
