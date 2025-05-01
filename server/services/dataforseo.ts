@@ -18,7 +18,8 @@ export class DataForSEOService {
 
   constructor() {
     this.apiUrl = 'https://api.dataforseo.com/';
-    this.username = process.env.DATAFORSEO_USERNAME || '';
+    // Use API_KEY as both username and password as per DataForSEO documentation
+    this.username = process.env.DATAFORSEO_API_KEY || '';
     this.password = process.env.DATAFORSEO_API_KEY || '';
   }
 

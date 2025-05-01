@@ -190,7 +190,8 @@ export default function AdminPanel() {
     setGeneratedContent(null);
     
     try {
-      const response = await apiRequest('/api/admin/generate-content', {
+      const response = await apiRequest({
+        url: '/api/admin/generate-content',
         method: 'POST',
         data: values
       });

@@ -11,7 +11,7 @@ import {
   shopifyService
 } from "../services/shopify";
 import { dataForSEOService, KeywordData } from "../services/dataforseo";
-import { pixawayService } from "../services/pixaway";
+import { pixabayService } from "../services/pixabay";
 import { generateBlogContentWithClaude } from "../services/claude";
 
 const adminRouter = Router();
@@ -219,7 +219,7 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
     const { prompt, count = 3 } = schema.parse(req.body);
     
     // Generate images (with fallback to placeholders if API key not set)
-    const { images, fallbackUsed } = await pixawayService.safeGenerateImages(prompt, count);
+    const { images, fallbackUsed } = await pixabayService.safeGenerateImages(prompt, count);
     
     res.json({
       success: true,
