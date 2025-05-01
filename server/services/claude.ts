@@ -6,6 +6,7 @@ interface BlogContentRequest {
   tone: string;
   length: string;
   customPrompt?: string;
+  systemPrompt?: string;
 }
 
 interface BlogContent {

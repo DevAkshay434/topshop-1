@@ -801,6 +801,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Add Claude routes under /api/claude
   apiRouter.use('/claude', claudeRouter);
   
+  // Add admin panel routes under /api/admin
+  apiRouter.use('/admin', adminRouter);
+  
   // Get stats for dashboard
   apiRouter.get("/stats", async (req: Request, res: Response) => {
     try {
