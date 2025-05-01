@@ -1,0 +1,191 @@
+Shopify App: Admin Panel Functional Requirements
+Goal: Build a user-friendly admin interface in a Shopify App that enables admins to control how blog content or pages are generated and published. It integrates with Shopify APIs, DataForSEO, and Pixaway.
+
+Fields & Logic to Add in Admin UI:
+
+1. Select Region
+Type: Dropdown
+
+Options: United States, United Kingdom, Canada, Australia, etc.
+
+Usage: Optional metadata for regional content context or localization.
+
+2. Choose Products
+
+Type: Multi-select ComboBox
+
+Fetch Logic: Use Shopify Products API
+
+Purpose: Selected products used for image selection, internal linking, and SEO keywords.
+
+3. Choose Collections
+
+Type: Multi-select ComboBox
+
+Fetch Logic: Use Shopify Collections API
+
+Purpose: Used for linking in generated content.
+
+4. Article Type
+
+Type: Dropdown → Options: Blog Post, Page
+
+Logic:
+
+If Blog Post → Show extra dropdown for Blog Category (via Shopify Blog API)
+
+If Page → Skip blog category
+
+Publishing: Based on this, publish content to the Shopify Blog or Pages endpoint.
+
+5. Keywords
+
+Options:
+
+Auto-generate via DataForSEO API (based on selected product URLs)
+
+Manual entry (textarea)
+
+UI Display: Show keyword list with checkboxes + metrics (volume, CPC, intent).
+
+I will Provide api key of Dataforseo
+
+6. Writing Perspective
+
+Type: Dropdown
+
+Options:
+
+First Person Plural (We, us, our) [default]
+
+First Person Singular (I, me, my)
+
+Second Person (you, your)
+
+Third Person (they, he, she)
+
+Professional
+
+7. Content Formatting Options
+
+Enable Tables → Toggle (Yes/No) [default: Yes]
+
+Enable Lists → Toggle (Yes/No) [default: Yes]
+
+Enable H3s → Toggle (Yes/No) [default: Yes]
+
+Intro Type → Dropdown: None, Standard Intro, Search Intent Intro
+
+FAQ Type → Dropdown: No FAQ, Short Answer [default], Long Answer
+
+Citations (Authority Links) → Toggle (Yes/No) [default: Yes]
+
+8. Image Selection
+
+Main Images: Checkbox list → Show product images for selection
+
+Internal Images: Same as above
+
+Pixaway Integration:
+
+As soon as admin enters Title, generate images via Pixaway API
+
+Display created images for selection → Use as featured and in-content images.
+
+9. Tone of Voice
+
+Type: Dropdown
+
+Options: Neutral, Professional, Empathetic, Casual, Excited, Formal, Friendly (default), Humorous
+
+10. Post Status (Publishing)
+
+Type: Dropdown
+
+Options:
+
+Publish Live → published_at field in Shopify API
+
+Save as Draft → skip published_at
+
+11. Internal Linking
+
+Automatically add internal links in generated content:
+
+To selected products
+
+To selected collections
+
+Optional: context-aware links to related items
+
+12. Templates (Save Inputs/Outputs)
+
+Allow admin to save current field data as a template
+
+Allow loading saved templates for future use.
+
+ Content Generation Prompt for Claude AI
+Use Claude AI for Creating Content I will provide api key for claude ai
+When generating content, use the following Claude AI prompt:
+
+You are an expert SEO blog writer and content strategist. Your goal is to write high-quality, engaging, and SEO-optimized blog posts or pages that sound natural, helpful, and authoritative.
+
+Based on the following inputs:
+
+Title: [User Title]
+
+Region: [Selected Region]
+
+Products: [Selected Products]
+
+Collections: [Selected Collections]
+
+Article Type: [Blog Post / Page]
+
+Blog Category: [If applicable]
+
+Keywords: [Auto-generated and/or Manual]
+
+Voice Style: [Writing Perspective]
+
+Enable Tables: [Yes/No]
+
+Enable Lists: [Yes/No]
+
+Enable H3s: [Yes/No]
+
+Intro Type: [Selected]
+
+FAQ Type: [Selected]
+
+Citations: [Yes/No]
+
+Main Images: [Selected URLs]
+
+Internal Images: [Selected URLs]
+
+Tone of Voice: [Selected]
+
+Instructions:
+
+Begin with selected intro.
+
+Each H2 must:
+
+Have compelling heading.
+
+Include 2-4 natural, helpful paragraphs.
+
+Use H3s/lists/tables as per formatting flags.
+
+Maintain selected tone and perspective.
+
+Add internal links and selected images naturally.
+
+Add FAQs if selected.
+
+Suggest a meta description at the end.
+
+ No H1 tags
+ No repetitive content or generic conclusions
+ Help, inspire, and engage the reader

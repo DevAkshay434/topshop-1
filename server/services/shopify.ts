@@ -23,6 +23,49 @@ interface ShopifyArticle {
   admin_graphql_api_id: string;
 }
 
+// Interfaces for products and collections
+export interface ShopifyProduct {
+  id: string;
+  title: string;
+  handle: string;
+  description?: string;
+  vendor?: string;
+  product_type?: string;
+  created_at: string;
+  updated_at: string;
+  published_at?: string;
+  tags?: string;
+  variants?: ShopifyProductVariant[];
+  images?: ShopifyProductImage[];
+  url?: string; // Full URL to the product
+}
+
+export interface ShopifyProductVariant {
+  id: string;
+  title: string;
+  price: string;
+  sku?: string;
+}
+
+export interface ShopifyProductImage {
+  id: string;
+  src: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+  position?: number;
+}
+
+export interface ShopifyCollection {
+  id: string;
+  title: string;
+  handle: string;
+  description?: string;
+  published_at?: string;
+  updated_at: string;
+  url?: string; // Full URL to the collection
+}
+
 export class ShopifyService {
   private clients: Map<number, AxiosInstance> = new Map();
   private shopDomains: Map<number, string> = new Map();
@@ -313,6 +356,156 @@ export class ShopifyService {
   }
   
   /**
+   * Get products from a specific store
+   * @param store The store to get products from
+   * @param limit Maximum number of products to return
+   * @returns Array of Shopify products
+   */
+  public async getProducts(store: ShopifyStore, limit: number = 50): Promise<ShopifyProduct[]> {
+    try {
+      const client = this.getClient(store);
+      const response = await client.get(`/products.json?limit=${limit}`);
+      
+      // Add the full URL to each product
+      const products = response.data.products.map((product: any) => ({
+        ...product,
+        url: `https://${store.shopName}/products/${product.handle}`
+      }));
+      
+      return products;
+    } catch (error: any) {
+      console.error(`Error fetching products from Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
+   * Search products in a specific store
+   * @param store The store to search products in
+   * @param query The search query
+   * @param limit Maximum number of products to return
+   * @returns Array of Shopify products
+   */
+  public async searchProducts(store: ShopifyStore, query: string, limit: number = 20): Promise<ShopifyProduct[]> {
+    try {
+      const client = this.getClient(store);
+      const response = await client.get(`/products.json?title=${encodeURIComponent(query)}&limit=${limit}`);
+      
+      // Add the full URL to each product
+      const products = response.data.products.map((product: any) => ({
+        ...product,
+        url: `https://${store.shopName}/products/${product.handle}`
+      }));
+      
+      return products;
+    } catch (error: any) {
+      console.error(`Error searching products in Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to search products: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
+   * Get collections from a specific store
+   * @param store The store to get collections from
+   * @param limit Maximum number of collections to return
+   * @returns Array of Shopify collections
+   */
+  public async getCollections(store: ShopifyStore, limit: number = 50): Promise<ShopifyCollection[]> {
+    try {
+      const client = this.getClient(store);
+      // Use custom collections as these are the manually created ones
+      const response = await client.get(`/custom_collections.json?limit=${limit}`);
+      
+      // Add the full URL to each collection
+      const collections = response.data.custom_collections.map((collection: any) => ({
+        ...collection,
+        url: `https://${store.shopName}/collections/${collection.handle}`
+      }));
+      
+      return collections;
+    } catch (error: any) {
+      console.error(`Error fetching collections from Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to fetch collections: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
+   * Get both smart and custom collections from a specific store
+   * @param store The store to get collections from
+   * @param limit Maximum number of collections to return
+   * @returns Array of Shopify collections
+   */
+  public async getAllCollections(store: ShopifyStore, limit: number = 50): Promise<ShopifyCollection[]> {
+    try {
+      const client = this.getClient(store);
+      
+      // Fetch custom collections
+      const customResponse = await client.get(`/custom_collections.json?limit=${limit}`);
+      const customCollections = customResponse.data.custom_collections.map((collection: any) => ({
+        ...collection,
+        url: `https://${store.shopName}/collections/${collection.handle}`,
+        type: 'custom'
+      }));
+      
+      // Fetch smart collections
+      const smartResponse = await client.get(`/smart_collections.json?limit=${limit}`);
+      const smartCollections = smartResponse.data.smart_collections.map((collection: any) => ({
+        ...collection,
+        url: `https://${store.shopName}/collections/${collection.handle}`,
+        type: 'smart'
+      }));
+      
+      // Combine both types of collections
+      return [...customCollections, ...smartCollections];
+    } catch (error: any) {
+      console.error(`Error fetching all collections from Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to fetch collections: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
+   * Get a specific page
+   * @param store The store to get the page from
+   * @param pageId The ID of the page
+   * @returns The Shopify page
+   */
+  public async getPage(store: ShopifyStore, pageId: string): Promise<any> {
+    try {
+      const client = this.getClient(store);
+      const response = await client.get(`/pages/${pageId}.json`);
+      return response.data.page;
+    } catch (error: any) {
+      console.error(`Error fetching page from Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to fetch page: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
+   * Create a page in a specific store
+   * @param store The store to create the page in
+   * @param title The title of the page
+   * @param content The HTML content of the page
+   * @param published Whether to publish the page
+   * @returns The created Shopify page
+   */
+  public async createPage(store: ShopifyStore, title: string, content: string, published: boolean = true): Promise<any> {
+    try {
+      const client = this.getClient(store);
+      const page = {
+        title,
+        body_html: content,
+        published
+      };
+      
+      const response = await client.post('/pages.json', { page });
+      return response.data.page;
+    } catch (error: any) {
+      console.error(`Error creating page in Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to create page: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
    * Legacy compatibility methods for backward compatibility
    * These will be removed once the app is fully migrated to multi-store
    */
@@ -357,11 +550,25 @@ const shopifyServiceInstance = new ShopifyService();
 
 // Export the singleton instance and individual methods
 export const shopifyService = shopifyServiceInstance;
+
+// Blog and article methods
 export const getBlogs = (store: ShopifyStore) => shopifyServiceInstance.getBlogs(store);
 export const createArticle = (store: ShopifyStore, blogId: string, post: BlogPost) => shopifyServiceInstance.createArticle(store, blogId, post);
 export const updateArticle = (store: ShopifyStore, blogId: string, articleId: string, post: Partial<BlogPost>) => shopifyServiceInstance.updateArticle(store, blogId, articleId, post);
 export const deleteArticle = (store: ShopifyStore, blogId: string, articleId: string) => shopifyServiceInstance.deleteArticle(store, blogId, articleId);
 export const getArticles = (store: ShopifyStore, blogId: string) => shopifyServiceInstance.getArticles(store, blogId);
+
+// Product and collection methods
+export const getProducts = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getProducts(store, limit);
+export const searchProducts = (store: ShopifyStore, query: string, limit?: number) => shopifyServiceInstance.searchProducts(store, query, limit);
+export const getCollections = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getCollections(store, limit);
+export const getAllCollections = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getAllCollections(store, limit);
+
+// Page methods
+export const getPage = (store: ShopifyStore, pageId: string) => shopifyServiceInstance.getPage(store, pageId);
+export const createPage = (store: ShopifyStore, title: string, content: string, published?: boolean) => shopifyServiceInstance.createPage(store, title, content, published);
+
+// Utility methods
 export const testConnection = (store: ShopifyStore) => shopifyServiceInstance.testConnection(store);
 export const getStoreUrl = (store: ShopifyStore) => shopifyServiceInstance.getStoreUrl(store);
 
