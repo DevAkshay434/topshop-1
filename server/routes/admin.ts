@@ -415,7 +415,7 @@ Please suggest a meta description at the end of your response.
             
             // Update the local post with Shopify IDs
             await storage.updateBlogPost(post.id, {
-              shopifyArticleId: shopifyArticle.id,
+              shopifyPostId: shopifyArticle.id,
               shopifyBlogId: blogId
             });
             
@@ -437,9 +437,9 @@ Please suggest a meta description at the end of your response.
           
           contentId = page.id;
           contentUrl = `https://${store.shopName}/pages/${page.handle}`;
-        } catch (pageError) {
+        } catch (pageError: any) {
           console.error('Error creating Shopify page:', pageError);
-          throw new Error(`Failed to create page: ${pageError.message}`);
+          throw new Error(`Failed to create page: ${pageError?.message || 'Unknown error'}`);
         }
       }
       
