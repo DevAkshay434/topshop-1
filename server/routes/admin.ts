@@ -383,7 +383,23 @@ Please suggest a meta description at the end of your response.
         generatedContent: JSON.stringify(generatedContent)
       });
       
-      // 5. Create a blog post or page based on article type
+      // 5. Generate images if requested
+      let featuredImage = null;
+      if (requestData.generateImages) {
+        try {
+          console.log(`Generating images for: "${requestData.title}"`);
+          const { images, fallbackUsed } = await pixabayService.safeGenerateImages(requestData.title, 1);
+          if (images && images.length > 0) {
+            featuredImage = images[0];
+            console.log(`Successfully generated featured image: ${featuredImage.url}`);
+          }
+        } catch (imageError) {
+          console.error('Error generating images:', imageError);
+          // Continue even if image generation fails
+        }
+      }
+      
+      // 6. Create a blog post or page based on article type
       let contentId, contentUrl;
       
       if (requestData.articleType === 'blog') {
@@ -393,10 +409,18 @@ Please suggest a meta description at the end of your response.
           throw new Error('Blog ID is required for blog posts');
         }
         
+        // Prepare content with featured image if available
+        let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
+        
+        // Add featured image at the beginning if generated
+        if (featuredImage) {
+          finalContent = `<img src="${featuredImage.url}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n\n${finalContent}`;
+        }
+        
         // Create blog post in DB
         const post = await storage.createBlogPost({
           title: generatedContent.title || requestData.title,
-          content: generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`,
+          content: finalContent,
           status: requestData.postStatus === 'publish' ? 'published' : 'draft',
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
           author: connection.storeName.replace('.myshopify.com', ''),
