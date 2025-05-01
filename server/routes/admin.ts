@@ -485,7 +485,7 @@ adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
     shopify: false,
     claude: false,
     dataForSEO: false,
-    pixaway: false
+    pixabay: false
   };
   
   // Test Shopify connection
@@ -530,12 +530,12 @@ adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
     console.error("DataForSEO connection test failed:", error);
   }
   
-  // Test Pixaway connection
+  // Test Pixabay connection
   try {
-    const pixawayTest = await pixawayService.testConnection();
-    results.pixaway = pixawayTest.success;
+    const pixabayTest = await pixabayService.testConnection();
+    results.pixabay = pixabayTest.success;
   } catch (error) {
-    console.error("Pixaway connection test failed:", error);
+    console.error("Pixabay connection test failed:", error);
   }
   
   res.json({
