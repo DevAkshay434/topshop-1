@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Card, 
@@ -266,6 +266,17 @@ export default function AdminPanel() {
     );
   };
   
+  // Auto-populate the search field with the title when dialog opens
+  useEffect(() => {
+    if (showImageDialog && !imageSearchQuery && form.getValues().title) {
+      setImageSearchQuery(form.getValues().title);
+      // Auto-search if we have a title
+      if (form.getValues().title && !searchedImages.length) {
+        searchImages(form.getValues().title);
+      }
+    }
+  }, [showImageDialog, form, imageSearchQuery, searchedImages.length]);
+
   // Handle image selection confirmation
   const confirmImageSelection = () => {
     const selected = searchedImages.filter(img => img.selected);
@@ -749,7 +760,7 @@ export default function AdminPanel() {
                               />
                               <Button 
                                 type="button" 
-                                onClick={() => searchImages(imageSearchQuery)}
+                                onClick={() => searchImages(imageSearchQuery || form.getValues().title)}
                                 disabled={isSearchingImages}
                               >
                                 {isSearchingImages ? (

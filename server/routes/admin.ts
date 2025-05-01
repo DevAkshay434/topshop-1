@@ -386,46 +386,56 @@ Please suggest a meta description at the end of your response.
       
       // 5. Handle images based on user selection or generate if needed
       let featuredImage = null;
+      let additionalImages: PixabayImage[] = [];
       
       // If user has selected specific images, use those
       if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
         try {
-          // Here we can directly use the selected image IDs
-          // In a more complete implementation, we would fetch the full image data from storage
-          // For now, we'll simply use the first selected image as the featured image
-          
           // We need to search for the image to get the URL
           console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
           
           // Search for the image to get its full data
           // Note: In a real implementation, we'd store these images in a database
-          const { images } = await pixabayService.safeGenerateImages(requestData.title, 6);
+          const { images } = await pixabayService.safeGenerateImages(requestData.title, 10);
           
-          // Find the selected image by ID
-          const selectedImage = images.find(img => 
+          // Filter all selected images
+          const selectedImages = images.filter(img => 
             requestData.selectedImageIds && 
             requestData.selectedImageIds.includes(img.id)
           );
           
-          if (selectedImage) {
-            featuredImage = selectedImage;
+          if (selectedImages.length > 0) {
+            // Use the first image as featured image
+            featuredImage = selectedImages[0];
             console.log(`Using user-selected featured image: ${featuredImage.url}`);
+            
+            // Save any additional images for insertion into content
+            if (selectedImages.length > 1) {
+              additionalImages = selectedImages.slice(1);
+              console.log(`Found ${additionalImages.length} additional images to insert in content`);
+            }
           } else {
-            console.log(`Selected image not found, will generate a new one`);
+            console.log(`Selected images not found, will generate new ones`);
           }
         } catch (imageError) {
           console.error('Error retrieving selected images:', imageError);
         }
       }
       
-      // If we still don't have a featured image (no selection or error), generate one
+      // If we still don't have a featured image (no selection or error), generate some
       if (!featuredImage && requestData.generateImages) {
         try {
           console.log(`Generating images for: "${requestData.title}"`);
-          const { images, fallbackUsed } = await pixabayService.safeGenerateImages(requestData.title, 1);
+          const { images, fallbackUsed } = await pixabayService.safeGenerateImages(requestData.title, 3);
           if (images && images.length > 0) {
             featuredImage = images[0];
             console.log(`Successfully generated featured image: ${featuredImage.url}`);
+            
+            // Save additional generated images if available
+            if (images.length > 1) {
+              additionalImages = images.slice(1);
+              console.log(`Generated ${additionalImages.length} additional images for content`);
+            }
           }
         } catch (imageError) {
           console.error('Error generating images:', imageError);
