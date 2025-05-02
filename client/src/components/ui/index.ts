@@ -7,13 +7,16 @@ import { Spinner } from "./spinner";
 // Re-export all shadcn components that exist
 export * from "./accordion";
 export * from "./alert-dialog";
+export * from "./badge";
 export * from "./button";
 export * from "./card";
 export * from "./checkbox";
+export * from "./command";
 export * from "./dialog";
 export * from "./form";
 export * from "./input";
 export * from "./label";
+export * from "./multi-select";
 export * from "./popover";
 export * from "./progress";
 export * from "./scroll-area";

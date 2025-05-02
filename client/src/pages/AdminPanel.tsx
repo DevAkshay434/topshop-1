@@ -139,6 +139,13 @@ export default function AdminPanel() {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<{name: string, data: any}[]>([]);
+  const [templateName, setTemplateName] = useState('');
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
+  const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
   const { toast } = useToast();
 
   // Default form values
@@ -221,7 +228,7 @@ export default function AdminPanel() {
   });
 
   // Handle image search using Pexels API
-  const searchImages = async (query: string) => {
+  const handleImageSearch = async (query: string) => {
     if (!query || query.trim() === '') {
       toast({
         title: "Search query required",
@@ -284,7 +291,7 @@ export default function AdminPanel() {
       setImageSearchQuery(form.getValues().title);
       // Auto-search if we have a title
       if (form.getValues().title && !searchedImages.length) {
-        searchImages(form.getValues().title);
+        handleImageSearch(form.getValues().title);
       }
     }
   }, [showImageDialog, form, imageSearchQuery, searchedImages.length]);
@@ -828,7 +835,7 @@ export default function AdminPanel() {
                               />
                               <Button 
                                 type="button" 
-                                onClick={() => searchImages(imageSearchQuery || form.getValues().title)}
+                                onClick={() => handleImageSearch(imageSearchQuery || form.getValues().title)}
                                 disabled={isSearchingImages}
                               >
                                 {isSearchingImages ? (
