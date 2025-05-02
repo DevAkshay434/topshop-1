@@ -414,21 +414,24 @@ export default function AdminPanel() {
     setGeneratedContent(null);
     
     try {
-      // Ensure product and collection IDs are arrays
-      const productIds = Array.isArray(values.productIds) ? values.productIds : [];
-      const collectionIds = Array.isArray(values.collectionIds) ? values.collectionIds : [];
+      // Create a safe copy of the form values with guaranteed array values
+      const safeValues = {
+        ...values,
+        // Ensure these are always arrays
+        productIds: Array.isArray(values.productIds) ? values.productIds : [],
+        collectionIds: Array.isArray(values.collectionIds) ? values.collectionIds : [],
+        keywords: Array.isArray(values.keywords) ? values.keywords : []
+      };
       
       // Add selected image IDs and keywords to form data
       const submitData = {
-        ...values,
-        productIds,
-        collectionIds,
+        ...safeValues,
         selectedImageIds: selectedImages.map(img => img.id),
         // Include full keyword data (not just strings) for analysis on the server
         selectedKeywordData: selectedKeywords
       };
       
-      console.log("Submitting with productIds:", productIds, "and collectionIds:", collectionIds);
+      console.log("Submitting with productIds:", safeValues.productIds, "and collectionIds:", safeValues.collectionIds);
       
       const response = await apiRequest({
         url: '/api/admin/generate-content',
@@ -815,11 +818,11 @@ export default function AdminPanel() {
                       </p>
                         
                       <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2">
-                        {selectedKeywords.length > 0 ? (
+                        {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 ? (
                           selectedKeywords.map((keyword, idx) => (
                             <Badge key={idx} variant="secondary" className="flex items-center gap-1">
-                              {keyword.keyword}
-                              {keyword.searchVolume && (
+                              {keyword?.keyword || ''}
+                              {keyword?.searchVolume && (
                                 <span className="text-xs text-muted-foreground ml-1">
                                   ({keyword.searchVolume.toLocaleString()})
                                 </span>
@@ -838,7 +841,7 @@ export default function AdminPanel() {
                         onClick={() => setShowKeywordSelector(true)}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
-                        {selectedKeywords.length > 0 ? 'Change Keywords' : 'Select Keywords'}
+                        {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 ? 'Change Keywords' : 'Select Keywords'}
                       </Button>
                     </div>
                     
@@ -975,7 +978,7 @@ export default function AdminPanel() {
                                   className="mt-2" 
                                   onClick={() => setShowImageDialog(true)}
                                 >
-                                  {selectedImages.length > 0 
+                                  {Array.isArray(selectedImages) && selectedImages.length > 0 
                                     ? `${selectedImages.length} Image(s) Selected` 
                                     : "Search & Select Images"}
                                 </Button>
@@ -1120,7 +1123,7 @@ export default function AdminPanel() {
                             )}
                             
                             {/* Selection summary */}
-                            {selectedImages.length > 0 && (
+                            {Array.isArray(selectedImages) && selectedImages.length > 0 && (
                               <div className="mt-2 p-3 border rounded-md bg-slate-50">
                                 <p className="text-sm font-medium mb-2">Selected Images: {selectedImages.length}</p>
                                 <div className="flex flex-wrap gap-2">
@@ -1174,7 +1177,7 @@ export default function AdminPanel() {
                           
                           <DialogFooter className="flex justify-between">
                             <div>
-                              {selectedImages.length > 0 && (
+                              {Array.isArray(selectedImages) && selectedImages.length > 0 && (
                                 <Button 
                                   type="button" 
                                   variant="destructive" 
@@ -1469,11 +1472,13 @@ export default function AdminPanel() {
                               type="button"
                               size="sm"
                               onClick={() => {
-                                // Ensure product and collection IDs are arrays
+                                // Ensure all array values are properly initialized
                                 const formDataWithArrays = {
                                   ...template.data,
+                                  // Initialize required arrays
                                   productIds: Array.isArray(template.data.productIds) ? template.data.productIds : [],
-                                  collectionIds: Array.isArray(template.data.collectionIds) ? template.data.collectionIds : []
+                                  collectionIds: Array.isArray(template.data.collectionIds) ? template.data.collectionIds : [],
+                                  keywords: Array.isArray(template.data.keywords) ? template.data.keywords : []
                                 };
                                 
                                 // Load template data into form
