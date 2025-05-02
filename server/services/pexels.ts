@@ -42,7 +42,7 @@ export class PexelsService {
    * @param count Number of images to return
    * @returns Array of image data
    */
-  public async searchImages(query: string, count: number = 5): Promise<PexelsImage[]> {
+  public async searchImages(query: string, count: number = 10): Promise<PexelsImage[]> {
     try {
       if (!this.hasValidApiKey()) {
         throw new Error('No Pexels API key found');
@@ -144,11 +144,11 @@ export class PexelsService {
    * @param count Number of fallback images
    * @returns Array of fallback image data
    */
-  private generateFallbackImages(count: number = 5): PexelsImage[] {
+  private generateFallbackImages(count: number = 10): PexelsImage[] {
     console.log(`Generating ${count} fallback images`);
     
-    // Placeholder image URLs 
-    const placeholderColors = ['555555', '777777', '999999', 'bbbbbb', 'dddddd'];
+    // Placeholder image URLs with more variety for up to 10 images
+    const placeholderColors = ['555555', '666666', '777777', '888888', '999999', 'aaaaaa', 'bbbbbb', 'cccccc', 'dddddd', 'eeeeee'];
     
     // Generate array of fallback images
     return Array.from({ length: count }).map((_, index) => ({
@@ -175,7 +175,7 @@ export class PexelsService {
    * @param count Number of images to return
    * @returns Images and fallback status
    */
-  public async safeSearchImages(query: string, count: number = 5): Promise<{ 
+  public async safeSearchImages(query: string, count: number = 10): Promise<{ 
     images: PexelsImage[], 
     fallbackUsed: boolean 
   }> {

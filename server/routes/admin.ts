@@ -270,7 +270,7 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
       count: z.number().min(1).max(10).optional()
     });
     
-    const { prompt, count = 3 } = schema.parse(req.body);
+    const { prompt, count = 10 } = schema.parse(req.body);
     
     // Generate images with Pexels (with fallback to placeholders if API key not set)
     const { images, fallbackUsed } = await pexelsService.safeSearchImages(prompt, count);

@@ -239,7 +239,7 @@ export default function AdminPanel() {
         method: 'POST',
         data: {
           prompt: query,
-          count: 6 // Request multiple images to choose from
+          count: 10 // Request 10 images to choose from
         }
       });
       
