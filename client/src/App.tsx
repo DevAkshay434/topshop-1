@@ -58,7 +58,7 @@ function Router() {
         <Switch>
           {/* If we're at root with embedded params, show EmbeddedApp */}
           <Route path="/">
-            {isEmbedded ? <EmbeddedApp /> : <Dashboard />}
+            {isEmbedded ? <EmbeddedApp /> : <AdminPanel />}
           </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
@@ -66,17 +66,18 @@ function Router() {
           <Route path="/simple-bulk-generation" component={SimpleBulkGeneration} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
-          <Route path="/billing-callback" component={Dashboard} />
+          <Route path="/billing-callback" component={AdminPanel} />
           <Route path="/embedded" component={EmbeddedApp} />
-          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/dashboard" component={AdminPanel} />
           <Route path="/install" component={AppInstall} />
           <Route path="/partner-install" component={PartnerInstall} />
-          <Route path="/shopify/callback" component={Dashboard} />
-          <Route path="/shopify/auth/callback" component={Dashboard} />
+          <Route path="/shopify/callback" component={AdminPanel} />
+          <Route path="/shopify/auth/callback" component={AdminPanel} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
           <Route path="/help" component={Help} />
           <Route path="/admin" component={AdminPanel} />
+          <Route path="/legacy-dashboard" component={Dashboard} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />
