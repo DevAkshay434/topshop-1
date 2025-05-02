@@ -414,13 +414,21 @@ export default function AdminPanel() {
     setGeneratedContent(null);
     
     try {
+      // Ensure product and collection IDs are arrays
+      const productIds = Array.isArray(values.productIds) ? values.productIds : [];
+      const collectionIds = Array.isArray(values.collectionIds) ? values.collectionIds : [];
+      
       // Add selected image IDs and keywords to form data
       const submitData = {
         ...values,
+        productIds,
+        collectionIds,
         selectedImageIds: selectedImages.map(img => img.id),
         // Include full keyword data (not just strings) for analysis on the server
         selectedKeywordData: selectedKeywords
       };
+      
+      console.log("Submitting with productIds:", productIds, "and collectionIds:", collectionIds);
       
       const response = await apiRequest({
         url: '/api/admin/generate-content',
@@ -1443,8 +1451,15 @@ export default function AdminPanel() {
                               type="button"
                               size="sm"
                               onClick={() => {
+                                // Ensure product and collection IDs are arrays
+                                const formDataWithArrays = {
+                                  ...template.data,
+                                  productIds: Array.isArray(template.data.productIds) ? template.data.productIds : [],
+                                  collectionIds: Array.isArray(template.data.collectionIds) ? template.data.collectionIds : []
+                                };
+                                
                                 // Load template data into form
-                                form.reset(template.data);
+                                form.reset(formDataWithArrays);
                                 
                                 // Update selected states
                                 if (template.data.selectedKeywords) {
@@ -1452,11 +1467,11 @@ export default function AdminPanel() {
                                 }
                                 
                                 if (template.data.selectedProducts) {
-                                  setSelectedProducts(template.data.selectedProducts);
+                                  setSelectedProducts(Array.isArray(template.data.selectedProducts) ? template.data.selectedProducts : []);
                                 }
                                 
                                 if (template.data.selectedCollections) {
-                                  setSelectedCollections(template.data.selectedCollections);
+                                  setSelectedCollections(Array.isArray(template.data.selectedCollections) ? template.data.selectedCollections : []);
                                 }
                                 
                                 setShowLoadTemplateDialog(false);
