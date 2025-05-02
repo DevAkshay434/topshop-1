@@ -845,7 +845,7 @@ export default function AdminPanel() {
                       </Button>
                     </div>
                     
-                    {/* Products & Collections section */}
+                    {/* Products & Collections section - Temporarily commented out to fix display issues
                     <div className="space-y-4 pt-4">
                       <h3 className="text-lg font-medium flex items-center">
                         <FileText className="h-5 w-5 mr-2 text-blue-500" />
@@ -855,7 +855,6 @@ export default function AdminPanel() {
                         Select products and collections to feature in your content
                       </p>
                       
-                      {/* Products selection */}
                       <div className="space-y-2">
                         <FormField
                           control={form.control}
@@ -892,7 +891,6 @@ export default function AdminPanel() {
                         />
                       </div>
                       
-                      {/* Collections selection */}
                       <div className="space-y-2">
                         <FormField
                           control={form.control}
@@ -929,6 +927,7 @@ export default function AdminPanel() {
                         />
                       </div>
                     </div>
+                    */}
                     
                     {/* Publication section */}
                     <div className="space-y-4 pt-4">
