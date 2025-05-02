@@ -878,10 +878,13 @@ export default function AdminPanel() {
                                   placeholder="Select products to feature in content..."
                                 />
                               </FormControl>
-                              <FormDescription>
-                                {Array.isArray(field.value) && field.value.length > 0 
-                                  ? `${field.value.length} product(s) will be mentioned and linked in your content` 
-                                  : "Products will be mentioned and linked in your content"}
+                              <FormDescription className="m-0 mt-1">
+                                Products will be mentioned and linked in your content
+                                {Array.isArray(field.value) && field.value.length > 0 && (
+                                  <span className="block font-medium text-foreground mt-1">
+                                    {field.value.length} product(s) selected
+                                  </span>
+                                )}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -912,10 +915,13 @@ export default function AdminPanel() {
                                   placeholder="Select collections to feature in content..."
                                 />
                               </FormControl>
-                              <FormDescription>
-                                {Array.isArray(field.value) && field.value.length > 0 
-                                  ? `${field.value.length} collection(s) will be mentioned and linked in your content` 
-                                  : "Collections will be mentioned and linked in your content"}
+                              <FormDescription className="m-0 mt-1">
+                                Collections will be mentioned and linked in your content
+                                {Array.isArray(field.value) && field.value.length > 0 && (
+                                  <span className="block font-medium text-foreground mt-1">
+                                    {field.value.length} collection(s) selected
+                                  </span>
+                                )}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
