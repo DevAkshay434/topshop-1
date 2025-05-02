@@ -843,46 +843,62 @@ export default function AdminPanel() {
                       
                       {/* Products selection */}
                       <div className="space-y-2">
-                        <Label>Featured Products</Label>
-                        <div className="min-h-[40px]">
-                          <MultiSelect
-                            options={productsQuery.data?.products.map(product => ({
-                              label: product.title,
-                              value: product.id
-                            })) || []}
-                            selected={selectedProducts}
-                            onChange={(selected) => {
-                              setSelectedProducts(selected);
-                              form.setValue('productIds', selected);
-                            }}
-                            placeholder="Select products to feature in content..."
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Products will be mentioned and linked in your content
-                        </p>
+                        <FormField
+                          control={form.control}
+                          name="productIds"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Featured Products</FormLabel>
+                              <FormControl>
+                                <MultiSelect
+                                  options={productsQuery.data?.products.map(product => ({
+                                    label: product.title,
+                                    value: product.id
+                                  })) || []}
+                                  selected={selectedProducts}
+                                  onChange={(selected) => {
+                                    setSelectedProducts(selected);
+                                    field.onChange(selected);
+                                  }}
+                                  placeholder="Select products to feature in content..."
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Products will be mentioned and linked in your content
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
                       </div>
                       
                       {/* Collections selection */}
                       <div className="space-y-2">
-                        <Label>Featured Collections</Label>
-                        <div className="min-h-[40px]">
-                          <MultiSelect
-                            options={collectionsQuery.data?.collections.map(collection => ({
-                              label: collection.title,
-                              value: collection.id
-                            })) || []}
-                            selected={selectedCollections}
-                            onChange={(selected) => {
-                              setSelectedCollections(selected);
-                              form.setValue('collectionIds', selected);
-                            }}
-                            placeholder="Select collections to feature in content..."
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Collections will be mentioned and linked in your content
-                        </p>
+                        <FormField
+                          control={form.control}
+                          name="collectionIds"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Featured Collections</FormLabel>
+                              <FormControl>
+                                <MultiSelect
+                                  options={collectionsQuery.data?.collections.map(collection => ({
+                                    label: collection.title,
+                                    value: collection.id
+                                  })) || []}
+                                  selected={selectedCollections}
+                                  onChange={(selected) => {
+                                    setSelectedCollections(selected);
+                                    field.onChange(selected);
+                                  }}
+                                  placeholder="Select collections to feature in content..."
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Collections will be mentioned and linked in your content
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
                     
