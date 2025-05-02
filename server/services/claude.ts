@@ -7,6 +7,9 @@ interface BlogContentRequest {
   length: string;
   customPrompt?: string;
   systemPrompt?: string;
+  includeProducts?: boolean;
+  includeCollections?: boolean;
+  includeKeywords?: boolean;
 }
 
 interface BlogContent {

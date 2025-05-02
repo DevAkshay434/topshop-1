@@ -987,7 +987,18 @@ export default function AdminPanel() {
                               <Button 
                                 type="button" 
                                 onClick={() => {
-                                  const query = imageSearchQuery || form.getValues().title;
+                                  // Use the explicit search query, never fall back to the title
+                                  const query = imageSearchQuery;
+                                  
+                                  if (!query || query.trim() === '') {
+                                    toast({
+                                      title: "Search query required",
+                                      description: "Please enter a search term for images",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+                                  
                                   handleImageSearch(query);
                                   
                                   // Store current images in history if there are any

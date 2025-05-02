@@ -424,12 +424,61 @@ Please suggest a meta description at the end of your response.
       // 3. Generate content with Claude
       console.log(`Generating enhanced content with Claude for: "${requestData.title}"`);
       
+      // Prepare product and collection data for more detailed prompt
+      const productDetails = productsInfo.map(p => ({
+        title: p.title,
+        url: `/products/${p.handle}`,
+        description: p.description || '',
+        id: p.id
+      }));
+      
+      const collectionDetails = collectionsInfo.map(c => ({
+        title: c.title,
+        url: `/collections/${c.handle}`,
+        description: c.description || '',
+        id: c.id
+      }));
+      
+      // Enhanced prompt with product/collection details
+      if (productDetails.length > 0 || collectionDetails.length > 0) {
+        claudeUserPrompt += `\n\nPRODUCT & COLLECTION DETAILS TO INCLUDE:\n`;
+        
+        if (productDetails.length > 0) {
+          claudeUserPrompt += `\nProducts (include links to these in your content):\n`;
+          productDetails.forEach(p => {
+            claudeUserPrompt += `- ${p.title}: <a href="${p.url}">${p.title}</a> ${p.description ? `- ${p.description.substring(0, 100)}...` : ''}\n`;
+          });
+        }
+        
+        if (collectionDetails.length > 0) {
+          claudeUserPrompt += `\nCollections (include links to these in your content):\n`;
+          collectionDetails.forEach(c => {
+            claudeUserPrompt += `- ${c.title}: <a href="${c.url}">${c.title}</a> ${c.description ? `- ${c.description.substring(0, 100)}...` : ''}\n`;
+          });
+        }
+        
+        claudeUserPrompt += `\nIMPORTANT: Incorporate these products and collections naturally in the content, using the exact link format provided.`;
+      }
+      
+      // Add keyword instructions to ensure they're used
+      if (requestData.keywords && requestData.keywords.length > 0) {
+        claudeUserPrompt += `\n\nKEYWORD USAGE INSTRUCTIONS:\n`;
+        claudeUserPrompt += `The following keywords MUST be naturally incorporated throughout the content:\n`;
+        requestData.keywords.forEach(keyword => {
+          claudeUserPrompt += `- "${keyword}"\n`;
+        });
+        claudeUserPrompt += `\nEnsure primary keywords appear in H2 headings, and distribute all keywords naturally throughout the content.`;
+      }
+      
       const generatedContent = await generateBlogContentWithClaude({
         topic: requestData.title,
         tone: requestData.toneOfVoice,
         length: "medium",
         customPrompt: claudeUserPrompt,
-        systemPrompt: claudeSystemPrompt
+        systemPrompt: claudeSystemPrompt,
+        includeProducts: productDetails.length > 0,
+        includeCollections: collectionDetails.length > 0,
+        includeKeywords: requestData.keywords && requestData.keywords.length > 0
       });
       
       // 4. Update content generation request
