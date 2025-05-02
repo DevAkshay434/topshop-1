@@ -40,6 +40,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,7 +49,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download } from 'lucide-react';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
 
@@ -751,6 +753,61 @@ export default function AdminPanel() {
                       </Button>
                     </div>
                     
+                    {/* Products & Collections section */}
+                    <div className="space-y-4 pt-4">
+                      <h3 className="text-lg font-medium flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                        Products & Collections
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Select products and collections to feature in your content
+                      </p>
+                      
+                      {/* Products selection */}
+                      <div className="space-y-2">
+                        <Label>Featured Products</Label>
+                        <div className="min-h-[40px]">
+                          <MultiSelect
+                            options={productsQuery.data?.products.map(product => ({
+                              label: product.title,
+                              value: product.id
+                            })) || []}
+                            selected={selectedProducts}
+                            onChange={(selected) => {
+                              setSelectedProducts(selected);
+                              form.setValue('productIds', selected);
+                            }}
+                            placeholder="Select products to feature in content..."
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Products will be mentioned and linked in your content
+                        </p>
+                      </div>
+                      
+                      {/* Collections selection */}
+                      <div className="space-y-2">
+                        <Label>Featured Collections</Label>
+                        <div className="min-h-[40px]">
+                          <MultiSelect
+                            options={collectionsQuery.data?.collections.map(collection => ({
+                              label: collection.title,
+                              value: collection.id
+                            })) || []}
+                            selected={selectedCollections}
+                            onChange={(selected) => {
+                              setSelectedCollections(selected);
+                              form.setValue('collectionIds', selected);
+                            }}
+                            placeholder="Select collections to feature in content..."
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Collections will be mentioned and linked in your content
+                        </p>
+                      </div>
+                    </div>
+                    
                     {/* Publication section */}
                     <div className="space-y-4 pt-4">
                       <h3 className="text-lg font-medium">Publication</h3>
@@ -902,9 +959,28 @@ export default function AdminPanel() {
                       </Dialog>
                     </div>
                     
+                    {/* Template Controls */}
+                    <div className="mt-6 grid grid-cols-2 gap-3">
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => setShowSaveTemplateDialog(true)}
+                      >
+                        Save as Template
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => setShowLoadTemplateDialog(true)}
+                        disabled={templates.length === 0}
+                      >
+                        Load Template
+                      </Button>
+                    </div>
+                    
                     <Button 
                       type="submit" 
-                      className="w-full mt-6" 
+                      className="w-full mt-3" 
                       disabled={isGenerating}
                     >
                       {isGenerating ? (
@@ -1008,6 +1084,149 @@ export default function AdminPanel() {
                 onClose={() => setShowKeywordSelector(false)}
                 title="Select Keywords for SEO Optimization"
               />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Save Template Dialog */}
+          <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Save as Template</DialogTitle>
+                <DialogDescription>
+                  Save your current settings as a template for future use
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="templateName" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="templateName"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    className="col-span-3"
+                    placeholder="My Template"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSaveTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // Save current form values as template
+                    if (!templateName) {
+                      toast({
+                        title: "Template name required",
+                        description: "Please enter a name for your template",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    const templateData = {
+                      ...form.getValues(),
+                      selectedKeywords,
+                      selectedProducts,
+                      selectedCollections
+                    };
+                    
+                    setTemplates([...templates, {
+                      name: templateName,
+                      data: templateData
+                    }]);
+                    
+                    setTemplateName('');
+                    setShowSaveTemplateDialog(false);
+                    
+                    toast({
+                      title: "Template saved",
+                      description: "Your template has been saved successfully",
+                      variant: "default"
+                    });
+                  }}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Template
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Load Template Dialog */}
+          <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+            <DialogContent className="sm:max-w-[525px]">
+              <DialogHeader>
+                <DialogTitle>Load Template</DialogTitle>
+                <DialogDescription>
+                  Select a saved template to load its settings
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[300px] overflow-y-auto">
+                {templates.length > 0 ? (
+                  <div className="space-y-2">
+                    {templates.map((template, index) => (
+                      <Card key={index} className="p-3">
+                        <div className="flex justify-between items-center">
+                          <div className="font-medium">{template.name}</div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              // Load template data into form
+                              form.reset(template.data);
+                              
+                              // Update selected states
+                              if (template.data.selectedKeywords) {
+                                setSelectedKeywords(template.data.selectedKeywords);
+                              }
+                              
+                              if (template.data.selectedProducts) {
+                                setSelectedProducts(template.data.selectedProducts);
+                              }
+                              
+                              if (template.data.selectedCollections) {
+                                setSelectedCollections(template.data.selectedCollections);
+                              }
+                              
+                              setShowLoadTemplateDialog(false);
+                              
+                              toast({
+                                title: "Template loaded",
+                                description: "Template settings have been applied",
+                                variant: "default"
+                              });
+                            }}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Load
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No saved templates. Save a template first.
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowLoadTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </TabsContent>
