@@ -878,14 +878,14 @@ export default function AdminPanel() {
                                   placeholder="Select products to feature in content..."
                                 />
                               </FormControl>
-                              <FormDescription className="m-0 mt-1">
+                              <div className="text-sm text-muted-foreground m-0 mt-1">
                                 Products will be mentioned and linked in your content
                                 {Array.isArray(field.value) && field.value.length > 0 && (
-                                  <span className="block font-medium text-foreground mt-1">
+                                  <div className="font-medium text-foreground mt-1">
                                     {field.value.length} product(s) selected
-                                  </span>
+                                  </div>
                                 )}
-                              </FormDescription>
+                              </div>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -915,14 +915,14 @@ export default function AdminPanel() {
                                   placeholder="Select collections to feature in content..."
                                 />
                               </FormControl>
-                              <FormDescription className="m-0 mt-1">
+                              <div className="text-sm text-muted-foreground m-0 mt-1">
                                 Collections will be mentioned and linked in your content
                                 {Array.isArray(field.value) && field.value.length > 0 && (
-                                  <span className="block font-medium text-foreground mt-1">
+                                  <div className="font-medium text-foreground mt-1">
                                     {field.value.length} collection(s) selected
-                                  </span>
+                                  </div>
                                 )}
-                              </FormDescription>
+                              </div>
                               <FormMessage />
                             </FormItem>
                           )}
