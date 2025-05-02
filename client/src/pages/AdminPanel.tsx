@@ -164,8 +164,8 @@ export default function AdminPanel() {
     postStatus: "draft",
     generateImages: true,
     keywords: [],
-    productIds: [],
-    collectionIds: []
+    productIds: [], // This needs to be initialized as an empty array
+    collectionIds: [] // This needs to be initialized as an empty array
   };
 
   // Form setup
@@ -990,9 +990,9 @@ export default function AdminPanel() {
                                 type="button" 
                                 onClick={() => {
                                   // Use the explicit search query, never fall back to the title
-                                  const query = imageSearchQuery;
+                                  const query = imageSearchQuery.trim();
                                   
-                                  if (!query || query.trim() === '') {
+                                  if (!query) {
                                     toast({
                                       title: "Search query required",
                                       description: "Please enter a search term for images",
@@ -1019,7 +1019,7 @@ export default function AdminPanel() {
                                     }
                                   }
                                 }}
-                                disabled={isSearchingImages}
+                                disabled={isSearchingImages || !imageSearchQuery.trim()}
                               >
                                 {isSearchingImages ? (
                                   <>

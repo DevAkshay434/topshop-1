@@ -1,5 +1,5 @@
 import * as React from "react";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Command as CommandPrimitive } from "cmdk";
@@ -20,7 +20,7 @@ interface MultiSelectProps {
 
 export function MultiSelect({
   options,
-  selected,
+  selected = [], // Ensure this defaults to an empty array if undefined
   onChange,
   placeholder = "Select options...",
   className,
@@ -30,16 +30,19 @@ export function MultiSelect({
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
 
+  // Ensure selected is always an array
+  const selectedValues = Array.isArray(selected) ? selected : [];
+
   const handleUnselect = (value: string) => {
-    onChange(selected.filter((s) => s !== value));
+    onChange(selectedValues.filter((s) => s !== value));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const input = inputRef.current;
     if (input) {
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (input.value === "" && selected.length > 0) {
-          onChange(selected.slice(0, -1));
+        if (input.value === "" && selectedValues.length > 0) {
+          onChange(selectedValues.slice(0, -1));
         }
       }
       // This is not a default behavior of the <input /> field
@@ -49,7 +52,16 @@ export function MultiSelect({
     }
   };
 
-  const selectables = options.filter((option) => !selected.includes(option.value));
+  // Filter out options that are already selected 
+  const selectables = options.filter((option) => !selectedValues.includes(option.value));
+  
+  // Add click handler to the whole component to open dropdown
+  const handleComponentClick = () => {
+    if (!disabled && !open) {
+      setOpen(true);
+      inputRef.current?.focus();
+    }
+  };
 
   return (
     <Command
@@ -58,11 +70,12 @@ export function MultiSelect({
     >
       <div
         className={`group border border-input px-3 py-2 text-sm ring-offset-background rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
-          disabled ? "opacity-50 cursor-not-allowed" : ""
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
         }`}
+        onClick={handleComponentClick}
       >
         <div className="flex gap-1 flex-wrap">
-          {selected.map((value) => {
+          {selectedValues.map((value) => {
             const option = options.find((o) => o.value === value);
             return (
               <Badge
@@ -83,7 +96,10 @@ export function MultiSelect({
                       e.preventDefault();
                       e.stopPropagation();
                     }}
-                    onClick={() => handleUnselect(value)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUnselect(value);
+                    }}
                   >
                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                   </button>
@@ -95,20 +111,20 @@ export function MultiSelect({
             ref={inputRef}
             value={inputValue}
             onValueChange={setInputValue}
-            onBlur={() => setOpen(false)}
+            onBlur={() => setTimeout(() => setOpen(false), 200)}
             onFocus={() => setOpen(true)}
-            placeholder={selected.length === 0 ? placeholder : undefined}
+            placeholder={selectedValues.length === 0 ? placeholder : undefined}
             disabled={disabled}
             className="ml-2 bg-transparent outline-none placeholder:text-muted-foreground flex-1"
           />
         </div>
       </div>
       <div className="relative mt-2">
-        {open && !disabled && selectables.length > 0 ? (
+        {open && !disabled ? (
           <div className="absolute w-full z-10 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandGroup className="h-full overflow-auto max-h-52">
-              {selectables.map((option) => {
-                return (
+              {selectables.length > 0 ? (
+                selectables.map((option) => (
                   <CommandItem
                     key={option.value}
                     onMouseDown={(e) => {
@@ -117,14 +133,18 @@ export function MultiSelect({
                     }}
                     onSelect={() => {
                       setInputValue("");
-                      onChange([...selected, option.value]);
+                      onChange([...selectedValues, option.value]);
                     }}
                     className={"cursor-pointer"}
                   >
                     {option.label}
                   </CommandItem>
-                );
-              })}
+                ))
+              ) : (
+                <div className="py-2 px-3 text-sm text-muted-foreground">
+                  {options.length > 0 ? "All items selected" : "No options available"}
+                </div>
+              )}
             </CommandGroup>
           </div>
         ) : null}
