@@ -49,7 +49,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
@@ -143,7 +143,11 @@ export default function AdminPanel() {
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
-  const [templates, setTemplates] = useState<{name: string, data: any}[]>([]);
+  const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
+    // Load templates from localStorage on initial render
+    const savedTemplates = localStorage.getItem('topshop-templates');
+    return savedTemplates ? JSON.parse(savedTemplates) : [];
+  });
   const [templateName, setTemplateName] = useState('');
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
   const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
@@ -1391,10 +1395,15 @@ export default function AdminPanel() {
                       selectedCollections
                     };
                     
-                    setTemplates([...templates, {
+                    const updatedTemplates = [...templates, {
                       name: templateName,
                       data: templateData
-                    }]);
+                    }];
+                    
+                    setTemplates(updatedTemplates);
+                    
+                    // Save to localStorage
+                    localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
                     
                     setTemplateName('');
                     setShowSaveTemplateDialog(false);
@@ -1429,38 +1438,61 @@ export default function AdminPanel() {
                       <Card key={index} className="p-3">
                         <div className="flex justify-between items-center">
                           <div className="font-medium">{template.name}</div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => {
-                              // Load template data into form
-                              form.reset(template.data);
-                              
-                              // Update selected states
-                              if (template.data.selectedKeywords) {
-                                setSelectedKeywords(template.data.selectedKeywords);
-                              }
-                              
-                              if (template.data.selectedProducts) {
-                                setSelectedProducts(template.data.selectedProducts);
-                              }
-                              
-                              if (template.data.selectedCollections) {
-                                setSelectedCollections(template.data.selectedCollections);
-                              }
-                              
-                              setShowLoadTemplateDialog(false);
-                              
-                              toast({
-                                title: "Template loaded",
-                                description: "Template settings have been applied",
-                                variant: "default"
-                              });
-                            }}
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            Load
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                // Load template data into form
+                                form.reset(template.data);
+                                
+                                // Update selected states
+                                if (template.data.selectedKeywords) {
+                                  setSelectedKeywords(template.data.selectedKeywords);
+                                }
+                                
+                                if (template.data.selectedProducts) {
+                                  setSelectedProducts(template.data.selectedProducts);
+                                }
+                                
+                                if (template.data.selectedCollections) {
+                                  setSelectedCollections(template.data.selectedCollections);
+                                }
+                                
+                                setShowLoadTemplateDialog(false);
+                                
+                                toast({
+                                  title: "Template loaded",
+                                  description: "Template settings have been applied",
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Load
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                // Remove this template
+                                const updatedTemplates = templates.filter((_, i) => i !== index);
+                                setTemplates(updatedTemplates);
+                                
+                                // Update localStorage
+                                localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
+                                
+                                toast({
+                                  title: "Template deleted",
+                                  description: `"${template.name}" has been removed`,
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </Card>
                     ))}
