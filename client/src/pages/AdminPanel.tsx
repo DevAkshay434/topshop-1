@@ -240,6 +240,14 @@ export default function AdminPanel() {
       return;
     }
     
+    // Check if we already have this search in history
+    const existingSearch = imageSearchHistory.find(hist => hist.query === query);
+    if (existingSearch) {
+      setSearchedImages(existingSearch.images);
+      setImageSearchQuery(query);
+      return;
+    }
+    
     setIsSearchingImages(true);
     
     try {
@@ -253,10 +261,28 @@ export default function AdminPanel() {
       });
       
       if (response.success && response.images) {
-        setSearchedImages(response.images.map((img: any) => ({
+        // Mark images as selected if they're already in selectedImages
+        const newImages = response.images.map((img: any) => ({
           ...img,
-          selected: false
-        })));
+          selected: selectedImages.some(selected => selected.id === img.id)
+        }));
+        
+        setSearchedImages(newImages);
+        
+        // Add to search history
+        setImageSearchHistory(prev => [
+          ...prev,
+          { 
+            query, 
+            images: newImages 
+          }
+        ]);
+        
+        toast({
+          title: "Images found",
+          description: `Found ${newImages.length} images for "${query}"`,
+          variant: "default"
+        });
       } else {
         toast({
           title: "No images found",
@@ -278,13 +304,42 @@ export default function AdminPanel() {
   
   // Toggle image selection
   const toggleImageSelection = (imageId: string) => {
+    // Get the current selection state
+    const currentImage = searchedImages.find(img => img.id === imageId);
+    const newSelectedState = !(currentImage?.selected || false);
+    
+    // Update in current search results
     setSearchedImages(prev => 
       prev.map(img => 
         img.id === imageId 
-          ? { ...img, selected: !img.selected } 
+          ? { ...img, selected: newSelectedState } 
           : img
       )
     );
+    
+    // Update in search history
+    setImageSearchHistory(prev => 
+      prev.map(history => ({
+        ...history,
+        images: history.images.map(img => 
+          img.id === imageId 
+            ? { ...img, selected: newSelectedState } 
+            : img
+        )
+      }))
+    );
+    
+    // Update selected images list
+    if (newSelectedState) {
+      // Add to selected images if not already there
+      const imageToAdd = searchedImages.find(img => img.id === imageId);
+      if (imageToAdd && !selectedImages.some(img => img.id === imageId)) {
+        setSelectedImages(prev => [...prev, { ...imageToAdd, selected: true }]);
+      }
+    } else {
+      // Remove from selected images
+      setSelectedImages(prev => prev.filter(img => img.id !== imageId));
+    }
   };
   
   // Auto-populate the search field with the title when dialog opens
@@ -300,12 +355,35 @@ export default function AdminPanel() {
 
   // Handle image selection confirmation
   const confirmImageSelection = () => {
-    const selected = searchedImages.filter(img => img.selected);
-    setSelectedImages(selected);
+    // Consolidate all selected images from all searches
+    const allSelected: PexelsImage[] = [];
+    
+    // Get selected images from current search
+    const currentSelected = searchedImages.filter(img => img.selected);
+    
+    // Get selected images from history
+    imageSearchHistory.forEach(history => {
+      const historySelected = history.images.filter(img => img.selected);
+      historySelected.forEach(img => {
+        // Only add if not already in the list
+        if (!allSelected.some(selected => selected.id === img.id)) {
+          allSelected.push(img);
+        }
+      });
+    });
+    
+    // Add current selected images if not in history
+    currentSelected.forEach(img => {
+      if (!allSelected.some(selected => selected.id === img.id)) {
+        allSelected.push(img);
+      }
+    });
+    
+    setSelectedImages(allSelected);
     setShowImageDialog(false);
     
     toast({
-      title: `${selected.length} image(s) selected`,
+      title: `${allSelected.length} image(s) selected`,
       description: "Images will be included in your content",
       variant: "default"
     });
@@ -878,7 +956,7 @@ export default function AdminPanel() {
                           <DialogHeader>
                             <DialogTitle>Select Images for Your Content</DialogTitle>
                             <DialogDescription>
-                              Search for images related to your content. Click on images to select them.
+                              Search for images related to your content. You can perform multiple searches and select images from each.
                             </DialogDescription>
                           </DialogHeader>
                           
@@ -892,7 +970,26 @@ export default function AdminPanel() {
                               />
                               <Button 
                                 type="button" 
-                                onClick={() => handleImageSearch(imageSearchQuery || form.getValues().title)}
+                                onClick={() => {
+                                  const query = imageSearchQuery || form.getValues().title;
+                                  handleImageSearch(query);
+                                  
+                                  // Store current images in history if there are any
+                                  if (searchedImages.length > 0) {
+                                    const currentSearch = imageSearchHistory.find(history => 
+                                      history.query === imageSearchQuery);
+                                    
+                                    if (!currentSearch) {
+                                      setImageSearchHistory(prev => [
+                                        ...prev,
+                                        { 
+                                          query: imageSearchQuery, 
+                                          images: searchedImages 
+                                        }
+                                      ]);
+                                    }
+                                  }
+                                }}
                                 disabled={isSearchingImages}
                               >
                                 {isSearchingImages ? (
@@ -903,6 +1000,36 @@ export default function AdminPanel() {
                                 ) : "Search"}
                               </Button>
                             </div>
+                            
+                            {/* Search history tabs */}
+                            {imageSearchHistory.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                <Badge 
+                                  variant={!imageSearchHistory.some(h => h.query === imageSearchQuery) ? "default" : "outline"} 
+                                  className="cursor-pointer"
+                                  onClick={() => {
+                                    setSearchedImages([]);
+                                    setImageSearchQuery("");
+                                  }}
+                                >
+                                  New Search
+                                </Badge>
+                                
+                                {imageSearchHistory.map((history, index) => (
+                                  <Badge 
+                                    key={index}
+                                    variant={history.query === imageSearchQuery ? "default" : "outline"} 
+                                    className="cursor-pointer"
+                                    onClick={() => {
+                                      setImageSearchQuery(history.query);
+                                      setSearchedImages(history.images);
+                                    }}
+                                  >
+                                    {history.query}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                             
                             {searchedImages.length > 0 ? (
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-1">
@@ -937,23 +1064,115 @@ export default function AdminPanel() {
                                 {isSearchingImages ? "Searching for images..." : "Search for images to display results"}
                               </div>
                             )}
+                            
+                            {/* Selection summary */}
+                            {selectedImages.length > 0 && (
+                              <div className="mt-2 p-3 border rounded-md bg-slate-50">
+                                <p className="text-sm font-medium mb-2">Selected Images: {selectedImages.length}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {selectedImages.map(image => (
+                                    <div 
+                                      key={image.id} 
+                                      className="relative h-16 w-16 rounded-md overflow-hidden border"
+                                    >
+                                      <img 
+                                        src={image.src?.thumbnail || image.url} 
+                                        alt="Selected" 
+                                        className="h-full w-full object-cover"
+                                      />
+                                      <div 
+                                        className="absolute top-0 right-0 bg-red-500 rounded-full p-0.5 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Remove from selected images
+                                          setSelectedImages(prev => 
+                                            prev.filter(img => img.id !== image.id)
+                                          );
+                                          // Also unselect in current search results if present
+                                          setSearchedImages(prev => 
+                                            prev.map(img => 
+                                              img.id === image.id 
+                                                ? { ...img, selected: false } 
+                                                : img
+                                            )
+                                          );
+                                          // Update in search history as well
+                                          setImageSearchHistory(prev => 
+                                            prev.map(history => ({
+                                              ...history,
+                                              images: history.images.map(img => 
+                                                img.id === image.id 
+                                                  ? { ...img, selected: false } 
+                                                  : img
+                                              )
+                                            }))
+                                          );
+                                        }}
+                                      >
+                                        <XCircle className="h-3 w-3 text-white" />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                           
-                          <DialogFooter>
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              onClick={() => setShowImageDialog(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button 
-                              type="button"
-                              onClick={confirmImageSelection}
-                              disabled={!searchedImages.some(img => img.selected)}
-                            >
-                              Use Selected Images
-                            </Button>
+                          <DialogFooter className="flex justify-between">
+                            <div>
+                              {selectedImages.length > 0 && (
+                                <Button 
+                                  type="button" 
+                                  variant="destructive" 
+                                  size="sm"
+                                  onClick={() => {
+                                    // Clear all selections
+                                    setSelectedImages([]);
+                                    
+                                    // Update searchedImages
+                                    setSearchedImages(prev => 
+                                      prev.map(img => ({ ...img, selected: false }))
+                                    );
+                                    
+                                    // Update search history
+                                    setImageSearchHistory(prev => 
+                                      prev.map(history => ({
+                                        ...history,
+                                        images: history.images.map(img => 
+                                          ({ ...img, selected: false })
+                                        )
+                                      }))
+                                    );
+                                    
+                                    toast({
+                                      title: "Selections cleared",
+                                      description: "All image selections have been cleared",
+                                      variant: "default"
+                                    });
+                                  }}
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Clear All Selections
+                                </Button>
+                              )}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => setShowImageDialog(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                type="button"
+                                onClick={confirmImageSelection}
+                                disabled={selectedImages.length === 0}
+                              >
+                                Use {selectedImages.length} Selected Image{selectedImages.length !== 1 ? 's' : ''}
+                              </Button>
+                            </div>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
