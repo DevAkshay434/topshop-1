@@ -866,7 +866,7 @@ export default function AdminPanel() {
                                     label: product.title,
                                     value: product.id
                                   })) || []}
-                                  selected={field.value || []}
+                                  selected={Array.isArray(field.value) ? field.value : []}
                                   onChange={(selected) => {
                                     setSelectedProducts(selected);
                                     field.onChange(selected);
@@ -900,7 +900,7 @@ export default function AdminPanel() {
                                     label: collection.title,
                                     value: collection.id
                                   })) || []}
-                                  selected={field.value || []}
+                                  selected={Array.isArray(field.value) ? field.value : []}
                                   onChange={(selected) => {
                                     setSelectedCollections(selected);
                                     field.onChange(selected);

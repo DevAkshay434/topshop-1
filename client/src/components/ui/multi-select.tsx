@@ -31,8 +31,15 @@ export function MultiSelect({
   className,
   disabled = false,
 }: MultiSelectProps) {
-  // Ensure selected is always an array
+  // Ensure selected is always an array, even if it's undefined
   const selectedValues = Array.isArray(selected) ? selected : [];
+  
+  // For debugging
+  React.useEffect(() => {
+    if (selected === undefined) {
+      console.log("MultiSelect received undefined selected value");
+    }
+  }, [selected]);
   
   // Remove an item from selection
   const handleRemove = (valueToRemove: string) => {
