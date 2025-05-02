@@ -11,7 +11,7 @@ import {
   shopifyService
 } from "../services/shopify";
 import { dataForSEOService, KeywordData } from "../services/dataforseo";
-import { pixabayService, type PixabayImage } from "../services/pixabay";
+import { pexelsService, type PexelsImage } from "../services/pexels";
 import { generateBlogContentWithClaude } from "../services/claude";
 
 const adminRouter = Router();
@@ -261,7 +261,7 @@ adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) 
   }
 });
 
-// Generate images for a topic using Pixaway
+// Generate images for a topic using Pexels
 adminRouter.post("/generate-images", async (req: Request, res: Response) => {
   try {
     // Validate request
@@ -272,8 +272,8 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
     
     const { prompt, count = 3 } = schema.parse(req.body);
     
-    // Generate images (with fallback to placeholders if API key not set)
-    const { images, fallbackUsed } = await pixabayService.safeGenerateImages(prompt, count);
+    // Generate images with Pexels (with fallback to placeholders if API key not set)
+    const { images, fallbackUsed } = await pexelsService.safeSearchImages(prompt, count);
     
     res.json({
       success: true,
@@ -440,7 +440,7 @@ Please suggest a meta description at the end of your response.
       
       // 5. Handle images based on user selection or generate if needed
       let featuredImage = null;
-      let additionalImages: PixabayImage[] = [];
+      let additionalImages: PexelsImage[] = [];
       
       // If user has selected specific images, use those
       if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
@@ -450,10 +450,10 @@ Please suggest a meta description at the end of your response.
           
           // Search for the image to get its full data
           // Note: In a real implementation, we'd store these images in a database
-          const { images } = await pixabayService.safeGenerateImages(requestData.title, 10);
+          const { images } = await pexelsService.safeSearchImages(requestData.title, 10);
           
           // Filter all selected images
-          const selectedImages = images.filter(img => 
+          const selectedImages = images.filter((img: PexelsImage) => 
             requestData.selectedImageIds && 
             requestData.selectedImageIds.includes(img.id)
           );
@@ -480,7 +480,7 @@ Please suggest a meta description at the end of your response.
       if (!featuredImage && requestData.generateImages) {
         try {
           console.log(`Generating images for: "${requestData.title}"`);
-          const { images, fallbackUsed } = await pixabayService.safeGenerateImages(requestData.title, 3);
+          const { images, fallbackUsed } = await pexelsService.safeSearchImages(requestData.title, 3);
           if (images && images.length > 0) {
             featuredImage = images[0];
             console.log(`Successfully generated featured image: ${featuredImage.url}`);
