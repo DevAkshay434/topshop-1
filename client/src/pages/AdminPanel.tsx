@@ -864,7 +864,9 @@ export default function AdminPanel() {
                                 />
                               </FormControl>
                               <FormDescription>
-                                Products will be mentioned and linked in your content
+                                {Array.isArray(field.value) && field.value.length > 0 
+                                  ? `${field.value.length} product(s) will be mentioned and linked in your content` 
+                                  : "Products will be mentioned and linked in your content"}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -896,7 +898,9 @@ export default function AdminPanel() {
                                 />
                               </FormControl>
                               <FormDescription>
-                                Collections will be mentioned and linked in your content
+                                {Array.isArray(field.value) && field.value.length > 0 
+                                  ? `${field.value.length} collection(s) will be mentioned and linked in your content` 
+                                  : "Collections will be mentioned and linked in your content"}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
