@@ -853,10 +853,11 @@ export default function AdminPanel() {
                                     label: product.title,
                                     value: product.id
                                   })) || []}
-                                  selected={selectedProducts}
+                                  selected={field.value || []}
                                   onChange={(selected) => {
                                     setSelectedProducts(selected);
                                     field.onChange(selected);
+                                    console.log("Products selected:", selected);
                                   }}
                                   placeholder="Select products to feature in content..."
                                 />
@@ -864,6 +865,7 @@ export default function AdminPanel() {
                               <FormDescription>
                                 Products will be mentioned and linked in your content
                               </FormDescription>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
@@ -883,10 +885,11 @@ export default function AdminPanel() {
                                     label: collection.title,
                                     value: collection.id
                                   })) || []}
-                                  selected={selectedCollections}
+                                  selected={field.value || []}
                                   onChange={(selected) => {
                                     setSelectedCollections(selected);
                                     field.onChange(selected);
+                                    console.log("Collections selected:", selected);
                                   }}
                                   placeholder="Select collections to feature in content..."
                                 />
@@ -894,6 +897,7 @@ export default function AdminPanel() {
                               <FormDescription>
                                 Collections will be mentioned and linked in your content
                               </FormDescription>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
