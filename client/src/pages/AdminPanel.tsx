@@ -342,16 +342,14 @@ export default function AdminPanel() {
     }
   };
   
-  // Auto-populate the search field with the title when dialog opens
+  // Just open the dialog without auto-populating or auto-searching
   useEffect(() => {
-    if (showImageDialog && !imageSearchQuery && form.getValues().title) {
-      setImageSearchQuery(form.getValues().title);
-      // Auto-search if we have a title
-      if (form.getValues().title && !searchedImages.length) {
-        handleImageSearch(form.getValues().title);
-      }
+    // No longer auto-populate or search based on title
+    if (showImageDialog && imageSearchHistory.length === 0 && !searchedImages.length) {
+      // Just display empty search - user must enter their own query
+      setImageSearchQuery('');
     }
-  }, [showImageDialog, form, imageSearchQuery, searchedImages.length]);
+  }, [showImageDialog, imageSearchHistory.length, searchedImages.length]);
 
   // Handle image selection confirmation
   const confirmImageSelection = () => {
