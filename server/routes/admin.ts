@@ -550,7 +550,9 @@ Please suggest a meta description at the end of your response.
                 if (match.index !== undefined) {
                   const insertPosition = match.index + match.match.length + insertOffset;
                   const image = additionalImages[imageIndex];
-                  const imageHtml = `\n\n<img src="${image.url}" alt="${image.alt || 'Content image'}" class="content-image" />\n\n`;
+                  const imageUrl = image.src?.medium || image.url;
+                  const photographer = image.photographer ? `<p class="image-credit">Photo by: ${image.photographer}</p>` : '';
+                  const imageHtml = `\n\n<img src="${imageUrl}" alt="${image.alt || 'Content image'}" class="content-image" />\n${photographer}\n`;
                   
                   // Insert the image HTML after the heading
                   contentWithImages = 
@@ -570,7 +572,9 @@ Please suggest a meta description at the end of your response.
               contentWithImages += '\n\n<div class="additional-images">\n';
               for (let i = imageIndex; i < additionalImages.length; i++) {
                 const image = additionalImages[i];
-                contentWithImages += `<img src="${image.url}" alt="${image.alt || 'Additional content image'}" class="content-image" />\n`;
+                const imageUrl = image.src?.medium || image.url;
+                const photographer = image.photographer ? `<p class="image-credit">Photo by: ${image.photographer}</p>` : '';
+                contentWithImages += `<img src="${imageUrl}" alt="${image.alt || 'Additional content image'}" class="content-image" />\n${photographer}\n`;
               }
               contentWithImages += '</div>\n';
             }
@@ -679,7 +683,9 @@ Please suggest a meta description at the end of your response.
                 contentWithImages += '\n\n<div class="additional-images">\n';
                 for (let i = imageIndex; i < additionalImages.length; i++) {
                   const image = additionalImages[i];
-                  contentWithImages += `<img src="${image.url}" alt="${image.alt || 'Additional content image'}" class="content-image" />\n`;
+                  const imageUrl = image.src?.medium || image.url;
+                  const photographer = image.photographer ? `<p class="image-credit">Photo by: ${image.photographer}</p>` : '';
+                  contentWithImages += `<img src="${imageUrl}" alt="${image.alt || 'Additional content image'}" class="content-image" />\n${photographer}\n`;
                 }
                 contentWithImages += '</div>\n';
               }
