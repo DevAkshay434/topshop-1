@@ -231,7 +231,8 @@ export default function AdminPanel() {
 
   // Handle image search using Pexels API
   const handleImageSearch = async (query: string) => {
-    if (!query || query.trim() === '') {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
       toast({
         title: "Search query required",
         description: "Please enter a search term to find images",
@@ -241,10 +242,10 @@ export default function AdminPanel() {
     }
     
     // Check if we already have this search in history
-    const existingSearch = imageSearchHistory.find(hist => hist.query === query);
+    const existingSearch = imageSearchHistory.find(hist => hist.query === trimmedQuery);
     if (existingSearch) {
       setSearchedImages(existingSearch.images);
-      setImageSearchQuery(query);
+      setImageSearchQuery(trimmedQuery);
       return;
     }
     
@@ -255,12 +256,12 @@ export default function AdminPanel() {
         url: '/api/admin/generate-images',
         method: 'POST',
         data: {
-          prompt: query,
+          prompt: trimmedQuery,
           count: 10 // Request 10 images to choose from
         }
       });
       
-      if (response.success && response.images) {
+      if (response.success && response.images && response.images.length > 0) {
         // Mark images as selected if they're already in selectedImages
         const newImages = response.images.map((img: any) => ({
           ...img,
@@ -273,14 +274,14 @@ export default function AdminPanel() {
         setImageSearchHistory(prev => [
           ...prev,
           { 
-            query, 
+            query: trimmedQuery, 
             images: newImages 
           }
         ]);
         
         toast({
           title: "Images found",
-          description: `Found ${newImages.length} images for "${query}"`,
+          description: `Found ${newImages.length} images for "${trimmedQuery}"`,
           variant: "default"
         });
       } else {
