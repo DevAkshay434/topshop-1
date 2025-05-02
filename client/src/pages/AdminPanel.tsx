@@ -148,7 +148,7 @@ export default function AdminPanel() {
     const savedTemplates = localStorage.getItem('topshop-templates');
     return savedTemplates ? JSON.parse(savedTemplates) : [];
   });
-  const [templateName, setTemplateName] = useState('');
+  const [templateName, setTemplateName] = useState<string>('');
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
   const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
@@ -986,7 +986,15 @@ export default function AdminPanel() {
                       />
                       
                       {/* Image Selection Dialog */}
-                      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+                      <Dialog 
+                        open={showImageDialog} 
+                        onOpenChange={(open) => {
+                          if (!open) {
+                            // Clear search query when dialog closes
+                            setImageSearchQuery('');
+                          }
+                          setShowImageDialog(open);
+                        }}>
                         <DialogContent className="sm:max-w-[700px]">
                           <DialogHeader>
                             <DialogTitle>Select Images for Your Content</DialogTitle>
@@ -1229,7 +1237,10 @@ export default function AdminPanel() {
                       <Button 
                         type="button" 
                         variant="outline"
-                        onClick={() => setShowSaveTemplateDialog(true)}
+                        onClick={() => {
+                          setTemplateName('');
+                          setShowSaveTemplateDialog(true);
+                        }}
                       >
                         Save as Template
                       </Button>
@@ -1353,7 +1364,14 @@ export default function AdminPanel() {
           </Dialog>
           
           {/* Save Template Dialog */}
-          <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+          <Dialog 
+            open={showSaveTemplateDialog} 
+            onOpenChange={(open) => {
+              if (!open) {
+                setTemplateName('');
+              }
+              setShowSaveTemplateDialog(open);
+            }}>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Save as Template</DialogTitle>
@@ -1368,7 +1386,7 @@ export default function AdminPanel() {
                   </Label>
                   <Input
                     id="templateName"
-                    value={templateName}
+                    value={templateName || ''}
                     onChange={(e) => setTemplateName(e.target.value)}
                     className="col-span-3"
                     placeholder="My Template"
