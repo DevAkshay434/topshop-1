@@ -106,16 +106,25 @@ interface ServiceStatus {
   shopify: boolean;
   claude: boolean;
   dataForSEO: boolean;
-  pixaway: boolean;
+  pexels: boolean;
 }
 
-// Interface for Pixabay image 
-interface PixabayImage {
+// Interface for Pexels image 
+interface PexelsImage {
   id: string;
   url: string;
   width: number;
   height: number;
   alt?: string;
+  src?: {
+    original: string;
+    large: string;
+    medium: string;
+    small: string;
+    thumbnail: string;
+  };
+  photographer?: string;
+  photographer_url?: string;
   selected?: boolean;
 }
 
@@ -125,8 +134,8 @@ export default function AdminPanel() {
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState('');
-  const [searchedImages, setSearchedImages] = useState<PixabayImage[]>([]);
-  const [selectedImages, setSelectedImages] = useState<PixabayImage[]>([]);
+  const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
+  const [selectedImages, setSelectedImages] = useState<PexelsImage[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
@@ -211,7 +220,7 @@ export default function AdminPanel() {
     enabled: selectedTab === "connections"
   });
 
-  // Handle image search using Pixabay API
+  // Handle image search using Pexels API
   const searchImages = async (query: string) => {
     if (!query || query.trim() === '') {
       toast({
