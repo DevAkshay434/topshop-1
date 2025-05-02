@@ -310,7 +310,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       enableCitations: z.boolean().default(true),
       mainImageIds: z.array(z.string()).optional(),
       internalImageIds: z.array(z.string()).optional(),
-      selectedImageIds: z.array(z.string()).optional(), // Added for user-selected Pixabay images
+      selectedImageIds: z.array(z.string()).optional(), // Added for user-selected Pexels images
       toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]).default("friendly"),
       postStatus: z.enum(["publish", "draft"]).default("draft"),
       generateImages: z.boolean().default(true)
@@ -732,7 +732,7 @@ adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
     shopify: false,
     claude: false,
     dataForSEO: false,
-    pixabay: false
+    pexels: false
   };
   
   // Test Shopify connection
@@ -777,12 +777,12 @@ adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
     console.error("DataForSEO connection test failed:", error);
   }
   
-  // Test Pixabay connection
+  // Test Pexels connection
   try {
-    const pixabayTest = await pixabayService.testConnection();
-    results.pixabay = pixabayTest.success;
+    const pexelsTest = await pexelsService.testConnection();
+    results.pexels = pexelsTest.success;
   } catch (error) {
-    console.error("Pixabay connection test failed:", error);
+    console.error("Pexels connection test failed:", error);
   }
   
   res.json({
