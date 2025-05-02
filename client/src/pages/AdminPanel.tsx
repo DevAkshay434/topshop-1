@@ -135,7 +135,7 @@ export default function AdminPanel() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
-  const [imageSearchQuery, setImageSearchQuery] = useState('');
+  const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -999,7 +999,7 @@ export default function AdminPanel() {
                             <div className="flex items-center gap-2">
                               <Input
                                 placeholder="Search for images (e.g., 'business meeting', 'online shopping')"
-                                value={imageSearchQuery}
+                                value={imageSearchQuery || ''}
                                 onChange={(e) => setImageSearchQuery(e.target.value)}
                                 className="flex-1"
                               />
