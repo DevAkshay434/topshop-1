@@ -512,7 +512,13 @@ Please suggest a meta description at the end of your response.
         
         // Add featured image at the beginning if available
         if (featuredImage) {
-          finalContent = `<img src="${featuredImage.url}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n\n${finalContent}`;
+          // Use Pexels medium or large src image if available, otherwise fallback to url
+          const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.url;
+          const photographer = featuredImage.photographer 
+            ? `<p class="image-credit">Photo by: ${featuredImage.photographer}</p>` 
+            : '';
+          
+          finalContent = `<img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n${photographer}\n${finalContent}`;
         }
         
         // Insert additional images throughout the content, after subheadings (<h2> and <h3> tags)
@@ -613,7 +619,13 @@ Please suggest a meta description at the end of your response.
           
           // Add featured image at the beginning if available
           if (featuredImage) {
-            finalContent = `<img src="${featuredImage.url}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n\n${finalContent}`;
+            // Use Pexels medium or large src image if available, otherwise fallback to url
+            const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.url;
+            const photographer = featuredImage.photographer 
+              ? `<p class="image-credit">Photo by: ${featuredImage.photographer}</p>` 
+              : '';
+            
+            finalContent = `<img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n${photographer}\n${finalContent}`;
           }
           
           // Insert additional images throughout the content, after subheadings (<h2> and <h3> tags)
@@ -645,7 +657,9 @@ Please suggest a meta description at the end of your response.
                   if (match.index !== undefined) {
                     const insertPosition = match.index + match.match.length + insertOffset;
                     const image = additionalImages[imageIndex];
-                    const imageHtml = `\n\n<img src="${image.url}" alt="${image.alt || 'Content image'}" class="content-image" />\n\n`;
+                    const imageUrl = image.src?.medium || image.url;
+                    const photographer = image.photographer ? `<p class="image-credit">Photo by: ${image.photographer}</p>` : '';
+                    const imageHtml = `\n\n<img src="${imageUrl}" alt="${image.alt || 'Content image'}" class="content-image" />\n${photographer}\n`;
                     
                     // Insert the image HTML after the heading
                     contentWithImages = 

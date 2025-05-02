@@ -789,7 +789,7 @@ export default function AdminPanel() {
                                 Generate Images
                               </FormLabel>
                               <FormDescription>
-                                Select images for your content from Pixabay
+                                Select images for your content from Pexels
                               </FormDescription>
                               {field.value && (
                                 <Button 
@@ -851,10 +851,15 @@ export default function AdminPanel() {
                                     onClick={() => toggleImageSelection(image.id)}
                                   >
                                     <img 
-                                      src={image.url} 
+                                      src={image.src?.medium || image.url} 
                                       alt={image.alt || 'Content image'} 
                                       className="w-full h-32 object-cover"
                                     />
+                                    {image.photographer && (
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
+                                        Photo by: {image.photographer}
+                                      </div>
+                                    )}
                                     {image.selected && (
                                       <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-1">
                                         <CheckCircle className="h-4 w-4 text-white" />
@@ -939,11 +944,14 @@ export default function AdminPanel() {
                     {generatedContent.featuredImage && (
                       <div className="mb-4">
                         <img 
-                          src={generatedContent.featuredImage.url} 
+                          src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
                           alt={generatedContent.featuredImage.alt || generatedContent.title} 
                           className="w-full h-auto rounded-md border"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">Featured image generated for this post</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Featured image {generatedContent.featuredImage.photographer && 
+                            `by ${generatedContent.featuredImage.photographer}`} for this post
+                        </p>
                       </div>
                     )}
                     
