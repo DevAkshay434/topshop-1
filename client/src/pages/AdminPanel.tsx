@@ -410,6 +410,7 @@ export default function AdminPanel() {
   
   // Handle content generation form submission
   const handleSubmit = async (values: ContentFormValues) => {
+    console.log("Form submission started with values:", values);
     setIsGenerating(true);
     setGeneratedContent(null);
     
@@ -431,20 +432,30 @@ export default function AdminPanel() {
         selectedKeywordData: selectedKeywords
       };
       
-      console.log("Submitting with productIds:", safeValues.productIds, "and collectionIds:", safeValues.collectionIds);
+      console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
       
-      const response = await apiRequest({
-        url: '/api/admin/generate-content',
-        method: 'POST',
-        data: submitData
-      });
-      
-      setGeneratedContent(response);
-      toast({
-        title: "Content generated successfully",
-        description: "Your content has been generated and saved.",
-        variant: "default"
-      });
+      try {
+        const response = await apiRequest({
+          url: '/api/admin/generate-content',
+          method: 'POST',
+          data: submitData
+        });
+        
+        console.log("API response received:", response);
+        setGeneratedContent(response);
+        toast({
+          title: "Content generated successfully",
+          description: "Your content has been generated and saved.",
+          variant: "default"
+        });
+      } catch (apiError: any) {
+        console.error("API request failed:", apiError);
+        toast({
+          title: "API Request Failed",
+          description: apiError.message || "Could not connect to the server",
+          variant: "destructive"
+        });
+      }
     } catch (error: any) {
       console.error("Content generation error:", error);
       toast({
