@@ -235,9 +235,11 @@ adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) 
 // Generate images from Pexels
 adminRouter.post("/generate-images", async (req: Request, res: Response) => {
   try {
+    console.log("Generate images request body:", req.body);
     const { query, count } = req.body;
     
     if (!query) {
+      console.log("Missing query in request body:", req.body);
       return res.status(400).json({
         success: false,
         error: "Search query is required for image generation"
@@ -247,7 +249,7 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
     const imageCount = count || 10;
     
     // Search for images
-    console.log(`Searching Pexels for: "${query}"`);
+    console.log(`Searching Pexels for: "${query}" (requesting ${imageCount} images)`);
     const { images, fallbackUsed } = await pexelsService.safeSearchImages(query, imageCount);
     
     res.json({

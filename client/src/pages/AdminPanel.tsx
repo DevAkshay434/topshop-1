@@ -260,7 +260,7 @@ export default function AdminPanel() {
         url: '/api/admin/generate-images',
         method: 'POST',
         data: {
-          prompt: trimmedQuery,
+          query: trimmedQuery, // Use "query" instead of "prompt" to match server expectations
           count: 10 // Request 10 images to choose from
         }
       });
