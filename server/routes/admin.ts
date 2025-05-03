@@ -364,7 +364,52 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       }
       
       // 2. Generate Claude prompt based on all parameters
-      let claudeSystemPrompt = `You are an expert SEO blog writer and content strategist. Your goal is to write high-quality, engaging, and SEO-optimized ${requestData.articleType === 'blog' ? 'blog posts' : 'pages'} that sound natural, helpful, and authoritative.`;
+      let claudeSystemPrompt = `You are an expert SEO blog writer and content strategist specializing in keyword optimization. Your goal is to write high-quality, engaging, and SEO-optimized ${requestData.articleType === 'blog' ? 'blog posts' : 'pages'} that sound natural, helpful, and authoritative.
+      
+Your primary objective is to create content that ranks well on search engines by incorporating ALL provided keywords naturally throughout the content. Keywords should appear in strategic locations:
+1. In the title (most important keywords)
+2. In H2 and H3 headings
+3. In the first and last paragraphs
+4. Throughout the body content in a natural, reader-friendly way
+
+When given keywords with search volume data, prioritize higher-volume keywords by giving them more prominence and using them more frequently.`;
+      
+      // Get selected keyword data with volume information if available
+      const selectedKeywordData = requestData.selectedKeywordData || [];
+      const hasKeywordData = selectedKeywordData && selectedKeywordData.length > 0;
+      
+      // Sort keywords by search volume if available to prioritize high-volume keywords
+      let prioritizedKeywords = [...selectedKeywordData];
+      if (hasKeywordData) {
+        try {
+          prioritizedKeywords.sort((a, b) => {
+            const volumeA = a.searchVolume || 0;
+            const volumeB = b.searchVolume || 0;
+            return volumeB - volumeA; // Sort from highest to lowest volume
+          });
+        } catch (err) {
+          console.log("Error sorting keywords by volume:", err);
+        }
+      }
+      
+      // Extract just the keyword text strings for easier use
+      const keywordStrings = hasKeywordData 
+        ? prioritizedKeywords.map(k => k.keyword) 
+        : (requestData.keywords || []);
+      
+      // Build a more detailed keyword section with search volumes
+      let keywordInfo = '';
+      if (hasKeywordData) {
+        keywordInfo = `
+Keywords (by search volume):
+${prioritizedKeywords.map(k => {
+  return `- ${k.keyword}${k.searchVolume ? ` (${k.searchVolume.toLocaleString()} monthly searches)` : ''}${k.intent ? `, ${k.intent} intent` : ''}`;
+}).join('\n')}`;
+      } else if (requestData.keywords?.length) {
+        keywordInfo = `Keywords: ${requestData.keywords.join(', ')}`;
+      } else {
+        keywordInfo = 'Keywords: None provided';
+      }
       
       // Build a detailed prompt with all the parameters
       let claudeUserPrompt = `
@@ -375,7 +420,7 @@ ${requestData.region ? `Region: ${requestData.region}` : ''}
 ${productsInfo.length > 0 ? `Products: ${productsInfo.map(p => p.title).join(', ')}` : ''}
 ${collectionsInfo.length > 0 ? `Collections: ${collectionsInfo.map(c => c.title).join(', ')}` : ''}
 Type: ${requestData.articleType === 'blog' ? 'Blog Post' : 'Shopify Page'}
-Keywords: ${requestData.keywords?.join(', ') || 'None provided'}
+${keywordInfo}
 Writing Perspective: ${requestData.writingPerspective.replace(/_/g, ' ')}
 Formatting Options:
 - Tables: ${requestData.enableTables ? 'Yes' : 'No'}
@@ -396,10 +441,11 @@ Instructions:
    ${requestData.enableTables ? '   - Use HTML tables for comparing items or presenting structured data' : ''}
 3. Maintain a ${requestData.toneOfVoice} tone throughout.
 4. Use the ${requestData.writingPerspective.replace(/_/g, ' ')} perspective consistently.
-${productsInfo.length > 0 ? '5. Naturally mention and link to the provided products where relevant.' : ''}
-${collectionsInfo.length > 0 ? `${productsInfo.length > 0 ? '6' : '5'}. Naturally mention and link to the provided collections where relevant.` : ''}
-${requestData.enableCitations ? `${productsInfo.length > 0 || collectionsInfo.length > 0 ? '7' : '5'}. Include 2-3 authoritative external citations or references.` : ''}
-${requestData.faqType !== 'none' ? `${(productsInfo.length > 0 || collectionsInfo.length > 0 || requestData.enableCitations) ? '8' : '5'}. Include a FAQ section with ${requestData.faqType === 'short' ? '3-5 concise questions and answers' : '5-7 detailed questions and answers'}.` : ''}
+5. VERY IMPORTANT - Use ALL the provided keywords naturally in the content - each keyword should appear at least once, with higher search volume keywords appearing more prominently and in important positions (title, headings, early paragraphs).
+${productsInfo.length > 0 ? '6. Naturally mention and link to the provided products where relevant.' : ''}
+${collectionsInfo.length > 0 ? `${productsInfo.length > 0 ? '7' : '6'}. Naturally mention and link to the provided collections where relevant.` : ''}
+${requestData.enableCitations ? `${productsInfo.length > 0 || collectionsInfo.length > 0 ? '8' : '6'}. Include 2-3 authoritative external citations or references.` : ''}
+${requestData.faqType !== 'none' ? `${(productsInfo.length > 0 || collectionsInfo.length > 0 || requestData.enableCitations) ? '9' : '7'}. Include a FAQ section with ${requestData.faqType === 'short' ? '3-5 concise questions and answers' : '5-7 detailed questions and answers'}.` : ''}
 
 IMPORTANT FORMATTING REQUIREMENTS:
 1. Format the content using proper HTML (h2, h3, p, ul, li, table, etc.)
@@ -408,8 +454,9 @@ IMPORTANT FORMATTING REQUIREMENTS:
 4. For links to collections, use: <a href="{collection-url}">{collection-name}</a>
 5. For external citations, use proper hyperlinks
 6. Don't include repetitive conclusions or generic phrases
+7. Include all selected keywords in the content - this is critical for SEO
 
-Please suggest a meta description at the end of your response.
+Please suggest a meta description at the end of your response that includes at least 2 of the top keywords.
 `;
 
       console.log(`Generating content with Claude for: "${requestData.title}"`);

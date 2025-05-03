@@ -33,19 +33,19 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
     
     // Determine content length based on request
-    let contentLength = "approximately 700-900 words";
+    let contentLength = "approximately 800-1000 words";
     if (request.length.toLowerCase().includes("short")) {
-      contentLength = "approximately 400-600 words";
+      contentLength = "approximately 500-700 words";
     } else if (request.length.toLowerCase().includes("long")) {
-      contentLength = "approximately 1200-1500 words";
+      contentLength = "approximately 1500-2000 words";
     }
     
     // Enhanced base prompt for Claude with proper structure
     let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${request.tone} tone, ${contentLength}.
     
     The blog post MUST follow this exact structure:
-    1. A compelling title that includes main keywords
-    2. Multiple clearly defined sections with H2 headings
+    1. A compelling title that includes the main topic and primary keywords
+    2. Multiple clearly defined sections with H2 headings that incorporate important keywords
     3. Appropriate H3 subheadings within each section where needed
     4. Well-organized paragraphs (2-4 paragraphs per section)
     5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
@@ -56,7 +56,8 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
     - DO NOT use <h1> tags, as this will be the post title
     - Make sure sections flow logically and coherently
-    - Include a meta description of 155-160 characters
+    - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
+    - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     
     Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
     
