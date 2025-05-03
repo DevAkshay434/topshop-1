@@ -182,7 +182,8 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     }
     
     // Execute keyword search
-    const keywords = await dataForSEOService.getKeywordSuggestions(
+    // Note: Assuming dataForSEOService has a method called getKeywordSuggestions
+    const keywords = await dataForSEOService.getKeywords(
       productTitle,
       region || 'us'
     );
@@ -315,23 +316,286 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       });
     }
     
-    // Create a content ID for tracking
-    const contentId = Math.floor(Math.random() * 1000) + 1;
+    // Parse request data for easier access
+    const requestData = req.body;
     
-    // For debugging, respond with a simplified result to verify API connectivity
-    return res.json({
-      success: true,
-      contentId,
-      title: req.body.title || "Test Title",
-      content: "<h2>Test Content</h2><p>This is test content to verify that the API is working. We'll implement the real content generation next.</p>",
-      message: "Content generation API endpoint successful. Real implementation coming soon."
+    // Create temporary store object
+    const store = {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || (requestData.blogId || ''),
+      isConnected: connection.isConnected,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
+    
+    // Create a record of the content generation request
+    const contentRequest = await storage.createContentGenRequest({
+      topic: requestData.title,
+      tone: requestData.toneOfVoice,
+      length: "medium", // Default length
+      status: "pending",
+      generatedContent: null
     });
-  } catch (error) {
+    
+    try {
+      // 1. Fetch product and collection details if IDs provided
+      let productsInfo: Array<any> = [];
+      let collectionsInfo: Array<any> = [];
+      
+      if (requestData.productIds && requestData.productIds.length > 0) {
+        // For simplicity, we'll use the product search API
+        const allProducts = await getProducts(store, 100);
+        productsInfo = allProducts.filter(p => requestData.productIds?.includes(p.id));
+      }
+      
+      if (requestData.collectionIds && requestData.collectionIds.length > 0) {
+        const allCollections = await getAllCollections(store, 100);
+        collectionsInfo = allCollections.filter(c => requestData.collectionIds?.includes(c.id));
+      }
+      
+      // 2. Generate Claude prompt based on all parameters
+      let claudeSystemPrompt = `You are an expert SEO blog writer and content strategist. Your goal is to write high-quality, engaging, and SEO-optimized ${requestData.articleType === 'blog' ? 'blog posts' : 'pages'} that sound natural, helpful, and authoritative.`;
+      
+      // Build a detailed prompt with all the parameters
+      let claudeUserPrompt = `
+Create a complete ${requestData.articleType === 'blog' ? 'blog post' : 'Shopify page'} based on the following inputs:
+
+Title: "${requestData.title}"
+${requestData.region ? `Region: ${requestData.region}` : ''}
+${productsInfo.length > 0 ? `Products: ${productsInfo.map(p => p.title).join(', ')}` : ''}
+${collectionsInfo.length > 0 ? `Collections: ${collectionsInfo.map(c => c.title).join(', ')}` : ''}
+Type: ${requestData.articleType === 'blog' ? 'Blog Post' : 'Shopify Page'}
+Keywords: ${requestData.keywords?.join(', ') || 'None provided'}
+Writing Perspective: ${requestData.writingPerspective.replace(/_/g, ' ')}
+Formatting Options:
+- Tables: ${requestData.enableTables ? 'Yes' : 'No'}
+- Lists: ${requestData.enableLists ? 'Yes' : 'No'}
+- H3 Headings: ${requestData.enableH3s ? 'Yes' : 'No'}
+- Intro Type: ${requestData.introType}
+- FAQ Type: ${requestData.faqType}
+- Citations/Links: ${requestData.enableCitations ? 'Yes' : 'No'}
+Tone of Voice: ${requestData.toneOfVoice}
+
+Instructions:
+1. Begin with a ${requestData.introType === 'search_intent' ? 'search intent-focused intro' : requestData.introType === 'standard' ? 'standard compelling intro' : 'direct entry into the topic'}.
+2. Each H2 section must:
+   - Have a compelling heading
+   - Include 2-4 natural, helpful paragraphs
+   ${requestData.enableH3s ? '   - Include relevant H3 subheadings where appropriate' : ''}
+   ${requestData.enableLists ? '   - Use bullet or numbered lists when presenting multiple items or steps' : ''}
+   ${requestData.enableTables ? '   - Use HTML tables for comparing items or presenting structured data' : ''}
+3. Maintain a ${requestData.toneOfVoice} tone throughout.
+4. Use the ${requestData.writingPerspective.replace(/_/g, ' ')} perspective consistently.
+${productsInfo.length > 0 ? '5. Naturally mention and link to the provided products where relevant.' : ''}
+${collectionsInfo.length > 0 ? `${productsInfo.length > 0 ? '6' : '5'}. Naturally mention and link to the provided collections where relevant.` : ''}
+${requestData.enableCitations ? `${productsInfo.length > 0 || collectionsInfo.length > 0 ? '7' : '5'}. Include 2-3 authoritative external citations or references.` : ''}
+${requestData.faqType !== 'none' ? `${(productsInfo.length > 0 || collectionsInfo.length > 0 || requestData.enableCitations) ? '8' : '5'}. Include a FAQ section with ${requestData.faqType === 'short' ? '3-5 concise questions and answers' : '5-7 detailed questions and answers'}.` : ''}
+
+IMPORTANT FORMATTING REQUIREMENTS:
+1. Format the content using proper HTML (h2, h3, p, ul, li, table, etc.)
+2. NO H1 TAGS - the title will be set separately
+3. For links to products, use: <a href="{product-url}">{product-name}</a>
+4. For links to collections, use: <a href="{collection-url}">{collection-name}</a>
+5. For external citations, use proper hyperlinks
+6. Don't include repetitive conclusions or generic phrases
+
+Please suggest a meta description at the end of your response.
+`;
+
+      console.log(`Generating content with Claude for: "${requestData.title}"`);
+      
+      // 3. Generate content with Claude
+      const generatedContent = await generateBlogContentWithClaude({
+        topic: requestData.title,
+        tone: requestData.toneOfVoice,
+        length: "medium",
+        customPrompt: claudeUserPrompt,
+        systemPrompt: claudeSystemPrompt,
+        includeProducts: productsInfo.length > 0,
+        includeCollections: collectionsInfo.length > 0,
+        includeKeywords: requestData.keywords && requestData.keywords.length > 0
+      });
+      
+      // 4. Update content generation request
+      await storage.updateContentGenRequest(contentRequest.id, {
+        status: "completed",
+        generatedContent: JSON.stringify(generatedContent)
+      });
+      
+      // 5. Handle images from Pexels if needed
+      let featuredImage = null;
+      let additionalImages: PexelsImage[] = [];
+      
+      // If user has selected specific images, use those
+      if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
+        try {
+          console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
+          
+          // Search for the image to get its full data
+          const { images } = await pexelsService.safeSearchImages(requestData.title, 10);
+          
+          // Filter all selected images
+          const selectedImages = images.filter((img: PexelsImage) => 
+            requestData.selectedImageIds && 
+            requestData.selectedImageIds.includes(img.id)
+          );
+          
+          if (selectedImages.length > 0) {
+            // Use the first image as featured image
+            featuredImage = selectedImages[0];
+            console.log(`Using user-selected featured image: ${featuredImage.url}`);
+            
+            // Save any additional images for insertion into content
+            if (selectedImages.length > 1) {
+              additionalImages = selectedImages.slice(1);
+            }
+          }
+        } catch (imageError) {
+          console.error('Error retrieving selected images:', imageError);
+        }
+      }
+      
+      // If we still don't have a featured image (no selection or error), generate some
+      if (!featuredImage && requestData.generateImages) {
+        try {
+          console.log(`Generating images for: "${requestData.title}"`);
+          const { images } = await pexelsService.safeSearchImages(requestData.title, 3);
+          if (images && images.length > 0) {
+            featuredImage = images[0];
+            
+            // Save additional generated images if available
+            if (images.length > 1) {
+              additionalImages = images.slice(1);
+            }
+          }
+        } catch (imageError) {
+          console.error('Error generating images:', imageError);
+          // Continue even if image generation fails
+        }
+      }
+      
+      // 6. Prepare content for blog post or page
+      let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
+      
+      // Add featured image at the beginning if available
+      if (featuredImage) {
+        // Use Pexels medium or large src image if available, otherwise fallback to url
+        const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.url;
+        const photographer = featuredImage.photographer 
+          ? `<p class="image-credit">Photo by: ${featuredImage.photographer}</p>` 
+          : '';
+        
+        finalContent = `<img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n${photographer}\n${finalContent}`;
+      }
+      
+      // 7. Create a blog post or page based on article type
+      let contentId, contentUrl;
+      
+      if (requestData.articleType === 'blog') {
+        // Must have a blog ID for blog posts
+        const blogId = requestData.blogId || store.defaultBlogId;
+        if (!blogId) {
+          throw new Error('Blog ID is required for blog posts');
+        }
+        
+        // Create blog post in DB
+        const post = await storage.createBlogPost({
+          title: generatedContent.title || requestData.title,
+          content: finalContent,
+          status: requestData.postStatus === 'publish' ? 'published' : 'draft',
+          publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
+          author: connection.storeName.replace('.myshopify.com', ''),
+          tags: generatedContent.tags?.join(',') || '',
+          category: "Generated Content",
+          shopifyPostId: null,
+          shopifyBlogId: blogId
+        });
+        
+        contentId = post.id;
+        
+        // If set to publish, create in Shopify too
+        if (requestData.postStatus === 'publish') {
+          console.log(`Publishing to Shopify blog ID: ${blogId}`);
+          try {
+            const shopifyArticle = await createArticle(store, blogId, post);
+            
+            // Update the local post with Shopify IDs
+            await storage.updateBlogPost(post.id, {
+              shopifyPostId: shopifyArticle.id,
+              shopifyBlogId: blogId
+            });
+            
+            contentUrl = `https://${store.shopName}/blogs/${shopifyArticle.blog_id}/${shopifyArticle.handle}`;
+          } catch (shopifyError: any) {
+            console.error('Error creating Shopify article:', shopifyError);
+            throw new Error(`Failed to publish to Shopify: ${shopifyError.message || 'Unknown error'}`);
+          }
+        }
+      } else {
+        // Create page in Shopify
+        try {
+          const page = await createPage(
+            store,
+            generatedContent.title || requestData.title,
+            finalContent,
+            requestData.postStatus === 'publish'
+          );
+          
+          contentId = page.id;
+          contentUrl = `https://${store.shopName}/pages/${page.handle}`;
+        } catch (pageError: any) {
+          console.error('Error creating Shopify page:', pageError);
+          throw new Error(`Failed to create page: ${pageError?.message || 'Unknown error'}`);
+        }
+      }
+      
+      // 8. Return the result
+      return res.json({
+        success: true,
+        contentId,
+        contentUrl,
+        content: generatedContent.content,
+        title: generatedContent.title,
+        tags: generatedContent.tags,
+        metaDescription: generatedContent.metaDescription || '',
+        featuredImage: featuredImage
+      });
+    } catch (error: any) {
+      console.error("Error in content generation process:", error);
+      
+      // Update request as failed if we created one
+      if (contentRequest && contentRequest.id) {
+        try {
+          await storage.updateContentGenRequest(contentRequest.id, {
+            status: "failed",
+            generatedContent: JSON.stringify({ 
+              error: "Content generation failed: " + (error instanceof Error ? error.message : String(error))
+            })
+          });
+        } catch (updateError) {
+          console.error("Failed to update content request status:", updateError);
+        }
+      }
+      
+      return res.status(500).json({
+        success: false,
+        error: "Content generation failed",
+        details: error.message || String(error)
+      });
+    }
+  } catch (error: any) {
     console.error("Unexpected error in generate-content endpoint:", error);
     return res.status(500).json({
       success: false,
       error: "An unexpected error occurred",
-      details: error instanceof Error ? error.message : String(error)
+      details: error.message || String(error)
     });
   }
 });
