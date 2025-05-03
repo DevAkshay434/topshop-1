@@ -169,29 +169,30 @@ adminRouter.get("/blogs", async (_req: Request, res: Response) => {
   }
 });
 
-// Generate keyword suggestions for a product
+// Generate keyword suggestions for a product or topic
 adminRouter.post("/keywords-for-product", async (req: Request, res: Response) => {
   try {
-    const { productId, productTitle, region } = req.body;
+    const { productId, productTitle, productUrl, topic } = req.body;
     
-    if (!productTitle) {
+    // Accept either a direct topic, productTitle, or productUrl
+    const searchTerm = topic || productTitle || productUrl;
+    
+    if (!searchTerm) {
       return res.status(400).json({
         success: false,
-        error: "Product title is required for keyword generation"
+        error: "A search term (topic, product title, or URL) is required for keyword generation"
       });
     }
     
     // Execute keyword search
-    // Note: Assuming dataForSEOService has a method called getKeywordSuggestions
-    const keywords = await dataForSEOService.getKeywords(
-      productTitle,
-      region || 'us'
-    );
+    console.log(`Searching for keywords related to: ${searchTerm}`);
+    // Use the proper method from dataForSEOService
+    const keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
     
     res.json({
       success: true,
       productId,
-      productTitle,
+      topic: searchTerm,
       keywords
     });
   } catch (error: any) {
