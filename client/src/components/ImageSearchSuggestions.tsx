@@ -82,14 +82,18 @@ export default function ImageSearchSuggestions({
   return (
     <div 
       ref={containerRef}
-      className="absolute left-0 right-0 top-full mt-1 bg-white rounded-md border border-gray-200 shadow-lg z-50 overflow-hidden"
+      className="absolute left-0 right-0 top-full mt-1 bg-white rounded-md border border-gray-200 shadow-lg z-[100] overflow-hidden max-h-[300px] overflow-y-auto"
     >
       <ul className="py-1">
         {suggestions.map((suggestion, index) => (
           <li 
             key={index} 
             className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
-            onClick={() => onSuggestionSelect(suggestion)}
+            onMouseDown={(e) => {
+              // Using onMouseDown instead of onClick prevents the onBlur from firing first
+              e.preventDefault();
+              onSuggestionSelect(suggestion);
+            }}
           >
             <Search className="h-4 w-4 text-gray-400" />
             <span>{suggestion}</span>

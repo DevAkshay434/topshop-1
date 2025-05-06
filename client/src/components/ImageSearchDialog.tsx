@@ -220,8 +220,9 @@ export default function ImageSearchDialog({
                     setImageSearchQuery(e.target.value);
                     setShowSearchSuggestions(e.target.value.length >= 2);
                   }}
-                  onFocus={() => setShowSearchSuggestions(imageSearchQuery.length >= 2)}
-                  onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
+                  onFocus={() => setShowSearchSuggestions(imageSearchQuery?.length >= 2)}
+                  // Keep suggestions visible for longer to allow clicking
+                  onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 300)}
                   className="flex-1"
                 />
                 <ImageSearchSuggestions 
