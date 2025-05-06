@@ -1386,87 +1386,73 @@ export default function AdminPanel() {
                           </DialogHeader>
                           
                           <div className="grid gap-4 py-4 overflow-hidden flex-grow flex flex-col">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-2 relative">
-                                  <div className="relative flex-1">
-                                    <Input
-                                      placeholder="Search for images"
-                                      value={imageSearchQuery || ''}
-                                      onChange={(e) => {
-                                        setImageSearchQuery(e.target.value);
-                                        setShowSearchSuggestions(e.target.value.length >= 2);
-                                      }}
-                                      onFocus={() => setShowSearchSuggestions(imageSearchQuery.length >= 2)}
-                                      onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
-                                      className="flex-1"
-                                    />
-                                    <ImageSearchSuggestions 
-                                      query={imageSearchQuery} 
-                                      visible={showSearchSuggestions}
-                                      productTitle={productTitle}
-                                      onSuggestionSelect={(suggestion) => {
-                                        setImageSearchQuery(suggestion);
-                                        setShowSearchSuggestions(false);
-                                        handleImageSearch(suggestion);
-                                      }}
-                                    />
-                                  </div>
-                                  <Button 
-                                    type="button" 
-                                    onClick={() => {
-                                      // Use the explicit search query, never fall back to the title
-                                      const query = imageSearchQuery.trim();
-                                      
-                                      if (!query) {
-                                        toast({
-                                          title: "Search query required",
-                                          description: "Please enter a search term for images",
-                                          variant: "destructive"
-                                        });
-                                        return;
-                                      }
-                                      
-                                      handleImageSearch(query);
-                                      
-                                      // Store current images in history if there are any
-                                      if (searchedImages.length > 0) {
-                                        const currentSearch = imageSearchHistory.find(history => 
-                                          history.query === imageSearchQuery);
-                                        
-                                        if (!currentSearch) {
-                                          setImageSearchHistory(prev => [
-                                            ...prev,
-                                            { 
-                                              query: imageSearchQuery, 
-                                              images: searchedImages 
-                                            }
-                                          ]);
-                                        }
-                                      }
+                            <div className="w-full">
+                              <div className="flex items-center gap-2 relative">
+                                <div className="relative flex-1">
+                                  <Input
+                                    placeholder="Search for images"
+                                    value={imageSearchQuery || ''}
+                                    onChange={(e) => {
+                                      setImageSearchQuery(e.target.value);
+                                      setShowSearchSuggestions(e.target.value.length >= 2);
                                     }}
-                                    disabled={isSearchingImages || !imageSearchQuery.trim()}
-                                  >
-                                    {isSearchingImages ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Searching...
-                                      </>
-                                    ) : "Search"}
-                                  </Button>
+                                    onFocus={() => setShowSearchSuggestions(imageSearchQuery.length >= 2)}
+                                    onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
+                                    className="flex-1"
+                                  />
+                                  <ImageSearchSuggestions 
+                                    query={imageSearchQuery} 
+                                    visible={showSearchSuggestions}
+                                    productTitle={productTitle}
+                                    onSuggestionSelect={(suggestion) => {
+                                      setImageSearchQuery(suggestion);
+                                      setShowSearchSuggestions(false);
+                                      handleImageSearch(suggestion);
+                                    }}
+                                  />
                                 </div>
-                              </div>
-                              
-                              {/* Image Prompt Suggestions */}
-                              <div className="space-y-2">
-                                <h4 className="text-sm font-medium mb-2">Prompt Suggestions</h4>
-                                <ImagePromptSuggestions
-                                  onPromptSelected={(prompt) => {
-                                    setImageSearchQuery(prompt);
-                                    handleImageSearch(prompt);
+                                <Button 
+                                  type="button" 
+                                  onClick={() => {
+                                    // Use the explicit search query, never fall back to the title
+                                    const query = imageSearchQuery.trim();
+                                    
+                                    if (!query) {
+                                      toast({
+                                        title: "Search query required",
+                                        description: "Please enter a search term for images",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+                                    
+                                    handleImageSearch(query);
+                                    
+                                    // Store current images in history if there are any
+                                    if (searchedImages.length > 0) {
+                                      const currentSearch = imageSearchHistory.find(history => 
+                                        history.query === imageSearchQuery);
+                                      
+                                      if (!currentSearch) {
+                                        setImageSearchHistory(prev => [
+                                          ...prev,
+                                          { 
+                                            query: imageSearchQuery, 
+                                            images: searchedImages 
+                                          }
+                                        ]);
+                                      }
+                                    }
                                   }}
-                                  productTitle={productTitle}
-                                />
+                                  disabled={isSearchingImages || !imageSearchQuery.trim()}
+                                >
+                                  {isSearchingImages ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Searching...
+                                    </>
+                                  ) : "Search"}
+                                </Button>
                               </div>
                             </div>
                             
