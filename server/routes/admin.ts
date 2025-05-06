@@ -682,22 +682,32 @@ Please suggest a meta description at the end of your response that includes at l
       
       // Add featured image at the beginning if available
       if (featuredImage) {
-        // Use Pexels medium or large src image if available, otherwise fallback to url
-        const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.url;
+        // Make sure we have a valid image URL - use Pexels medium or large src image
+        // Only use URL from src properties, which are the actual image URLs
+        const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.src?.small || featuredImage.src?.original;
         
-        // Remove photographer credit as per request
-        
-        // If we have products, link the featured image to the first product
-        let featuredImageHtml = '';
-        if (productsInfo.length > 0) {
-          // Use the first product URL for the featured image
-          featuredImageHtml = `<div style="text-align: center;"><a href="https://${store.shopName}/products/${productsInfo[0].handle}" target="_blank"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
+        if (!imageUrl) {
+          console.warn("Featured image is missing valid src URLs, skipping featured image");
         } else {
-          // No product to link to
-          featuredImageHtml = `<div style="text-align: center;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
+          console.log(`Using featured image URL: ${imageUrl}`);
+          
+          // Remove photographer credit as per request
+          
+          // If we have products, link the featured image to the first product
+          let featuredImageHtml = '';
+          if (productsInfo.length > 0) {
+            // Use the first product URL for the featured image with absolute URL
+            const productUrl = `https://${store.shopName}/products/${productsInfo[0].handle}`;
+            console.log(`Linking featured image to product URL: ${productUrl}`);
+            
+            featuredImageHtml = `<div style="text-align: center;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
+          } else {
+            // No product to link to
+            featuredImageHtml = `<div style="text-align: center;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
+          }
+          
+          finalContent = `${featuredImageHtml}\n${finalContent}`;
         }
-        
-        finalContent = `${featuredImageHtml}\n${finalContent}`;
       }
       
       // Insert secondary images throughout the content with product links
@@ -747,12 +757,17 @@ Please suggest a meta description at the end of your response that includes at l
                 // Get the actual position in the content
                 const position = insertPoints[insertIndex] + insertionOffset;
                 
-                // Ensure we have valid image URLs
-                const imageUrl = image.src?.medium || image.src?.large || image.url;
+                // Ensure we have valid image URLs from src properties
+                const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
+                if (!imageUrl) {
+                  console.warn(`Image ${image.id} is missing valid src URLs, skipping insertion`);
+                  continue;
+                }
                 // Make sure we have valid image ALT text
                 const imageAlt = image.alt || product.title || requestData.title;
-                // Ensure product URL is correctly formatted
+                // Ensure product URL is correctly formatted with store domain
                 const productUrl = `https://${store.shopName}/products/${product.handle}`;
+                console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
                 
                 // Create center-aligned div with link to product
                 const imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></a>
@@ -774,7 +789,75 @@ Please suggest a meta description at the end of your response that includes at l
           console.warn("Could not find suitable insertion points for additional images");
         }
       } else if (additionalImages.length > 0) {
-        console.warn("Have additional images but no products to link to. Images will not be inserted.");
+        // If we have additional images but no products to link to, still insert the images without product links
+        console.log(`Inserting ${additionalImages.length} images without product links`);
+        
+        // Find potential spots to insert images (after paragraphs or headings)
+        const insertPoints = [];
+        let match;
+        const tagPattern = /<\/(p|h2|h3|h4|div|section)>/g;
+        
+        // Find all potential insertion points
+        while ((match = tagPattern.exec(finalContent)) !== null) {
+          // Skip the first 15% of the content for the first image insertion
+          if (match.index > finalContent.length * 0.15) {
+            insertPoints.push(match.index + match[0].length);
+          }
+        }
+        
+        // If we have insertion points and images, start inserting images
+        if (insertPoints.length > 0) {
+          // Use ALL additional images, not just a limited number
+          const insertCount = Math.min(additionalImages.length, insertPoints.length);
+          
+          if (insertCount > 0) {
+            // Create evenly spaced insertion indices
+            const contentSections = insertCount + 1;
+            const sectionSize = insertPoints.length / contentSections;
+            
+            // Distribute images evenly
+            let modifiedContent = finalContent;
+            let insertionOffset = 0;
+            
+            for (let i = 0; i < insertCount; i++) {
+              // Calculate insertion index - distribute evenly throughout content
+              const insertIndex = Math.floor(sectionSize * (i + 1));
+              
+              if (insertIndex < insertPoints.length) {
+                const imageIndex = i % additionalImages.length;
+                const image = additionalImages[imageIndex];
+                
+                // Get the actual position in the content
+                const position = insertPoints[insertIndex] + insertionOffset;
+                
+                // Ensure we have valid image URLs from src properties
+                const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
+                if (!imageUrl) {
+                  console.warn(`Image ${image.id} is missing valid src URLs, skipping insertion`);
+                  continue;
+                }
+                const imageAlt = image.alt || requestData.title;
+                
+                console.log(`Inserting standalone image with URL: ${imageUrl}`);
+                
+                // Create center-aligned div without product link
+                const imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></div>\n`;
+                
+                // Insert the image HTML at the position
+                modifiedContent = modifiedContent.slice(0, position) + imageHtml + modifiedContent.slice(position);
+                
+                // Adjust offset for subsequent insertions
+                insertionOffset += imageHtml.length;
+                
+                console.log(`Inserted image ${i+1}/${insertCount} at position ${position} with URL: ${imageUrl}`);
+              }
+            }
+            
+            finalContent = modifiedContent;
+          }
+        } else {
+          console.warn("Could not find suitable insertion points for additional images");
+        }
       } else if (productsInfo.length > 0) {
         console.log("No additional images available to insert into content.");
       }
