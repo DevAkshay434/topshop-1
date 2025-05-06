@@ -215,7 +215,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] max-h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -390,14 +390,14 @@ export default function ImageSearchDialog({
               
               {/* Compact view when we have search results, expandable view otherwise */}
               {searchedImages.length > 0 ? (
-                <div className="px-3 py-2 flex gap-2 items-center overflow-x-auto">
+                <div className="px-3 py-1.5 flex gap-2 items-center overflow-x-auto">
                   <p className="text-xs text-gray-500 shrink-0 whitespace-nowrap">Selected:</p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     {selectedImages.map((image, index) => (
                       <div 
                         key={image.id} 
                         className={`relative rounded-md overflow-hidden border shadow shrink-0 ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}
-                        style={{ width: '80px', height: '80px' }}
+                        style={{ width: '72px', height: '72px' }}
                       >
                         <img 
                           src={image.src?.small || image.src?.thumbnail || image.url} 
@@ -508,7 +508,7 @@ export default function ImageSearchDialog({
                 <h3 className="font-medium text-blue-900">Search results for "{imageSearchQuery}"</h3>
                 <p className="text-sm text-blue-700">Click on an image to select/deselect it</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[700px] overflow-y-auto p-5">
                 {searchedImages.map(image => (
                   <div 
                     key={image.id}
