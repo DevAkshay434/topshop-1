@@ -223,7 +223,7 @@ export default function ImageSearchDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4 overflow-hidden flex-grow flex flex-col">
+        <div className="py-4 overflow-y-auto overflow-x-hidden flex-grow flex flex-col">
           <div className="w-full">
             <div className="flex items-center gap-2 relative">
               <div className="relative flex-1">
@@ -330,10 +330,15 @@ export default function ImageSearchDialog({
           {Array.isArray(selectedImages) && selectedImages.length > 0 && (
             <div className="p-4 border rounded-md bg-slate-50/80 shadow-sm mb-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-1.5" />
-                  Selected Images: {selectedImages.length}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-1.5" />
+                    Selected Images: {selectedImages.length}
+                  </p>
+                  <Badge variant="secondary" className="ml-1">
+                    First image will be featured at the top
+                  </Badge>
+                </div>
                 <Button 
                   type="button" 
                   variant="ghost" 
@@ -353,47 +358,54 @@ export default function ImageSearchDialog({
                   Clear All
                 </Button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {selectedImages.map(image => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {selectedImages.map((image, index) => (
                   <div 
                     key={image.id} 
-                    className="relative h-28 rounded-md overflow-hidden border shadow-sm hover:shadow-md transition-shadow duration-200"
+                    className={`relative rounded-md overflow-hidden border shadow hover:shadow-md transition-shadow duration-200 ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}
                   >
-                    <img 
-                      src={image.src?.small || image.src?.thumbnail || image.url} 
-                      alt="Selected" 
-                      className="h-full w-full object-cover"
-                    />
-                    <div 
-                      className="absolute top-2 right-2 bg-red-500 rounded-full p-1.5 cursor-pointer shadow-md hover:bg-red-600 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Remove from selected images
-                        setSelectedImages(prev => 
-                          prev.filter(img => img.id !== image.id)
-                        );
-                        // Also unselect in current search results if present
-                        setSearchedImages(prev => 
-                          prev.map(img => 
-                            img.id === image.id 
-                              ? { ...img, selected: false } 
-                              : img
-                          )
-                        );
-                        // Update in search history as well
-                        setImageSearchHistory(prev => 
-                          prev.map(history => ({
-                            ...history,
-                            images: history.images.map(img => 
+                    <div className="aspect-square relative">
+                      <img 
+                        src={image.src?.small || image.src?.thumbnail || image.url} 
+                        alt="Selected" 
+                        className="h-full w-full object-cover"
+                      />
+                      {index === 0 && (
+                        <div className="absolute top-0 left-0 bg-blue-500 text-white text-xs py-1 px-2">
+                          Featured
+                        </div>
+                      )}
+                      <div 
+                        className="absolute top-2 right-2 bg-red-500 rounded-full p-1.5 cursor-pointer shadow-md hover:bg-red-600 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Remove from selected images
+                          setSelectedImages(prev => 
+                            prev.filter(img => img.id !== image.id)
+                          );
+                          // Also unselect in current search results if present
+                          setSearchedImages(prev => 
+                            prev.map(img => 
                               img.id === image.id 
                                 ? { ...img, selected: false } 
                                 : img
                             )
-                          }))
-                        );
-                      }}
-                    >
-                      <XCircle className="h-4 w-4 text-white" />
+                          );
+                          // Update in search history as well
+                          setImageSearchHistory(prev => 
+                            prev.map(history => ({
+                              ...history,
+                              images: history.images.map(img => 
+                                img.id === image.id 
+                                  ? { ...img, selected: false } 
+                                  : img
+                              )
+                            }))
+                          );
+                        }}
+                      >
+                        <XCircle className="h-4 w-4 text-white" />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -404,7 +416,7 @@ export default function ImageSearchDialog({
           {/* Search results - Now always visible below selected images */}
           {searchedImages.length > 0 ? (
             <div className="border rounded-lg overflow-hidden shadow-sm bg-slate-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[500px] overflow-y-auto p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto p-4">
                 {searchedImages.map(image => (
                   <div 
                     key={image.id}
@@ -417,7 +429,7 @@ export default function ImageSearchDialog({
                       <img 
                         src={image.src?.medium || image.url} 
                         alt={image.alt || 'Content image'} 
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover"
                         loading="lazy"
                       />
                       {image.alt && (
