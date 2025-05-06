@@ -619,16 +619,10 @@ Please suggest a meta description at the end of your response that includes at l
         try {
           console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
           
-          // Search for the image to get its full data - we need this to retrieve the metadata
-          const { images } = await pexelsService.safeSearchImages(requestData.title, 50);
+          // Directly fetch the selected images by ID
+          const selectedImages = await pexelsService.getImagesByIds(requestData.selectedImageIds);
           
-          // Filter to ONLY use the specifically selected images
-          const selectedImages = images.filter((img: PexelsImage) => 
-            requestData.selectedImageIds && 
-            requestData.selectedImageIds.includes(String(img.id))
-          );
-          
-          console.log(`Found ${selectedImages.length} matching images out of ${requestData.selectedImageIds.length} requested IDs`);
+          console.log(`Fetched ${selectedImages.length} images out of ${requestData.selectedImageIds.length} requested IDs`);
           
           if (selectedImages.length > 0) {
             // Use the first image as featured image
@@ -641,7 +635,25 @@ Please suggest a meta description at the end of your response that includes at l
               console.log(`Using ${additionalImages.length} additional images for content body`);
             }
           } else {
-            console.warn("Could not find any of the selected images in search results");
+            console.warn("Could not fetch any of the selected images by ID");
+            
+            // Fallback to searching if direct fetching fails
+            console.log("Attempting fallback search for images");
+            const { images } = await pexelsService.safeSearchImages(requestData.title, 50);
+            
+            // Filter to ONLY use the specifically selected images
+            const fallbackImages = images.filter((img: PexelsImage) => 
+              requestData.selectedImageIds && 
+              requestData.selectedImageIds.includes(String(img.id))
+            );
+            
+            if (fallbackImages.length > 0) {
+              featuredImage = fallbackImages[0];
+              if (fallbackImages.length > 1) {
+                additionalImages = fallbackImages.slice(1);
+              }
+              console.log(`Found ${fallbackImages.length} images through fallback search`);
+            }
           }
         } catch (imageError) {
           console.error('Error retrieving selected images:', imageError);

@@ -170,6 +170,80 @@ export class PexelsService {
   }
 
   /**
+   * Get a specific image by its ID
+   * @param id The Pexels image ID
+   * @returns The image data or null if not found
+   */
+  public async getImageById(id: string): Promise<PexelsImage | null> {
+    try {
+      if (!this.hasValidApiKey()) {
+        throw new Error('No Pexels API key found');
+      }
+
+      console.log(`Fetching Pexels image with ID: ${id}`);
+      
+      // Make request to Pexels API
+      const response = await axios.get(`${this.apiUrl}/photos/${id}`, {
+        headers: {
+          'Authorization': this.apiKey
+        }
+      });
+
+      const photo = response.data;
+      
+      // Map response to our PexelsImage interface
+      return {
+        id: photo.id.toString(),
+        width: photo.width,
+        height: photo.height,
+        url: photo.url,
+        src: {
+          original: photo.src.original,
+          large: photo.src.large,
+          medium: photo.src.medium,
+          small: photo.src.small,
+          thumbnail: photo.src.tiny
+        },
+        photographer: photo.photographer,
+        photographer_url: photo.photographer_url,
+        alt: photo.alt || `Pexels image ${id}`
+      };
+    } catch (error: any) {
+      console.error(`Error fetching Pexels image ID ${id}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get multiple images by their IDs
+   * @param ids Array of Pexels image IDs
+   * @returns Array of found images (may be less than requested if some IDs are invalid)
+   */
+  public async getImagesByIds(ids: string[]): Promise<PexelsImage[]> {
+    // Remove duplicates using filter instead of Set for better compatibility
+    const uniqueIds = ids.filter((id, index) => ids.indexOf(id) === index);
+    const images: PexelsImage[] = [];
+    
+    console.log(`Fetching ${uniqueIds.length} specific Pexels images by ID`);
+    
+    // Fetch each image individually
+    for (const id of uniqueIds) {
+      try {
+        const image = await this.getImageById(id);
+        if (image) {
+          images.push(image);
+        }
+      } catch (error) {
+        console.error(`Error fetching image ID ${id}:`, error);
+        // Continue with the next image
+      }
+    }
+    
+    console.log(`Successfully fetched ${images.length} out of ${uniqueIds.length} requested images`);
+    return images;
+  }
+
+  /**
    * Safely search for images with fallback
    * @param query Search query term
    * @param count Number of images to return
