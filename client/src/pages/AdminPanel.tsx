@@ -452,7 +452,7 @@ export default function AdminPanel() {
     // Auto-open keyword selector if products were selected
     if (productIds.length > 0) {
       setShowKeywordSelector(true);
-    } else if (form.getValues('collectionIds')?.length > 0) {
+    } else if (form.getValues('collectionIds') && form.getValues('collectionIds').length > 0) {
       // If collections were selected but not products, still move to keyword step
       setShowKeywordSelector(true);
     }
@@ -464,7 +464,7 @@ export default function AdminPanel() {
     setSelectedCollections(collectionIds);
     
     // Only move to next step if no products were selected (products take precedence)
-    if (form.getValues('productIds')?.length === 0 && collectionIds.length > 0) {
+    if ((!form.getValues('productIds') || form.getValues('productIds').length === 0) && collectionIds.length > 0) {
       setWorkflowStep('keyword');
       setShowKeywordSelector(true);
     }
