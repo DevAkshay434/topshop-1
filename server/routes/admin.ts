@@ -684,18 +684,17 @@ Please suggest a meta description at the end of your response that includes at l
       if (featuredImage) {
         // Use Pexels medium or large src image if available, otherwise fallback to url
         const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.url;
-        const photographer = featuredImage.photographer 
-          ? `<p class="image-credit" style="text-align: center; font-size: 0.8em; color: #666;">Photo by: ${featuredImage.photographer}</p>` 
-          : '';
+        
+        // Remove photographer credit as per request
         
         // If we have products, link the featured image to the first product
         let featuredImageHtml = '';
         if (productsInfo.length > 0) {
           // Use the first product URL for the featured image
-          featuredImageHtml = `<div style="text-align: center;"><a href="https://${store.shopName}/products/${productsInfo[0].handle}" target="_blank"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a>${photographer}</div>`;
+          featuredImageHtml = `<div style="text-align: center;"><a href="https://${store.shopName}/products/${productsInfo[0].handle}" target="_blank"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
         } else {
           // No product to link to
-          featuredImageHtml = `<div style="text-align: center;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" />${photographer}</div>`;
+          featuredImageHtml = `<div style="text-align: center;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
         }
         
         finalContent = `${featuredImageHtml}\n${finalContent}`;
@@ -712,19 +711,19 @@ Please suggest a meta description at the end of your response that includes at l
         
         // Find all potential insertion points
         while ((match = tagPattern.exec(finalContent)) !== null) {
-          // Skip the first 20% of the content for the first image insertion
-          if (match.index > finalContent.length * 0.2) {
+          // Skip the first 15% of the content for the first image insertion
+          if (match.index > finalContent.length * 0.15) {
             insertPoints.push(match.index + match[0].length);
           }
         }
         
         // If we have insertion points and images, start inserting images
         if (insertPoints.length > 0) {
-          // Space insertion points evenly throughout content
-          const insertCount = Math.min(additionalImages.length, productsInfo.length - 1, 3); // Limit to 3 insertions
+          // Use ALL additional images, not just a limited number
+          const insertCount = Math.min(additionalImages.length, insertPoints.length);
           
           if (insertCount > 0) {
-            // Create evenly spaced insertion indices
+            // Create evenly spaced insertion indices to distribute images throughout the content
             const contentSections = insertCount + 1;
             const sectionSize = insertPoints.length / contentSections;
             
@@ -737,8 +736,10 @@ Please suggest a meta description at the end of your response that includes at l
               const insertIndex = Math.floor(sectionSize * (i + 1));
               
               if (insertIndex < insertPoints.length) {
+                // Get the image and appropriate product to link to
                 const imageIndex = i % additionalImages.length;
-                const productIndex = (i + 1) % productsInfo.length; // Start with second product for secondary images
+                // Use the first product for all images if only one product is available
+                const productIndex = productsInfo.length > 1 ? (i % productsInfo.length) : 0;
                 
                 const image = additionalImages[imageIndex];
                 const product = productsInfo[productIndex];
@@ -746,9 +747,11 @@ Please suggest a meta description at the end of your response that includes at l
                 // Get the actual position in the content
                 const position = insertPoints[insertIndex] + insertionOffset;
                 
-                // Build image HTML with product link
+                // Ensure we have valid image URLs
                 const imageUrl = image.src?.medium || image.src?.large || image.url;
+                // Make sure we have valid image ALT text
                 const imageAlt = image.alt || product.title || requestData.title;
+                // Ensure product URL is correctly formatted
                 const productUrl = `https://${store.shopName}/products/${product.handle}`;
                 
                 // Create center-aligned div with link to product
@@ -760,12 +763,20 @@ Please suggest a meta description at the end of your response that includes at l
                 
                 // Adjust offset for subsequent insertions
                 insertionOffset += imageHtml.length;
+                
+                console.log(`Inserted image ${i+1}/${insertCount} at position ${position} with URL: ${imageUrl}`);
               }
             }
             
             finalContent = modifiedContent;
           }
+        } else {
+          console.warn("Could not find suitable insertion points for additional images");
         }
+      } else if (additionalImages.length > 0) {
+        console.warn("Have additional images but no products to link to. Images will not be inserted.");
+      } else if (productsInfo.length > 0) {
+        console.log("No additional images available to insert into content.");
       }
       
       // 7. Create a blog post or page based on article type
