@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle 
-} from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Loader2, ShieldCheck } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Card } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from '@/hooks/use-toast';
 
-// Define the interface for title suggestions
 export interface TitleSelectionProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,150 +20,124 @@ export default function TitleSelector({
   selectedKeywords,
   productTitle
 }: TitleSelectionProps) {
-  const [isLoading, setIsLoading] = useState(false);
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
-  const [selectedTitle, setSelectedTitle] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Generate title suggestions based on keywords when dialog opens
+  // Generate title suggestions when the component is opened
   useEffect(() => {
-    if (open && selectedKeywords.length > 0 && titleSuggestions.length === 0) {
-      generateTitleSuggestions();
+    if (open && selectedKeywords.length > 0) {
+      generateTitles();
     }
   }, [open, selectedKeywords]);
 
-  // Function to generate title suggestions
-  const generateTitleSuggestions = async () => {
-    if (!selectedKeywords || selectedKeywords.length === 0) {
-      toast({
-        title: "No keywords selected",
-        description: "Please select keywords first to generate title suggestions",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const generateTitles = async () => {
     setIsLoading(true);
+    setError(null);
     
     try {
       const response = await apiRequest({
         url: '/api/admin/title-suggestions',
         method: 'POST',
         data: {
-          keywords: selectedKeywords,
-          productTitle: productTitle,
-          count: 5
+          keywords: selectedKeywords.map(k => k.keyword),
+          keywordData: selectedKeywords,
+          productTitle: productTitle
         }
       });
       
       if (response.success && response.titles && response.titles.length > 0) {
         setTitleSuggestions(response.titles);
-        setSelectedTitle(response.titles[0]); // Default select the first suggestion
       } else {
-        throw new Error("No title suggestions were returned");
+        setError('Could not generate title suggestions');
+        toast({
+          title: 'Error',
+          description: 'Failed to generate title suggestions',
+          variant: 'destructive'
+        });
       }
-    } catch (error: any) {
-      console.error('Failed to generate title suggestions:', error);
+    } catch (err: any) {
+      console.error('Title suggestion error:', err);
+      setError(err.message || 'An unexpected error occurred');
       toast({
-        title: "Title generation failed",
-        description: error.message || "Could not generate title suggestions",
-        variant: "destructive"
+        title: 'Error',
+        description: err.message || 'Failed to generate title suggestions',
+        variant: 'destructive'
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle selection confirmation
-  const handleConfirm = () => {
-    if (selectedTitle) {
-      onTitleSelected(selectedTitle);
-      onOpenChange(false);
-    } else {
-      toast({
-        title: "No title selected",
-        description: "Please select a title suggestion",
-        variant: "destructive"
-      });
-    }
+  const handleTitleSelect = (title: string) => {
+    onTitleSelected(title);
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <ShieldCheck className="h-6 w-6 mr-2 text-blue-500" />
-            Title Suggestions
-          </DialogTitle>
-          <DialogDescription>
-            Choose an SEO-optimized title for your content based on your selected keywords.
-          </DialogDescription>
-        </DialogHeader>
-        
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-            <p className="text-sm text-muted-foreground">Generating title suggestions...</p>
-          </div>
-        ) : (
-          <>
+    <div className="space-y-4 py-4">
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+          <p className="mt-4 text-center text-muted-foreground">
+            Generating title suggestions based on your selected keywords...
+          </p>
+        </div>
+      ) : error ? (
+        <div className="text-center p-4 space-y-4">
+          <p className="text-red-500">{error}</p>
+          <Button onClick={generateTitles}>Try Again</Button>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-4">
             {titleSuggestions.length > 0 ? (
-              <ScrollArea className="h-[300px] rounded-md border p-4">
-                <RadioGroup 
-                  value={selectedTitle} 
-                  onValueChange={setSelectedTitle}
-                  className="space-y-3"
+              titleSuggestions.map((title, index) => (
+                <Card
+                  key={index}
+                  className="p-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => handleTitleSelect(title)}
                 >
-                  {titleSuggestions.map((title, index) => (
-                    <div key={index} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted">
-                      <RadioGroupItem value={title} id={`title-${index}`} />
-                      <Label 
-                        htmlFor={`title-${index}`} 
-                        className="font-medium text-base cursor-pointer"
-                      >
-                        {title}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </ScrollArea>
+                  <h3 className="font-medium text-lg text-blue-700">{title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click to select this title
+                  </p>
+                </Card>
+              ))
             ) : (
-              <div className="py-4 text-center">
-                <p className="text-muted-foreground">
-                  No title suggestions available. Please select keywords first.
-                </p>
+              <div className="text-center p-4">
+                <p>No title suggestions available</p>
+                <Button 
+                  onClick={generateTitles} 
+                  className="mt-2"
+                  disabled={selectedKeywords.length === 0}
+                >
+                  Generate Titles
+                </Button>
               </div>
             )}
-          </>
-        )}
-        
-        <DialogFooter className="flex justify-between sm:justify-between">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => generateTitleSuggestions()}
-            disabled={isLoading || selectedKeywords.length === 0}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              'Regenerate Titles'
-            )}
-          </Button>
+          </div>
           
-          <Button 
-            type="button" 
-            onClick={handleConfirm}
-            disabled={isLoading || !selectedTitle}
-          >
-            Use Selected Title
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <div className="flex justify-between pt-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                onOpenChange(false);
+              }}
+            >
+              Cancel
+            </Button>
+            
+            <Button 
+              onClick={generateTitles}
+              disabled={isLoading || selectedKeywords.length === 0}
+            >
+              Generate New Suggestions
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

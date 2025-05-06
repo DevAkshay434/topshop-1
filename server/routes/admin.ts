@@ -171,6 +171,74 @@ adminRouter.get("/blogs", async (_req: Request, res: Response) => {
 });
 
 // Generate keyword suggestions for a product or topic
+adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
+  try {
+    console.log("Title suggestions requested with data:", req.body);
+    const { keywords, keywordData, productTitle } = req.body;
+    
+    if (!Array.isArray(keywords) || keywords.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Keywords are required for title generation"
+      });
+    }
+    
+    // Prioritize keywords with higher search volume
+    const sortedKeywords = [...keywordData].sort((a, b) => {
+      const volumeA = a.searchVolume || 0;
+      const volumeB = b.searchVolume || 0;
+      return volumeB - volumeA;
+    });
+    
+    const keywordStrings = sortedKeywords.map(k => k.keyword);
+    const topKeywords = keywordStrings.slice(0, 5); // Use top 5 keywords by search volume
+    
+    // Generate titles using Claude or other service
+    let titles: string[] = [];
+    try {
+      // Example using Claude service
+      const claudeRequest = {
+        prompt: `Generate 5 compelling, SEO-optimized blog post titles using these keywords: ${topKeywords.join(", ")}${productTitle ? ` for product: ${productTitle}` : ""}.
+        Make each title unique, engaging, and incorporating at least 2-3 keywords naturally.
+        Focus on creating titles that would get high CTR in search results.
+        Format your response as a JSON array of exactly 5 strings, with no additional text.`,
+        responseFormat: "json"
+      };
+      
+      const claudeService = require("../services/claude");
+      const claudeResponse = await claudeService.generateTitles(claudeRequest);
+      
+      if (claudeResponse && claudeResponse.titles && Array.isArray(claudeResponse.titles)) {
+        titles = claudeResponse.titles;
+      }
+    } catch (claudeError) {
+      console.error("Claude title generation failed:", claudeError);
+      
+      // Fallback to simple title generation
+      titles = [
+        `Ultimate Guide to ${topKeywords[0]} ${topKeywords.length > 1 ? `and ${topKeywords[1]}` : ''}`,
+        `Top 10 ${topKeywords[0]} Tips for ${productTitle || 'Your Business'}`,
+        `How to Choose the Best ${topKeywords[0]} ${topKeywords.length > 1 ? `for ${topKeywords[1]}` : ''}`,
+        `${topKeywords[0]} ${topKeywords.length > 1 ? `vs ${topKeywords[1]}` : ''}: Everything You Need to Know`,
+        `The Complete ${productTitle || topKeywords[0]} Guide for ${new Date().getFullYear()}`
+      ];
+    }
+    
+    // Return titles
+    return res.json({
+      success: true,
+      titles
+    });
+    
+  } catch (error: any) {
+    console.error("Title suggestions error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to generate title suggestions"
+    });
+  }
+});
+
 adminRouter.post("/keywords-for-product", async (req: Request, res: Response) => {
   try {
     const { productId, productTitle, productUrl, topic } = req.body;
@@ -205,102 +273,7 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
   }
 });
 
-// Generate title suggestions based on selected keywords
-adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
-  try {
-    const { keywords = [], productTitle = null, count = 5 } = req.body;
-    
-    if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "At least one keyword is required for title generation"
-      });
-    }
-    
-    console.log(`Generating ${count} title suggestions for keywords:`, keywords);
-    
-    try {
-      // Use Claude/GPT to generate title options
-      const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-      
-      // Prepare keywords for prompt
-      let keywordText;
-      if (typeof keywords[0] === 'string') {
-        keywordText = keywords.join(', ');
-      } else {
-        // Handle case where keywords are objects with keyword property
-        keywordText = keywords.map((k: any) => k.keyword || k).join(', ');
-      }
-      
-      const prompt = `Generate ${count} SEO-optimized, catchy blog title options for a Shopify store.
-      
-These titles MUST incorporate at least 1-2 of these keywords naturally: ${keywordText}
-${productTitle ? `The related product is: ${productTitle}` : ''}
-
-The titles should:
-- Be attention-grabbing and encourage clicks
-- Incorporate keywords naturally, not forced
-- Be between 40-60 characters long
-- Use power words and numbers where appropriate
-- Be highly specific, not generic
-- Target search intent
-
-Format your response as a JSON array containing only the title strings.`;
-      
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
-        messages: [
-          { role: "system", content: "You are an expert SEO title writer for e-commerce blogs." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
-        response_format: { type: "json_object" }
-      });
-      
-      const content = response.choices[0].message.content;
-      
-      if (!content) {
-        throw new Error("Empty response from AI service");
-      }
-      
-      // Parse the JSON response
-      const parsedResponse = JSON.parse(content);
-      
-      // Return titles to client
-      res.json({
-        success: true,
-        titles: Array.isArray(parsedResponse.titles) ? parsedResponse.titles : 
-                (Array.isArray(parsedResponse) ? parsedResponse : [])
-      });
-      
-    } catch (aiError: any) {
-      console.error("Error generating title suggestions:", aiError);
-      
-      // Fallback to simple title generation if AI fails
-      const fallbackTitles = [
-        `Top Guide to ${keywords[0]}`,
-        `How to Choose the Best ${keywords[0]}`,
-        `${keywords[0]}: Everything You Need to Know`,
-        `Why ${keywords[0]} Matters for Your Home`,
-        `The Complete ${keywords[0]} Buying Guide`
-      ].slice(0, count);
-      
-      res.json({
-        success: true,
-        titles: fallbackTitles,
-        fallback: true
-      });
-    }
-  } catch (error: any) {
-    console.error("Title suggestion error:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to generate title suggestions"
-    });
-  }
-});
+// Title suggestion endpoint already defined above
 
 // Save selected keywords
 adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) => {

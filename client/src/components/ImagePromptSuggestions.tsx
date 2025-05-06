@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ImagePromptSuggestionsProps {
@@ -9,114 +9,165 @@ interface ImagePromptSuggestionsProps {
 }
 
 export default function ImagePromptSuggestions({ 
-  onPromptSelected,
-  productTitle
+  onPromptSelected, 
+  productTitle 
 }: ImagePromptSuggestionsProps) {
+  // Base prompt suggestions
+  const generalPrompts = [
+    "product lifestyle photography",
+    "product in use",
+    "minimalist product display",
+    "luxury product showcase",
+    "product flat lay photography"
+  ];
   
-  // Pre-defined prompt categories
-  const categories = {
-    product: [
-      "Professional product showcase",
-      "Product in use by customer",
-      "Product with natural background",
-      "Product detail closeup",
-      "Product with lifestyle setting"
-    ],
-    household: [
-      "Modern home interior with product",
-      "Beautiful kitchen showcase",
-      "Clean bathroom design",
-      "Organized living room",
-      "Luxury home design"
-    ],
-    people: [
-      "Happy family using product",
-      "Satisfied customer testimonial",
-      "Child safely using product",
-      "Professional installing product",
-      "Customer experiencing benefits"
-    ],
-    lifestyle: [
-      "Healthy lifestyle representation",
-      "Eco-friendly sustainable living",
-      "Modern lifestyle with product",
-      "Outdoor activity with product",
-      "Wellness and self-care scene"
-    ],
-    nature: [
-      "Natural landscape with product",
-      "Environmental benefits visual",
-      "Eco-friendly product showcase",
-      "Product in natural setting",
-      "Clean environment imagery"
-    ]
-  };
+  // Context-specific prompts
+  const contextPrompts = [
+    "people using product",
+    "product in natural setting",
+    "product with complementary items",
+    "close-up product details",
+    "product in modern home",
+    "product in office setting"
+  ];
   
-  // Custom prompts if product title is provided
-  const getCustomPrompts = () => {
+  // Aesthetic style prompts
+  const stylePrompts = [
+    "professional product photography",
+    "bright clean product photography",
+    "moody dramatic product photography",
+    "colorful product display",
+    "monochrome product photography",
+    "vintage style product photography"
+  ];
+  
+  // Product-specific prompts if product title is provided
+  const getProductSpecificPrompts = () => {
     if (!productTitle) return [];
     
+    // Extract key terms from product title
+    const terms = productTitle
+      .toLowerCase()
+      .replace(/[^\w\s]/gi, '')
+      .split(' ')
+      .filter(term => term.length > 3 && !['with', 'that', 'this', 'from', 'for'].includes(term));
+    
+    if (terms.length === 0) return [];
+    
+    // Generate product-specific prompts
     return [
-      `${productTitle} in modern home setting`,
-      `Person using ${productTitle}`,
-      `${productTitle} with stylish background`,
-      `Benefits of ${productTitle} visual`,
-      `Close-up details of ${productTitle}`
+      `${productTitle} in use`,
+      `${productTitle} close-up`,
+      `${productTitle} lifestyle photography`,
+      `${productTitle} on white background`,
+      `${terms[0]} product photography`
     ];
   };
   
-  const customPrompts = getCustomPrompts();
-  
   return (
-    <div className="w-full border rounded-md">
-      <Tabs defaultValue="product">
-        <TabsList className="grid grid-cols-5 w-full">
-          <TabsTrigger value="product">Product</TabsTrigger>
-          <TabsTrigger value="household">Household</TabsTrigger>
-          <TabsTrigger value="people">People</TabsTrigger>
-          <TabsTrigger value="lifestyle">Lifestyle</TabsTrigger>
-          <TabsTrigger value="nature">Nature</TabsTrigger>
-        </TabsList>
-        
-        {Object.entries(categories).map(([key, prompts]) => (
-          <TabsContent key={key} value={key} className="p-4">
-            <ScrollArea className="h-[120px] rounded-md">
-              <div className="flex flex-wrap gap-2">
-                {prompts.map((prompt, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    size="sm"
+    <div className="space-y-4">
+      <div className="text-sm font-medium mb-2">Click a suggestion to search for images:</div>
+      
+      <ScrollArea className="h-64 rounded-md border p-2">
+        <div className="space-y-4">
+          {/* Product-specific suggestions if available */}
+          {productTitle && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">Product Specific</h3>
+              <div className="grid grid-cols-1 gap-2">
+                {getProductSpecificPrompts().map((prompt, index) => (
+                  <Card 
+                    key={`product-${index}`}
+                    className="p-2 hover:bg-slate-50 cursor-pointer transition-colors"
                     onClick={() => onPromptSelected(prompt)}
-                    className="text-xs"
                   >
-                    {prompt}
-                  </Button>
+                    <span className="text-sm">{prompt}</span>
+                  </Card>
                 ))}
               </div>
-            </ScrollArea>
-          </TabsContent>
-        ))}
-      </Tabs>
-      
-      {customPrompts.length > 0 && (
-        <div className="p-4 border-t">
-          <h4 className="text-sm font-medium mb-2">Product-specific suggestions</h4>
-          <div className="flex flex-wrap gap-2">
-            {customPrompts.map((prompt, i) => (
-              <Button
-                key={i}
-                variant="outline"
-                size="sm"
-                onClick={() => onPromptSelected(prompt)}
-                className="text-xs"
-              >
-                {prompt}
-              </Button>
-            ))}
+            </div>
+          )}
+          
+          {/* General prompts */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">General Product Photos</h3>
+            <div className="grid grid-cols-1 gap-2">
+              {generalPrompts.map((prompt, index) => (
+                <Card 
+                  key={`general-${index}`}
+                  className="p-2 hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => onPromptSelected(prompt)}
+                >
+                  <span className="text-sm">{prompt}</span>
+                </Card>
+              ))}
+            </div>
+          </div>
+          
+          {/* Context prompts */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">Context & Setting</h3>
+            <div className="grid grid-cols-1 gap-2">
+              {contextPrompts.map((prompt, index) => (
+                <Card 
+                  key={`context-${index}`}
+                  className="p-2 hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => onPromptSelected(prompt)}
+                >
+                  <span className="text-sm">{prompt}</span>
+                </Card>
+              ))}
+            </div>
+          </div>
+          
+          {/* Style prompts */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">Photo Styles</h3>
+            <div className="grid grid-cols-1 gap-2">
+              {stylePrompts.map((prompt, index) => (
+                <Card 
+                  key={`style-${index}`}
+                  className="p-2 hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => onPromptSelected(prompt)}
+                >
+                  <span className="text-sm">{prompt}</span>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
-      )}
+      </ScrollArea>
+      
+      <div className="flex justify-between">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => {
+            // Get a random prompt from all categories
+            const allPrompts = [
+              ...generalPrompts,
+              ...contextPrompts,
+              ...stylePrompts,
+              ...getProductSpecificPrompts()
+            ];
+            const randomIndex = Math.floor(Math.random() * allPrompts.length);
+            onPromptSelected(allPrompts[randomIndex]);
+          }}
+        >
+          Random Suggestion
+        </Button>
+        
+        <Button 
+          size="sm"
+          onClick={() => {
+            // If product title exists, use it as base, otherwise use generic term
+            const basePrompt = productTitle || "product";
+            onPromptSelected(basePrompt);
+          }}
+        >
+          Use Simple Search
+        </Button>
+      </div>
     </div>
   );
 }

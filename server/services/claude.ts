@@ -124,6 +124,91 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
   }
 }
 
+// Function to generate title suggestions using Claude
+export async function generateTitles(request: { prompt: string, responseFormat: string }): Promise<{ titles: string[] }> {
+  try {
+    console.log("Generating title suggestions with Claude");
+    
+    // Make API call to Claude
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: request.prompt
+        }
+      ],
+    });
+    
+    // Extract response text
+    const responseText = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : JSON.stringify(response.content[0]);
+    
+    // Parse the response based on format
+    if (request.responseFormat === 'json') {
+      try {
+        // Find JSON content - handle any wrapping text Claude might add
+        const jsonRegex = /\[[\s\S]*\]/;
+        const match = responseText.match(jsonRegex);
+        
+        if (match) {
+          const titles = JSON.parse(match[0]);
+          return { titles };
+        } else {
+          // If no JSON array found, try to parse the entire response as JSON
+          const jsonResponse = JSON.parse(responseText);
+          if (Array.isArray(jsonResponse)) {
+            return { titles: jsonResponse };
+          } else if (jsonResponse.titles && Array.isArray(jsonResponse.titles)) {
+            return { titles: jsonResponse.titles };
+          }
+        }
+      } catch (parseError) {
+        console.error("Error parsing JSON from Claude response:", parseError);
+        // Fall back to extracting titles from text
+      }
+    }
+    
+    // If parsing fails or format is not JSON, extract titles from text
+    // Look for numbered lines, bullet points, or line breaks
+    const lines = responseText.split(/[\n\r]+/);
+    const titleCandidates = lines.filter(line => 
+      line.trim().length > 10 && // Minimum reasonable title length
+      !line.includes("Here are") && // Skip intro lines
+      !line.includes("suggestions") &&
+      !line.includes("titles") &&
+      (
+        /^\d+[\.\)]\s+/.test(line.trim()) || // numbered items
+        /^[-*•]\s+/.test(line.trim()) || // bullet points
+        /^["'].*["']$/.test(line.trim()) // quoted text
+      )
+    );
+    
+    // Clean up the titles
+    const titles = titleCandidates.map(title => 
+      title.replace(/^\d+[\.\)]\s+|^[-*•]\s+|^["']|["']$/g, '').trim()
+    ).filter(title => title.length > 0);
+    
+    // Return at least some titles
+    if (titles.length === 0) {
+      // If we couldn't extract any titles, just return 5 lines that look like titles
+      return { 
+        titles: lines
+          .filter(line => line.trim().length > 15 && line.trim().length < 100)
+          .slice(0, 5)
+          .map(line => line.trim())
+      };
+    }
+    
+    return { titles };
+  } catch (error: any) {
+    console.error("Error generating titles with Claude:", error);
+    throw new Error(`Failed to generate titles with Claude: ${error.message || 'Unknown error'}`);
+  }
+}
+
 // Test function to check if Claude API is working
 export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
   try {
