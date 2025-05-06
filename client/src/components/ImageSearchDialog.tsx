@@ -326,55 +326,9 @@ export default function ImageSearchDialog({
             </div>
           )}
           
-          {searchedImages.length > 0 ? (
-            <div className="border rounded-lg overflow-hidden shadow-sm bg-slate-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[500px] overflow-y-auto p-6">
-                {searchedImages.map(image => (
-                  <div 
-                    key={image.id}
-                    className={`relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 border-2 shadow hover:shadow-lg ${
-                      image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-slate-300'
-                    }`}
-                    onClick={() => toggleImageSelection(image.id)}
-                  >
-                    <div className="aspect-[4/3] relative bg-slate-100">
-                      <img 
-                        src={image.src?.medium || image.url} 
-                        alt={image.alt || 'Content image'} 
-                        className="w-full h-full object-contain"
-                        loading="lazy"
-                      />
-                      {image.alt && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs py-1 px-2 truncate">
-                          {image.alt}
-                        </div>
-                      )}
-                    </div>
-                    {image.selected && (
-                      <div className="absolute top-3 right-3 bg-blue-500 rounded-full p-1.5 shadow-md">
-                        <CheckCircle className="h-5 w-5 text-white" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="py-12 text-center text-muted-foreground border rounded-md bg-slate-50/50 my-4">
-              {isSearchingImages ? 
-                <div className="flex flex-col items-center">
-                  <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-500" />
-                  <p>Searching for images...</p>
-                </div> 
-                : 
-                <p>Search for images to display results</p>
-              }
-            </div>
-          )}
-          
-          {/* Selection summary */}
+          {/* Selection summary - Now positioned BEFORE search results */}
           {Array.isArray(selectedImages) && selectedImages.length > 0 && (
-            <div className="mt-4 p-4 border rounded-md bg-slate-50/80 shadow-sm">
+            <div className="p-4 border rounded-md bg-slate-50/80 shadow-sm mb-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-medium flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-1.5" />
@@ -444,6 +398,53 @@ export default function ImageSearchDialog({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Search results - Now always visible below selected images */}
+          {searchedImages.length > 0 ? (
+            <div className="border rounded-lg overflow-hidden shadow-sm bg-slate-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[500px] overflow-y-auto p-6">
+                {searchedImages.map(image => (
+                  <div 
+                    key={image.id}
+                    className={`relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 border-2 shadow hover:shadow-lg ${
+                      image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-slate-300'
+                    }`}
+                    onClick={() => toggleImageSelection(image.id)}
+                  >
+                    <div className="aspect-[4/3] relative bg-slate-100">
+                      <img 
+                        src={image.src?.medium || image.url} 
+                        alt={image.alt || 'Content image'} 
+                        className="w-full h-full object-contain"
+                        loading="lazy"
+                      />
+                      {image.alt && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs py-1 px-2 truncate">
+                          {image.alt}
+                        </div>
+                      )}
+                    </div>
+                    {image.selected && (
+                      <div className="absolute top-3 right-3 bg-blue-500 rounded-full p-1.5 shadow-md">
+                        <CheckCircle className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="py-12 text-center text-muted-foreground border rounded-md bg-slate-50/50 my-4">
+              {isSearchingImages ? 
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-500" />
+                  <p>Searching for images...</p>
+                </div> 
+                : 
+                <p>Search for images to display results</p>
+              }
             </div>
           )}
         </div>

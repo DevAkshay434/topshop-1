@@ -58,9 +58,14 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
-    - Format all images with this exact HTML structure: <div style="text-align: center;"><a href="PRODUCT_URL"><img src="IMAGE_URL" alt="IMAGE_ALT" style="max-width: 100%; height: auto;"></a></div>
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
+    
+    IMPORTANT IMAGE AND LINK GUIDELINES:
+    - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
+    - NEVER reference competitor websites or external commercial domains in any links or image sources
+    - DO NOT include ANY external links except to trusted reference sites like .gov, .edu, or wikipedia.org
+    - DO NOT include external images from third-party domains - the images will be added separately
     
     Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
     
