@@ -1475,27 +1475,30 @@ export default function AdminPanel() {
                             )}
                             
                             {searchedImages.length > 0 ? (
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto p-1">
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto p-1 border rounded-md bg-slate-50/50">
                                 {searchedImages.map(image => (
                                   <div 
                                     key={image.id}
-                                    className={`relative rounded-md overflow-hidden cursor-pointer border-2 ${
-                                      image.selected ? 'border-blue-500' : 'border-transparent'
+                                    className={`relative rounded-md overflow-hidden cursor-pointer transition-all duration-200 border-2 shadow-sm hover:shadow-md ${
+                                      image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-slate-300'
                                     }`}
                                     onClick={() => toggleImageSelection(image.id)}
                                   >
-                                    <img 
-                                      src={image.src?.medium || image.url} 
-                                      alt={image.alt || 'Content image'} 
-                                      className="w-full h-32 object-cover"
-                                    />
+                                    <div className="aspect-w-16 aspect-h-9 relative">
+                                      <img 
+                                        src={image.src?.medium || image.url} 
+                                        alt={image.alt || 'Content image'} 
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    </div>
                                     {image.photographer && (
-                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm text-white text-xs p-1.5 truncate">
                                         Photo by: {image.photographer}
                                       </div>
                                     )}
                                     {image.selected && (
-                                      <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-1">
+                                      <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1.5 shadow-md">
                                         <CheckCircle className="h-4 w-4 text-white" />
                                       </div>
                                     )}
@@ -1510,13 +1513,36 @@ export default function AdminPanel() {
                             
                             {/* Selection summary */}
                             {Array.isArray(selectedImages) && selectedImages.length > 0 && (
-                              <div className="mt-2 p-3 border rounded-md bg-slate-50">
-                                <p className="text-sm font-medium mb-2">Selected Images: {selectedImages.length}</p>
-                                <div className="flex flex-wrap gap-2">
+                              <div className="mt-4 p-4 border rounded-md bg-slate-50/80 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-sm font-medium flex items-center">
+                                    <CheckCircle className="h-4 w-4 text-green-500 mr-1.5" />
+                                    Selected Images: {selectedImages.length}
+                                  </p>
+                                  <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => {
+                                      // Clear all selections
+                                      setSelectedImages([]);
+                                      setSearchedImages(prev => prev.map(img => ({ ...img, selected: false })));
+                                      setImageSearchHistory(prev => prev.map(history => ({
+                                        ...history,
+                                        images: history.images.map(img => ({ ...img, selected: false }))
+                                      })));
+                                    }}
+                                  >
+                                    <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                                    Clear All
+                                  </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
                                   {selectedImages.map(image => (
                                     <div 
                                       key={image.id} 
-                                      className="relative h-16 w-16 rounded-md overflow-hidden border"
+                                      className="relative h-20 w-20 rounded-md overflow-hidden border shadow-sm hover:shadow-md transition-shadow duration-200"
                                     >
                                       <img 
                                         src={image.src?.thumbnail || image.url} 
@@ -1524,7 +1550,7 @@ export default function AdminPanel() {
                                         className="h-full w-full object-cover"
                                       />
                                       <div 
-                                        className="absolute top-0 right-0 bg-red-500 rounded-full p-0.5 cursor-pointer"
+                                        className="absolute top-1 right-1 bg-red-500 rounded-full p-1 cursor-pointer shadow-sm hover:bg-red-600 transition-colors"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           // Remove from selected images
@@ -1561,46 +1587,8 @@ export default function AdminPanel() {
                             )}
                           </div>
                           
-                          <DialogFooter className="flex justify-between">
-                            <div>
-                              {Array.isArray(selectedImages) && selectedImages.length > 0 && (
-                                <Button 
-                                  type="button" 
-                                  variant="destructive" 
-                                  size="sm"
-                                  onClick={() => {
-                                    // Clear all selections
-                                    setSelectedImages([]);
-                                    
-                                    // Update searchedImages
-                                    setSearchedImages(prev => 
-                                      prev.map(img => ({ ...img, selected: false }))
-                                    );
-                                    
-                                    // Update search history
-                                    setImageSearchHistory(prev => 
-                                      prev.map(history => ({
-                                        ...history,
-                                        images: history.images.map(img => 
-                                          ({ ...img, selected: false })
-                                        )
-                                      }))
-                                    );
-                                    
-                                    toast({
-                                      title: "Selections cleared",
-                                      description: "All image selections have been cleared",
-                                      variant: "default"
-                                    });
-                                  }}
-                                >
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Clear All Selections
-                                </Button>
-                              )}
-                            </div>
-                            
-                            <div className="flex gap-2">
+                          <DialogFooter>
+                            <div className="flex gap-2 ml-auto">
                               <Button 
                                 type="button" 
                                 variant="outline" 

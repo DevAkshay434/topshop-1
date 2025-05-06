@@ -76,10 +76,17 @@ export class DataForSEOService {
         console.log("DataForSEO request payload:", JSON.stringify(requestData));
 
         // POST request to DataForSEO API to get related keywords
+        // Use the correct endpoint for keyword research
         const response = await axios.post(
-          `${this.apiUrl}/v3/keywords_data/google/related_keywords/live`,
+          `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
           requestData,
-          { auth }
+          { 
+            auth,
+            timeout: 15000, // 15 second timeout
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
         );
 
         console.log(`DataForSEO API status code: ${response.status}`);
@@ -119,23 +126,33 @@ export class DataForSEOService {
         }
         
         for (const result of results) {
-          for (const item of result.items || []) {
-            // Get competition level based on competition value
-            const competitionLevel = this.getCompetitionLevel(item.competition || 0);
+          // Search volume endpoint has a different response structure
+          const items = result.items || [];
+          
+          for (const item of items) {
+            // Some properties have different names in the search_volume endpoint
+            const searchVolume = item.search_volume || 0;
+            const competition = item.competition_index || item.competition || 0;
+            const competitionLevel = this.getCompetitionLevel(competition);
+            const cpc = item.cpc || 0;
             
             // Process monthly trend data if available
             const trend = item.monthly_searches?.map((monthData: any) => monthData.search_volume) || [];
             
-            // Calculate keyword difficulty if not provided directly
-            const difficulty = item.keyword_difficulty || this.calculateKeywordDifficulty(item);
+            // Calculate keyword difficulty
+            const difficulty = this.calculateKeywordDifficulty({
+              search_volume: searchVolume,
+              competition: competition,
+              cpc: cpc
+            });
             
             keywordData.push({
               keyword: item.keyword || '',
-              searchVolume: item.search_volume || 0,
-              cpc: item.cpc || 0,
-              competition: item.competition || 0,
+              searchVolume: searchVolume,
+              cpc: cpc,
+              competition: competition,
               competitionLevel,
-              intent: this.determineIntent(item),
+              intent: this.determineIntent({ keyword: item.keyword }),
               trend,
               difficulty,
               selected: false // Default to not selected
@@ -329,9 +346,9 @@ export class DataForSEOService {
         password: this.password
       };
 
-      // Using a simpler endpoint that's more likely to succeed for testing
+      // Use a different endpoint for connection test
       const response = await axios.get(
-        `${this.apiUrl}/v3/merchant/api_status`, 
+        `${this.apiUrl}/v3/system_status`, 
         { 
           auth,
           timeout: 10000, // 10 second timeout
