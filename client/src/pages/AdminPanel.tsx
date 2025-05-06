@@ -451,16 +451,8 @@ export default function AdminPanel() {
     // Move to keyword selection step after product selection
     setWorkflowStep('keyword');
     
-    // Auto-open keyword selector if products were selected
-    if (productIds.length > 0) {
-      setShowKeywordSelector(true);
-    } else {
-      const collectionIds = form.getValues('collectionIds') || [];
-      if (collectionIds.length > 0) {
-        // If collections were selected but not products, still move to keyword step
-        setShowKeywordSelector(true);
-      }
-    }
+    // No longer auto-open keyword selector, let user click the button manually
+    // Just update the UI to show that we're in the keyword step now
   };
   
   // Handle collection selection
@@ -471,8 +463,9 @@ export default function AdminPanel() {
     // Only move to next step if no products were selected (products take precedence)
     const productIds = form.getValues('productIds') || [];
     if (productIds.length === 0 && collectionIds.length > 0) {
+      // Just update the workflow step, don't auto-open keyword selector
       setWorkflowStep('keyword');
-      setShowKeywordSelector(true);
+      // The user will need to click the button manually
     }
   };
   

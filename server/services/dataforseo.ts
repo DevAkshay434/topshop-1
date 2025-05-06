@@ -23,10 +23,20 @@ export class DataForSEOService {
   constructor() {
     this.apiUrl = 'https://api.dataforseo.com';
     
-    // Use API_KEY as both username and password as per DataForSEO documentation
+    // DataForSEO requires the API key to be split into username/password pair
+    // The DATAFORSEO_API_KEY should be in the format 'username:password'
     const apiKey = process.env.DATAFORSEO_API_KEY || '';
-    this.username = apiKey;
-    this.password = apiKey;
+    
+    if (apiKey.includes(':')) {
+      // Split the API key into username and password if it contains a colon
+      const [username, password] = apiKey.split(':');
+      this.username = username;
+      this.password = password;
+    } else {
+      // Fallback to using the API key as both username and password
+      this.username = apiKey;
+      this.password = apiKey;
+    }
     
     if (this.hasValidCredentials()) {
       console.log(`DataForSEO service initialized with API key: ${this.username.substring(0, 5)}...`);
@@ -342,7 +352,8 @@ export class DataForSEOService {
     }
 
     try {
-      console.log(`Testing DataForSEO connection with API key: ${this.username.substring(0, 5)}...`);
+      console.log(`Testing DataForSEO connection with username: ${this.username.substring(0, 5)}...`);
+      console.log(`Auth details - username length: ${this.username.length}, password length: ${this.password.length}`);
       
       // Use a simple POST request instead of GET for testing
       // DataForSEO's API prefers POST requests for most endpoints
@@ -358,44 +369,100 @@ export class DataForSEOService {
         location_code: 2840 // United States
       }];
 
-      const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
-        requestData,
-        { 
-          auth,
-          timeout: 15000, // 15 second timeout
-          headers: {
-            'Content-Type': 'application/json'
+      // Add more detailed logging
+      console.log(`DataForSEO test request URL: ${this.apiUrl}/v3/keywords_data/google/search_volume/live`);
+      console.log(`DataForSEO test request data: ${JSON.stringify(requestData)}`);
+      
+      try {
+        const response = await axios.post(
+          `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
+          requestData,
+          { 
+            auth,
+            timeout: 15000, // 15 second timeout
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        console.log(`DataForSEO test connection HTTP status: ${response.status}`);
+        
+        // Check DataForSEO specific status code in the response data
+        if (response.data && response.data.status_code) {
+          console.log(`DataForSEO API status code: ${response.data.status_code}`);
+          console.log(`DataForSEO API status message: ${response.data.status_message || 'No message'}`);
+          
+          // DataForSEO uses 20000 as their success code
+          if (response.data.status_code === 20000) {
+            return {
+              success: true,
+              message: 'Connected to DataForSEO API successfully'
+            };
+          } else {
+            return {
+              success: false,
+              message: `DataForSEO API error: ${response.data.status_message || 'Unknown error'}`
+            };
           }
         }
-      );
-      
-      console.log(`DataForSEO test connection response status: ${response.status}`);
-      
-      // With DataForSEO, a successful response might have various status codes
-      // But a 2xx HTTP status code generally indicates the API is accessible
-      if (response.status >= 200 && response.status < 300) {
-        return {
-          success: true,
-          message: 'Connected to DataForSEO API successfully'
-        };
-      } else {
-        return {
-          success: false,
-          message: `DataForSEO API returned unexpected status: ${response.status}`
-        };
+        
+        // If no DataForSEO specific status code, fall back to HTTP status
+        if (response.status >= 200 && response.status < 300) {
+          return {
+            success: true,
+            message: 'Connected to DataForSEO API successfully'
+          };
+        } else {
+          return {
+            success: false,
+            message: `DataForSEO API returned unexpected status: ${response.status}`
+          };
+        }
+      } catch (axiosError: any) {
+        // Special handling for 401 errors which indicate authentication problems
+        if (axiosError.response?.status === 401) {
+          console.error("DataForSEO authentication failed. Status 401 Unauthorized");
+          
+          // Show the exact error response to help debug
+          if (axiosError.response?.data) {
+            console.error("DataForSEO error response:", JSON.stringify(axiosError.response.data));
+          }
+          
+          return {
+            success: false,
+            message: 'Authentication failed: Invalid DataForSEO API credentials. Make sure your API key is in the format "username:password".'
+          };
+        }
+        
+        throw axiosError; // Re-throw to be caught by the outer catch block
       }
     } catch (error: any) {
-      console.error("DataForSEO connection test error details:", error);
+      console.error("DataForSEO connection test error:", error.message);
+      
+      // Log the full error object for debugging
+      console.error("DataForSEO error details:", error);
       
       // Extract more detailed error information if available
-      const errorDetails = error.response?.data?.status_message || error.message || 'Unknown error';
+      const errorResponse = error.response?.data;
+      const errorDetails = errorResponse?.status_message || error.message || 'Unknown error';
       
-      // If the error includes information about invalid credentials
-      if (errorDetails.includes('invalid') && errorDetails.includes('credentials')) {
+      // Enhanced error messages based on common DataForSEO errors
+      if (error.code === 'ENOTFOUND') {
         return {
           success: false,
-          message: 'Invalid DataForSEO API credentials. Please check your API key.'
+          message: 'Could not connect to DataForSEO API server. Please check your internet connection.'
+        };
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+        return {
+          success: false,
+          message: 'Connection to DataForSEO API timed out. Please try again later.'
+        };
+      } else if (errorDetails.toLowerCase().includes('unauthorized') || 
+                 errorDetails.toLowerCase().includes('authentication')) {
+        return {
+          success: false,
+          message: 'Invalid DataForSEO API credentials. Please check your API key format (should be username:password).'
         };
       }
       
