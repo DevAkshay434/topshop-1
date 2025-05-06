@@ -1754,6 +1754,7 @@ export default function AdminPanel() {
                 onKeywordsSelected={handleKeywordsSelected}
                 onClose={() => setShowKeywordSelector(false)}
                 title="Select Keywords for SEO Optimization"
+                productTitle={productTitle}
               />
             </DialogContent>
           </Dialog>

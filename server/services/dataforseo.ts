@@ -23,8 +23,12 @@ export class DataForSEOService {
   constructor() {
     this.apiUrl = 'https://api.dataforseo.com';
     // Use API_KEY as both username and password as per DataForSEO documentation
-    this.username = process.env.DATAFORSEO_API_KEY || '4c56c11d3c04852c';
-    this.password = process.env.DATAFORSEO_API_KEY || '4c56c11d3c04852c';
+    // Using secret or fallback api key
+    const apiKey = process.env.DATAFORSEO_API_KEY || '4c56c11d3c04852c';
+    this.username = apiKey;
+    this.password = apiKey;
+    
+    console.log(`DataForSEO service initialized with API key: ${this.username.substring(0, 5)}...`);
   }
 
   /**
@@ -317,22 +321,50 @@ export class DataForSEOService {
     }
 
     try {
+      console.log(`Testing DataForSEO connection with API key: ${this.username.substring(0, 5)}...`);
+      
       // Simple API call to check if credentials are valid
       const auth = {
         username: this.username,
         password: this.password
       };
 
-      const response = await axios.get(`${this.apiUrl}/v3/merchant/api_status`, { auth });
+      // Using a simpler endpoint that's more likely to succeed for testing
+      const response = await axios.get(
+        `${this.apiUrl}/v3/merchant/api_status`, 
+        { 
+          auth,
+          timeout: 10000, // 10 second timeout
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log(`DataForSEO test connection response status: ${response.status}`);
+      console.log(`DataForSEO test connection response data:`, JSON.stringify(response.data));
+      
+      // Check if the response indicates success
+      if (response.data?.status_code === 20000) {
+        return {
+          success: true,
+          message: 'Connected to DataForSEO API successfully'
+        };
+      } else {
+        return {
+          success: false,
+          message: `DataForSEO API returned unexpected status: ${response.data?.status_message || 'Unknown status'}`
+        };
+      }
+    } catch (error: any) {
+      console.error("DataForSEO connection test error details:", error);
+      
+      // Extract more detailed error information if available
+      const errorDetails = error.response?.data?.status_message || error.message || 'Unknown error';
       
       return {
-        success: true,
-        message: 'Connected to DataForSEO API successfully'
-      };
-    } catch (error: any) {
-      return {
         success: false,
-        message: `Failed to connect to DataForSEO API: ${error.message}`
+        message: `Failed to connect to DataForSEO API: ${errorDetails}`
       };
     }
   }
