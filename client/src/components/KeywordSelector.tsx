@@ -41,20 +41,22 @@ interface KeywordSelectorProps {
   onKeywordsSelected: (keywords: KeywordData[]) => void;
   title?: string;
   onClose?: () => void;
+  productTitle?: string; // Add this to use selected product title
 }
 
 export default function KeywordSelector({
   initialKeywords = [],
   onKeywordsSelected,
   title = "Select Keywords for Your Content",
-  onClose
+  onClose,
+  productTitle
 }: KeywordSelectorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [keywords, setKeywords] = useState<KeywordData[]>(initialKeywords);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterIntent, setFilterIntent] = useState<string | null>(null);
   const [productUrl, setProductUrl] = useState("");
-  const [directTopic, setDirectTopic] = useState("");
+  const [directTopic, setDirectTopic] = useState(productTitle || ""); // Pre-populate with product title if available
 
   // Count selected keywords
   const selectedCount = keywords.filter(kw => kw.selected).length;
@@ -73,6 +75,13 @@ export default function KeywordSelector({
     setKeywords(updatedKeywords);
   };
 
+  // Automatically fetch keywords when component mounts if productTitle is provided
+  useEffect(() => {
+    if (productTitle && keywords.length === 0) {
+      fetchKeywords();
+    }
+  }, []);
+  
   // Fetch keywords based on product URL or direct topic
   const fetchKeywords = async () => {
     if (!productUrl && !directTopic) {

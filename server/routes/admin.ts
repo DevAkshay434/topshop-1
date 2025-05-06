@@ -196,11 +196,22 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
     // Generate titles using Claude or other service
     let titles: string[] = [];
     try {
+      // Create a clean product title without repetition for prompting
+      const cleanProductTitle = productTitle ? productTitle.replace(/\[.*?\]/g, '').trim() : '';
+      
       // Example using Claude service
       const claudeRequest = {
-        prompt: `Generate 5 compelling, SEO-optimized blog post titles using these keywords: ${topKeywords.join(", ")}${productTitle ? ` for product: ${productTitle}` : ""}.
-        Make each title unique, engaging, and incorporating at least 2-3 keywords naturally.
-        Focus on creating titles that would get high CTR in search results.
+        prompt: `Generate 5 compelling, SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that naturally incorporate these keywords: ${topKeywords.join(", ")}.
+        
+        IMPORTANT GUIDELINES:
+        - Each title should be unique and engaging
+        - Create natural-sounding titles that don't seem keyword-stuffed
+        - Avoid repetition of the same phrases or product names
+        - Avoid using the same keyword multiple times in a single title
+        - Use each keyword only where it fits naturally
+        - Focus on creating titles that would get high CTR in search results
+        - Keep titles between 50-65 characters for optimal SEO
+        
         Format your response as a JSON array of exactly 5 strings, with no additional text.`,
         responseFormat: "json"
       };
@@ -214,13 +225,17 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
     } catch (claudeError) {
       console.error("Claude title generation failed:", claudeError);
       
-      // Fallback to simple title generation
+      // Create a clean product title without repetition for fallback
+      const cleanProductTitle = productTitle ? productTitle.replace(/\[.*?\]/g, '').trim() : '';
+      const productShortName = cleanProductTitle.split(' ').slice(0, 2).join(' ');
+      
+      // Fallback to better title generation with less repetition
       titles = [
-        `Ultimate Guide to ${topKeywords[0]} ${topKeywords.length > 1 ? `and ${topKeywords[1]}` : ''}`,
-        `Top 10 ${topKeywords[0]} Tips for ${productTitle || 'Your Business'}`,
-        `How to Choose the Best ${topKeywords[0]} ${topKeywords.length > 1 ? `for ${topKeywords[1]}` : ''}`,
-        `${topKeywords[0]} ${topKeywords.length > 1 ? `vs ${topKeywords[1]}` : ''}: Everything You Need to Know`,
-        `The Complete ${productTitle || topKeywords[0]} Guide for ${new Date().getFullYear()}`
+        `Ultimate Guide to ${topKeywords[0]} in ${new Date().getFullYear()}`,
+        `Top 10 ${productShortName || topKeywords[0]} Features and Benefits`,
+        `How to Choose the Best ${topKeywords[1] || topKeywords[0]} for Your Home`,
+        `${topKeywords[0]} vs Competitors: What You Need to Know`,
+        `The Complete Buyer's Guide for ${productShortName || topKeywords[0]}`
       ];
     }
     
