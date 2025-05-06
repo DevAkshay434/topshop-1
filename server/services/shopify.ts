@@ -218,14 +218,47 @@ export class ShopifyService {
       let processedContent = post.content;
       
       // Replace proxy image URLs with their Pexels source URLs
+      // Look for both relative URLs and URLs with <a> tags
       const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
+      const proxyImageLinkPattern = /<a href="([^"]+)"><img src="\/api\/proxy\/image\/(\d+)"/g;
       let proxyMatch;
+      let proxyLinkMatch;
       
       const pexelsService = await import('./pexels').then(module => module.pexelsService);
       
+      // First, handle images with links
+      while ((proxyLinkMatch = proxyImageLinkPattern.exec(processedContent)) !== null) {
+        const productUrl = proxyLinkMatch[1];
+        const imageId = proxyLinkMatch[2];
+        console.log(`Found linked proxied image in content: ${imageId} with product link: ${productUrl}`);
+        
+        try {
+          // Get the Pexels image with this ID
+          const image = await pexelsService.getImageById(imageId);
+          
+          if (image && image.src) {
+            // Get the best quality image URL
+            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
+            
+            if (directImageUrl) {
+              console.log(`Replacing linked proxy URL with direct URL: ${directImageUrl}`);
+              // Replace the proxy URL with the direct URL in content, maintaining the link
+              processedContent = processedContent.replace(
+                `<a href="${productUrl}"><img src="/api/proxy/image/${imageId}"`, 
+                `<a href="${productUrl}"><img src="${directImageUrl}"`
+              );
+            }
+          }
+        } catch (imageError) {
+          console.error(`Error processing linked proxied image ${imageId}:`, imageError);
+          // Continue with other images if one fails
+        }
+      }
+      
+      // Now handle standalone images (without links)
       while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
         const imageId = proxyMatch[1];
-        console.log(`Found proxied image in content: ${imageId}`);
+        console.log(`Found standalone proxied image in content: ${imageId}`);
         
         try {
           // Get the Pexels image with this ID
@@ -309,14 +342,47 @@ export class ShopifyService {
         let processedContent = post.content;
         
         // Replace proxy image URLs with their Pexels source URLs
+        // Look for both relative URLs and URLs with <a> tags
         const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
+        const proxyImageLinkPattern = /<a href="([^"]+)"><img src="\/api\/proxy\/image\/(\d+)"/g;
         let proxyMatch;
+        let proxyLinkMatch;
         
         const pexelsService = await import('./pexels').then(module => module.pexelsService);
         
+        // First, handle images with links
+        while ((proxyLinkMatch = proxyImageLinkPattern.exec(processedContent)) !== null) {
+          const productUrl = proxyLinkMatch[1];
+          const imageId = proxyLinkMatch[2];
+          console.log(`Found linked proxied image in content for update: ${imageId} with product link: ${productUrl}`);
+          
+          try {
+            // Get the Pexels image with this ID
+            const image = await pexelsService.getImageById(imageId);
+            
+            if (image && image.src) {
+              // Get the best quality image URL
+              const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
+              
+              if (directImageUrl) {
+                console.log(`Replacing linked proxy URL with direct URL for update: ${directImageUrl}`);
+                // Replace the proxy URL with the direct URL in content, maintaining the link
+                processedContent = processedContent.replace(
+                  `<a href="${productUrl}"><img src="/api/proxy/image/${imageId}"`, 
+                  `<a href="${productUrl}"><img src="${directImageUrl}"`
+                );
+              }
+            }
+          } catch (imageError) {
+            console.error(`Error processing linked proxied image ${imageId} for update:`, imageError);
+            // Continue with other images if one fails
+          }
+        }
+        
+        // Now handle standalone images (without links)
         while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
           const imageId = proxyMatch[1];
-          console.log(`Found proxied image in content for update: ${imageId}`);
+          console.log(`Found standalone proxied image in content for update: ${imageId}`);
           
           try {
             // Get the Pexels image with this ID
@@ -630,9 +696,79 @@ export class ShopifyService {
   public async createPage(store: ShopifyStore, title: string, content: string, published: boolean = true): Promise<any> {
     try {
       const client = this.getClient(store);
+      
+      // Process content to handle proxied image URLs - same as in createArticle
+      let processedContent = content;
+      
+      // Replace proxy image URLs with their Pexels source URLs
+      // Look for both relative URLs and URLs with <a> tags
+      const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
+      const proxyImageLinkPattern = /<a href="([^"]+)"><img src="\/api\/proxy\/image\/(\d+)"/g;
+      let proxyMatch;
+      let proxyLinkMatch;
+      
+      const pexelsService = await import('./pexels').then(module => module.pexelsService);
+      
+      // First, handle images with links
+      while ((proxyLinkMatch = proxyImageLinkPattern.exec(processedContent)) !== null) {
+        const productUrl = proxyLinkMatch[1];
+        const imageId = proxyLinkMatch[2];
+        console.log(`Found linked proxied image in page content: ${imageId} with product link: ${productUrl}`);
+        
+        try {
+          // Get the Pexels image with this ID
+          const image = await pexelsService.getImageById(imageId);
+          
+          if (image && image.src) {
+            // Get the best quality image URL
+            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
+            
+            if (directImageUrl) {
+              console.log(`Replacing linked proxy URL with direct URL in page: ${directImageUrl}`);
+              // Replace the proxy URL with the direct URL in content, maintaining the link
+              processedContent = processedContent.replace(
+                `<a href="${productUrl}"><img src="/api/proxy/image/${imageId}"`, 
+                `<a href="${productUrl}"><img src="${directImageUrl}"`
+              );
+            }
+          }
+        } catch (imageError) {
+          console.error(`Error processing linked proxied image ${imageId} for page:`, imageError);
+          // Continue with other images if one fails
+        }
+      }
+      
+      // Now handle standalone images (without links)
+      while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
+        const imageId = proxyMatch[1];
+        console.log(`Found standalone proxied image in page content: ${imageId}`);
+        
+        try {
+          // Get the Pexels image with this ID
+          const image = await pexelsService.getImageById(imageId);
+          
+          if (image && image.src) {
+            // Get the best quality image URL
+            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
+            
+            if (directImageUrl) {
+              console.log(`Replacing proxy URL with direct URL in page: ${directImageUrl}`);
+              // Replace the proxy URL with the direct URL in content
+              processedContent = processedContent.replace(
+                `src="/api/proxy/image/${imageId}"`, 
+                `src="${directImageUrl}"`
+              );
+            }
+          }
+        } catch (imageError) {
+          console.error(`Error processing proxied image ${imageId} for page:`, imageError);
+          // Continue with other images if one fails
+        }
+      }
+      
       const page = {
         title,
-        body_html: content,
+        body_html: processedContent, // Use processed content with direct image URLs
         published
       };
       
