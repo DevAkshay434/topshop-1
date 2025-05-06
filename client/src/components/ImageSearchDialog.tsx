@@ -215,7 +215,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -355,10 +355,10 @@ export default function ImageSearchDialog({
             </div>
           )}
           
-          {/* Selection summary - Now positioned BEFORE search results */}
+          {/* Selection summary - Positioned in a compact format when showing search results */}
           {Array.isArray(selectedImages) && selectedImages.length > 0 && (
-            <div className="p-4 border rounded-md bg-slate-50/80 shadow-sm mb-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className={`border rounded-md shadow-sm mb-4 ${searchedImages.length > 0 ? 'bg-white' : 'bg-slate-50/80 p-4'}`}>
+              <div className="flex items-center justify-between p-3 border-b">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-1.5" />
@@ -387,58 +387,117 @@ export default function ImageSearchDialog({
                   Clear All
                 </Button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {selectedImages.map((image, index) => (
-                  <div 
-                    key={image.id} 
-                    className={`relative rounded-md overflow-hidden border shadow hover:shadow-md transition-shadow duration-200 ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}
-                  >
-                    <div className="aspect-square relative">
-                      <img 
-                        src={image.src?.small || image.src?.thumbnail || image.url} 
-                        alt="Selected" 
-                        className="h-full w-full object-cover"
-                      />
-                      {index === 0 && (
-                        <div className="absolute top-0 left-0 bg-blue-500 text-white text-xs py-1 px-2">
-                          Featured
-                        </div>
-                      )}
+              
+              {/* Compact view when we have search results, expandable view otherwise */}
+              {searchedImages.length > 0 ? (
+                <div className="px-3 py-2 flex gap-2 items-center overflow-x-auto">
+                  <p className="text-xs text-gray-500 shrink-0 whitespace-nowrap">Selected:</p>
+                  <div className="flex gap-2">
+                    {selectedImages.map((image, index) => (
                       <div 
-                        className="absolute top-2 right-2 bg-red-500 rounded-full p-1.5 cursor-pointer shadow-md hover:bg-red-600 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Remove from selected images
-                          setSelectedImages(prev => 
-                            prev.filter(img => img.id !== image.id)
-                          );
-                          // Also unselect in current search results if present
-                          setSearchedImages(prev => 
-                            prev.map(img => 
-                              img.id === image.id 
-                                ? { ...img, selected: false } 
-                                : img
-                            )
-                          );
-                          // Update in search history as well
-                          setImageSearchHistory(prev => 
-                            prev.map(history => ({
-                              ...history,
-                              images: history.images.map(img => 
+                        key={image.id} 
+                        className={`relative rounded-md overflow-hidden border shadow shrink-0 ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}
+                        style={{ width: '80px', height: '80px' }}
+                      >
+                        <img 
+                          src={image.src?.small || image.src?.thumbnail || image.url} 
+                          alt="Selected" 
+                          className="h-full w-full object-cover"
+                        />
+                        {index === 0 && (
+                          <div className="absolute top-0 left-0 bg-blue-500 text-white text-xs py-0.5 px-1">
+                            Featured
+                          </div>
+                        )}
+                        <div 
+                          className="absolute top-1 right-1 bg-red-500 rounded-full p-1 cursor-pointer shadow-md hover:bg-red-600 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Remove from selected images
+                            setSelectedImages(prev => 
+                              prev.filter(img => img.id !== image.id)
+                            );
+                            // Also unselect in current search results if present
+                            setSearchedImages(prev => 
+                              prev.map(img => 
                                 img.id === image.id 
                                   ? { ...img, selected: false } 
                                   : img
                               )
-                            }))
-                          );
-                        }}
-                      >
-                        <XCircle className="h-4 w-4 text-white" />
+                            );
+                            // Update in search history as well
+                            setImageSearchHistory(prev => 
+                              prev.map(history => ({
+                                ...history,
+                                images: history.images.map(img => 
+                                  img.id === image.id 
+                                    ? { ...img, selected: false } 
+                                    : img
+                                )
+                              }))
+                            );
+                          }}
+                        >
+                          <XCircle className="h-3 w-3 text-white" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-3">
+                  {selectedImages.map((image, index) => (
+                    <div 
+                      key={image.id} 
+                      className={`relative rounded-md overflow-hidden border shadow hover:shadow-md transition-shadow duration-200 ${index === 0 ? 'ring-2 ring-blue-400' : ''}`}
+                    >
+                      <div className="aspect-square relative">
+                        <img 
+                          src={image.src?.small || image.src?.thumbnail || image.url} 
+                          alt="Selected" 
+                          className="h-full w-full object-cover"
+                        />
+                        {index === 0 && (
+                          <div className="absolute top-0 left-0 bg-blue-500 text-white text-xs py-1 px-2">
+                            Featured
+                          </div>
+                        )}
+                        <div 
+                          className="absolute top-2 right-2 bg-red-500 rounded-full p-1.5 cursor-pointer shadow-md hover:bg-red-600 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Remove from selected images
+                            setSelectedImages(prev => 
+                              prev.filter(img => img.id !== image.id)
+                            );
+                            // Also unselect in current search results if present
+                            setSearchedImages(prev => 
+                              prev.map(img => 
+                                img.id === image.id 
+                                  ? { ...img, selected: false } 
+                                  : img
+                              )
+                            );
+                            // Update in search history as well
+                            setImageSearchHistory(prev => 
+                              prev.map(history => ({
+                                ...history,
+                                images: history.images.map(img => 
+                                  img.id === image.id 
+                                    ? { ...img, selected: false } 
+                                    : img
+                                )
+                              }))
+                            );
+                          }}
+                        >
+                          <XCircle className="h-4 w-4 text-white" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -449,7 +508,7 @@ export default function ImageSearchDialog({
                 <h3 className="font-medium text-blue-900">Search results for "{imageSearchQuery}"</h3>
                 <p className="text-sm text-blue-700">Click on an image to select/deselect it</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto p-5">
                 {searchedImages.map(image => (
                   <div 
                     key={image.id}
