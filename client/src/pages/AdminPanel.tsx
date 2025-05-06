@@ -175,6 +175,7 @@ export default function AdminPanel() {
     toneOfVoice: "friendly",
     postStatus: "draft",
     generateImages: true,
+    region: "us", // Default to US region for store
     keywords: [],
     productIds: [], // This needs to be initialized as an empty array
     collectionIds: [] // This needs to be initialized as an empty array
@@ -1504,11 +1505,7 @@ export default function AdminPanel() {
                                         loading="lazy"
                                       />
                                     </div>
-                                    {image.photographer && (
-                                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm text-white text-xs p-1.5 truncate">
-                                        Photo by: {image.photographer}
-                                      </div>
-                                    )}
+                                    {/* Photographer credit removed as per client request */}
                                     {image.selected && (
                                       <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1.5 shadow-md">
                                         <CheckCircle className="h-4 w-4 text-white" />
@@ -1696,10 +1693,7 @@ export default function AdminPanel() {
                           alt={generatedContent.featuredImage.alt || generatedContent.title} 
                           className="w-full h-auto rounded-md border"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Featured image {generatedContent.featuredImage.photographer && 
-                            `by ${generatedContent.featuredImage.photographer}`} for this post
-                        </p>
+                        {/* Photographer credit removed as per client request */}
                       </div>
                     )}
                     

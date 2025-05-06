@@ -58,6 +58,9 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
+    - Format all images with this exact HTML structure: <div style="text-align: center;"><a href="PRODUCT_URL"><img src="IMAGE_URL" alt="IMAGE_ALT" style="max-width: 100%; height: auto;"></a></div>
+    - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
+    - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
     
     Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
     
