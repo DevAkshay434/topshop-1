@@ -93,6 +93,7 @@ interface Product {
   title: string;
   handle: string;
   image?: string;
+  body_html?: string;
 }
 
 interface Collection {
@@ -150,6 +151,8 @@ export default function AdminPanel() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [productTitle, setProductTitle] = useState<string>('');
+  const [productId, setProductId] = useState<string>('');
+  const [productDescription, setProductDescription] = useState<string>('');
   const [workflowStep, setWorkflowStep] = useState<'product' | 'keyword' | 'title' | 'content'>('product');
   const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
     // Load templates from localStorage on initial render
@@ -438,12 +441,28 @@ export default function AdminPanel() {
   
   // Handle product selection
   const handleProductsSelected = (productIds: string[]) => {
-    // Find the selected product to use for keyword generation
+    // Find the selected product to use for keyword generation and image suggestions
     if (productIds.length > 0) {
       const product = productsQuery.data?.products.find(p => p.id === productIds[0]);
       if (product) {
         setProductTitle(product.title);
+        setProductId(product.id);
+        
+        // Set product description if available
+        if (product.body_html) {
+          // Strip HTML tags for plain text description
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = product.body_html;
+          setProductDescription(tempDiv.textContent || tempDiv.innerText || '');
+        } else {
+          setProductDescription('');
+        }
       }
+    } else {
+      // Clear product-related fields if no products selected
+      setProductTitle('');
+      setProductId('');
+      setProductDescription('');
     }
     
     form.setValue('productIds', productIds);
