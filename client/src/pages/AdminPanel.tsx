@@ -917,8 +917,8 @@ export default function AdminPanel() {
                       </div>
                     </div>
                     
-                    {/* Style and formatting section */}
-                    <div className="space-y-4 pt-4">
+                    {/* Style and formatting section - Only shown in content step */}
+                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
                       <h3 className="text-lg font-medium">Style & Formatting</h3>
                       
                       <FormField
@@ -1127,15 +1127,12 @@ export default function AdminPanel() {
                       </div>
                     </div>
                     
-                    {/* Keywords section */}
-                    <div className="space-y-4 pt-4">
+                    {/* Keywords section - only visible in final content step */}
+                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
                       <h3 className="text-lg font-medium flex items-center">
                         <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
-                        Keywords
+                        Selected Keywords
                       </h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Select keywords to optimize your content for SEO
-                      </p>
                         
                       <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2">
                         {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 ? (
@@ -1157,11 +1154,14 @@ export default function AdminPanel() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full"
-                        onClick={() => setShowKeywordSelector(true)}
+                        size="sm"
+                        onClick={() => {
+                          setWorkflowStep('keyword');
+                          setShowKeywordSelector(true);
+                        }}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
-                        {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 ? 'Change Keywords' : 'Select Keywords'}
+                        Change Keywords
                       </Button>
                     </div>
                     
@@ -1313,7 +1313,52 @@ export default function AdminPanel() {
                         )}
                       />
                       
-                      {/* Image Selection Dialog */}
+                      {/* Scheduled publishing option - Step 4 content */}
+                      {workflowStep === 'content' && (
+                        <FormField
+                          control={form.control}
+                          name="scheduledPublishDate"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center gap-4 space-y-0 mt-2">
+                              <FormControl>
+                                <div className="flex items-center">
+                                  <Checkbox
+                                    checked={!!field.value}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        // Set to tomorrow by default
+                                        const tomorrow = new Date();
+                                        tomorrow.setDate(tomorrow.getDate() + 1);
+                                        tomorrow.setHours(9, 0, 0, 0);
+                                        field.onChange(tomorrow.toISOString().split('T')[0]);
+                                      } else {
+                                        field.onChange(undefined);
+                                      }
+                                    }}
+                                  />
+                                  <FormLabel className="ml-2 font-medium">
+                                    Schedule for later
+                                  </FormLabel>
+                                </div>
+                              </FormControl>
+                              
+                              {field.value && (
+                                <div className="flex items-center">
+                                  <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                                  <Input
+                                    type="date"
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.target.value)}
+                                    className="w-auto"
+                                  />
+                                </div>
+                              )}
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
+                    {/* Image Selection Dialog */}
                       <Dialog 
                         open={showImageDialog} 
                         onOpenChange={(open) => {
