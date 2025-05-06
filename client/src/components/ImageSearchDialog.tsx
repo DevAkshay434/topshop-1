@@ -224,18 +224,18 @@ export default function ImageSearchDialog({
         </DialogHeader>
         
         <div className="py-4 overflow-y-auto overflow-x-hidden flex-grow flex flex-col">
-          <div className="w-full">
+          <div className="w-full space-y-4">
             <div className="flex items-center gap-2 relative">
               <div className="relative flex-1">
                 <Input
-                  placeholder="Search for images"
+                  placeholder="Search for images (e.g., 'family drinking water')"
                   value={imageSearchQuery || ''}
                   onChange={(e) => {
                     setImageSearchQuery(e.target.value);
                     setShowSearchSuggestions(e.target.value.length >= 2);
                   }}
-                  onFocus={() => setShowSearchSuggestions(imageSearchQuery?.length >= 2)}
-                  // Keep suggestions visible for longer to allow clicking
+                  onFocus={() => setShowSearchSuggestions(true)} 
+                  // Keep suggestions visible when input is focused
                   onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 300)}
                   className="flex-1"
                 />
@@ -294,6 +294,35 @@ export default function ImageSearchDialog({
                 ) : "Search"}
               </Button>
             </div>
+            
+            {/* Example search prompts */}
+            {!searchedImages.length && !isSearchingImages && (
+              <div className="rounded-md bg-blue-50 p-3">
+                <div className="text-sm font-medium text-blue-800 mb-2">Try these realistic search prompts:</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {[
+                    "family drinking water",
+                    "water filter in kitchen",
+                    "child drinking water",
+                    "filtered water pouring glass",
+                    "water filter installation",
+                    "clean tap water"
+                  ].map((example, idx) => (
+                    <Badge 
+                      key={idx} 
+                      variant="secondary" 
+                      className="cursor-pointer hover:bg-blue-100 py-1.5 justify-center"
+                      onClick={() => {
+                        setImageSearchQuery(example);
+                        handleImageSearch(example);
+                      }}
+                    >
+                      {example}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Search history tabs */}
@@ -415,8 +444,12 @@ export default function ImageSearchDialog({
 
           {/* Search results - Now always visible below selected images */}
           {searchedImages.length > 0 ? (
-            <div className="border rounded-lg overflow-hidden shadow-sm bg-slate-50">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto p-4">
+            <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
+              <div className="p-3 bg-blue-50 border-b">
+                <h3 className="font-medium text-blue-900">Search results for "{imageSearchQuery}"</h3>
+                <p className="text-sm text-blue-700">Click on an image to select/deselect it</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto p-4">
                 {searchedImages.map(image => (
                   <div 
                     key={image.id}
@@ -438,9 +471,17 @@ export default function ImageSearchDialog({
                         </div>
                       )}
                     </div>
-                    {image.selected && (
-                      <div className="absolute top-3 right-3 bg-blue-500 rounded-full p-1.5 shadow-md">
-                        <CheckCircle className="h-5 w-5 text-white" />
+                    {image.selected ? (
+                      <div className="absolute top-0 right-0 left-0 bottom-0 bg-blue-500/20 flex items-center justify-center">
+                        <div className="bg-blue-500 rounded-full p-2 shadow-md">
+                          <CheckCircle className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute top-0 right-0 left-0 bottom-0 bg-black/0 hover:bg-black/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <div className="bg-white/80 rounded-full p-2 shadow-md">
+                          <Plus className="h-6 w-6 text-blue-500" />
+                        </div>
                       </div>
                     )}
                   </div>

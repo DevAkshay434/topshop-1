@@ -79,26 +79,28 @@ export default function ImageSearchSuggestions({
     function generateDefaultSuggestions() {
       // If query is empty or very short, show pre-filled suggestions
       if (!query || query.length < 2) {
-        // More generic photography-related suggestions
+        // Specific realistic suggestions for water-related products
         const defaultSuggestions = [
-          "professional product photography",
-          "product lifestyle photo",
-          "product in use",
-          "product features close-up",
-          "customer using product",
-          "product detail shot",
-          "product benefits visualization",
-          "product demonstration",
-          "product on white background",
-          "product packaging photo"
+          "family drinking water",
+          "person drinking water glass",
+          "child drinking water",
+          "water filter system home",
+          "filtered water pouring into glass",
+          "clean water tap",
+          "water filtration in kitchen",
+          "water filter cartridge",
+          "water purifier installation",
+          "water bottle refill station",
+          "water quality testing",
+          "kitchen sink water filter"
         ];
         setSuggestions(defaultSuggestions);
         return;
       }
 
-      // Generic search prefixes and suffixes
-      const prefixes = ["high quality", "professional", "detailed", "beautiful", "modern"];
-      const suffixes = ["photo", "image", "photography", "picture", "close-up"];
+      // Realistic prefixes and suffixes for product images
+      const prefixes = ["clear", "clean", "fresh", "pure", "healthy"];
+      const suffixes = ["in kitchen", "in home", "for family", "benefits", "usage"];
       
       // Generate suggestions
       const newSuggestions: string[] = [];
