@@ -1,6 +1,7 @@
 import { Express, Request, Response, NextFunction, Router } from 'express';
 import { Server } from 'http';
 import { z } from 'zod';
+import axios from 'axios';
 import {
   insertContentGenRequestSchema,
   insertBlogPostSchema,
@@ -13,6 +14,7 @@ import * as shopifyService from './services/shopify';
 import contentRouter from './routes/content';
 import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
+import { pexelsService } from './services/pexels';
 import { 
   validateShopDomain, 
   generateNonce, 

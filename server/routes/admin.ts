@@ -772,11 +772,18 @@ Please suggest a meta description at the end of your response that includes at l
                 const position = insertPoints[insertIndex] + insertionOffset;
                 
                 // Ensure we have valid image URLs from src properties
+                // Get highest quality image URL but avoid original which can be very large
                 const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
                 if (!imageUrl) {
                   console.warn(`Image ${image.id || 'unknown'} is missing valid src URLs, skipping insertion`);
                   continue;
                 }
+                
+                // Use a proxy URL format to indicate these should be served through Shopify CDN
+                // This is the URL format we'll detect and process in createArticle
+                const contentImageUrl = `/api/proxy/image/${image.id}`;
+                console.log(`Using proxied image URL for content: ${contentImageUrl} -> ${imageUrl}`);
+                
                 
                 let imageHtml;
                 
@@ -794,16 +801,16 @@ Please suggest a meta description at the end of your response that includes at l
                   
                   console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
                   
-                  // Create center-aligned div with link to product - Fixed link URL format
-                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></a>
+                  // Create center-aligned div with link to product - Using proxied image URL to avoid external links
+                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}"><img src="${contentImageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></a>
 <p style="margin-top: 5px; font-size: 0.9em;"><a href="${productUrl}">${product.title}</a></p></div>\n`;
                 } else {
                   // No product to link to - just insert the image
                   const imageAlt = image.alt || requestData.title;                  
                   console.log(`Inserting standalone image with URL: ${imageUrl}`);
                   
-                  // Create center-aligned div without product link - Fixed HTML format
-                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></div>\n`;
+                  // Create center-aligned div without product link - Using proxied image URL
+                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${contentImageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></div>\n`;
                 }
                 
                 // Insert the image HTML at the position

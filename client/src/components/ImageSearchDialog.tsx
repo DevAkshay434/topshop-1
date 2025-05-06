@@ -60,10 +60,20 @@ export default function ImageSearchDialog({
 
   // Reset selected images when initialSelectedImages changes
   useEffect(() => {
-    if (initialSelectedImages) {
+    if (initialSelectedImages && open) {
       setSelectedImages(initialSelectedImages);
+      
+      // If initialSelectedImages is provided, update the selected state in searchedImages
+      if (searchedImages.length > 0) {
+        setSearchedImages(prev =>
+          prev.map(img => ({
+            ...img,
+            selected: initialSelectedImages.some(selected => selected.id === img.id)
+          }))
+        );
+      }
     }
-  }, [initialSelectedImages]);
+  }, [initialSelectedImages, open]);
 
   // Just open the dialog without auto-populating or auto-searching
   useEffect(() => {
