@@ -288,6 +288,51 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
   }
 });
 
+// Generate product-specific image search suggestions using OpenAI
+adminRouter.post("/image-suggestions-for-product", async (req: Request, res: Response) => {
+  try {
+    const { productId, productTitle, productDescription, productType, productTags } = req.body;
+    
+    if (!productTitle) {
+      return res.status(400).json({
+        success: false,
+        error: "Product title is required for generating image suggestions"
+      });
+    }
+    
+    // Import the OpenAI image suggestion service
+    const { generateProductImageSuggestions } = await import("../services/openai-image-suggestions");
+    
+    // Create product details object
+    const productDetails = {
+      title: productTitle,
+      description: productDescription || '',
+      type: productType || '',
+      tags: productTags || []
+    };
+    
+    console.log(`Generating image suggestions for product: "${productTitle}"`);
+    
+    // Get suggestions using OpenAI
+    const suggestions = await generateProductImageSuggestions(productDetails, 8);
+    
+    // Return the suggestions
+    res.json({
+      success: true,
+      productId,
+      productTitle,
+      suggestions
+    });
+    
+  } catch (error: any) {
+    console.error("Error generating image suggestions:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to generate image suggestions"
+    });
+  }
+});
+
 // Title suggestion endpoint already defined above
 
 // Save selected keywords
