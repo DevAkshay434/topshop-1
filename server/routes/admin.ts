@@ -691,6 +691,10 @@ Please suggest a meta description at the end of your response that includes at l
         } else {
           console.log(`Using featured image URL: ${imageUrl}`);
           
+          // Create a proxy URL for the image to avoid direct external links
+          const proxyImageUrl = `/api/proxy/image/${featuredImage.id}`;
+          console.log(`Using proxied featured image URL: ${proxyImageUrl}`);
+          
           // Remove photographer credit as per request
           
           // If we have products, link the featured image to the first product
@@ -700,10 +704,10 @@ Please suggest a meta description at the end of your response that includes at l
             const productUrl = `https://${store.shopName}/products/${productsInfo[0].handle}`;
             console.log(`Linking featured image to product URL: ${productUrl}`);
             
-            featuredImageHtml = `<div style="text-align: center;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
+            featuredImageHtml = `<div style="text-align: center;"><a href="${productUrl}" target="_blank"><img src="${proxyImageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
           } else {
             // No product to link to
-            featuredImageHtml = `<div style="text-align: center;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
+            featuredImageHtml = `<div style="text-align: center;"><img src="${proxyImageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
           }
           
           finalContent = `${featuredImageHtml}\n${finalContent}`;

@@ -214,20 +214,58 @@ export class ShopifyService {
           : new Date().toISOString();
       }
       
+      // Process content to handle proxied image URLs
+      let processedContent = post.content;
+      
+      // Replace proxy image URLs with their Pexels source URLs
+      const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
+      let proxyMatch;
+      
+      const pexelsService = await import('./pexels').then(module => module.pexelsService);
+      
+      while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
+        const imageId = proxyMatch[1];
+        console.log(`Found proxied image in content: ${imageId}`);
+        
+        try {
+          // Get the Pexels image with this ID
+          const image = await pexelsService.getImageById(imageId);
+          
+          if (image && image.src) {
+            // Get the best quality image URL
+            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
+            
+            if (directImageUrl) {
+              console.log(`Replacing proxy URL with direct URL: ${directImageUrl}`);
+              // Replace the proxy URL with the direct URL in content
+              processedContent = processedContent.replace(
+                `src="/api/proxy/image/${imageId}"`, 
+                `src="${directImageUrl}"`
+              );
+            }
+          }
+        } catch (imageError) {
+          console.error(`Error processing proxied image ${imageId}:`, imageError);
+          // Continue with other images if one fails
+        }
+      }
+      
       const article = {
         title: post.title,
         author: post.author || store.shopName,
-        body_html: post.content,
+        body_html: processedContent, // Use processed content with direct image URLs
         tags: post.tags || "",
         published: post.status === 'published',
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
+      console.log(`Creating Shopify article "${post.title}" in blog ${blogId}`);
       const response = await client.post(`/blogs/${blogId}/articles.json`, {
         article
       });
       
+      console.log(`Successfully created Shopify article with ID: ${response.data.article.id}`);
       return response.data.article;
     } catch (error: any) {
       console.error(`Error creating article in Shopify store ${store.shopName}:`, error);
@@ -267,7 +305,43 @@ export class ShopifyService {
       
       // Handle content with fallback
       if (post.content && post.content.length > 0) {
-        article.body_html = post.content;
+        // Process content to handle proxied image URLs just like in createArticle
+        let processedContent = post.content;
+        
+        // Replace proxy image URLs with their Pexels source URLs
+        const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
+        let proxyMatch;
+        
+        const pexelsService = await import('./pexels').then(module => module.pexelsService);
+        
+        while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
+          const imageId = proxyMatch[1];
+          console.log(`Found proxied image in content for update: ${imageId}`);
+          
+          try {
+            // Get the Pexels image with this ID
+            const image = await pexelsService.getImageById(imageId);
+            
+            if (image && image.src) {
+              // Get the best quality image URL
+              const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
+              
+              if (directImageUrl) {
+                console.log(`Replacing proxy URL with direct URL for update: ${directImageUrl}`);
+                // Replace the proxy URL with the direct URL in content
+                processedContent = processedContent.replace(
+                  `src="/api/proxy/image/${imageId}"`, 
+                  `src="${directImageUrl}"`
+                );
+              }
+            }
+          } catch (imageError) {
+            console.error(`Error processing proxied image ${imageId} for update:`, imageError);
+            // Continue with other images if one fails
+          }
+        }
+        
+        article.body_html = processedContent;
       } else {
         console.warn("Empty content for Shopify article update!");
         article.body_html = `<p>Content for "${article.title}" is being updated.</p>`;

@@ -1158,6 +1158,58 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  // Add image proxy endpoint to handle Pexels images
+  apiRouter.get("/proxy/image/:imageId", async (req: Request, res: Response) => {
+    try {
+      const imageId = req.params.imageId;
+      
+      if (!imageId) {
+        return res.status(400).json({ error: "Image ID is required" });
+      }
+      
+      // Get the image from Pexels
+      const image = await pexelsService.getImageById(imageId);
+      
+      if (!image) {
+        return res.status(404).json({ error: "Image not found" });
+      }
+      
+      // Get the best quality image (but avoid original which can be too large)
+      const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
+      
+      if (!imageUrl) {
+        return res.status(404).json({ error: "No valid image URL found" });
+      }
+      
+      console.log(`Image proxy: Redirecting to Pexels image URL: ${imageUrl}`);
+      
+      // Option 1: Redirect to the image URL (simplest approach but still uses external URLs)
+      // return res.redirect(imageUrl);
+      
+      // Option 2: Fetch the image and pipe it through our server (more robust but uses more bandwidth)
+      try {
+        // Fetch the image
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        
+        // Set appropriate Content-Type header based on the image type
+        const contentType = response.headers['content-type'] || 'image/jpeg';
+        res.setHeader('Content-Type', contentType);
+        
+        // Set cache headers to improve performance
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+        
+        // Send the image data
+        return res.send(response.data);
+      } catch (fetchError) {
+        console.error('Error fetching image:', fetchError);
+        return res.status(500).json({ error: "Failed to fetch image" });
+      }
+    } catch (error: any) {
+      console.error('Image proxy error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Mount OAuth routes without /api prefix
   app.use(oauthRouter);
   
