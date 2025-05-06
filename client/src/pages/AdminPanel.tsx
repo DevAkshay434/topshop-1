@@ -49,7 +49,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Copy, ExternalLink } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
@@ -1531,18 +1531,21 @@ export default function AdminPanel() {
                     
                     {/* Display featured image if available */}
                     {generatedContent.featuredImage && (
-                      <div className="mb-4">
+                      <div className="mb-6">
                         <img 
                           src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
                           alt={generatedContent.featuredImage.alt || generatedContent.title} 
-                          className="w-full h-auto rounded-md border"
+                          className="w-full h-auto rounded-md shadow-md"
                         />
                         {/* Photographer credit removed as per client request */}
                       </div>
                     )}
                     
-                    <div className="border rounded-md p-4 max-h-[60vh] overflow-y-auto">
-                      <div dangerouslySetInnerHTML={{ __html: generatedContent.content }} />
+                    <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
+                      <div 
+                        className="content-preview prose prose-blue max-w-none" 
+                        dangerouslySetInnerHTML={{ __html: generatedContent.content }}
+                      />
                     </div>
                     
                     {generatedContent.metaDescription && (
@@ -1555,13 +1558,29 @@ export default function AdminPanel() {
                     )}
                     
                     {generatedContent.contentUrl && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full mt-4"
-                        onClick={() => window.open(generatedContent.contentUrl, '_blank')}
-                      >
-                        View on Shopify
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => window.open(generatedContent.contentUrl, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View on Shopify
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedContent.contentUrl);
+                            toast({
+                              title: "Link copied",
+                              description: "URL has been copied to clipboard",
+                              variant: "default"
+                            });
+                          }}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Link
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ) : (
