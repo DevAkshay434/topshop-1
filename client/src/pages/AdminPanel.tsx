@@ -798,7 +798,17 @@ export default function AdminPanel() {
                       <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Keywords</h4>
-                          <p className="text-sm text-blue-600">Select SEO-friendly keywords to optimize your content</p>
+                          <p className="text-sm text-blue-600 mb-4">
+                            Click the button below to select keywords for your content. The selected product will be used to generate relevant keyword suggestions.
+                          </p>
+                          <Button 
+                            onClick={() => setShowKeywordSelector(true)}
+                            size="lg"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" /> 
+                            Select Keywords
+                          </Button>
                         </div>
                         
                         <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2 mb-3">
