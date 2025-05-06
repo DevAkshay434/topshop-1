@@ -472,18 +472,29 @@ export default function AdminPanel() {
   
   // Handle content generation form submission
   const handleSubmit = async (values: ContentFormValues) => {
-    console.log("Form submission started with values:", values);
-    setIsGenerating(true);
-    setGeneratedContent(null);
-    
     try {
+      console.log("Form submission started with values:", values);
+      setIsGenerating(true);
+      setGeneratedContent(null);
+      
+      if (workflowStep !== 'content') {
+        console.warn("Attempting to generate content when not in content step. Current step:", workflowStep);
+        setWorkflowStep('content');
+        await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state update
+      }
+      
       // Create a safe copy of the form values with guaranteed array values
       const safeValues = {
         ...values,
         // Ensure these are always arrays
         productIds: Array.isArray(values.productIds) ? values.productIds : [],
         collectionIds: Array.isArray(values.collectionIds) ? values.collectionIds : [],
-        keywords: Array.isArray(values.keywords) ? values.keywords : []
+        keywords: Array.isArray(values.keywords) ? values.keywords : [],
+        // Ensure we have these required fields
+        articleType: values.articleType || "blog",
+        title: values.title || "",
+        introType: values.introType || "search_intent", // Set search_intent as default as requested
+        region: values.region || "us" // Default to US region as requested
       };
       
       // Add selected image IDs and keywords to form data
