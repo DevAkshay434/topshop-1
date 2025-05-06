@@ -571,7 +571,7 @@ export default function AdminPanel() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                  <form onSubmit={(e) => { e.preventDefault(); }} className="space-y-4">
                     {/* Step guidance */}
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                       <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
@@ -1009,7 +1009,7 @@ export default function AdminPanel() {
                             <FormLabel>Introduction Style</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              value={field.value || "search_intent"}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -1017,8 +1017,8 @@ export default function AdminPanel() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="standard">Standard Introduction</SelectItem>
                                 <SelectItem value="search_intent">Search Intent Focused</SelectItem>
+                                <SelectItem value="standard">Standard Introduction</SelectItem>
                                 <SelectItem value="none">No Introduction</SelectItem>
                               </SelectContent>
                             </Select>
@@ -1418,9 +1418,15 @@ export default function AdminPanel() {
                     </div>
                     
                     <Button 
-                      type="submit" 
+                      type="button" 
                       className="w-full mt-3" 
                       disabled={isGenerating}
+                      onClick={() => {
+                        // Manually trigger form submission
+                        const values = form.getValues();
+                        console.log("Manual form submission triggered with values:", values);
+                        handleSubmit(values);
+                      }}
                     >
                       {isGenerating ? (
                         <>
