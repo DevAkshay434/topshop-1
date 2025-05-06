@@ -49,10 +49,12 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
+import TitleSelector from '@/components/TitleSelector';
+import ImagePromptSuggestions from '@/components/ImagePromptSuggestions';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -74,7 +76,8 @@ const contentFormSchema = z.object({
   internalImageIds: z.array(z.string()).optional(),
   toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]),
   postStatus: z.enum(["publish", "draft"]),
-  generateImages: z.boolean().default(true)
+  generateImages: z.boolean().default(true),
+  scheduledPublishDate: z.string().optional() // Added for future scheduling
 });
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -140,9 +143,12 @@ export default function AdminPanel() {
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
+  const [showTitleSelector, setShowTitleSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [productTitle, setProductTitle] = useState<string>('');
+  const [workflowStep, setWorkflowStep] = useState<'product' | 'keyword' | 'title' | 'content'>('product');
   const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
     // Load templates from localStorage on initial render
     const savedTemplates = localStorage.getItem('topshop-templates');
@@ -406,6 +412,62 @@ export default function AdminPanel() {
       description: "Keywords will be used to optimize your content",
       variant: "default"
     });
+    
+    // Move to title selection step
+    setWorkflowStep('title');
+    setShowTitleSelector(true);
+  };
+  
+  // Handle title selection
+  const handleTitleSelected = (title: string) => {
+    form.setValue('title', title);
+    setShowTitleSelector(false);
+    
+    toast({
+      title: "Title selected",
+      description: "Title will be used for your content",
+      variant: "default"
+    });
+    
+    // Move to content generation step
+    setWorkflowStep('content');
+  };
+  
+  // Handle product selection
+  const handleProductsSelected = (productIds: string[]) => {
+    // Find the selected product to use for keyword generation
+    if (productIds.length > 0) {
+      const product = productsQuery.data?.products.find(p => p.id === productIds[0]);
+      if (product) {
+        setProductTitle(product.title);
+      }
+    }
+    
+    form.setValue('productIds', productIds);
+    setSelectedProducts(productIds);
+    
+    // Move to keyword selection step after product selection
+    setWorkflowStep('keyword');
+    
+    // Auto-open keyword selector if products were selected
+    if (productIds.length > 0) {
+      setShowKeywordSelector(true);
+    } else if (form.getValues('collectionIds').length > 0) {
+      // If collections were selected but not products, still move to keyword step
+      setShowKeywordSelector(true);
+    }
+  };
+  
+  // Handle collection selection
+  const handleCollectionsSelected = (collectionIds: string[]) => {
+    form.setValue('collectionIds', collectionIds);
+    setSelectedCollections(collectionIds);
+    
+    // Only move to next step if no products were selected (products take precedence)
+    if (form.getValues('productIds').length === 0 && collectionIds.length > 0) {
+      setWorkflowStep('keyword');
+      setShowKeywordSelector(true);
+    }
   };
   
   // Handle content generation form submission
@@ -499,24 +561,37 @@ export default function AdminPanel() {
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                    {/* Step guidance */}
+                    <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
+                      <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
+                      <div className="flex items-center space-x-3">
+                        <Badge className={workflowStep === 'product' ? 'bg-blue-600' : 'bg-gray-300'}>1</Badge>
+                        <div className="flex-1 h-1 bg-gray-200 rounded">
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep !== 'product' ? 'w-full' : 'w-0'}`}></div>
+                        </div>
+                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
+                        <div className="flex-1 h-1 bg-gray-200 rounded">
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
+                        </div>
+                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
+                        <div className="flex-1 h-1 bg-gray-200 rounded">
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
+                        </div>
+                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>4</Badge>
+                      </div>
+                      <div className="flex justify-between mt-1 text-xs text-gray-600">
+                        <span>Select Products</span>
+                        <span>Choose Keywords</span>
+                        <span>Pick Title</span>
+                        <span>Generate</span>
+                      </div>
+                    </div>
+                      
                     {/* Basic information section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Basic Information</h3>
-                      
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Title</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter a descriptive title" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
 
+                      {/* Region selection - always visible regardless of step */}
                       <FormField
                         control={form.control}
                         name="region"
@@ -549,6 +624,7 @@ export default function AdminPanel() {
                         )}
                       />
                       
+                      {/* Content type selection - always visible regardless of step */}
                       <FormField
                         control={form.control}
                         name="articleType"
@@ -574,6 +650,7 @@ export default function AdminPanel() {
                         )}
                       />
                       
+                      {/* Blog ID selection if blog type is selected */}
                       {form.watch('articleType') === "blog" && (
                         <FormField
                           control={form.control}
@@ -606,6 +683,238 @@ export default function AdminPanel() {
                           )}
                         />
                       )}
+                      
+                      {/* Title field (hidden initially, made visible and populated in title step) */}
+                      <div className={workflowStep === 'content' ? 'block' : 'hidden'}>
+                        <FormField
+                          control={form.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Selected Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter a descriptive title" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              <div className="mt-2">
+                                <Button
+                                  type="button" 
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setShowTitleSelector(true)}
+                                >
+                                  Change Title
+                                </Button>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      {/* Step 1: Product and Collection Selection */}
+                      <div className={workflowStep === 'product' ? 'block' : 'hidden'}>
+                        <div className="p-4 bg-blue-50 rounded-md mb-4">
+                          <h4 className="font-medium text-blue-700 mb-1">Step 1: Select Products or Collections</h4>
+                          <p className="text-sm text-blue-600">Choose products or collections to feature in your content</p>
+                        </div>
+                        
+                        <FormField
+                          control={form.control}
+                          name="productIds"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Featured Products</FormLabel>
+                              <FormControl>
+                                <MultiSelect
+                                  options={productsQuery.data?.products.map(product => ({
+                                    label: product.title,
+                                    value: product.id
+                                  })) || []}
+                                  selected={Array.isArray(field.value) ? field.value : []}
+                                  onChange={(selected) => {
+                                    field.onChange(selected);
+                                    handleProductsSelected(selected);
+                                  }}
+                                  placeholder="Select products to feature in content..."
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Products will be mentioned and linked in your content
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="collectionIds"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Featured Collections</FormLabel>
+                              <FormControl>
+                                <MultiSelect
+                                  options={collectionsQuery.data?.collections.map(collection => ({
+                                    label: collection.title,
+                                    value: collection.id
+                                  })) || []}
+                                  selected={Array.isArray(field.value) ? field.value : []}
+                                  onChange={(selected) => {
+                                    field.onChange(selected);
+                                    handleCollectionsSelected(selected);
+                                  }}
+                                  placeholder="Select collections to feature in content..."
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Collections will be mentioned and linked in your content
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="mt-4 flex justify-end">
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (selectedProducts.length > 0 || selectedCollections.length > 0) {
+                                setWorkflowStep('keyword');
+                                setShowKeywordSelector(true);
+                              } else {
+                                toast({
+                                  title: "Selection Required",
+                                  description: "Please select at least one product or collection",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                          >
+                            Next: Select Keywords
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Step 2: Keyword Selection Section */}
+                      <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
+                        <div className="p-4 bg-blue-50 rounded-md mb-4">
+                          <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Keywords</h4>
+                          <p className="text-sm text-blue-600">Select SEO-friendly keywords to optimize your content</p>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2 mb-3">
+                          {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 ? (
+                            selectedKeywords.map((keyword, idx) => (
+                              <Badge key={idx} variant="secondary" className="flex items-center gap-1">
+                                {keyword?.keyword || ''}
+                                {keyword?.searchVolume && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({keyword.searchVolume.toLocaleString()})
+                                  </span>
+                                )}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">No keywords selected yet</span>
+                          )}
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setWorkflowStep('product')}
+                          >
+                            Back
+                          </Button>
+                          
+                          <div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="mr-2"
+                              onClick={() => setShowKeywordSelector(true)}
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              {selectedKeywords.length > 0 ? 'Change Keywords' : 'Select Keywords'}
+                            </Button>
+                            
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                if (selectedKeywords.length > 0) {
+                                  setWorkflowStep('title');
+                                  setShowTitleSelector(true);
+                                } else {
+                                  toast({
+                                    title: "Keywords Required",
+                                    description: "Please select at least one keyword before continuing",
+                                    variant: "destructive"
+                                  });
+                                }
+                              }}
+                              disabled={selectedKeywords.length === 0}
+                            >
+                              Next: Choose Title
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Step 3: Title Selection Section */}
+                      <div className={workflowStep === 'title' ? 'block' : 'hidden'}>
+                        <div className="p-4 bg-blue-50 rounded-md mb-4">
+                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Select a Title</h4>
+                          <p className="text-sm text-blue-600">Choose from AI-generated title suggestions based on your keywords</p>
+                        </div>
+                        
+                        {form.watch('title') && (
+                          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                            <h4 className="font-medium">Selected Title:</h4>
+                            <p className="text-lg font-semibold">{form.watch('title')}</p>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setWorkflowStep('keyword')}
+                          >
+                            Back
+                          </Button>
+                          
+                          <div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="mr-2"
+                              onClick={() => setShowTitleSelector(true)}
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              {form.watch('title') ? 'Change Title' : 'Select Title'}
+                            </Button>
+                            
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                if (form.watch('title')) {
+                                  setWorkflowStep('content');
+                                } else {
+                                  toast({
+                                    title: "Title Required",
+                                    description: "Please select a title before continuing",
+                                    variant: "destructive"
+                                  });
+                                }
+                              }}
+                              disabled={!form.watch('title')}
+                            >
+                              Next: Generate Content
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     
                     {/* Style and formatting section */}

@@ -13,6 +13,7 @@ import {
 import { dataForSEOService, KeywordData } from "../services/dataforseo";
 import { pexelsService, type PexelsImage } from "../services/pexels";
 import { generateBlogContentWithClaude } from "../services/claude";
+import OpenAI from "openai";
 
 const adminRouter = Router();
 
