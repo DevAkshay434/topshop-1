@@ -569,19 +569,21 @@ Please suggest a meta description at the end of your response that includes at l
       let featuredImage = null;
       let additionalImages: PexelsImage[] = [];
       
-      // If user has selected specific images, use those
+      // If user has selected specific images, use ONLY those
       if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
         try {
           console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
           
-          // Search for the image to get its full data
-          const { images } = await pexelsService.safeSearchImages(requestData.title, 10);
+          // Search for the image to get its full data - we need this to retrieve the metadata
+          const { images } = await pexelsService.safeSearchImages(requestData.title, 50);
           
-          // Filter all selected images
+          // Filter to ONLY use the specifically selected images
           const selectedImages = images.filter((img: PexelsImage) => 
             requestData.selectedImageIds && 
-            requestData.selectedImageIds.includes(img.id)
+            requestData.selectedImageIds.includes(String(img.id))
           );
+          
+          console.log(`Found ${selectedImages.length} matching images out of ${requestData.selectedImageIds.length} requested IDs`);
           
           if (selectedImages.length > 0) {
             // Use the first image as featured image
@@ -591,15 +593,16 @@ Please suggest a meta description at the end of your response that includes at l
             // Save any additional images for insertion into content
             if (selectedImages.length > 1) {
               additionalImages = selectedImages.slice(1);
+              console.log(`Using ${additionalImages.length} additional images for content body`);
             }
+          } else {
+            console.warn("Could not find any of the selected images in search results");
           }
         } catch (imageError) {
           console.error('Error retrieving selected images:', imageError);
         }
-      }
-      
-      // If we still don't have a featured image (no selection or error), generate some
-      if (!featuredImage && requestData.generateImages) {
+      } else if (requestData.generateImages) {
+        // ONLY if no specific images were selected AND generateImages is true, find some images
         try {
           console.log(`Generating images for: "${requestData.title}"`);
           const { images } = await pexelsService.safeSearchImages(requestData.title, 3);
@@ -625,10 +628,87 @@ Please suggest a meta description at the end of your response that includes at l
         // Use Pexels medium or large src image if available, otherwise fallback to url
         const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.url;
         const photographer = featuredImage.photographer 
-          ? `<p class="image-credit">Photo by: ${featuredImage.photographer}</p>` 
+          ? `<p class="image-credit" style="text-align: center; font-size: 0.8em; color: #666;">Photo by: ${featuredImage.photographer}</p>` 
           : '';
         
-        finalContent = `<img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" />\n${photographer}\n${finalContent}`;
+        // If we have products, link the featured image to the first product
+        let featuredImageHtml = '';
+        if (productsInfo.length > 0) {
+          // Use the first product URL for the featured image
+          featuredImageHtml = `<div style="text-align: center;"><a href="https://${store.shopName}/products/${productsInfo[0].handle}" target="_blank"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a>${photographer}</div>`;
+        } else {
+          // No product to link to
+          featuredImageHtml = `<div style="text-align: center;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" />${photographer}</div>`;
+        }
+        
+        finalContent = `${featuredImageHtml}\n${finalContent}`;
+      }
+      
+      // Insert secondary images throughout the content with product links
+      if (additionalImages.length > 0 && productsInfo.length > 0) {
+        console.log(`Inserting ${additionalImages.length} secondary images into content body`);
+        
+        // Find potential spots to insert images (after paragraphs or headings)
+        const insertPoints = [];
+        let match;
+        const tagPattern = /<\/(p|h2|h3|h4|div|section)>/g;
+        
+        // Find all potential insertion points
+        while ((match = tagPattern.exec(finalContent)) !== null) {
+          // Skip the first 20% of the content for the first image insertion
+          if (match.index > finalContent.length * 0.2) {
+            insertPoints.push(match.index + match[0].length);
+          }
+        }
+        
+        // If we have insertion points and images, start inserting images
+        if (insertPoints.length > 0) {
+          // Space insertion points evenly throughout content
+          const insertCount = Math.min(additionalImages.length, productsInfo.length - 1, 3); // Limit to 3 insertions
+          
+          if (insertCount > 0) {
+            // Create evenly spaced insertion indices
+            const contentSections = insertCount + 1;
+            const sectionSize = insertPoints.length / contentSections;
+            
+            // Distribute images evenly
+            let modifiedContent = finalContent;
+            let insertionOffset = 0;
+            
+            for (let i = 0; i < insertCount; i++) {
+              // Calculate insertion index - distribute evenly throughout content
+              const insertIndex = Math.floor(sectionSize * (i + 1));
+              
+              if (insertIndex < insertPoints.length) {
+                const imageIndex = i % additionalImages.length;
+                const productIndex = (i + 1) % productsInfo.length; // Start with second product for secondary images
+                
+                const image = additionalImages[imageIndex];
+                const product = productsInfo[productIndex];
+                
+                // Get the actual position in the content
+                const position = insertPoints[insertIndex] + insertionOffset;
+                
+                // Build image HTML with product link
+                const imageUrl = image.src?.medium || image.src?.large || image.url;
+                const imageAlt = image.alt || product.title || requestData.title;
+                const productUrl = `https://${store.shopName}/products/${product.handle}`;
+                
+                // Create center-aligned div with link to product
+                const imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></a>
+<p style="margin-top: 5px; font-size: 0.9em;"><a href="${productUrl}">${product.title}</a></p></div>\n`;
+                
+                // Insert the image HTML at the position
+                modifiedContent = modifiedContent.slice(0, position) + imageHtml + modifiedContent.slice(position);
+                
+                // Adjust offset for subsequent insertions
+                insertionOffset += imageHtml.length;
+              }
+            }
+            
+            finalContent = modifiedContent;
+          }
+        }
       }
       
       // 7. Create a blog post or page based on article type
