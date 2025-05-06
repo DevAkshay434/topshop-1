@@ -19,8 +19,27 @@ export default function ImageSearchSuggestions({
 
   // Generate suggestions based on query and product title
   useEffect(() => {
-    if (!query || query.length < 2 || !visible) {
+    if (!visible) {
       setSuggestions([]);
+      return;
+    }
+
+    // If query is empty or very short, show pre-filled suggestions
+    if (!query || query.length < 2) {
+      // Pre-filled suggestions related to water products
+      const waterRelatedSuggestions = [
+        "family drinking clean water",
+        "baby drinking water",
+        "water filter in kitchen",
+        "pure water pouring in glass",
+        "soft water shower",
+        "water filtration system",
+        "water quality testing",
+        "family using soft water",
+        "clean drinking water",
+        "water softener installation"
+      ];
+      setSuggestions(waterRelatedSuggestions);
       return;
     }
 
