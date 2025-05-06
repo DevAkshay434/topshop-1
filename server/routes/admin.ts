@@ -199,9 +199,9 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       // Create a clean product title without repetition for prompting
       const cleanProductTitle = productTitle ? productTitle.replace(/\[.*?\]/g, '').trim() : '';
       
-      // Enhanced Claude prompt for more contextually relevant titles
+      // Enhanced Claude prompt for trending, Google-optimized titles
       const claudeRequest = {
-        prompt: `Generate 5 unique, compelling, SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that naturally incorporate these keywords: ${topKeywords.join(", ")}.
+        prompt: `Generate 5 unique, compelling, trending blog post titles about ${cleanProductTitle || topKeywords[0]} that naturally incorporate these keywords: ${topKeywords.join(", ")}.
         
         IMPORTANT CONTEXT: 
         - Primary product: ${cleanProductTitle || topKeywords[0]}
@@ -210,16 +210,17 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         - Current year: ${new Date().getFullYear()}
         
         IMPORTANT GUIDELINES:
-        - Create titles that directly relate to the product and its primary use cases
-        - Each title should be unique and engaging
-        - Create natural-sounding titles that don't seem keyword-stuffed
+        - Create titles that use TRENDING FORMATS currently popular in Google Search
+        - Analyze what type of content is currently trending for these keywords
+        - Use trending headline patterns like "Ultimate Guide", "Complete Breakdown", or "${new Date().getFullYear()} Review"
+        - Each title should be unique, engaging and reflect current search patterns
         - Include current year (${new Date().getFullYear()}) in at least one title for freshness
-        - Avoid repetition of the same phrases or product names
-        - Avoid using the same keyword multiple times in a single title
-        - Use each keyword only where it fits naturally
+        - Use trendy words like "trending", "viral", "ultimate", "essential", or "expert guide" where appropriate
+        - Create natural-sounding titles that don't seem keyword-stuffed
         - Focus on titles that would get high CTR in search results
         - Include one title with a number (e.g., "5 Ways to...", "Top 10...", etc.)
         - Include one title with a "how to" format if appropriate
+        - Use question format for one title (e.g., "Why is X Better Than Y?")
         - Keep titles between 50-65 characters for optimal SEO
         
         Format your response as a JSON array of exactly 5 strings, with no additional text.`,
@@ -256,11 +257,11 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       const keyword3 = topKeywords[2] || keyword1;
       
       titles = [
-        `Ultimate Guide to ${keyword1} in ${currentYear}`,
-        `Top Benefits of Using a ${productShortName || keyword1} for Your ${keyword2}`,
-        `How to Choose the Best ${keyword2} for Your ${keyword3 === keyword2 ? 'Home' : keyword3}`,
-        `${keyword1} Buying Guide: What Features to Look For in ${currentYear}`,
-        `Why ${productShortName || keyword1} is Essential for ${keyword3}`
+        `Ultimate Trending Guide to ${keyword1} (${currentYear} Edition)`,
+        `${currentYear} Review: Why ${productShortName || keyword1} Is Going Viral for ${keyword2}`,
+        `How Experts Choose the Best ${keyword2} for ${keyword3 === keyword2 ? 'Performance' : keyword3} in ${currentYear}`,
+        `10 Trending Features of ${keyword1} You Need to Know in ${currentYear}`,
+        `Is ${productShortName || keyword1} Worth It? The Complete ${keyword3} Breakdown`
       ];
     }
     
