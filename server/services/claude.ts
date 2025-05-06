@@ -135,7 +135,7 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
 // Function to generate title suggestions using Claude
 export async function generateTitles(request: { prompt: string, responseFormat: string }): Promise<{ titles: string[] }> {
   try {
-    console.log("Generating title suggestions with Claude");
+    console.log("Generating title suggestions with Claude model:", CLAUDE_MODEL);
     
     // Make API call to Claude
     const response = await anthropic.messages.create({
@@ -154,6 +154,8 @@ export async function generateTitles(request: { prompt: string, responseFormat: 
       ? response.content[0].text 
       : JSON.stringify(response.content[0]);
     
+    console.log("Claude raw response:", responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+    
     // Parse the response based on format
     if (request.responseFormat === 'json') {
       try {
@@ -162,15 +164,21 @@ export async function generateTitles(request: { prompt: string, responseFormat: 
         const match = responseText.match(jsonRegex);
         
         if (match) {
+          console.log("Found JSON array in Claude response:", match[0]);
           const titles = JSON.parse(match[0]);
           return { titles };
         } else {
+          console.log("No JSON array found, trying to parse entire response as JSON");
           // If no JSON array found, try to parse the entire response as JSON
           const jsonResponse = JSON.parse(responseText);
           if (Array.isArray(jsonResponse)) {
+            console.log("Response is an array:", jsonResponse);
             return { titles: jsonResponse };
           } else if (jsonResponse.titles && Array.isArray(jsonResponse.titles)) {
+            console.log("Response has titles property:", jsonResponse.titles);
             return { titles: jsonResponse.titles };
+          } else {
+            console.error("Unable to find titles array in JSON response:", jsonResponse);
           }
         }
       } catch (parseError) {

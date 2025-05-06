@@ -199,28 +199,48 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       // Create a clean product title without repetition for prompting
       const cleanProductTitle = productTitle ? productTitle.replace(/\[.*?\]/g, '').trim() : '';
       
-      // Example using Claude service
+      // Enhanced Claude prompt for more contextually relevant titles
       const claudeRequest = {
-        prompt: `Generate 5 compelling, SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that naturally incorporate these keywords: ${topKeywords.join(", ")}.
+        prompt: `Generate 5 unique, compelling, SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that naturally incorporate these keywords: ${topKeywords.join(", ")}.
+        
+        IMPORTANT CONTEXT: 
+        - Primary product: ${cleanProductTitle || topKeywords[0]}
+        - Primary keywords: ${topKeywords.slice(0, 3).join(", ")}
+        - Secondary keywords: ${topKeywords.slice(3).join(", ") || "N/A"}
+        - Current year: ${new Date().getFullYear()}
         
         IMPORTANT GUIDELINES:
+        - Create titles that directly relate to the product and its primary use cases
         - Each title should be unique and engaging
         - Create natural-sounding titles that don't seem keyword-stuffed
+        - Include current year (${new Date().getFullYear()}) in at least one title for freshness
         - Avoid repetition of the same phrases or product names
         - Avoid using the same keyword multiple times in a single title
         - Use each keyword only where it fits naturally
-        - Focus on creating titles that would get high CTR in search results
+        - Focus on titles that would get high CTR in search results
+        - Include one title with a number (e.g., "5 Ways to...", "Top 10...", etc.)
+        - Include one title with a "how to" format if appropriate
         - Keep titles between 50-65 characters for optimal SEO
         
         Format your response as a JSON array of exactly 5 strings, with no additional text.`,
         responseFormat: "json"
       };
       
+      // Log the Claude request for debugging
+      console.log("Sending title generation request to Claude with data:", {
+        productTitle: cleanProductTitle || topKeywords[0],
+        keywords: topKeywords,
+        yearContext: new Date().getFullYear()
+      });
+      
       const claudeService = require("../services/claude");
       const claudeResponse = await claudeService.generateTitles(claudeRequest);
       
       if (claudeResponse && claudeResponse.titles && Array.isArray(claudeResponse.titles)) {
+        console.log("Claude generated title suggestions:", claudeResponse.titles);
         titles = claudeResponse.titles;
+      } else {
+        console.error("Claude response missing titles array:", claudeResponse);
       }
     } catch (claudeError) {
       console.error("Claude title generation failed:", claudeError);
@@ -229,13 +249,18 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       const cleanProductTitle = productTitle ? productTitle.replace(/\[.*?\]/g, '').trim() : '';
       const productShortName = cleanProductTitle.split(' ').slice(0, 2).join(' ');
       
-      // Fallback to better title generation with less repetition
+      // Generate dynamic titles based on the product and keywords
+      const currentYear = new Date().getFullYear();
+      const keyword1 = topKeywords[0] || "product";
+      const keyword2 = topKeywords[1] || keyword1;
+      const keyword3 = topKeywords[2] || keyword1;
+      
       titles = [
-        `Ultimate Guide to ${topKeywords[0]} in ${new Date().getFullYear()}`,
-        `Top 10 ${productShortName || topKeywords[0]} Features and Benefits`,
-        `How to Choose the Best ${topKeywords[1] || topKeywords[0]} for Your Home`,
-        `${topKeywords[0]} vs Competitors: What You Need to Know`,
-        `The Complete Buyer's Guide for ${productShortName || topKeywords[0]}`
+        `Ultimate Guide to ${keyword1} in ${currentYear}`,
+        `Top Benefits of Using a ${productShortName || keyword1} for Your ${keyword2}`,
+        `How to Choose the Best ${keyword2} for Your ${keyword3 === keyword2 ? 'Home' : keyword3}`,
+        `${keyword1} Buying Guide: What Features to Look For in ${currentYear}`,
+        `Why ${productShortName || keyword1} is Essential for ${keyword3}`
       ];
     }
     

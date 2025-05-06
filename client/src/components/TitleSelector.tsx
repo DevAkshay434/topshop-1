@@ -36,20 +36,29 @@ export default function TitleSelector({
     setIsLoading(true);
     setError(null);
     
+    // Log the request data for debugging
+    const requestData = {
+      keywords: selectedKeywords.map(k => k.keyword),
+      keywordData: selectedKeywords,
+      productTitle: productTitle
+    };
+    
+    console.log("Generating title suggestions with data:", requestData);
+    
     try {
       const response = await apiRequest({
         url: '/api/admin/title-suggestions',
         method: 'POST',
-        data: {
-          keywords: selectedKeywords.map(k => k.keyword),
-          keywordData: selectedKeywords,
-          productTitle: productTitle
-        }
+        data: requestData
       });
       
+      console.log("Title suggestions response:", response);
+      
       if (response.success && response.titles && response.titles.length > 0) {
+        console.log("Setting new title suggestions:", response.titles);
         setTitleSuggestions(response.titles);
       } else {
+        console.error("Failed to get valid title suggestions:", response);
         setError('Could not generate title suggestions');
         toast({
           title: 'Error',
