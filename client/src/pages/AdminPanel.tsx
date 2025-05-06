@@ -54,7 +54,7 @@ import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
 import TitleSelector from '@/components/TitleSelector';
-import ImagePromptSuggestions from '@/components/ImagePromptSuggestions';
+import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 
 // Define the form schema for content generation
