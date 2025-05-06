@@ -380,6 +380,54 @@ export class ShopifyService {
   }
   
   /**
+   * Get products by their IDs
+   * @param store The store to get products from
+   * @param productIds Array of product IDs to fetch
+   * @returns Array of Shopify products
+   */
+  public async getProductsById(store: ShopifyStore, productIds: string[]): Promise<ShopifyProduct[]> {
+    try {
+      if (!productIds || productIds.length === 0) {
+        return [];
+      }
+      
+      const client = this.getClient(store);
+      const products: ShopifyProduct[] = [];
+      
+      // Process in batches of 10 IDs to avoid long URLs
+      const batchSize = 10;
+      
+      for (let i = 0; i < productIds.length; i += batchSize) {
+        const batch = productIds.slice(i, i + batchSize);
+        const idsParam = batch.join(',');
+        
+        console.log(`Fetching products batch ${i/batchSize + 1} with IDs: ${idsParam}`);
+        
+        try {
+          const response = await client.get(`/products.json?ids=${idsParam}`);
+          
+          // Add the full URL to each product
+          const batchProducts = response.data.products.map((product: any) => ({
+            ...product,
+            url: `https://${store.shopName}/products/${product.handle}`
+          }));
+          
+          products.push(...batchProducts);
+        } catch (batchError) {
+          console.error(`Error fetching product batch from Shopify store ${store.shopName}:`, batchError);
+          // Continue with other batches even if one fails
+        }
+      }
+      
+      console.log(`Successfully fetched ${products.length} out of ${productIds.length} requested products`);
+      return products;
+    } catch (error: any) {
+      console.error(`Error fetching products by ID from Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to fetch products by ID: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
    * Search products in a specific store
    * @param store The store to search products in
    * @param query The search query
@@ -560,6 +608,7 @@ export const getArticles = (store: ShopifyStore, blogId: string) => shopifyServi
 
 // Product and collection methods
 export const getProducts = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getProducts(store, limit);
+export const getProductsById = (store: ShopifyStore, productIds: string[]) => shopifyServiceInstance.getProductsById(store, productIds);
 export const searchProducts = (store: ShopifyStore, query: string, limit?: number) => shopifyServiceInstance.searchProducts(store, query, limit);
 export const getCollections = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getCollections(store, limit);
 export const getAllCollections = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getAllCollections(store, limit);

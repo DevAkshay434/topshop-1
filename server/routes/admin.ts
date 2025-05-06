@@ -710,9 +710,27 @@ Please suggest a meta description at the end of your response that includes at l
         }
       }
       
-      // Insert secondary images throughout the content with product links
-      if (additionalImages.length > 0 && productsInfo.length > 0) {
-        console.log(`Inserting ${additionalImages.length} secondary images into content body`);
+      // Insert secondary images throughout the content
+      if (additionalImages.length > 0) {
+        // Get product info either from productsInfo or from the request's productIds
+        let availableProducts = productsInfo;
+        
+        // If we don't have productsInfo but we do have productIds in the request, use those productIds
+        if ((!availableProducts || availableProducts.length === 0) && requestData.productIds && requestData.productIds.length > 0) {
+          // Fetch product information for the productIds
+          try {
+            console.log(`No product info available, trying to fetch details for products: ${requestData.productIds.join(', ')}`);
+            availableProducts = await shopifyService.getProductsById(store, requestData.productIds);
+            console.log(`Successfully fetched ${availableProducts.length} products for interlinking`);
+          } catch (productFetchError) {
+            console.error("Failed to fetch product details for interlinking:", productFetchError);
+          }
+        }
+        
+        // Determine if we're inserting images with or without product links
+        const hasProducts = availableProducts && availableProducts.length > 0;
+        
+        console.log(`Inserting ${additionalImages.length} secondary images into content body ${hasProducts ? 'with' : 'without'} product links`);
         
         // Find potential spots to insert images (after paragraphs or headings)
         const insertPoints = [];
@@ -746,13 +764,9 @@ Please suggest a meta description at the end of your response that includes at l
               const insertIndex = Math.floor(sectionSize * (i + 1));
               
               if (insertIndex < insertPoints.length) {
-                // Get the image and appropriate product to link to
+                // Get the image
                 const imageIndex = i % additionalImages.length;
-                // Use the first product for all images if only one product is available
-                const productIndex = productsInfo.length > 1 ? (i % productsInfo.length) : 0;
-                
                 const image = additionalImages[imageIndex];
-                const product = productsInfo[productIndex];
                 
                 // Get the actual position in the content
                 const position = insertPoints[insertIndex] + insertionOffset;
@@ -760,88 +774,35 @@ Please suggest a meta description at the end of your response that includes at l
                 // Ensure we have valid image URLs from src properties
                 const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
                 if (!imageUrl) {
-                  console.warn(`Image ${image.id} is missing valid src URLs, skipping insertion`);
+                  console.warn(`Image ${image.id || 'unknown'} is missing valid src URLs, skipping insertion`);
                   continue;
                 }
-                // Make sure we have valid image ALT text
-                const imageAlt = image.alt || product.title || requestData.title;
-                // Ensure product URL is correctly formatted with store domain
-                const productUrl = `https://${store.shopName}/products/${product.handle}`;
-                console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
                 
-                // Create center-aligned div with link to product
-                const imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></a>
+                let imageHtml;
+                
+                // If we have products, link the image to a product
+                if (hasProducts) {
+                  // Use the first product for all images if only one product is available
+                  const productIndex = availableProducts.length > 1 ? (i % availableProducts.length) : 0;
+                  const product = availableProducts[productIndex];
+                  
+                  // Make sure we have valid image ALT text
+                  const imageAlt = image.alt || product.title || requestData.title;
+                  // Ensure product URL is correctly formatted with store domain
+                  const productUrl = `https://${store.shopName}/products/${product.handle}`;
+                  console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
+                  
+                  // Create center-aligned div with link to product
+                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></a>
 <p style="margin-top: 5px; font-size: 0.9em;"><a href="${productUrl}">${product.title}</a></p></div>\n`;
-                
-                // Insert the image HTML at the position
-                modifiedContent = modifiedContent.slice(0, position) + imageHtml + modifiedContent.slice(position);
-                
-                // Adjust offset for subsequent insertions
-                insertionOffset += imageHtml.length;
-                
-                console.log(`Inserted image ${i+1}/${insertCount} at position ${position} with URL: ${imageUrl}`);
-              }
-            }
-            
-            finalContent = modifiedContent;
-          }
-        } else {
-          console.warn("Could not find suitable insertion points for additional images");
-        }
-      } else if (additionalImages.length > 0) {
-        // If we have additional images but no products to link to, still insert the images without product links
-        console.log(`Inserting ${additionalImages.length} images without product links`);
-        
-        // Find potential spots to insert images (after paragraphs or headings)
-        const insertPoints = [];
-        let match;
-        const tagPattern = /<\/(p|h2|h3|h4|div|section)>/g;
-        
-        // Find all potential insertion points
-        while ((match = tagPattern.exec(finalContent)) !== null) {
-          // Skip the first 15% of the content for the first image insertion
-          if (match.index > finalContent.length * 0.15) {
-            insertPoints.push(match.index + match[0].length);
-          }
-        }
-        
-        // If we have insertion points and images, start inserting images
-        if (insertPoints.length > 0) {
-          // Use ALL additional images, not just a limited number
-          const insertCount = Math.min(additionalImages.length, insertPoints.length);
-          
-          if (insertCount > 0) {
-            // Create evenly spaced insertion indices
-            const contentSections = insertCount + 1;
-            const sectionSize = insertPoints.length / contentSections;
-            
-            // Distribute images evenly
-            let modifiedContent = finalContent;
-            let insertionOffset = 0;
-            
-            for (let i = 0; i < insertCount; i++) {
-              // Calculate insertion index - distribute evenly throughout content
-              const insertIndex = Math.floor(sectionSize * (i + 1));
-              
-              if (insertIndex < insertPoints.length) {
-                const imageIndex = i % additionalImages.length;
-                const image = additionalImages[imageIndex];
-                
-                // Get the actual position in the content
-                const position = insertPoints[insertIndex] + insertionOffset;
-                
-                // Ensure we have valid image URLs from src properties
-                const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
-                if (!imageUrl) {
-                  console.warn(`Image ${image.id} is missing valid src URLs, skipping insertion`);
-                  continue;
+                } else {
+                  // No product to link to - just insert the image
+                  const imageAlt = image.alt || requestData.title;                  
+                  console.log(`Inserting standalone image with URL: ${imageUrl}`);
+                  
+                  // Create center-aligned div without product link
+                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></div>\n`;
                 }
-                const imageAlt = image.alt || requestData.title;
-                
-                console.log(`Inserting standalone image with URL: ${imageUrl}`);
-                
-                // Create center-aligned div without product link
-                const imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></div>\n`;
                 
                 // Insert the image HTML at the position
                 modifiedContent = modifiedContent.slice(0, position) + imageHtml + modifiedContent.slice(position);
@@ -849,7 +810,7 @@ Please suggest a meta description at the end of your response that includes at l
                 // Adjust offset for subsequent insertions
                 insertionOffset += imageHtml.length;
                 
-                console.log(`Inserted image ${i+1}/${insertCount} at position ${position} with URL: ${imageUrl}`);
+                console.log(`Inserted image ${i+1}/${insertCount} at position ${position}`);
               }
             }
             
@@ -858,7 +819,7 @@ Please suggest a meta description at the end of your response that includes at l
         } else {
           console.warn("Could not find suitable insertion points for additional images");
         }
-      } else if (productsInfo.length > 0) {
+      } else {
         console.log("No additional images available to insert into content.");
       }
       
