@@ -477,6 +477,23 @@ export default function AdminPanel() {
       setIsGenerating(true);
       setGeneratedContent(null);
       
+      // Validate required fields
+      if (!values.title) {
+        throw new Error("Please select a title for your content");
+      }
+      
+      if (!values.articleType) {
+        throw new Error("Please select an article type");
+      }
+      
+      if (values.articleType === "blog" && !values.blogId) {
+        throw new Error("Please select a blog for your content");
+      }
+      
+      if (!Array.isArray(selectedKeywords) || selectedKeywords.length === 0) {
+        throw new Error("Please select at least one keyword for SEO optimization");
+      }
+      
       if (workflowStep !== 'content') {
         console.warn("Attempting to generate content when not in content step. Current step:", workflowStep);
         setWorkflowStep('content');
@@ -507,6 +524,7 @@ export default function AdminPanel() {
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
       
+      // Specific try-catch for the API request
       try {
         const response = await apiRequest({
           url: '/api/admin/generate-content',
@@ -515,6 +533,11 @@ export default function AdminPanel() {
         });
         
         console.log("API response received:", response);
+        
+        if (!response) {
+          throw new Error("Received empty response from server");
+        }
+        
         setGeneratedContent(response);
         toast({
           title: "Content generated successfully",
@@ -525,7 +548,7 @@ export default function AdminPanel() {
         console.error("API request failed:", apiError);
         toast({
           title: "API Request Failed",
-          description: apiError.message || "Could not connect to the server",
+          description: apiError?.message || "Could not connect to the server. Please try again.",
           variant: "destructive"
         });
       }
@@ -533,7 +556,7 @@ export default function AdminPanel() {
       console.error("Content generation error:", error);
       toast({
         title: "Error generating content",
-        description: error.message || "An unexpected error occurred",
+        description: error?.message || "An unexpected error occurred. Please check your form inputs and try again.",
         variant: "destructive"
       });
     } finally {

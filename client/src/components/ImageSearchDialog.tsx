@@ -201,7 +201,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -312,7 +312,7 @@ export default function ImageSearchDialog({
           
           {searchedImages.length > 0 ? (
             <div className="border rounded-lg overflow-hidden shadow-sm bg-slate-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[500px] overflow-y-auto p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[500px] overflow-y-auto p-6">
                 {searchedImages.map(image => (
                   <div 
                     key={image.id}
@@ -321,11 +321,11 @@ export default function ImageSearchDialog({
                     }`}
                     onClick={() => toggleImageSelection(image.id)}
                   >
-                    <div className="aspect-[4/3] relative">
+                    <div className="aspect-[4/3] relative bg-slate-100">
                       <img 
                         src={image.src?.medium || image.url} 
                         alt={image.alt || 'Content image'} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         loading="lazy"
                       />
                       {image.alt && (
