@@ -169,7 +169,7 @@ export default function AdminPanel() {
     enableTables: true,
     enableLists: true,
     enableH3s: true,
-    introType: "standard",
+    introType: "search_intent", // Changed from "standard" to "search_intent"
     faqType: "short",
     enableCitations: true,
     toneOfVoice: "friendly",
