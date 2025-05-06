@@ -503,23 +503,40 @@ export default function AdminPanel() {
       // Create a safe copy of the form values with guaranteed array values
       const safeValues = {
         ...values,
-        // Ensure these are always arrays
-        productIds: Array.isArray(values.productIds) ? values.productIds : [],
-        collectionIds: Array.isArray(values.collectionIds) ? values.collectionIds : [],
+        // Ensure these are always arrays of strings
+        productIds: Array.isArray(values.productIds) 
+          ? values.productIds.map(id => String(id)) 
+          : [],
+        collectionIds: Array.isArray(values.collectionIds) 
+          ? values.collectionIds.map(id => String(id)) 
+          : [],
         keywords: Array.isArray(values.keywords) ? values.keywords : [],
         // Ensure we have these required fields
         articleType: values.articleType || "blog",
         title: values.title || "",
         introType: values.introType || "search_intent", // Set search_intent as default as requested
-        region: values.region || "us" // Default to US region as requested
+        region: values.region || "us", // Default to US region as requested
+        // Make sure blogId is a string if it exists
+        blogId: values.blogId ? String(values.blogId) : undefined
       };
+      
+      // Process keywords to ensure they're in the right format
+      const processedKeywords = Array.isArray(selectedKeywords)
+        ? selectedKeywords.map(kw => ({
+            keyword: typeof kw.keyword === 'string' ? kw.keyword : String(kw.keyword || ''),
+            searchVolume: typeof kw.searchVolume === 'number' ? kw.searchVolume : 0,
+            // Ensure any other properties are included but properly typed
+            difficulty: typeof kw.difficulty === 'number' ? kw.difficulty : 0,
+            cpc: typeof kw.cpc === 'number' ? kw.cpc : 0
+          }))
+        : [];
       
       // Add selected image IDs and keywords to form data
       const submitData = {
         ...safeValues,
-        selectedImageIds: selectedImages.map(img => img.id),
+        selectedImageIds: selectedImages.map(img => String(img.id)),
         // Include full keyword data (not just strings) for analysis on the server
-        selectedKeywordData: selectedKeywords
+        selectedKeywordData: processedKeywords
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
