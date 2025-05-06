@@ -788,20 +788,22 @@ Please suggest a meta description at the end of your response that includes at l
                   
                   // Make sure we have valid image ALT text
                   const imageAlt = image.alt || product.title || requestData.title;
-                  // Ensure product URL is correctly formatted with store domain
+                  
+                  // Ensure product URL is correctly formatted with store domain - CRITICAL FIX
                   const productUrl = `https://${store.shopName}/products/${product.handle}`;
+                  
                   console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
                   
-                  // Create center-aligned div with link to product
-                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></a>
+                  // Create center-aligned div with link to product - Fixed link URL format
+                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></a>
 <p style="margin-top: 5px; font-size: 0.9em;"><a href="${productUrl}">${product.title}</a></p></div>\n`;
                 } else {
                   // No product to link to - just insert the image
                   const imageAlt = image.alt || requestData.title;                  
                   console.log(`Inserting standalone image with URL: ${imageUrl}`);
                   
-                  // Create center-aligned div without product link
-                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;" /></div>\n`;
+                  // Create center-aligned div without product link - Fixed HTML format
+                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></div>\n`;
                 }
                 
                 // Insert the image HTML at the position
@@ -860,7 +862,17 @@ Please suggest a meta description at the end of your response that includes at l
               shopifyBlogId: blogId
             });
             
-            contentUrl = `https://${store.shopName}/blogs/${shopifyArticle.blog_id}/${shopifyArticle.handle}`;
+            // Get the blog handle/slug instead of using the numeric ID in the URL
+            let blogHandle;
+            try {
+              const blogDetails = await shopifyService.getBlogById(store, shopifyArticle.blog_id);
+              blogHandle = blogDetails.handle;
+              console.log(`Using blog handle "${blogHandle}" instead of ID for URL`);
+            } catch (blogError) {
+              console.warn(`Could not fetch blog handle, falling back to ID: ${blogError}`);
+              blogHandle = shopifyArticle.blog_id;
+            }
+            contentUrl = `https://${store.shopName}/blogs/${blogHandle}/${shopifyArticle.handle}`;
           } catch (shopifyError: any) {
             console.error('Error creating Shopify article:', shopifyError);
             throw new Error(`Failed to publish to Shopify: ${shopifyError.message || 'Unknown error'}`);

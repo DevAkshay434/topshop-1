@@ -177,6 +177,23 @@ export class ShopifyService {
   }
   
   /**
+   * Get blog details including handle/slug
+   * @param store The store to get the blog from
+   * @param blogId The ID of the blog to fetch
+   * @returns The Shopify blog with handle
+   */
+  public async getBlogById(store: ShopifyStore, blogId: string): Promise<any> {
+    try {
+      const client = this.getClient(store);
+      const response = await client.get(`/blogs/${blogId}.json`);
+      return response.data.blog;
+    } catch (error: any) {
+      console.error(`Error fetching blog from Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to fetch blog: ${error?.message || 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Create an article in a specific store
    * @param store The store to create the article in
    * @param blogId The ID of the blog to create the article in
@@ -601,6 +618,7 @@ export const shopifyService = shopifyServiceInstance;
 
 // Blog and article methods
 export const getBlogs = (store: ShopifyStore) => shopifyServiceInstance.getBlogs(store);
+export const getBlogById = (store: ShopifyStore, blogId: string) => shopifyServiceInstance.getBlogById(store, blogId);
 export const createArticle = (store: ShopifyStore, blogId: string, post: BlogPost) => shopifyServiceInstance.createArticle(store, blogId, post);
 export const updateArticle = (store: ShopifyStore, blogId: string, articleId: string, post: Partial<BlogPost>) => shopifyServiceInstance.updateArticle(store, blogId, articleId, post);
 export const deleteArticle = (store: ShopifyStore, blogId: string, articleId: string) => shopifyServiceInstance.deleteArticle(store, blogId, articleId);
