@@ -36,6 +36,8 @@ interface ImageSearchDialogProps {
   onOpenChange: (open: boolean) => void;
   onImagesSelected: (images: PexelsImage[]) => void;
   productTitle?: string;
+  productId?: string;
+  productDescription?: string;
   initialSelectedImages?: PexelsImage[];
 }
 
@@ -44,6 +46,8 @@ export default function ImageSearchDialog({
   onOpenChange,
   onImagesSelected,
   productTitle,
+  productId,
+  productDescription,
   initialSelectedImages = []
 }: ImageSearchDialogProps) {
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
@@ -229,6 +233,8 @@ export default function ImageSearchDialog({
                   query={imageSearchQuery} 
                   visible={showSearchSuggestions}
                   productTitle={productTitle}
+                  productId={productId}
+                  productDescription={productDescription}
                   onSuggestionSelect={(suggestion) => {
                     setImageSearchQuery(suggestion);
                     setShowSearchSuggestions(false);
