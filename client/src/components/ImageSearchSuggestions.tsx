@@ -52,7 +52,7 @@ export default function ImageSearchSuggestions({
     }
     
     // Filter out duplicates and limit to 10 suggestions
-    const uniqueSuggestions = [...new Set(newSuggestions)].slice(0, 10);
+    const uniqueSuggestions = Array.from(new Set(newSuggestions)).slice(0, 10);
     setSuggestions(uniqueSuggestions);
   }, [query, productTitle, visible]);
 

@@ -55,6 +55,7 @@ import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
 import TitleSelector from '@/components/TitleSelector';
 import ImagePromptSuggestions from '@/components/ImagePromptSuggestions';
+import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -139,6 +140,7 @@ export default function AdminPanel() {
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -452,9 +454,12 @@ export default function AdminPanel() {
     // Auto-open keyword selector if products were selected
     if (productIds.length > 0) {
       setShowKeywordSelector(true);
-    } else if (form.getValues('collectionIds') && form.getValues('collectionIds').length > 0) {
-      // If collections were selected but not products, still move to keyword step
-      setShowKeywordSelector(true);
+    } else {
+      const collectionIds = form.getValues('collectionIds') || [];
+      if (collectionIds.length > 0) {
+        // If collections were selected but not products, still move to keyword step
+        setShowKeywordSelector(true);
+      }
     }
   };
   
@@ -464,7 +469,8 @@ export default function AdminPanel() {
     setSelectedCollections(collectionIds);
     
     // Only move to next step if no products were selected (products take precedence)
-    if ((!form.getValues('productIds') || form.getValues('productIds').length === 0) && collectionIds.length > 0) {
+    const productIds = form.getValues('productIds') || [];
+    if (productIds.length === 0 && collectionIds.length > 0) {
       setWorkflowStep('keyword');
       setShowKeywordSelector(true);
     }
@@ -1368,7 +1374,7 @@ export default function AdminPanel() {
                           }
                           setShowImageDialog(open);
                         }}>
-                        <DialogContent className="sm:max-w-[700px]">
+                        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
                           <DialogHeader>
                             <DialogTitle>Select Images for Your Content</DialogTitle>
                             <DialogDescription>
@@ -1376,16 +1382,33 @@ export default function AdminPanel() {
                             </DialogDescription>
                           </DialogHeader>
                           
-                          <div className="grid gap-4 py-4">
+                          <div className="grid gap-4 py-4 overflow-hidden flex-grow flex flex-col">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    placeholder="Search for images"
-                                    value={imageSearchQuery || ''}
-                                    onChange={(e) => setImageSearchQuery(e.target.value)}
-                                    className="flex-1"
-                                  />
+                                <div className="flex items-center gap-2 relative">
+                                  <div className="relative flex-1">
+                                    <Input
+                                      placeholder="Search for images"
+                                      value={imageSearchQuery || ''}
+                                      onChange={(e) => {
+                                        setImageSearchQuery(e.target.value);
+                                        setShowSearchSuggestions(e.target.value.length >= 2);
+                                      }}
+                                      onFocus={() => setShowSearchSuggestions(imageSearchQuery.length >= 2)}
+                                      onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
+                                      className="flex-1"
+                                    />
+                                    <ImageSearchSuggestions 
+                                      query={imageSearchQuery} 
+                                      visible={showSearchSuggestions}
+                                      productTitle={productTitle}
+                                      onSuggestionSelect={(suggestion) => {
+                                        setImageSearchQuery(suggestion);
+                                        setShowSearchSuggestions(false);
+                                        handleImageSearch(suggestion);
+                                      }}
+                                    />
+                                  </div>
                                   <Button 
                                     type="button" 
                                     onClick={() => {
