@@ -1450,6 +1450,8 @@ export default function AdminPanel() {
                           });
                         }}
                         productTitle={productTitle}
+                        productId={productId}
+                        productDescription={productDescription}
                         initialSelectedImages={selectedImages}
                       />
                     </div>
