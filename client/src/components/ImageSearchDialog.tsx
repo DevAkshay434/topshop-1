@@ -201,7 +201,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -310,34 +310,48 @@ export default function ImageSearchDialog({
           )}
           
           {searchedImages.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-3 border rounded-md bg-slate-50">
-              {searchedImages.map(image => (
-                <div 
-                  key={image.id}
-                  className={`relative rounded-md overflow-hidden cursor-pointer transition-all duration-200 border-2 shadow-sm hover:shadow-md ${
-                    image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-slate-300'
-                  }`}
-                  onClick={() => toggleImageSelection(image.id)}
-                >
-                  <div className="aspect-ratio-4/3 h-[180px] relative">
-                    <img 
-                      src={image.src?.medium || image.url} 
-                      alt={image.alt || 'Content image'} 
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                  {image.selected && (
-                    <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1.5 shadow-md">
-                      <CheckCircle className="h-4 w-4 text-white" />
+            <div className="border rounded-lg overflow-hidden shadow-sm bg-slate-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[500px] overflow-y-auto p-4">
+                {searchedImages.map(image => (
+                  <div 
+                    key={image.id}
+                    className={`relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 border-2 shadow hover:shadow-lg ${
+                      image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-slate-300'
+                    }`}
+                    onClick={() => toggleImageSelection(image.id)}
+                  >
+                    <div className="aspect-[4/3] relative">
+                      <img 
+                        src={image.src?.medium || image.url} 
+                        alt={image.alt || 'Content image'} 
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {image.alt && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs py-1 px-2 truncate">
+                          {image.alt}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    {image.selected && (
+                      <div className="absolute top-3 right-3 bg-blue-500 rounded-full p-1.5 shadow-md">
+                        <CheckCircle className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              {isSearchingImages ? "Searching for images..." : "Search for images to display results"}
+            <div className="py-12 text-center text-muted-foreground border rounded-md bg-slate-50/50 my-4">
+              {isSearchingImages ? 
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin mb-2 text-blue-500" />
+                  <p>Searching for images...</p>
+                </div> 
+                : 
+                <p>Search for images to display results</p>
+              }
             </div>
           )}
           
@@ -368,19 +382,19 @@ export default function ImageSearchDialog({
                   Clear All
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {selectedImages.map(image => (
                   <div 
                     key={image.id} 
-                    className="relative h-20 w-20 rounded-md overflow-hidden border shadow-sm hover:shadow-md transition-shadow duration-200"
+                    className="relative h-28 rounded-md overflow-hidden border shadow-sm hover:shadow-md transition-shadow duration-200"
                   >
                     <img 
-                      src={image.src?.thumbnail || image.url} 
+                      src={image.src?.small || image.src?.thumbnail || image.url} 
                       alt="Selected" 
                       className="h-full w-full object-cover"
                     />
                     <div 
-                      className="absolute top-1 right-1 bg-red-500 rounded-full p-1 cursor-pointer shadow-sm hover:bg-red-600 transition-colors"
+                      className="absolute top-2 right-2 bg-red-500 rounded-full p-1.5 cursor-pointer shadow-md hover:bg-red-600 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         // Remove from selected images
@@ -408,7 +422,7 @@ export default function ImageSearchDialog({
                         );
                       }}
                     >
-                      <XCircle className="h-3 w-3 text-white" />
+                      <XCircle className="h-4 w-4 text-white" />
                     </div>
                   </div>
                 ))}
