@@ -600,7 +600,7 @@ export default function AdminPanel() {
                             <FormLabel>Region</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              value={field.value || "us"}
                             >
                               <FormControl>
                                 <SelectTrigger>
