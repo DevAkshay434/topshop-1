@@ -197,7 +197,25 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
     let titles: string[] = [];
     try {
       // Create a clean product title without repetition for prompting
-      const cleanProductTitle = productTitle ? productTitle.replace(/\[.*?\]/g, '').trim() : '';
+      let cleanProductTitle = '';
+      
+      if (productTitle) {
+        // Check if this is a multi-product title and handle appropriately
+        if (productTitle.includes(' - ')) {
+          // Split by dash and take just the first product to avoid long confusing titles
+          cleanProductTitle = productTitle.split(' - ')[0].replace(/\[.*?\]/g, '').trim();
+          console.log("Multi-product title detected. Using first product:", cleanProductTitle);
+        } else {
+          cleanProductTitle = productTitle.replace(/\[.*?\]/g, '').trim();
+        }
+        
+        // If still too long (>40 chars), truncate for better title generation
+        if (cleanProductTitle.length > 40) {
+          const shortened = cleanProductTitle.substring(0, 40).trim();
+          console.log(`Product title too long (${cleanProductTitle.length} chars). Shortened to: ${shortened}`);
+          cleanProductTitle = shortened;
+        }
+      }
       
       // Enhanced Claude prompt for trending, Google-optimized titles
       const claudeRequest = {
@@ -246,8 +264,28 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
     } catch (claudeError) {
       console.error("Claude title generation failed:", claudeError);
       
-      // Create a clean product title without repetition for fallback
-      const cleanProductTitle = productTitle ? productTitle.replace(/\[.*?\]/g, '').trim() : '';
+      // Create a clean product title without repetition for fallback using the same logic
+      let cleanProductTitle = '';
+      
+      if (productTitle) {
+        // Check if this is a multi-product title and handle appropriately
+        if (productTitle.includes(' - ')) {
+          // Split by dash and take just the first product to avoid long confusing titles
+          cleanProductTitle = productTitle.split(' - ')[0].replace(/\[.*?\]/g, '').trim();
+          console.log("Multi-product title detected in fallback. Using first product:", cleanProductTitle);
+        } else {
+          cleanProductTitle = productTitle.replace(/\[.*?\]/g, '').trim();
+        }
+        
+        // If still too long (>40 chars), truncate for better title generation
+        if (cleanProductTitle.length > 40) {
+          const shortened = cleanProductTitle.substring(0, 40).trim();
+          console.log(`Product title too long in fallback (${cleanProductTitle.length} chars). Shortened to: ${shortened}`);
+          cleanProductTitle = shortened;
+        }
+      }
+      
+      // Extract a short product name for more compact titles
       const productShortName = cleanProductTitle.split(' ').slice(0, 2).join(' ');
       
       // Generate dynamic titles based on the product and keywords
