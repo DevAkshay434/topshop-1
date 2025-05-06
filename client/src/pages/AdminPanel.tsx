@@ -464,7 +464,7 @@ export default function AdminPanel() {
     setSelectedCollections(collectionIds);
     
     // Only move to next step if no products were selected (products take precedence)
-    if (form.getValues('productIds').length === 0 && collectionIds.length > 0) {
+    if (form.getValues('productIds')?.length === 0 && collectionIds.length > 0) {
       setWorkflowStep('keyword');
       setShowKeywordSelector(true);
     }
