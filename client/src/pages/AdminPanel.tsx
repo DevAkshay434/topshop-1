@@ -1488,7 +1488,7 @@ export default function AdminPanel() {
                             )}
                             
                             {searchedImages.length > 0 ? (
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto p-1 border rounded-md bg-slate-50/50">
+                              <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-3 border rounded-md bg-slate-50">
                                 {searchedImages.map(image => (
                                   <div 
                                     key={image.id}
@@ -1497,7 +1497,7 @@ export default function AdminPanel() {
                                     }`}
                                     onClick={() => toggleImageSelection(image.id)}
                                   >
-                                    <div className="aspect-w-16 aspect-h-9 relative">
+                                    <div className="aspect-ratio-4/3 h-[180px] relative">
                                       <img 
                                         src={image.src?.medium || image.url} 
                                         alt={image.alt || 'Content image'} 
@@ -1505,7 +1505,6 @@ export default function AdminPanel() {
                                         loading="lazy"
                                       />
                                     </div>
-                                    {/* Photographer credit removed as per client request */}
                                     {image.selected && (
                                       <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1.5 shadow-md">
                                         <CheckCircle className="h-4 w-4 text-white" />
