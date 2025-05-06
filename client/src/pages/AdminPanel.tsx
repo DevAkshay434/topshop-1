@@ -452,7 +452,7 @@ export default function AdminPanel() {
     // Auto-open keyword selector if products were selected
     if (productIds.length > 0) {
       setShowKeywordSelector(true);
-    } else if (form.getValues('collectionIds').length > 0) {
+    } else if (form.getValues('collectionIds')?.length > 0) {
       // If collections were selected but not products, still move to keyword step
       setShowKeywordSelector(true);
     }
@@ -1377,55 +1377,71 @@ export default function AdminPanel() {
                           </DialogHeader>
                           
                           <div className="grid gap-4 py-4">
-                            <div className="flex items-center gap-2">
-                              <Input
-                                placeholder="Search for images (e.g., 'business meeting', 'online shopping')"
-                                value={imageSearchQuery || ''}
-                                onChange={(e) => setImageSearchQuery(e.target.value)}
-                                className="flex-1"
-                              />
-                              <Button 
-                                type="button" 
-                                onClick={() => {
-                                  // Use the explicit search query, never fall back to the title
-                                  const query = imageSearchQuery.trim();
-                                  
-                                  if (!query) {
-                                    toast({
-                                      title: "Search query required",
-                                      description: "Please enter a search term for images",
-                                      variant: "destructive"
-                                    });
-                                    return;
-                                  }
-                                  
-                                  handleImageSearch(query);
-                                  
-                                  // Store current images in history if there are any
-                                  if (searchedImages.length > 0) {
-                                    const currentSearch = imageSearchHistory.find(history => 
-                                      history.query === imageSearchQuery);
-                                    
-                                    if (!currentSearch) {
-                                      setImageSearchHistory(prev => [
-                                        ...prev,
-                                        { 
-                                          query: imageSearchQuery, 
-                                          images: searchedImages 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    placeholder="Search for images"
+                                    value={imageSearchQuery || ''}
+                                    onChange={(e) => setImageSearchQuery(e.target.value)}
+                                    className="flex-1"
+                                  />
+                                  <Button 
+                                    type="button" 
+                                    onClick={() => {
+                                      // Use the explicit search query, never fall back to the title
+                                      const query = imageSearchQuery.trim();
+                                      
+                                      if (!query) {
+                                        toast({
+                                          title: "Search query required",
+                                          description: "Please enter a search term for images",
+                                          variant: "destructive"
+                                        });
+                                        return;
+                                      }
+                                      
+                                      handleImageSearch(query);
+                                      
+                                      // Store current images in history if there are any
+                                      if (searchedImages.length > 0) {
+                                        const currentSearch = imageSearchHistory.find(history => 
+                                          history.query === imageSearchQuery);
+                                        
+                                        if (!currentSearch) {
+                                          setImageSearchHistory(prev => [
+                                            ...prev,
+                                            { 
+                                              query: imageSearchQuery, 
+                                              images: searchedImages 
+                                            }
+                                          ]);
                                         }
-                                      ]);
-                                    }
-                                  }
-                                }}
-                                disabled={isSearchingImages || !imageSearchQuery.trim()}
-                              >
-                                {isSearchingImages ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Searching...
-                                  </>
-                                ) : "Search"}
-                              </Button>
+                                      }
+                                    }}
+                                    disabled={isSearchingImages || !imageSearchQuery.trim()}
+                                  >
+                                    {isSearchingImages ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Searching...
+                                      </>
+                                    ) : "Search"}
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Image Prompt Suggestions */}
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium mb-2">Prompt Suggestions</h4>
+                                <ImagePromptSuggestions
+                                  onPromptSelected={(prompt) => {
+                                    setImageSearchQuery(prompt);
+                                    handleImageSearch(prompt);
+                                  }}
+                                  productTitle={productTitle}
+                                />
+                              </div>
                             </div>
                             
                             {/* Search history tabs */}
@@ -1727,11 +1743,37 @@ export default function AdminPanel() {
           {/* Keyword Selector Dialog */}
           <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Select Keywords</DialogTitle>
+                <DialogDescription>
+                  Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
+                </DialogDescription>
+              </DialogHeader>
               <KeywordSelector
                 initialKeywords={selectedKeywords}
                 onKeywordsSelected={handleKeywordsSelected}
                 onClose={() => setShowKeywordSelector(false)}
                 title="Select Keywords for SEO Optimization"
+              />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Title Selector Dialog */}
+          <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
+            <DialogContent className="sm:max-w-[700px]">
+              <DialogHeader>
+                <DialogTitle>Choose a Title</DialogTitle>
+                <DialogDescription>
+                  Select a title that incorporates your keywords for better SEO.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <TitleSelector 
+                open={showTitleSelector}
+                onOpenChange={setShowTitleSelector}
+                onTitleSelected={handleTitleSelected}
+                selectedKeywords={selectedKeywords}
+                productTitle={productTitle}
               />
             </DialogContent>
           </Dialog>
