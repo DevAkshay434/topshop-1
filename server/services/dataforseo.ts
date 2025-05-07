@@ -23,25 +23,32 @@ export class DataForSEOService {
   constructor() {
     this.apiUrl = 'https://api.dataforseo.com';
     
-    // DataForSEO requires the API key to be split into username/password pair
-    // The DATAFORSEO_API_KEY should be in the format 'username:password'
+    // DataForSEO requires credentials in the format 'username:password'
+    // The DATAFORSEO_API_KEY should be set to "login:password" from DataForSEO account
     const apiKey = process.env.DATAFORSEO_API_KEY || '';
     
+    console.log(`Initializing DataForSEO service with key format: ${apiKey.includes(':') ? 'username:password' : 'invalid format'}`);
+    
     if (apiKey.includes(':')) {
-      // Split the API key into username and password if it contains a colon
+      // Split the API key into username and password
       const [username, password] = apiKey.split(':');
       this.username = username;
       this.password = password;
+      
+      console.log(`DataForSEO credentials parsed - Login: ${username}, Password length: ${password.length}`);
     } else {
-      // Fallback to using the API key as both username and password
+      // Log warning about invalid format
+      console.warn('WARNING: DataForSEO credentials not in correct format. Should be "login:password"');
+      
+      // Still try to use whatever was provided as both username and password
       this.username = apiKey;
       this.password = apiKey;
     }
     
     if (this.hasValidCredentials()) {
-      console.log(`DataForSEO service initialized with API key: ${this.username.substring(0, 5)}...`);
+      console.log(`DataForSEO service initialized successfully with login: ${this.username}`);
     } else {
-      console.log('DataForSEO service initialized without valid credentials');
+      console.warn('WARNING: DataForSEO service initialized without valid credentials');
     }
   }
 
@@ -77,7 +84,7 @@ export class DataForSEOService {
           password: this.password
         };
 
-        console.log(`Using DataForSEO credentials - username: ${this.username.substring(0, 5)}...`);
+        console.log(`Using DataForSEO credentials - Login: ${this.username}, Password length: ${this.password.length}`);
 
         // Prepare request payload
         const requestData = [{
@@ -352,7 +359,7 @@ export class DataForSEOService {
     }
 
     try {
-      console.log(`Testing DataForSEO connection with username: ${this.username.substring(0, 5)}...`);
+      console.log(`Testing DataForSEO connection with login: ${this.username}`);
       console.log(`Auth details - username length: ${this.username.length}, password length: ${this.password.length}`);
       
       // Use a simple POST request instead of GET for testing
