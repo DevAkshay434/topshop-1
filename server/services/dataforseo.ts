@@ -379,17 +379,155 @@ export class DataForSEOService {
           }
         }
         
-        // Add related keywords - since the search_volume endpoint only returns data for the exact keyword(s) we ask for,
-        // we need to add some variations to make it more useful for the content generation
+        // Get related keywords from DataForSEO API to expand our keyword list
+        // Use keyword suggestions endpoint to get a broader range of keywords
         if (keywordData.length > 0) {
-          // Get the main keyword
-          const mainKeyword = keywordData[0];
-          
-          // Generate related keywords based on the main keyword
-          const relatedKeywords = this.generateRelatedKeywords(mainKeyword);
-          
-          // Add the related keywords to the results
-          keywordData.push(...relatedKeywords);
+          try {
+            // Only proceed if we have at least one keyword with valid search volume
+            const validKeyword = keywordData.find(k => k.searchVolume && k.searchVolume > 0);
+            
+            if (validKeyword) {
+              // Use this keyword to get keyword suggestions from the API
+              console.log(`Getting API keyword suggestions for: ${validKeyword.keyword}`);
+              
+              const auth = {
+                username: this.username,
+                password: this.password
+              };
+              
+              // Use 3 different keyword suggestion approaches to maximize our keyword count
+              const suggestionsRequestData = [{
+                keyword: validKeyword.keyword,
+                language_code: "en",
+                location_code: 2840, // United States
+                limit: 100 // Get up to 100 keyword suggestions
+              }];
+              
+              // Make DataForSEO API call to get keyword suggestions
+              console.log("Fetching keyword suggestions from DataForSEO API");
+              const suggestionsEndpoint = `/v3/keywords_data/google/keywords_for_keywords/live`;
+              
+              try {
+                const suggestionsResponse = await axios.post(
+                  `${this.apiUrl}${suggestionsEndpoint}`,
+                  suggestionsRequestData,
+                  { 
+                    auth,
+                    timeout: 30000, // 30 second timeout
+                    headers: { 'Content-Type': 'application/json' }
+                  }
+                );
+                
+                // Process the suggestions response
+                if (suggestionsResponse.data?.tasks?.[0]?.result) {
+                  const suggestionsResults = suggestionsResponse.data.tasks[0].result;
+                  console.log(`Got ${suggestionsResults.length} keyword suggestions from API`);
+                  
+                  // Process each suggestion
+                  for (const suggestion of suggestionsResults) {
+                    // Only add if we don't already have this keyword
+                    if (!keywordData.some(k => k.keyword.toLowerCase() === suggestion.keyword.toLowerCase())) {
+                      const searchVolume = suggestion.search_volume || 0;
+                      const competition = suggestion.competition || 0;
+                      const cpc = suggestion.cpc || 0;
+                      
+                      // Create trend data from monthly_searches if available
+                      const trend = suggestion.monthly_searches
+                        ? suggestion.monthly_searches.map((monthData: any) => monthData.search_volume)
+                        : Array(12).fill(Math.round(searchVolume));
+                      
+                      // Calculate keyword difficulty
+                      const difficulty = this.calculateKeywordDifficulty({
+                        search_volume: searchVolume,
+                        competition,
+                        cpc
+                      });
+                      
+                      // Add to our keywords list
+                      keywordData.push({
+                        keyword: suggestion.keyword,
+                        searchVolume,
+                        cpc,
+                        competition,
+                        competitionLevel: this.getCompetitionLevel(competition),
+                        intent: this.determineIntent({ keyword: suggestion.keyword }),
+                        trend,
+                        difficulty,
+                        selected: false
+                      });
+                    }
+                  }
+                } else {
+                  console.log("No keyword suggestions found in API response");
+                }
+              } catch (suggestionsError: any) {
+                console.error(`Error getting keyword suggestions: ${suggestionsError.message}`);
+              }
+              
+              // Try a second API call with "related_keywords" endpoint
+              try {
+                console.log("Trying related keywords API endpoint for more keyword ideas");
+                const relatedEndpoint = `/v3/keywords_data/google/related_keywords/live`;
+                
+                const relatedResponse = await axios.post(
+                  `${this.apiUrl}${relatedEndpoint}`,
+                  suggestionsRequestData, // Use the same request data
+                  { 
+                    auth,
+                    timeout: 30000,
+                    headers: { 'Content-Type': 'application/json' }
+                  }
+                );
+                
+                // Process the related keywords response
+                if (relatedResponse.data?.tasks?.[0]?.result?.[0]?.keywords) {
+                  const relatedResults = relatedResponse.data.tasks[0].result[0].keywords;
+                  console.log(`Got ${relatedResults.length} related keywords from API`);
+                  
+                  // Process each related keyword
+                  for (const related of relatedResults) {
+                    // Only add if we don't already have this keyword
+                    if (!keywordData.some(k => k.keyword.toLowerCase() === related.keyword.toLowerCase())) {
+                      const searchVolume = related.search_volume || 0;
+                      const competition = related.competition || 0;
+                      const cpc = related.cpc || 0;
+                      
+                      // Create trend data from monthly_searches if available
+                      const trend = related.monthly_searches
+                        ? related.monthly_searches.map((monthData: any) => monthData.search_volume)
+                        : Array(12).fill(Math.round(searchVolume));
+                      
+                      // Calculate keyword difficulty
+                      const difficulty = this.calculateKeywordDifficulty({
+                        search_volume: searchVolume,
+                        competition,
+                        cpc
+                      });
+                      
+                      // Add to our keywords list
+                      keywordData.push({
+                        keyword: related.keyword,
+                        searchVolume,
+                        cpc,
+                        competition,
+                        competitionLevel: this.getCompetitionLevel(competition),
+                        intent: this.determineIntent({ keyword: related.keyword }),
+                        trend,
+                        difficulty,
+                        selected: false
+                      });
+                    }
+                  }
+                }
+              } catch (relatedError: any) {
+                console.error(`Error getting related keywords: ${relatedError.message}`);
+              }
+            } else {
+              console.log("No valid keywords found to use for suggestions");
+            }
+          } catch (suggestionsError: any) {
+            console.error(`Error processing keyword suggestions: ${suggestionsError.message}`);
+          }
         }
         
         // If no keywords were found, return fallback data
