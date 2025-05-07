@@ -303,7 +303,51 @@ export class DataForSEOService {
           return this.generateFallbackKeywords(keyword);
         }
 
-        return keywordData;
+        // Sort keywords by relevance and search volume
+        const sortedKeywords = this.sortKeywordsByRelevance(keywordData);
+        
+        // Auto-select the most relevant keywords (up to 3)
+        if (sortedKeywords.length > 0) {
+          // Always select the main keyword
+          sortedKeywords[0].selected = true;
+          
+          // Select a few more based on search volume and relevance
+          // Prioritize terms that would make good blog post topics
+          let selectedCount = 1;
+          const maxToSelect = Math.min(3, sortedKeywords.length);
+          
+          for (let i = 1; i < sortedKeywords.length && selectedCount < maxToSelect; i++) {
+            const keyword = sortedKeywords[i];
+            
+            // Prioritize informational keywords for content creation
+            if (keyword.intent === 'Informational' && (keyword.searchVolume || 0) > 1000) {
+              keyword.selected = true;
+              selectedCount++;
+            }
+          }
+          
+          // If we didn't select enough informational keywords, add commercial ones
+          for (let i = 1; i < sortedKeywords.length && selectedCount < maxToSelect; i++) {
+            const keyword = sortedKeywords[i];
+            
+            if (!keyword.selected && keyword.intent === 'Commercial' && (keyword.searchVolume || 0) > 1000) {
+              keyword.selected = true;
+              selectedCount++;
+            }
+          }
+          
+          // If we still need more, select based on search volume
+          for (let i = 1; i < sortedKeywords.length && selectedCount < maxToSelect; i++) {
+            const keyword = sortedKeywords[i];
+            
+            if (!keyword.selected && (keyword.searchVolume || 0) > 1000) {
+              keyword.selected = true;
+              selectedCount++;
+            }
+          }
+        }
+        
+        return sortedKeywords;
       } catch (apiError: any) {
         // If any error occurs during API call, log it and use fallback
         console.error('Error fetching keywords from DataForSEO API:', apiError.message);
@@ -533,6 +577,74 @@ export class DataForSEOService {
     
     console.log(`Extracted terms: ${terms.join(', ')}`);
     return terms;
+  }
+
+  /**
+   * Sort keywords by relevance based on various metrics
+   * This ensures the most valuable keywords for content creation are prioritized
+   * @param keywords The array of keywords to sort
+   * @returns Sorted array of keywords
+   */
+  private sortKeywordsByRelevance(keywords: KeywordData[]): KeywordData[] {
+    console.log(`Sorting ${keywords.length} keywords by relevance`);
+    
+    // If there's only one keyword, no need to sort
+    if (keywords.length <= 1) {
+      return keywords;
+    }
+
+    // Keep the first keyword (main keyword) in position
+    const mainKeyword = keywords[0];
+    const otherKeywords = keywords.slice(1);
+    
+    // Create a scoring function to rank keywords by their value for content creation
+    const getKeywordScore = (keyword: KeywordData): number => {
+      let score = 0;
+      
+      // Start with search volume as the base score
+      score += keyword.searchVolume ? keyword.searchVolume / 1000 : 0;
+      
+      // Adjust score based on intent (highest value for informational keywords)
+      if (keyword.intent === 'Informational') {
+        score *= 1.5; // Best for blog posts
+      } else if (keyword.intent === 'Commercial') {
+        score *= 1.2; // Good for product comparison
+      } else if (keyword.intent === 'Navigational') {
+        score *= 0.7; // Less useful for content
+      }
+      
+      // Adjust for competition (lower competition is better)
+      if (keyword.competition) {
+        score *= (1 - keyword.competition * 0.3); // Reduce score by up to 30% for high competition
+      }
+      
+      // Adjust for specific patterns ideal for blog content
+      const lowercaseKeyword = keyword.keyword.toLowerCase();
+      if (lowercaseKeyword.includes('how to') || 
+          lowercaseKeyword.includes('guide') || 
+          lowercaseKeyword.includes('tips')) {
+        score *= 1.3;
+      }
+      
+      // Adjust for specific patterns that make great blog titles
+      if (lowercaseKeyword.includes('best') || 
+          lowercaseKeyword.includes('vs') || 
+          lowercaseKeyword.match(/^\d+\s+/)) { // Starts with number, like "10 best..."
+        score *= 1.2;
+      }
+      
+      return score;
+    };
+    
+    // Sort other keywords by their content value score
+    otherKeywords.sort((a, b) => {
+      const scoreA = getKeywordScore(a);
+      const scoreB = getKeywordScore(b);
+      return scoreB - scoreA; // Descending order
+    });
+    
+    // Return the main keyword followed by the sorted other keywords
+    return [mainKeyword, ...otherKeywords];
   }
 
   /**
