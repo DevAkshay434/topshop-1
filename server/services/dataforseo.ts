@@ -92,11 +92,37 @@ export class DataForSEOService {
         
         // Prepare request payload for search_volume endpoint
         // Note: search_volume expects 'keywords' array instead of a single 'keyword'
+        
+        // Extract some common variations to include in the API request to get more data
+        const baseKeyword = cleanedKeyword;
+        
+        // Generate keyword variations for the API request
+        // This helps us get actual data for multiple related terms instead of just the main keyword
+        const keywordVariations = [
+          baseKeyword,
+          `best ${baseKeyword}`,
+          `${baseKeyword} review`,
+          `${baseKeyword} guide`,
+          `buy ${baseKeyword}`
+        ];
+        
+        // Extract generic terms to add to the request
+        const genericTerms = this.extractGenericTerms(baseKeyword);
+        
+        // Combine and filter to unique keywords (up to 10 for the API request)
+        // This gives us more data points directly from DataForSEO instead of generating them
+        const combinedKeywords = [...keywordVariations, ...genericTerms.slice(0, 5)];
+        const uniqueKeywords = combinedKeywords
+          .filter((item, index) => combinedKeywords.indexOf(item) === index) // Remove duplicates
+          .slice(0, 10); // Limit to 10 keywords per request
+        
+        console.log(`Sending ${uniqueKeywords.length} keyword variations to DataForSEO API:`, uniqueKeywords);
+        
         const requestData = [{
-          keywords: [cleanedKeyword],
+          keywords: uniqueKeywords,
           language_code: "en",
           location_code: 2840, // United States
-          limit: 100 // Increased limit to get more keywords
+          limit: 100 // Get up to 100 results per keyword
         }];
 
         console.log("DataForSEO request payload:", JSON.stringify(requestData));
@@ -381,24 +407,58 @@ export class DataForSEOService {
   }
 
   /**
-   * Clean a keyword string by removing special characters that cause API issues
+   * Clean a keyword string by removing special characters and noise words
    * @param input The raw keyword string
    * @returns Cleaned keyword string
    */
   private cleanKeywordString(input: string): string {
-    return input
-      .replace(/®|™|©/g, '') // Remove trademark/copyright symbols
+    console.log(`Cleaning keyword string: "${input}"`);
+    
+    // First, remove common symbols and noise
+    let cleaned = input
+      .replace(/®|™|©|℠/g, '') // Remove trademark/copyright symbols
       .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets and parentheses
+      .replace(/[[\]{}|<>]/g, ' ') // Remove special characters
+      .replace(/^\d+\s*[.:)]\s*/, '') // Remove list numbers (e.g., "1. ", "2) ")
+      .replace(/\b\d{5,}\b/g, '') // Remove long numbers (likely SKUs, model numbers)
+      .replace(/\s+-\s+.*$/, '') // Remove everything after a dash with spaces around it
+      .replace(/\s*,\s*([a-z])/g, ' $1') // Convert commas to spaces when followed by lowercase (likely list items)
       .replace(/\s+/g, ' ') // Normalize spaces
       .trim(); // Remove leading/trailing whitespace
+      
+    // Next, check if there are any model numbers or variant codes that should be removed
+    // These often appear as alphanumeric codes that don't add search value
+    cleaned = cleaned
+      .replace(/\b[A-Z]\d{3,}\b/g, '') // Remove model numbers like "A1234"
+      .replace(/\b[A-Z]{2,}\d{2,}\b/g, '') // Remove codes like "AB123"
+      .replace(/\b\d{2,}[A-Z]{1,}\b/g, '') // Remove codes like "123A"
+      .replace(/\s+/g, ' ') // Normalize spaces again
+      .trim();
+      
+    console.log(`After cleaning: "${cleaned}"`);
+    
+    // Remove any excess words if the keyword is still very long
+    if (cleaned.length > 50) {
+      const words = cleaned.split(' ');
+      if (words.length > 7) {
+        // Keep only the first 7 words which typically contain the main product details
+        cleaned = words.slice(0, 7).join(' ');
+        console.log(`Truncated long keyword to: "${cleaned}"`);
+      }
+    }
+    
+    return cleaned;
   }
 
   /**
-   * Extract keywords from a product URL or use direct topic input
-   * @param input The URL or direct keyword/topic to use
+   * Extract meaningful keywords from a product URL or title
+   * This improved method focuses on pulling out the most relevant search terms
+   * @param input The URL or product title/topic to use
    * @returns The extracted keywords
    */
   private extractKeywordFromUrl(input: string): string {
+    console.log(`Extracting keywords from input: "${input}"`);
+    
     // First check if input is a URL or direct topic
     let extractedKeyword;
 
@@ -413,17 +473,68 @@ export class DataForSEOService {
         
         // Convert handle to keywords (replace hyphens with spaces)
         extractedKeyword = handle.replace(/-/g, ' ');
+        console.log(`Extracted from URL handle: "${extractedKeyword}"`);
       } catch (error) {
         // If URL parsing fails, just use the input
         extractedKeyword = input;
+        console.log(`URL parsing failed, using raw input: "${extractedKeyword}"`);
       }
     } else {
       // If it's not a URL, use the input directly
       extractedKeyword = input;
+      console.log(`Using direct input as keyword: "${extractedKeyword}"`);
     }
 
-    // Clean the keyword before returning
-    return this.cleanKeywordString(extractedKeyword);
+    // Special case: Sometimes we get product titles that are very long and specific
+    // Extract the most relevant parts to use as keyword
+    if (extractedKeyword.length > 30) {
+      console.log(`Long keyword detected (${extractedKeyword.length} chars), extracting core terms...`);
+      
+      // Remove common product identifiers and model numbers that don't make good search keywords
+      // e.g. "(Model: ABC123)" or "- XYZ456"
+      extractedKeyword = extractedKeyword
+        .replace(/\s*[-–—]\s*[A-Z0-9]{3,8}\b/g, '') // Remove model numbers after dashes
+        .replace(/\bmodel[:\s]+[A-Z0-9\-]{3,10}\b/i, '') // Remove model numbers with "model:" prefix
+        .replace(/\b(?:model|type|item|sku|part|size|style)\b[:\s]+[\w\d\-]{3,10}\b/gi, '') // Remove various product identifiers
+        .replace(/\b[A-Z0-9]{2,3}[-–—][A-Z0-9]{3,6}\b/g, '') // Remove formatted model numbers like "AB-12345"
+        .replace(/\([^)]*\)/g, '') // Remove text in parentheses
+        .replace(/\sby\s[\w\s]+$/i, ''); // Remove "by [Brand]" at the end
+      
+      // Extract core product terms (the first 3-5 words usually contain the key product terms)
+      const words = extractedKeyword.split(/\s+/);
+      
+      if (words.length > 5) {
+        // Get the most likely core product terms
+        // For water products, look for specific product category indicators
+        const waterProductIndex = words.findIndex(word => 
+          word.toLowerCase().includes('water') || 
+          word.toLowerCase().includes('filter') || 
+          word.toLowerCase().includes('softener')
+        );
+        
+        // If we found water-related terms, use them as central point
+        if (waterProductIndex >= 0) {
+          // Get a few words before and after the water term
+          const startIndex = Math.max(0, waterProductIndex - 1);
+          const endIndex = Math.min(words.length, waterProductIndex + 3);
+          const coreTerms = words.slice(startIndex, endIndex);
+          
+          // Join the core terms back together
+          extractedKeyword = coreTerms.join(' ');
+          console.log(`Extracted water-related core terms: "${extractedKeyword}"`);
+        } else {
+          // Default: just use the first 3-4 words which typically contain the main product type
+          extractedKeyword = words.slice(0, 4).join(' ');
+          console.log(`Extracted first 4 words as core terms: "${extractedKeyword}"`);
+        }
+      }
+    }
+
+    // Apply final cleaning to the keyword
+    const cleanedKeyword = this.cleanKeywordString(extractedKeyword);
+    console.log(`Final cleaned keyword: "${cleanedKeyword}"`);
+    
+    return cleanedKeyword;
   }
 
   /**
@@ -849,30 +960,75 @@ export class DataForSEOService {
    * @returns Array of simulated keyword data
    */
   private generateFallbackKeywords(input: string): KeywordData[] {
-    console.log("Generating fallback keywords for:", input);
+    console.log("Generating comprehensive fallback keywords for:", input);
     
     // Create variations of the keyword
     const terms = input.split(' ');
-    const baseKeywords = [
-      // Exact match
-      input,
-      // Add question starters
-      `how to ${input}`,
-      `what is ${input}`,
-      `best ${input}`,
-      // Add long tail variations
-      `${input} for beginners`,
-      `${input} review`,
-      `${input} guide`,
-      `${input} vs ${terms.length > 1 ? terms[1] : 'alternative'}`,
-      `affordable ${input}`,
-      `${input} near me`,
-      `buy ${input}`,
-      `${input} price`,
-      `top ${input} brands`,
-      `${input} features`,
-      `${input} tips`
+    
+    // Start with basic prefixes
+    const prefixes = [
+      'best', 'top', 'affordable', 'cheap', 'quality', 'premium', 'professional', 'commercial',
+      'residential', 'high-end', 'budget', 'luxury', 'efficient', 'modern', 'eco-friendly', 
+      'smart', 'portable', 'compact', 'heavy-duty', 'lightweight', 'energy-efficient', 'reliable',
+      'durable', 'recommended', 'top-rated', 'popular', 'new'
     ];
+    
+    // Question-based keywords 
+    const questions = [
+      `how to choose ${input}`,
+      `how to install ${input}`,
+      `how to use ${input}`,
+      `how to maintain ${input}`,
+      `how to fix ${input}`,
+      `how to clean ${input}`,
+      `what is ${input}`,
+      `why use ${input}`,
+      `when to replace ${input}`,
+      `which ${input} is best`,
+      `where to buy ${input}`,
+      `how much does ${input} cost`
+    ];
+    
+    // Action-based keywords
+    const actions = [
+      `buy ${input}`,
+      `install ${input}`,
+      `repair ${input}`,
+      `compare ${input}`,
+      `review ${input}`,
+      `maintain ${input}`,
+      `order ${input}`
+    ];
+    
+    // Suffixes to create long-tail variations
+    const suffixes = [
+      'review', 'reviews', 'comparison', 'guide', 'tutorial', 'tips', 'advice',
+      'problems', 'solutions', 'for home', 'for business', 'for beginners',
+      'brands', 'types', 'models', 'alternatives',
+      'near me', 'online', 'for sale', 'price', 'cost',
+      'features', 'specifications', 'installation',
+      'maintenance', 'warranty', 'benefits', 'advantages'
+    ];
+    
+    // Combine prefixes with the keyword
+    const prefixVariations = prefixes.map(prefix => `${prefix} ${input}`);
+    
+    // Combine keyword with suffixes
+    const suffixVariations = suffixes.map(suffix => `${input} ${suffix}`);
+    
+    // Combine all variations
+    const allKeywords = [
+      // Start with the basic keyword
+      input,
+      // Add all our variations
+      ...questions,
+      ...actions,
+      ...prefixVariations,
+      ...suffixVariations
+    ];
+    
+    // Filter out duplicates
+    const baseKeywords = allKeywords.filter((item, index) => allKeywords.indexOf(item) === index);
     
     // Generate some fallback data with randomized metrics
     return baseKeywords.map(keyword => {
