@@ -670,7 +670,7 @@ export class DataForSEOService {
         }
 
         // Sort keywords by relevance and search volume
-        const sortedKeywords = this.sortKeywordsByRelevance(keywordData);
+        let sortedKeywords = this.sortKeywordsByRelevance(keywordData);
         
         // Auto-select the most relevant keywords (up to 3)
         if (sortedKeywords.length > 0) {
