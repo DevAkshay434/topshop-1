@@ -1056,9 +1056,23 @@ adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
     console.error("Claude connection test failed:", error);
   }
   
-  // Test DataForSEO connection
+  // Test DataForSEO connection with detailed logging
   try {
+    // Log the current DataForSEO credentials format (without revealing sensitive data)
+    const apiKey = process.env.DATAFORSEO_API_KEY || '';
+    const hasCredentials = apiKey.length > 0;
+    const hasCorrectFormat = apiKey.includes(':');
+    
+    console.log(`DataForSEO credentials check - Has credentials: ${hasCredentials}, Has correct format: ${hasCorrectFormat}`);
+    if (hasCredentials) {
+      const parts = apiKey.split(':');
+      console.log(`DataForSEO login length: ${parts[0]?.length || 0}, password length: ${parts[1]?.length || 0}`);
+    }
+    
+    console.log("Testing DataForSEO connection...");
     const dataForSEOTest = await dataForSEOService.testConnection();
+    console.log("DataForSEO test result:", dataForSEOTest);
+    
     results.dataForSEO = dataForSEOTest.success;
   } catch (error) {
     console.error("DataForSEO connection test failed:", error);
