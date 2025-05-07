@@ -109,12 +109,56 @@ export class DataForSEOService {
         // Extract generic terms to add to the request
         const genericTerms = this.extractGenericTerms(baseKeyword);
         
-        // Combine and filter to unique keywords (up to 10 for the API request)
-        // This gives us more data points directly from DataForSEO instead of generating them
-        const combinedKeywords = [...keywordVariations, ...genericTerms.slice(0, 5)];
-        const uniqueKeywords = combinedKeywords
-          .filter((item, index) => combinedKeywords.indexOf(item) === index) // Remove duplicates
-          .slice(0, 10); // Limit to 10 keywords per request
+        // Generate many more keyword variations based on common patterns
+        // These will all be real API requests, not synthetic data
+        const productVariations = [];
+        
+        // Create prefix-based variations (e.g., "best water softener")
+        const commonPrefixes = ['best', 'top', 'affordable', 'cheap', 'quality', 'premium', 
+                              'professional', 'commercial', 'residential', 'high-end', 
+                              'budget', 'luxury', 'efficient', 'modern', 'eco-friendly'];
+                              
+        // Create question-based variations (e.g., "how to install water softener")
+        const questionPrefixes = ['how to', 'what is', 'why use', 'when to', 'where to buy',
+                                'which', 'how much', 'how long', 'how does', 'who sells', 
+                                'is a', 'can a', 'best way to', 'benefits of', 'reviews for'];
+                                
+        // Create suffix-based variations (e.g., "water softener reviews")
+        const commonSuffixes = ['review', 'reviews', 'comparison', 'vs', 'guide', 'tips', 
+                              'problems', 'installation', 'maintenance', 'cost', 'price',
+                              'near me', 'for home', 'for business', 'system', 'model'];
+        
+        // Add prefix variations for the main keyword and generic terms
+        [...keywordVariations, ...genericTerms.slice(0, 3)].forEach(term => {
+          commonPrefixes.slice(0, 5).forEach(prefix => {
+            productVariations.push(`${prefix} ${term}`);
+          });
+        });
+        
+        // Add question-based variations for generic terms only (more natural)
+        genericTerms.slice(0, 2).forEach(term => {
+          questionPrefixes.slice(0, 5).forEach(prefix => {
+            productVariations.push(`${prefix} ${term}`);
+          });
+        });
+        
+        // Add suffix variations for main keyword and generic terms
+        [...keywordVariations, ...genericTerms.slice(0, 3)].forEach(term => {
+          commonSuffixes.slice(0, 5).forEach(suffix => {
+            productVariations.push(`${term} ${suffix}`);
+          });
+        });
+        
+        // Combine all variations
+        const combinedKeywords = [
+          ...keywordVariations,
+          ...genericTerms.slice(0, 10),
+          ...productVariations
+        ];
+        
+        // Filter to unique keywords (up to 50 for the API request)
+        // DataForSEO can handle batches of 50 keywords easily
+        const uniqueKeywords = Array.from(new Set(combinedKeywords)).slice(0, 50);
         
         console.log(`Sending ${uniqueKeywords.length} keyword variations to DataForSEO API:`, uniqueKeywords);
         
