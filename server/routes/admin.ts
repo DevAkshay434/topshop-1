@@ -219,7 +219,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       
       // Enhanced Claude prompt for trending, Google-optimized titles
       const claudeRequest = {
-        prompt: `Generate 5 unique, compelling, trending blog post titles about ${cleanProductTitle || topKeywords[0]} that naturally incorporate these keywords: ${topKeywords.join(", ")}.
+        prompt: `Generate 8 unique, highly SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that strategically incorporate these keywords: ${topKeywords.join(", ")}.
         
         IMPORTANT CONTEXT: 
         - Primary product: ${cleanProductTitle || topKeywords[0]}
@@ -227,21 +227,27 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         - Secondary keywords: ${topKeywords.slice(3).join(", ") || "N/A"}
         - Current year: ${new Date().getFullYear()}
         
-        IMPORTANT GUIDELINES:
-        - Create titles that use TRENDING FORMATS currently popular in Google Search
-        - Analyze what type of content is currently trending for these keywords
+        IMPORTANT SEO GUIDELINES:
+        - Each title MUST naturally include at least one of the provided keywords in full
+        - Always place the most important keyword as close to the beginning of the title as possible
+        - Create titles that directly match search intent (informational, commercial, etc.)
         - Use trending headline patterns like "Ultimate Guide", "Complete Breakdown", or "${new Date().getFullYear()} Review"
-        - Each title should be unique, engaging and reflect current search patterns
-        - Include current year (${new Date().getFullYear()}) in at least one title for freshness
-        - Use trendy words like "trending", "viral", "ultimate", "essential", or "expert guide" where appropriate
-        - Create natural-sounding titles that don't seem keyword-stuffed
-        - Focus on titles that would get high CTR in search results
-        - Include one title with a number (e.g., "5 Ways to...", "Top 10...", etc.)
-        - Include one title with a "how to" format if appropriate
-        - Use question format for one title (e.g., "Why is X Better Than Y?")
-        - Keep titles between 50-65 characters for optimal SEO
+        - Include the current year (${new Date().getFullYear()}) in at least 2 titles for freshness signals
+        - For clickthrough optimization, use powerful words like "essential", "complete", "proven", or "ultimate"
+        - Create naturally engaging titles that avoid obvious keyword stuffing
+        - Focus on titles with strong CTR potential in search results
+        - Follow these specific title formats for maximum SEO value:
+          * Include 2 numbered list titles (e.g., "7 Best...", "10 Ways to...")
+          * Include 1 "How to" title specifically targeting informational searches
+          * Include 1 comparison title (e.g., "X vs Y: Which...")
+          * Include 1 question-format title that includes a keyword (e.g., "What is...")
+          * Include 1 title with "Ultimate Guide to [keyword]" format
+          * Include 1 title with a "Why" format (e.g., "Why [keyword] is...")
+          * Include 1 title with "[Current Year] Review/Guide" format
+        - Keep titles between 50-65 characters for optimal SEO click-through rates
+        - Avoid ALL-CAPS words, excessive punctuation, or clickbait tactics
         
-        Format your response as a JSON array of exactly 5 strings, with no additional text.`,
+        Format your response as a JSON array of exactly 8 strings, with no additional text.`,
         responseFormat: "json"
       };
       
@@ -295,11 +301,15 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       const keyword3 = topKeywords[2] || keyword1;
       
       titles = [
-        `Ultimate Trending Guide to ${keyword1} (${currentYear} Edition)`,
-        `${currentYear} Review: Why ${productShortName || keyword1} Is Going Viral for ${keyword2}`,
-        `How Experts Choose the Best ${keyword2} for ${keyword3 === keyword2 ? 'Performance' : keyword3} in ${currentYear}`,
-        `10 Trending Features of ${keyword1} You Need to Know in ${currentYear}`,
-        `Is ${productShortName || keyword1} Worth It? The Complete ${keyword3} Breakdown`
+        // SEO-optimized titles as fallbacks
+        `${keyword1}: The Ultimate Guide for ${currentYear}`,
+        `10 Best ${keyword1} Features You Need to Know (${currentYear})`,
+        `How to Choose the Perfect ${keyword2} in ${currentYear}`,
+        `${keyword1} vs Traditional Systems: Which is Better?`,
+        `What is ${keyword1}? Complete ${currentYear} Buyer's Guide`,
+        `Why ${keyword1} is Essential for Modern Homes`,
+        `7 Reasons ${keyword2} Outperforms the Competition`,
+        `${currentYear} ${keyword1} Review: Everything You Need to Know`
       ];
     }
     

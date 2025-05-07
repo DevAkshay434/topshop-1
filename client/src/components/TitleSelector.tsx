@@ -100,35 +100,45 @@ export default function TitleSelector({
         </div>
       ) : (
         <>
-          <div className="space-y-4">
-            {titleSuggestions.length > 0 ? (
-              titleSuggestions.map((title, index) => (
-                <Card
-                  key={index}
-                  className="p-4 hover:bg-slate-50 cursor-pointer transition-colors"
-                  onClick={() => handleTitleSelect(title)}
-                >
-                  <h3 className="font-medium text-lg text-blue-700">{title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Click to select this title
-                  </p>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center p-4">
-                <p>No title suggestions available</p>
-                <Button 
-                  onClick={generateTitles} 
-                  className="mt-2"
-                  disabled={selectedKeywords.length === 0}
-                >
-                  Generate Titles
-                </Button>
-              </div>
-            )}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 text-slate-800">Choose an SEO-optimized title:</h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              {titleSuggestions.length > 0 ? (
+                titleSuggestions.map((title, index) => (
+                  <Card
+                    key={index}
+                    className={`p-4 hover:bg-blue-50 cursor-pointer transition-colors border-2 ${index < 3 ? 'border-blue-200' : 'border-transparent'}`}
+                    onClick={() => handleTitleSelect(title)}
+                  >
+                    <div className="flex items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-md text-blue-700">{title}</h3>
+                        {index < 3 && (
+                          <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            {index === 0 ? 'Best for SEO' : index === 1 ? 'Trending format' : 'High CTR'}
+                          </span>
+                        )}
+                      </div>
+                      <span className="ml-2 text-sm text-slate-400 opacity-75">#{index + 1}</span>
+                    </div>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-center p-4 col-span-2">
+                  <p>No title suggestions available</p>
+                  <Button 
+                    onClick={generateTitles} 
+                    className="mt-2"
+                    disabled={selectedKeywords.length === 0}
+                  >
+                    Generate Titles
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="flex justify-between pt-2">
+          <div className="flex justify-between pt-4">
             <Button 
               variant="outline" 
               onClick={() => {
