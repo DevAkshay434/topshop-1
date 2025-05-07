@@ -96,7 +96,7 @@ export class DataForSEOService {
           keywords: [cleanedKeyword],
           language_code: "en",
           location_code: 2840, // United States
-          limit: 20
+          limit: 100 // Increased limit to get more keywords
         }];
 
         console.log("DataForSEO request payload:", JSON.stringify(requestData));
@@ -682,25 +682,106 @@ export class DataForSEOService {
     const keyword = mainKeyword.keyword;
     const terms = keyword.split(' ');
     
-    // Create common variations
-    const variations = [
-      // Add question starters
-      `how to ${keyword}`,
-      `what is ${keyword}`,
-      `best ${keyword}`,
-      // Add long tail variations
-      `${keyword} for beginners`,
-      `${keyword} review`,
-      `${keyword} guide`,
-      `${keyword} vs ${terms.length > 1 ? terms[1] : 'alternative'}`,
-      `affordable ${keyword}`,
-      `${keyword} near me`,
-      `buy ${keyword}`,
-      `${keyword} price`,
-      `top ${keyword} brands`,
-      `${keyword} features`,
-      `${keyword} tips`
+    // Create comprehensive list of variations to increase keyword count (100-200 range)
+    
+    // Start with basic prefixes
+    const prefixes = [
+      'best', 'top', 'affordable', 'cheap', 'quality', 'premium', 'professional', 'commercial',
+      'residential', 'high-end', 'budget', 'luxury', 'efficient', 'modern', 'eco-friendly', 
+      'smart', 'portable', 'compact', 'heavy-duty', 'lightweight', 'energy-efficient', 'reliable',
+      'durable', 'recommended', 'top-rated', 'highly-rated', 'popular', 'trending', 'new',
+      'latest', 'advanced', 'innovative', 'improved', 'enhanced'
     ];
+    
+    // Question-based keywords 
+    const questions = [
+      `how to choose ${keyword}`,
+      `how to install ${keyword}`,
+      `how to use ${keyword}`,
+      `how to maintain ${keyword}`,
+      `how to fix ${keyword}`,
+      `how to clean ${keyword}`,
+      `how to repair ${keyword}`,
+      `what is ${keyword}`,
+      `why use ${keyword}`,
+      `when to replace ${keyword}`,
+      `which ${keyword} is best`,
+      `where to buy ${keyword}`,
+      `who needs ${keyword}`,
+      `what size ${keyword} do I need`,
+      `how long does ${keyword} last`,
+      `how much does ${keyword} cost`,
+      `are ${keyword}s worth it`,
+      `can ${keyword} be repaired`
+    ];
+    
+    // Action-based keywords
+    const actions = [
+      `buy ${keyword}`,
+      `install ${keyword}`,
+      `repair ${keyword}`,
+      `rent ${keyword}`,
+      `compare ${keyword}`,
+      `review ${keyword}`,
+      `maintain ${keyword}`,
+      `upgrade ${keyword}`,
+      `troubleshoot ${keyword}`,
+      `clean ${keyword}`,
+      `order ${keyword}`,
+      `finance ${keyword}`,
+      `lease ${keyword}`
+    ];
+    
+    // Suffixes to create long-tail variations
+    const suffixes = [
+      'review', 'reviews', 'comparison', 'guide', 'tutorial', 'tips', 'advice',
+      'problems', 'solutions', 'for home', 'for business', 'for beginners', 'for professionals',
+      'brands', 'types', 'models', 'companies', 'manufacturer', 'suppliers', 'alternatives',
+      'vs competition', 'near me', 'online', 'in stock', 'for sale', 'price', 'cost',
+      'price comparison', 'ratings', 'features', 'specifications', 'installation requirements',
+      'maintenance tips', 'repair service', 'warranty', 'life expectancy', 'energy usage',
+      'pros and cons', 'benefits', 'advantages', 'disadvantages', 'problems',
+      'troubleshooting', 'replacement parts', 'user manual', 'setup guide',
+      'DIY installation', 'professional installation', 'customer reviews'
+    ];
+    
+    // Specific comparisons if we can extract useful terms
+    const comparisons = [];
+    if (terms.length > 1) {
+      // If we have multiple terms, use them for comparisons
+      for (let i = 0; i < terms.length && i < 3; i++) {
+        if (terms[i].length > 2) { // Only use meaningful terms
+          comparisons.push(`${keyword} vs ${terms[i]}`);
+          comparisons.push(`${terms[i]} alternatives`);
+        }
+      }
+    } else {
+      // Generic comparisons if not enough terms
+      comparisons.push(`${keyword} vs traditional`);
+      comparisons.push(`${keyword} vs competitors`);
+      comparisons.push(`${keyword} vs leading brands`);
+    }
+    
+    // Combine prefixes with the keyword
+    const prefixVariations = prefixes.map(prefix => `${prefix} ${keyword}`);
+    
+    // Combine keyword with suffixes
+    const suffixVariations = suffixes.map(suffix => `${keyword} ${suffix}`);
+    
+    // Combine all variations
+    const variations = [
+      // Start with the basic keyword
+      keyword,
+      // Add all our variations
+      ...questions,
+      ...actions,
+      ...prefixVariations,
+      ...suffixVariations,
+      ...comparisons,
+    ];
+    
+    // Filter out duplicates
+    const uniqueVariations = variations.filter((item, index) => variations.indexOf(item) === index);
     
     // Ensure we have valid metrics to work with (otherwise use reasonable defaults)
     const baseSearchVolume = mainKeyword.searchVolume || 5000;
@@ -713,7 +794,7 @@ export class DataForSEOService {
     );
     
     // Generate related keywords with metrics based on main keyword
-    return variations.map(variationText => {
+    return uniqueVariations.map(variationText => {
       // Derive metrics based on the main keyword with some variation
       const multiplier = 0.1 + Math.random() * 0.9; // 10% to 100% of main metrics
       const searchVolume = Math.round(baseSearchVolume * multiplier);
