@@ -86,9 +86,10 @@ export class DataForSEOService {
 
         console.log(`Using DataForSEO credentials - Login: ${this.username}, Password length: ${this.password.length}`);
 
-        // Prepare request payload
+        // Prepare request payload for search_volume endpoint
+        // Note: search_volume expects 'keywords' array instead of a single 'keyword'
         const requestData = [{
-          keyword: keyword,
+          keywords: [keyword],
           language_code: "en",
           location_code: 2840, // United States
           limit: 20
@@ -96,9 +97,9 @@ export class DataForSEOService {
 
         console.log("DataForSEO request payload:", JSON.stringify(requestData));
 
-        // POST request to DataForSEO API to get related keywords
-        // Try using a different endpoint that might be more reliable
-        const endpoint = `/v3/keywords_data/google/related_keywords/live`;
+        // POST request to DataForSEO API to get keyword data
+        // Try using the keywords_data endpoint that should work with our account
+        const endpoint = `/v3/keywords_data/google/search_volume/live`;
         console.log(`Using DataForSEO endpoint: ${endpoint}`);
         
         const response = await axios.post(
@@ -150,26 +151,26 @@ export class DataForSEOService {
         }
         
         for (const result of results) {
-          // For related_keywords endpoint, the keywords are in the result.keywords array
-          const keywords = result.keywords || [];
+          // In search_volume endpoint, the data we need is in result.items
+          const items = result.items || [];
           
           // Log the structure of the response to help understand the data
-          console.log(`Processing ${keywords.length} related keywords`);
-          if (keywords.length > 0) {
-            console.log("Sample keyword structure:", JSON.stringify(keywords[0]));
+          console.log(`Processing ${items.length} keyword items`);
+          if (items.length > 0) {
+            console.log("Sample item structure:", JSON.stringify(items[0]));
           }
           
-          for (const keyword of keywords) {
-            // Extract keyword data based on the related_keywords endpoint structure
-            const keywordText = keyword.keyword || '';
-            const searchVolume = keyword.search_volume || 0;
-            const competition = keyword.competition_index || keyword.competition || 0;
+          for (const item of items) {
+            // Extract keyword data based on the search_volume endpoint structure
+            const keywordText = item.keyword || '';
+            const searchVolume = item.search_volume || 0;
+            const competition = item.competition_index || item.competition || 0;
             const competitionLevel = this.getCompetitionLevel(competition);
-            const cpc = keyword.cpc || 0;
+            const cpc = item.cpc || 0;
             
-            // Create an array of 12 values for monthly trend (might not be available)
-            const trend = keyword.monthly_searches
-              ? keyword.monthly_searches.map((monthData: any) => monthData.search_volume)
+            // Process monthly_searches data if available
+            const trend = item.monthly_searches
+              ? item.monthly_searches.map((monthData: any) => monthData.search_volume)
               : Array(12).fill(Math.round(searchVolume * 0.8 + Math.random() * searchVolume * 0.4)); // Approximate if not available
             
             // Calculate keyword difficulty
@@ -398,14 +399,15 @@ export class DataForSEOService {
       };
 
       // Use a keyword search endpoint that's known to work
+      // For search_volume endpoint, use 'keywords' array instead of 'keyword'
       const requestData = [{
-        keyword: "test connection",
+        keywords: ["test connection"],
         language_code: "en",
         location_code: 2840 // United States
       }];
 
       // Add more detailed logging
-      const endpoint = `/v3/keywords_data/google/related_keywords/live`;
+      const endpoint = `/v3/keywords_data/google/search_volume/live`;
       console.log(`DataForSEO test request URL: ${this.apiUrl}${endpoint}`);
       console.log(`DataForSEO test request data: ${JSON.stringify(requestData)}`);
       
