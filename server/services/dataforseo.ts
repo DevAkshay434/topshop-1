@@ -86,10 +86,14 @@ export class DataForSEOService {
 
         console.log(`Using DataForSEO credentials - Login: ${this.username}, Password length: ${this.password.length}`);
 
+        // Clean the keyword to remove problematic characters
+        const cleanedKeyword = this.cleanKeywordString(keyword);
+        console.log(`Cleaned keyword for API request: "${cleanedKeyword}" (original: "${keyword}")`);
+        
         // Prepare request payload for search_volume endpoint
         // Note: search_volume expects 'keywords' array instead of a single 'keyword'
         const requestData = [{
-          keywords: [keyword],
+          keywords: [cleanedKeyword],
           language_code: "en",
           location_code: 2840, // United States
           limit: 20
@@ -377,12 +381,27 @@ export class DataForSEOService {
   }
 
   /**
+   * Clean a keyword string by removing special characters that cause API issues
+   * @param input The raw keyword string
+   * @returns Cleaned keyword string
+   */
+  private cleanKeywordString(input: string): string {
+    return input
+      .replace(/®|™|©/g, '') // Remove trademark/copyright symbols
+      .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets and parentheses
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim(); // Remove leading/trailing whitespace
+  }
+
+  /**
    * Extract keywords from a product URL or use direct topic input
    * @param input The URL or direct keyword/topic to use
    * @returns The extracted keywords
    */
   private extractKeywordFromUrl(input: string): string {
-    // Check if input is a URL or direct topic
+    // First check if input is a URL or direct topic
+    let extractedKeyword;
+
     if (input.startsWith('http://') || input.startsWith('https://')) {
       try {
         // Extract product name from URL
@@ -393,15 +412,18 @@ export class DataForSEOService {
         const handle = pathSegments[pathSegments.length - 1];
         
         // Convert handle to keywords (replace hyphens with spaces)
-        return handle.replace(/-/g, ' ');
+        extractedKeyword = handle.replace(/-/g, ' ');
       } catch (error) {
-        // If URL parsing fails, just return the input
-        return input;
+        // If URL parsing fails, just use the input
+        extractedKeyword = input;
       }
     } else {
-      // If it's not a URL, use the input directly as the keyword
-      return input;
+      // If it's not a URL, use the input directly
+      extractedKeyword = input;
     }
+
+    // Clean the keyword before returning
+    return this.cleanKeywordString(extractedKeyword);
   }
 
   /**
@@ -825,7 +847,7 @@ export class DataForSEOService {
       // Use a keyword search endpoint that's known to work
       // For search_volume endpoint, use 'keywords' array instead of 'keyword'
       const requestData = [{
-        keywords: ["test connection"],
+        keywords: ["test connection"], // Always using a simple keyword for testing
         language_code: "en",
         location_code: 2840 // United States
       }];
