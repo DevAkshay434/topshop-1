@@ -334,8 +334,58 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     
     // Execute keyword search
     console.log(`Searching for keywords related to: ${searchTerm}`);
+    
     // Use the proper method from dataForSEOService
-    const keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
+    let keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
+    
+    // Process keywords to ensure they're not just showing the product name
+    if (keywords.length > 0) {
+      // Clean up helper function
+      const cleanKeyword = (keyword: string): string => {
+        return keyword
+          .replace(/®|™|©/g, '') // Remove trademark symbols
+          .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets/parentheses
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .trim();
+      };
+      
+      // Process each keyword
+      keywords = keywords.map(kw => {
+        let processedKeyword = cleanKeyword(kw.keyword);
+        
+        // If the keyword is still just the full product name, try to extract a more meaningful term
+        if (searchTerm && processedKeyword.length > 30 && 
+            processedKeyword.toLowerCase() === cleanKeyword(searchTerm).toLowerCase()) {
+          // Extract meaningful part (e.g., "water softener" from "SoftPro Elite Salt Free Water Conditioner")
+          const parts = processedKeyword.split(' ');
+          if (parts.length > 3) {
+            // Try to find meaningful pairs of words for specific categories
+            const categoryKeywords = [
+              'water softener', 'water conditioner', 'water filter', 
+              'salt free', 'water treatment', 'softener system',
+              'jacket', 'smartphone', 'laptop', 'camera', 'headphones'
+            ];
+            
+            for (const catKeyword of categoryKeywords) {
+              if (processedKeyword.toLowerCase().includes(catKeyword)) {
+                processedKeyword = catKeyword;
+                break;
+              }
+            }
+            
+            // If still using full product name, use the last 2-3 words which often contain the product category
+            if (processedKeyword.length > 30) {
+              processedKeyword = parts.slice(-Math.min(3, parts.length)).join(' ');
+            }
+          }
+        }
+        
+        return {
+          ...kw,
+          keyword: processedKeyword
+        };
+      });
+    }
     
     res.json({
       success: true,

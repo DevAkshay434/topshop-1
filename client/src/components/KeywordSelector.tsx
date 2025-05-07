@@ -108,11 +108,50 @@ export default function KeywordSelector({
       });
 
       if (response.success && response.keywords && response.keywords.length > 0) {
-        // Add selected flag to each keyword
-        const keywordsWithSelection = response.keywords.map(kw => ({
-          ...kw,
-          selected: false
-        }));
+        // Process keywords, clean up formatting and ensure we don't show product titles as keywords
+        const keywordsWithSelection = response.keywords.map(kw => {
+          let processedKeyword = kw.keyword;
+          
+          // Clean up the keyword by removing special characters and brackets
+          processedKeyword = processedKeyword
+            .replace(/®|™|©/g, '') // Remove trademark symbols
+            .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets/parentheses
+            .replace(/\s+/g, ' ') // Normalize spaces
+            .trim();
+          
+          // If the keyword is still the full product name, try to extract a shorter version
+          if (directTopic && processedKeyword.length > 30 && 
+              (processedKeyword.toLowerCase() === directTopic.toLowerCase().replace(/®|™|©|\[.*?\]|\(.*?\)/g, '').trim())) {
+            // Extract meaningful part (e.g., "water softener" from "SoftPro Elite Salt Free Water Conditioner")
+            const parts = processedKeyword.split(' ');
+            if (parts.length > 3) {
+              // Try to find meaningful pairs of words
+              const keywords = [
+                'water softener', 'water conditioner', 'water filter', 
+                'salt free', 'water treatment', 'softener system'
+              ];
+              
+              for (const keyword of keywords) {
+                if (processedKeyword.toLowerCase().includes(keyword)) {
+                  processedKeyword = keyword;
+                  break;
+                }
+              }
+              
+              // If no specific keyword found, use last 2-3 words which often contain the product category
+              if (processedKeyword.length > 30) {
+                processedKeyword = parts.slice(-Math.min(3, parts.length)).join(' ');
+              }
+            }
+          }
+
+          return {
+            ...kw,
+            keyword: processedKeyword,
+            selected: false
+          };
+        });
+        
         setKeywords(keywordsWithSelection);
         console.log(`Received ${keywordsWithSelection.length} keywords from API`);
       } else {
