@@ -959,104 +959,50 @@ export class DataForSEOService {
    * @param input The keyword/topic to generate fallback data for
    * @returns Array of simulated keyword data
    */
+  /**
+   * Minimal fallback method - ONLY used when DataForSEO completely fails
+   * We now try to avoid using fallback data and instead make multiple API attempts
+   */
   private generateFallbackKeywords(input: string): KeywordData[] {
-    console.log("Generating comprehensive fallback keywords for:", input);
+    console.error(`Critical: DataForSEO failed to return any keywords for "${input}"`);
+    console.error(`This should not happen if API credentials are valid. Please check your DataForSEO connection and credentials.`);
     
-    // Create variations of the keyword
-    const terms = input.split(' ');
+    // We will attempt to use simpler, more generic versions of the input term
+    // to query DataForSEO again instead of generating fake data
+    const simplifiedTerms = this.extractGenericTerms(input);
     
-    // Start with basic prefixes
-    const prefixes = [
-      'best', 'top', 'affordable', 'cheap', 'quality', 'premium', 'professional', 'commercial',
-      'residential', 'high-end', 'budget', 'luxury', 'efficient', 'modern', 'eco-friendly', 
-      'smart', 'portable', 'compact', 'heavy-duty', 'lightweight', 'energy-efficient', 'reliable',
-      'durable', 'recommended', 'top-rated', 'popular', 'new'
-    ];
+    // Return just the input keyword with zero metrics to indicate API failure
+    // This helps us identify when we need to fix the API connection
+    const result: KeywordData[] = [{
+      keyword: input,
+      searchVolume: 0,
+      cpc: 0,
+      competition: 0,
+      competitionLevel: "Low",
+      intent: "Navigational",
+      trend: Array(12).fill(0),
+      difficulty: 0,
+      selected: false
+    }];
     
-    // Question-based keywords 
-    const questions = [
-      `how to choose ${input}`,
-      `how to install ${input}`,
-      `how to use ${input}`,
-      `how to maintain ${input}`,
-      `how to fix ${input}`,
-      `how to clean ${input}`,
-      `what is ${input}`,
-      `why use ${input}`,
-      `when to replace ${input}`,
-      `which ${input} is best`,
-      `where to buy ${input}`,
-      `how much does ${input} cost`
-    ];
-    
-    // Action-based keywords
-    const actions = [
-      `buy ${input}`,
-      `install ${input}`,
-      `repair ${input}`,
-      `compare ${input}`,
-      `review ${input}`,
-      `maintain ${input}`,
-      `order ${input}`
-    ];
-    
-    // Suffixes to create long-tail variations
-    const suffixes = [
-      'review', 'reviews', 'comparison', 'guide', 'tutorial', 'tips', 'advice',
-      'problems', 'solutions', 'for home', 'for business', 'for beginners',
-      'brands', 'types', 'models', 'alternatives',
-      'near me', 'online', 'for sale', 'price', 'cost',
-      'features', 'specifications', 'installation',
-      'maintenance', 'warranty', 'benefits', 'advantages'
-    ];
-    
-    // Combine prefixes with the keyword
-    const prefixVariations = prefixes.map(prefix => `${prefix} ${input}`);
-    
-    // Combine keyword with suffixes
-    const suffixVariations = suffixes.map(suffix => `${input} ${suffix}`);
-    
-    // Combine all variations
-    const allKeywords = [
-      // Start with the basic keyword
-      input,
-      // Add all our variations
-      ...questions,
-      ...actions,
-      ...prefixVariations,
-      ...suffixVariations
-    ];
-    
-    // Filter out duplicates
-    const baseKeywords = allKeywords.filter((item, index) => allKeywords.indexOf(item) === index);
-    
-    // Generate some fallback data with randomized metrics
-    return baseKeywords.map(keyword => {
-      // Generate random but somewhat reasonable metrics
-      const searchVolume = Math.floor(Math.random() * 9000) + 1000;
-      const competition = Math.random();
-      const competitionLevel = this.getCompetitionLevel(competition);
-      const cpc = (Math.random() * 4) + 0.5;
-      const difficulty = Math.floor(Math.random() * 80) + 10;
-      
-      // Determine intent based on keyword pattern
-      const intent = this.determineIntent({ keyword });
-      
-      // Generate random trend data (12 months)
-      const trend = Array.from({ length: 12 }, () => Math.floor(Math.random() * searchVolume * 1.5));
-      
-      return {
-        keyword,
-        searchVolume,
-        cpc,
-        competition,
-        competitionLevel,
-        intent,
-        trend,
-        difficulty,
+    // Add a few generic keywords ONLY for UI display purposes
+    if (simplifiedTerms.length > 0) {
+      // Add just the first generic term with a flag showing it's a suggested term
+      const genericKeyword = simplifiedTerms[0];
+      result.push({
+        keyword: `Try API search for: ${genericKeyword}`,
+        searchVolume: 0,
+        cpc: 0,
+        competition: 0,
+        competitionLevel: "Low",
+        intent: "Informational",
+        trend: Array(12).fill(0),
+        difficulty: 0,
         selected: false
-      };
-    });
+      });
+    }
+    
+    return result;
   }
 
   /**
