@@ -713,6 +713,55 @@ export class DataForSEOService {
           }
         }
         
+        // Now add related keywords from API calls to get many more keyword variations
+        // This is a crucial step to increase our keyword count to 100-200
+        console.log(`Generating related keywords via API calls...`);
+        
+        try {
+          // Use the top 3 keywords with highest search volume to generate related terms
+          const topKeywords = sortedKeywords.slice(0, 3).filter(k => (k.searchVolume || 0) > 0);
+          let relatedKeywords: KeywordData[] = [];
+          
+          // Make API calls for related keywords (these will be entirely different keywords)
+          for (const topKeyword of topKeywords) {
+            try {
+              console.log(`Getting related keywords for: ${topKeyword.keyword}`);
+              // This call will make additional API requests to different endpoints
+              const moreKeywords = await this.generateRelatedKeywords(topKeyword);
+              console.log(`Found ${moreKeywords.length} related keywords for ${topKeyword.keyword}`);
+              relatedKeywords = [...relatedKeywords, ...moreKeywords];
+            } catch (err: any) {
+              console.error(`Error getting related keywords for ${topKeyword.keyword}: ${err.message}`);
+            }
+            
+            // Don't overwhelm the API with too many requests
+            if (relatedKeywords.length > 100) {
+              break;
+            }
+          }
+          
+          console.log(`Total related keywords found: ${relatedKeywords.length}`);
+          
+          // Add the related keywords to our existing keywords
+          // This should dramatically increase our keyword count
+          if (relatedKeywords.length > 0) {
+            // Remove any duplicates based on keyword text
+            const existingKeywordTexts = sortedKeywords.map(k => k.keyword.toLowerCase());
+            const uniqueRelatedKeywords = relatedKeywords.filter(
+              k => !existingKeywordTexts.includes(k.keyword.toLowerCase())
+            );
+            
+            console.log(`Adding ${uniqueRelatedKeywords.length} unique related keywords`);
+            
+            // Add the unique related keywords to our result set
+            sortedKeywords = [...sortedKeywords, ...uniqueRelatedKeywords];
+          }
+        } catch (relatedError: any) {
+          console.error(`Error processing related keywords: ${relatedError.message}`);
+          // Continue with what we have even if related keywords fail
+        }
+        
+        console.log(`Final keyword count: ${sortedKeywords.length}`);
         return sortedKeywords;
       } catch (apiError: any) {
         // If any error occurs during API call, log it and use fallback
