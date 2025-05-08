@@ -111,15 +111,97 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       ? response.content[0].text 
       : JSON.stringify(response.content[0]);
     
-    // Find JSON content - handle any wrapping text Claude might add
-    const jsonRegex = /\{[\s\S]*\}/;
-    const match = responseText.match(jsonRegex);
+    console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
     
-    if (!match) {
-      throw new Error("Failed to parse JSON from Claude response");
+    // Try different strategies to extract valid JSON from Claude's response
+    let jsonContent;
+    
+    try {
+      // Strategy 1: Find the most complete JSON object in the response
+      const jsonObjectRegex = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}/g;
+      const jsonMatches = responseText.match(jsonObjectRegex);
+      
+      if (jsonMatches && jsonMatches.length > 0) {
+        // Find the longest match, which is likely the complete JSON
+        const longestMatch = jsonMatches.reduce((longest, current) => 
+          current.length > longest.length ? current : longest, "");
+        
+        if (longestMatch) {
+          console.log("Found JSON object match:", longestMatch.substring(0, 100) + "...");
+          jsonContent = JSON.parse(longestMatch);
+        }
+      }
+    } catch (jsonError: any) {
+      console.log("Error parsing complete JSON object:", jsonError?.message || "Unknown error");
     }
     
-    const jsonContent = JSON.parse(match[0]);
+    // Strategy 2: If strategy 1 fails, try to extract JSON by matching braces
+    if (!jsonContent) {
+      try {
+        let braceCount = 0;
+        let startIndex = -1;
+        let jsonCandidate = "";
+        
+        // Find the opening brace
+        startIndex = responseText.indexOf('{');
+        
+        if (startIndex >= 0) {
+          for (let i = startIndex; i < responseText.length; i++) {
+            jsonCandidate += responseText[i];
+            
+            if (responseText[i] === '{') braceCount++;
+            if (responseText[i] === '}') braceCount--;
+            
+            // When braces are balanced, we've found a complete JSON object
+            if (braceCount === 0 && jsonCandidate.length > 2) {
+              console.log("Found balanced JSON via brace counting:", jsonCandidate.substring(0, 100) + "...");
+              jsonContent = JSON.parse(jsonCandidate);
+              break;
+            }
+          }
+        }
+      } catch (balancedError: any) {
+        console.log("Error parsing balanced braces JSON:", balancedError?.message || "Unknown error");
+      }
+    }
+    
+    // Strategy 3: Manual extraction of key fields if JSON parsing fails
+    if (!jsonContent) {
+      console.log("Attempting manual extraction of content components...");
+      
+      // Extract title
+      const titleMatch = responseText.match(/"title"\s*:\s*"([^"]+)"/);
+      const title = titleMatch ? titleMatch[1] : "Blog Post";
+      
+      // Extract content - look for content field followed by a large HTML block
+      const contentMatch = responseText.match(/"content"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*})/);
+      let content = contentMatch ? contentMatch[1] : "";
+      
+      // Unescape content string
+      content = content.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+      
+      // Extract tags
+      const tagsMatch = responseText.match(/"tags"\s*:\s*\[([\s\S]+?)\]/);
+      const tagsString = tagsMatch ? tagsMatch[1] : "";
+      const tags = tagsString.split(',').map(tag => 
+        tag.trim().replace(/^"|"$/g, '')
+      ).filter(Boolean);
+      
+      // Extract meta description
+      const metaMatch = responseText.match(/"metaDescription"\s*:\s*"([^"]+)"/);
+      const metaDescription = metaMatch ? metaMatch[1] : "";
+      
+      jsonContent = {
+        title,
+        content,
+        tags,
+        metaDescription
+      };
+    }
+    
+    if (!jsonContent) {
+      throw new Error("Failed to extract content from Claude response using all available methods");
+    }
     
     return {
       title: jsonContent.title,

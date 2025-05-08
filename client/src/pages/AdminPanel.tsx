@@ -1462,10 +1462,11 @@ export default function AdminPanel() {
                             description: "Images will be included in your content",
                           });
                         }}
-                        productTitle={productTitle}
-                        productId={productId}
-                        productDescription={productDescription}
                         initialSelectedImages={selectedImages}
+                        selectedKeywords={selectedKeywords.map(k => ({
+                          keyword: k.keyword,
+                          isMainKeyword: k === selectedKeywords[0] // First keyword is main
+                        }))}
                       />
                     </div>
                     
