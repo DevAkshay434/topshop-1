@@ -217,6 +217,13 @@ export default function PostList({
                                 : "Draft"}
                           </span>
                         </p>
+                        {post.category && (
+                          <p className="mt-2 flex items-center text-sm text-neutral-500 sm:mt-0 sm:ml-6">
+                            <span className="px-2 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-700">
+                              {post.category}
+                            </span>
+                          </p>
+                        )}
                         {post.status === "published" && (
                           <p className="mt-2 flex items-center text-sm text-neutral-500 sm:mt-0 sm:ml-6">
                             <Eye className="text-neutral-400 mr-1 h-4 w-4" />

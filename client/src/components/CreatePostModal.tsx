@@ -330,6 +330,9 @@ export default function CreatePostModal({
                         <SelectItem value="Seasonal Trends">Seasonal Trends</SelectItem>
                         <SelectItem value="Accessories">Accessories</SelectItem>
                         <SelectItem value="Sustainability">Sustainability</SelectItem>
+                        <SelectItem value="Selected">Selected</SelectItem>
+                        <SelectItem value="Featured">Featured</SelectItem>
+                        <SelectItem value="New Arrivals">New Arrivals</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
