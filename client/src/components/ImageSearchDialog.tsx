@@ -80,14 +80,24 @@ export default function ImageSearchDialog({
     }
   }, [initialSelectedImages, open]);
 
-  // Just open the dialog without auto-populating or auto-searching
+  // Pre-populate with main keyword if available and auto-suggest search terms based on it
   useEffect(() => {
-    // No longer auto-populate or search based on title
     if (open && imageSearchHistory.length === 0 && !searchedImages.length) {
-      // Just display empty search - user must enter their own query
-      setImageSearchQuery('');
+      // Find the main keyword if available
+      const mainKeyword = selectedKeywords.find(kw => kw.isMainKeyword);
+      
+      if (mainKeyword) {
+        // Pre-populate the search box with the main keyword
+        setImageSearchQuery(mainKeyword.keyword);
+        
+        // Don't auto-search - let the user initiate it
+        console.log(`Pre-populated image search with main keyword: ${mainKeyword.keyword}`);
+      } else {
+        // If no main keyword, just leave empty
+        setImageSearchQuery('');
+      }
     }
-  }, [open, imageSearchHistory.length, searchedImages.length]);
+  }, [open, imageSearchHistory.length, searchedImages.length, selectedKeywords]);
 
   // Handle image search using Pexels API
   const handleImageSearch = async (query: string) => {
@@ -300,32 +310,70 @@ export default function ImageSearchDialog({
               </Button>
             </div>
             
-            {/* Example search prompts */}
+            {/* Example search prompts or keyword-based suggestions */}
             {!searchedImages.length && !isSearchingImages && (
               <div className="rounded-md bg-blue-50 p-3">
-                <div className="text-sm font-medium text-blue-800 mb-2">Try these realistic search prompts:</div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {[
-                    "family drinking water",
-                    "water filter in kitchen",
-                    "child drinking water",
-                    "filtered water pouring glass",
-                    "water filter installation",
-                    "clean tap water"
-                  ].map((example, idx) => (
-                    <Badge 
-                      key={idx} 
-                      variant="secondary" 
-                      className="cursor-pointer hover:bg-blue-100 py-1.5 justify-center"
-                      onClick={() => {
-                        setImageSearchQuery(example);
-                        handleImageSearch(example);
-                      }}
-                    >
-                      {example}
-                    </Badge>
-                  ))}
-                </div>
+                {/* If we have a main keyword, show suggestions based on it */}
+                {selectedKeywords.some(kw => kw.isMainKeyword) ? (
+                  <>
+                    <div className="text-sm font-medium text-blue-800 mb-2">
+                      Search suggestions based on your main keyword:
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {selectedKeywords.filter(kw => kw.isMainKeyword).map((mainKw, idx) => {
+                        // Generate search variations based on the main keyword
+                        const variations = [
+                          mainKw.keyword,
+                          `${mainKw.keyword} product`,
+                          `${mainKw.keyword} in use`,
+                          `person using ${mainKw.keyword}`,
+                          `${mainKw.keyword} lifestyle`,
+                          `${mainKw.keyword} close up`
+                        ];
+                        
+                        return variations.map((variation, vIdx) => (
+                          <Badge 
+                            key={`${idx}-${vIdx}`} 
+                            variant="secondary" 
+                            className={`cursor-pointer hover:bg-blue-100 py-1.5 justify-center ${vIdx === 0 ? 'bg-blue-200 hover:bg-blue-300' : ''}`}
+                            onClick={() => {
+                              setImageSearchQuery(variation);
+                              handleImageSearch(variation);
+                            }}
+                          >
+                            {variation}
+                          </Badge>
+                        ));
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm font-medium text-blue-800 mb-2">Try these realistic search prompts:</div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {[
+                        "family drinking water",
+                        "water filter in kitchen",
+                        "child drinking water",
+                        "filtered water pouring glass",
+                        "water filter installation",
+                        "clean tap water"
+                      ].map((example, idx) => (
+                        <Badge 
+                          key={idx} 
+                          variant="secondary" 
+                          className="cursor-pointer hover:bg-blue-100 py-1.5 justify-center"
+                          onClick={() => {
+                            setImageSearchQuery(example);
+                            handleImageSearch(example);
+                          }}
+                        >
+                          {example}
+                        </Badge>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

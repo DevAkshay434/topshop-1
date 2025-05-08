@@ -92,7 +92,7 @@ export default function CreatePostModal({
         : new Date().toISOString().split('T')[0],
       scheduleTime: initialData?.scheduledDate 
         ? new Date(initialData.scheduledDate).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) 
-        : "09:00",
+        : "09:30",
       status: initialData?.status || "draft",
     },
   });
