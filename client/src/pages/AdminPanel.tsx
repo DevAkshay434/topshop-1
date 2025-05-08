@@ -286,31 +286,19 @@ export default function AdminPanel() {
     enabled: selectedTab === "generate" && form.watch('articleType') === "blog"
   });
   
-  // Set default blog ID when blogs are loaded
-  useEffect(() => {
-    if (blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0) {
-      // If blogs are loaded and blogId is not set, set it to the first blog
-      if (!form.getValues('blogId')) {
-        console.log("Setting default blog ID to:", blogsQuery.data.blogs[0].id);
-        form.setValue('blogId', blogsQuery.data.blogs[0].id);
-      }
-    }
-  }, [blogsQuery.data, form]);
-
-  // Ensure articleType is correctly set to "blog"
+  // Initialize form defaults when data is loaded
   useEffect(() => {
     // First, ensure we have articleType set to "blog"
     if (!form.getValues('articleType')) {
       form.setValue('articleType', "blog");
-      console.log("Initializing articleType to 'blog'");
     }
     
-    // Then set the default blog ID if blogs are loaded
-    if (blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 && 
-        form.getValues('articleType') === "blog" && !form.getValues('blogId')) {
-      // Set the first blog as default
+    // Then set the default blog ID if blogs are loaded and no blog is selected
+    if (blogsQuery.data?.blogs && 
+        blogsQuery.data.blogs.length > 0 && 
+        form.getValues('articleType') === "blog" && 
+        !form.getValues('blogId')) {
       form.setValue('blogId', blogsQuery.data.blogs[0].id);
-      console.log("Setting default blog ID to:", blogsQuery.data.blogs[0].id);
     }
   }, [blogsQuery.data, form]);
   
@@ -916,13 +904,10 @@ export default function AdminPanel() {
                               <Select 
                                 onValueChange={field.onChange} 
                                 value={field.value || ""} // Use controlled component pattern
-                                defaultValue={blogsQuery.data?.blogs?.[0]?.id || ""} // Set default value to first blog
                               >
                                 <FormControl>
                                   <SelectTrigger className="border border-gray-300">
-                                    <SelectValue placeholder="Select blog">
-                                      {blogsQuery.data?.blogs?.find(blog => blog.id === field.value)?.title || "Select blog"}
-                                    </SelectValue>
+                                    <SelectValue placeholder="Select blog" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
