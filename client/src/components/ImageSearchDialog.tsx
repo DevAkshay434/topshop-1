@@ -133,8 +133,8 @@ export default function ImageSearchDialog({
         method: 'POST',
         data: {
           query: trimmedQuery,
-          count: 10, // Request 10 images to choose from
-          productId: productId // Include productId if available to fetch product images
+          count: 20, // Request more images to give better options
+          source: sourceFilter !== 'all' ? sourceFilter : undefined
         }
       });
       
