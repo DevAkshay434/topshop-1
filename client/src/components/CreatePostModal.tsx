@@ -34,7 +34,8 @@ import {
   List, 
   ListOrdered, 
   Image, 
-  ShoppingBag 
+  ShoppingBag,
+  CheckCircle2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -107,6 +108,11 @@ const formSchema = insertBlogPostSchema.extend({
   // Override date fields with more flexible handling
   publishedDate: z.any().optional(),
   scheduledDate: z.any().optional(),
+  // Additional fields for blog selection and product association
+  blogId: z.string().optional(),
+  shopifyBlogId: z.string().optional(),
+  articleType: z.enum(["blog", "page"]).default("blog"),
+  productIds: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -166,16 +172,25 @@ export default function CreatePostModal({
         ? generatedContent.tags.join(", ") 
         : generatedContent.title?.split(" ").slice(0, 3).join(", ") || "";
       
+      // Get current values
+      const currentValues = form.getValues();
+      
+      // Update form values
       form.reset({
-        ...form.getValues(),
+        ...currentValues,
         title: generatedContent.title || "New Blog Post",
         content: generatedContent.content || "",
         tags: formattedTags.current,
-        // If we have a selected blog ID, set it in the form
-        blogId: selectedBlogId || form.getValues('blogId'),
-        // Set article type if provided
-        articleType: articleType || form.getValues('articleType'),
       });
+      
+      // Set additional fields after reset
+      if (selectedBlogId) {
+        form.setValue('blogId', selectedBlogId);
+      }
+      
+      if (articleType) {
+        form.setValue('articleType', articleType as "blog" | "page");
+      }
     } else if (initialData) {
       // Make sure form gets reset with initial data when editing an existing post
       form.reset({
@@ -195,15 +210,27 @@ export default function CreatePostModal({
           ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
           : "09:30",
         status: initialData.status || "draft",
-        // If we have a selected blog ID, set it in the form
-        blogId: selectedBlogId || initialData.blogId,
-        // Set article type if provided
-        articleType: articleType || initialData.articleType || "blog",
       });
+      
+      // Set additional fields after reset
+      if (selectedBlogId || initialData.blogId) {
+        form.setValue('blogId', selectedBlogId || initialData.blogId);
+      }
+      
+      if (articleType || initialData.articleType) {
+        form.setValue('articleType', 
+          (articleType || initialData.articleType || "blog") as "blog" | "page"
+        );
+      }
     } else {
       // For new posts without generated content, still use the selected blog ID and article type
-      form.setValue('blogId', selectedBlogId || form.getValues('blogId'));
-      form.setValue('articleType', articleType || form.getValues('articleType') || "blog");
+      if (selectedBlogId) {
+        form.setValue('blogId', selectedBlogId);
+      }
+      
+      form.setValue('articleType', 
+        (articleType || "blog") as "blog" | "page"
+      );
     }
   }, [generatedContent, initialData, form, storeTimezone, tomorrowDateFormatted, selectedBlogId, articleType]);
   
@@ -211,14 +238,23 @@ export default function CreatePostModal({
     setIsSubmitting(true);
     
     try {
+      // Create the base post data from form values
       let postData: any = {
         title: values.title,
         content: values.content,
         category: values.category,
         tags: values.tags,
-        blogId: selectedBlogId || form.getValues('blogId'),
-        articleType: articleType || form.getValues('articleType') || "blog",
+        shopifyBlogId: values.shopifyBlogId,
       };
+      
+      // Add blogId and articleType if available
+      if (selectedBlogId || values.blogId) {
+        postData.blogId = selectedBlogId || values.blogId;
+      }
+      
+      if (articleType || values.articleType) {
+        postData.articleType = articleType || values.articleType || "blog";
+      }
       
       // Include selected products if available
       if (selectedProducts && selectedProducts.length > 0) {
@@ -538,6 +574,29 @@ export default function CreatePostModal({
                   </FormItem>
                 )}
               />
+              
+              {/* Hidden field for blogId with visual indicator */}
+              <FormField
+                control={form.control}
+                name="blogId"
+                render={({ field }) => (
+                  <FormItem className="hidden">
+                    <FormControl>
+                      <Input type="hidden" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {/* Display selected blog info if available */}
+              {selectedBlogId && (
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                  <p className="text-sm text-blue-700 font-medium">
+                    <CheckCircle2 className="inline-block w-4 h-4 mr-1" />
+                    Content will be published to the selected blog
+                  </p>
+                </div>
+              )}
             </div>
             
             <FormField
