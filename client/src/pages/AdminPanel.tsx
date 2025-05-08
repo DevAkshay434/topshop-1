@@ -49,7 +49,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Clock, Copy, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Clock, Copy, ExternalLink, Package } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
@@ -149,8 +149,8 @@ export default function AdminPanel() {
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [showTitleSelector, setShowTitleSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<Collection[]>([]);
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
@@ -443,22 +443,32 @@ export default function AdminPanel() {
   
   // Handle product selection
   const handleProductsSelected = (productIds: string[]) => {
-    // Find the selected product to use for keyword generation and image suggestions
-    if (productIds.length > 0) {
-      const product = productsQuery.data?.products.find(p => p.id === productIds[0]);
+    // Save the actual product objects instead of just IDs
+    const selectedProductObjects: Product[] = [];
+    
+    productIds.forEach(id => {
+      const product = productsQuery.data?.products.find(p => p.id === id);
       if (product) {
-        setProductTitle(product.title);
-        setProductId(product.id);
-        
-        // Set product description if available
-        if (product.body_html) {
-          // Strip HTML tags for plain text description
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = product.body_html;
-          setProductDescription(tempDiv.textContent || tempDiv.innerText || '');
-        } else {
-          setProductDescription('');
-        }
+        selectedProductObjects.push(product);
+      }
+    });
+    
+    setSelectedProducts(selectedProductObjects);
+    
+    // Find the primary selected product to use for keyword generation and image suggestions
+    if (productIds.length > 0 && selectedProductObjects.length > 0) {
+      const primaryProduct = selectedProductObjects[0];
+      setProductTitle(primaryProduct.title);
+      setProductId(primaryProduct.id);
+      
+      // Set product description if available
+      if (primaryProduct.body_html) {
+        // Strip HTML tags for plain text description
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = primaryProduct.body_html;
+        setProductDescription(tempDiv.textContent || tempDiv.innerText || '');
+      } else {
+        setProductDescription('');
       }
     } else {
       // Clear product-related fields if no products selected
@@ -467,8 +477,8 @@ export default function AdminPanel() {
       setProductDescription('');
     }
     
+    // Update form value with the IDs
     form.setValue('productIds', productIds);
-    setSelectedProducts(productIds);
     
     // Move to keyword selection step after product selection
     setWorkflowStep('keyword');
@@ -479,8 +489,20 @@ export default function AdminPanel() {
   
   // Handle collection selection
   const handleCollectionsSelected = (collectionIds: string[]) => {
+    // Save the actual collection objects instead of just IDs
+    const selectedCollectionObjects: Collection[] = [];
+    
+    collectionIds.forEach(id => {
+      const collection = collectionsQuery.data?.collections.find(c => c.id === id);
+      if (collection) {
+        selectedCollectionObjects.push(collection);
+      }
+    });
+    
+    setSelectedCollections(selectedCollectionObjects);
+    
+    // Update form value with IDs
     form.setValue('collectionIds', collectionIds);
-    setSelectedCollections(collectionIds);
     
     // Only move to next step if no products were selected (products take precedence)
     const productIds = form.getValues('productIds') || [];
