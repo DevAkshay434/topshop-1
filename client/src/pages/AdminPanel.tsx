@@ -286,7 +286,18 @@ export default function AdminPanel() {
     enabled: selectedTab === "generate" && form.watch('articleType') === "blog"
   });
   
-  // Ensure articleType is correctly set to "blog" and set default blog ID when blogs are loaded
+  // Set default blog ID when blogs are loaded
+  useEffect(() => {
+    if (blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0) {
+      // If blogs are loaded and blogId is not set, set it to the first blog
+      if (!form.getValues('blogId')) {
+        console.log("Setting default blog ID to:", blogsQuery.data.blogs[0].id);
+        form.setValue('blogId', blogsQuery.data.blogs[0].id);
+      }
+    }
+  }, [blogsQuery.data, form]);
+
+  // Ensure articleType is correctly set to "blog"
   useEffect(() => {
     // First, ensure we have articleType set to "blog"
     if (!form.getValues('articleType')) {
@@ -905,10 +916,13 @@ export default function AdminPanel() {
                               <Select 
                                 onValueChange={field.onChange} 
                                 value={field.value || ""} // Use controlled component pattern
+                                defaultValue={blogsQuery.data?.blogs?.[0]?.id || ""} // Set default value to first blog
                               >
                                 <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select blog" />
+                                  <SelectTrigger className="border border-gray-300">
+                                    <SelectValue placeholder="Select blog">
+                                      {blogsQuery.data?.blogs?.find(blog => blog.id === field.value)?.title || "Select blog"}
+                                    </SelectValue>
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
