@@ -89,6 +89,7 @@ export interface ShopifyCollection {
 export class ShopifyService {
   private clients: Map<number, AxiosInstance> = new Map();
   private shopDomains: Map<number, string> = new Map();
+  private shopCache: Map<number, ShopifyShop> = new Map(); // Cache for shop details including timezone
   
   /**
    * Initialize a client for a specific store
@@ -533,6 +534,37 @@ export class ShopifyService {
   }
   
   /**
+   * Get shop/store information including timezone
+   * @param store The store to get information for
+   * @returns Shop information including timezone
+   */
+  public async getShopInfo(store: ShopifyStore): Promise<ShopifyShop> {
+    try {
+      // Check cache first
+      const cachedShop = this.shopCache.get(store.id);
+      if (cachedShop) {
+        return cachedShop;
+      }
+      
+      const client = this.getClient(store);
+      console.log(`Fetching shop information for ${store.shopName}`);
+      const response = await client.get('/shop.json');
+      
+      if (response.data && response.data.shop) {
+        // Cache the result
+        this.shopCache.set(store.id, response.data.shop);
+        console.log(`Shop timezone for ${store.shopName}: ${response.data.shop.iana_timezone || 'unknown'}`);
+        return response.data.shop;
+      } else {
+        throw new Error('Invalid shop data response');
+      }
+    } catch (error: any) {
+      console.error(`Error fetching shop information for ${store.shopName}:`, error);
+      throw new Error(`Failed to fetch shop information: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
    * Get products from a specific store
    * @param store The store to get products from
    * @param limit Maximum number of products to return
@@ -868,6 +900,7 @@ export const createPage = (store: ShopifyStore, title: string, content: string, 
 // Utility methods
 export const testConnection = (store: ShopifyStore) => shopifyServiceInstance.testConnection(store);
 export const getStoreUrl = (store: ShopifyStore) => shopifyServiceInstance.getStoreUrl(store);
+export const getShopInfo = (store: ShopifyStore) => shopifyServiceInstance.getShopInfo(store);
 
 // Legacy compatibility exports
 export const setConnection = (connection: ShopifyConnection) => shopifyServiceInstance.setConnection(connection);

@@ -76,6 +76,58 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  apiRouter.get("/shopify/store-info", async (req: Request, res: Response) => {
+    try {
+      const connection = await storage.getShopifyConnection();
+      
+      if (!connection || !connection.isConnected) {
+        return res.status(404).json({
+          success: false,
+          error: "No active Shopify connection found"
+        });
+      }
+      
+      // Create temporary store object
+      const store = {
+        id: connection.id,
+        shopName: connection.storeName,
+        accessToken: connection.accessToken,
+        scope: '',
+        defaultBlogId: connection.defaultBlogId || '',
+        isConnected: connection.isConnected,
+        lastSynced: connection.lastSynced,
+        installedAt: new Date(),
+        uninstalledAt: null,
+        planName: null,
+        chargeId: null,
+        trialEndsAt: null
+      };
+      
+      // Get shop info with timezone
+      const shopify = require('./services/shopify');
+      const shopInfo = await shopify.getShopInfo(store);
+      
+      res.json({
+        success: true,
+        shopInfo: {
+          name: shopInfo.name,
+          domain: shopInfo.domain,
+          email: shopInfo.email,
+          country: shopInfo.country,
+          currency: shopInfo.currency,
+          timezone: shopInfo.timezone,
+          iana_timezone: shopInfo.iana_timezone
+        }
+      });
+    } catch (error: any) {
+      console.error("Error fetching Shopify store info:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Failed to fetch store information"
+      });
+    }
+  });
+  
   // Get all connected Shopify stores
   apiRouter.get("/shopify/stores", async (req: Request, res: Response) => {
     try {
