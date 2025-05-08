@@ -1184,6 +1184,120 @@ export default function AdminPanel() {
                     <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
                       <h3 className="text-lg font-medium">Style & Formatting</h3>
                       
+                      {/* Content Generation Options */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <FormField
+                          control={form.control}
+                          name="buyerProfile"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Buyer Profile</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select buyer profile" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="auto">Auto (Based on Products)</SelectItem>
+                                  <SelectItem value="beginner">Beginner</SelectItem>
+                                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                                  <SelectItem value="advanced">Advanced</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription className="text-xs">
+                                Tailors content to the buyer's knowledge level
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="articleLength"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Article Length</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select article length" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="short">Short (~500 words)</SelectItem>
+                                  <SelectItem value="medium">Medium (~800 words)</SelectItem>
+                                  <SelectItem value="long">Long (~1200 words)</SelectItem>
+                                  <SelectItem value="comprehensive">Comprehensive (~1800 words)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription className="text-xs">
+                                Determines the detail and depth of the content
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="headingsCount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Number of Sections</FormLabel>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Number of H2 headings" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="2">2 Sections</SelectItem>
+                                  <SelectItem value="3">3 Sections</SelectItem>
+                                  <SelectItem value="4">4 Sections</SelectItem>
+                                  <SelectItem value="5">5 Sections</SelectItem>
+                                  <SelectItem value="6">6 Sections</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription className="text-xs">
+                                Controls how many H2 headings in the article
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="youtubeUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>YouTube Video URL (Optional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="https://www.youtube.com/watch?v=..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription className="text-xs">
+                                Embed a relevant YouTube video in your article
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
                       <FormField
                         control={form.control}
                         name="writingPerspective"
