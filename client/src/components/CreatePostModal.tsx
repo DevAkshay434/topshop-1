@@ -550,6 +550,45 @@ export default function CreatePostModal({
                           />
                         </div> : null;
                       
+                      // Check if content has embedded images
+                      const hasEmbeddedImages = content.includes('<img');
+                      
+                      // For content with embedded images, render directly with the YouTube embed
+                      if (hasEmbeddedImages) {
+                        // Apply formatting to content with embedded images
+                        let processedContent = content
+                          .replace(/\n/g, '<br />')
+                          .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
+                          .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
+                          .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
+                        
+                        // Handle YouTube embed if present
+                        if (youtubeEmbed) {
+                          if (processedContent.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
+                            // Replace placeholder with YouTube embed
+                            const parts = processedContent.split('[YOUTUBE_EMBED_PLACEHOLDER]');
+                            return (
+                              <>
+                                <div dangerouslySetInnerHTML={{ __html: parts[0] || '' }} />
+                                {youtubeEmbed}
+                                <div dangerouslySetInnerHTML={{ __html: parts[1] || '' }} />
+                              </>
+                            );
+                          } else {
+                            // Append YouTube embed at the end
+                            return (
+                              <>
+                                <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+                                {youtubeEmbed}
+                              </>
+                            );
+                          }
+                        }
+                        
+                        // Just render the content with embedded images
+                        return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
+                      }
+                      
                       // Check if content has YouTube placeholder
                       const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
                       

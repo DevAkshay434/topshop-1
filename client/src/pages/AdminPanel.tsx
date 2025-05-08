@@ -919,7 +919,7 @@ export default function AdminPanel() {
                                   ))}
                                 </SelectContent>
                               </Select>
-                              <FormDescription>
+                              <FormDescription className="sr-only">
                                 Select the blog where this post will be published
                               </FormDescription>
                               <FormMessage />
