@@ -111,6 +111,7 @@ export default function CreatePostModal({
   const { storeInfo } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formattedTags = useRef<string>("");
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   
   // Get the store timezone or fall back to UTC
   const storeTimezone = storeInfo?.iana_timezone || 'UTC';
@@ -292,54 +293,141 @@ export default function CreatePostModal({
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Post Content</FormLabel>
-                  <div className="mt-1 border border-neutral-200 rounded-md shadow-sm">
-                    <div className="bg-neutral-50 px-3 py-2 border-b border-neutral-200 flex flex-wrap gap-2">
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <Bold className="h-4 w-4" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <Italic className="h-4 w-4" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <Underline className="h-4 w-4" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <LinkIcon className="h-4 w-4" />
-                      </Button>
-                      <Separator orientation="vertical" className="h-5 mx-1" />
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <List className="h-4 w-4" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <ListOrdered className="h-4 w-4" />
-                      </Button>
-                      <Separator orientation="vertical" className="h-5 mx-1" />
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <Image className="h-4 w-4" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
-                        <ShoppingBag className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <FormControl>
-                      <Textarea
-                        rows={8}
-                        className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                        placeholder="Write your blog post content here or use AI to generate content..."
-                        {...field}
+            <Tabs 
+              value={activeTab} 
+              onValueChange={(value) => setActiveTab(value as "edit" | "preview")} 
+              className="w-full"
+            >
+              <TabsList className="grid grid-cols-2 mb-4">
+                <TabsTrigger value="edit">Edit</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="edit" className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Post Content</FormLabel>
+                      <div className="mt-1 border border-neutral-200 rounded-md shadow-sm">
+                        <div className="bg-neutral-50 px-3 py-2 border-b border-neutral-200 flex flex-wrap gap-2">
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <Bold className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <Italic className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <Underline className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <LinkIcon className="h-4 w-4" />
+                          </Button>
+                          <Separator orientation="vertical" className="h-5 mx-1" />
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <List className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <ListOrdered className="h-4 w-4" />
+                          </Button>
+                          <Separator orientation="vertical" className="h-5 mx-1" />
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <Image className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
+                            <ShoppingBag className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <FormControl>
+                          <Textarea
+                            rows={8}
+                            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            placeholder="Write your blog post content here or use AI to generate content..."
+                            {...field}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+              
+              <TabsContent value="preview" className="space-y-4">
+                <div className="border rounded-md p-4">
+                  <h2 className="text-2xl font-bold mb-4">{form.watch("title")}</h2>
+                  
+                  {/* Display the featured image */}
+                  {generatedContent?.featuredImage && (
+                    <div className="mb-6 flex justify-center">
+                      <img 
+                        src={generatedContent.featuredImage.url || generatedContent.featuredImage.src?.medium} 
+                        alt={generatedContent.featuredImage.alt || form.watch("title")} 
+                        className="rounded-md max-h-80 object-contain" 
                       />
-                    </FormControl>
+                    </div>
+                  )}
+                  
+                  {/* Convert content to paragraphs and insert secondary images */}
+                  <div className="space-y-4 post-content">
+                    {(() => {
+                      const content = form.watch("content");
+                      if (!content) return <p>No content to preview</p>;
+                      
+                      // Split content into paragraphs
+                      const paragraphs = content.split(/\n\n+/);
+                      const secondaryImages = generatedContent?.secondaryImages || [];
+                      
+                      // If no secondary images, just return the content as paragraphs
+                      if (!secondaryImages.length) {
+                        return paragraphs.map((para, i) => (
+                          <div key={i} dangerouslySetInnerHTML={{ __html: para.replace(/\n/g, '<br />') }} />
+                        ));
+                      }
+                      
+                      // Insert images at approximately every 3 paragraphs
+                      const result = [];
+                      let imageIndex = 0;
+                      
+                      paragraphs.forEach((para, i) => {
+                        result.push(
+                          <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para.replace(/\n/g, '<br />') }} />
+                        );
+                        
+                        // Insert an image after every 3 paragraphs, if available
+                        if ((i + 1) % 3 === 0 && imageIndex < secondaryImages.length) {
+                          const image = secondaryImages[imageIndex];
+                          result.push(
+                            <div key={`img-${i}`} className="my-6 flex justify-center">
+                              <img 
+                                src={image.url || image.src?.medium} 
+                                alt={image.alt || `Product image ${imageIndex + 1}`} 
+                                className="rounded-md max-h-64 object-contain" 
+                              />
+                            </div>
+                          );
+                          imageIndex++;
+                        }
+                      });
+                      
+                      return result;
+                    })()}
                   </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  
+                  {/* Tags section */}
+                  {form.watch("tags") && (
+                    <div className="mt-6 flex flex-wrap gap-2">
+                      {form.watch("tags").split(',').map((tag, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">
+                          {tag.trim()}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
