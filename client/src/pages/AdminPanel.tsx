@@ -654,6 +654,8 @@ export default function AdminPanel() {
           ? values.collectionIds.map(id => String(id)) 
           : [],
         keywords: Array.isArray(values.keywords) ? values.keywords : [],
+        // Ensure categories are properly included
+        categories: Array.isArray(values.categories) ? values.categories : [],
         // Ensure we have these required fields
         articleType: values.articleType || "blog",
         title: values.title || "",
@@ -1381,7 +1383,7 @@ export default function AdminPanel() {
                               <FormLabel>Categories</FormLabel>
                               <div className="flex flex-col space-y-3">
                                 <div className="flex flex-wrap gap-2 border p-2 rounded-md min-h-[38px]">
-                                  {field.value && field.value.length > 0 ? (
+                                  {field.value && Array.isArray(field.value) && field.value.length > 0 ? (
                                     field.value.map(category => {
                                       // Find display name for this category
                                       const foundCategory = [...predefinedCategories, ...customCategories]
@@ -1397,8 +1399,9 @@ export default function AdminPanel() {
                                           <X
                                             className="h-3 w-3 cursor-pointer"
                                             onClick={() => {
-                                              // Remove this category
-                                              const updatedCategories = field.value.filter(
+                                              // Remove this category - ensure field.value is an array
+                                              const currentCategories = Array.isArray(field.value) ? field.value : [];
+                                              const updatedCategories = currentCategories.filter(
                                                 (cat: string) => cat !== category
                                               );
                                               form.setValue('categories', updatedCategories);
@@ -1433,7 +1436,7 @@ export default function AdminPanel() {
                                         <DropdownMenuItem
                                           key={category.id}
                                           onClick={() => {
-                                            const currentCategories = field.value || [];
+                                            const currentCategories = Array.isArray(field.value) ? field.value : [];
                                             
                                             // Only add if not already in the list
                                             if (!currentCategories.includes(category.id)) {
@@ -1456,7 +1459,7 @@ export default function AdminPanel() {
                                             <DropdownMenuItem
                                               key={category.id}
                                               onClick={() => {
-                                                const currentCategories = field.value || [];
+                                                const currentCategories = Array.isArray(field.value) ? field.value : [];
                                                 
                                                 // Only add if not already in the list
                                                 if (!currentCategories.includes(category.id)) {
