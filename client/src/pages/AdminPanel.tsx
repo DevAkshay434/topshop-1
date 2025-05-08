@@ -49,7 +49,15 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Clock, Copy, ExternalLink, Package } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Clock, Copy, ExternalLink, Package, Plus, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
@@ -1358,6 +1366,157 @@ export default function AdminPanel() {
                               </FormControl>
                               <FormDescription className="text-xs">
                                 Embed a relevant YouTube video in your article
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {/* Categories Multi-select */}
+                        <FormField
+                          control={form.control}
+                          name="categories"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Categories</FormLabel>
+                              <div className="flex flex-col space-y-3">
+                                <div className="flex flex-wrap gap-2 border p-2 rounded-md min-h-[38px]">
+                                  {field.value && field.value.length > 0 ? (
+                                    field.value.map(category => {
+                                      // Find display name for this category
+                                      const foundCategory = [...predefinedCategories, ...customCategories]
+                                        .find(cat => cat.id === category);
+                                        
+                                      return (
+                                        <Badge
+                                          key={category}
+                                          variant="secondary"
+                                          className="flex items-center gap-1"
+                                        >
+                                          {foundCategory?.name || category}
+                                          <X
+                                            className="h-3 w-3 cursor-pointer"
+                                            onClick={() => {
+                                              // Remove this category
+                                              const updatedCategories = field.value.filter(
+                                                (cat: string) => cat !== category
+                                              );
+                                              form.setValue('categories', updatedCategories);
+                                            }}
+                                          />
+                                        </Badge>
+                                      );
+                                    })
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground p-1">
+                                      No categories selected
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 gap-2">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        type="button"
+                                      >
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Add Category
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-56">
+                                      <DropdownMenuLabel>Predefined Categories</DropdownMenuLabel>
+                                      <DropdownMenuSeparator />
+                                      {predefinedCategories.map(category => (
+                                        <DropdownMenuItem
+                                          key={category.id}
+                                          onClick={() => {
+                                            const currentCategories = field.value || [];
+                                            
+                                            // Only add if not already in the list
+                                            if (!currentCategories.includes(category.id)) {
+                                              form.setValue('categories', [
+                                                ...currentCategories,
+                                                category.id
+                                              ]);
+                                            }
+                                          }}
+                                        >
+                                          {category.name}
+                                        </DropdownMenuItem>
+                                      ))}
+                                      
+                                      {customCategories.length > 0 && (
+                                        <>
+                                          <DropdownMenuLabel>Custom Categories</DropdownMenuLabel>
+                                          <DropdownMenuSeparator />
+                                          {customCategories.map(category => (
+                                            <DropdownMenuItem
+                                              key={category.id}
+                                              onClick={() => {
+                                                const currentCategories = field.value || [];
+                                                
+                                                // Only add if not already in the list
+                                                if (!currentCategories.includes(category.id)) {
+                                                  form.setValue('categories', [
+                                                    ...currentCategories,
+                                                    category.id
+                                                  ]);
+                                                }
+                                              }}
+                                            >
+                                              {category.name}
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                              <FormDescription className="text-xs">
+                                Add categories to organize your content
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {/* Custom Category Input */}
+                        <FormField
+                          control={form.control}
+                          name="customCategory"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Add Custom Category</FormLabel>
+                              <div className="flex space-x-2">
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter new category name"
+                                    {...field}
+                                    className="flex-1"
+                                  />
+                                </FormControl>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (field.value) {
+                                      addCustomCategory(field.value);
+                                      // Clear the input after adding
+                                      form.setValue('customCategory', '');
+                                    }
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Add
+                                </Button>
+                              </div>
+                              <FormDescription className="text-xs">
+                                Create your own custom categories
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
