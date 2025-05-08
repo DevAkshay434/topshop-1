@@ -22,6 +22,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -255,10 +256,23 @@ export default function CreatePostModal({
     setIsSubmitting(true);
     
     try {
+      // Process YouTube embed if available
+      let finalContent = values.content;
+      
+      // If YouTube URL is provided, embed it at the end of the content
+      if (values.youtubeUrl) {
+        const videoId = values.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+        
+        if (videoId) {
+          // Add a section break and video embed HTML
+          finalContent = `${finalContent}\n\n<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">\n  <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n</div>`;
+        }
+      }
+      
       // Create the base post data from form values
       let postData: any = {
         title: values.title,
-        content: values.content,
+        content: finalContent, // Use the processed content with YouTube embed
         category: values.category,
         tags: values.tags,
         shopifyBlogId: values.shopifyBlogId,
