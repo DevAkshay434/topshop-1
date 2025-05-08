@@ -22,85 +22,42 @@ export default function ImageSearchSuggestions({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const requestInProgressRef = useRef<boolean>(false);
 
-  // Generate suggestions based on query and product title
+  // Generate suggestions based on query keywords only
   useEffect(() => {
     if (!visible) {
       setSuggestions([]);
       return;
     }
 
-    // If product title is available, use ChatGPT to generate product-specific suggestions
-    if (productTitle && productId && !requestInProgressRef.current) {
-      requestInProgressRef.current = true;
-      setIsLoading(true);
-      
-      const fetchProductSuggestions = async () => {
-        try {
-          console.log("Fetching AI-generated product-specific image suggestions for:", productTitle);
-          
-          const response = await apiRequest({
-            url: '/api/admin/image-suggestions-for-product',
-            method: 'POST',
-            data: {
-              productId: productId,
-              productTitle: productTitle,
-              productDescription: productDescription || '',
-              productType: '',
-              productTags: []
-            }
-          });
-          
-          if (response?.success && Array.isArray(response.suggestions) && response.suggestions.length > 0) {
-            console.log("Using AI-generated product-specific image suggestions:", response.suggestions);
-            setSuggestions(response.suggestions);
-          } else {
-            // Fall back to default generation if API returns no suggestions
-            generateDefaultSuggestions();
-          }
-        } catch (error) {
-          console.error("Error fetching product-specific image suggestions:", error);
-          // Fall back to manual generation if API fails
-          generateDefaultSuggestions();
-        } finally {
-          setIsLoading(false);
-          requestInProgressRef.current = false;
-        }
-      };
-      
-      fetchProductSuggestions();
-      return;
-    }
-
     // Default suggestion generation
-    generateDefaultSuggestions();
+    generateKeywordSuggestions();
     
-    function generateDefaultSuggestions() {
+    function generateKeywordSuggestions() {
       // If query is empty or very short, show pre-filled suggestions
       if (!query || query.length < 2) {
         // Emotional and lifestyle-focused suggestions for improved engagement
         const defaultSuggestions = [
-          "happy family drinking water",
-          "smiling child drinking water",
-          "pregnant woman drinking water",
-          "baby drinking filtered water",
-          "family in kitchen with water filter",
-          "woman enjoying clean water",
-          "athlete drinking filtered water",
-          "couple installing water filter",
-          "healthy lifestyle water drinking",
-          "mother giving child pure water",
-          "elderly person drinking clean water",
-          "water filter healthy home"
+          "happy family lifestyle",
+          "smiling person in kitchen",
+          "children playing at home",
+          "relaxed family moments",
+          "healthy lifestyle choices", 
+          "satisfied customer portrait",
+          "people drinking water",
+          "family in kitchen",
+          "modern home interior",
+          "healthy lifestyle",
+          "clean water splash",
+          "nature landscape"
         ];
         setSuggestions(defaultSuggestions);
         return;
       }
 
-      // Emotional and lifestyle-focused prefixes and suffixes for better engagement
-      const prefixes = ["happy", "smiling", "healthy", "satisfied", "relaxed"];
-      const suffixes = ["for family", "lifestyle", "in kitchen", "at home", "for health"];
+      // Generate variations with emotional and artistic modifiers
+      const prefixes = ["happy", "smiling", "healthy", "satisfied", "relaxed", "beautiful", "modern", "elegant"];
+      const suffixes = ["lifestyle", "in home", "at home", "portrait", "close-up", "landscape", "scene"];
       
       // Generate suggestions
       const newSuggestions: string[] = [];
@@ -118,18 +75,11 @@ export default function ImageSearchSuggestions({
         newSuggestions.push(`${query} ${suffix}`);
       });
       
-      // Product-specific suggestions using simple patterns
-      if (productTitle && productTitle.toLowerCase() !== query.toLowerCase()) {
-        newSuggestions.push(`${productTitle} with ${query}`);
-        newSuggestions.push(`${query} for ${productTitle}`);
-        newSuggestions.push(`${productTitle} ${query}`);
-      }
-      
       // Filter out duplicates and limit to 10 suggestions
       const uniqueSuggestions = Array.from(new Set(newSuggestions)).slice(0, 10);
       setSuggestions(uniqueSuggestions);
     }
-  }, [query, productTitle, productId, productDescription, visible]);
+  }, [query, visible]);
 
   if (!visible) {
     return null;
