@@ -1101,6 +1101,11 @@ Please suggest a meta description at the end of your response that includes at l
         }
         
         // Create blog post in DB
+        // Check if we have product information for setting the proper category
+        const hasCategoryProducts = productsInfo.length > 0 || 
+                             (requestData.productIds && requestData.productIds.length > 0);
+        const category = hasCategoryProducts ? "Selected" : "Generated Content";
+        
         const post = await storage.createBlogPost({
           title: generatedContent.title || requestData.title,
           content: finalContent,
@@ -1108,7 +1113,7 @@ Please suggest a meta description at the end of your response that includes at l
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
           author: connection.storeName.replace('.myshopify.com', ''),
           tags: generatedContent.tags?.join(',') || '',
-          category: "Generated Content",
+          category: category,
           shopifyPostId: null,
           shopifyBlogId: blogId
         });
