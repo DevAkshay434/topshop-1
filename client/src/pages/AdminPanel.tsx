@@ -243,6 +243,23 @@ export default function AdminPanel() {
     queryKey: ['/api/admin/blogs'],
     enabled: selectedTab === "generate" && form.watch('articleType') === "blog"
   });
+  
+  // Ensure articleType is correctly set to "blog" and set default blog ID when blogs are loaded
+  useEffect(() => {
+    // First, ensure we have articleType set to "blog"
+    if (!form.getValues('articleType')) {
+      form.setValue('articleType', "blog");
+      console.log("Initializing articleType to 'blog'");
+    }
+    
+    // Then set the default blog ID if blogs are loaded
+    if (blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 && 
+        form.getValues('articleType') === "blog" && !form.getValues('blogId')) {
+      // Set the first blog as default
+      form.setValue('blogId', blogsQuery.data.blogs[0].id);
+      console.log("Setting default blog ID to:", blogsQuery.data.blogs[0].id);
+    }
+  }, [blogsQuery.data, form]);
 
   // Query for connection status
   const servicesStatusQuery = useQuery<ServiceStatusResponse>({
@@ -643,7 +660,17 @@ export default function AdminPanel() {
           </p>
         </div>
         <Button 
-          onClick={() => setCreatePostModalOpen(true)}
+          onClick={() => {
+            // Ensure we have form data ready before opening the modal
+            if (!form.getValues('articleType')) {
+              form.setValue('articleType', "blog");
+            }
+            // Set default blog ID if not already set
+            if (!form.getValues('blogId') && blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0) {
+              form.setValue('blogId', blogsQuery.data.blogs[0].id);
+            }
+            setCreatePostModalOpen(true);
+          }}
           className="bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-900"
         >
           Create New Post
