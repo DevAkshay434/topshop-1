@@ -1557,24 +1557,34 @@ export default function AdminPanel() {
                       </Button>
                     </div>
                     
-                    <Button 
-                      type="button" 
-                      className="w-full mt-3" 
-                      disabled={isGenerating}
-                      onClick={() => {
-                        // Manually trigger form submission
-                        const values = form.getValues();
-                        console.log("Manual form submission triggered with values:", values);
-                        handleSubmit(values);
-                      }}
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generating Content...
-                        </>
-                      ) : "Generate Content"}
-                    </Button>
+                    {/* Sticky Generate Content button fixed to bottom of screen */}
+                    <div className="sticky bottom-6 left-0 right-0 mt-8 z-10">
+                      <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200">
+                        <Button 
+                          type="button" 
+                          className="w-full" 
+                          disabled={isGenerating}
+                          onClick={() => {
+                            // Manually trigger form submission
+                            const values = form.getValues();
+                            console.log("Manual form submission triggered with values:", values);
+                            handleSubmit(values);
+                          }}
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating Content...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Generate Content
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </form>
                 </Form>
               </CardContent>
