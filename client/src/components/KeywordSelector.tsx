@@ -62,6 +62,7 @@ export default function KeywordSelector({
 
   // Count selected keywords
   const selectedCount = keywords.filter(kw => kw.selected).length;
+  const mainKeyword = keywords.find(kw => kw.isMainKeyword);
 
   // Filter keywords based on search and intent filter
   const filteredKeywords = keywords.filter(keyword => {
@@ -69,6 +70,24 @@ export default function KeywordSelector({
     const matchesIntent = filterIntent ? keyword.intent === filterIntent : true;
     return matchesSearch && matchesIntent;
   });
+
+  // Set a keyword as the main keyword
+  const setAsMainKeyword = (index: number) => {
+    const updatedKeywords = [...keywords];
+    
+    // First, clear any existing main keyword flags
+    updatedKeywords.forEach(kw => {
+      if (kw.isMainKeyword) {
+        kw.isMainKeyword = false;
+      }
+    });
+    
+    // Set the new main keyword
+    updatedKeywords[index].isMainKeyword = true;
+    updatedKeywords[index].selected = true; // Ensure it's also selected
+    
+    setKeywords(updatedKeywords);
+  };
 
   // Handle keyword selection with limits (1 main + up to 3 secondary)
   const toggleKeywordSelection = (index: number) => {
@@ -88,21 +107,17 @@ export default function KeywordSelector({
     // Toggle the selection
     currentKeyword.selected = !currentlySelected;
     
-    // If this is the first selected keyword, mark it as the main one
-    // We'll use searchVolume to store the original placement order for sorting
+    // Store original search volume if not already saved
+    if (!currentKeyword._originalSearchVolume && currentKeyword.searchVolume) {
+      currentKeyword._originalSearchVolume = currentKeyword.searchVolume;
+    }
+    
+    // If this is the first selected keyword, automatically make it the main one
     if (selectedKeywords.length === 0 && currentKeyword.selected) {
-      // Store the original search volume before modifying
-      updatedKeywords.forEach(kw => {
-        if (!kw._originalSearchVolume && kw.searchVolume) {
-          kw._originalSearchVolume = kw.searchVolume;
-        }
-      });
-      
-      // Mark as main keyword by giving it highest search volume
       currentKeyword.isMainKeyword = true;
     }
     
-    // If this was a main keyword and we're unselecting it, 
+    // If this was the main keyword and we're unselecting it, 
     // promote the next selected keyword to main if any exist
     if (!currentlySelected && currentKeyword.isMainKeyword) {
       currentKeyword.isMainKeyword = false;
@@ -359,10 +374,21 @@ export default function KeywordSelector({
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        {keyword.keyword}
-                        {keyword.isMainKeyword && (
-                          <Badge className="ml-2 bg-blue-500 text-white">Main</Badge>
-                        )}
+                        <div className="flex items-center">
+                          {keyword.keyword}
+                          {keyword.isMainKeyword ? (
+                            <Badge className="ml-2 bg-blue-500 text-white">Main Keyword</Badge>
+                          ) : keyword.selected ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="ml-2 h-6 px-2 text-xs"
+                              onClick={() => setAsMainKeyword(keywords.findIndex(k => k.keyword === keyword.keyword))}
+                            >
+                              Set as main
+                            </Button>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {keyword.searchVolume !== undefined ? keyword.searchVolume.toLocaleString() : 'N/A'}
@@ -402,16 +428,39 @@ export default function KeywordSelector({
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <div className="text-sm">
+      <CardFooter className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="text-sm w-full sm:w-auto">
           {selectedCount > 0 ? (
-            <span className="flex items-center text-muted-foreground">
-              <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-              {selectedCount} keyword{selectedCount !== 1 ? 's' : ''} selected
+            <div className="flex flex-col gap-1">
+              <span className="flex items-center text-green-700 font-medium">
+                <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                {selectedCount} keyword{selectedCount !== 1 ? 's' : ''} selected
+              </span>
+              
+              <div className="flex flex-wrap gap-2 mt-1">
+                {keywords.filter(k => k.selected).map((kw, idx) => (
+                  <Badge 
+                    key={idx} 
+                    variant={kw.isMainKeyword ? "default" : "outline"}
+                    className={kw.isMainKeyword ? "bg-blue-500" : ""}
+                  >
+                    {kw.keyword}
+                    {kw.isMainKeyword && " (Main)"}
+                  </Badge>
+                ))}
+              </div>
+              
+              <span className="text-xs text-muted-foreground mt-1">
+                {mainKeyword ? `Main keyword: "${mainKeyword.keyword}"` : "No main keyword selected yet"}
+              </span>
+            </div>
+          ) : (
+            <span className="text-amber-600">
+              Please select at least 1 keyword (up to 4 max)
             </span>
-          ) : null}
+          )}
         </div>
-        <div className="space-x-2">
+        <div className="space-x-2 flex-shrink-0">
           {onClose && (
             <Button variant="outline" onClick={onClose}>
               Cancel

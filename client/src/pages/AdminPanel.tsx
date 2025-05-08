@@ -1436,18 +1436,12 @@ export default function AdminPanel() {
                                     />
                                   </div>
                                   <div className="flex items-center">
-                                    <Clock className="h-4 w-4 mr-2 text-blue-500" />
-                                    <FormField
-                                      control={form.control}
-                                      name="scheduledPublishTime"
-                                      render={({ field: timeField }) => (
-                                        <Input
-                                          type="time"
-                                          value={timeField.value || "09:30"}
-                                          onChange={(e) => timeField.onChange(e.target.value)}
-                                          className="w-auto"
-                                        />
-                                      )}
+                                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                                    <Input
+                                      type="time"
+                                      value={form.watch('scheduledPublishTime') || "09:30"}
+                                      onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+                                      className="w-auto"
                                     />
                                   </div>
                                 </div>
