@@ -574,11 +574,11 @@ export default function CreatePostModal({
                             // Split paragraph by placeholder, render parts separately with YouTube embed in between
                             const parts = formattedPara.split('[YOUTUBE_EMBED_PLACEHOLDER]');
                             return (
-                              <React.Fragment key={i}>
+                              <Fragment key={i}>
                                 {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
                                 {youtubeEmbed}
                                 {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
-                              </React.Fragment>
+                              </Fragment>
                             );
                           }
                           
@@ -587,7 +587,7 @@ export default function CreatePostModal({
                       }
                       
                       // Insert images and YouTube video at appropriate positions
-                      const result: React.ReactNode[] = [];
+                      const result: JSX.Element[] = [];
                       let imageIndex = 0;
                       let youtubeInserted = hasYoutubePlaceholder; // If we have a placeholder, we'll replace it instead
                       
@@ -610,7 +610,7 @@ export default function CreatePostModal({
                             result.push(<div key={`p-${i}-part1`} dangerouslySetInnerHTML={{ __html: parts[0] }} />);
                           }
                           
-                          result.push(<React.Fragment key={`yt-${i}`}>{youtubeEmbed}</React.Fragment>);
+                          result.push(<Fragment key={`yt-${i}`}>{youtubeEmbed}</Fragment>);
                           youtubeInserted = true;
                           
                           if (parts[1]) {
@@ -625,7 +625,7 @@ export default function CreatePostModal({
                         
                         // Insert YouTube video after first heading if not inserted yet and we're at a good position
                         if (youtubeEmbed && !youtubeInserted && i === 1) {
-                          result.push(<React.Fragment key={`yt-auto`}>{youtubeEmbed}</React.Fragment>);
+                          result.push(<Fragment key={`yt-auto`}>{youtubeEmbed}</Fragment>);
                           youtubeInserted = true;
                         }
                         
@@ -647,7 +647,7 @@ export default function CreatePostModal({
                       
                       // If YouTube video wasn't inserted and we have one, add it at the end
                       if (youtubeEmbed && !youtubeInserted) {
-                        result.push(<React.Fragment key="yt-end">{youtubeEmbed}</React.Fragment>);
+                        result.push(<Fragment key="yt-end">{youtubeEmbed}</Fragment>);
                       }
                       
                       return result;

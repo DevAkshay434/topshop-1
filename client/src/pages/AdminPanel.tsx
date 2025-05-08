@@ -2549,17 +2549,26 @@ export default function AdminPanel() {
       </Tabs>
       
       {/* Create Post Modal */}
-      <CreatePostModal
-        open={createPostModalOpen}
-        onOpenChange={setCreatePostModalOpen}
-        initialData={null}
-        generatedContent={generatedContent}
-        selectedProducts={selectedProducts}
-        selectedBlogId={form.getValues('blogId')}
-        articleType={form.getValues('articleType') as "blog" | "page"}
-        categories={Array.isArray(form.getValues('selectedCategories')) ? 
-          form.getValues('selectedCategories') : undefined}
-      />
+      {(() => {
+        // Get values beforehand to ensure proper typing
+        const blogId = form.getValues('blogId');
+        const articleType = form.getValues('articleType') as "blog" | "page";
+        const categoriesValue = form.getValues('categories');
+        const categories = Array.isArray(categoriesValue) ? categoriesValue : undefined;
+        
+        return (
+          <CreatePostModal
+            open={createPostModalOpen}
+            onOpenChange={setCreatePostModalOpen}
+            initialData={null}
+            generatedContent={generatedContent}
+            selectedProducts={selectedProducts}
+            selectedBlogId={blogId}
+            articleType={articleType}
+            categories={categories}
+          />
+        );
+      })()}
     </div>
   );
 }
