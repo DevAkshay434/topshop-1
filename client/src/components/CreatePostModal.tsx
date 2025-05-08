@@ -509,7 +509,7 @@ export default function CreatePostModal({
               </TabsContent>
               
               <TabsContent value="preview" className="space-y-4">
-                <div className="border rounded-md p-4 max-h-[400px] overflow-y-auto">
+                <div className="border rounded-md p-4 max-h-[500px] overflow-y-auto">
                   <h2 className="text-2xl font-bold mb-4">{form.watch("title")}</h2>
                   
                   {/* Display the featured image */}

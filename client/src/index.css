@@ -34,3 +34,42 @@
 .post-content strong {
   @apply inline-block mb-2;
 }
+
+/* Handle embedded images in content preview */
+.post-content img {
+  @apply mx-auto my-6 rounded-md max-h-80 object-contain block;
+}
+
+/* Center images in content and add proper spacing */
+.post-content .img-container,
+.post-content a:has(img) {
+  @apply flex justify-center my-6;
+}
+
+/* Ensure proper iframe display for embedded content like YouTube */
+.post-content iframe {
+  @apply mx-auto my-6 max-w-full rounded-md border border-gray-200;
+}
+
+/* Make sure images in the content preview render at correct size */
+.post-content div > img,
+.post-content a > img {
+  @apply max-w-full h-auto;
+}
+
+/* Fix styles for embedded content in dangerouslySetInnerHTML */
+.post-content div[dangerouslySetInnerHTML] img {
+  @apply mx-auto my-6 rounded-md max-h-80 object-contain;
+}
+
+.post-content div[dangerouslySetInnerHTML] a {
+  @apply text-blue-600 hover:underline;
+}
+
+.post-content div[dangerouslySetInnerHTML] h2 {
+  @apply text-2xl font-bold mt-8 mb-4;
+}
+
+.post-content div[dangerouslySetInnerHTML] h3 {
+  @apply text-xl font-medium mt-6 mb-3;
+}
