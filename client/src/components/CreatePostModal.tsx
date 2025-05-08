@@ -42,6 +42,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreatePostModalProps {
@@ -52,6 +54,34 @@ interface CreatePostModalProps {
     title: string;
     content: string;
     tags: string[];
+    featuredImage?: {
+      id: string;
+      url: string;
+      width: number;
+      height: number;
+      alt?: string;
+      src?: {
+        original: string;
+        large: string;
+        medium: string;
+        small: string;
+        thumbnail: string;
+      };
+    };
+    secondaryImages?: Array<{
+      id: string;
+      url: string;
+      width: number;
+      height: number;
+      alt?: string;
+      src?: {
+        original: string;
+        large: string;
+        medium: string;
+        small: string;
+        thumbnail: string;
+      };
+    }>;
   };
 }
 
