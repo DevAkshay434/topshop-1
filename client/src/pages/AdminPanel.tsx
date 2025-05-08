@@ -2139,8 +2139,9 @@ export default function AdminPanel() {
 
                         // If content has no YouTube placeholder but has secondary images
                         if (secondaryImages.length > 0) {
-                          if (hasImageTags) {
-                            // Content already has image tags - render as-is
+                          // Check if content has full HTML img tags (not just image placeholders or markdown)
+                          if (hasImageTags && /src\s*=\s*["']/i.test(content)) {
+                            // Content already has proper image tags with src attributes - render as-is
                             return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: content }} />;
                           } else {
                             // Split into paragraphs
@@ -2150,12 +2151,18 @@ export default function AdminPanel() {
                             
                             // Process each paragraph, inserting images occasionally
                             paragraphs.forEach((para: string, i: number) => {
-                              result.push(
-                                <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para }} />
-                              );
+                              // Check if paragraph already has an image tag but missing proper src (happens sometimes)
+                              const hasImgTagWithoutSrc = para.includes('<img') && !(/src\s*=\s*["']/i.test(para));
                               
-                              // Insert an image after some paragraphs
-                              if ((i + 1) % 3 === 0 && imageIndex < secondaryImages.length) {
+                              // If it's a paragraph with img tag without src, skip it (we'll add proper images instead)
+                              if (!hasImgTagWithoutSrc) {
+                                result.push(
+                                  <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para }} />
+                                );
+                              }
+                              
+                              // Insert an image after some paragraphs or if we found an img tag without src
+                              if ((hasImgTagWithoutSrc || (i + 1) % 3 === 0) && imageIndex < secondaryImages.length) {
                                 const image = secondaryImages[imageIndex];
                                 result.push(
                                   <div key={`img-${i}`} className="my-6 flex justify-center">
