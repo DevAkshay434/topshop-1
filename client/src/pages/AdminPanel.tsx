@@ -2097,6 +2097,9 @@ export default function AdminPanel() {
         onOpenChange={setCreatePostModalOpen}
         initialData={null}
         generatedContent={generatedContent}
+        selectedProducts={selectedProducts}
+        selectedBlogId={form.getValues('blogId')}
+        articleType={form.getValues('articleType') as "blog" | "page"}
       />
     </div>
   );

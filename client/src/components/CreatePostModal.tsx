@@ -50,6 +50,16 @@ interface CreatePostModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: any;
+  // Additional props for product and blog information
+  selectedProducts?: Array<{
+    id: string;
+    title: string;
+    handle: string;
+    image?: string;
+    body_html?: string;
+  }>;
+  selectedBlogId?: string;
+  articleType?: "blog" | "page";
   generatedContent?: {
     title: string;
     content: string;
@@ -105,7 +115,10 @@ export default function CreatePostModal({
   open, 
   onOpenChange, 
   initialData,
-  generatedContent
+  generatedContent,
+  selectedProducts,
+  selectedBlogId,
+  articleType = "blog"
 }: CreatePostModalProps) {
   const { toast } = useToast();
   const { storeInfo } = useStore();
@@ -146,6 +159,7 @@ export default function CreatePostModal({
   });
   
   useEffect(() => {
+    // Update the form when generated content is available
     if (generatedContent) {
       // Format tags array into a comma-separated string (safely handle undefined tags)
       formattedTags.current = Array.isArray(generatedContent.tags) 
@@ -157,6 +171,10 @@ export default function CreatePostModal({
         title: generatedContent.title || "New Blog Post",
         content: generatedContent.content || "",
         tags: formattedTags.current,
+        // If we have a selected blog ID, set it in the form
+        blogId: selectedBlogId || form.getValues('blogId'),
+        // Set article type if provided
+        articleType: articleType || form.getValues('articleType'),
       });
     } else if (initialData) {
       // Make sure form gets reset with initial data when editing an existing post
@@ -176,10 +194,18 @@ export default function CreatePostModal({
         scheduleTime: initialData.scheduledDate 
           ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
           : "09:30",
-        status: initialData.status || "draft"
+        status: initialData.status || "draft",
+        // If we have a selected blog ID, set it in the form
+        blogId: selectedBlogId || initialData.blogId,
+        // Set article type if provided
+        articleType: articleType || initialData.articleType || "blog",
       });
+    } else {
+      // For new posts without generated content, still use the selected blog ID and article type
+      form.setValue('blogId', selectedBlogId || form.getValues('blogId'));
+      form.setValue('articleType', articleType || form.getValues('articleType') || "blog");
     }
-  }, [generatedContent, initialData, form, storeTimezone, tomorrowDateFormatted]);
+  }, [generatedContent, initialData, form, storeTimezone, tomorrowDateFormatted, selectedBlogId, articleType]);
   
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
@@ -190,7 +216,14 @@ export default function CreatePostModal({
         content: values.content,
         category: values.category,
         tags: values.tags,
+        blogId: selectedBlogId || form.getValues('blogId'),
+        articleType: articleType || form.getValues('articleType') || "blog",
       };
+      
+      // Include selected products if available
+      if (selectedProducts && selectedProducts.length > 0) {
+        postData.productIds = selectedProducts.map(product => product.id);
+      }
       
       // Set status and dates based on publication type
       if (values.publicationType === "publish") {
@@ -310,6 +343,34 @@ export default function CreatePostModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Post Content</FormLabel>
+                      
+                      {/* Display selected products related to this content */}
+                      {selectedProducts && selectedProducts.length > 0 && (
+                        <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                          <h4 className="font-medium text-sm text-gray-700 mb-2">Products used for this content:</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedProducts.map(product => (
+                              <div key={product.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
+                                {product.image ? (
+                                  <img 
+                                    src={product.image} 
+                                    alt={product.title} 
+                                    className="w-8 h-8 object-contain rounded border border-gray-200" 
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                    <ShoppingBag className="h-4 w-4 text-gray-400" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-800 truncate">{product.title}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="mt-1 border border-neutral-200 rounded-md shadow-sm">
                         <div className="bg-neutral-50 px-3 py-2 border-b border-neutral-200 flex flex-wrap gap-2">
                           <Button type="button" variant="ghost" size="sm" className="p-1 h-auto">
