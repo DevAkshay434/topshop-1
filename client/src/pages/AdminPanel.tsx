@@ -868,6 +868,7 @@ export default function AdminPanel() {
                                         )}
                                         <div className="flex-1 min-w-0">
                                           <p className="text-sm font-medium text-gray-800 truncate">{product.title}</p>
+                                          <p className="text-xs text-gray-500 truncate">Product</p>
                                         </div>
                                       </div>
                                     ))}
@@ -903,6 +904,35 @@ export default function AdminPanel() {
                                   placeholder="Select collections to feature in content..."
                                 />
                               </FormControl>
+                              
+                              {/* Display selected collections more prominently */}
+                              {selectedCollections.length > 0 && (
+                                <div className="mt-3 p-3 bg-green-50 rounded-md border border-green-200">
+                                  <h4 className="font-medium text-sm text-green-700 mb-2">Selected Collections:</h4>
+                                  <div className="space-y-2">
+                                    {selectedCollections.map(collection => (
+                                      <div key={collection.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
+                                        {collection.image ? (
+                                          <img 
+                                            src={collection.image} 
+                                            alt={collection.title} 
+                                            className="w-10 h-10 object-contain rounded border border-gray-200" 
+                                          />
+                                        ) : (
+                                          <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                                            <Package className="h-5 w-5 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium text-gray-800 truncate">{collection.title}</p>
+                                          <p className="text-xs text-gray-500 truncate">Category</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
                               <FormDescription>
                                 Collections will be mentioned and linked in your content
                               </FormDescription>
