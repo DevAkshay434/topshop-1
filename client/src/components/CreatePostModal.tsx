@@ -5,7 +5,12 @@ import { queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { insertBlogPostSchema } from "@shared/schema";
-import { createDateInTimezone } from "@shared/timezone";
+import { 
+  createDateInTimezone, 
+  formatToTimezone, 
+  getTomorrowInTimezone 
+} from "@shared/timezone";
+import { useStore } from "@/contexts/StoreContext";
 import { 
   Dialog,
   DialogContent, 
@@ -73,8 +78,19 @@ export default function CreatePostModal({
   generatedContent
 }: CreatePostModalProps) {
   const { toast } = useToast();
+  const { storeInfo } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formattedTags = useRef<string>("");
+  
+  // Get the store timezone or fall back to UTC
+  const storeTimezone = storeInfo?.iana_timezone || 'UTC';
+  
+  // Get current and tomorrow's date in the store's timezone
+  const currentDate = new Date();
+  const currentDateFormatted = formatToTimezone(currentDate, storeTimezone, 'date');
+  const tomorrowDate = new Date(currentDate);
+  tomorrowDate.setDate(currentDate.getDate() + 1);
+  const tomorrowDateFormatted = formatToTimezone(tomorrowDate, storeTimezone, 'date');
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -89,10 +105,10 @@ export default function CreatePostModal({
           ? "schedule" 
           : "draft",
       scheduleDate: initialData?.scheduledDate 
-        ? new Date(initialData.scheduledDate).toISOString().split('T')[0] 
-        : new Date().toISOString().split('T')[0],
+        ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'date') 
+        : tomorrowDateFormatted,
       scheduleTime: initialData?.scheduledDate 
-        ? new Date(initialData.scheduledDate).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) 
+        ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
         : "09:30",
       status: initialData?.status || "draft",
     },
@@ -124,15 +140,15 @@ export default function CreatePostModal({
             ? "schedule" 
             : "draft",
         scheduleDate: initialData.scheduledDate 
-          ? new Date(initialData.scheduledDate).toISOString().split('T')[0] 
-          : new Date().toISOString().split('T')[0],
+          ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'date') 
+          : tomorrowDateFormatted,
         scheduleTime: initialData.scheduledDate 
-          ? new Date(initialData.scheduledDate).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) 
-          : "09:00",
+          ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
+          : "09:30",
         status: initialData.status || "draft"
       });
     }
-  }, [generatedContent, initialData, form]);
+  }, [generatedContent, initialData, form, storeTimezone, tomorrowDateFormatted]);
   
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
@@ -158,13 +174,16 @@ export default function CreatePostModal({
         
         // Combine date and time for scheduled date
         if (values.scheduleDate && values.scheduleTime) {
-          const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
+          // Use timezone-aware date creation
+          const scheduledDate = createDateInTimezone(
+            values.scheduleDate,
+            values.scheduleTime,
+            storeTimezone
+          );
           postData.scheduledDate = scheduledDate;
         } else {
-          // Default scheduling to tomorrow if not specified
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          postData.scheduledDate = tomorrow;
+          // Default scheduling to tomorrow in the store's timezone if not specified
+          postData.scheduledDate = getTomorrowInTimezone(storeTimezone);
         }
         // For schedule, still set publishedDate to null
         postData.publishedDate = null;
@@ -380,40 +399,49 @@ export default function CreatePostModal({
             />
             
             {publicationType === "schedule" && (
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="scheduleDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="scheduleDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="scheduleTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Time</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="text-xs text-gray-500 -mt-2">
+                  {storeInfo ? (
+                    <p>All times are in the store's timezone: <span className="font-medium">{storeInfo.timezone || storeInfo.iana_timezone}</span></p>
+                  ) : (
+                    <p>Times are in your local timezone</p>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="scheduleTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                </div>
+              </>
             )}
             
             <DialogFooter>

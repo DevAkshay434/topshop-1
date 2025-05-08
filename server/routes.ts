@@ -104,8 +104,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       };
       
       // Get shop info with timezone
-      const shopify = require('./services/shopify');
-      const shopInfo = await shopify.getShopInfo(store);
+      const shopInfo = await shopifyService.getShopInfo(store);
       
       res.json({
         success: true,

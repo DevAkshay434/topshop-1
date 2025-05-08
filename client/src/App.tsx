@@ -87,17 +87,20 @@ function Router() {
   );
 }
 
-// Import Shopify Provider
+// Import Providers
 import { ShopifyProvider } from './components/ShopifyProvider';
+import { StoreProvider } from './contexts/StoreContext';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ShopifyProvider>
-        <div className="min-h-screen flex flex-col">
-          <Router />
-          <Toaster />
-        </div>
+        <StoreProvider>
+          <div className="min-h-screen flex flex-col">
+            <Router />
+            <Toaster />
+          </div>
+        </StoreProvider>
       </ShopifyProvider>
     </QueryClientProvider>
   );
