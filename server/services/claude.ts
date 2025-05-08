@@ -65,7 +65,12 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
     - NEVER reference competitor websites or external commercial domains in any links or image sources
     - DO NOT include ANY external links except to trusted reference sites like .gov, .edu, or wikipedia.org
-    - DO NOT include external images from third-party domains - the images will be added separately
+    - DO NOT include external images from third-party domains - the system will insert 5 placeholder markers for images that will be replaced automatically
+    - Insert exactly 5 image placeholder markers distributed evenly throughout the content where images would enhance the article
+    - Use [IMAGE_PLACEHOLDER_1] for the featured image near the top of the article
+    - Use [IMAGE_PLACEHOLDER_2], [IMAGE_PLACEHOLDER_3], [IMAGE_PLACEHOLDER_4], and [IMAGE_PLACEHOLDER_5] for the remaining images
+    - For each image placeholder, add this HTML which will be replaced: <div class="image-container" style="text-align:center; margin: 20px 0;"><a href="PRODUCT_LINK">[IMAGE_PLACEHOLDER_X]</a></div>
+    - Place image placeholders at logical breaks between sections or after key points that would benefit from visual illustration
     
     Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
     
