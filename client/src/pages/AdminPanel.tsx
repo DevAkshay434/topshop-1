@@ -80,7 +80,12 @@ const contentFormSchema = z.object({
   postStatus: z.enum(["publish", "draft"]),
   generateImages: z.boolean().default(true),
   scheduledPublishDate: z.string().optional(), // Added for future scheduling date
-  scheduledPublishTime: z.string().optional()  // Added for future scheduling time
+  scheduledPublishTime: z.string().optional(),  // Added for future scheduling time
+  // New fields for content generation
+  buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
+  articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
+  headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
+  youtubeUrl: z.string().optional()
 });
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -186,7 +191,12 @@ export default function AdminPanel() {
     productIds: [], // This needs to be initialized as an empty array
     collectionIds: [], // This needs to be initialized as an empty array
     scheduledPublishTime: "09:30", // Default to 9:30 AM
-    blogId: "" // Initialize with empty string to ensure the field exists
+    blogId: "", // Initialize with empty string to ensure the field exists
+    // New fields
+    buyerProfile: "auto",
+    articleLength: "medium",
+    headingsCount: "3",
+    youtubeUrl: ""
   };
 
   // Form setup
