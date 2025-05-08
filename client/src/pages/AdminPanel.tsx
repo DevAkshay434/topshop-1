@@ -590,7 +590,12 @@ export default function AdminPanel() {
         introType: values.introType || "search_intent", // Set search_intent as default as requested
         region: values.region || "us", // Default to US region as requested
         // Make sure blogId is a string if it exists
-        blogId: values.blogId ? String(values.blogId) : undefined
+        blogId: values.blogId ? String(values.blogId) : undefined,
+        // Include new content generation option fields
+        buyerProfile: values.buyerProfile || "auto",
+        articleLength: values.articleLength || "medium",
+        headingsCount: values.headingsCount || "3",
+        youtubeUrl: values.youtubeUrl || ""
       };
       
       // Process keywords to ensure they're in the right format
