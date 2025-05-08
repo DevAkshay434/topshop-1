@@ -634,6 +634,21 @@ export default function AdminPanel() {
                 <Form {...form}>
                   <form onSubmit={(e) => { e.preventDefault(); }} className="space-y-4">
                     {/* Step guidance */}
+                    {/* Top button for Load Template */}
+                    <div className="flex justify-end mb-4">
+                      <Button
+                        type="button" 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowLoadTemplateDialog(true)}
+                        disabled={templates.length === 0}
+                        className="flex items-center gap-1"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Load Template
+                      </Button>
+                    </div>
+                    
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                       <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
                       <div className="flex items-center space-x-3">
@@ -810,6 +825,34 @@ export default function AdminPanel() {
                                   placeholder="Select products to feature in content..."
                                 />
                               </FormControl>
+                              
+                              {/* Display selected products more prominently */}
+                              {selectedProducts.length > 0 && (
+                                <div className="mt-3 p-3 bg-green-50 rounded-md border border-green-200">
+                                  <h4 className="font-medium text-sm text-green-700 mb-2">Selected Products:</h4>
+                                  <div className="space-y-2">
+                                    {selectedProducts.map(product => (
+                                      <div key={product.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
+                                        {product.image ? (
+                                          <img 
+                                            src={product.image} 
+                                            alt={product.title} 
+                                            className="w-10 h-10 object-contain rounded border border-gray-200" 
+                                          />
+                                        ) : (
+                                          <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                                            <Package className="h-5 w-5 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium text-gray-800 truncate">{product.title}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
                               <FormDescription>
                                 Products will be mentioned and linked in your content
                               </FormDescription>
