@@ -828,10 +828,10 @@ Please suggest a meta description at the end of your response that includes at l
             const productUrl = `https://${store.shopName}/products/${productsInfo[0].handle}`;
             console.log(`Linking featured image to product URL: ${productUrl}`);
             
-            featuredImageHtml = `<div style="text-align: center;"><a href="${productUrl}" target="_blank"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
+            featuredImageHtml = `<div class="image-container" style="text-align: center; margin: 20px 0;"><a href="${productUrl}" title="${productsInfo[0].title}"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
           } else {
             // No product to link to
-            featuredImageHtml = `<div style="text-align: center;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
+            featuredImageHtml = `<div class="image-container" style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
           }
           
           finalContent = `${featuredImageHtml}\n${finalContent}`;
@@ -928,7 +928,7 @@ Please suggest a meta description at the end of your response that includes at l
                   console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
                   
                   // Create center-aligned div with link to product - Using direct image URL
-                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><a href="${productUrl}"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></a>
+                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><a href="${productUrl}" title="${product.title}"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></a>
 <p style="margin-top: 5px; font-size: 0.9em;"><a href="${productUrl}">${product.title}</a></p></div>\n`;
                 } else {
                   // No product to link to - just insert the image
@@ -936,7 +936,7 @@ Please suggest a meta description at the end of your response that includes at l
                   console.log(`Inserting standalone image with URL: ${imageUrl}`);
                   
                   // Create center-aligned div without product link - Using direct image URL
-                  imageHtml = `\n<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></div>\n`;
+                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></div>\n`;
                 }
                 
                 // Insert the image HTML at the position
