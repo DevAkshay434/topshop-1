@@ -49,7 +49,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Copy, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Clock, Copy, ExternalLink } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
@@ -78,7 +78,8 @@ const contentFormSchema = z.object({
   toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]),
   postStatus: z.enum(["publish", "draft"]),
   generateImages: z.boolean().default(true),
-  scheduledPublishDate: z.string().optional() // Added for future scheduling
+  scheduledPublishDate: z.string().optional(), // Added for future scheduling date
+  scheduledPublishTime: z.string().optional()  // Added for future scheduling time
 });
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -181,7 +182,8 @@ export default function AdminPanel() {
     region: "us", // Default to US region for store
     keywords: [],
     productIds: [], // This needs to be initialized as an empty array
-    collectionIds: [] // This needs to be initialized as an empty array
+    collectionIds: [], // This needs to be initialized as an empty array
+    scheduledPublishTime: "09:30" // Default to 9:30 AM
   };
 
   // Form setup
@@ -1423,14 +1425,31 @@ export default function AdminPanel() {
                               </FormControl>
                               
                               {field.value && (
-                                <div className="flex items-center">
-                                  <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-                                  <Input
-                                    type="date"
-                                    value={field.value}
-                                    onChange={(e) => field.onChange(e.target.value)}
-                                    className="w-auto"
-                                  />
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center">
+                                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                                    <Input
+                                      type="date"
+                                      value={field.value}
+                                      onChange={(e) => field.onChange(e.target.value)}
+                                      className="w-auto"
+                                    />
+                                  </div>
+                                  <div className="flex items-center">
+                                    <Clock className="h-4 w-4 mr-2 text-blue-500" />
+                                    <FormField
+                                      control={form.control}
+                                      name="scheduledPublishTime"
+                                      render={({ field: timeField }) => (
+                                        <Input
+                                          type="time"
+                                          value={timeField.value || "09:30"}
+                                          onChange={(e) => timeField.onChange(e.target.value)}
+                                          className="w-auto"
+                                        />
+                                      )}
+                                    />
+                                  </div>
                                 </div>
                               )}
                             </FormItem>
