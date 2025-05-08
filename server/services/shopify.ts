@@ -570,18 +570,32 @@ export class ShopifyService {
    * @param limit Maximum number of products to return
    * @returns Array of Shopify products
    */
-  public async getProducts(store: ShopifyStore, limit: number = 50): Promise<ShopifyProduct[]> {
+  public async getProducts(store: ShopifyStore, limit: number = 50, productId?: string): Promise<ShopifyProduct[]> {
     try {
       const client = this.getClient(store);
-      const response = await client.get(`/products.json?limit=${limit}`);
       
-      // Add the full URL to each product
-      const products = response.data.products.map((product: any) => ({
-        ...product,
-        url: `https://${store.shopName}/products/${product.handle}`
-      }));
-      
-      return products;
+      // If a specific productId is provided, fetch just that product
+      if (productId) {
+        const response = await client.get(`/products/${productId}.json`);
+        const product = response.data.product;
+        
+        // Add the full URL to the product
+        return [{
+          ...product,
+          url: `https://${store.shopName}/products/${product.handle}`
+        }];
+      } else {
+        // Otherwise fetch products as normal
+        const response = await client.get(`/products.json?limit=${limit}`);
+        
+        // Add the full URL to each product
+        const products = response.data.products.map((product: any) => ({
+          ...product,
+          url: `https://${store.shopName}/products/${product.handle}`
+        }));
+        
+        return products;
+      }
     } catch (error: any) {
       console.error(`Error fetching products from Shopify store ${store.shopName}:`, error);
       throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
@@ -887,7 +901,7 @@ export const deleteArticle = (store: ShopifyStore, blogId: string, articleId: st
 export const getArticles = (store: ShopifyStore, blogId: string) => shopifyServiceInstance.getArticles(store, blogId);
 
 // Product and collection methods
-export const getProducts = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getProducts(store, limit);
+export const getProducts = (store: ShopifyStore, limit?: number, productId?: string) => shopifyServiceInstance.getProducts(store, limit, productId);
 export const getProductsById = (store: ShopifyStore, productIds: string[]) => shopifyServiceInstance.getProductsById(store, productIds);
 export const searchProducts = (store: ShopifyStore, query: string, limit?: number) => shopifyServiceInstance.searchProducts(store, query, limit);
 export const getCollections = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getCollections(store, limit);

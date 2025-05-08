@@ -24,6 +24,8 @@ interface PexelsImage {
   photographer?: string;
   photographer_url?: string;
   selected?: boolean;
+  isProductImage?: boolean;
+  productId?: string;
 }
 
 interface SearchHistory {
@@ -128,7 +130,8 @@ export default function ImageSearchDialog({
         method: 'POST',
         data: {
           query: trimmedQuery,
-          count: 10 // Request 10 images to choose from
+          count: 10, // Request 10 images to choose from
+          productId: productId // Include productId if available to fetch product images
         }
       });
       
@@ -573,7 +576,11 @@ export default function ImageSearchDialog({
                   <div 
                     key={image.id}
                     className={`relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 border-2 shadow hover:shadow-lg ${
-                      image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-slate-300'
+                      image.selected 
+                        ? 'border-blue-500 ring-2 ring-blue-300' 
+                        : image.isProductImage 
+                          ? 'border-green-500 hover:border-green-600' 
+                          : 'border-transparent hover:border-slate-300'
                     }`}
                     onClick={() => toggleImageSelection(image.id)}
                   >
