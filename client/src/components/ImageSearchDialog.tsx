@@ -26,6 +26,7 @@ interface PexelsImage {
   selected?: boolean;
   isProductImage?: boolean;
   productId?: string;
+  source?: 'pexels' | 'pixabay' | 'product';
 }
 
 interface SearchHistory {

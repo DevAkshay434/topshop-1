@@ -515,7 +515,13 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
       try {
         console.log(`Searching Pexels for: "${query}" (requesting ${imageCount} images)`);
         const pexelsResult = await pexelsService.safeSearchImages(query, imageCount);
-        images = pexelsResult.images;
+        
+        // Add source property to each image
+        images = pexelsResult.images.map(img => ({
+          ...img,
+          source: 'pexels'
+        }));
+        
         fallbackUsed = pexelsResult.fallbackUsed;
         sourcesUsed.push('pexels');
       } catch (error) {
@@ -546,7 +552,8 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
           },
           photographer: 'Pixabay',
           photographer_url: 'https://pixabay.com',
-          alt: img.alt || query
+          alt: img.alt || query,
+          source: 'pixabay'
         }));
         
         // If no images from Pexels or if explicitly requested Pixabay, use Pixabay images
@@ -613,7 +620,8 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
               photographer_url: '',
               alt: img.alt || products[0].title,
               isProductImage: true,
-              productId: productId
+              productId: productId,
+              source: 'product'
             }));
             
             // Add product images to the results
