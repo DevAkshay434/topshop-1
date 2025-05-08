@@ -5,6 +5,7 @@ import { queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { insertBlogPostSchema } from "@shared/schema";
+import { createDateInTimezone } from "@shared/timezone";
 import { 
   Dialog,
   DialogContent, 
