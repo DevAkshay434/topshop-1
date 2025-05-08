@@ -837,11 +837,14 @@ ${requestData.faqType !== 'none' ? `${(productsInfo.length > 0 || collectionsInf
 IMPORTANT FORMATTING REQUIREMENTS:
 1. Format the content using proper HTML (h2, h3, p, ul, li, table, etc.)
 2. NO H1 TAGS - the title will be set separately
-3. For links to products, use: <a href="{product-url}">{product-name}</a>
-4. For links to collections, use: <a href="{collection-url}">{collection-name}</a>
-5. For external citations, use proper hyperlinks
-6. Don't include repetitive conclusions or generic phrases
-7. Include all selected keywords in the content - this is critical for SEO
+3. Always add a <br> tag after bolded text in introductions (e.g., <strong>Bolded text</strong><br>Next sentence)
+4. Add proper spacing between sections with an extra line break (<br>) after each closing paragraph tag
+5. Center-align tables with inline styles (style="margin: 0 auto;width: 100%;text-align: center;")
+6. For links to products, use: <a href="{product-url}">{product-name}</a>
+7. For links to collections, use: <a href="{collection-url}">{collection-name}</a>
+8. For external citations, use proper hyperlinks
+9. Don't include repetitive conclusions or generic phrases
+10. Include all selected keywords in the content - this is critical for SEO
 
 Please suggest a meta description at the end of your response that includes at least 2 of the top keywords.
 `;
