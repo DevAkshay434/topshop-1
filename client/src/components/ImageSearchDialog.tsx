@@ -230,7 +230,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] max-h-[95vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -248,6 +248,12 @@ export default function ImageSearchDialog({
                   onChange={(e) => {
                     setImageSearchQuery(e.target.value);
                     setShowSearchSuggestions(e.target.value.length >= 2);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && imageSearchQuery.trim()) {
+                      e.preventDefault();
+                      handleImageSearch(imageSearchQuery.trim());
+                    }
                   }}
                   onFocus={() => setShowSearchSuggestions(true)} 
                   // Keep suggestions visible when input is focused
@@ -561,7 +567,7 @@ export default function ImageSearchDialog({
                 <h3 className="font-medium text-blue-900">Search results for "{imageSearchQuery}"</h3>
                 <p className="text-sm text-blue-700">Click on an image to select/deselect it</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[700px] overflow-y-auto p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto p-5" style={{ maxHeight: 'calc(80vh - 210px)' }}>
                 {searchedImages.map(image => (
                   <div 
                     key={image.id}
