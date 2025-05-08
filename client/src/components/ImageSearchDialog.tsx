@@ -63,6 +63,8 @@ export default function ImageSearchDialog({
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>(initialSelectedImages || []);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<SearchHistory[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'product'>('all');
+  const [availableSources, setAvailableSources] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Reset selected images when initialSelectedImages changes
@@ -141,6 +143,11 @@ export default function ImageSearchDialog({
           ...img,
           selected: selectedImages.some(selected => selected.id === img.id)
         }));
+        
+        // Track available image sources from the response
+        if (response.sourcesUsed && Array.isArray(response.sourcesUsed)) {
+          setAvailableSources(response.sourcesUsed);
+        }
         
         setSearchedImages(newImages);
         
@@ -568,11 +575,60 @@ export default function ImageSearchDialog({
           {searchedImages.length > 0 ? (
             <div className="border rounded-lg overflow-hidden shadow-sm bg-white">
               <div className="p-3 bg-blue-50 border-b">
-                <h3 className="font-medium text-blue-900">Search results for "{imageSearchQuery}"</h3>
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-medium text-blue-900">Search results for "{imageSearchQuery}"</h3>
+                  {availableSources.length > 1 && (
+                    <div className="flex gap-1">
+                      <Badge 
+                        variant={sourceFilter === 'all' ? 'default' : 'outline'} 
+                        className="cursor-pointer"
+                        onClick={() => setSourceFilter('all')}
+                      >
+                        All
+                      </Badge>
+                      {availableSources.includes('pexels') && (
+                        <Badge 
+                          variant={sourceFilter === 'pexels' ? 'default' : 'outline'} 
+                          className="cursor-pointer"
+                          onClick={() => setSourceFilter('pexels')}
+                        >
+                          Pexels
+                        </Badge>
+                      )}
+                      {availableSources.includes('pixabay') && (
+                        <Badge 
+                          variant={sourceFilter === 'pixabay' ? 'default' : 'outline'} 
+                          className="cursor-pointer"
+                          onClick={() => setSourceFilter('pixabay')}
+                        >
+                          Pixabay
+                        </Badge>
+                      )}
+                      {availableSources.includes('product') && (
+                        <Badge 
+                          variant={sourceFilter === 'product' ? 'default' : 'outline'} 
+                          className="cursor-pointer bg-green-100 hover:bg-green-200"
+                          onClick={() => setSourceFilter('product')}
+                        >
+                          Product
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <p className="text-sm text-blue-700">Click on an image to select/deselect it</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto p-5" style={{ maxHeight: 'calc(80vh - 210px)' }}>
-                {searchedImages.map(image => (
+                {searchedImages
+                  .filter(image => {
+                    // Apply source filtering
+                    if (sourceFilter === 'all') return true;
+                    if (sourceFilter === 'product') return image.isProductImage;
+                    if (sourceFilter === 'pexels') return image.source === 'pexels';
+                    if (sourceFilter === 'pixabay') return image.source === 'pixabay';
+                    return true;
+                  })
+                  .map(image => (
                   <div 
                     key={image.id}
                     className={`relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 border-2 shadow hover:shadow-lg ${
@@ -591,11 +647,29 @@ export default function ImageSearchDialog({
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      {image.alt && (
+                      {/* Label for image source - show product image label or alt text */}
+                      {image.isProductImage ? (
+                        <div className="absolute bottom-0 left-0 right-0 bg-green-600 text-white text-xs py-1 px-2 truncate">
+                          Product Image
+                        </div>
+                      ) : image.alt && (
                         <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs py-1 px-2 truncate">
                           {image.alt}
                         </div>
                       )}
+                      
+                      {/* Badge for image source */}
+                      <div className="absolute top-2 left-2 bg-white/90 rounded-md text-xs py-0.5 px-2 font-medium shadow-sm">
+                        {image.isProductImage ? (
+                          <span className="text-green-700">Product</span>
+                        ) : image.source === 'pexels' ? (
+                          <span className="text-blue-700">Pexels</span>
+                        ) : image.source === 'pixabay' ? (
+                          <span className="text-purple-700">Pixabay</span>
+                        ) : (
+                          <span className="text-gray-700">Stock</span>
+                        )}
+                      </div>
                     </div>
                     {image.selected ? (
                       <div className="absolute top-0 right-0 left-0 bottom-0 bg-blue-500/20 flex items-center justify-center">
