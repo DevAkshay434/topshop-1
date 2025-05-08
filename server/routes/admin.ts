@@ -686,6 +686,8 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
       headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
       youtubeUrl: z.string().optional(),
+      // Category support
+      categories: z.array(z.string()).optional(),
       // Additional fields from client
       selectedKeywordData: z.array(z.any()).optional()
     });
@@ -876,6 +878,12 @@ Target this content specifically for ${requestData.buyerProfile}-level users wit
       // Add headings count information
       if (requestData.headingsCount) {
         claudeUserPrompt += `\nStructure: Include exactly ${requestData.headingsCount} main sections with H2 headings.`;
+      }
+      
+      // Add category information if provided
+      if (requestData.categories && Array.isArray(requestData.categories) && requestData.categories.length > 0) {
+        claudeUserPrompt += `\nCategories: ${requestData.categories.join(', ')}
+When writing this content, specifically tailor it for these categories. Ensure the content emphasizes features, benefits, and topics that would be most relevant to readers interested in these categories.`;
       }
       
       // Add YouTube video embed instruction if URL is provided
@@ -1200,10 +1208,25 @@ Place this at a logical position in the content, typically after introducing a c
         }
         
         // Create blog post in DB
-        // Check if we have product information for setting the proper category
-        const hasCategoryProducts = productsInfo.length > 0 || 
-                             (requestData.productIds && requestData.productIds.length > 0);
-        const category = hasCategoryProducts ? "Selected" : "Generated Content";
+        // Use custom categories if available, or fall back to default category
+        let categoryValue = "";
+        
+        if (requestData.categories && Array.isArray(requestData.categories) && requestData.categories.length > 0) {
+          // Use the first category as the main category for the post
+          categoryValue = requestData.categories[0];
+          console.log(`Using custom category for post: ${categoryValue}`);
+        } else {
+          // Check if we have product information for setting the proper category
+          const hasCategoryProducts = productsInfo.length > 0 || 
+                               (requestData.productIds && requestData.productIds.length > 0);
+          categoryValue = hasCategoryProducts ? "Selected" : "Generated Content";
+          console.log(`Using default category for post: ${categoryValue}`);
+        }
+        
+        // Prepare categories string for storage
+        const categoriesString = requestData.categories && Array.isArray(requestData.categories) 
+                               ? requestData.categories.join(',') 
+                               : categoryValue;
         
         const post = await storage.createBlogPost({
           title: generatedContent.title || requestData.title,
@@ -1212,7 +1235,8 @@ Place this at a logical position in the content, typically after introducing a c
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
           author: connection.storeName.replace('.myshopify.com', ''),
           tags: generatedContent.tags?.join(',') || '',
-          category: category,
+          category: categoryValue,
+          categories: categoriesString,
           shopifyPostId: null,
           shopifyBlogId: blogId
         });

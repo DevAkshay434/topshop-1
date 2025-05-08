@@ -115,6 +115,7 @@ export const blogPosts = pgTable("blog_posts", {
   content: text("content").notNull(),
   featuredImage: text("featured_image"),
   category: text("category"),
+  categories: text("categories"), // Comma-separated list of category IDs
   tags: text("tags"),
   status: text("status").notNull().default("draft"), // draft, published, scheduled
   scheduledDate: timestamp("scheduled_date"),
@@ -148,6 +149,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts, {
   content: true, 
   featuredImage: true,
   category: true,
+  categories: true,
   tags: true,
   status: true,
   scheduledDate: true,
