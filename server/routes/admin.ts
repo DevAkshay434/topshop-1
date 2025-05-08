@@ -12,6 +12,7 @@ import {
 } from "../services/shopify";
 import { dataForSEOService, KeywordData } from "../services/dataforseo";
 import { pexelsService, type PexelsImage } from "../services/pexels";
+import { pixabayService, type PixabayImage } from "../services/pixabay";
 import { generateBlogContentWithClaude } from "../services/claude";
 import OpenAI from "openai";
 
@@ -491,7 +492,7 @@ adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) 
 adminRouter.post("/generate-images", async (req: Request, res: Response) => {
   try {
     console.log("Generate images request body:", req.body);
-    const { query, count } = req.body;
+    const { query, count, source } = req.body;
     
     if (!query) {
       console.log("Missing query in request body:", req.body);
@@ -502,16 +503,139 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
     }
     
     const imageCount = count || 10;
+    const requestedSource = source || 'all'; // Default to 'all' if not specified
     
-    // Search for images
-    console.log(`Searching Pexels for: "${query}" (requesting ${imageCount} images)`);
-    const { images, fallbackUsed } = await pexelsService.safeSearchImages(query, imageCount);
+    // Prepare response containers
+    let images: PexelsImage[] = [];
+    let fallbackUsed = false;
+    let sourcesUsed: string[] = [];
+    
+    // Try Pexels first if source is 'all' or 'pexels'
+    if (requestedSource === 'all' || requestedSource === 'pexels') {
+      try {
+        console.log(`Searching Pexels for: "${query}" (requesting ${imageCount} images)`);
+        const pexelsResult = await pexelsService.safeSearchImages(query, imageCount);
+        images = pexelsResult.images;
+        fallbackUsed = pexelsResult.fallbackUsed;
+        sourcesUsed.push('pexels');
+      } catch (error) {
+        console.error("Pexels search failed:", error);
+        fallbackUsed = true;
+      }
+    }
+    
+    // If Pexels returned no results or failed and source is 'all' or 'pixabay', try Pixabay
+    if ((images.length === 0 || requestedSource === 'pixabay') && 
+        (requestedSource === 'all' || requestedSource === 'pixabay')) {
+      try {
+        console.log(`Searching Pixabay for: "${query}" (requesting ${imageCount} images)`);
+        const pixabayResult = await pixabayService.safeGenerateImages(query, imageCount);
+        
+        // Convert Pixabay format to Pexels format for consistent client handling
+        const pixabayImages: PexelsImage[] = pixabayResult.images.map(img => ({
+          id: img.id,
+          width: img.width,
+          height: img.height,
+          url: img.url,
+          src: {
+            original: img.url,
+            large: img.url,
+            medium: img.url,
+            small: img.url,
+            thumbnail: img.url
+          },
+          photographer: 'Pixabay',
+          photographer_url: 'https://pixabay.com',
+          alt: img.alt || query
+        }));
+        
+        // If no images from Pexels or if explicitly requested Pixabay, use Pixabay images
+        if (images.length === 0 || requestedSource === 'pixabay') {
+          images = pixabayImages;
+        } else {
+          // Otherwise, add some Pixabay images to supplement Pexels
+          const remainingSlots = imageCount - images.length;
+          if (remainingSlots > 0) {
+            // Add Pixabay images until we reach the desired count
+            images = [...images, ...pixabayImages.slice(0, remainingSlots)];
+          }
+        }
+        
+        sourcesUsed.push('pixabay');
+        fallbackUsed = fallbackUsed || pixabayResult.fallbackUsed;
+      } catch (error) {
+        console.error("Pixabay search failed:", error);
+        // If Pexels already failed, we're in full fallback mode
+        fallbackUsed = true;
+      }
+    }
+    
+    // Search for product images if productId is provided
+    if (req.body.productId) {
+      try {
+        const { productId } = req.body;
+        const connection = await storage.getShopifyConnection();
+        
+        if (connection && connection.isConnected) {
+          // Create temporary store object
+          const store = {
+            id: connection.id,
+            shopName: connection.storeName,
+            accessToken: connection.accessToken,
+            scope: '',
+            defaultBlogId: connection.defaultBlogId || '',
+            isConnected: connection.isConnected,
+            lastSynced: connection.lastSynced,
+            installedAt: new Date(),
+            uninstalledAt: null,
+            planName: null,
+            chargeId: null,
+            trialEndsAt: null
+          };
+          
+          // Get the specific product to fetch its images
+          const products = await getProducts(store, 1, productId);
+          
+          if (products.length > 0 && products[0].images) {
+            const productImages = products[0].images.map((img: any, index: number) => ({
+              id: `product-${productId}-img-${index}`,
+              width: img.width || 800,
+              height: img.height || 800,
+              url: img.src,
+              src: {
+                original: img.src,
+                large: img.src,
+                medium: img.src,
+                small: img.src,
+                thumbnail: img.src
+              },
+              photographer: 'Product Image',
+              photographer_url: '',
+              alt: img.alt || products[0].title,
+              isProductImage: true,
+              productId: productId
+            }));
+            
+            // Add product images to the results
+            if (productImages.length > 0) {
+              // Add product images at the beginning for prominence
+              images = [...productImages, ...images];
+              sourcesUsed.push('product');
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching product images:", error);
+        // Continue with other images, don't fail the entire request
+      }
+    }
     
     res.json({
       success: true,
       query,
       images,
-      fallbackUsed
+      fallbackUsed,
+      sourcesUsed
     });
   } catch (error: any) {
     console.error("Error generating images:", error);
