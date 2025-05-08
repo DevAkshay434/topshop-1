@@ -85,7 +85,10 @@ const contentFormSchema = z.object({
   buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
   articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
   headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
-  youtubeUrl: z.string().optional()
+  youtubeUrl: z.string().optional(),
+  // Custom category fields
+  categories: z.array(z.string()).optional(),
+  customCategory: z.string().optional()
 });
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -142,6 +145,19 @@ interface PexelsImage {
   selected?: boolean;
 }
 
+// Predefined categories for content
+const predefinedCategories = [
+  { id: "featured", name: "Featured" },
+  { id: "new", name: "New Arrivals" },
+  { id: "selected", name: "Selected" },
+  { id: "trending", name: "Trending" },
+  { id: "popular", name: "Popular" },
+  { id: "seasonal", name: "Seasonal" },
+  { id: "sale", name: "On Sale" },
+  { id: "guides", name: "Buying Guides" },
+  { id: "how-to", name: "How-To" },
+];
+
 export default function AdminPanel() {
   const [selectedTab, setSelectedTab] = useState("generate");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -161,6 +177,11 @@ export default function AdminPanel() {
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
   const [workflowStep, setWorkflowStep] = useState<'product' | 'keyword' | 'title' | 'content'>('product');
+  const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
+    // Load custom categories from localStorage
+    const savedCategories = localStorage.getItem('topshop-custom-categories');
+    return savedCategories ? JSON.parse(savedCategories) : [];
+  });
   const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
     // Load templates from localStorage on initial render
     const savedTemplates = localStorage.getItem('topshop-templates');
@@ -196,7 +217,10 @@ export default function AdminPanel() {
     buyerProfile: "auto",
     articleLength: "medium",
     headingsCount: "3",
-    youtubeUrl: ""
+    youtubeUrl: "",
+    // Category fields
+    categories: [],
+    customCategory: ""
   };
 
   // Form setup
@@ -270,6 +294,44 @@ export default function AdminPanel() {
       console.log("Setting default blog ID to:", blogsQuery.data.blogs[0].id);
     }
   }, [blogsQuery.data, form]);
+  
+  // Save custom categories to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('topshop-custom-categories', JSON.stringify(customCategories));
+  }, [customCategories]);
+  
+  // Function to add a new custom category
+  const addCustomCategory = (name: string) => {
+    if (!name.trim()) return;
+    
+    // Create a slug-like ID from the name
+    const id = name.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    
+    // Check if this category already exists (case insensitive)
+    const exists = [...predefinedCategories, ...customCategories]
+      .some(cat => cat.name.toLowerCase() === name.trim().toLowerCase());
+    
+    if (exists) {
+      toast({
+        title: "Category already exists",
+        description: `"${name}" is already in your category list`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Add the new category
+    setCustomCategories(prev => [...prev, { id, name: name.trim() }]);
+    
+    toast({
+      title: "Category added",
+      description: `"${name}" added to your categories`,
+      variant: "default"
+    });
+  };
 
   // Query for connection status
   const servicesStatusQuery = useQuery<ServiceStatusResponse>({
