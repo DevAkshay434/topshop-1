@@ -114,6 +114,11 @@ const formSchema = insertBlogPostSchema.extend({
   shopifyBlogId: z.string().optional(),
   articleType: z.enum(["blog", "page"]).default("blog"),
   productIds: z.array(z.string()).optional(),
+  // New fields for content generation options
+  buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
+  articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
+  headingsCount: z.string().default("3"),
+  youtubeUrl: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -168,6 +173,11 @@ export default function CreatePostModal({
         ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
         : "09:30",
       status: initialData?.status || "draft",
+      // Default values for new fields
+      buyerProfile: initialData?.buyerProfile || "auto",
+      articleLength: initialData?.articleLength || "medium",
+      headingsCount: initialData?.headingsCount || "3",
+      youtubeUrl: initialData?.youtubeUrl || "",
     },
   });
   
@@ -252,6 +262,11 @@ export default function CreatePostModal({
         category: values.category,
         tags: values.tags,
         shopifyBlogId: values.shopifyBlogId,
+        // Add new fields
+        buyerProfile: values.buyerProfile,
+        articleLength: values.articleLength,
+        headingsCount: values.headingsCount,
+        youtubeUrl: values.youtubeUrl || null,
       };
       
       // Add blogId and articleType if available
@@ -394,17 +409,9 @@ export default function CreatePostModal({
                           <div className="flex flex-wrap gap-2">
                             {selectedProducts.map(product => (
                               <div key={product.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
-                                {product.image ? (
-                                  <img 
-                                    src={product.image} 
-                                    alt={product.title} 
-                                    className="w-8 h-8 object-contain rounded border border-gray-200" 
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                                    <ShoppingBag className="h-4 w-4 text-gray-400" />
-                                  </div>
-                                )}
+                                <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center mr-1">
+                                  <ShoppingBag className="h-3 w-3 text-blue-600" />
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-gray-800 truncate">{product.title}</p>
                                 </div>
@@ -537,6 +544,32 @@ export default function CreatePostModal({
                     })()}
                   </div>
                   
+                  {/* Display YouTube video if URL is provided */}
+                  {(() => {
+                    const youtubeUrl = form.watch("youtubeUrl");
+                    if (youtubeUrl) {
+                      // Extract video ID from YouTube URL
+                      const videoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                      
+                      if (videoId) {
+                        return (
+                          <div className="my-8 flex justify-center">
+                            <iframe 
+                              width="560" 
+                              height="315" 
+                              src={`https://www.youtube.com/embed/${videoId}`}
+                              title="YouTube video" 
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen
+                              className="rounded-md border border-gray-200"
+                            />
+                          </div>
+                        );
+                      }
+                    }
+                    return null;
+                  })()}
+                  
                   {/* Tags section */}
                   {(() => {
                     const tags = form.watch("tags");
@@ -554,6 +587,115 @@ export default function CreatePostModal({
               </TabsContent>
             </Tabs>
             
+            {/* Content Creation Options Section */}
+            <div className="mb-4 mt-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Content Generation Options</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="buyerProfile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Buyer Profile</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select buyer profile" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto (Based on Products)</SelectItem>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-xs">
+                        Tailors content to the buyer's knowledge level
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="articleLength"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Article Length</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select article length" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="short">Short (~500 words)</SelectItem>
+                          <SelectItem value="medium">Medium (~800 words)</SelectItem>
+                          <SelectItem value="long">Long (~1200 words)</SelectItem>
+                          <SelectItem value="comprehensive">Comprehensive (~1800 words)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-xs">
+                        Determines the detail and depth of the content
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="headingsCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Number of Sections</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Number of H2 headings" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="2">2 Sections</SelectItem>
+                          <SelectItem value="3">3 Sections</SelectItem>
+                          <SelectItem value="4">4 Sections</SelectItem>
+                          <SelectItem value="5">5 Sections</SelectItem>
+                          <SelectItem value="6">6 Sections</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-xs">
+                        Controls how many H2 headings in the article
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="youtubeUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>YouTube Video URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">
+                        Embed a relevant YouTube video in your article
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            
+            {/* Content Classification */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
