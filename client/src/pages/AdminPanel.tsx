@@ -2557,6 +2557,8 @@ export default function AdminPanel() {
         selectedProducts={selectedProducts}
         selectedBlogId={form.getValues('blogId')}
         articleType={form.getValues('articleType') as "blog" | "page"}
+        categories={Array.isArray(form.getValues('selectedCategories')) ? 
+          form.getValues('selectedCategories') : undefined}
       />
     </div>
   );

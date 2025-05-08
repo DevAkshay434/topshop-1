@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Fragment } from "react";
 import { useForm } from "react-hook-form";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -63,6 +63,7 @@ interface CreatePostModalProps {
   }>;
   selectedBlogId?: string;
   articleType?: "blog" | "page";
+  categories?: string[]; // Categories for the post
   generatedContent?: {
     title: string;
     content: string;
@@ -132,7 +133,8 @@ export default function CreatePostModal({
   generatedContent,
   selectedProducts,
   selectedBlogId,
-  articleType = "blog"
+  articleType = "blog",
+  categories
 }: CreatePostModalProps) {
   const { toast } = useToast();
   const { storeInfo } = useStore();
@@ -215,6 +217,11 @@ export default function CreatePostModal({
       if (articleType) {
         form.setValue('articleType', articleType as "blog" | "page");
       }
+      
+      // Set categories if provided from parent component
+      if (categories && Array.isArray(categories)) {
+        form.setValue('categories', categories);
+      }
     } else if (initialData) {
       // Make sure form gets reset with initial data when editing an existing post
       form.reset({
@@ -251,6 +258,11 @@ export default function CreatePostModal({
           (articleType || initialData.articleType || "blog") as "blog" | "page"
         );
       }
+      
+      // Set categories if provided from parent component (override initialData)
+      if (categories && Array.isArray(categories)) {
+        form.setValue('categories', categories);
+      }
     } else {
       // For new posts without generated content, still use the selected blog ID and article type
       if (selectedBlogId) {
@@ -260,8 +272,13 @@ export default function CreatePostModal({
       form.setValue('articleType', 
         (articleType || "blog") as "blog" | "page"
       );
+      
+      // Set categories if provided from parent component
+      if (categories && Array.isArray(categories)) {
+        form.setValue('categories', categories);
+      }
     }
-  }, [generatedContent, initialData, form, storeTimezone, tomorrowDateFormatted, selectedBlogId, articleType]);
+  }, [generatedContent, initialData, form, storeTimezone, tomorrowDateFormatted, selectedBlogId, articleType, categories]);
   
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
