@@ -6,6 +6,26 @@ interface ShopifyBlog {
   title: string;
 }
 
+interface ShopifyShop {
+  id: string;
+  name: string;
+  email: string;
+  domain: string;
+  province: string;
+  country: string;
+  address1: string;
+  zip: string;
+  city: string;
+  source: string;
+  phone: string;
+  latitude: number;
+  longitude: number;
+  primary_locale: string;
+  currency: string;
+  iana_timezone: string; // IANA timezone format (e.g., "America/New_York")
+  timezone: string; // String representation (e.g., "Eastern Time (US & Canada)")
+}
+
 interface ShopifyArticle {
   id: string;
   title: string;
