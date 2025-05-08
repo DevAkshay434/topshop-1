@@ -1866,10 +1866,104 @@ export default function AdminPanel() {
                     )}
                     
                     <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
-                      <div 
-                        className="content-preview prose prose-blue max-w-none" 
-                        dangerouslySetInnerHTML={{ __html: generatedContent.content }}
-                      />
+                      {(() => {
+                        // Get content
+                        const content = generatedContent.content;
+                        if (!content) return <p>No content available</p>;
+
+                        // Get YouTube data if exists
+                        const youtubeUrl = form.watch("youtubeUrl");
+                        let youtubeVideoId = null;
+                        if (youtubeUrl) {
+                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                        }
+                        
+                        // Create YouTube embed component
+                        const YouTubeEmbed = () => (
+                          <div className="my-8 flex justify-center">
+                            <iframe 
+                              width="560" 
+                              height="315" 
+                              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                              title="YouTube video" 
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen
+                              className="rounded-md border border-gray-200"
+                            />
+                          </div>
+                        );
+                        
+                        // Check if content has YouTube placeholder
+                        const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
+                        
+                        // If content has placeholder, split and insert YouTube
+                        if (youtubeVideoId && hasYoutubePlaceholder) {
+                          const parts = content.split('[YOUTUBE_EMBED_PLACEHOLDER]');
+                          return (
+                            <div className="content-preview prose prose-blue max-w-none">
+                              {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
+                              <YouTubeEmbed />
+                              {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
+                            </div>
+                          );
+                        } 
+                        
+                        // Get secondary images
+                        const secondaryImages = generatedContent.secondaryImages || [];
+                        
+                        // If content has no YouTube placeholder but has secondary images
+                        if (secondaryImages.length > 0) {
+                          // Split into paragraphs
+                          const paragraphs = content.split(/\n\n+/);
+                          const result = [];
+                          let imageIndex = 0;
+                          
+                          // Process each paragraph, inserting images occasionally
+                          paragraphs.forEach((para, i) => {
+                            result.push(
+                              <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para }} />
+                            );
+                            
+                            // Insert an image after some paragraphs
+                            if ((i + 1) % 3 === 0 && imageIndex < secondaryImages.length) {
+                              const image = secondaryImages[imageIndex];
+                              result.push(
+                                <div key={`img-${i}`} className="my-6 flex justify-center">
+                                  <img 
+                                    src={image.url || (image.src?.medium ?? '')} 
+                                    alt={image.alt || `Product image ${imageIndex + 1}`} 
+                                    className="rounded-md max-h-64 object-contain" 
+                                  />
+                                </div>
+                              );
+                              imageIndex++;
+                            }
+                            
+                            // Insert YouTube after first or second paragraph if not already inserted via placeholder
+                            if (youtubeVideoId && !hasYoutubePlaceholder && (i === 0 || i === 1)) {
+                              result.push(<YouTubeEmbed key="youtube" />);
+                              // Prevent multiple inserts
+                              youtubeVideoId = null;
+                            }
+                          });
+                          
+                          return <div className="content-preview prose prose-blue max-w-none">{result}</div>;
+                        }
+                        
+                        // If no secondary images or YouTube placeholder, handle YouTube separately
+                        if (youtubeVideoId && !hasYoutubePlaceholder) {
+                          return (
+                            <div className="content-preview prose prose-blue max-w-none">
+                              <div dangerouslySetInnerHTML={{ __html: content.substring(0, content.length / 3) }} />
+                              <YouTubeEmbed />
+                              <div dangerouslySetInnerHTML={{ __html: content.substring(content.length / 3) }} />
+                            </div>
+                          );
+                        }
+                        
+                        // Default: just show content
+                        return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: content }} />;
+                      })()}
                     </div>
                     
                     {generatedContent.metaDescription && (
