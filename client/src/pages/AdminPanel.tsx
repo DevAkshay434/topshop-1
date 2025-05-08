@@ -1873,9 +1873,9 @@ export default function AdminPanel() {
 
                         // Get YouTube data if exists
                         const youtubeUrl = form.watch("youtubeUrl");
-                        let youtubeVideoId = null;
+                        let youtubeVideoId: string | null = null;
                         if (youtubeUrl) {
-                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
                         }
                         
                         // Create YouTube embed component
@@ -1911,43 +1911,53 @@ export default function AdminPanel() {
                         // Get secondary images
                         const secondaryImages = generatedContent.secondaryImages || [];
                         
+                        // Check for image tags in content 
+                        const hasImageTags = content.includes('<img');
+
                         // If content has no YouTube placeholder but has secondary images
                         if (secondaryImages.length > 0) {
-                          // Split into paragraphs
-                          const paragraphs = content.split(/\n\n+/);
-                          const result = [];
-                          let imageIndex = 0;
-                          
-                          // Process each paragraph, inserting images occasionally
-                          paragraphs.forEach((para, i) => {
-                            result.push(
-                              <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para }} />
-                            );
+                          if (hasImageTags) {
+                            // Content already has image tags - render as-is
+                            return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: content }} />;
+                          } else {
+                            // Split into paragraphs
+                            const paragraphs = content.split(/\n\n+/);
+                            const result: React.ReactNode[] = [];
+                            let imageIndex = 0;
                             
-                            // Insert an image after some paragraphs
-                            if ((i + 1) % 3 === 0 && imageIndex < secondaryImages.length) {
-                              const image = secondaryImages[imageIndex];
+                            // Process each paragraph, inserting images occasionally
+                            paragraphs.forEach((para: string, i: number) => {
                               result.push(
-                                <div key={`img-${i}`} className="my-6 flex justify-center">
-                                  <img 
-                                    src={image.url || (image.src?.medium ?? '')} 
-                                    alt={image.alt || `Product image ${imageIndex + 1}`} 
-                                    className="rounded-md max-h-64 object-contain" 
-                                  />
-                                </div>
+                                <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para }} />
                               );
-                              imageIndex++;
-                            }
+                              
+                              // Insert an image after some paragraphs
+                              if ((i + 1) % 3 === 0 && imageIndex < secondaryImages.length) {
+                                const image = secondaryImages[imageIndex];
+                                result.push(
+                                  <div key={`img-${i}`} className="my-6 flex justify-center">
+                                    <a href={image.productUrl || "#"} target="_blank" rel="noopener noreferrer">
+                                      <img 
+                                        src={image.url || (image.src?.medium ?? '')} 
+                                        alt={image.alt || `Product image ${imageIndex + 1}`} 
+                                        className="rounded-md max-h-64 object-contain" 
+                                      />
+                                    </a>
+                                  </div>
+                                );
+                                imageIndex++;
+                              }
+                              
+                              // Insert YouTube after first or second paragraph if not already inserted via placeholder
+                              if (youtubeVideoId && !hasYoutubePlaceholder && (i === 0 || i === 1)) {
+                                result.push(<YouTubeEmbed key="youtube" />);
+                                // Prevent multiple inserts
+                                youtubeVideoId = null;
+                              }
+                            });
                             
-                            // Insert YouTube after first or second paragraph if not already inserted via placeholder
-                            if (youtubeVideoId && !hasYoutubePlaceholder && (i === 0 || i === 1)) {
-                              result.push(<YouTubeEmbed key="youtube" />);
-                              // Prevent multiple inserts
-                              youtubeVideoId = null;
-                            }
-                          });
-                          
-                          return <div className="content-preview prose prose-blue max-w-none">{result}</div>;
+                            return <div className="content-preview prose prose-blue max-w-none">{result}</div>;
+                          }
                         }
                         
                         // If no secondary images or YouTube placeholder, handle YouTube separately
