@@ -185,7 +185,8 @@ export default function AdminPanel() {
     keywords: [],
     productIds: [], // This needs to be initialized as an empty array
     collectionIds: [], // This needs to be initialized as an empty array
-    scheduledPublishTime: "09:30" // Default to 9:30 AM
+    scheduledPublishTime: "09:30", // Default to 9:30 AM
+    blogId: "" // Initialize with empty string to ensure the field exists
   };
 
   // Form setup
@@ -755,8 +756,14 @@ export default function AdminPanel() {
                           <FormItem>
                             <FormLabel>Content Type</FormLabel>
                             <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                // Immediately update the form to show/hide the blog selection
+                                if (value === "blog" || value === "page") {
+                                  form.setValue('articleType', value);
+                                }
+                              }} 
+                              value={field.value || "blog"}
                             >
                               <FormControl>
                                 <SelectTrigger>
