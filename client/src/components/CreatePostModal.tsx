@@ -550,11 +550,12 @@ export default function CreatePostModal({
                           />
                         </div> : null;
                       
-                      // Check if content has embedded images
+                      // Check if content has embedded images with proper src attributes
                       const hasEmbeddedImages = content.includes('<img');
+                      const hasImageWithSrc = /img.*?src\s*=\s*["']/i.test(content);
                       
-                      // For content with embedded images, render directly with the YouTube embed
-                      if (hasEmbeddedImages) {
+                      // For content with properly embedded images (with src attributes), render directly
+                      if (hasEmbeddedImages && hasImageWithSrc) {
                         // Apply formatting to content with embedded images
                         let processedContent = content
                           .replace(/\n/g, '<br />')
@@ -586,6 +587,20 @@ export default function CreatePostModal({
                         }
                         
                         // Just render the content with embedded images
+                        return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
+                      }
+                      
+                      // For content with image tags without src (placeholders), handle them separately
+                      if (hasEmbeddedImages && !hasImageWithSrc) {
+                        // Remove or replace the img tags without src
+                        let cleanedContent = content.replace(/<img[^>]*?>/g, '');
+                        let processedContent = cleanedContent
+                          .replace(/\n/g, '<br />')
+                          .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
+                          .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
+                          .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
+                          
+                        // We'll use our secondary images logic below instead of these placeholder images
                         return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
                       }
                       
