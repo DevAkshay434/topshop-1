@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { insertBlogPostSchema } from "@shared/schema";
@@ -131,6 +132,12 @@ export default function CreatePostModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formattedTags = useRef<string>("");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+
+  // Query for blogs
+  const { data: blogsData } = useQuery<{ success: boolean; blogs: Array<{ id: string; title: string; handle: string; }> }>({
+    queryKey: ['/api/admin/blogs'],
+    enabled: true,
+  });
   
   // Get the store timezone or fall back to UTC
   const storeTimezone = storeInfo?.iana_timezone || 'UTC';
@@ -438,8 +445,8 @@ export default function CreatePostModal({
                         </div>
                         <FormControl>
                           <Textarea
-                            rows={8}
-                            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            rows={12}
+                            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 max-h-[400px] overflow-y-auto"
                             placeholder="Write your blog post content here or use AI to generate content..."
                             {...field}
                           />
@@ -589,11 +596,11 @@ export default function CreatePostModal({
               />
               
               {/* Display selected blog info if available */}
-              {selectedBlogId && (
+              {selectedBlogId && blogsData?.blogs && (
                 <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
                   <p className="text-sm text-blue-700 font-medium">
                     <CheckCircle2 className="inline-block w-4 h-4 mr-1" />
-                    Content will be published to the selected blog
+                    <span className="font-semibold">Blog:</span> {blogsData.blogs.find(blog => blog.id === selectedBlogId)?.title || 'Selected Blog'}
                   </p>
                 </div>
               )}
