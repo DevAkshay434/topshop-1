@@ -387,7 +387,7 @@ export default function CreatePostModal({
                       }
                       
                       // Insert images at approximately every 3 paragraphs
-                      const result = [];
+                      const result: React.ReactNode[] = [];
                       let imageIndex = 0;
                       
                       paragraphs.forEach((para, i) => {
@@ -401,7 +401,7 @@ export default function CreatePostModal({
                           result.push(
                             <div key={`img-${i}`} className="my-6 flex justify-center">
                               <img 
-                                src={image.url || image.src?.medium} 
+                                src={image.url || (image.src?.medium ?? '')} 
                                 alt={image.alt || `Product image ${imageIndex + 1}`} 
                                 className="rounded-md max-h-64 object-contain" 
                               />
@@ -416,15 +416,18 @@ export default function CreatePostModal({
                   </div>
                   
                   {/* Tags section */}
-                  {form.watch("tags") && (
-                    <div className="mt-6 flex flex-wrap gap-2">
-                      {form.watch("tags").split(',').map((tag, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {tag.trim()}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    const tags = form.watch("tags");
+                    return typeof tags === 'string' && tags.length > 0 ? (
+                      <div className="mt-6 flex flex-wrap gap-2">
+                        {tags.split(',').filter(Boolean).map((tag, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            {tag.trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </TabsContent>
             </Tabs>

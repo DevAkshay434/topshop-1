@@ -632,13 +632,21 @@ export default function AdminPanel() {
 
   return (
     <div className="container max-w-7xl mx-auto py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 text-transparent bg-clip-text mb-2">
-          TopShop SEO Admin
-        </h1>
-        <p className="text-muted-foreground">
-          Manage content generation, view service status, and configure settings
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 text-transparent bg-clip-text mb-2">
+            TopShop SEO Admin
+          </h1>
+          <p className="text-muted-foreground">
+            Manage content generation, view service status, and configure settings
+          </p>
+        </div>
+        <Button 
+          onClick={() => setCreatePostModalOpen(true)}
+          className="bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-900"
+        >
+          Create New Post
+        </Button>
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
