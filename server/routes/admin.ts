@@ -681,6 +681,11 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]).default("friendly"),
       postStatus: z.enum(["publish", "draft"]).default("draft"),
       generateImages: z.boolean().default(true),
+      // New fields for content generation options
+      buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
+      articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
+      headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
+      youtubeUrl: z.string().optional(),
       // Additional fields from client
       selectedKeywordData: z.array(z.any()).optional()
     });
@@ -851,11 +856,44 @@ Please suggest a meta description at the end of your response that includes at l
 
       console.log(`Generating content with Claude for: "${requestData.title}"`);
       
+      // Map articleLength to actual length values for Claude
+      let contentLength = "medium";
+      if (requestData.articleLength === "short") {
+        contentLength = "short";
+      } else if (requestData.articleLength === "long") {
+        contentLength = "long";
+      } else if (requestData.articleLength === "comprehensive") {
+        contentLength = "comprehensive";
+      }
+      
+      // Update the prompt based on new fields
+      // Add buyer profile information
+      if (requestData.buyerProfile && requestData.buyerProfile !== "auto") {
+        claudeUserPrompt += `\nBuyer Profile: ${requestData.buyerProfile}
+Target this content specifically for ${requestData.buyerProfile}-level users with appropriate depth and terminology.`;
+      }
+      
+      // Add headings count information
+      if (requestData.headingsCount) {
+        claudeUserPrompt += `\nStructure: Include exactly ${requestData.headingsCount} main sections with H2 headings.`;
+      }
+      
+      // Add YouTube video embed instruction if URL is provided
+      if (requestData.youtubeUrl) {
+        const videoId = requestData.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+        
+        if (videoId) {
+          claudeUserPrompt += `\nYouTube Video: Please indicate where to place a YouTube video embed with ID "${videoId}" by adding this placeholder:
+[YOUTUBE_EMBED_PLACEHOLDER]
+Place this at a logical position in the content, typically after introducing a concept that the video demonstrates.`;
+        }
+      }
+      
       // 3. Generate content with Claude
       const generatedContent = await generateBlogContentWithClaude({
         topic: requestData.title,
         tone: requestData.toneOfVoice,
-        length: "medium",
+        length: contentLength,
         customPrompt: claudeUserPrompt,
         systemPrompt: claudeSystemPrompt,
         includeProducts: productsInfo.length > 0,
@@ -938,6 +976,64 @@ Please suggest a meta description at the end of your response that includes at l
       
       // 6. Prepare content for blog post or page
       let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
+      
+      // Add YouTube video embed if provided
+      if (requestData.youtubeUrl) {
+        const videoId = requestData.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+        
+        if (videoId) {
+          // Create the YouTube embed HTML
+          const youtubeEmbed = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>`;
+          
+          // Check if Claude inserted a placeholder
+          if (finalContent.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
+            // Replace the placeholder with the actual embed
+            finalContent = finalContent.replace('[YOUTUBE_EMBED_PLACEHOLDER]', youtubeEmbed);
+            console.log('Inserted YouTube video at placeholder position');
+          } else {
+            // If no placeholder, insert the video after the first H2 or paragraph
+            const h2Match = finalContent.match(/<\/h2>/i);
+            const pMatch = finalContent.match(/<\/p>/i);
+            
+            if (h2Match && pMatch) {
+              // Insert after whichever comes first
+              const h2Index = h2Match.index || 0;
+              const pIndex = pMatch.index || 0;
+              const insertIndex = Math.min(h2Index, pIndex) + (h2Index < pIndex ? 5 : 4); // Length of </h2> or </p>
+              
+              finalContent = finalContent.substring(0, insertIndex) + 
+                             '\n\n' + youtubeEmbed + '\n\n' + 
+                             finalContent.substring(insertIndex);
+              
+              console.log('Inserted YouTube video after first heading or paragraph');
+            } else if (h2Match) {
+              // Insert after the first H2
+              const insertIndex = (h2Match.index || 0) + 5; // Length of </h2>
+              
+              finalContent = finalContent.substring(0, insertIndex) + 
+                             '\n\n' + youtubeEmbed + '\n\n' + 
+                             finalContent.substring(insertIndex);
+              
+              console.log('Inserted YouTube video after first heading');
+            } else if (pMatch) {
+              // Insert after the first paragraph
+              const insertIndex = (pMatch.index || 0) + 4; // Length of </p>
+              
+              finalContent = finalContent.substring(0, insertIndex) + 
+                             '\n\n' + youtubeEmbed + '\n\n' + 
+                             finalContent.substring(insertIndex);
+              
+              console.log('Inserted YouTube video after first paragraph');
+            } else {
+              // Fallback: Just prepend the video
+              finalContent = youtubeEmbed + '\n\n' + finalContent;
+              console.log('Inserted YouTube video at the beginning of content');
+            }
+          }
+        }
+      }
       
       // Add featured image at the beginning if available
       if (featuredImage) {
