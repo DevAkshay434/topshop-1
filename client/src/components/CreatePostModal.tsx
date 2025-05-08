@@ -494,18 +494,42 @@ export default function CreatePostModal({
                     </div>
                   )}
                   
-                  {/* Convert content to paragraphs and insert secondary images */}
+                  {/* Convert content to paragraphs, insert secondary images, and handle YouTube video */}
                   <div className="space-y-4 post-content">
                     {(() => {
                       const content = form.watch("content");
                       if (!content) return <p>No content to preview</p>;
                       
+                      // Get YouTube data if exists
+                      const youtubeUrl = form.watch("youtubeUrl");
+                      let youtubeVideoId = null;
+                      if (youtubeUrl) {
+                        youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                      }
+                      
+                      // Create YouTube embed HTML
+                      const youtubeEmbed = youtubeVideoId ? 
+                        <div className="my-8 flex justify-center">
+                          <iframe 
+                            width="560" 
+                            height="315" 
+                            src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                            title="YouTube video" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowFullScreen
+                            className="rounded-md border border-gray-200"
+                          />
+                        </div> : null;
+                      
+                      // Check if content has YouTube placeholder
+                      const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
+                      
                       // Split content into paragraphs
                       const paragraphs = content.split(/\n\n+/);
                       const secondaryImages = generatedContent?.secondaryImages || [];
                       
-                      // If no secondary images, just return the content as paragraphs
-                      if (!secondaryImages.length) {
+                      // If no secondary images and no YouTube embed, just return the content as paragraphs
+                      if (!secondaryImages.length && !youtubeEmbed) {
                         return paragraphs.map((para, i) => {
                           // Add <br> after bold text or section headers
                           let formattedPara = para
@@ -516,13 +540,27 @@ export default function CreatePostModal({
                             .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
                             .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
                           
+                          // Replace YouTube placeholder if present
+                          if (youtubeEmbed && formattedPara.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
+                            // Split paragraph by placeholder, render parts separately with YouTube embed in between
+                            const parts = formattedPara.split('[YOUTUBE_EMBED_PLACEHOLDER]');
+                            return (
+                              <React.Fragment key={i}>
+                                {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
+                                {youtubeEmbed}
+                                {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
+                              </React.Fragment>
+                            );
+                          }
+                          
                           return <div key={i} dangerouslySetInnerHTML={{ __html: formattedPara }} />;
                         });
                       }
                       
-                      // Insert images at approximately every 3 paragraphs
+                      // Insert images and YouTube video at appropriate positions
                       const result: React.ReactNode[] = [];
                       let imageIndex = 0;
+                      let youtubeInserted = hasYoutubePlaceholder; // If we have a placeholder, we'll replace it instead
                       
                       paragraphs.forEach((para, i) => {
                         // Apply the same formatting as above
@@ -534,9 +572,33 @@ export default function CreatePostModal({
                           .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
                           .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
                         
-                        result.push(
-                          <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: formattedPara }} />
-                        );
+                        // Check if paragraph contains YouTube placeholder
+                        if (youtubeEmbed && formattedPara.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
+                          // Split paragraph by placeholder, render parts separately with YouTube embed in between
+                          const parts = formattedPara.split('[YOUTUBE_EMBED_PLACEHOLDER]');
+                          
+                          if (parts[0]) {
+                            result.push(<div key={`p-${i}-part1`} dangerouslySetInnerHTML={{ __html: parts[0] }} />);
+                          }
+                          
+                          result.push(<React.Fragment key={`yt-${i}`}>{youtubeEmbed}</React.Fragment>);
+                          youtubeInserted = true;
+                          
+                          if (parts[1]) {
+                            result.push(<div key={`p-${i}-part2`} dangerouslySetInnerHTML={{ __html: parts[1] }} />);
+                          }
+                        } else {
+                          // Regular paragraph without placeholder
+                          result.push(
+                            <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: formattedPara }} />
+                          );
+                        }
+                        
+                        // Insert YouTube video after first heading if not inserted yet and we're at a good position
+                        if (youtubeEmbed && !youtubeInserted && i === 1) {
+                          result.push(<React.Fragment key={`yt-auto`}>{youtubeEmbed}</React.Fragment>);
+                          youtubeInserted = true;
+                        }
                         
                         // Insert an image after every 3 paragraphs, if available
                         if ((i + 1) % 3 === 0 && imageIndex < secondaryImages.length) {
@@ -554,35 +616,14 @@ export default function CreatePostModal({
                         }
                       });
                       
+                      // If YouTube video wasn't inserted and we have one, add it at the end
+                      if (youtubeEmbed && !youtubeInserted) {
+                        result.push(<React.Fragment key="yt-end">{youtubeEmbed}</React.Fragment>);
+                      }
+                      
                       return result;
                     })()}
                   </div>
-                  
-                  {/* Display YouTube video if URL is provided */}
-                  {(() => {
-                    const youtubeUrl = form.watch("youtubeUrl");
-                    if (youtubeUrl) {
-                      // Extract video ID from YouTube URL
-                      const videoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
-                      
-                      if (videoId) {
-                        return (
-                          <div className="my-8 flex justify-center">
-                            <iframe 
-                              width="560" 
-                              height="315" 
-                              src={`https://www.youtube.com/embed/${videoId}`}
-                              title="YouTube video" 
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                              allowFullScreen
-                              className="rounded-md border border-gray-200"
-                            />
-                          </div>
-                        );
-                      }
-                    }
-                    return null;
-                  })()}
                   
                   {/* Tags section */}
                   {(() => {
