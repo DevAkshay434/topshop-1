@@ -601,6 +601,10 @@ export default function AdminPanel() {
         }
         
         setGeneratedContent(response);
+        
+        // Open the CreatePostModal to show the preview with all images
+        setCreatePostModalOpen(true);
+        
         toast({
           title: "Content generated successfully",
           description: "Your content has been generated and saved.",
@@ -2016,6 +2020,14 @@ export default function AdminPanel() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Create Post Modal */}
+      <CreatePostModal
+        open={createPostModalOpen}
+        onOpenChange={setCreatePostModalOpen}
+        initialData={null}
+        generatedContent={generatedContent}
+      />
     </div>
   );
 }
