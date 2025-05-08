@@ -1228,6 +1228,7 @@ Place this at a logical position in the content, typically after introducing a c
                                ? requestData.categories.join(',') 
                                : categoryValue;
         
+        // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           title: generatedContent.title || requestData.title,
           content: finalContent,

@@ -103,6 +103,7 @@ const formSchema = insertBlogPostSchema.extend({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
   category: z.string().optional(),
+  categories: z.array(z.string()).optional(),
   tags: z.string().optional(),
   publicationType: z.enum(["publish", "schedule", "draft"]),
   scheduleDate: z.string().optional(),
@@ -161,6 +162,11 @@ export default function CreatePostModal({
       title: initialData?.title || "",
       content: initialData?.content || "",
       category: initialData?.category || "Fashion",
+      categories: initialData?.categories ? 
+        (typeof initialData.categories === 'string' 
+          ? initialData.categories.split(',') 
+          : initialData.categories) 
+        : undefined,
       tags: initialData?.tags || "",
       publicationType: initialData?.status === "published" 
         ? "publish" 
@@ -215,6 +221,11 @@ export default function CreatePostModal({
         title: initialData.title || "",
         content: initialData.content || "",
         category: initialData.category || "Fashion",
+        categories: initialData.categories ? 
+          (typeof initialData.categories === 'string' 
+            ? initialData.categories.split(',') 
+            : initialData.categories) 
+          : undefined,
         tags: initialData.tags || "",
         publicationType: initialData.status === "published" 
           ? "publish" 
@@ -274,6 +285,7 @@ export default function CreatePostModal({
         title: values.title,
         content: finalContent, // Use the processed content with YouTube embed
         category: values.category,
+        categories: values.categories, // Add categories array if available
         tags: values.tags,
         shopifyBlogId: values.shopifyBlogId,
         // Add new fields
