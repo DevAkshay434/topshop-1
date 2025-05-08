@@ -34,6 +34,8 @@ interface KeywordData {
   intent?: string;
   difficulty?: number;
   selected: boolean;
+  isMainKeyword?: boolean; // Flag to mark main keyword
+  _originalSearchVolume?: number; // Store original search volume when marking as main
 }
 
 interface KeywordSelectorProps {
@@ -68,10 +70,50 @@ export default function KeywordSelector({
     return matchesSearch && matchesIntent;
   });
 
-  // Handle keyword selection
+  // Handle keyword selection with limits (1 main + up to 3 secondary)
   const toggleKeywordSelection = (index: number) => {
     const updatedKeywords = [...keywords];
-    updatedKeywords[index].selected = !updatedKeywords[index].selected;
+    const currentKeyword = updatedKeywords[index];
+    const currentlySelected = currentKeyword.selected;
+    
+    // Count currently selected keywords
+    const selectedKeywords = updatedKeywords.filter(kw => kw.selected);
+    
+    // If trying to select and already have 4 selected, prevent it
+    if (!currentlySelected && selectedKeywords.length >= 4) {
+      alert("You can only select up to 4 keywords (1 main + 3 secondary)");
+      return;
+    }
+    
+    // Toggle the selection
+    currentKeyword.selected = !currentlySelected;
+    
+    // If this is the first selected keyword, mark it as the main one
+    // We'll use searchVolume to store the original placement order for sorting
+    if (selectedKeywords.length === 0 && currentKeyword.selected) {
+      // Store the original search volume before modifying
+      updatedKeywords.forEach(kw => {
+        if (!kw._originalSearchVolume && kw.searchVolume) {
+          kw._originalSearchVolume = kw.searchVolume;
+        }
+      });
+      
+      // Mark as main keyword by giving it highest search volume
+      currentKeyword.isMainKeyword = true;
+    }
+    
+    // If this was a main keyword and we're unselecting it, 
+    // promote the next selected keyword to main if any exist
+    if (!currentlySelected && currentKeyword.isMainKeyword) {
+      currentKeyword.isMainKeyword = false;
+      
+      // Find the next selected keyword to promote to main
+      const nextSelected = updatedKeywords.find(kw => kw.selected && !kw.isMainKeyword);
+      if (nextSelected) {
+        nextSelected.isMainKeyword = true;
+      }
+    }
+    
     setKeywords(updatedKeywords);
   };
 
@@ -203,7 +245,7 @@ export default function KeywordSelector({
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>
-          Find and select keywords to include in your content
+          Select up to 4 keywords (1 main + 3 secondary) to include in your content
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -307,7 +349,7 @@ export default function KeywordSelector({
                 </TableHeader>
                 <TableBody>
                   {filteredKeywords.map((keyword, index) => (
-                    <TableRow key={index} className={keyword.selected ? "bg-muted/30" : ""}>
+                    <TableRow key={index} className={keyword.selected ? (keyword.isMainKeyword ? "bg-blue-100" : "bg-muted/30") : ""}>
                       <TableCell>
                         <Checkbox 
                           checked={keyword.selected} 
@@ -316,7 +358,12 @@ export default function KeywordSelector({
                           )}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{keyword.keyword}</TableCell>
+                      <TableCell className="font-medium">
+                        {keyword.keyword}
+                        {keyword.isMainKeyword && (
+                          <Badge className="ml-2 bg-blue-500 text-white">Main</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {keyword.searchVolume !== undefined ? keyword.searchVolume.toLocaleString() : 'N/A'}
                       </TableCell>

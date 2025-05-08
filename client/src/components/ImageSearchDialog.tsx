@@ -39,6 +39,10 @@ interface ImageSearchDialogProps {
   productId?: string;
   productDescription?: string;
   initialSelectedImages?: PexelsImage[];
+  selectedKeywords?: Array<{
+    keyword: string;
+    isMainKeyword?: boolean;
+  }>;
 }
 
 export default function ImageSearchDialog({
@@ -48,7 +52,8 @@ export default function ImageSearchDialog({
   productTitle,
   productId,
   productDescription,
-  initialSelectedImages = []
+  initialSelectedImages = [],
+  selectedKeywords = []
 }: ImageSearchDialogProps) {
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
