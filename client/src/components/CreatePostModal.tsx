@@ -343,7 +343,7 @@ export default function CreatePostModal({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {initialData ? "Edit Blog Post" : "Create New Blog Post"}
@@ -459,7 +459,7 @@ export default function CreatePostModal({
               </TabsContent>
               
               <TabsContent value="preview" className="space-y-4">
-                <div className="border rounded-md p-4">
+                <div className="border rounded-md p-4 max-h-[400px] overflow-y-auto">
                   <h2 className="text-2xl font-bold mb-4">{form.watch("title")}</h2>
                   
                   {/* Display the featured image */}
@@ -485,9 +485,18 @@ export default function CreatePostModal({
                       
                       // If no secondary images, just return the content as paragraphs
                       if (!secondaryImages.length) {
-                        return paragraphs.map((para, i) => (
-                          <div key={i} dangerouslySetInnerHTML={{ __html: para.replace(/\n/g, '<br />') }} />
-                        ));
+                        return paragraphs.map((para, i) => {
+                          // Add <br> after bold text or section headers
+                          let formattedPara = para
+                            .replace(/\n/g, '<br />')
+                            // Add line break after bold paragraphs
+                            .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
+                            // Add line break after h2, h3 tags
+                            .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
+                            .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
+                          
+                          return <div key={i} dangerouslySetInnerHTML={{ __html: formattedPara }} />;
+                        });
                       }
                       
                       // Insert images at approximately every 3 paragraphs
@@ -495,8 +504,17 @@ export default function CreatePostModal({
                       let imageIndex = 0;
                       
                       paragraphs.forEach((para, i) => {
+                        // Apply the same formatting as above
+                        let formattedPara = para
+                          .replace(/\n/g, '<br />')
+                          // Add line break after bold paragraphs
+                          .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
+                          // Add line break after h2, h3 tags
+                          .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
+                          .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
+                        
                         result.push(
-                          <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para.replace(/\n/g, '<br />') }} />
+                          <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: formattedPara }} />
                         );
                         
                         // Insert an image after every 3 paragraphs, if available

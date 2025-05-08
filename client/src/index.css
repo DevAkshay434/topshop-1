@@ -11,3 +11,26 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Format tables in blog content properly */
+.post-content table {
+  @apply mx-auto my-6 border-collapse border border-gray-300 w-full max-w-[90%];
+}
+
+.post-content th {
+  @apply bg-gray-100 border border-gray-300 p-2 font-semibold text-center;
+}
+
+.post-content td {
+  @apply border border-gray-300 p-2 text-center;
+}
+
+/* Add more spacing between sections */
+.post-content h2, .post-content h3 {
+  @apply mt-8 mb-4;
+}
+
+/* Ensure proper line breaks after bold text and headers */
+.post-content strong {
+  @apply inline-block mb-2;
+}
