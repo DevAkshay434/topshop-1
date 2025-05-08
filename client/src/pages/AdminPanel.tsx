@@ -56,6 +56,7 @@ import KeywordSelector from '@/components/KeywordSelector';
 import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
+import CreatePostModal from '@/components/CreatePostModal';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -164,6 +165,7 @@ export default function AdminPanel() {
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
   const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
+  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const { toast } = useToast();
 
   // Default form values
