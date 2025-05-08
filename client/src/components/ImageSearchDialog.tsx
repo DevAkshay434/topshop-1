@@ -90,8 +90,9 @@ export default function ImageSearchDialog({
         // Pre-populate the search box with the main keyword
         setImageSearchQuery(mainKeyword.keyword);
         
-        // Don't auto-search - let the user initiate it
-        console.log(`Pre-populated image search with main keyword: ${mainKeyword.keyword}`);
+        // Auto-search with the main keyword when dialog opens
+        console.log(`Pre-populated and searching with main keyword: ${mainKeyword.keyword}`);
+        handleImageSearch(mainKeyword.keyword);
       } else {
         // If no main keyword, just leave empty
         setImageSearchQuery('');
@@ -330,11 +331,11 @@ export default function ImageSearchDialog({
                         // Generate search variations based on the main keyword
                         const variations = [
                           mainKw.keyword,
-                          `${mainKw.keyword} product`,
-                          `${mainKw.keyword} in use`,
-                          `person using ${mainKw.keyword}`,
+                          `happy ${mainKw.keyword}`,
                           `${mainKw.keyword} lifestyle`,
-                          `${mainKw.keyword} close up`
+                          `family using ${mainKw.keyword}`,
+                          `smiling person with ${mainKw.keyword}`,
+                          `${mainKw.keyword} at home`
                         ];
                         
                         return variations.map((variation, vIdx) => (
@@ -358,12 +359,12 @@ export default function ImageSearchDialog({
                     <div className="text-sm font-medium text-blue-800 mb-2">Try these realistic search prompts:</div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {[
-                        "family drinking water",
-                        "water filter in kitchen",
-                        "child drinking water",
-                        "filtered water pouring glass",
-                        "water filter installation",
-                        "clean tap water"
+                        "happy family lifestyle",
+                        "smiling person in kitchen",
+                        "children playing at home",
+                        "relaxed family moments",
+                        "healthy lifestyle choices",
+                        "satisfied customer portrait"
                       ].map((example, idx) => (
                         <Badge 
                           key={idx} 

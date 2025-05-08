@@ -79,28 +79,28 @@ export default function ImageSearchSuggestions({
     function generateDefaultSuggestions() {
       // If query is empty or very short, show pre-filled suggestions
       if (!query || query.length < 2) {
-        // Specific realistic suggestions for water-related products
+        // Emotional and lifestyle-focused suggestions for improved engagement
         const defaultSuggestions = [
-          "family drinking water",
-          "person drinking water glass",
-          "child drinking water",
-          "water filter system home",
-          "filtered water pouring into glass",
-          "clean water tap",
-          "water filtration in kitchen",
-          "water filter cartridge",
-          "water purifier installation",
-          "water bottle refill station",
-          "water quality testing",
-          "kitchen sink water filter"
+          "happy family drinking water",
+          "smiling child drinking water",
+          "pregnant woman drinking water",
+          "baby drinking filtered water",
+          "family in kitchen with water filter",
+          "woman enjoying clean water",
+          "athlete drinking filtered water",
+          "couple installing water filter",
+          "healthy lifestyle water drinking",
+          "mother giving child pure water",
+          "elderly person drinking clean water",
+          "water filter healthy home"
         ];
         setSuggestions(defaultSuggestions);
         return;
       }
 
-      // Realistic prefixes and suffixes for product images
-      const prefixes = ["clear", "clean", "fresh", "pure", "healthy"];
-      const suffixes = ["in kitchen", "in home", "for family", "benefits", "usage"];
+      // Emotional and lifestyle-focused prefixes and suffixes for better engagement
+      const prefixes = ["happy", "smiling", "healthy", "satisfied", "relaxed"];
+      const suffixes = ["for family", "lifestyle", "in kitchen", "at home", "for health"];
       
       // Generate suggestions
       const newSuggestions: string[] = [];
