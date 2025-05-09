@@ -2155,10 +2155,18 @@ export default function AdminPanel() {
                           if (hasProperImages) {
                             // Content already has proper image tags with src attributes - render as-is
                             // Make sure images can be seen by adding max-width and height styles
-                            const enhancedContent = content.replace(
-                              /<img([^>]*?)>/gi, 
-                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
-                            );
+                            // Fix image URLs and add proper styling
+                            const enhancedContent = content
+                              // Make sure all image URLs are absolute and not relative
+                              .replace(
+                                /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$2"$3>'
+                              )
+                              // Add styling to all images
+                              .replace(
+                                /<img([^>]*?)>/gi, 
+                                '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                              );
                             return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
                           } else {
                             // Remove any img tags without proper src
@@ -2213,15 +2221,50 @@ export default function AdminPanel() {
                         if (youtubeVideoId && !hasYoutubePlaceholder) {
                           return (
                             <div className="content-preview prose prose-blue max-w-none">
-                              <div dangerouslySetInnerHTML={{ __html: content.substring(0, content.length / 3) }} />
+                              <div dangerouslySetInnerHTML={{ 
+                                __html: content.substring(0, content.length / 3)
+                                  // Make sure all image URLs are absolute and not relative
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Add styling to all images
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  )
+                              }} />
                               <YouTubeEmbed />
-                              <div dangerouslySetInnerHTML={{ __html: content.substring(content.length / 3) }} />
+                              <div dangerouslySetInnerHTML={{ 
+                                __html: content.substring(content.length / 3)
+                                  // Make sure all image URLs are absolute and not relative
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Add styling to all images
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  )
+                              }} />
                             </div>
                           );
                         }
                         
-                        // Default: just show content
-                        return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: content }} />;
+                        // Default: just show content but ensure image URLs are properly formatted
+                        const processedContent = content
+                          // Make sure all image URLs are absolute and not relative
+                          .replace(
+                            /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$2"$3>'
+                          )
+                          // Add styling to all images
+                          .replace(
+                            /<img([^>]*?)>/gi, 
+                            '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                          );
+                        return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: processedContent }} />;
                       })()}
                     </div>
                     
