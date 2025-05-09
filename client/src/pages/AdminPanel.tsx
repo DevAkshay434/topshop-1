@@ -904,11 +904,23 @@ export default function AdminPanel() {
                               <Select 
                                 onValueChange={(value) => {
                                   console.log("Blog changed to:", value);
+                                  // Update both the field and form state to ensure consistent updates
                                   field.onChange(value);
                                   // Force update the form with setValue to ensure React picks up the change
-                                  form.setValue('blogId', value, { shouldValidate: true });
+                                  form.setValue('blogId', value, { 
+                                    shouldValidate: true,
+                                    shouldDirty: true,
+                                    shouldTouch: true
+                                  });
+                                  
+                                  // Force a re-render since the select value might not update immediately
+                                  setTimeout(() => {
+                                    const formState = form.getValues();
+                                    console.log("Current form state:", formState);
+                                  }, 100);
                                 }} 
                                 value={field.value || ""} // Use controlled component pattern with fallback
+                                defaultValue=""
                               >
                                 <FormControl>
                                   <SelectTrigger className="border border-gray-300">
