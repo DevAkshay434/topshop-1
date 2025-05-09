@@ -562,6 +562,11 @@ export default function CreatePostModal({
                           .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
                           .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
                           .replace(/<\/h3>([^\n<])/g, '</h3><br />$1')
+                          // Make sure all image URLs are absolute and not relative
+                          .replace(
+                            /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$2"$3>'
+                          )
                           // Enhance image display with inline styles
                           .replace(
                             /<img([^>]*?)>/gi, 
@@ -603,7 +608,12 @@ export default function CreatePostModal({
                           .replace(/\n/g, '<br />')
                           .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
                           .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
-                          .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
+                          .replace(/<\/h3>([^\n<])/g, '</h3><br />$1')
+                          // Make sure all image URLs are absolute and not relative
+                          .replace(
+                            /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$2"$3>'
+                          );
                           
                         // We'll use our secondary images logic below instead of these placeholder images
                         return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
