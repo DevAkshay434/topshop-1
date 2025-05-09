@@ -227,9 +227,45 @@ export default function ImageSearchDialog({
 
   // Handle image selection confirmation
   const confirmImageSelection = () => {
-    // Pass selected images back to parent component
-    onImagesSelected(selectedImages);
+    // Make sure featured image is first in the array
+    let orderedImages = [...selectedImages];
+    
+    if (featuredImageId && orderedImages.length > 0) {
+      // Remove featured image from array if it exists
+      const featuredImageIndex = orderedImages.findIndex(img => img.id === featuredImageId);
+      
+      if (featuredImageIndex >= 0) {
+        const featuredImage = orderedImages[featuredImageIndex];
+        // Remove from current position
+        orderedImages.splice(featuredImageIndex, 1);
+        // Add to beginning of array
+        orderedImages.unshift(featuredImage);
+      }
+    }
+    
+    // Pass selected images back to parent component with featured image first
+    onImagesSelected(orderedImages);
     onOpenChange(false);
+  };
+  
+  // Set an image as featured
+  const setAsFeaturedImage = (imageId: string) => {
+    // Check if image is selected
+    const isSelected = selectedImages.some(img => img.id === imageId);
+    
+    if (!isSelected) {
+      // Auto-select the image if it's not already selected
+      toggleImageSelection(imageId);
+    }
+    
+    // Set as featured image
+    setFeaturedImageId(imageId);
+    
+    toast({
+      title: "Featured image set",
+      description: "This will be the main image for your content",
+      variant: "default"
+    });
   };
   
   // Suggestion options for the search field
@@ -261,199 +297,350 @@ export default function ImageSearchDialog({
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Search bar and controls */}
-          <div className="p-4 space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter keywords to search for images..."
-                value={imageSearchQuery}
-                onChange={(e) => setImageSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && imageSearchQuery.trim()) {
-                    handleImageSearch(imageSearchQuery);
-                  }
-                }}
-                className="flex-1"
-              />
-              <Button 
-                type="button" 
-                onClick={() => handleImageSearch(imageSearchQuery)}
-                disabled={isSearchingImages || !imageSearchQuery.trim()}
-              >
-                {isSearchingImages ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : "Search"}
-              </Button>
+          {/* Tabs for Search vs Selected Images */}
+          <Tabs 
+            defaultValue="search" 
+            value={activeTab} 
+            onValueChange={(value) => setActiveTab(value as 'search' | 'selected')}
+            className="w-full"
+          >
+            <div className="border-b px-4">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="search" className="rounded-b-none">
+                  <Search className="mr-2 h-4 w-4" /> Search Images
+                </TabsTrigger>
+                <TabsTrigger value="selected" className="rounded-b-none">
+                  <ImageIcon className="mr-2 h-4 w-4" /> Selected Images 
+                  {selectedImages.length > 0 && (
+                    <span className="ml-1.5 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {selectedImages.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
             </div>
             
-            {/* Suggested searches - show when no search has been performed */}
-            {!searchedImages.length && !isSearchingImages && (
-              <div className="bg-blue-50 p-3 rounded-md">
-                <div className="text-sm font-medium text-blue-800 mb-2">Try these search terms:</div>
-                <div className="flex flex-wrap gap-2">
-                  {suggestedSearches.map((term, idx) => (
-                    <Badge
-                      key={idx}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-blue-100"
-                      onClick={() => {
-                        setImageSearchQuery(term);
-                        handleImageSearch(term);
-                      }}
-                    >
-                      {term}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Search history */}
-            {imageSearchHistory.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {imageSearchHistory.map((history, index) => (
-                  <Badge
-                    key={index}
-                    variant={history.query === imageSearchQuery ? "default" : "outline"} 
-                    className="cursor-pointer"
-                    onClick={() => {
-                      setImageSearchQuery(history.query);
-                      setSearchedImages(history.images);
-                    }}
-                  >
-                    {history.query}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            
-            {/* Source filters */}
-            {searchedImages.length > 0 && availableSources.length > 0 && (
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">Filter by source:</span>
+            {/* Search Tab */}
+            <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-4 space-y-4">
                 <div className="flex gap-2">
-                  <Badge 
-                    variant={sourceFilter === 'all' ? 'default' : 'outline'} 
-                    className="cursor-pointer"
-                    onClick={() => setSourceFilter('all')}
+                  <Input
+                    placeholder="Enter keywords to search for images..."
+                    value={imageSearchQuery}
+                    onChange={(e) => setImageSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && imageSearchQuery.trim()) {
+                        handleImageSearch(imageSearchQuery);
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={() => handleImageSearch(imageSearchQuery)}
+                    disabled={isSearchingImages || !imageSearchQuery.trim()}
                   >
-                    All Sources
-                  </Badge>
-                  
-                  {availableSources.includes('pexels') && (
-                    <Badge 
-                      variant={sourceFilter === 'pexels' ? 'default' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => setSourceFilter('pexels')}
-                    >
-                      Pexels
-                    </Badge>
-                  )}
-                  
-                  {availableSources.includes('pixabay') && (
-                    <Badge 
-                      variant={sourceFilter === 'pixabay' ? 'default' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => setSourceFilter('pixabay')}
-                    >
-                      Pixabay
-                    </Badge>
-                  )}
+                    {isSearchingImages ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Searching...
+                      </>
+                    ) : "Search"}
+                  </Button>
                 </div>
-              </div>
-            )}
-            
-            {/* Selected images count */}
-            {selectedImages.length > 0 && (
-              <div className="bg-green-50 px-3 py-2 rounded-md text-sm">
-                <span className="font-medium text-green-800">
-                  {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* Image grid */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {searchedImages.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {searchedImages
-                  .filter(image => {
-                    // Apply source filtering
-                    if (sourceFilter === 'all') return true;
-                    if (sourceFilter === 'pexels') return image.source === 'pexels';
-                    if (sourceFilter === 'pixabay') return image.source === 'pixabay';
-                    if (sourceFilter === 'product') return image.isProductImage;
-                    return true;
-                  })
-                  .map(image => (
-                    <div 
-                      key={image.id}
-                      className={`
-                        relative rounded-lg overflow-hidden border-2 shadow cursor-pointer
-                        ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'}
-                        ${image.isProductImage ? 'border-green-500' : ''}
-                      `}
-                      onClick={() => toggleImageSelection(image.id)}
-                    >
-                      <div className="aspect-[4/3] bg-slate-100">
-                        <img 
-                          src={image.src?.medium || image.url} 
-                          alt={image.alt || 'Image'} 
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
+                
+                {/* Suggested searches - show when no search has been performed */}
+                {!searchedImages.length && !isSearchingImages && (
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <div className="text-sm font-medium text-blue-800 mb-2">Try these search terms:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedSearches.map((term, idx) => (
+                        <Badge
+                          key={idx}
+                          variant="secondary"
+                          className="cursor-pointer hover:bg-blue-100"
+                          onClick={() => {
+                            setImageSearchQuery(term);
+                            handleImageSearch(term);
+                          }}
+                        >
+                          {term}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Search history */}
+                {imageSearchHistory.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {imageSearchHistory.map((history, index) => (
+                      <Badge
+                        key={index}
+                        variant={history.query === imageSearchQuery ? "default" : "outline"} 
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setImageSearchQuery(history.query);
+                          setSearchedImages(history.images);
+                        }}
+                      >
+                        {history.query}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Source filters */}
+                {searchedImages.length > 0 && availableSources.length > 0 && (
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium">Filter by source:</span>
+                    <div className="flex gap-2">
+                      <Badge 
+                        variant={sourceFilter === 'all' ? 'default' : 'outline'} 
+                        className="cursor-pointer"
+                        onClick={() => setSourceFilter('all')}
+                      >
+                        All Sources
+                      </Badge>
                       
-                      {/* Source badge */}
-                      <div className="absolute top-2 left-2 z-10">
-                        {image.source === 'pexels' && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md">
-                            Pexels
-                          </span>
-                        )}
-                        {image.source === 'pixabay' && (
-                          <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md">
-                            Pixabay
-                          </span>
-                        )}
-                        {image.isProductImage && (
-                          <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md">
-                            Product
-                          </span>
-                        )}
-                      </div>
+                      {availableSources.includes('pexels') && (
+                        <Badge 
+                          variant={sourceFilter === 'pexels' ? 'default' : 'outline'}
+                          className="cursor-pointer"
+                          onClick={() => setSourceFilter('pexels')}
+                        >
+                          Pexels
+                        </Badge>
+                      )}
                       
-                      {/* Selection indicator */}
-                      {image.selected && (
-                        <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                          <div className="bg-blue-500 text-white p-2 rounded-full">
-                            <CheckCircle size={20} />
-                          </div>
-                        </div>
+                      {availableSources.includes('pixabay') && (
+                        <Badge 
+                          variant={sourceFilter === 'pixabay' ? 'default' : 'outline'}
+                          className="cursor-pointer"
+                          onClick={() => setSourceFilter('pixabay')}
+                        >
+                          Pixabay
+                        </Badge>
                       )}
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                {isSearchingImages ? (
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                    <p>Searching for images...</p>
                   </div>
-                ) : (
-                  <div className="text-center text-gray-500">
-                    <Search className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                    <p>Enter keywords above and click Search to find images</p>
+                )}
+                
+                {/* Selected images info */}
+                {selectedImages.length > 0 && (
+                  <div className="bg-green-50 px-3 py-2 rounded-md text-sm flex justify-between items-center">
+                    <span className="font-medium text-green-800">
+                      {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab('selected')}
+                      className="text-green-800 hover:text-green-900 hover:bg-green-100 p-1 h-auto"
+                    >
+                      View Selected
+                    </Button>
                   </div>
                 )}
               </div>
-            )}
-          </div>
+              
+              {/* Search results grid */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {searchedImages.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {searchedImages
+                      .filter(image => {
+                        // Apply source filtering
+                        if (sourceFilter === 'all') return true;
+                        if (sourceFilter === 'pexels') return image.source === 'pexels';
+                        if (sourceFilter === 'pixabay') return image.source === 'pixabay';
+                        if (sourceFilter === 'product') return image.isProductImage;
+                        return true;
+                      })
+                      .map(image => (
+                        <div 
+                          key={image.id}
+                          className={`
+                            relative rounded-lg overflow-hidden border-2 shadow cursor-pointer
+                            ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'}
+                            ${image.isProductImage ? 'border-green-500' : ''}
+                            ${featuredImageId === image.id ? 'ring-4 ring-yellow-400' : ''}
+                          `}
+                        >
+                          <div className="aspect-[4/3] bg-slate-100" onClick={() => toggleImageSelection(image.id)}>
+                            <img 
+                              src={image.src?.medium || image.url} 
+                              alt={image.alt || 'Image'} 
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                          
+                          {/* Source badge */}
+                          <div className="absolute top-2 left-2 z-10">
+                            {image.source === 'pexels' && (
+                              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md">
+                                Pexels
+                              </span>
+                            )}
+                            {image.source === 'pixabay' && (
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md">
+                                Pixabay
+                              </span>
+                            )}
+                            {image.isProductImage && (
+                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md">
+                                Product
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Featured badge */}
+                          {featuredImageId === image.id && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                                Featured
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Selection indicator */}
+                          {image.selected && (
+                            <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                              <div className="bg-blue-500 text-white p-2 rounded-full">
+                                <CheckCircle size={20} />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Featured button */}
+                          {image.selected && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-center">
+                              <Button
+                                variant={featuredImageId === image.id ? "default" : "secondary"}
+                                size="sm"
+                                className="h-7 text-xs w-full"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAsFeaturedImage(image.id);
+                                }}
+                              >
+                                {featuredImageId === image.id ? "Featured" : "Set as Featured"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    {isSearchingImages ? (
+                      <div className="text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                        <p>Searching for images...</p>
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-500">
+                        <Search className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                        <p>Enter keywords above and click Search to find images</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            {/* Selected Images Tab */}
+            <TabsContent value="selected" className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-4 space-y-4">
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <h3 className="text-sm font-medium text-blue-800 mb-1">Selected Images</h3>
+                  <p className="text-xs text-blue-700">
+                    The first image will be used as the featured image for your content.
+                    Click "Set as Featured" to choose which image appears first.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                {selectedImages.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {selectedImages.map((image, index) => (
+                      <div 
+                        key={image.id}
+                        className={`
+                          relative rounded-lg overflow-hidden border-2 shadow
+                          ${featuredImageId === image.id ? 'ring-4 ring-yellow-400 border-yellow-500' : 'border-blue-500'}
+                        `}
+                      >
+                        <div className="aspect-[4/3] bg-slate-100">
+                          <img 
+                            src={image.src?.medium || image.url} 
+                            alt={image.alt || 'Image'} 
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        
+                        {/* Order badge */}
+                        <div className="absolute top-2 left-2 z-10">
+                          <span className={`text-white text-xs px-2 py-1 rounded-md font-medium ${index === 0 ? 'bg-yellow-500' : 'bg-blue-500'}`}>
+                            {index === 0 ? 'Featured' : `Image ${index + 1}`}
+                          </span>
+                        </div>
+                        
+                        {/* Featured badge */}
+                        {featuredImageId === image.id && index !== 0 && (
+                          <div className="absolute top-2 right-2 z-10">
+                            <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                              Featured
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Action buttons */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-between gap-1">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-7 text-xs flex-1"
+                            onClick={() => toggleImageSelection(image.id)}
+                          >
+                            Remove
+                          </Button>
+                          
+                          <Button
+                            variant={featuredImageId === image.id ? "default" : "secondary"}
+                            size="sm"
+                            className="h-7 text-xs flex-1"
+                            onClick={() => setAsFeaturedImage(image.id)}
+                            disabled={featuredImageId === image.id}
+                          >
+                            {featuredImageId === image.id ? "Featured" : "Set as Featured"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-500">
+                      <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                      <p>No images selected yet</p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-3" 
+                        size="sm"
+                        onClick={() => setActiveTab('search')}
+                      >
+                        Go to Search
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
         
         <DialogFooter>
