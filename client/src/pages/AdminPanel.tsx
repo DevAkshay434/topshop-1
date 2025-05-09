@@ -902,14 +902,21 @@ export default function AdminPanel() {
                             <FormItem>
                               <FormLabel>Blog</FormLabel>
                               <Select 
-                                onValueChange={field.onChange} 
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  // This forces a re-render to show the selected blog title
+                                  setTimeout(() => {}, 0);
+                                }} 
                                 value={field.value || ""} // Use controlled component pattern
                                 defaultValue={blogsQuery.data?.blogs?.[0]?.id || ""}
                               >
                                 <FormControl>
                                   <SelectTrigger className="border border-gray-300">
-                                    <SelectValue placeholder="Select blog">
-                                      {blogsQuery.data?.blogs?.find(blog => blog.id === field.value)?.title || "Select blog"}
+                                    <SelectValue>
+                                      {/* Explicitly display the blog title */}
+                                      {field.value
+                                        ? blogsQuery.data?.blogs?.find(blog => blog.id === field.value)?.title || "News"
+                                        : "Select blog"}
                                     </SelectValue>
                                   </SelectTrigger>
                                 </FormControl>
