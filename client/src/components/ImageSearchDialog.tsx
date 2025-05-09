@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Plus, Search } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Plus, Search, ImageIcon } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface PexelsImage {
   id: string;
@@ -58,12 +59,19 @@ export default function ImageSearchDialog({
   const [imageSearchHistory, setImageSearchHistory] = useState<SearchHistory[]>([]);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'product'>('all');
   const [availableSources, setAvailableSources] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'search' | 'selected'>('search');
+  const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Reset selected images when initialSelectedImages changes
   useEffect(() => {
     if (initialSelectedImages && open) {
       setSelectedImages(initialSelectedImages);
+      
+      // Set the first image as featured if none is set and we have selected images
+      if (initialSelectedImages.length > 0 && !featuredImageId) {
+        setFeaturedImageId(initialSelectedImages[0].id);
+      }
       
       // If initialSelectedImages is provided, update the selected state in searchedImages
       if (searchedImages.length > 0) {
@@ -75,7 +83,7 @@ export default function ImageSearchDialog({
         );
       }
     }
-  }, [initialSelectedImages, open]);
+  }, [initialSelectedImages, open, featuredImageId]);
 
   // Pre-populate with main keyword if available and auto-search with it
   useEffect(() => {
