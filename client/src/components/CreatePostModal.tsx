@@ -552,16 +552,21 @@ export default function CreatePostModal({
                       
                       // Check if content has embedded images with proper src attributes
                       const hasEmbeddedImages = content.includes('<img');
-                      const hasImageWithSrc = /img.*?src\s*=\s*["']/i.test(content);
+                      const hasImageWithSrc = /img[^>]*?src\s*=\s*["'][^"']+["']/i.test(content);
                       
                       // For content with properly embedded images (with src attributes), render directly
                       if (hasEmbeddedImages && hasImageWithSrc) {
-                        // Apply formatting to content with embedded images
+                        // Apply formatting to content with embedded images and enhance image styling
                         let processedContent = content
                           .replace(/\n/g, '<br />')
                           .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
                           .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
-                          .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
+                          .replace(/<\/h3>([^\n<])/g, '</h3><br />$1')
+                          // Enhance image display with inline styles
+                          .replace(
+                            /<img([^>]*?)>/gi, 
+                            '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                          );
                         
                         // Handle YouTube embed if present
                         if (youtubeEmbed) {
@@ -592,8 +597,8 @@ export default function CreatePostModal({
                       
                       // For content with image tags without src (placeholders), handle them separately
                       if (hasEmbeddedImages && !hasImageWithSrc) {
-                        // Remove or replace the img tags without src
-                        let cleanedContent = content.replace(/<img[^>]*?>/g, '');
+                        // Remove img tags without proper src attributes
+                        let cleanedContent = content.replace(/<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi, '');
                         let processedContent = cleanedContent
                           .replace(/\n/g, '<br />')
                           .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
@@ -683,8 +688,8 @@ export default function CreatePostModal({
                           youtubeInserted = true;
                         }
                         
-                        // Insert an image after every 3 paragraphs, if available
-                        if ((i + 1) % 3 === 0 && imageIndex < secondaryImages.length) {
+                        // Insert an image after every 2 paragraphs, if available
+                        if ((i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
                           const image = secondaryImages[imageIndex];
                           result.push(
                             <div key={`img-${i}`} className="my-6 flex justify-center">

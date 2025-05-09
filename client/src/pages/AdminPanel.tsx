@@ -904,10 +904,13 @@ export default function AdminPanel() {
                               <Select 
                                 onValueChange={field.onChange} 
                                 value={field.value || ""} // Use controlled component pattern
+                                defaultValue={blogsQuery.data?.blogs?.[0]?.id || ""}
                               >
                                 <FormControl>
                                   <SelectTrigger className="border border-gray-300">
-                                    <SelectValue placeholder="Select blog" />
+                                    <SelectValue placeholder="Select blog">
+                                      {blogsQuery.data?.blogs?.find(blog => blog.id === field.value)?.title || "Select blog"}
+                                    </SelectValue>
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -2139,30 +2142,39 @@ export default function AdminPanel() {
 
                         // If content has no YouTube placeholder but has secondary images
                         if (secondaryImages.length > 0) {
-                          // Check if content has full HTML img tags (not just image placeholders or markdown)
-                          if (hasImageTags && /src\s*=\s*["']/i.test(content)) {
+                          // Check if content has full HTML img tags with proper src attributes
+                          const hasProperImages = hasImageTags && /img[^>]*?src\s*=\s*["'][^"']+["']/i.test(content);
+                          
+                          if (hasProperImages) {
                             // Content already has proper image tags with src attributes - render as-is
-                            return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: content }} />;
+                            // Make sure images can be seen by adding max-width and height styles
+                            const enhancedContent = content.replace(
+                              /<img([^>]*?)>/gi, 
+                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                            );
+                            return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
                           } else {
+                            // Remove any img tags without proper src
+                            let cleanedContent = content;
+                            if (hasImageTags) {
+                              cleanedContent = content.replace(/<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi, '');
+                            }
+                            
                             // Split into paragraphs
-                            const paragraphs = content.split(/\n\n+/);
+                            const paragraphs = cleanedContent.split(/\n\n+/);
                             const result: React.ReactNode[] = [];
                             let imageIndex = 0;
                             
                             // Process each paragraph, inserting images occasionally
                             paragraphs.forEach((para: string, i: number) => {
-                              // Check if paragraph already has an image tag but missing proper src (happens sometimes)
-                              const hasImgTagWithoutSrc = para.includes('<img') && !(/src\s*=\s*["']/i.test(para));
-                              
-                              // If it's a paragraph with img tag without src, skip it (we'll add proper images instead)
-                              if (!hasImgTagWithoutSrc) {
+                              if (para.trim()) {
                                 result.push(
                                   <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para }} />
                                 );
                               }
                               
-                              // Insert an image after some paragraphs or if we found an img tag without src
-                              if ((hasImgTagWithoutSrc || (i + 1) % 3 === 0) && imageIndex < secondaryImages.length) {
+                              // Insert an image after every 2-3 paragraphs
+                              if ((i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
                                 const image = secondaryImages[imageIndex];
                                 result.push(
                                   <div key={`img-${i}`} className="my-6 flex justify-center">
