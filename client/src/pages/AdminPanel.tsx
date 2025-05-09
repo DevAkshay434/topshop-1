@@ -185,6 +185,7 @@ export default function AdminPanel() {
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
   const [workflowStep, setWorkflowStep] = useState<'product' | 'keyword' | 'title' | 'content'>('product');
+  const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
     // Load custom categories from localStorage
     const savedCategories = localStorage.getItem('topshop-custom-categories');
@@ -917,21 +918,28 @@ export default function AdminPanel() {
                                   setTimeout(() => {
                                     const formState = form.getValues();
                                     console.log("Current form state:", formState);
+                                    // Force a re-render to update UI
+                                    setForceUpdate(prev => prev + 1);
                                   }, 100);
                                 }} 
                                 value={field.value || ""} // Use controlled component pattern with fallback
                                 defaultValue=""
                               >
                                 <FormControl>
-                                  <SelectTrigger className="border border-gray-300">
-                                    <SelectValue>
-                                      {/* Explicitly display the blog title by directly querying the blogs data */}
+                                  <SelectTrigger className="w-full border border-gray-300">
+                                    <SelectValue placeholder="Select blog">
                                       {(() => {
-                                        const currentBlogId = field.value || form.getValues('blogId');
-                                        if (!currentBlogId || !blogsQuery.data?.blogs) return "Select blog";
+                                        // Get blog title from the current value
+                                        const currentBlogId = field.value;
+                                        if (!currentBlogId || !blogsQuery.data?.blogs) return "Select Blog";
                                         
-                                        const selectedBlog = blogsQuery.data.blogs.find(blog => blog.id === currentBlogId);
-                                        return selectedBlog?.title || "Select blog";
+                                        // Find the selected blog by ID
+                                        const selectedBlog = blogsQuery.data.blogs.find(
+                                          blog => blog.id === currentBlogId
+                                        );
+                                        
+                                        // Return the blog title or placeholder
+                                        return selectedBlog?.title || "Select Blog";
                                       })()}
                                     </SelectValue>
                                   </SelectTrigger>
