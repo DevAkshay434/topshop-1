@@ -903,20 +903,24 @@ export default function AdminPanel() {
                               <FormLabel>Blog</FormLabel>
                               <Select 
                                 onValueChange={(value) => {
+                                  console.log("Blog changed to:", value);
                                   field.onChange(value);
-                                  // This forces a re-render to show the selected blog title
-                                  setTimeout(() => {}, 0);
+                                  // Force update the form with setValue to ensure React picks up the change
+                                  form.setValue('blogId', value, { shouldValidate: true });
                                 }} 
-                                value={field.value || ""} // Use controlled component pattern
-                                defaultValue={blogsQuery.data?.blogs?.[0]?.id || ""}
+                                value={field.value || ""} // Use controlled component pattern with fallback
                               >
                                 <FormControl>
                                   <SelectTrigger className="border border-gray-300">
                                     <SelectValue>
-                                      {/* Explicitly display the blog title */}
-                                      {field.value
-                                        ? blogsQuery.data?.blogs?.find(blog => blog.id === field.value)?.title || "News"
-                                        : "Select blog"}
+                                      {/* Explicitly display the blog title by directly querying the blogs data */}
+                                      {(() => {
+                                        const currentBlogId = field.value || form.getValues('blogId');
+                                        if (!currentBlogId || !blogsQuery.data?.blogs) return "Select blog";
+                                        
+                                        const selectedBlog = blogsQuery.data.blogs.find(blog => blog.id === currentBlogId);
+                                        return selectedBlog?.title || "Select blog";
+                                      })()}
                                     </SelectValue>
                                   </SelectTrigger>
                                 </FormControl>
