@@ -334,77 +334,45 @@ export default function CreatePostModal({
       // IMPORTANT: Add publicationType to postData for server-side processing
       postData.publicationType = values.publicationType;
       
-      // Reset all publication-related fields first to avoid conflicts
-      postData.publishedDate = null;
-      postData.scheduledDate = null;
-      postData.scheduledPublishDate = null;
-      postData.scheduledPublishTime = null;
-      
-      if (values.publicationType === "publish") {
-        // Publish immediately
-        postData.status = "published";
-        postData.postStatus = "publish"; // Explicit flag for backend
+      // For existing content, preserve its current publishing status
+      if (initialData?.id) {
+        console.log("Updating existing content, preserving current status:", initialData.status);
         
-        // Make sure date is properly formatted as ISO string
-        const currentDate = new Date();
-        postData.publishedDate = currentDate;
+        // Keep the existing status
+        postData.status = initialData.status || "published";
+        postData.postStatus = initialData.status || "published";
         
-        // Explicitly clear any scheduling info
-        postData.scheduleDate = null;
-        postData.scheduleTime = null;
-        postData.scheduledPublishDate = null;
-        postData.scheduledPublishTime = null;
-        
-      } else if (values.publicationType === "schedule") {
-        // Schedule for later publication - this takes precedence over any postStatus
-        postData.status = "scheduled";  // This is for our local database
-        postData.postStatus = "draft";  // CRITICAL: This prevents immediate publishing in Shopify
-        postData.publicationType = "schedule"; // Critical flag for backend to recognize scheduling
-        
-        console.log("📅 Preparing scheduled post:", {
-          publicationType: values.publicationType,
-          scheduleDate: values.scheduleDate,
-          scheduleTime: values.scheduleTime,
-          storeTimezone
-        });
-        
-        // Combine date and time for scheduled date
-        if (values.scheduleDate && values.scheduleTime) {
-          // Use timezone-aware date creation
-          const scheduledDate = createDateInTimezone(
-            values.scheduleDate,
-            values.scheduleTime,
-            storeTimezone
-          );
-          
-          console.log(`Scheduled for publication at: ${scheduledDate.toISOString()} (${storeTimezone})`);
-          
-          // For Shopify API integration - store date and time separately
-          postData.scheduleDate = values.scheduleDate;
-          postData.scheduleTime = values.scheduleTime;
-          postData.scheduledPublishDate = values.scheduleDate;
-          postData.scheduledPublishTime = values.scheduleTime;
-          
-          // Also keep the combined date object for our local usage
-          postData.scheduledDate = scheduledDate;
-        } else {
-          // Default scheduling to tomorrow in the store's timezone if not specified
-          const tomorrow = getTomorrowInTimezone(storeTimezone);
-          postData.scheduledDate = tomorrow;
-          
-          // Format tomorrow's date for Shopify API
-          const tomorrowDate = formatToTimezone(tomorrow, storeTimezone, 'date');
-          const tomorrowTime = formatToTimezone(tomorrow, storeTimezone, 'time');
-          postData.scheduledPublishDate = tomorrowDate;
-          postData.scheduledPublishTime = tomorrowTime;
+        // Keep any existing publishing dates
+        if (initialData.publishedDate) {
+          postData.publishedDate = initialData.publishedDate;
         }
-        // For schedule, still set publishedDate to null
-        postData.publishedDate = null;
+        
+        // Keep scheduling information if it's already scheduled
+        if (initialData.status === "scheduled") {
+          postData.scheduledDate = initialData.scheduledDate;
+          postData.scheduledPublishDate = initialData.scheduledPublishDate;
+          postData.scheduledPublishTime = initialData.scheduledPublishTime;
+          postData.scheduleDate = initialData.scheduledPublishDate;
+          postData.scheduleTime = initialData.scheduledPublishTime;
+        }
+        
+        // For published content, ensure it stays published
+        if (initialData.status === "published") {
+          postData.status = "published";
+          postData.postStatus = "publish";
+          
+          if (!initialData.publishedDate) {
+            // If somehow there's no published date, set it to current
+            postData.publishedDate = new Date();
+          }
+        }
       } else {
+        // For new content, always save as draft
+        console.log("Creating new content as draft");
         postData.status = "draft";
-        // For draft, set all dates to null explicitly
-        postData.scheduledDate = null;
+        postData.postStatus = "draft";
         postData.publishedDate = null;
+        postData.scheduledDate = null;
         postData.scheduledPublishDate = null;
         postData.scheduledPublishTime = null;
       }
@@ -416,16 +384,16 @@ export default function CreatePostModal({
         response = await apiRequest("PUT", `/api/posts/${initialData.id}`, postData);
         
         toast({
-          title: "Post Updated",
-          description: "Blog post has been updated successfully",
+          title: "Content Updated",
+          description: "Changes have been saved and published immediately",
         });
       } else {
         // Create new post
         response = await apiRequest("POST", "/api/posts", postData);
         
         toast({
-          title: "Post Created",
-          description: "Blog post has been created successfully",
+          title: "Draft Created",
+          description: "A new draft has been created successfully",
         });
       }
       
@@ -454,7 +422,7 @@ export default function CreatePostModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {initialData ? "Edit Blog Post" : "Create New Blog Post"}
+            Edit Content
           </DialogTitle>
         </DialogHeader>
         
