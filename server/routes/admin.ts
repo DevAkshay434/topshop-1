@@ -1232,6 +1232,14 @@ Place this at a logical position in the content, typically after introducing a c
         const isScheduled = requestData.publicationType === "schedule" && 
                           requestData.scheduleDate && 
                           requestData.scheduleTime;
+                          
+        console.log("Publication type from form:", {
+          publicationType: requestData.publicationType,
+          postStatus: requestData.postStatus,
+          scheduleDate: requestData.scheduleDate,
+          scheduleTime: requestData.scheduleTime,
+          isScheduled
+        });
 
         // Prepare post data with proper status
         const postStatus = requestData.postStatus === 'publish' 
@@ -1313,10 +1321,16 @@ Place this at a logical position in the content, typically after introducing a c
             const { createDateInTimezone } = await import('../../shared/timezone');
             
             // Create a proper date object for scheduling
+            // Get shop info for timezone
+            const shopInfo = await getShopInfo(store);
+            const storeTimezone = shopInfo?.iana_timezone || 'America/New_York';
+            
+            console.log(`Using timezone: ${storeTimezone} for scheduling`);
+            
             const scheduledDate = createDateInTimezone(
               requestData.scheduleDate,
               requestData.scheduleTime,
-              store.timezone || 'America/New_York'
+              storeTimezone
             );
             
             // Format for Shopify API

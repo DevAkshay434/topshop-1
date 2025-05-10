@@ -333,6 +333,9 @@ export default function CreatePostModal({
         scheduleTime: values.scheduleTime
       });
       
+      // IMPORTANT: Add publicationType to postData for server-side processing
+      postData.publicationType = values.publicationType;
+      
       // Reset all publication-related fields first to avoid conflicts
       postData.publishedDate = null;
       postData.scheduledDate = null;
