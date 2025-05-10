@@ -171,13 +171,17 @@ export class MemStorage implements IStorage {
       title: "Summer Fashion Trends 2023: What's Hot This Season",
       content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
       category: "Fashion",
+      categories: "Fashion, Summer",
       tags: "summer, fashion, trends",
       status: "published",
       publishedDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
       views: 342,
       featuredImage: "",
       scheduledDate: null,
+      scheduledPublishDate: null,
+      scheduledPublishTime: null,
       shopifyPostId: "12345",
+      shopifyBlogId: "116776337722",
       storeId: 1,
       createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
@@ -190,13 +194,17 @@ export class MemStorage implements IStorage {
       title: "How to Style Sustainable Clothing for Every Occasion",
       content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
       category: "Style Tips",
+      categories: "Style Tips, Fashion",
       tags: "sustainable, fashion, styling",
       status: "published",
       publishedDate: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
       views: 278,
       featuredImage: "",
       scheduledDate: null,
+      scheduledPublishDate: null,
+      scheduledPublishTime: null,
       shopifyPostId: "12346",
+      shopifyBlogId: "116776337722",
       storeId: 1,
       createdAt: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
@@ -209,13 +217,17 @@ export class MemStorage implements IStorage {
       title: "10 Must-Have Accessories for Your Summer Wardrobe",
       content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
       category: "Accessories",
+      categories: "Accessories, Fashion",
       tags: "accessories, summer, fashion",
       status: "scheduled",
       publishedDate: null,
       scheduledDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
+      scheduledPublishDate: "2025-05-13", // 3 days in future
+      scheduledPublishTime: "09:30",
       views: 0,
       featuredImage: "",
       shopifyPostId: null,
+      shopifyBlogId: "116776337722",
       storeId: 1,
       createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
@@ -290,12 +302,17 @@ export class MemStorage implements IStorage {
   }
   
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    console.log("MemStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
     const id = this.currentBlogPostId++;
     const newPost: BlogPost = { 
       ...post, 
       id,
-      views: post.views || 0
+      views: post.views || 0,
+      // Explicitly handle the scheduledPublishDate and scheduledPublishTime fields
+      scheduledPublishDate: post.scheduledPublishDate || null,
+      scheduledPublishTime: post.scheduledPublishTime || null
     };
+    console.log("MemStorage.createBlogPost - Created post:", JSON.stringify(newPost, null, 2));
     this.blogPosts.set(id, newPost);
     return newPost;
   }
@@ -548,6 +565,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    console.log("DatabaseStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
     // Ensure required fields are present and nulls are handled properly
     const [newPost] = await db.insert(blogPosts)
       .values({
@@ -556,14 +574,22 @@ export class DatabaseStorage implements IStorage {
         status: post.status || 'draft',
         featuredImage: post.featuredImage || null,
         category: post.category || null,
+        categories: post.categories || null,
         tags: post.tags || null,
         scheduledDate: post.scheduledDate || null,
+        scheduledPublishDate: post.scheduledPublishDate || null,
+        scheduledPublishTime: post.scheduledPublishTime || null,
         publishedDate: post.publishedDate || null,
         shopifyPostId: post.shopifyPostId || null,
-        views: post.views || 0
+        shopifyBlogId: post.shopifyBlogId || null,
+        storeId: post.storeId || 1,
+        views: post.views || 0,
+        author: post.author || null,
+        authorId: post.authorId || null
       })
       .returning();
       
+    console.log("DatabaseStorage.createBlogPost - Created post:", JSON.stringify(newPost, null, 2));
     return newPost;
   }
   
