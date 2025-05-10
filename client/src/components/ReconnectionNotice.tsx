@@ -11,7 +11,7 @@ export function ReconnectionNotice() {
     try {
       setIsReconnecting(true);
       // Get the auth URL from the server
-      const response = await apiRequest('/api/shopify/auth', { method: 'GET' });
+      const response = await apiRequest('/api/shopify/reconnect', { method: 'GET' });
       
       // Redirect to Shopify's OAuth flow
       if (response.authUrl) {

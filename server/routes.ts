@@ -66,6 +66,63 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  // Special route to handle reconnection with the new write_publications scope
+  apiRouter.get("/shopify/reconnect", async (req: Request, res: Response) => {
+    try {
+      const apiKey = process.env.SHOPIFY_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ 
+          success: false,
+          message: "Missing Shopify API credentials"
+        });
+      }
+      
+      // Get shop from existing connection
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No connected store found" 
+        });
+      }
+      
+      // Generate a nonce for CSRF protection
+      const nonce = require('crypto').randomBytes(16).toString('hex');
+      
+      // Store nonce data
+      const shop = stores[0].shopName;
+      const nonceData: NonceData = {
+        shop,
+        timestamp: Date.now()
+      };
+      nonceStore.set(nonce, nonceData);
+      
+      // Redirect URL for the OAuth callback
+      const redirectUri = `${req.protocol}://${req.get('host')}/shopify/callback`;
+      const host = req.query.host as string || '';
+      
+      // Create the auth URL with the new write_publications scope
+      const authUrl = `https://${shop}/admin/oauth/authorize?` +
+        `client_id=${apiKey}&` +
+        `scope=read_products,write_products,read_content,write_content,read_themes,write_publications&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `state=${nonce}`;
+      
+      // Return the URL to the client
+      return res.json({ 
+        success: true, 
+        authUrl
+      });
+    } catch (error) {
+      console.error('Error generating reconnect URL:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to generate authentication URL" 
+      });
+    }
+  });
+  
   // Get current Shopify connection
   apiRouter.get("/shopify/connection", async (req: Request, res: Response) => {
     try {
