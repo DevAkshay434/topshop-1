@@ -2173,24 +2173,30 @@ export default function AdminPanel() {
 
                         // If content has no YouTube placeholder but has secondary images
                         if (secondaryImages.length > 0) {
-                          // Check if content has full HTML img tags with proper src attributes
-                          const hasProperImages = hasImageTags && /img[^>]*?src\s*=\s*["'][^"']+["']/i.test(content);
+                          // Always consider content as having proper images
+                          // This ensures embedded images are always preserved
+                          const hasProperImages = true;
                           
                           if (hasProperImages) {
-                            // Content already has proper image tags with src attributes - render as-is
-                            // Make sure images can be seen by adding max-width and height styles
-                            // Fix image URLs and add proper styling
+                            // Enhanced processing for all content with images
                             const enhancedContent = content
-                              // Make sure all image URLs are absolute and not relative
+                              // Fix relative image URLs to absolute URLs (adding https:// if missing)
                               .replace(
                                 /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
                                 '<img$1src="https://$2"$3>'
                               )
-                              // Add styling to all images
+                              // Fix image URLs that might be missing domain (starting with //)
+                              .replace(
+                                /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$3"$4>'
+                              )
+                              // Add styling to all images for proper display
                               .replace(
                                 /<img([^>]*?)>/gi, 
                                 '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
                               );
+                            
+                            // Return the enhanced content with proper image styling
                             return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
                           } else {
                             // Remove any img tags without proper src
@@ -2247,12 +2253,17 @@ export default function AdminPanel() {
                             <div className="content-preview prose prose-blue max-w-none">
                               <div dangerouslySetInnerHTML={{ 
                                 __html: content.substring(0, content.length / 3)
-                                  // Make sure all image URLs are absolute and not relative
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
                                   .replace(
                                     /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
                                     '<img$1src="https://$2"$3>'
                                   )
-                                  // Add styling to all images
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
                                   .replace(
                                     /<img([^>]*?)>/gi, 
                                     '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
@@ -2276,18 +2287,25 @@ export default function AdminPanel() {
                           );
                         }
                         
-                        // Default: just show content but ensure image URLs are properly formatted
+                        // Default: ensure content displays correctly with embedded images
                         const processedContent = content
-                          // Make sure all image URLs are absolute and not relative
+                          // Fix relative image URLs to absolute URLs (adding https:// if missing)
                           .replace(
                             /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
                             '<img$1src="https://$2"$3>'
                           )
-                          // Add styling to all images
+                          // Fix image URLs that might be missing domain (starting with //)
+                          .replace(
+                            /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$3"$4>'
+                          )
+                          // Add styling to all images for proper display
                           .replace(
                             /<img([^>]*?)>/gi, 
                             '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
                           );
+                        
+                        // Return enhanced content with all embedded images properly displayed
                         return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: processedContent }} />;
                       })()}
                     </div>
