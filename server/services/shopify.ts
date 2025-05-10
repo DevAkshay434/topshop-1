@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { ShopifyConnection, ShopifyStore, BlogPost } from '@shared/schema';
+import { createDateInTimezone } from '@shared/timezone';
 
 // Define a separate interface for the Shopify service
 interface ShopifyBlogPost {
@@ -48,156 +49,96 @@ interface ShopifyShop {
 interface ShopifyArticle {
   id: string;
   title: string;
-  handle: string;
-  created_at: string;
-  updated_at: string;
+  author: string;
   published_at: string;
+  updated_at: string;
+  created_at: string;
   body_html: string;
   blog_id: string;
-  author: string;
-  user_id: string;
   summary_html: string;
-  template_suffix: string;
+  published: boolean;
   tags: string;
-  admin_graphql_api_id: string;
 }
 
-// Interfaces for products and collections
-export interface ShopifyProduct {
-  id: string;
-  title: string;
-  handle: string;
-  description?: string;
-  vendor?: string;
-  product_type?: string;
-  created_at: string;
-  updated_at: string;
-  published_at?: string;
-  tags?: string;
-  variants?: ShopifyProductVariant[];
-  images?: ShopifyProductImage[];
-  url?: string; // Full URL to the product
-}
-
-export interface ShopifyProductVariant {
-  id: string;
-  title: string;
-  price: string;
-  sku?: string;
-}
-
-export interface ShopifyProductImage {
-  id: string;
-  src: string;
-  width?: number;
-  height?: number;
+interface PexelsImage {
+  id: number;
+  url: string;
+  width: number;
+  height: number;
   alt?: string;
-  position?: number;
+  src?: {
+    original: string;
+    large: string;
+    medium: string;
+    small: string;
+    thumbnail: string;
+  };
 }
 
-export interface ShopifyCollection {
-  id: string;
-  title: string;
-  handle: string;
-  description?: string;
-  published_at?: string;
-  updated_at: string;
-  url?: string; // Full URL to the collection
-}
-
+/**
+ * Service class for interacting with the Shopify API
+ */
 export class ShopifyService {
-  private clients: Map<number, AxiosInstance> = new Map();
-  private shopDomains: Map<number, string> = new Map();
-  private shopCache: Map<number, ShopifyShop> = new Map(); // Cache for shop details including timezone
+  private clients: Map<string, AxiosInstance> = new Map();
+  private pexelsImages: Map<number, PexelsImage> = new Map();
   
   /**
-   * Initialize a client for a specific store
-   * @param store The Shopify store information
-   * @returns The created axios instance
+   * Initialize the Shopify client for a specific store
+   * @param store The store to initialize the client for
    */
-  private initializeClient(store: ShopifyStore): AxiosInstance {
-    console.log(`Initializing Shopify client for store: ${store.shopName}`);
-    console.log(`Access token (first 5 chars): ${store.accessToken.substring(0, 5)}...`);
-    
-    const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-07`,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': store.accessToken
-      }
-    });
-    
-    // Add request and response interceptors for debugging
-    client.interceptors.request.use(config => {
-      console.log(`Shopify API request for ${store.shopName}: ${config.method?.toUpperCase()} ${config.url}`);
-      return config;
-    });
-    
-    client.interceptors.response.use(
-      response => {
-        console.log(`Shopify API response for ${store.shopName}: ${response.status} for ${response.config.url}`);
-        return response;
-      },
-      error => {
-        if (error.response) {
-          console.error(`Shopify API error for ${store.shopName}: ${error.response.status} for ${error.config.url}`);
-          console.error(`Error data:`, error.response.data);
-        } else {
-          console.error(`Shopify API error for ${store.shopName}:`, error.message);
-        }
-        return Promise.reject(error);
-      }
-    );
-    
-    // Cache the client and domain name
-    this.clients.set(store.id, client);
-    this.shopDomains.set(store.id, store.shopName);
-    
-    return client;
-  }
-  
-  /**
-   * Get the client for a specific store, initializing it if necessary
-   * @param store The Shopify store to get a client for
-   * @returns The axios client for the store
-   */
-  private getClient(store: ShopifyStore): AxiosInstance {
-    // Check if we already have a client for this store
-    let client = this.clients.get(store.id);
-    
-    // If not, initialize one
-    if (!client || !store.isConnected) {
-      client = this.initializeClient(store);
+  public initializeClient(store: ShopifyStore) {
+    if (!store.accessToken) {
+      throw new Error('Store does not have an access token');
     }
     
-    return client;
+    // Create a reusable axios client for this store
+    const client = axios.create({
+      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      headers: {
+        'X-Shopify-Access-Token': store.accessToken,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    // Add request interceptor to log requests
+    client.interceptors.request.use(request => {
+      console.log(`Shopify API request for ${store.shopName}: ${request.method?.toUpperCase()} ${request.url}`);
+      return request;
+    });
+    
+    // Add response interceptor to log responses
+    client.interceptors.response.use(response => {
+      console.log(`Shopify API response for ${store.shopName}: ${response.status} for ${response.config.url}`);
+      return response;
+    }, error => {
+      console.error(`Shopify API error for ${store.shopName}:`, error?.response?.status, error?.response?.data || error.message);
+      return Promise.reject(error);
+    });
+    
+    // Store the client in the map
+    this.clients.set(store.shopName, client);
+    
+    console.log(`Initializing Shopify client for store: ${store.shopName}`);
+    console.log(`Access token (first 5 chars): ${store.accessToken.substring(0, 5)}...`);
   }
   
   /**
-   * For backward compatibility with old connection interface
-   * @param connection Legacy ShopifyConnection 
+   * Get the Shopify client for a specific store
+   * @param store The store to get the client for
+   * @returns An Axios instance configured for the store
    */
-  public setConnection(connection: ShopifyConnection) {
-    console.log("Warning: Using legacy setConnection method");
+  private getClient(store: ShopifyStore): AxiosInstance {
+    // Check if client exists
+    const client = this.clients.get(store.shopName);
     
-    // Create a temporary store object to use with the new client system
-    const store: ShopifyStore = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '', // Not available in legacy connection
-      defaultBlogId: connection.defaultBlogId,
-      isConnected: connection.isConnected || true,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
+    // If client exists, return it
+    if (client) {
+      return client;
+    }
     
-    // Initialize the client
+    // Otherwise, initialize and return a new client
     this.initializeClient(store);
+    return this.clients.get(store.shopName)!;
   }
   
   /**
@@ -244,470 +185,148 @@ export class ShopifyService {
     try {
       const client = this.getClient(store);
       
-      // Properly handle the date formatting for Shopify API
-      // Use current date if no publishedDate is provided
-      let publishedAt: string | undefined = undefined;
-      
-      // Initial scheduling detection flag (will be enhanced below)
-      // We use an explicit initial detection variable to avoid conflicts with later declarations
-      
       console.log(`Creating Shopify article for post with status: ${post.status}`, {
         postId: post.id,
         title: post.title,
         status: post.status,
-        publishedDate: post.publishedDate,
-        scheduledDate: post.scheduledDate,
         scheduledPublishDate: post.scheduledPublishDate,
         scheduledPublishTime: post.scheduledPublishTime
       });
       
-      if (post.status === 'published') {
-        // For published posts, use the current time or the existing published date
-        if (post.publishedDate) {
-          publishedAt = new Date(post.publishedDate).toISOString();
-          console.log(`Using existing published date: ${publishedAt}`);
-        } else {
-          publishedAt = new Date().toISOString();
-          console.log(`Using current time as publish date: ${publishedAt}`);
-        }
-      } else if (post.status === 'scheduled') {
-        // For scheduled posts, use the scheduled date and time
-        if (post.scheduledPublishDate && post.scheduledPublishTime) {
-          console.log(`Scheduling post for publication on ${post.scheduledPublishDate} at ${post.scheduledPublishTime}`);
-          
-          // Parse the date parts
-          const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
-          const [hours, minutes] = post.scheduledPublishTime.split(':').map(Number);
-          
-          console.log(`Parsed date components: Year=${year}, Month=${month}, Day=${day}, Hours=${hours}, Minutes=${minutes}`);
-          
-          // Create a date string in ISO format
-          // Shopify expects dates in ISO format
-          // Format: YYYY-MM-DDTHH:MM:SS+00:00 (or Z for UTC)
-          const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-          
-          // First, try to get the store's timezone for better scheduling accuracy
-          const shopService = this;
-          let storeTimezone = "UTC";
-          
-          try {
-            const shopInfo = await shopService.getShopInfo(store);
-            storeTimezone = shopInfo.iana_timezone || "UTC";
-            console.log(`Using timezone: ${storeTimezone} for scheduling`);
-          } catch (tzError) {
-            console.error("Error getting store timezone:", tzError);
-            console.log("Falling back to UTC for scheduling");
-          }
-          
-          console.log(`Creating date in timezone: ${storeTimezone} with date: ${post.scheduledPublishDate} and time: ${post.scheduledPublishTime}`);
-          console.log(`Parsed components: year=${year}, month=${month}, day=${day}, hour=${hours}, minute=${minutes}`);
-          
-          // Create the date object - this is crucial
-          const isoStringDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-          console.log(`ISO date string: ${isoStringDate}`);
-          
-          // Set the scheduled date to future
-          publishedAt = isoStringDate + ".000Z"; // Force UTC timezone with Z suffix
-          console.log(`Setting page scheduled publication date to: ${publishedAt}`);
-          
-          // Make sure we're scheduling properly
-          if (publishedAt) {
-            console.log(`Creating page with publish setting: SCHEDULED`);
-          } else {
-            console.error(`Invalid scheduled date/time: ${post.scheduledPublishDate} ${post.scheduledPublishTime}`);
-            console.error(`Failed to parse ISO date: ${isoDateString}`);
-            // For invalid scheduled dates, leave publishedAt as undefined
-            // This will create a draft post in Shopify
-          }
-        } else if (post.scheduledDate) {
-          // Use existing scheduled date if available
-          publishedAt = new Date(post.scheduledDate).toISOString();
-          console.log(`Using existing scheduled date: ${publishedAt}`);
-        } else {
-          console.log(`No schedule information provided, creating as draft in Shopify`);
-          // If no scheduled date is provided, leave publishedAt as undefined
-          // This will create a draft post in Shopify
-        }
-      }
-      
-      // Enhanced scheduling detection logic
-      // Detect if this post should be scheduled based on multiple possible indicators
-      const scheduleInfo = {
-        postStatus: (post as any).postStatus || post.status,
-        publicationType: (post as any).publicationType,
-        hasPublicationType: typeof (post as any).publicationType !== 'undefined',
-        isPublicationTypeScheduled: (post as any).publicationType === 'schedule',
-        isStatusScheduled: ((post as any).postStatus === 'scheduled' || post.status === 'scheduled'),
-        hasScheduledDate: !!post.scheduledPublishDate,
-        scheduledDate: post.scheduledPublishDate,
-        hasScheduledTime: !!post.scheduledPublishTime,
-        scheduledTime: post.scheduledPublishTime,
-        shouldSchedule: false // Will be set below if conditions are met
-      };
-      
-      // Log the scheduling detection for debugging
-      console.log("Schedule detection details:", scheduleInfo);
-      
-      // If we have explicit scheduling indicators, we should enter scheduling mode
-      if ((scheduleInfo.isPublicationTypeScheduled || scheduleInfo.isStatusScheduled) && 
-          scheduleInfo.hasScheduledDate && 
-          scheduleInfo.hasScheduledTime) {
-        
-        // Update scheduling flags
-        scheduleInfo.shouldSchedule = true;
-        console.log(`Setting shouldSchedule to true based on detection`);
-        
-        if (!publishedAt && scheduleInfo.scheduledDate && scheduleInfo.scheduledTime) {
-          // Parse the date parts
-          const [year, month, day] = scheduleInfo.scheduledDate.split('-').map(Number);
-          const [hours, minutes] = scheduleInfo.scheduledTime.split(':').map(Number);
-          
-          // Create a UTC date for scheduling (this is what Shopify expects)
-          const scheduledDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
-          publishedAt = scheduledDateTime.toISOString();
-          console.log(`Updated publishedAt for scheduling: ${publishedAt}`);
-        }
-      }
-      
-      // Process content to handle proxied image URLs
+      // Process content to handle any proxied image URLs
       let processedContent = post.content;
       
-      // Replace proxy image URLs with their Pexels source URLs
-      // Look for both relative URLs and URLs with <a> tags
+      // Replace proxy image URLs with their source URLs if needed
       const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
-      const proxyImageLinkPattern = /<a href="([^"]+)"><img src="\/api\/proxy\/image\/(\d+)"/g;
       let proxyMatch;
-      let proxyLinkMatch;
       
-      const pexelsService = await import('./pexels').then(module => module.pexelsService);
-      
-      // First, handle images with links
-      while ((proxyLinkMatch = proxyImageLinkPattern.exec(processedContent)) !== null) {
-        const productUrl = proxyLinkMatch[1];
-        const imageId = proxyLinkMatch[2];
-        console.log(`Found linked proxied image in content: ${imageId} with product link: ${productUrl}`);
-        
-        try {
-          // Get the Pexels image with this ID
-          const image = await pexelsService.getImageById(imageId);
-          
-          if (image && image.src) {
-            // Get the best quality image URL
-            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
-            
-            if (directImageUrl) {
-              console.log(`Replacing linked proxy URL with direct URL: ${directImageUrl}`);
-              // Replace the proxy URL with the direct URL in content, maintaining the link
-              processedContent = processedContent.replace(
-                `<a href="${productUrl}"><img src="/api/proxy/image/${imageId}"`, 
-                `<a href="${productUrl}"><img src="${directImageUrl}"`
-              );
-            }
-          }
-        } catch (imageError) {
-          console.error(`Error processing linked proxied image ${imageId}:`, imageError);
-          // Continue with other images if one fails
-        }
-      }
-      
-      // Now handle standalone images (without links)
+      // Process direct image references
       while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
-        const imageId = proxyMatch[1];
-        console.log(`Found standalone proxied image in content: ${imageId}`);
+        const [fullMatch, imageId] = proxyMatch;
         
-        try {
-          // Get the Pexels image with this ID
-          const image = await pexelsService.getImageById(imageId);
-          
-          if (image && image.src) {
-            // Get the best quality image URL
-            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
+        // Only replace if we have an image ID
+        if (imageId) {
+          try {
+            // Check if this is a Pexels image
+            const pexelsImage = await this.getPexelsImageById(parseInt(imageId));
             
-            if (directImageUrl) {
-              console.log(`Replacing proxy URL with direct URL: ${directImageUrl}`);
-              // Replace the proxy URL with the direct URL in content
+            if (pexelsImage) {
+              // Use the original Pexels image URL
+              const directImageUrl = pexelsImage.src?.large || pexelsImage.url;
+              
+              // Replace the proxy URL with the direct Pexels URL
               processedContent = processedContent.replace(
                 `src="/api/proxy/image/${imageId}"`, 
                 `src="${directImageUrl}"`
               );
             }
+          } catch (imageError) {
+            console.error(`Error processing proxied image ${imageId}:`, imageError);
+            // Continue with other images if one fails
           }
-        } catch (imageError) {
-          console.error(`Error processing proxied image ${imageId}:`, imageError);
-          // Continue with other images if one fails
         }
       }
       
-      // COMPLETE REWRITE OF SCHEDULING DETECTION
-      // We need to be explicit about scheduling to make the right API calls
+      // Determine if this is a scheduled post
+      const isScheduled = post.status === 'scheduled' && 
+                         post.scheduledPublishDate && 
+                         post.scheduledPublishTime;
       
-      // Determine if post should be scheduled based on reliable indicators
-      let shouldSchedulePublication = false;
+      // Prepare the published_at date for the article
+      let publishedAt: string | undefined = undefined;
       
-      // First, check if post has all required scheduling information
-      const hasScheduleData = post.scheduledPublishDate && post.scheduledPublishTime;
-      
-      // Then check if status or publicationType indicates scheduling
-      const hasScheduleStatus = post.status === 'scheduled';
-      const hasSchedulePublicationType = (post as any).publicationType === 'schedule';
-      
-      // If we have the scheduling data AND either status or publicationType indicates scheduling
-      if (hasScheduleData && (hasScheduleStatus || hasSchedulePublicationType)) {
-        shouldSchedulePublication = true;
-        console.log(`Post will be scheduled: data + intent detected`);
+      if (isScheduled) {
+        // For scheduled posts, parse the date and time
+        try {
+          // Parse the date parts
+          const [year, month, day] = post.scheduledPublishDate!.split('-').map(Number);
+          const [hours, minutes] = post.scheduledPublishTime!.split(':').map(Number);
+          
+          // Get shop's timezone
+          let timezone = 'UTC';
+          try {
+            const shopInfo = await this.getShopInfo(store);
+            timezone = shopInfo.timezone || 'UTC';
+            console.log(`Using shop timezone for scheduling: ${timezone}`);
+          } catch (tzError) {
+            console.warn(`Could not get shop timezone, using UTC`);
+          }
+          
+          // Create a date in the shop's timezone
+          try {
+            const scheduledDate = createDateInTimezone(
+              post.scheduledPublishDate!,
+              post.scheduledPublishTime!,
+              timezone
+            );
+            publishedAt = scheduledDate.toISOString();
+          } catch (dateError) {
+            // Fallback to UTC if timezone conversion fails
+            const scheduledDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+            publishedAt = scheduledDate.toISOString();
+          }
+          
+          // Ensure the scheduled date is in the future
+          const now = new Date();
+          const scheduledDate = new Date(publishedAt);
+          
+          if (scheduledDate <= now) {
+            // Move to one hour in the future if the scheduled time is in the past
+            const futureDate = new Date();
+            futureDate.setHours(futureDate.getHours() + 1);
+            publishedAt = futureDate.toISOString();
+            console.log(`Adjusted past scheduled date to future: ${publishedAt}`);
+          }
+        } catch (err) {
+          console.error('Error parsing scheduled date:', err);
+          // If there's an error, default to one hour from now
+          const futureDate = new Date();
+          futureDate.setHours(futureDate.getHours() + 1);
+          publishedAt = futureDate.toISOString();
+        }
+      } else if (post.status === 'published') {
+        // For published posts, use the current time
+        publishedAt = new Date().toISOString();
       }
-      // Fallback: If we have date/time data but no explicit schedule status
-      else if (hasScheduleData) {
-        shouldSchedulePublication = true;
-        console.log(`Post will be scheduled: scheduling data detected without explicit status`);
-      }
       
-      // Add detailed logging about schedule detection
-      console.log("Schedule detection details:", {
-        postStatus: post.status,
-        isStatusScheduled: post.status === 'scheduled',
-        hasPublicationType: !!(post as any).publicationType,
-        publicationType: (post as any).publicationType,
-        hasScheduledDate: !!post.scheduledPublishDate,
-        scheduledDate: post.scheduledPublishDate,
-        hasScheduledTime: !!post.scheduledPublishTime,
-        scheduledTime: post.scheduledPublishTime,
-        shouldSchedulePublication
-      });
-      
-      // Get the post status, with fallbacks for backward compatibility
-      const postStatus = (post as any).postStatus || post.status;
-      
-      console.log(`Preparing article with postStatus: ${postStatus} and status: ${post.status}`, {
-        shouldSchedulePublication,
-        publishedAt,
-        publicationType: (post as any).publicationType,
-        postStatus,
-        scheduledDate: post.scheduledPublishDate,
-        scheduledTime: post.scheduledPublishTime
-      });
-      
-      // Prepare article data for Shopify API
+      // Create the article object
       const article = {
         title: post.title,
         author: post.author || store.shopName,
-        body_html: processedContent, // Use processed content with direct image URLs
+        body_html: processedContent,
         tags: post.tags || "",
-        // For Shopify API scheduling to work properly:
-        // 1. published MUST be false for scheduled posts (future published_at)
-        // 2. published_at must be set to the future date
-        // Set a default safe value - we'll override for immediate publishing only
-        published: false,
+        published: post.status === 'published', // Only true for immediate publishing
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
-      // Only set published=true for immediate publishing (not scheduling)
-      if (post.status === 'published' && !shouldSchedulePublication) {
-        console.log('Setting article to publish immediately (not scheduled)');
-        article.published = true;
-      } else if (shouldSchedulePublication) {
-        // CRITICAL: Force published=false for scheduled content
-        // This is required by Shopify's API - a scheduled post MUST have published=false
+      // CRITICAL: For scheduling to work in Shopify, we must have:
+      // 1. published = false 
+      // 2. published_at = future date
+      if (isScheduled) {
         article.published = false;
-        console.log(`FORCE SETTING published=false for scheduled content with date ${publishedAt}`);
+        console.log(`SCHEDULED POST: Setting published=false with published_at=${publishedAt}`);
       }
       
-      // For scheduled posts check the date is actually in the future
-      if (shouldSchedulePublication && publishedAt) {
-        const currentTimestamp = new Date().toISOString();
-        const scheduledTimestamp = publishedAt;
-        
-        // Calculate if the schedule date is in the future
-        const isInFuture = scheduledTimestamp > currentTimestamp;
-        const diffInMs = new Date(scheduledTimestamp).getTime() - new Date(currentTimestamp).getTime();
-        const diffInMinutes = diffInMs / (1000 * 60);
-        
-        console.log("Scheduling details:", {
-          scheduledAt: scheduledTimestamp,
-          currentTimestamp,
-          scheduledTimestamp,
-          isInFuture,
-          diffInMs,
-          diffInMinutes
-        });
-        
-        // For Shopify scheduling to work: 
-        // 1. published must be false
-        // 2. published_at must be in future
-        article.published = false;
-        
-        // If the date isn't actually in the future, schedule it for 1 hour from now
-        if (!isInFuture) {
-          const oneHourFromNow = new Date();
-          oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
-          article.published_at = oneHourFromNow.toISOString();
-          console.log(`Scheduled time was in the past. Rescheduling for 1 hour from now: ${article.published_at}`);
-        }
-      }
-      
-      // Double check scheduling logic
-      if (shouldSchedulePublication && publishedAt) {
-        console.log(`SCHEDULING POST - Setting published=false, published_at=${publishedAt}`);
-        article.published = false; // Must be false for scheduling to work properly
-        
-        // Additional check to ensure the date is in the future
-        const scheduledDate = new Date(publishedAt);
-        const currentDate = new Date();
-        const isInFuture = scheduledDate > currentDate;
-        
-        // If the date isn't actually future, adjust it
-        if (!isInFuture) {
-          const oneHourFromNow = new Date();
-          oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
-          article.published_at = oneHourFromNow.toISOString();
-          console.log(`Scheduled time was in the past. Rescheduling for 1 hour from now: ${article.published_at}`);
-        }
-      }
-      
-      // Log the article data being sent to Shopify
-      console.log(`Creating Shopify article "${post.title}" in blog ${blogId} with data:`, {
+      // Log the request
+      console.log(`Sending to Shopify API:`, {
         title: article.title,
         published: article.published,
         published_at: article.published_at,
-        status: post.status,
-        postStatus: postStatus,
-        isScheduled: shouldSchedulePublication,
-        scheduledDate: post.scheduledPublishDate,
-        scheduledTime: post.scheduledPublishTime,
-        tags: article.tags
-      });
-      // SIMPLIFIED SCHEDULING APPROACH USING PUBLISHED_AT
-      // According to Shopify API documentation
-      
-      if (shouldSchedulePublication && publishedAt) {
-        console.log(`Setting up SCHEDULED article with future date: ${publishedAt}`);
-        
-        // Force a minimum delay of 1 hour for scheduled content for safety
-        const requestedDate = new Date(publishedAt);
-        const now = new Date();
-        const minScheduleTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
-        
-        if (requestedDate < minScheduleTime) {
-          // If the scheduled date is too soon, push it to 1 hour from now
-          article.published_at = minScheduleTime.toISOString();
-          console.log(`Scheduled time adjusted to ensure minimum 1 hour delay: ${article.published_at}`);
-        } else {
-          article.published_at = publishedAt;
-        }
-        
-        // CRITICAL: For scheduled posts in Shopify 
-        // 1. published_at must be in the future
-        // 2. published must be false
-        article.published = false;
-        
-        console.log(`SCHEDULING APPROACH: Simplified direct method`);
-        console.log(`Article settings:`, {
-          published: article.published, // Must be false
-          published_at: article.published_at, // Must be future date
-        });
-        
-        // Final log of exact request data to verify
-        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
-          url: `/blogs/${blogId}/articles.json`,
-          method: 'POST',
-          article: {
-            title: article.title,
-            published: article.published,
-            published_at: article.published_at,
-            tags: article.tags
-          }
-        });
-        
-        // Make standard API request without query parameters
-        const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
-        
-        // Log the response for debugging
-        console.log(`SHOPIFY SCHEDULING RESPONSE:`, {
-          id: response.data.article.id,
-          title: response.data.article.title,
-          published: response.data.article.published,
-          published_at: response.data.article.published_at,
-          created_at: response.data.article.created_at
-        });
-        
-        return response.data.article;
-      } 
-      else if (post.status === 'draft') {
-        // For draft articles in Shopify
-        // Simply set published=false without a published_at date
-        article.published = false;
-        article.published_at = undefined; // Do not set published_at for drafts
-        
-        console.log(`Creating DRAFT article with settings:`, {
-          published: article.published,
-          published_at: article.published_at
-        });
-        
-        const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
-        
-        console.log(`DRAFT RESPONSE:`, {
-          id: response.data.article.id,
-          title: response.data.article.title,
-          published: response.data.article.published,
-          published_at: response.data.article.published_at
-        });
-        
-        return response.data.article;
-      } 
-      else if (post.status === 'published') {
-        // For immediate publication:
-        article.published = true;
-        
-        // For immediately published content, set published_at to now
-        const now = new Date();
-        article.published_at = now.toISOString();
-        
-        console.log(`Creating PUBLISHED article (immediate) with settings:`, {
-          published: article.published,
-          published_at: article.published_at
-        });
-        
-        const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
-        
-        console.log(`PUBLISH RESPONSE:`, {
-          id: response.data.article.id,
-          title: response.data.article.title,
-          published: response.data.article.published,
-          published_at: response.data.article.published_at
-        });
-        
-        return response.data.article;
-      }
-      
-      // Default case (should not reach here, but just in case)
-      console.log(`WARNING: Using default article creation approach`);
-      console.log(`FINAL REQUEST TO SHOPIFY API:`, {
-        url: `/blogs/${blogId}/articles.json`,
-        method: 'POST',
-        article: {
-          title: article.title,
-          tags: article.tags
-        }
+        isScheduled
       });
       
-      // Set to draft by default for safety
-      const draftParams = new URLSearchParams();
-      draftParams.append('status', 'draft');
+      // Make the API request
+      const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
       
-      const response = await client.post(`/blogs/${blogId}/articles.json?${draftParams.toString()}`, {
-        article
-      });
-      
-      console.log(`SHOPIFY API RESPONSE:`, {
+      // Log the response
+      console.log(`Shopify API response:`, {
         id: response.data.article.id,
         title: response.data.article.title,
         published: response.data.article.published,
-        published_at: response.data.article.published_at,
-        created_at: response.data.article.created_at
+        published_at: response.data.article.published_at
       });
       
-      console.log(`Successfully created Shopify article with ID: ${response.data.article.id}`);
       return response.data.article;
     } catch (error: any) {
       console.error(`Error creating article in Shopify store ${store.shopName}:`, error);
@@ -716,186 +335,124 @@ export class ShopifyService {
   }
   
   /**
-   * Update an article in a specific store
+   * Update an existing Shopify article
    * @param store The store to update the article in
-   * @param blogId The ID of the blog containing the article
-   * @param articleId The ID of the article to update
-   * @param post The updated blog post data
-   * @returns The updated Shopify article
+   * @param blogId The blog ID containing the article
+   * @param articleId The article ID to update
+   * @param post The updated post data
    */
-  public async updateArticle(store: ShopifyStore, blogId: string, articleId: string, post: Partial<BlogPost> | Partial<ShopifyBlogPost>): Promise<ShopifyArticle> {
+  public async updateArticle(store: ShopifyStore, blogId: string, articleId: string, post: BlogPost | ShopifyBlogPost): Promise<ShopifyArticle> {
     try {
       const client = this.getClient(store);
-      const article: any = {};
       
-      // Log the post data to help diagnose issues
-      console.log("Updating Shopify article with post data:", JSON.stringify({
-        id: post.id,
+      console.log(`Updating Shopify article ${articleId} in blog ${blogId}`);
+      
+      // Process content to handle proxied image URLs
+      let processedContent = post.content;
+      
+      // Replace proxy image URLs with their Pexels source URLs
+      const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
+      let proxyMatch;
+      
+      while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
+        const [fullMatch, imageId] = proxyMatch;
+        
+        if (imageId) {
+          try {
+            const pexelsImage = await this.getPexelsImageById(parseInt(imageId));
+            
+            if (pexelsImage) {
+              const directImageUrl = pexelsImage.src?.large || pexelsImage.url;
+              processedContent = processedContent.replace(
+                `src="/api/proxy/image/${imageId}"`, 
+                `src="${directImageUrl}"`
+              );
+            }
+          } catch (error) {
+            console.error(`Error processing proxied image ${imageId}:`, error);
+          }
+        }
+      }
+      
+      // Determine if this is a scheduled post
+      const isScheduled = post.status === 'scheduled' && 
+                         post.scheduledPublishDate && 
+                         post.scheduledPublishTime;
+      
+      // Prepare the published_at date
+      let publishedAt: string | undefined = undefined;
+      
+      if (isScheduled) {
+        try {
+          // Get shop's timezone
+          let timezone = 'UTC';
+          try {
+            const shopInfo = await this.getShopInfo(store);
+            timezone = shopInfo.timezone || 'UTC';
+          } catch (error) {
+            console.warn(`Could not get shop timezone, using UTC`);
+          }
+          
+          // Create a timezone-aware date
+          const scheduledDate = createDateInTimezone(
+            post.scheduledPublishDate!,
+            post.scheduledPublishTime!,
+            timezone
+          );
+          
+          publishedAt = scheduledDate.toISOString();
+          
+          // Ensure the date is in the future
+          const now = new Date();
+          if (scheduledDate <= now) {
+            const futureDate = new Date();
+            futureDate.setHours(futureDate.getHours() + 1);
+            publishedAt = futureDate.toISOString();
+          }
+        } catch (error) {
+          console.error('Error creating scheduled date:', error);
+          // Default to one hour from now
+          const futureDate = new Date();
+          futureDate.setHours(futureDate.getHours() + 1);
+          publishedAt = futureDate.toISOString();
+        }
+      } else if (post.status === 'published') {
+        // For published articles, use the current time
+        publishedAt = new Date().toISOString();
+      }
+      
+      // Create the update article object
+      const article = {
+        id: articleId,
         title: post.title,
-        contentLength: post.content ? post.content.length : 0,
-        tags: post.tags,
-        status: post.status
-      }));
+        author: post.author || store.shopName,
+        body_html: processedContent,
+        tags: post.tags || "",
+        published: post.status === 'published',
+        published_at: publishedAt,
+        image: post.featuredImage ? { src: post.featuredImage } : undefined
+      };
       
-      // Make sure we have required fields
-      if (!post.title) {
-        console.warn("No title provided for Shopify article update!");
-        article.title = "Untitled Post";
-      } else {
-        article.title = post.title;
-      }
-      
-      // Handle content with fallback
-      if (post.content && post.content.length > 0) {
-        // Process content to handle proxied image URLs just like in createArticle
-        let processedContent = post.content;
-        
-        // Replace proxy image URLs with their Pexels source URLs
-        // Look for both relative URLs and URLs with <a> tags
-        const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
-        const proxyImageLinkPattern = /<a href="([^"]+)"><img src="\/api\/proxy\/image\/(\d+)"/g;
-        let proxyMatch;
-        let proxyLinkMatch;
-        
-        const pexelsService = await import('./pexels').then(module => module.pexelsService);
-        
-        // First, handle images with links
-        while ((proxyLinkMatch = proxyImageLinkPattern.exec(processedContent)) !== null) {
-          const productUrl = proxyLinkMatch[1];
-          const imageId = proxyLinkMatch[2];
-          console.log(`Found linked proxied image in content for update: ${imageId} with product link: ${productUrl}`);
-          
-          try {
-            // Get the Pexels image with this ID
-            const image = await pexelsService.getImageById(imageId);
-            
-            if (image && image.src) {
-              // Get the best quality image URL
-              const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
-              
-              if (directImageUrl) {
-                console.log(`Replacing linked proxy URL with direct URL for update: ${directImageUrl}`);
-                // Replace the proxy URL with the direct URL in content, maintaining the link
-                processedContent = processedContent.replace(
-                  `<a href="${productUrl}"><img src="/api/proxy/image/${imageId}"`, 
-                  `<a href="${productUrl}"><img src="${directImageUrl}"`
-                );
-              }
-            }
-          } catch (imageError) {
-            console.error(`Error processing linked proxied image ${imageId} for update:`, imageError);
-            // Continue with other images if one fails
-          }
-        }
-        
-        // Now handle standalone images (without links)
-        while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
-          const imageId = proxyMatch[1];
-          console.log(`Found standalone proxied image in content for update: ${imageId}`);
-          
-          try {
-            // Get the Pexels image with this ID
-            const image = await pexelsService.getImageById(imageId);
-            
-            if (image && image.src) {
-              // Get the best quality image URL
-              const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
-              
-              if (directImageUrl) {
-                console.log(`Replacing proxy URL with direct URL for update: ${directImageUrl}`);
-                // Replace the proxy URL with the direct URL in content
-                processedContent = processedContent.replace(
-                  `src="/api/proxy/image/${imageId}"`, 
-                  `src="${directImageUrl}"`
-                );
-              }
-            }
-          } catch (imageError) {
-            console.error(`Error processing proxied image ${imageId} for update:`, imageError);
-            // Continue with other images if one fails
-          }
-        }
-        
-        article.body_html = processedContent;
-      } else {
-        console.warn("Empty content for Shopify article update!");
-        article.body_html = `<p>Content for "${article.title}" is being updated.</p>`;
-      }
-      
-      if (post.tags) article.tags = post.tags;
-      
-      // Set the author if provided
-      if (post.author) {
-        article.author = post.author;
-      } else {
-        article.author = store.shopName;
-      }
-      
-      // Determine if this is a scheduled post - check both status and publicationType
-      const isScheduled = 
-        post.status === 'scheduled' || 
-        (post as any).publicationType === 'schedule';
-      
-      // Log scheduling information
-      console.log(`Update post scheduling status: isScheduled=${isScheduled}`, {
-        status: post.status,
-        publicationType: (post as any).publicationType,
-        scheduledDate: post.scheduledPublishDate,
-        scheduledTime: post.scheduledPublishTime
-      });
-      
-      // Properly handle date formatting for Shopify API
-      // Start with published=false as the default for safety
-      article.published = false;
-      
-      // Now handle specific publish scenarios
-      if (post.status === 'published' && !isScheduled) {
-        // Only set to true if explicitly publishing immediately (not scheduling)
-        article.published = true;
-        
-        // Make sure the date is properly formatted as an ISO string
-        let publishedAt: string;
-        if (post.publishedDate) {
-          publishedAt = new Date(post.publishedDate).toISOString();
-        } else {
-          publishedAt = new Date().toISOString();
-        }
-        article.published_at = publishedAt;
-        console.log(`Article will be published immediately with date: ${publishedAt}`);
-      } else if (post.status === 'scheduled' || isScheduled) {
-        // Handle scheduled posts - must be false for scheduled posts
-        article.published = false; // CRITICAL: Must be false for scheduling to work
-        
-        // Set the publication date in the future
-        if (post.scheduledPublishDate && post.scheduledPublishTime) {
-          // Parse the date parts
-          const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
-          const [hours, minutes] = post.scheduledPublishTime.split(':').map(Number);
-          
-          // Create date string in ISO format
-          const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-          
-          // Create a date object and validate
-          const scheduledDate = new Date(isoDateString);
-          if (!isNaN(scheduledDate.getTime())) {
-            article.published_at = scheduledDate.toISOString();
-            console.log(`Article scheduled for: ${article.published_at}`);
-          } else {
-            console.error(`Invalid scheduled date format: ${isoDateString}`);
-          }
-        } else {
-          console.warn("Scheduled post missing date/time information!");
-        }
-      } else if (post.status === 'draft') {
+      // Critical for scheduling: published must be false
+      if (isScheduled) {
         article.published = false;
       }
       
-      if (post.featuredImage) article.image = { src: post.featuredImage };
+      // Log the update request
+      console.log(`Updating article with data:`, {
+        title: article.title,
+        published: article.published,
+        published_at: article.published_at,
+        isScheduled
+      });
       
-      console.log(`Sending article update to Shopify: ${JSON.stringify(article)}`);
+      // Make the API request
+      const response = await client.put(`/blogs/${blogId}/articles/${articleId}.json`, { article });
       
-      const response = await client.put(`/blogs/${blogId}/articles/${articleId}.json`, {
-        article
+      console.log(`Article updated successfully:`, {
+        id: response.data.article.id,
+        published: response.data.article.published,
+        published_at: response.data.article.published_at
       });
       
       return response.data.article;
@@ -908,15 +465,19 @@ export class ShopifyService {
   /**
    * Delete an article from a specific store
    * @param store The store to delete the article from
-   * @param blogId The ID of the blog containing the article
-   * @param articleId The ID of the article to delete
-   * @returns True if successful
+   * @param blogId The blog ID containing the article
+   * @param articleId The article ID to delete
    */
-  public async deleteArticle(store: ShopifyStore, blogId: string, articleId: string): Promise<boolean> {
+  public async deleteArticle(store: ShopifyStore, blogId: string, articleId: string): Promise<void> {
     try {
       const client = this.getClient(store);
+      
+      console.log(`Deleting Shopify article ${articleId} from blog ${blogId}`);
+      
+      // Make the API request
       await client.delete(`/blogs/${blogId}/articles/${articleId}.json`);
-      return true;
+      
+      console.log(`Article deleted successfully`);
     } catch (error: any) {
       console.error(`Error deleting article from Shopify store ${store.shopName}:`, error);
       throw new Error(`Failed to delete article: ${error?.message || 'Unknown error'}`);
@@ -924,15 +485,21 @@ export class ShopifyService {
   }
   
   /**
-   * Get articles from a specific store and blog
+   * Get articles from a specific blog
    * @param store The store to get articles from
-   * @param blogId The ID of the blog to get articles from
-   * @returns Array of Shopify articles
+   * @param blogId The blog ID to get articles from
+   * @param limit The maximum number of articles to return
    */
-  public async getArticles(store: ShopifyStore, blogId: string): Promise<ShopifyArticle[]> {
+  public async getArticles(store: ShopifyStore, blogId: string, limit: number = 50): Promise<ShopifyArticle[]> {
     try {
       const client = this.getClient(store);
-      const response = await client.get(`/blogs/${blogId}/articles.json`);
+      
+      console.log(`Fetching articles from blog ${blogId} in store ${store.shopName}`);
+      
+      const response = await client.get(`/blogs/${blogId}/articles.json?limit=${limit}`);
+      
+      console.log(`Fetched ${response.data.articles.length} articles`);
+      
       return response.data.articles;
     } catch (error: any) {
       console.error(`Error fetching articles from Shopify store ${store.shopName}:`, error);
@@ -941,54 +508,23 @@ export class ShopifyService {
   }
   
   /**
-   * Test the connection to a specific store
-   * @param store The store to test the connection to
-   * @returns True if the connection is successful
-   */
-  public async testConnection(store: ShopifyStore): Promise<boolean> {
-    try {
-      await this.getBlogs(store);
-      return true;
-    } catch (error) {
-      console.error(`Failed to connect to Shopify store ${store.shopName}:`, error);
-      return false;
-    }
-  }
-  
-  /**
-   * Get the URL for a specific store
-   * @param store The store to get the URL for
-   * @returns The store URL
-   */
-  public getStoreUrl(store: ShopifyStore): string {
-    return `https://${store.shopName}`;
-  }
-  
-  /**
-   * Get shop/store information including timezone
+   * Get information about a Shopify store
    * @param store The store to get information for
-   * @returns Shop information including timezone
    */
   public async getShopInfo(store: ShopifyStore): Promise<ShopifyShop> {
     try {
-      // Check cache first
-      const cachedShop = this.shopCache.get(store.id);
-      if (cachedShop) {
-        return cachedShop;
-      }
-      
       const client = this.getClient(store);
+      
       console.log(`Fetching shop information for ${store.shopName}`);
+      
       const response = await client.get('/shop.json');
       
-      if (response.data && response.data.shop) {
-        // Cache the result
-        this.shopCache.set(store.id, response.data.shop);
-        console.log(`Shop timezone for ${store.shopName}: ${response.data.shop.iana_timezone || 'unknown'}`);
-        return response.data.shop;
-      } else {
-        throw new Error('Invalid shop data response');
+      // Log the timezone information for debugging
+      if (response.data.shop.timezone) {
+        console.log(`Shop timezone for ${store.shopName}: ${response.data.shop.timezone}`);
       }
+      
+      return response.data.shop;
     } catch (error: any) {
       console.error(`Error fetching shop information for ${store.shopName}:`, error);
       throw new Error(`Failed to fetch shop information: ${error?.message || 'Unknown error'}`);
@@ -996,37 +532,36 @@ export class ShopifyService {
   }
   
   /**
-   * Get products from a specific store
-   * @param store The store to get products from
-   * @param limit Maximum number of products to return
-   * @returns Array of Shopify products
+   * Get a Pexels image by ID from the cache or return undefined
+   * @param id The Pexels image ID
+   * @returns The Pexels image if found in the cache
    */
-  public async getProducts(store: ShopifyStore, limit: number = 50, productId?: string): Promise<ShopifyProduct[]> {
+  public async getPexelsImageById(id: number): Promise<PexelsImage | undefined> {
+    return this.pexelsImages.get(id);
+  }
+  
+  /**
+   * Register a Pexels image in the cache
+   * @param image The Pexels image to register
+   * @returns The registered image
+   */
+  public registerPexelsImage(image: PexelsImage): PexelsImage {
+    this.pexelsImages.set(image.id, image);
+    return image;
+  }
+  
+  /**
+   * Get products from a store
+   * @param store The store to get products from
+   * @param limit The maximum number of products to return
+   */
+  public async getProducts(store: ShopifyStore, limit: number = 50): Promise<any[]> {
     try {
       const client = this.getClient(store);
       
-      // If a specific productId is provided, fetch just that product
-      if (productId) {
-        const response = await client.get(`/products/${productId}.json`);
-        const product = response.data.product;
-        
-        // Add the full URL to the product
-        return [{
-          ...product,
-          url: `https://${store.shopName}/products/${product.handle}`
-        }];
-      } else {
-        // Otherwise fetch products as normal
-        const response = await client.get(`/products.json?limit=${limit}`);
-        
-        // Add the full URL to each product
-        const products = response.data.products.map((product: any) => ({
-          ...product,
-          url: `https://${store.shopName}/products/${product.handle}`
-        }));
-        
-        return products;
-      }
+      const response = await client.get(`/products.json?limit=${limit}`);
+      
+      return response.data.products;
     } catch (error: any) {
       console.error(`Error fetching products from Shopify store ${store.shopName}:`, error);
       throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
@@ -1034,448 +569,26 @@ export class ShopifyService {
   }
   
   /**
-   * Get products by their IDs
-   * @param store The store to get products from
-   * @param productIds Array of product IDs to fetch
-   * @returns Array of Shopify products
-   */
-  public async getProductsById(store: ShopifyStore, productIds: string[]): Promise<ShopifyProduct[]> {
-    try {
-      if (!productIds || productIds.length === 0) {
-        return [];
-      }
-      
-      const client = this.getClient(store);
-      const products: ShopifyProduct[] = [];
-      
-      // Process in batches of 10 IDs to avoid long URLs
-      const batchSize = 10;
-      
-      for (let i = 0; i < productIds.length; i += batchSize) {
-        const batch = productIds.slice(i, i + batchSize);
-        const idsParam = batch.join(',');
-        
-        console.log(`Fetching products batch ${i/batchSize + 1} with IDs: ${idsParam}`);
-        
-        try {
-          const response = await client.get(`/products.json?ids=${idsParam}`);
-          
-          // Add the full URL to each product
-          const batchProducts = response.data.products.map((product: any) => ({
-            ...product,
-            url: `https://${store.shopName}/products/${product.handle}`
-          }));
-          
-          products.push(...batchProducts);
-        } catch (batchError) {
-          console.error(`Error fetching product batch from Shopify store ${store.shopName}:`, batchError);
-          // Continue with other batches even if one fails
-        }
-      }
-      
-      console.log(`Successfully fetched ${products.length} out of ${productIds.length} requested products`);
-      return products;
-    } catch (error: any) {
-      console.error(`Error fetching products by ID from Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to fetch products by ID: ${error?.message || 'Unknown error'}`);
-    }
-  }
-  
-  /**
-   * Search products in a specific store
-   * @param store The store to search products in
-   * @param query The search query
-   * @param limit Maximum number of products to return
-   * @returns Array of Shopify products
-   */
-  public async searchProducts(store: ShopifyStore, query: string, limit: number = 20): Promise<ShopifyProduct[]> {
-    try {
-      const client = this.getClient(store);
-      const response = await client.get(`/products.json?title=${encodeURIComponent(query)}&limit=${limit}`);
-      
-      // Add the full URL to each product
-      const products = response.data.products.map((product: any) => ({
-        ...product,
-        url: `https://${store.shopName}/products/${product.handle}`
-      }));
-      
-      return products;
-    } catch (error: any) {
-      console.error(`Error searching products in Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to search products: ${error?.message || 'Unknown error'}`);
-    }
-  }
-  
-  /**
-   * Get collections from a specific store
+   * Get collections from a store
    * @param store The store to get collections from
-   * @param limit Maximum number of collections to return
-   * @returns Array of Shopify collections
+   * @param limit The maximum number of collections to return
    */
-  public async getCollections(store: ShopifyStore, limit: number = 50): Promise<ShopifyCollection[]> {
+  public async getCollections(store: ShopifyStore, collectionType: 'custom' | 'smart', limit: number = 50): Promise<any[]> {
     try {
       const client = this.getClient(store);
-      // Use custom collections as these are the manually created ones
-      const response = await client.get(`/custom_collections.json?limit=${limit}`);
       
-      // Add the full URL to each collection
-      const collections = response.data.custom_collections.map((collection: any) => ({
-        ...collection,
-        url: `https://${store.shopName}/collections/${collection.handle}`
-      }));
+      // Choose the endpoint based on collection type
+      const endpoint = collectionType === 'custom' ? 'custom_collections' : 'smart_collections';
       
-      return collections;
+      const response = await client.get(`/${endpoint}.json?limit=${limit}`);
+      
+      return response.data[endpoint];
     } catch (error: any) {
-      console.error(`Error fetching collections from Shopify store ${store.shopName}:`, error);
+      console.error(`Error fetching ${collectionType} collections from Shopify store ${store.shopName}:`, error);
       throw new Error(`Failed to fetch collections: ${error?.message || 'Unknown error'}`);
-    }
-  }
-  
-  /**
-   * Get both smart and custom collections from a specific store
-   * @param store The store to get collections from
-   * @param limit Maximum number of collections to return
-   * @returns Array of Shopify collections
-   */
-  public async getAllCollections(store: ShopifyStore, limit: number = 50): Promise<ShopifyCollection[]> {
-    try {
-      const client = this.getClient(store);
-      
-      // Fetch custom collections
-      const customResponse = await client.get(`/custom_collections.json?limit=${limit}`);
-      const customCollections = customResponse.data.custom_collections.map((collection: any) => ({
-        ...collection,
-        url: `https://${store.shopName}/collections/${collection.handle}`,
-        type: 'custom'
-      }));
-      
-      // Fetch smart collections
-      const smartResponse = await client.get(`/smart_collections.json?limit=${limit}`);
-      const smartCollections = smartResponse.data.smart_collections.map((collection: any) => ({
-        ...collection,
-        url: `https://${store.shopName}/collections/${collection.handle}`,
-        type: 'smart'
-      }));
-      
-      // Combine both types of collections
-      return [...customCollections, ...smartCollections];
-    } catch (error: any) {
-      console.error(`Error fetching all collections from Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to fetch collections: ${error?.message || 'Unknown error'}`);
-    }
-  }
-  
-  /**
-   * Get a specific page
-   * @param store The store to get the page from
-   * @param pageId The ID of the page
-   * @returns The Shopify page
-   */
-  public async getPage(store: ShopifyStore, pageId: string): Promise<any> {
-    try {
-      const client = this.getClient(store);
-      const response = await client.get(`/pages/${pageId}.json`);
-      return response.data.page;
-    } catch (error: any) {
-      console.error(`Error fetching page from Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to fetch page: ${error?.message || 'Unknown error'}`);
-    }
-  }
-  
-  /**
-   * Create a page in a specific store
-   * @param store The store to create the page in
-   * @param title The title of the page
-   * @param content The HTML content of the page
-   * @param published Whether to publish the page
-   * @returns The created Shopify page
-   */
-  /**
-   * Create a page in Shopify
-   * @param store - The Shopify store
-   * @param title - The page title 
-   * @param content - The page content
-   * @param published - Whether to publish immediately (for scheduled content, this MUST be false)
-   * @param scheduledAt - ISO date string for scheduled publication (if scheduling)
-   * @returns The created page
-   */
-  public async createPage(
-    store: ShopifyStore, 
-    title: string, 
-    content: string, 
-    published: boolean = true,
-    scheduledAt?: string
-  ): Promise<any> {
-    try {
-      const client = this.getClient(store);
-      
-      console.log(`Creating Shopify page with title: "${title}"`, {
-        published: published,
-        scheduledAt: scheduledAt,
-        contentLength: content.length
-      });
-      
-      // Process content to handle proxied image URLs - same as in createArticle
-      let processedContent = content;
-      
-      // Replace proxy image URLs with their Pexels source URLs
-      // Look for both relative URLs and URLs with <a> tags
-      const proxyImagePattern = /src="\/api\/proxy\/image\/(\d+)"/g;
-      const proxyImageLinkPattern = /<a href="([^"]+)"><img src="\/api\/proxy\/image\/(\d+)"/g;
-      let proxyMatch;
-      let proxyLinkMatch;
-      
-      const pexelsService = await import('./pexels').then(module => module.pexelsService);
-      
-      // First, handle images with links
-      while ((proxyLinkMatch = proxyImageLinkPattern.exec(processedContent)) !== null) {
-        const productUrl = proxyLinkMatch[1];
-        const imageId = proxyLinkMatch[2];
-        console.log(`Found linked proxied image in page content: ${imageId} with product link: ${productUrl}`);
-        
-        try {
-          // Get the Pexels image with this ID
-          const image = await pexelsService.getImageById(imageId);
-          
-          if (image && image.src) {
-            // Get the best quality image URL
-            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
-            
-            if (directImageUrl) {
-              console.log(`Replacing linked proxy URL with direct URL in page: ${directImageUrl}`);
-              // Replace the proxy URL with the direct URL in content, maintaining the link
-              processedContent = processedContent.replace(
-                `<a href="${productUrl}"><img src="/api/proxy/image/${imageId}"`, 
-                `<a href="${productUrl}"><img src="${directImageUrl}"`
-              );
-            }
-          }
-        } catch (imageError) {
-          console.error(`Error processing linked proxied image ${imageId} for page:`, imageError);
-          // Continue with other images if one fails
-        }
-      }
-      
-      // Now handle standalone images (without links)
-      while ((proxyMatch = proxyImagePattern.exec(processedContent)) !== null) {
-        const imageId = proxyMatch[1];
-        console.log(`Found standalone proxied image in page content: ${imageId}`);
-        
-        try {
-          // Get the Pexels image with this ID
-          const image = await pexelsService.getImageById(imageId);
-          
-          if (image && image.src) {
-            // Get the best quality image URL
-            const directImageUrl = image.src.large || image.src.medium || image.src.small || image.src.original;
-            
-            if (directImageUrl) {
-              console.log(`Replacing proxy URL with direct URL in page: ${directImageUrl}`);
-              // Replace the proxy URL with the direct URL in content
-              processedContent = processedContent.replace(
-                `src="/api/proxy/image/${imageId}"`, 
-                `src="${directImageUrl}"`
-              );
-            }
-          }
-        } catch (imageError) {
-          console.error(`Error processing proxied image ${imageId} for page:`, imageError);
-          // Continue with other images if one fails
-        }
-      }
-      
-      // Prepare page data for Shopify API
-      const page: any = {
-        title,
-        body_html: processedContent, // Use processed content with direct image URLs
-        published
-      };
-      
-      // SIMPLIFIED SCHEDULING APPROACH USING PUBLISHED_AT FOR PAGES
-      // According to Shopify API documentation
-      
-      if (scheduledAt) {
-        console.log(`Setting up SCHEDULED page with future date: ${scheduledAt}`);
-        
-        // Force a minimum delay of 1 hour for scheduled content for safety
-        const requestedDate = new Date(scheduledAt);
-        const now = new Date();
-        const minScheduleTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
-        
-        if (requestedDate < minScheduleTime) {
-          // If the scheduled date is too soon, push it to 1 hour from now
-          page.published_at = minScheduleTime.toISOString();
-          console.log(`Scheduled time adjusted to ensure minimum 1 hour delay: ${page.published_at}`);
-        } else {
-          page.published_at = scheduledAt;
-        }
-        
-        // CRITICAL: For scheduled pages in Shopify 
-        // 1. published_at must be in the future
-        // 2. published must be false
-        page.published = false;
-        
-        console.log(`SCHEDULING APPROACH FOR PAGE: Simplified direct method`);
-        console.log(`Page settings:`, {
-          published: page.published, // Must be false
-          published_at: page.published_at, // Must be future date
-        });
-        
-        // Final log of exact request data to verify
-        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
-          url: `/pages.json`,
-          method: 'POST',
-          page: {
-            title: page.title,
-            published: page.published,
-            published_at: page.published_at,
-            body_html: page.body_html?.substring(0, 100) + '...' // Truncate for logging
-          }
-        });
-        
-        // Make standard API request without query parameters
-        const response = await client.post(`/pages.json`, { page });
-        
-        // Log the response for debugging
-        console.log(`SHOPIFY PAGE SCHEDULING RESPONSE:`, {
-          id: response.data.page.id,
-          title: response.data.page.title,
-          published: response.data.page.published,
-          published_at: response.data.page.published_at,
-          created_at: response.data.page.created_at
-        });
-        
-        return response.data.page;
-      }
-      else if (!published) {
-        // For draft pages in Shopify
-        // Simply set published=false without a published_at date
-        page.published = false;
-        page.published_at = undefined; // Do not set published_at for drafts
-        
-        console.log(`Creating DRAFT page with settings:`, {
-          published: page.published,
-          published_at: page.published_at
-        });
-        
-        const response = await client.post(`/pages.json`, { page });
-        
-        console.log(`DRAFT PAGE RESPONSE:`, {
-          id: response.data.page.id,
-          title: response.data.page.title,
-          published: response.data.page.published,
-          published_at: response.data.page.published_at
-        });
-        
-        return response.data.page;
-      }
-      else {
-        // For immediate publication:
-        page.published = true;
-        
-        // For immediately published content, set published_at to now
-        const now = new Date();
-        page.published_at = now.toISOString();
-        
-        console.log(`Creating PUBLISHED page (immediate) with settings:`, {
-          published: page.published,
-          published_at: page.published_at
-        });
-        
-        const response = await client.post(`/pages.json`, { page });
-        
-        console.log(`PUBLISH PAGE RESPONSE:`, {
-          id: response.data.page.id,
-          title: response.data.page.title,
-          published: response.data.page.published,
-          published_at: response.data.page.published_at
-        });
-        
-        return response.data.page;
-      }
-    } catch (error: any) {
-      console.error(`Error creating page in Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to create page: ${error?.message || 'Unknown error'}`);
-    }
-  }
-  
-  /**
-   * Legacy compatibility methods for backward compatibility
-   * These will be removed once the app is fully migrated to multi-store
-   */
-  
-  // Legacy getBlogs method
-  public async getBlogsLegacy(): Promise<ShopifyBlog[]> {
-    const storeIds = Array.from(this.clients.keys());
-    if (storeIds.length === 0) {
-      throw new Error('No Shopify clients initialized. Please connect to a store first.');
-    }
-    
-    // Use the first store in the list (for backward compatibility)
-    const storeId = storeIds[0];
-    const client = this.clients.get(storeId);
-    
-    if (!client) {
-      throw new Error('Shopify client not initialized. Please connect to a store first.');
-    }
-    
-    try {
-      const response = await client.get('/blogs.json');
-      return response.data.blogs || [];
-    } catch (error: any) {
-      console.error('Error fetching blogs from Shopify:', error);
-      throw new Error(`Failed to fetch blogs: ${error.message}`);
-    }
-  }
-  
-  // Legacy test connection method
-  public async testConnectionLegacy(): Promise<boolean> {
-    try {
-      await this.getBlogsLegacy();
-      return true;
-    } catch (error) {
-      return false;
     }
   }
 }
 
 // Create a singleton instance
-const shopifyServiceInstance = new ShopifyService();
-
-// Export the singleton instance and individual methods
-export const shopifyService = shopifyServiceInstance;
-
-// Blog and article methods
-export const getBlogs = (store: ShopifyStore) => shopifyServiceInstance.getBlogs(store);
-export const getBlogById = (store: ShopifyStore, blogId: string) => shopifyServiceInstance.getBlogById(store, blogId);
-export const createArticle = (store: ShopifyStore, blogId: string, post: BlogPost) => shopifyServiceInstance.createArticle(store, blogId, post);
-export const updateArticle = (store: ShopifyStore, blogId: string, articleId: string, post: Partial<BlogPost>) => shopifyServiceInstance.updateArticle(store, blogId, articleId, post);
-export const deleteArticle = (store: ShopifyStore, blogId: string, articleId: string) => shopifyServiceInstance.deleteArticle(store, blogId, articleId);
-export const getArticles = (store: ShopifyStore, blogId: string) => shopifyServiceInstance.getArticles(store, blogId);
-
-// Product and collection methods
-export const getProducts = (store: ShopifyStore, limit?: number, productId?: string) => shopifyServiceInstance.getProducts(store, limit, productId);
-export const getProductsById = (store: ShopifyStore, productIds: string[]) => shopifyServiceInstance.getProductsById(store, productIds);
-export const searchProducts = (store: ShopifyStore, query: string, limit?: number) => shopifyServiceInstance.searchProducts(store, query, limit);
-export const getCollections = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getCollections(store, limit);
-export const getAllCollections = (store: ShopifyStore, limit?: number) => shopifyServiceInstance.getAllCollections(store, limit);
-
-// Page methods
-export const getPage = (store: ShopifyStore, pageId: string) => shopifyServiceInstance.getPage(store, pageId);
-export const createPage = (
-  store: ShopifyStore, 
-  title: string, 
-  content: string, 
-  published?: boolean,
-  scheduledAt?: string
-) => shopifyServiceInstance.createPage(store, title, content, published, scheduledAt);
-
-// Utility methods
-export const testConnection = (store: ShopifyStore) => shopifyServiceInstance.testConnection(store);
-export const getStoreUrl = (store: ShopifyStore) => shopifyServiceInstance.getStoreUrl(store);
-export const getShopInfo = (store: ShopifyStore) => shopifyServiceInstance.getShopInfo(store);
-
-// Legacy compatibility exports
-export const setConnection = (connection: ShopifyConnection) => shopifyServiceInstance.setConnection(connection);
-export const getBlogsLegacy = () => shopifyServiceInstance.getBlogsLegacy();
-export const testConnectionLegacy = () => shopifyServiceInstance.testConnectionLegacy();
+export const shopifyService = new ShopifyService();

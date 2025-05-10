@@ -1,16 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
-import { 
-  getProducts, 
-  getCollections, 
-  getAllCollections, 
-  getBlogs,
-  createArticle,
-  createPage,
-  getShopInfo,
-  shopifyService
-} from "../services/shopify";
+import { shopifyService } from "../services/shopify";
 import { dataForSEOService, KeywordData } from "../services/dataforseo";
 import { pexelsService, type PexelsImage } from "../services/pexels";
 import { pixabayService, type PixabayImage } from "../services/pixabay";
