@@ -934,7 +934,10 @@ export default function CreatePostModal({
                     
                     // For content with image tags without src (placeholders), handle them separately
                     if (hasEmbeddedImages && !hasImageWithSrc) {
-                      // Remove img tags without proper src attributes
+                      // First, clean up any image tags without proper src attributes
+                      const cleanedContent = content.replace(/<img[^>]*?(?!src=)[^>]*?>/gi, '');
+                      
+                      // Then process the cleaned content
                       let processedContent = cleanedContent
                         .replace(/\n/g, '<br />')
                         .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
@@ -991,7 +994,7 @@ export default function CreatePostModal({
                         // If content has secondaryImages but no embedded images in content, 
                         // divide content into paragraphs and insert images in between
                         const paragraphs = processedContent.split(/<br \/>(?:<br \/>)+/);
-                        const result = [];
+                        const result: React.ReactNode[] = [];
                         
                         paragraphs.forEach((para, i) => {
                           // Add paragraph text
@@ -1068,11 +1071,11 @@ export default function CreatePostModal({
                   )}
                 </div>
                 
-                {form.watch("tags") && (
+                {form.watch("tags") && form.watch("tags").trim() && (
                   <div className="mt-4">
                     <h3 className="text-sm font-medium text-muted-foreground mb-2">Tags:</h3>
                     <div className="flex flex-wrap gap-2">
-                      {form.watch("tags").split(",").map((tag, index) => (
+                      {form.watch("tags").split(",").filter(tag => tag.trim()).map((tag, index) => (
                         <Badge key={index} variant="secondary">{tag.trim()}</Badge>
                       ))}
                     </div>
