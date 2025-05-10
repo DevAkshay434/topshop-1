@@ -119,6 +119,8 @@ export const blogPosts = pgTable("blog_posts", {
   tags: text("tags"),
   status: text("status").notNull().default("draft"), // draft, published, scheduled
   scheduledDate: timestamp("scheduled_date"),
+  scheduledPublishDate: text("scheduled_publish_date"), // Date in YYYY-MM-DD format
+  scheduledPublishTime: text("scheduled_publish_time"), // Time in HH:MM format
   publishedDate: timestamp("published_date"),
   shopifyPostId: text("shopify_post_id"),
   shopifyBlogId: text("shopify_blog_id"),
