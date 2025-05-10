@@ -1126,7 +1126,7 @@ export default function CreatePostModal({
                   <div className="mt-4">
                     <h3 className="text-sm font-medium text-muted-foreground mb-2">Tags:</h3>
                     <div className="flex flex-wrap gap-2">
-                      {form.watch("tags").split(",").filter(tag => tag.trim()).map((tag, index) => (
+                      {form.watch("tags")?.split(",").filter(tag => tag.trim()).map((tag, index) => (
                         <Badge key={index} variant="secondary">{tag.trim()}</Badge>
                       ))}
                     </div>

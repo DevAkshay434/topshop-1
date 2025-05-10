@@ -963,11 +963,22 @@ export class ShopifyService {
         // but keep published=false to prevent immediate publication
         page.published_at = scheduledAt;
         
-        if (new Date(scheduledAt) > new Date()) {
-          // If scheduled date is in future, ensure it's not published immediately
-          page.published = false;
-          console.log(`Page will be scheduled for: ${scheduledAt}, setting published=false`);
-        }
+        // CRITICAL: Always set published=false for scheduled content, regardless of date
+        // This ensures Shopify treats it as scheduled content, not immediately published
+        page.published = false;
+        console.log(`Page will be scheduled for: ${scheduledAt}, setting published=false`);
+        
+        // Additional debug information
+        const scheduledDate = new Date(scheduledAt);
+        const currentDate = new Date();
+        console.log(`Scheduling details:`, {
+          scheduledAt,
+          currentTimestamp: currentDate.toISOString(),
+          scheduledTimestamp: scheduledDate.toISOString(),
+          isInFuture: scheduledDate > currentDate,
+          diffInMs: scheduledDate.getTime() - currentDate.getTime(),
+          diffInMinutes: (scheduledDate.getTime() - currentDate.getTime()) / (1000 * 60)
+        });
       }
       
       // Log the page data being sent to Shopify

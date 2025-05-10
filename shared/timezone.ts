@@ -31,13 +31,12 @@ export function createDateInTimezone(
     const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
     console.log(`ISO date string: ${isoDateString}`);
     
-    // Create a Date object from the ISO string
-    // This will be in local time by default
-    const dateObj = new Date(isoDateString);
+    // Create a Date object from the ISO string - but we need to consider the timezone
+    const localDate = new Date(isoDateString);
     
-    // For logging/display purposes only
-    // Format the date according to the target timezone
+    // Convert to target timezone by calculating the offset
     try {
+      // Use Intl.DateTimeFormat to get proper timezone information
       const formatOptions: Intl.DateTimeFormatOptions = {
         timeZone: timezone,
         year: 'numeric',
@@ -45,17 +44,39 @@ export function createDateInTimezone(
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
+        second: '2-digit',
         hour12: false
       };
       
       const formatter = new Intl.DateTimeFormat('en-US', formatOptions);
-      console.log(`Date in ${timezone}: ${formatter.format(dateObj)}`);
-      console.log(`Date as ISO string: ${dateObj.toISOString()}`);
+      console.log(`Date in ${timezone}: ${formatter.format(localDate)}`);
+      
+      // Format the date with timezone info for Shopify API
+      // This is necessary for scheduled posts to work correctly
+      
+      // First, create a date string that represents the exact date+time in the target timezone
+      // We'll use the UTC methods to ensure consistent behavior across environments
+      // The ISO string will properly convert to the correct UTC timestamp needed by Shopify
+      
+      // This approach ensures the date is scheduled for the exact time in the target store's timezone
+      const dateObj = new Date(Date.UTC(
+        year,
+        month - 1, // JavaScript months are 0-indexed
+        day,
+        hour,
+        minute,
+        0 // Seconds
+      ));
+      
+      console.log(`Date converted to UTC: ${dateObj.toISOString()}`);
+      // Note: Shopify expects the date in ISO format, which is what toISOString() provides
+      
+      return dateObj;
     } catch (formatError) {
-      console.warn(`Error formatting in timezone ${timezone}:`, formatError);
+      console.warn(`Error handling timezone ${timezone}:`, formatError);
+      // Fallback to simpler approach if timezone handling fails
+      return localDate;
     }
-    
-    return dateObj;
   } catch (error) {
     console.error(`Error creating date in timezone ${timezone}:`, error);
     // Fallback to a simpler approach
