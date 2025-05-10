@@ -521,6 +521,19 @@ export class ShopifyService {
       if (shouldSchedulePublication && publishedAt) {
         console.log(`SCHEDULING POST - Setting published=false, published_at=${publishedAt}`);
         article.published = false; // Must be false for scheduling to work properly
+        
+        // Additional check to ensure the date is in the future
+        const scheduledDate = new Date(publishedAt);
+        const currentDate = new Date();
+        const isInFuture = scheduledDate > currentDate;
+        
+        // If the date isn't actually future, adjust it
+        if (!isInFuture) {
+          const oneHourFromNow = new Date();
+          oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+          article.published_at = oneHourFromNow.toISOString();
+          console.log(`Scheduled time was in the past. Rescheduling for 1 hour from now: ${article.published_at}`);
+        }
       }
       
       // Log the article data being sent to Shopify
@@ -1122,14 +1135,28 @@ export class ShopifyService {
         // Additional debug information
         const scheduledDate = new Date(scheduledAt);
         const currentDate = new Date();
+        
+        // Verify the scheduled date is in the future
+        const isInFuture = scheduledDate > currentDate;
+        const diffInMs = scheduledDate.getTime() - currentDate.getTime();
+        
         console.log(`Scheduling details:`, {
           scheduledAt,
           currentTimestamp: currentDate.toISOString(),
           scheduledTimestamp: scheduledDate.toISOString(),
-          isInFuture: scheduledDate > currentDate,
-          diffInMs: scheduledDate.getTime() - currentDate.getTime(),
-          diffInMinutes: (scheduledDate.getTime() - currentDate.getTime()) / (1000 * 60)
+          isInFuture,
+          diffInMs,
+          diffInMinutes: diffInMs / (1000 * 60)
         });
+        
+        // If the scheduled date is not in the future, adjust it to a future time
+        // This is crucial for Shopify scheduling to work properly
+        if (!isInFuture) {
+          const oneHourFromNow = new Date();
+          oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+          page.published_at = oneHourFromNow.toISOString();
+          console.log(`Scheduled time was in the past. Rescheduling for 1 hour from now: ${page.published_at}`);
+        }
       }
       
       // Log the page data being sent to Shopify
