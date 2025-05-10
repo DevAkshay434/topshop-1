@@ -1178,9 +1178,9 @@ export async function registerRoutes(app: Express): Promise<void> {
           const storeName = shopData.name || shop;
           
           store = await storage.createShopifyStore({
-            shopName: storeName,
-            shopDomain: shop,
+            shopName: shop, // Using the shop domain as the shopName
             accessToken,
+            scope: "read_products,write_products,read_content,write_content,read_themes,write_publications",
             isConnected: true,
             lastSynced: new Date()
           });
