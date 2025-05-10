@@ -680,7 +680,13 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       internalImageIds: z.array(z.string()).optional(),
       selectedImageIds: z.array(z.string()).optional(), // Added for user-selected Pexels images
       toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]).default("friendly"),
-      postStatus: z.enum(["publish", "draft"]).default("draft"),
+      postStatus: z.enum(["publish", "draft", "scheduled"]).default("draft"),
+      // Support for explicit scheduling controls
+      publicationType: z.enum(["publish", "draft", "schedule"]).optional(),
+      scheduleDate: z.string().optional(),
+      scheduleTime: z.string().optional(),
+      scheduledPublishDate: z.string().optional(),
+      scheduledPublishTime: z.string().optional(),
       generateImages: z.boolean().default(true),
       // New fields for content generation options
       buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),

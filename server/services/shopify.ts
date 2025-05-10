@@ -249,7 +249,7 @@ export class ShopifyService {
       let publishedAt: string | undefined = undefined;
       
       // Initial scheduling detection flag (will be enhanced below)
-      let isScheduled: boolean | string | null | undefined = false;
+      // We use an explicit initial detection variable to avoid conflicts with later declarations
       
       console.log(`Creating Shopify article for post with status: ${post.status}`, {
         postId: post.id,
@@ -325,23 +325,21 @@ export class ShopifyService {
         hasScheduledDate: !!post.scheduledPublishDate,
         scheduledDate: post.scheduledPublishDate,
         hasScheduledTime: !!post.scheduledPublishTime,
-        scheduledTime: post.scheduledPublishTime
+        scheduledTime: post.scheduledPublishTime,
+        shouldSchedule: false // Will be set below if conditions are met
       };
       
       // Log the scheduling detection for debugging
-      console.log("Schedule detection details:", {
-        ...scheduleInfo,
-        currentIsScheduled: isScheduled
-      });
+      console.log("Schedule detection details:", scheduleInfo);
       
       // If we have explicit scheduling indicators, we should enter scheduling mode
       if ((scheduleInfo.isPublicationTypeScheduled || scheduleInfo.isStatusScheduled) && 
           scheduleInfo.hasScheduledDate && 
           scheduleInfo.hasScheduledTime) {
         
-        // Update isScheduled to enter scheduling mode
-        isScheduled = scheduleInfo.scheduledTime || true;
-        console.log(`Setting isScheduled to ${isScheduled} based on detection`);
+        // Update scheduling flags
+        scheduleInfo.shouldSchedule = true;
+        console.log(`Setting shouldSchedule to true based on detection`);
         
         if (!publishedAt && scheduleInfo.scheduledDate && scheduleInfo.scheduledTime) {
           // Parse the date parts
@@ -427,7 +425,7 @@ export class ShopifyService {
       // Determine whether this is a scheduled post - check both publicationType and status
       // The frontend may use publicationType while the backend uses status
       // Also check for existence of scheduledPublishDate and scheduledPublishTime fields
-      const isScheduled = 
+      const shouldSchedulePublication = 
         (post.status === 'scheduled' && post.scheduledPublishDate && post.scheduledPublishTime) || 
         ((post as any).publicationType === 'schedule' && post.scheduledPublishDate && post.scheduledPublishTime);
       
@@ -441,14 +439,14 @@ export class ShopifyService {
         scheduledDate: post.scheduledPublishDate,
         hasScheduledTime: !!post.scheduledPublishTime,
         scheduledTime: post.scheduledPublishTime,
-        isScheduled: isScheduled
+        shouldSchedulePublication
       });
       
       // Get the post status, with fallbacks for backward compatibility
       const postStatus = (post as any).postStatus || post.status;
       
       console.log(`Preparing article with postStatus: ${postStatus} and status: ${post.status}`, {
-        isScheduled,
+        shouldSchedulePublication,
         publishedAt,
         publicationType: (post as any).publicationType,
         postStatus,
@@ -464,14 +462,14 @@ export class ShopifyService {
         tags: post.tags || "",
         // CRITICAL: Only mark as published if status is 'published' and not scheduled
         // When scheduling, published MUST be false and published_at set to future date
-        published: post.status === 'published' && !isScheduled,
+        published: post.status === 'published' && !shouldSchedulePublication,
         // Use published_at for both immediate publishing and scheduling future dates
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
       // Double check scheduling logic
-      if (isScheduled && publishedAt) {
+      if (shouldSchedulePublication && publishedAt) {
         console.log(`SCHEDULING POST - Setting published=false, published_at=${publishedAt}`);
         article.published = false; // Must be false for scheduling to work properly
       }
@@ -483,7 +481,7 @@ export class ShopifyService {
         published_at: article.published_at,
         status: post.status,
         postStatus: postStatus,
-        isScheduled: isScheduled,
+        isScheduled: shouldSchedulePublication,
         scheduledDate: post.scheduledPublishDate,
         scheduledTime: post.scheduledPublishTime,
         tags: article.tags
