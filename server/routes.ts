@@ -99,10 +99,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       };
       nonceStore.set(nonce, nonceData);
       
-      // Redirect URL for the OAuth callback
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const host = req.headers['x-forwarded-host'] || req.headers.host;
-      const redirectUri = `${protocol}://${host}/shopify/callback`;
+      // Hard-code the callback URL to match the one registered in the Shopify app
+      const redirectUri = 'https://shopify-app.justinlofton.com/shopify/callback';
       
       // Create the auth URL with the new write_publications scope
       const authUrl = `https://${shop}/admin/oauth/authorize?` +
