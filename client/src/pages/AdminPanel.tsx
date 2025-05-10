@@ -2179,7 +2179,26 @@ export default function AdminPanel() {
                           
                           if (hasProperImages) {
                             // Enhanced processing for all content with images
-                            const enhancedContent = content
+                            let enhancedContent = content;
+                            
+                            // Process all <a> tags with embedded images to ensure they display properly
+                            enhancedContent = enhancedContent.replace(
+                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
+                              (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
+                                // Ensure src is absolute URL
+                                let fixedSrc = src;
+                                if (!src.startsWith('http')) {
+                                  fixedSrc = 'https://' + src;
+                                } else if (src.startsWith('//')) {
+                                  fixedSrc = 'https:' + src;
+                                }
+                                
+                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px;">${postspace}</a>`;
+                              }
+                            );
+                            
+                            // Then process any remaining standalone images
+                            enhancedContent = enhancedContent
                               // Fix relative image URLs to absolute URLs (adding https:// if missing)
                               .replace(
                                 /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
@@ -2190,7 +2209,7 @@ export default function AdminPanel() {
                                 /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
                                 '<img$1src="https://$3"$4>'
                               )
-                              // Add styling to all images for proper display
+                              // Add styling to all remaining images for proper display
                               .replace(
                                 /<img([^>]*?)>/gi, 
                                 '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'

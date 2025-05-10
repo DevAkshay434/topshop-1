@@ -288,7 +288,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[95vh] flex flex-col">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-screen flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
