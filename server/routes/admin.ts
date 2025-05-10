@@ -1351,7 +1351,7 @@ Place this at a logical position in the content, typically after introducing a c
             requestData.postStatus = 'draft'; // Prevent immediate publishing
           }
           
-          let scheduledAt: string | undefined = undefined;
+          let scheduledAt: Date | undefined = undefined;
           
           // If scheduled, create proper date for scheduling
           if (isScheduled) {
@@ -1365,14 +1365,15 @@ Place this at a logical position in the content, typically after introducing a c
             
             console.log(`Using timezone: ${storeTimezone} for scheduling`);
             
+            // Create a JavaScript Date object for scheduling
             const scheduledDate = createDateInTimezone(
               requestData.scheduleDate,
               requestData.scheduleTime,
               storeTimezone
             );
             
-            // Set for Shopify API
-            scheduledAt = scheduledDate;
+            // Set for Shopify API - must be a Date object for the createPage method
+            scheduledAt = new Date(scheduledDate);
             console.log(`Setting page scheduled publication date to: ${scheduledAt}`);
           }
           
