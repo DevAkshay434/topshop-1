@@ -2171,8 +2171,8 @@ export default function AdminPanel() {
                         // Check for image tags in content 
                         const hasImageTags = content.includes('<img');
 
-                        // If content has no YouTube placeholder but has secondary images
-                        if (secondaryImages.length > 0) {
+                        // If content has no YouTube placeholder but has secondary images or image tags
+                        if (secondaryImages.length > 0 || hasImageTags) {
                           // Always consider content as having proper images
                           // This ensures embedded images are always preserved
                           const hasProperImages = true;
@@ -2212,14 +2212,36 @@ export default function AdminPanel() {
                             
                             // Process each paragraph, inserting images occasionally
                             paragraphs.forEach((para: string, i: number) => {
+                              // Check if paragraph already has image tags
+                              const hasImageInParagraph = para.includes('<img');
+                              
                               if (para.trim()) {
+                                // Process paragraph to ensure proper image handling
+                                const processedPara = para
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  );
+                                
                                 result.push(
-                                  <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: para }} />
+                                  <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: processedPara }} />
                                 );
                               }
                               
-                              // Insert an image after every 2-3 paragraphs
-                              if ((i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
+                              // Only insert secondary images if the paragraph doesn't already have images
+                              // And do it after every 2-3 paragraphs for optimal spacing
+                              if (!hasImageInParagraph && (i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
                                 const image = secondaryImages[imageIndex];
                                 result.push(
                                   <div key={`img-${i}`} className="my-6 flex justify-center">
@@ -2227,7 +2249,14 @@ export default function AdminPanel() {
                                       <img 
                                         src={image.url || (image.src?.medium ?? '')} 
                                         alt={image.alt || `Product image ${imageIndex + 1}`} 
-                                        className="rounded-md max-h-64 object-contain" 
+                                        style={{
+                                          maxWidth: '100%',
+                                          maxHeight: '400px', 
+                                          objectFit: 'contain',
+                                          margin: '1rem auto',
+                                          display: 'block',
+                                          borderRadius: '0.375rem'
+                                        }}
                                       />
                                     </a>
                                   </div>
