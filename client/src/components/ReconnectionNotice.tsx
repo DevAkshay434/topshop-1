@@ -10,14 +10,21 @@ export function ReconnectionNotice() {
   const handleReconnect = async () => {
     try {
       setIsReconnecting(true);
-      // Get the auth URL from the server
-      const response = await apiRequest('/api/shopify/reconnect', { method: 'GET' });
+      
+      // Use the browser's fetch API directly with the correct syntax
+      const response = await fetch('/api/shopify/reconnect');
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+      
+      const data = await response.json();
       
       // Redirect to Shopify's OAuth flow
-      if (response.authUrl) {
-        window.location.href = response.authUrl;
+      if (data.success && data.authUrl) {
+        window.location.href = data.authUrl;
       } else {
-        console.error('Failed to get Shopify auth URL');
+        console.error('Failed to get Shopify auth URL', data);
         setIsReconnecting(false);
       }
     } catch (error) {

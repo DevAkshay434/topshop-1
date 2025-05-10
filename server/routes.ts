@@ -1177,7 +1177,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           const storeName = shopData.name || shop;
           
           store = await storage.createShopifyStore({
-            storeName,
+            shopName: storeName,
             shopDomain: shop,
             accessToken,
             isConnected: true,

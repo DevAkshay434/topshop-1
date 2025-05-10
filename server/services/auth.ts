@@ -5,7 +5,7 @@ import crypto from 'crypto';
 // Constants for OAuth process
 const API_KEY = process.env.SHOPIFY_API_KEY || '';
 const API_SECRET = process.env.SHOPIFY_API_SECRET || '';
-const SCOPES = 'read_products,write_products,read_content,write_content,read_themes';
+const SCOPES = 'read_products,write_products,read_content,write_content,read_themes,write_publications';
 const REDIRECT_URI = process.env.SHOPIFY_REDIRECT_URI || '';
 
 /**
