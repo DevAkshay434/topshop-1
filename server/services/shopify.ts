@@ -577,41 +577,122 @@ export class ShopifyService {
         scheduledTime: post.scheduledPublishTime,
         tags: article.tags
       });
-      // CRITICAL FIX FOR SCHEDULING: We must ensure these fields are correctly set for Shopify API
-      // Reference: https://shopify.dev/docs/api/admin-rest/2023-10/resources/article#post-blogs-blog-id-articles
+      // COMPLETELY REVISED SCHEDULING APPROACH
+      // According to Shopify API documentation (https://shopify.dev/docs/api/admin-rest/2023-10/resources/article#post-blogs-blog-id-articles)
+      
+      // First, clear out any existing publication settings to start fresh
+      // Use object property assignment instead of delete to avoid TypeScript errors
+      article.published = undefined as any;
+      article.published_at = undefined as any;
       
       if (shouldSchedulePublication && publishedAt) {
-        // For scheduled posts, we MUST have:
-        // 1. published: false
-        // 2. published_at: future date
-        article.published = false;
+        console.log(`Setting up SCHEDULED article with future date: ${publishedAt}`);
+        
+        // CRITICAL: For Shopify scheduled content, we must:
+        // 1. Set status=scheduled in the query parameter (not in the body!)
+        // 2. Set published_at to the future date
+        // 3. DO NOT set published flag at all
         article.published_at = publishedAt;
-      } else if (post.status === 'draft') {
-        // For drafts, we MUST have:
-        // 1. published: false
-        // 2. published_at: null (or omitted)
-        article.published = false;
-        delete article.published_at;
-      } else if (post.status === 'published') {
+        
+        // Create the scheduling query parameters
+        const schedulingParams = new URLSearchParams();
+        schedulingParams.append('status', 'scheduled');
+        
+        // Force a minimum delay of 1 hour for scheduled content
+        const requestedDate = new Date(publishedAt);
+        const now = new Date();
+        const minScheduleTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+        
+        if (requestedDate < minScheduleTime) {
+          // If the scheduled date is too soon, push it to 1 hour from now
+          article.published_at = minScheduleTime.toISOString();
+          console.log(`Scheduled time adjusted to ensure minimum 1 hour delay: ${article.published_at}`);
+        }
+        
+        // Log the final scheduling approach
+        console.log(`SCHEDULING APPROACH:`, {
+          article_settings: {
+            published_at: article.published_at,
+            // Note: published flag MUST be omitted for scheduled content
+          },
+          query_params: {
+            status: 'scheduled'
+          }
+        });
+        
+        // Change the API endpoint to include the status=scheduled query parameter
+        const apiEndpoint = `/blogs/${blogId}/articles.json?${schedulingParams.toString()}`;
+        
+        // Final log of exact request data to verify
+        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
+          url: apiEndpoint,
+          method: 'POST',
+          article: {
+            title: article.title,
+            published_at: article.published_at,
+            tags: article.tags
+          }
+        });
+        
+        // Make API request with query parameters
+        const response = await client.post(apiEndpoint, { article });
+        return response.data.article;
+      } 
+      else if (post.status === 'draft') {
+        // For drafts:
+        // - We set status=draft query parameter
+        // - We don't set published or published_at
+        const draftParams = new URLSearchParams();
+        draftParams.append('status', 'draft');
+        
+        console.log(`Creating DRAFT article`);
+        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
+          url: `/blogs/${blogId}/articles.json?${draftParams.toString()}`,
+          method: 'POST',
+          article: {
+            title: article.title,
+            tags: article.tags
+          }
+        });
+        
+        const response = await client.post(`/blogs/${blogId}/articles.json?${draftParams.toString()}`, { article });
+        return response.data.article;
+      } 
+      else if (post.status === 'published') {
         // For immediate publication:
-        // 1. published: true
-        // 2. published_at can be now or specific time
         article.published = true;
+        
+        console.log(`Creating PUBLISHED article (immediate)`);
+        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
+          url: `/blogs/${blogId}/articles.json`,
+          method: 'POST',
+          article: {
+            title: article.title,
+            published: article.published,
+            tags: article.tags
+          }
+        });
+        
+        const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
+        return response.data.article;
       }
       
-      // Final log of exact request data to verify
+      // Default case (should not reach here, but just in case)
+      console.log(`WARNING: Using default article creation approach`);
       console.log(`FINAL REQUEST TO SHOPIFY API:`, {
         url: `/blogs/${blogId}/articles.json`,
         method: 'POST',
         article: {
           title: article.title,
-          published: article.published,
-          published_at: article.published_at,
           tags: article.tags
         }
       });
       
-      const response = await client.post(`/blogs/${blogId}/articles.json`, {
+      // Set to draft by default for safety
+      const draftParams = new URLSearchParams();
+      draftParams.append('status', 'draft');
+      
+      const response = await client.post(`/blogs/${blogId}/articles.json?${draftParams.toString()}`, {
         article
       });
       
@@ -1207,53 +1288,105 @@ export class ShopifyService {
         published
       };
       
-      // Add scheduling information if provided
+      // COMPLETELY REVISED SCHEDULING APPROACH
+      // According to Shopify API documentation
+      
+      // First, clear out any existing publication settings to start fresh
+      // Use object property assignment instead of delete to avoid TypeScript errors
+      page.published = undefined as any;
+      page.published_at = undefined as any;
+      
       if (scheduledAt) {
-        // For scheduled pages, we need to set published_at to the future date
-        // but keep published=false to prevent immediate publication
+        console.log(`Setting up SCHEDULED page with future date: ${scheduledAt}`);
+        
+        // CRITICAL: For Shopify scheduled content, we must:
+        // 1. Set status=scheduled in the query parameter (not in the body!)
+        // 2. Set published_at to the future date
+        // 3. DO NOT set published flag at all
         page.published_at = scheduledAt;
         
-        // CRITICAL: Always set published=false for scheduled content, regardless of date
-        // This ensures Shopify treats it as scheduled content, not immediately published
-        page.published = false;
-        console.log(`Page will be scheduled for: ${scheduledAt}, setting published=false`);
+        // Create the scheduling query parameters
+        const schedulingParams = new URLSearchParams();
+        schedulingParams.append('status', 'scheduled');
         
-        // Additional debug information
-        const scheduledDate = new Date(scheduledAt);
-        const currentDate = new Date();
+        // Force a minimum delay of 1 hour for scheduled content
+        const requestedDate = new Date(scheduledAt);
+        const now = new Date();
+        const minScheduleTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
         
-        // Verify the scheduled date is in the future
-        const isInFuture = scheduledDate > currentDate;
-        const diffInMs = scheduledDate.getTime() - currentDate.getTime();
+        if (requestedDate < minScheduleTime) {
+          // If the scheduled date is too soon, push it to 1 hour from now
+          page.published_at = minScheduleTime.toISOString();
+          console.log(`Scheduled time adjusted to ensure minimum 1 hour delay: ${page.published_at}`);
+        }
         
-        console.log(`Scheduling details:`, {
-          scheduledAt,
-          currentTimestamp: currentDate.toISOString(),
-          scheduledTimestamp: scheduledDate.toISOString(),
-          isInFuture,
-          diffInMs,
-          diffInMinutes: diffInMs / (1000 * 60)
+        // Log the final scheduling approach
+        console.log(`SCHEDULING APPROACH FOR PAGE:`, {
+          page_settings: {
+            published_at: page.published_at,
+            // Note: published flag MUST be omitted for scheduled content
+          },
+          query_params: {
+            status: 'scheduled'
+          }
         });
         
-        // If the scheduled date is not in the future, adjust it to a future time
-        // This is crucial for Shopify scheduling to work properly
-        if (!isInFuture) {
-          const oneHourFromNow = new Date();
-          oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
-          page.published_at = oneHourFromNow.toISOString();
-          console.log(`Scheduled time was in the past. Rescheduling for 1 hour from now: ${page.published_at}`);
-        }
+        // Change the API endpoint to include the status=scheduled query parameter
+        const apiEndpoint = `/pages.json?${schedulingParams.toString()}`;
+        
+        // Final log of exact request data to verify
+        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
+          url: apiEndpoint,
+          method: 'POST',
+          page: {
+            title: page.title,
+            published_at: page.published_at,
+            body_html: page.body_html?.substring(0, 100) + '...' // Truncate for logging
+          }
+        });
+        
+        // Make API request with query parameters
+        const response = await client.post(apiEndpoint, { page });
+        return response.data.page;
       }
-      
-      // Log the page data being sent to Shopify
-      console.log(`Creating Shopify page "${title}" with data:`, {
-        published: page.published, 
-        published_at: page.published_at,
-        scheduledAt
-      });
-      
-      const response = await client.post('/pages.json', { page });
-      return response.data.page;
+      else if (!published) {
+        // For drafts:
+        // - We set status=draft query parameter
+        // - We don't set published or published_at
+        const draftParams = new URLSearchParams();
+        draftParams.append('status', 'draft');
+        
+        console.log(`Creating DRAFT page`);
+        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
+          url: `/pages.json?${draftParams.toString()}`,
+          method: 'POST',
+          page: {
+            title: page.title,
+            body_html: page.body_html?.substring(0, 100) + '...' // Truncate for logging
+          }
+        });
+        
+        const response = await client.post(`/pages.json?${draftParams.toString()}`, { page });
+        return response.data.page;
+      }
+      else {
+        // For immediate publication:
+        page.published = true;
+        
+        console.log(`Creating PUBLISHED page (immediate)`);
+        console.log(`FINAL REQUEST TO SHOPIFY API:`, {
+          url: `/pages.json`,
+          method: 'POST',
+          page: {
+            title: page.title,
+            published: page.published,
+            body_html: page.body_html?.substring(0, 100) + '...' // Truncate for logging
+          }
+        });
+        
+        const response = await client.post(`/pages.json`, { page });
+        return response.data.page;
+      }
     } catch (error: any) {
       console.error(`Error creating page in Shopify store ${store.shopName}:`, error);
       throw new Error(`Failed to create page: ${error?.message || 'Unknown error'}`);
