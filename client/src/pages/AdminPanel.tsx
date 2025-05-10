@@ -1940,6 +1940,10 @@ export default function AdminPanel() {
                                 <SelectItem value="publish">Publish Immediately</SelectItem>
                               </SelectContent>
                             </Select>
+                            <FormDescription>
+                              Choose whether to publish immediately or save as draft. 
+                              <strong>Note:</strong> If "Schedule for later" is checked below, this post will be saved as a draft and published at the scheduled time.
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2003,31 +2007,42 @@ export default function AdminPanel() {
                                       }
                                     }}
                                   />
-                                  <FormLabel className="ml-2 font-medium">
-                                    Schedule for later
-                                  </FormLabel>
+                                  <div className="ml-2">
+                                    <FormLabel className="font-medium">
+                                      Schedule for later
+                                    </FormLabel>
+                                    <FormDescription>
+                                      Set a future date and time when this post should be published on your site
+                                    </FormDescription>
+                                  </div>
                                 </div>
                               </FormControl>
                               
                               {field.value && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mt-2">
                                   <div className="flex items-center">
-                                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-                                    <Input
-                                      type="date"
-                                      value={field.value}
-                                      onChange={(e) => field.onChange(e.target.value)}
-                                      className="w-auto"
-                                    />
+                                    <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+                                    <div className="flex flex-col">
+                                      <FormLabel className="text-sm mb-1">Publication Date</FormLabel>
+                                      <Input
+                                        type="date"
+                                        value={field.value}
+                                        onChange={(e) => field.onChange(e.target.value)}
+                                        className="w-44"
+                                      />
+                                    </div>
                                   </div>
                                   <div className="flex items-center">
-                                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-                                    <Input
-                                      type="time"
-                                      value={form.watch('scheduledPublishTime') || "09:30"}
-                                      onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
-                                      className="w-auto"
-                                    />
+                                    <Clock className="h-5 w-5 mr-2 text-blue-500" />
+                                    <div className="flex flex-col">
+                                      <FormLabel className="text-sm mb-1">Publication Time</FormLabel>
+                                      <Input
+                                        type="time"
+                                        value={form.watch('scheduledPublishTime') || "09:30"}
+                                        onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+                                        className="w-32"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               )}
