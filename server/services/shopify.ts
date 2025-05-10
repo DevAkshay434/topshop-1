@@ -1,10 +1,23 @@
 import axios, { AxiosInstance } from 'axios';
-import { ShopifyConnection, ShopifyStore, BlogPost as OriginalBlogPost } from '@shared/schema';
+import { ShopifyConnection, ShopifyStore, BlogPost } from '@shared/schema';
 
-// Extended BlogPost with additional scheduling fields
-interface BlogPost extends OriginalBlogPost {
-  scheduledPublishDate?: string;
-  scheduledPublishTime?: string;
+// Define a separate interface for the Shopify service
+interface ShopifyBlogPost {
+  id: number;
+  status: string;
+  title: string;
+  content: string;
+  featuredImage?: string | null;
+  publishedDate?: Date | null;
+  scheduledDate?: Date | null;
+  scheduledPublishDate?: string | null;
+  scheduledPublishTime?: string | null;
+  shopifyPostId?: string | null;
+  shopifyBlogId?: string | null;
+  author?: string | null;
+  tags?: string | null;
+  category?: string | null;
+  categories?: string | null;
 }
 
 interface ShopifyBlog {
@@ -227,7 +240,7 @@ export class ShopifyService {
    * @param post The blog post to create
    * @returns The created Shopify article
    */
-  public async createArticle(store: ShopifyStore, blogId: string, post: BlogPost): Promise<ShopifyArticle> {
+  public async createArticle(store: ShopifyStore, blogId: string, post: BlogPost | ShopifyBlogPost): Promise<ShopifyArticle> {
     try {
       const client = this.getClient(store);
       
@@ -236,7 +249,14 @@ export class ShopifyService {
       let publishedAt: string | undefined = undefined;
       
       if (post.status === 'published') {
-        // Check if we have a specific scheduled date and time
+        // For published posts, use the current time or the existing published date
+        if (post.publishedDate) {
+          publishedAt = new Date(post.publishedDate).toISOString();
+        } else {
+          publishedAt = new Date().toISOString();
+        }
+      } else if (post.status === 'scheduled') {
+        // For scheduled posts, use the scheduled date and time
         if (post.scheduledPublishDate && post.scheduledPublishTime) {
           console.log(`Scheduling post for publication on ${post.scheduledPublishDate} at ${post.scheduledPublishTime}`);
           
@@ -254,15 +274,17 @@ export class ShopifyService {
             console.log(`Post will be published at: ${publishedAt}`);
           } else {
             console.error(`Invalid scheduled date/time: ${post.scheduledPublishDate} ${post.scheduledPublishTime}`);
-            // Fallback to current time if the scheduled time is invalid
-            publishedAt = new Date().toISOString();
+            // For invalid scheduled dates, leave publishedAt as undefined
+            // This will create a draft post in Shopify
           }
-        } else if (post.publishedDate) {
-          // Use existing published date if available
-          publishedAt = new Date(post.publishedDate).toISOString();
+        } else if (post.scheduledDate) {
+          // Use existing scheduled date if available
+          publishedAt = new Date(post.scheduledDate).toISOString();
+          console.log(`Using existing scheduled date: ${publishedAt}`);
         } else {
-          // Default to current time
-          publishedAt = new Date().toISOString();
+          console.log(`No schedule information provided, creating as draft in Shopify`);
+          // If no scheduled date is provided, leave publishedAt as undefined
+          // This will create a draft post in Shopify
         }
       }
       
@@ -366,7 +388,7 @@ export class ShopifyService {
    * @param post The updated blog post data
    * @returns The updated Shopify article
    */
-  public async updateArticle(store: ShopifyStore, blogId: string, articleId: string, post: Partial<BlogPost>): Promise<ShopifyArticle> {
+  public async updateArticle(store: ShopifyStore, blogId: string, articleId: string, post: Partial<BlogPost> | Partial<ShopifyBlogPost>): Promise<ShopifyArticle> {
     try {
       const client = this.getClient(store);
       const article: any = {};
