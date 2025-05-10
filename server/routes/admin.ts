@@ -8,6 +8,7 @@ import {
   getBlogs,
   createArticle,
   createPage,
+  getShopInfo,
   shopifyService
 } from "../services/shopify";
 import { dataForSEOService, KeywordData } from "../services/dataforseo";
@@ -1228,24 +1229,37 @@ Place this at a logical position in the content, typically after introducing a c
                                ? requestData.categories.join(',') 
                                : categoryValue;
         
-        // Check if this is a scheduled post
-        const isScheduled = requestData.publicationType === "schedule" && 
-                          requestData.scheduleDate && 
-                          requestData.scheduleTime;
+        // CRITICAL: Check if this is a scheduled post - publicationType takes precedence over postStatus
+        const isScheduled = 
+            // First check explicit publicationType (from form radio buttons)
+            (requestData.publicationType === "schedule" && 
+            requestData.scheduleDate && 
+            requestData.scheduleTime) || 
+            // Fallback to postStatus for backward compatibility
+            (requestData.postStatus === 'schedule' && 
+            requestData.scheduleDate && 
+            requestData.scheduleTime);
                           
-        console.log("Publication type from form:", {
+        console.log("Processing post/page creation:", {
           publicationType: requestData.publicationType,
           postStatus: requestData.postStatus,
           scheduleDate: requestData.scheduleDate,
           scheduleTime: requestData.scheduleTime,
-          isScheduled
+          isScheduled: isScheduled
         });
+        
+        // OVERRIDE postStatus when scheduling is selected
+        // This ensures immediate publication is NOT triggered when scheduling is selected
+        if (isScheduled) {
+          console.log("SCHEDULING MODE ACTIVATED - Setting status to scheduled");
+          requestData.postStatus = 'draft'; // Prevent immediate publishing
+        }
 
-        // Prepare post data with proper status
-        const postStatus = requestData.postStatus === 'publish' 
-                         ? 'published' 
-                         : isScheduled 
-                           ? 'scheduled' 
+        // Prepare post data with proper status - publicationType takes precedence
+        const postStatus = isScheduled
+                         ? 'scheduled'  
+                         : requestData.postStatus === 'publish'
+                           ? 'published'
                            : 'draft';
 
         // Log post creation info
@@ -1308,10 +1322,31 @@ Place this at a logical position in the content, typically after introducing a c
       } else {
         // Create page in Shopify
         try {
-          // Determine if this is a scheduled post/page
-          const isScheduled = requestData.publicationType === "schedule" && 
-                             requestData.scheduleDate && 
-                             requestData.scheduleTime;
+          // CRITICAL: Check if this is a scheduled page - publicationType takes precedence
+          const isScheduled = 
+              // First check explicit publicationType (from form radio buttons)
+              (requestData.publicationType === "schedule" && 
+              requestData.scheduleDate && 
+              requestData.scheduleTime) || 
+              // Fallback to postStatus for backward compatibility
+              (requestData.postStatus === 'schedule' && 
+              requestData.scheduleDate && 
+              requestData.scheduleTime);
+                            
+          console.log("Processing page creation:", {
+            publicationType: requestData.publicationType,
+            postStatus: requestData.postStatus,
+            scheduleDate: requestData.scheduleDate,
+            scheduleTime: requestData.scheduleTime,
+            isScheduled: isScheduled
+          });
+          
+          // OVERRIDE postStatus when scheduling is selected
+          // This ensures immediate publication is NOT triggered when scheduling is selected
+          if (isScheduled) {
+            console.log("SCHEDULING MODE ACTIVATED FOR PAGE - Setting status to scheduled");
+            requestData.postStatus = 'draft'; // Prevent immediate publishing
+          }
           
           let scheduledAt: string | undefined = undefined;
           
@@ -1338,11 +1373,17 @@ Place this at a logical position in the content, typically after introducing a c
             console.log(`Setting page scheduled publication date to: ${scheduledAt}`);
           }
           
+          // Determine publish setting - critical for correct scheduling
+          // Only publish immediately if explicitly set to publish AND not scheduled
+          const shouldPublishNow = requestData.postStatus === 'publish' && !isScheduled;
+          
+          console.log(`Creating page with publish setting: ${shouldPublishNow ? 'PUBLISH NOW' : isScheduled ? 'SCHEDULED' : 'DRAFT'}`);
+          
           const page = await createPage(
             store,
             generatedContent.title || requestData.title,
             finalContent,
-            requestData.postStatus === 'publish' && !isScheduled, // Only publish now if not scheduled
+            shouldPublishNow, // Only publish now if explicitly set and not scheduled
             scheduledAt
           );
           
