@@ -2,6 +2,7 @@ import { Express, Request, Response, NextFunction, Router } from 'express';
 import { Server } from 'http';
 import { z } from 'zod';
 import axios from 'axios';
+import crypto from 'crypto';
 import {
   insertContentGenRequestSchema,
   insertBlogPostSchema,
@@ -88,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Generate a nonce for CSRF protection
-      const nonce = require('crypto').randomBytes(16).toString('hex');
+      const nonce = crypto.randomBytes(16).toString('hex');
       
       // Store nonce data
       const shop = stores[0].shopName;
