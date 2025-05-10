@@ -15,37 +15,53 @@ export function createDateInTimezone(
   timeString: string, 
   timezone: string = 'UTC'
 ): Date {
+  // Log input parameters
+  console.log(`Creating date in timezone: ${timezone} with date: ${dateString} and time: ${timeString}`);
+  
   // Parse the date and time components
   const [year, month, day] = dateString.split('-').map(Number);
   const [hour, minute] = timeString.split(':').map(Number);
   
-  // Create a Date object in the user's local time zone
-  // but with the specified date/time values
-  const localDate = new Date(year, month - 1, day, hour, minute, 0);
+  console.log(`Parsed components: year=${year}, month=${month}, day=${day}, hour=${hour}, minute=${minute}`);
   
   try {
-    // Format the date for display (for logging purposes)
-    const formatOptions: Intl.DateTimeFormatOptions = {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    };
+    // Create an ISO 8601 string that can be parsed to a Date
+    // This format works universally across browsers: YYYY-MM-DDTHH:MM:SS
+    // We manually zero-pad single-digit months/days/hours/minutes
+    const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
+    console.log(`ISO date string: ${isoDateString}`);
     
-    // Create a date string in the target timezone
-    const formatter = new Intl.DateTimeFormat('en-US', formatOptions);
-    console.log(`Date in ${timezone}: ${formatter.format(localDate)}`);
+    // Create a Date object from the ISO string
+    // This will be in local time by default
+    const dateObj = new Date(isoDateString);
     
-    // Create a date object that will be properly serialized in ISO
-    // format for the Shopify API
-    return localDate;
+    // For logging/display purposes only
+    // Format the date according to the target timezone
+    try {
+      const formatOptions: Intl.DateTimeFormatOptions = {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      };
+      
+      const formatter = new Intl.DateTimeFormat('en-US', formatOptions);
+      console.log(`Date in ${timezone}: ${formatter.format(dateObj)}`);
+      console.log(`Date as ISO string: ${dateObj.toISOString()}`);
+    } catch (formatError) {
+      console.warn(`Error formatting in timezone ${timezone}:`, formatError);
+    }
+    
+    return dateObj;
   } catch (error) {
     console.error(`Error creating date in timezone ${timezone}:`, error);
-    // Fallback to just using the local date
-    return localDate;
+    // Fallback to a simpler approach
+    const fallbackDate = new Date(year, month - 1, day, hour, minute, 0);
+    console.log(`Using fallback date: ${fallbackDate.toISOString()}`);
+    return fallbackDate;
   }
 }
 

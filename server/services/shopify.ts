@@ -380,14 +380,22 @@ export class ShopifyService {
         }
       }
       
+      // Determine whether this is a scheduled post
+      const isScheduled = post.status === 'scheduled';
+      const postStatus = (post as any).postStatus || post.status;
+      
+      console.log(`Preparing article with postStatus: ${postStatus} and status: ${post.status}`);
+      
       // Prepare article data for Shopify API
       const article = {
         title: post.title,
         author: post.author || store.shopName,
         body_html: processedContent, // Use processed content with direct image URLs
         tags: post.tags || "",
-        published: post.status === 'published', // published = false means 'draft' in Shopify
-        published_at: publishedAt, // Set publication date (works for both now and future)
+        // Only mark as published if status is 'published' and not scheduled
+        published: post.status === 'published' && !isScheduled,
+        // Use published_at for both immediate publishing and scheduling future dates
+        published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
@@ -397,6 +405,10 @@ export class ShopifyService {
         published: article.published,
         published_at: article.published_at,
         status: post.status,
+        postStatus: postStatus,
+        isScheduled: isScheduled,
+        scheduledDate: post.scheduledPublishDate,
+        scheduledTime: post.scheduledPublishTime,
         tags: article.tags
       });
       const response = await client.post(`/blogs/${blogId}/articles.json`, {
