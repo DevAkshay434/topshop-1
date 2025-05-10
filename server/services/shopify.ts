@@ -185,6 +185,7 @@ export class ShopifyService {
     try {
       const client = this.getClient(store);
       
+      // Log detailed information about the post being created
       console.log(`Creating Shopify article for post with status: ${post.status}`, {
         postId: post.id,
         title: post.title,
@@ -589,11 +590,8 @@ export class ShopifyService {
       const client = this.getClient(store);
       
       console.log(`Creating page in store ${store.shopName} with publish setting: ${published ? 'published' : 'draft'}`);
-      if (publishDate) {
-        console.log(`Page scheduled for: ${publishDate.toISOString()}`);
-      }
       
-      const pageData = {
+      const pageData: any = {
         page: {
           title,
           body_html: content,
@@ -601,10 +599,19 @@ export class ShopifyService {
         }
       };
       
-      // If we have a publish date, add it for scheduling
+      // For scheduled publishing, we need both:
+      // 1. published=false (so it doesn't publish immediately)
+      // 2. published_at=future date (for when to publish)
       if (publishDate) {
-        // @ts-ignore - The Shopify API accepts published_at for scheduling even if TypeScript doesn't know about it
+        console.log(`Page scheduled for: ${publishDate.toISOString()}`);
+        
+        // Ensure we're setting published to false for scheduled posts
+        pageData.page.published = false;
+        
+        // Set the future publish date
         pageData.page.published_at = publishDate.toISOString();
+        
+        console.log(`Final page data for scheduling:`, JSON.stringify(pageData, null, 2));
       }
       
       const response = await client.post('/pages.json', pageData);
