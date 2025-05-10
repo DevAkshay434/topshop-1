@@ -796,70 +796,7 @@ export default function CreatePostModal({
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="publicationType"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Publication Status</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={(value) => {
-                            // When changing publication type, update form state
-                            field.onChange(value);
-                            
-                            // This ensures we don't have conflicting settings
-                            // For scheduling we need to make sure we're not publishing immediately
-                            if (value === "schedule") {
-                              // Scheduling flag handling through form values (safely ignore the type error)
-                              // @ts-ignore - This is a form field we're using for workflow control
-                              form.setValue("postStatus", "draft");
-                              console.log("Set to SCHEDULE mode - postStatus set to draft");
-                            } else if (value === "publish") {
-                              // For immediate publishing
-                              // @ts-ignore - This is a form field we're using for workflow control
-                              form.setValue("postStatus", "publish");
-                              console.log("Set to PUBLISH mode - postStatus set to publish");
-                            } else {
-                              // For drafts
-                              // @ts-ignore - This is a form field we're using for workflow control
-                              form.setValue("postStatus", "draft");
-                              console.log("Set to DRAFT mode - postStatus set to draft");
-                            }
-                          }}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="draft" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Save as Draft
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="publish" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Publish Now
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="schedule" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Schedule for Later
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Publication status is now handled by buttons in the footer */}
                 
                 {publicationType === "schedule" && (
                   <div className="grid grid-cols-2 gap-4">
@@ -1165,9 +1102,60 @@ export default function CreatePostModal({
                   </Badge>
                 )}
               </div>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : (initialData ? "Save Changes" : "Create Post")}
-              </Button>
+              
+              <div className="flex gap-2">
+                {!initialData && (
+                  <>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        form.setValue("publicationType", "draft");
+                        form.handleSubmit(onSubmit)();
+                      }}
+                    >
+                      Save as Draft
+                    </Button>
+                    
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        form.setValue("publicationType", "schedule");
+                        if (!form.getValues("scheduleDate")) {
+                          // Set default schedule for tomorrow
+                          const tomorrow = new Date();
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          form.setValue("scheduleDate", tomorrow.toISOString().split('T')[0]);
+                          form.setValue("scheduleTime", "09:30");
+                        }
+                        form.handleSubmit(onSubmit)();
+                      }}
+                    >
+                      Schedule
+                    </Button>
+                    
+                    <Button 
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        form.setValue("publicationType", "publish");
+                        form.handleSubmit(onSubmit)();
+                      }}
+                    >
+                      Publish Now
+                    </Button>
+                  </>
+                )}
+                
+                {initialData && (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Save Changes"}
+                  </Button>
+                )}
+              </div>
             </DialogFooter>
           </form>
         </Form>
