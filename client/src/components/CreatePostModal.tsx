@@ -150,12 +150,8 @@ export default function CreatePostModal({
   // Get the store timezone or fall back to UTC
   const storeTimezone = storeInfo?.iana_timezone || 'UTC';
   
-  // Get current and tomorrow's date in the store's timezone
+  // Store reference for timezone info
   const currentDate = new Date();
-  const currentDateFormatted = formatToTimezone(currentDate, storeTimezone, 'date');
-  const tomorrowDate = new Date(currentDate);
-  tomorrowDate.setDate(currentDate.getDate() + 1);
-  const tomorrowDateFormatted = formatToTimezone(tomorrowDate, storeTimezone, 'date');
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -223,17 +219,8 @@ export default function CreatePostModal({
             : initialData.categories) 
           : undefined,
         tags: initialData.tags || "",
-        publicationType: initialData.status === "published" 
-          ? "publish" 
-          : initialData.status === "scheduled" 
-            ? "schedule" 
-            : "draft",
-        scheduleDate: initialData.scheduledDate 
-          ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'date') 
-          : tomorrowDateFormatted,
-        scheduleTime: initialData.scheduledDate 
-          ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
-          : "09:30",
+        // Default to draft for new content, preserve status for existing content
+        publicationType: initialData.status || "draft",
       });
       
       // Set additional fields after reset
@@ -266,7 +253,7 @@ export default function CreatePostModal({
         form.setValue('categories', categories);
       }
     }
-  }, [generatedContent, initialData, form, storeTimezone, tomorrowDateFormatted, selectedBlogId, articleType, categories]);
+  }, [generatedContent, initialData, form, storeTimezone, selectedBlogId, articleType, categories]);
   
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
@@ -316,10 +303,7 @@ export default function CreatePostModal({
       
       // Set status and dates based on publication type
       // Log the selected publication type for debugging
-      console.log(`Using publication type: ${values.publicationType}`, {
-        scheduleDate: values.scheduleDate,
-        scheduleTime: values.scheduleTime
-      });
+      console.log(`Using publication type: ${values.publicationType}`);
       
       // IMPORTANT: Add publicationType to postData for server-side processing
       postData.publicationType = values.publicationType;
@@ -342,8 +326,7 @@ export default function CreatePostModal({
           postData.scheduledDate = initialData.scheduledDate;
           postData.scheduledPublishDate = initialData.scheduledPublishDate;
           postData.scheduledPublishTime = initialData.scheduledPublishTime;
-          postData.scheduleDate = initialData.scheduledPublishDate;
-          postData.scheduleTime = initialData.scheduledPublishTime;
+          // Keep the original scheduled publication details
         }
         
         // For published content, ensure it stays published
