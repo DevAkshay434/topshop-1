@@ -15,37 +15,38 @@ export function createDateInTimezone(
   timeString: string, 
   timezone: string = 'UTC'
 ): Date {
-  // Create the date string in ISO format
-  const isoString = `${dateString}T${timeString}:00`;
+  // Parse the date and time components
+  const [year, month, day] = dateString.split('-').map(Number);
+  const [hour, minute] = timeString.split(':').map(Number);
   
-  // Create a formatter using the specified timezone
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
+  // Create a Date object in the user's local time zone
+  // but with the specified date/time values
+  const localDate = new Date(year, month - 1, day, hour, minute, 0);
   
-  // Create a UTC date from the ISO string
-  const utcDate = new Date(isoString);
-  
-  // Format the date for the timezone
-  const formattedDate = formatter.format(utcDate);
-  
-  // Parse the formatted date parts
-  const [month, day, year, hour, minute, second] = formattedDate
-    .replace(',', '')
-    .split(/[\/\s:]/)
-    .map(part => parseInt(part, 10));
-  
-  // Create the timezone-aware date
-  const tzDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-  
-  return tzDate;
+  try {
+    // Format the date for display (for logging purposes)
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    
+    // Create a date string in the target timezone
+    const formatter = new Intl.DateTimeFormat('en-US', formatOptions);
+    console.log(`Date in ${timezone}: ${formatter.format(localDate)}`);
+    
+    // Create a date object that will be properly serialized in ISO
+    // format for the Shopify API
+    return localDate;
+  } catch (error) {
+    console.error(`Error creating date in timezone ${timezone}:`, error);
+    // Fallback to just using the local date
+    return localDate;
+  }
 }
 
 /**
