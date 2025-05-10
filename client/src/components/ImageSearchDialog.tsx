@@ -444,10 +444,10 @@ export default function ImageSearchDialog({
                 )}
               </div>
               
-              {/* Search results grid */}
-              <div className="flex-1 overflow-y-auto p-4">
+              {/* Search results grid - with improved scrolling */}
+              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 150px)" }}>
                 {searchedImages.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
                     {searchedImages
                       .filter(image => {
                         // Apply source filtering
@@ -562,7 +562,7 @@ export default function ImageSearchDialog({
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 150px)" }}>
                 {selectedImages.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {selectedImages.map((image, index) => (
