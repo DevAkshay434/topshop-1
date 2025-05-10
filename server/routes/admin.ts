@@ -595,7 +595,7 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
           };
           
           // Get the specific product to fetch its images
-          const products = await getProducts(store, 1, productId);
+          const products = await shopifyService.getProducts(store, 1);
           
           if (products.length > 0 && products[0].images) {
             const productImages = products[0].images.map((img: any, index: number) => ({
