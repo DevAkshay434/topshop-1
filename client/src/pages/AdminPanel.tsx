@@ -670,6 +670,26 @@ export default function AdminPanel() {
         youtubeUrl: values.youtubeUrl || ""
       };
       
+      // Handle scheduling information
+      if (values.scheduledPublishDate) {
+        // If scheduled, set proper flags and scheduling information
+        safeValues.publicationType = "schedule";
+        safeValues.postStatus = "draft"; // Critical: This ensures post isn't published immediately
+        safeValues.scheduleDate = values.scheduledPublishDate;
+        safeValues.scheduleTime = values.scheduledPublishTime || "09:30";
+        safeValues.scheduledPublishDate = values.scheduledPublishDate;
+        safeValues.scheduledPublishTime = values.scheduledPublishTime || "09:30";
+        
+        console.log("Content will be scheduled for", values.scheduledPublishDate, "at", values.scheduledPublishTime || "09:30");
+      } else {
+        // Not scheduled, use the selected postStatus
+        safeValues.publicationType = values.postStatus === "publish" ? "publish" : "draft";
+        safeValues.scheduleDate = null;
+        safeValues.scheduleTime = null;
+        safeValues.scheduledPublishDate = null;
+        safeValues.scheduledPublishTime = null;
+      }
+      
       // Process keywords to ensure they're in the right format
       const processedKeywords = Array.isArray(selectedKeywords)
         ? selectedKeywords.map(kw => ({
