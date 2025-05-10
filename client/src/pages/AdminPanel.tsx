@@ -89,6 +89,10 @@ const contentFormSchema = z.object({
   generateImages: z.boolean().default(true),
   scheduledPublishDate: z.string().optional(), // Added for future scheduling date
   scheduledPublishTime: z.string().optional(),  // Added for future scheduling time
+  // Fields needed for scheduling functionality
+  publicationType: z.enum(["publish", "schedule", "draft"]).optional(),
+  scheduleDate: z.string().optional(),
+  scheduleTime: z.string().optional(),
   // New fields for content generation
   buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
   articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
@@ -222,6 +226,10 @@ export default function AdminPanel() {
     collectionIds: [], // This needs to be initialized as an empty array
     scheduledPublishTime: "09:30", // Default to 9:30 AM
     blogId: "", // Initialize with empty string to ensure the field exists
+    // Scheduling fields
+    publicationType: "draft",
+    scheduleDate: undefined,
+    scheduleTime: "09:30",
     // New fields
     buyerProfile: "auto",
     articleLength: "medium",
@@ -643,8 +651,22 @@ export default function AdminPanel() {
         await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state update
       }
       
+      // Determine publication type based on scheduling checkbox
+      let publicationType = values.postStatus === "publish" ? "publish" : "draft";
+      let scheduleDate: string | undefined = undefined;
+      let scheduleTime: string | undefined = undefined;
+      
+      // Handle scheduling information
+      if (values.scheduledPublishDate) {
+        // If scheduled, override publication type to schedule
+        publicationType = "schedule";
+        scheduleDate = values.scheduledPublishDate;
+        scheduleTime = values.scheduledPublishTime || "09:30";
+        console.log("Content will be scheduled for", scheduleDate, "at", scheduleTime);
+      }
+      
       // Create a safe copy of the form values with guaranteed array values
-      const safeValues = {
+      const processedData = {
         ...values,
         // Ensure these are always arrays of strings
         productIds: Array.isArray(values.productIds) 
@@ -659,36 +681,22 @@ export default function AdminPanel() {
         // Ensure we have these required fields
         articleType: values.articleType || "blog",
         title: values.title || "",
-        introType: values.introType || "search_intent", // Set search_intent as default as requested
-        region: values.region || "us", // Default to US region as requested
+        introType: values.introType || "search_intent",
+        region: values.region || "us",
         // Make sure blogId is a string if it exists
         blogId: values.blogId ? String(values.blogId) : undefined,
-        // Include new content generation option fields
+        // Add scheduling fields
+        publicationType,
+        scheduleDate,
+        scheduleTime,
+        // If we're scheduling, keep post as draft until scheduled time
+        postStatus: publicationType === "schedule" ? "draft" : values.postStatus,
+        // Include content generation option fields
         buyerProfile: values.buyerProfile || "auto",
         articleLength: values.articleLength || "medium",
         headingsCount: values.headingsCount || "3",
         youtubeUrl: values.youtubeUrl || ""
       };
-      
-      // Handle scheduling information
-      if (values.scheduledPublishDate) {
-        // If scheduled, set proper flags and scheduling information
-        safeValues.publicationType = "schedule";
-        safeValues.postStatus = "draft"; // Critical: This ensures post isn't published immediately
-        safeValues.scheduleDate = values.scheduledPublishDate;
-        safeValues.scheduleTime = values.scheduledPublishTime || "09:30";
-        safeValues.scheduledPublishDate = values.scheduledPublishDate;
-        safeValues.scheduledPublishTime = values.scheduledPublishTime || "09:30";
-        
-        console.log("Content will be scheduled for", values.scheduledPublishDate, "at", values.scheduledPublishTime || "09:30");
-      } else {
-        // Not scheduled, use the selected postStatus
-        safeValues.publicationType = values.postStatus === "publish" ? "publish" : "draft";
-        safeValues.scheduleDate = null;
-        safeValues.scheduleTime = null;
-        safeValues.scheduledPublishDate = null;
-        safeValues.scheduledPublishTime = null;
-      }
       
       // Process keywords to ensure they're in the right format
       const processedKeywords = Array.isArray(selectedKeywords)
@@ -703,7 +711,7 @@ export default function AdminPanel() {
       
       // Add selected image IDs and keywords to form data
       const submitData = {
-        ...safeValues,
+        ...processedData,
         selectedImageIds: selectedImages.map(img => String(img.id)),
         // Include full keyword data (not just strings) for analysis on the server
         selectedKeywordData: processedKeywords
