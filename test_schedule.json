@@ -1,0 +1,15 @@
+{
+  "title": "Test Scheduled Post After Fixes",
+  "content": "<p>This is a test post to verify that scheduling is working correctly after our fixes.</p>",
+  "publicationType": "schedule",
+  "postStatus": "draft",
+  "status": "scheduled",
+  "shopifyBlogId": "116776337722",
+  "blogId": "116776337722",
+  "scheduleDate": "2025-05-12",
+  "scheduleTime": "15:30",
+  "scheduledPublishDate": "2025-05-12", 
+  "scheduledPublishTime": "15:30",
+  "tags": "test,scheduling",
+  "categories": "Test,Scheduling"
+}
