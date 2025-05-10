@@ -380,13 +380,22 @@ export class ShopifyService {
         }
       }
       
-      // Determine whether this is a scheduled post
-      const isScheduled = post.status === 'scheduled';
+      // Determine whether this is a scheduled post - check both publicationType and status
+      // The frontend may use publicationType while the backend uses status
+      const isScheduled = 
+        post.status === 'scheduled' || 
+        (post as any).publicationType === 'schedule';
+      
+      // Get the post status, with fallbacks for backward compatibility
       const postStatus = (post as any).postStatus || post.status;
       
       console.log(`Preparing article with postStatus: ${postStatus} and status: ${post.status}`, {
         isScheduled,
-        publishedAt
+        publishedAt,
+        publicationType: (post as any).publicationType,
+        postStatus,
+        scheduledDate: post.scheduledPublishDate,
+        scheduledTime: post.scheduledPublishTime
       });
       
       // Prepare article data for Shopify API
@@ -549,8 +558,21 @@ export class ShopifyService {
         article.author = store.shopName;
       }
       
+      // Determine if this is a scheduled post - check both status and publicationType
+      const isScheduled = 
+        post.status === 'scheduled' || 
+        (post as any).publicationType === 'schedule';
+      
+      // Log scheduling information
+      console.log(`Update post scheduling status: isScheduled=${isScheduled}`, {
+        status: post.status,
+        publicationType: (post as any).publicationType,
+        scheduledDate: post.scheduledPublishDate,
+        scheduledTime: post.scheduledPublishTime
+      });
+      
       // Properly handle date formatting for Shopify API
-      if (post.status === 'published') {
+      if (post.status === 'published' && !isScheduled) {
         article.published = true;
         
         // Make sure the date is properly formatted as an ISO string
@@ -561,6 +583,30 @@ export class ShopifyService {
           publishedAt = new Date().toISOString();
         }
         article.published_at = publishedAt;
+      } else if (post.status === 'scheduled' || isScheduled) {
+        // Handle scheduled posts
+        article.published = false; // Must be false for scheduled posts
+        
+        // Set the publication date in the future
+        if (post.scheduledPublishDate && post.scheduledPublishTime) {
+          // Parse the date parts
+          const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
+          const [hours, minutes] = post.scheduledPublishTime.split(':').map(Number);
+          
+          // Create date string in ISO format
+          const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+          
+          // Create a date object and validate
+          const scheduledDate = new Date(isoDateString);
+          if (!isNaN(scheduledDate.getTime())) {
+            article.published_at = scheduledDate.toISOString();
+            console.log(`Article scheduled for: ${article.published_at}`);
+          } else {
+            console.error(`Invalid scheduled date format: ${isoDateString}`);
+          }
+        } else {
+          console.warn("Scheduled post missing date/time information!");
+        }
       } else if (post.status === 'draft') {
         article.published = false;
       }
