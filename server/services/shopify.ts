@@ -286,17 +286,33 @@ export class ShopifyService {
           // Format: YYYY-MM-DDTHH:MM:SS+00:00 (or Z for UTC)
           const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
           
-          // Create a date object from the ISO string
-          const scheduledDate = new Date(isoDateString);
+          // First, try to get the store's timezone for better scheduling accuracy
+          const shopService = this;
+          let storeTimezone = "UTC";
           
-          // Make sure the date is valid before using it
-          if (!isNaN(scheduledDate.getTime())) {
-            // For Shopify scheduled posts, we need the exact ISO format
-            publishedAt = scheduledDate.toISOString();
-            
-            console.log(`Post will be published at: ${publishedAt}`);
-            console.log(`ISO date string: ${isoDateString}`);
-            console.log(`Resulting local date: ${scheduledDate.toString()}`);
+          try {
+            const shopInfo = await shopService.getShopInfo(store);
+            storeTimezone = shopInfo.iana_timezone || "UTC";
+            console.log(`Using timezone: ${storeTimezone} for scheduling`);
+          } catch (tzError) {
+            console.error("Error getting store timezone:", tzError);
+            console.log("Falling back to UTC for scheduling");
+          }
+          
+          console.log(`Creating date in timezone: ${storeTimezone} with date: ${post.scheduledPublishDate} and time: ${post.scheduledPublishTime}`);
+          console.log(`Parsed components: year=${year}, month=${month}, day=${day}, hour=${hours}, minute=${minutes}`);
+          
+          // Create the date object - this is crucial
+          const isoStringDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+          console.log(`ISO date string: ${isoStringDate}`);
+          
+          // Set the scheduled date to future
+          publishedAt = isoStringDate + ".000Z"; // Force UTC timezone with Z suffix
+          console.log(`Setting page scheduled publication date to: ${publishedAt}`);
+          
+          // Make sure we're scheduling properly
+          if (publishedAt) {
+            console.log(`Creating page with publish setting: SCHEDULED`);
           } else {
             console.error(`Invalid scheduled date/time: ${post.scheduledPublishDate} ${post.scheduledPublishTime}`);
             console.error(`Failed to parse ISO date: ${isoDateString}`);
@@ -467,6 +483,39 @@ export class ShopifyService {
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
+      
+      // For scheduled posts check the date is actually in the future
+      if (shouldSchedulePublication && publishedAt) {
+        const currentTimestamp = new Date().toISOString();
+        const scheduledTimestamp = publishedAt;
+        
+        // Calculate if the schedule date is in the future
+        const isInFuture = scheduledTimestamp > currentTimestamp;
+        const diffInMs = new Date(scheduledTimestamp).getTime() - new Date(currentTimestamp).getTime();
+        const diffInMinutes = diffInMs / (1000 * 60);
+        
+        console.log("Scheduling details:", {
+          scheduledAt: scheduledTimestamp,
+          currentTimestamp,
+          scheduledTimestamp,
+          isInFuture,
+          diffInMs,
+          diffInMinutes
+        });
+        
+        // For Shopify scheduling to work: 
+        // 1. published must be false
+        // 2. published_at must be in future
+        article.published = false;
+        
+        // If the date isn't actually in the future, schedule it for 1 hour from now
+        if (!isInFuture) {
+          const oneHourFromNow = new Date();
+          oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+          article.published_at = oneHourFromNow.toISOString();
+          console.log(`Scheduled time was in the past. Rescheduling for 1 hour from now: ${article.published_at}`);
+        }
+      }
       
       // Double check scheduling logic
       if (shouldSchedulePublication && publishedAt) {

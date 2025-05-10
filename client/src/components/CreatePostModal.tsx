@@ -1108,7 +1108,6 @@ export default function CreatePostModal({
                   <>
                     <Button 
                       type="button" 
-                      variant="outline" 
                       disabled={isSubmitting}
                       onClick={() => {
                         form.setValue("publicationType", "draft");
@@ -1116,36 +1115,6 @@ export default function CreatePostModal({
                       }}
                     >
                       Save as Draft
-                    </Button>
-                    
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      disabled={isSubmitting}
-                      onClick={() => {
-                        form.setValue("publicationType", "schedule");
-                        if (!form.getValues("scheduleDate")) {
-                          // Set default schedule for tomorrow
-                          const tomorrow = new Date();
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          form.setValue("scheduleDate", tomorrow.toISOString().split('T')[0]);
-                          form.setValue("scheduleTime", "09:30");
-                        }
-                        form.handleSubmit(onSubmit)();
-                      }}
-                    >
-                      Schedule
-                    </Button>
-                    
-                    <Button 
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => {
-                        form.setValue("publicationType", "publish");
-                        form.handleSubmit(onSubmit)();
-                      }}
-                    >
-                      Publish Now
                     </Button>
                   </>
                 )}
