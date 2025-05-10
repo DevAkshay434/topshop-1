@@ -302,7 +302,7 @@ export default function CreatePostModal({
         title: values.title,
         content: finalContent, // Use the processed content with YouTube embed
         category: values.category,
-        categories: values.categories, // Add categories array if available
+        categories: Array.isArray(values.categories) ? values.categories.join(',') : values.categories, // Convert categories array to string
         tags: values.tags,
         shopifyBlogId: values.shopifyBlogId,
         // Add new fields
@@ -351,10 +351,16 @@ export default function CreatePostModal({
         const currentDate = new Date();
         postData.publishedDate = currentDate;
         
+        // Explicitly clear any scheduling info
+        postData.scheduleDate = null;
+        postData.scheduleTime = null;
+        postData.scheduledPublishDate = null;
+        postData.scheduledPublishTime = null;
+        
       } else if (values.publicationType === "schedule") {
-        // Schedule for later publication
+        // Schedule for later publication - this takes precedence over any postStatus
         postData.status = "scheduled";  // This is for our local database
-        postData.postStatus = "draft";  // This prevents immediate publishing in Shopify
+        postData.postStatus = "draft";  // CRITICAL: This prevents immediate publishing in Shopify
         postData.publicationType = "schedule"; // Critical flag for backend to recognize scheduling
         
         console.log("📅 Preparing scheduled post:", {
