@@ -541,6 +541,84 @@ export class ShopifyService {
   }
   
   /**
+   * Test the connection to a Shopify store
+   * @param store The store to test the connection for
+   */
+  public async testConnection(store: ShopifyStore): Promise<{ success: boolean; message: string }> {
+    try {
+      const client = this.getClient(store);
+      const response = await client.get('/shop.json');
+      
+      if (response.data && response.data.shop) {
+        return { 
+          success: true, 
+          message: `Connected to Shopify store ${response.data.shop.name} successfully` 
+        };
+      }
+      
+      return { 
+        success: false, 
+        message: 'Unable to verify store connection' 
+      };
+    } catch (error: any) {
+      console.error(`Error testing connection to Shopify store ${store.shopName}:`, error);
+      return { 
+        success: false, 
+        message: `Failed to connect to store: ${error?.message || 'Unknown error'}` 
+      };
+    }
+  }
+  
+  /**
+   * Create a page in a Shopify store
+   * @param store The store to create the page in
+   * @param title The title of the page
+   * @param content The HTML content of the page
+   * @param published Whether the page should be published or not
+   * @param publishDate Optional publish date for scheduling
+   * @returns The created page data
+   */
+  public async createPage(
+    store: ShopifyStore,
+    title: string,
+    content: string,
+    published: boolean = false,
+    publishDate?: Date
+  ): Promise<any> {
+    try {
+      const client = this.getClient(store);
+      
+      console.log(`Creating page in store ${store.shopName} with publish setting: ${published ? 'published' : 'draft'}`);
+      if (publishDate) {
+        console.log(`Page scheduled for: ${publishDate.toISOString()}`);
+      }
+      
+      const pageData = {
+        page: {
+          title,
+          body_html: content,
+          published: published
+        }
+      };
+      
+      // If we have a publish date, add it for scheduling
+      if (publishDate) {
+        // @ts-ignore - The Shopify API accepts published_at for scheduling even if TypeScript doesn't know about it
+        pageData.page.published_at = publishDate.toISOString();
+      }
+      
+      const response = await client.post('/pages.json', pageData);
+      
+      console.log(`Page created successfully with ID: ${response.data.page.id}`);
+      
+      return response.data.page;
+    } catch (error: any) {
+      console.error(`Error creating page in Shopify store ${store.shopName}:`, error);
+      throw new Error(`Failed to create page: ${error?.message || 'Unknown error'}`);
+    }
+  }
+  
+  /**
    * Register a Pexels image in the cache
    * @param image The Pexels image to register
    * @returns The registered image

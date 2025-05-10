@@ -1359,7 +1359,7 @@ Place this at a logical position in the content, typically after introducing a c
             const { createDateInTimezone } = await import('../../shared/timezone');
             
             // Create a proper date object for scheduling
-            // Get shop info for timezone
+            // Get shop info for timezone using the singleton
             const shopInfo = await shopifyService.getShopInfo(store);
             const storeTimezone = shopInfo?.iana_timezone || 'America/New_York';
             
@@ -1371,8 +1371,8 @@ Place this at a logical position in the content, typically after introducing a c
               storeTimezone
             );
             
-            // Format for Shopify API
-            scheduledAt = scheduledDate.toISOString();
+            // Set for Shopify API
+            scheduledAt = scheduledDate;
             console.log(`Setting page scheduled publication date to: ${scheduledAt}`);
           }
           
@@ -1470,7 +1470,8 @@ adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
         trialEndsAt: null
       };
       
-      results.shopify = await shopifyService.testConnection(store);
+      const testResult = await shopifyService.testConnection(store);
+      results.shopify = testResult;
     }
   } catch (error) {
     console.error("Shopify connection test failed:", error);
