@@ -1,14 +1,21 @@
 {
   "articleType": "blog",
-  "title": "Scheduled Blog Test - After Fix",
+  "title": "Scheduled Content Test - After Restart",
   "content": "<p>This is a test blog post with scheduling after fix.</p>",
   "publicationType": "schedule",
   "postStatus": "draft",
   "blogId": "116776337722",
   "scheduleDate": "2025-05-11",
-  "scheduleTime": "15:30",
+  "scheduleTime": "17:30",
   "region": "us",
   "toneOfVoice": "friendly",
+  "writingPerspective": "first_person_plural",
+  "enableTables": true,
+  "enableLists": true,
+  "enableH3s": true,
+  "introType": "search_intent",
+  "faqType": "short",
+  "enableCitations": true,
   "keywords": ["test"],
   "tags": "test,scheduled"
 }
