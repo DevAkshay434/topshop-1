@@ -855,9 +855,21 @@ export class ShopifyService {
    * @param published Whether to publish the page
    * @returns The created Shopify page
    */
-  public async createPage(store: ShopifyStore, title: string, content: string, published: boolean = true): Promise<any> {
+  public async createPage(
+    store: ShopifyStore, 
+    title: string, 
+    content: string, 
+    published: boolean = true,
+    scheduledAt?: string
+  ): Promise<any> {
     try {
       const client = this.getClient(store);
+      
+      console.log(`Creating Shopify page with title: "${title}"`, {
+        published: published,
+        scheduledAt: scheduledAt,
+        contentLength: content.length
+      });
       
       // Process content to handle proxied image URLs - same as in createArticle
       let processedContent = content;
