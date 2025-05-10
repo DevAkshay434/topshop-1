@@ -1,5 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
-import { ShopifyConnection, ShopifyStore, BlogPost } from '@shared/schema';
+import { ShopifyConnection, ShopifyStore, BlogPost as OriginalBlogPost } from '@shared/schema';
+
+// Extended BlogPost with additional scheduling fields
+interface BlogPost extends OriginalBlogPost {
+  scheduledPublishDate?: string;
+  scheduledPublishTime?: string;
+}
 
 interface ShopifyBlog {
   id: string;
