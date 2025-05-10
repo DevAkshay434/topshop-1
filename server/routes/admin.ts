@@ -57,7 +57,7 @@ adminRouter.get("/products", async (req: Request, res: Response) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     
     // Get products
-    const products = await getProducts(store, limit);
+    const products = await shopifyService.getProducts(store, limit);
     
     res.json({
       success: true,
@@ -104,7 +104,9 @@ adminRouter.get("/collections", async (req: Request, res: Response) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     
     // Get all collections (both smart and custom)
-    const collections = await getAllCollections(store, limit);
+    const customCollections = await shopifyService.getCollections(store, 'custom', limit);
+    const smartCollections = await shopifyService.getCollections(store, 'smart', limit);
+    const collections = [...customCollections, ...smartCollections];
     
     res.json({
       success: true,
@@ -148,7 +150,7 @@ adminRouter.get("/blogs", async (_req: Request, res: Response) => {
     };
     
     // Get blogs
-    const blogs = await getBlogs(store);
+    const blogs = await shopifyService.getBlogs(store);
     
     res.json({
       success: true,
