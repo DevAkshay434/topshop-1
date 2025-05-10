@@ -106,9 +106,8 @@ const formSchema = insertBlogPostSchema.extend({
   category: z.string().optional(),
   categories: z.array(z.string()).optional(),
   tags: z.string().optional(),
-  publicationType: z.enum(["publish", "schedule", "draft"]),
-  scheduleDate: z.string().optional(),
-  scheduleTime: z.string().optional(),
+  // Publication details are now handled automatically
+  publicationType: z.enum(["publish", "schedule", "draft"]).default("draft").optional(),
   // Override date fields with more flexible handling
   publishedDate: z.any().optional(),
   scheduledDate: z.any().optional(),
@@ -170,17 +169,8 @@ export default function CreatePostModal({
           : initialData.categories) 
         : undefined,
       tags: initialData?.tags || "",
-      publicationType: initialData?.status === "published" 
-        ? "publish" 
-        : initialData?.status === "scheduled" 
-          ? "schedule" 
-          : "draft",
-      scheduleDate: initialData?.scheduledDate 
-        ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'date') 
-        : tomorrowDateFormatted,
-      scheduleTime: initialData?.scheduledDate 
-        ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
-        : "09:30",
+      // Default to draft for new content, preserve status for existing content
+      publicationType: initialData?.status || "draft",
       // Default values for new fields
       buyerProfile: initialData?.buyerProfile || "auto",
       articleLength: initialData?.articleLength || "medium",
@@ -764,45 +754,7 @@ export default function CreatePostModal({
                   )}
                 />
                 
-                {/* Publication status is now handled by buttons in the footer */}
-                
-                {publicationType === "schedule" && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="scheduleDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Date</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              min={currentDateFormatted}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="scheduleTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Time ({storeInfo ? storeInfo.timezone_abbreviation || storeInfo.iana_timezone : 'UTC'})</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="time"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
+                {/* Removed publication controls as changes are now saved directly */}
               </TabsContent>
               
               <TabsContent value="preview">
@@ -1072,26 +1024,9 @@ export default function CreatePostModal({
               </div>
               
               <div className="flex gap-2">
-                {!initialData && (
-                  <>
-                    <Button 
-                      type="button" 
-                      disabled={isSubmitting}
-                      onClick={() => {
-                        form.setValue("publicationType", "draft");
-                        form.handleSubmit(onSubmit)();
-                      }}
-                    >
-                      Save as Draft
-                    </Button>
-                  </>
-                )}
-                
-                {initialData && (
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : "Save Changes"}
-                  </Button>
-                )}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </DialogFooter>
           </form>
