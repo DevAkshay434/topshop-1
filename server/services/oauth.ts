@@ -2,7 +2,7 @@ import axios from 'axios';
 import crypto from 'crypto';
 
 // Constants for OAuth process (would come from environment variables in production)
-const SCOPES = 'read_products,write_products,read_content,write_content,read_themes';
+const SCOPES = 'read_products,write_products,read_content,write_content,read_themes,write_publications';
 
 /**
  * Validate a Shopify myshopify.com domain
