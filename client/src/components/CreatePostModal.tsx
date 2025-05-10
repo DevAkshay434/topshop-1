@@ -332,8 +332,10 @@ export default function CreatePostModal({
         // Make sure date is properly formatted as ISO string
         const currentDate = new Date();
         postData.publishedDate = currentDate;
-        // For publish, still need to set scheduledDate to null explicitly
+        // For publish, explicitly clear all scheduling fields
         postData.scheduledDate = null;
+        postData.scheduledPublishDate = null;
+        postData.scheduledPublishTime = null;
       } else if (values.publicationType === "schedule") {
         postData.status = "scheduled";
         
@@ -345,18 +347,33 @@ export default function CreatePostModal({
             values.scheduleTime,
             storeTimezone
           );
+          
+          // For Shopify API integration - store date and time separately
+          postData.scheduledPublishDate = values.scheduleDate;
+          postData.scheduledPublishTime = values.scheduleTime;
+          
+          // Also keep the combined date object for our local usage
           postData.scheduledDate = scheduledDate;
         } else {
           // Default scheduling to tomorrow in the store's timezone if not specified
-          postData.scheduledDate = getTomorrowInTimezone(storeTimezone);
+          const tomorrow = getTomorrowInTimezone(storeTimezone);
+          postData.scheduledDate = tomorrow;
+          
+          // Format tomorrow's date for Shopify API
+          const tomorrowDate = formatToTimezone(tomorrow, storeTimezone, 'date');
+          const tomorrowTime = formatToTimezone(tomorrow, storeTimezone, 'time');
+          postData.scheduledPublishDate = tomorrowDate;
+          postData.scheduledPublishTime = tomorrowTime;
         }
         // For schedule, still set publishedDate to null
         postData.publishedDate = null;
       } else {
         postData.status = "draft";
-        // For draft, set both dates to null explicitly
+        // For draft, set all dates to null explicitly
         postData.scheduledDate = null;
         postData.publishedDate = null;
+        postData.scheduledPublishDate = null;
+        postData.scheduledPublishTime = null;
       }
       
       let response;
