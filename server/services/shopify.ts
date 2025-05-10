@@ -248,6 +248,9 @@ export class ShopifyService {
       // Use current date if no publishedDate is provided
       let publishedAt: string | undefined = undefined;
       
+      // Initial scheduling detection flag (will be enhanced below)
+      let isScheduled: boolean | string | null | undefined = false;
+      
       console.log(`Creating Shopify article for post with status: ${post.status}`, {
         postId: post.id,
         title: post.title,
@@ -308,6 +311,47 @@ export class ShopifyService {
           console.log(`No schedule information provided, creating as draft in Shopify`);
           // If no scheduled date is provided, leave publishedAt as undefined
           // This will create a draft post in Shopify
+        }
+      }
+      
+      // Enhanced scheduling detection logic
+      // Detect if this post should be scheduled based on multiple possible indicators
+      const scheduleInfo = {
+        postStatus: (post as any).postStatus || post.status,
+        publicationType: (post as any).publicationType,
+        hasPublicationType: typeof (post as any).publicationType !== 'undefined',
+        isPublicationTypeScheduled: (post as any).publicationType === 'schedule',
+        isStatusScheduled: ((post as any).postStatus === 'scheduled' || post.status === 'scheduled'),
+        hasScheduledDate: !!post.scheduledPublishDate,
+        scheduledDate: post.scheduledPublishDate,
+        hasScheduledTime: !!post.scheduledPublishTime,
+        scheduledTime: post.scheduledPublishTime
+      };
+      
+      // Log the scheduling detection for debugging
+      console.log("Schedule detection details:", {
+        ...scheduleInfo,
+        currentIsScheduled: isScheduled
+      });
+      
+      // If we have explicit scheduling indicators, we should enter scheduling mode
+      if ((scheduleInfo.isPublicationTypeScheduled || scheduleInfo.isStatusScheduled) && 
+          scheduleInfo.hasScheduledDate && 
+          scheduleInfo.hasScheduledTime) {
+        
+        // Update isScheduled to enter scheduling mode
+        isScheduled = scheduleInfo.scheduledTime || true;
+        console.log(`Setting isScheduled to ${isScheduled} based on detection`);
+        
+        if (!publishedAt && scheduleInfo.scheduledDate && scheduleInfo.scheduledTime) {
+          // Parse the date parts
+          const [year, month, day] = scheduleInfo.scheduledDate.split('-').map(Number);
+          const [hours, minutes] = scheduleInfo.scheduledTime.split(':').map(Number);
+          
+          // Create a UTC date for scheduling (this is what Shopify expects)
+          const scheduledDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+          publishedAt = scheduledDateTime.toISOString();
+          console.log(`Updated publishedAt for scheduling: ${publishedAt}`);
         }
       }
       

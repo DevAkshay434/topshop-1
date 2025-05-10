@@ -676,11 +676,22 @@ export default function AdminPanel() {
       
       // Handle scheduling information
       if (values.scheduledPublishDate) {
-        // If scheduled, override publication type to schedule
+        // If scheduled, override publication type to schedule and set status to scheduled
         publicationType = "schedule";
         scheduleDate = values.scheduledPublishDate;
         scheduleTime = values.scheduledPublishTime || "09:30";
+        
+        // Updating both for maximum compatibility with backend
         console.log("Content will be scheduled for", scheduleDate, "at", scheduleTime);
+        
+        // Add explicit debugging log to confirm scheduling is being set
+        console.log("SCHEDULING MODE ACTIVE in AdminPanel form submission", {
+          scheduledPublishDate: values.scheduledPublishDate,
+          scheduledPublishTime: values.scheduledPublishTime || "09:30",
+          publicationType,
+          scheduleDate,
+          scheduleTime
+        });
       }
       
       // Create a safe copy of the form values with guaranteed array values
@@ -703,18 +714,38 @@ export default function AdminPanel() {
         region: values.region || "us",
         // Make sure blogId is a string if it exists
         blogId: values.blogId ? String(values.blogId) : undefined,
-        // Add scheduling fields
+        
+        // Critical scheduling fields - includes multiple formats for compatibility
+        // with different parts of the backend
         publicationType,
+        status: publicationType === "schedule" ? "scheduled" : (values.postStatus || "draft"),
         scheduleDate,
         scheduleTime,
+        scheduledPublishDate: values.scheduledPublishDate || null,
+        scheduledPublishTime: values.scheduledPublishTime || (values.scheduledPublishDate ? "09:30" : null),
+        
         // If we're scheduling, keep post as draft until scheduled time
-        postStatus: publicationType === "schedule" ? "draft" : values.postStatus,
+        postStatus: publicationType === "schedule" ? "scheduled" : values.postStatus,
+        
         // Include content generation option fields
         buyerProfile: values.buyerProfile || "auto",
         articleLength: values.articleLength || "medium",
         headingsCount: values.headingsCount || "3",
         youtubeUrl: values.youtubeUrl || ""
       };
+      
+      // Extra verification to ensure scheduling works correctly
+      if (values.scheduledPublishDate) {
+        console.log("Double-checking scheduling data is complete", {
+          status: processedData.status,
+          postStatus: processedData.postStatus,
+          publicationType: processedData.publicationType,
+          scheduleDate: processedData.scheduleDate,
+          scheduleTime: processedData.scheduleTime,
+          scheduledPublishDate: processedData.scheduledPublishDate,
+          scheduledPublishTime: processedData.scheduledPublishTime
+        });
+      }
       
       // Process keywords to ensure they're in the right format
       const processedKeywords = Array.isArray(selectedKeywords)
