@@ -230,9 +230,34 @@ export class ShopifyService {
       let publishedAt: string | undefined = undefined;
       
       if (post.status === 'published') {
-        publishedAt = post.publishedDate 
-          ? new Date(post.publishedDate).toISOString() 
-          : new Date().toISOString();
+        // Check if we have a specific scheduled date and time
+        if (post.scheduledPublishDate && post.scheduledPublishTime) {
+          console.log(`Scheduling post for publication on ${post.scheduledPublishDate} at ${post.scheduledPublishTime}`);
+          
+          // Parse the date parts
+          const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
+          const [hours, minutes] = post.scheduledPublishTime.split(':').map(Number);
+          
+          // Create a date object for the scheduled time
+          // Note: month is 0-indexed in JavaScript Date
+          const scheduledDate = new Date(year, month - 1, day, hours, minutes, 0);
+          
+          // Make sure the date is valid before using it
+          if (!isNaN(scheduledDate.getTime())) {
+            publishedAt = scheduledDate.toISOString();
+            console.log(`Post will be published at: ${publishedAt}`);
+          } else {
+            console.error(`Invalid scheduled date/time: ${post.scheduledPublishDate} ${post.scheduledPublishTime}`);
+            // Fallback to current time if the scheduled time is invalid
+            publishedAt = new Date().toISOString();
+          }
+        } else if (post.publishedDate) {
+          // Use existing published date if available
+          publishedAt = new Date(post.publishedDate).toISOString();
+        } else {
+          // Default to current time
+          publishedAt = new Date().toISOString();
+        }
       }
       
       // Process content to handle proxied image URLs
