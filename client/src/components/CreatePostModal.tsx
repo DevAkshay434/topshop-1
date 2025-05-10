@@ -106,11 +106,10 @@ const formSchema = insertBlogPostSchema.extend({
   category: z.string().optional(),
   categories: z.array(z.string()).optional(),
   tags: z.string().optional(),
-  // Publication details are now handled automatically
-  publicationType: z.enum(["publish", "schedule", "draft"]).default("draft").optional(),
-  // Override date fields with more flexible handling
+  // Status is preserved when editing existing content
+  publicationType: z.enum(["publish", "draft"]).default("draft").optional(),
+  // We still need these fields to handle existing values in the DB
   publishedDate: z.any().optional(),
-  scheduledDate: z.any().optional(),
   // Additional fields for blog selection and product association
   blogId: z.string().optional(),
   shopifyBlogId: z.string().optional(),
@@ -977,17 +976,7 @@ export default function CreatePostModal({
                   </div>
                 )}
                 
-                {publicationType === "schedule" && form.watch("scheduleDate") && form.watch("scheduleTime") && (
-                  <div className="mt-4 text-sm">
-                    <Badge variant="outline" className="mt-2 flex items-center gap-1 w-fit">
-                      <span>Will be published on:</span>
-                      <span className="font-medium">
-                        {form.watch("scheduleDate")} at {form.watch("scheduleTime")} 
-                        {storeInfo ? ` (${storeInfo.timezone_abbreviation || storeInfo.iana_timezone || 'UTC'})` : ' (Store timezone)'}
-                      </span>
-                    </Badge>
-                  </div>
-                )}
+                {/* Scheduling information removed as per requirement - content is saved directly */}
               </TabsContent>
             </Tabs>
             
