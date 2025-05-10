@@ -441,9 +441,25 @@ export class ShopifyService {
       // Determine whether this is a scheduled post - check both publicationType and status
       // The frontend may use publicationType while the backend uses status
       // Also check for existence of scheduledPublishDate and scheduledPublishTime fields
-      const shouldSchedulePublication = 
+      let shouldSchedulePublication: boolean | string = 
         (post.status === 'scheduled' && post.scheduledPublishDate && post.scheduledPublishTime) || 
         ((post as any).publicationType === 'schedule' && post.scheduledPublishDate && post.scheduledPublishTime);
+      
+      // Preserve string values for compatibility - scheduledPublishTime could be passed directly
+      if (post.scheduledPublishTime && !shouldSchedulePublication) {
+        shouldSchedulePublication = post.scheduledPublishTime;
+      }
+      
+      // IMPORTANT FIX: If we have valid scheduling information, force scheduling
+      // This ensures any post with scheduledPublishDate/Time will be properly scheduled
+      if (post.scheduledPublishDate && post.scheduledPublishTime) {
+        // Override with boolean true to ensure scheduling logic is triggered
+        if (typeof shouldSchedulePublication !== 'boolean') {
+          console.log(`Converting scheduling value ${shouldSchedulePublication} to boolean true`);
+        }
+        shouldSchedulePublication = true;
+        console.log(`Forcing scheduled mode for post with future date`);
+      }
       
       // Add detailed logging about schedule detection
       console.log("Schedule detection details:", {
@@ -476,20 +492,24 @@ export class ShopifyService {
         author: post.author || store.shopName,
         body_html: processedContent, // Use processed content with direct image URLs
         tags: post.tags || "",
-        // CRITICAL: For scheduling to work with Shopify API:
-        // 1. We MUST set published=false for scheduled content
-        // 2. published_at must be set to a future date
-        // 3. This applies to both scheduleDate/scheduleTime and scheduledPublishDate/scheduledPublishTime
-        published: false, // Always start with false for safety
-        // Use published_at for both immediate publishing and scheduling future dates
+        // For Shopify API scheduling to work properly:
+        // 1. published MUST be false for scheduled posts (future published_at)
+        // 2. published_at must be set to the future date
+        // Set a default safe value - we'll override for immediate publishing only
+        published: false,
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
-      // Only set published=true if explicitly publishing immediately (not scheduling)
+      // Only set published=true for immediate publishing (not scheduling)
       if (post.status === 'published' && !shouldSchedulePublication) {
         console.log('Setting article to publish immediately (not scheduled)');
         article.published = true;
+      } else if (shouldSchedulePublication) {
+        // CRITICAL: Force published=false for scheduled content
+        // This is required by Shopify's API - a scheduled post MUST have published=false
+        article.published = false;
+        console.log(`FORCE SETTING published=false for scheduled content with date ${publishedAt}`);
       }
       
       // For scheduled posts check the date is actually in the future
