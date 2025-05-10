@@ -248,12 +248,24 @@ export class ShopifyService {
       // Use current date if no publishedDate is provided
       let publishedAt: string | undefined = undefined;
       
+      console.log(`Creating Shopify article for post with status: ${post.status}`, {
+        postId: post.id,
+        title: post.title,
+        status: post.status,
+        publishedDate: post.publishedDate,
+        scheduledDate: post.scheduledDate,
+        scheduledPublishDate: post.scheduledPublishDate,
+        scheduledPublishTime: post.scheduledPublishTime
+      });
+      
       if (post.status === 'published') {
         // For published posts, use the current time or the existing published date
         if (post.publishedDate) {
           publishedAt = new Date(post.publishedDate).toISOString();
+          console.log(`Using existing published date: ${publishedAt}`);
         } else {
           publishedAt = new Date().toISOString();
+          console.log(`Using current time as publish date: ${publishedAt}`);
         }
       } else if (post.status === 'scheduled') {
         // For scheduled posts, use the scheduled date and time
@@ -264,6 +276,8 @@ export class ShopifyService {
           const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
           const [hours, minutes] = post.scheduledPublishTime.split(':').map(Number);
           
+          console.log(`Parsed date components: Year=${year}, Month=${month}, Day=${day}, Hours=${hours}, Minutes=${minutes}`);
+          
           // Create a date object for the scheduled time
           // Note: month is 0-indexed in JavaScript Date
           const scheduledDate = new Date(year, month - 1, day, hours, minutes, 0);
@@ -271,7 +285,7 @@ export class ShopifyService {
           // Make sure the date is valid before using it
           if (!isNaN(scheduledDate.getTime())) {
             publishedAt = scheduledDate.toISOString();
-            console.log(`Post will be published at: ${publishedAt}`);
+            console.log(`Post will be published at: ${publishedAt} (local date: ${scheduledDate.toString()})`);
           } else {
             console.error(`Invalid scheduled date/time: ${post.scheduledPublishDate} ${post.scheduledPublishTime}`);
             // For invalid scheduled dates, leave publishedAt as undefined
@@ -357,17 +371,25 @@ export class ShopifyService {
         }
       }
       
+      // Prepare article data for Shopify API
       const article = {
         title: post.title,
         author: post.author || store.shopName,
         body_html: processedContent, // Use processed content with direct image URLs
         tags: post.tags || "",
-        published: post.status === 'published',
-        published_at: publishedAt,
+        published: post.status === 'published', // published = false means 'draft' in Shopify
+        published_at: publishedAt, // Set publication date (works for both now and future)
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
-      console.log(`Creating Shopify article "${post.title}" in blog ${blogId}`);
+      // Log the article data being sent to Shopify
+      console.log(`Creating Shopify article "${post.title}" in blog ${blogId} with data:`, {
+        title: article.title,
+        published: article.published,
+        published_at: article.published_at,
+        status: post.status,
+        tags: article.tags
+      });
       const response = await client.post(`/blogs/${blogId}/articles.json`, {
         article
       });

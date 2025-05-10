@@ -9,6 +9,7 @@ interface StoreInfo {
   currency: string;
   timezone: string;
   iana_timezone: string;
+  timezone_abbreviation?: string; // Optional timezone abbreviation (e.g., EST, PST)
 }
 
 interface StoreContextType {
