@@ -886,34 +886,47 @@ export default function CreatePostModal({
                         .replace(/\n/g, '<br />')
                         .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
                         .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
-                        .replace(/<\/h3>([^\n<])/g, '</h3><br />$1')
-                        // Make sure all image URLs are absolute and not relative
-                        .replace(
-                          /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                          '<img$1src="https://$2"$3>'
-                        )
-                        // Enhance image display with inline styles
-                        .replace(
-                          /<img([^>]*?)>/gi, 
-                          '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
-                        );
+                        .replace(/<\/h3>([^\n<])/g, '</h3><br />$1');
+                        
+                      // Fix relative image URLs to absolute URLs
+                      processedContent = processedContent.replace(
+                        /<img([^>]*?)src=["'](?!http)(\/[^"']+)["']([^>]*?)>/gi,
+                        '<img$1src="https://rajeshshah.myshopify.com$2"$3>'
+                      );
+                      
+                      // Fix protocol-relative URLs (starting with //)
+                      processedContent = processedContent.replace(
+                        /<img([^>]*?)src=["'](\/\/[^"']+)["']([^>]*?)>/gi,
+                        '<img$1src="https:$2"$3>'
+                      );
+                      
+                      // Enhance all images with improved styling
+                      processedContent = processedContent.replace(
+                        /<img([^>]*?)>/gi, 
+                        '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                      );
                       
                       // Handle YouTube embed if present
-                      if (youtubeEmbed) {
+                      if (youtubeVideoId) {
                         if (processedContent.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
                           // Replace placeholder with YouTube embed
                           const parts = processedContent.split('[YOUTUBE_EMBED_PLACEHOLDER]');
                           return (
                             <>
                               <div dangerouslySetInnerHTML={{ __html: parts[0] || '' }} />
-                              {youtubeEmbed}
+                              <YouTubeEmbed />
                               <div dangerouslySetInnerHTML={{ __html: parts[1] || '' }} />
                             </>
                           );
                         }
                         
                         // Add YouTube embed at the end if no placeholder exists
-                        return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
+                        return (
+                          <>
+                            <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+                            <YouTubeEmbed />
+                          </>
+                        );
                       }
                       
                       return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
