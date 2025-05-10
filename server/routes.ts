@@ -488,6 +488,75 @@ export async function registerRoutes(app: Express): Promise<void> {
       let postData;
       try {
         postData = insertBlogPostSchema.parse(req.body);
+        
+        // Better handling for scheduling fields
+        if (postData.status === 'scheduled') {
+          console.log("Processing scheduled post request with data:", {
+            status: postData.status,
+            scheduledPublishDate: postData.scheduledPublishDate,
+            scheduledPublishTime: postData.scheduledPublishTime,
+            storeId: postData.storeId,
+            shopifyBlogId: postData.shopifyBlogId
+          });
+          
+          // Ensure scheduledPublishDate and scheduledPublishTime are set for scheduled posts
+          if (!postData.scheduledPublishDate || !postData.scheduledPublishTime) {
+            console.error("Missing required scheduling fields for scheduled post");
+            return res.status(400).json({
+              error: "Missing required scheduling information",
+              details: "A scheduled post must include scheduledPublishDate and scheduledPublishTime fields"
+            });
+          }
+          
+          // Set scheduledDate for compatibility with old code
+          if (postData.scheduledPublishDate && postData.scheduledPublishTime) {
+            try {
+              const { createDateInTimezone } = await import('../shared/timezone');
+              // Get store timezone from Shopify
+              const connection = await storage.getShopifyConnection();
+              const shopifyService = await import('./services/shopify').then(module => module.shopifyService);
+              
+              // Default to store timezone or UTC
+              let timezone = 'UTC';
+              if (connection && connection.storeName) {
+                const tempStore = {
+                  id: connection.id,
+                  shopName: connection.storeName,
+                  accessToken: connection.accessToken,
+                  scope: '',
+                  defaultBlogId: connection.defaultBlogId || null,
+                  isConnected: connection.isConnected || true,
+                  lastSynced: connection.lastSynced,
+                  installedAt: new Date(),
+                  uninstalledAt: null,
+                  planName: null,
+                  chargeId: null,
+                  trialEndsAt: null
+                };
+                
+                try {
+                  const shopInfo = await shopifyService.getShopInfo(tempStore);
+                  timezone = shopInfo.iana_timezone || 'UTC';
+                  console.log(`Using store timezone: ${timezone}`);
+                } catch (tzError) {
+                  console.warn("Could not get store timezone:", tzError);
+                }
+              }
+              
+              // Create a date object from the date and time strings in the store's timezone
+              const scheduledDate = createDateInTimezone(
+                postData.scheduledPublishDate,
+                postData.scheduledPublishTime,
+                timezone
+              );
+              
+              console.log(`Converted scheduled date: ${scheduledDate.toISOString()}`);
+              postData.scheduledDate = scheduledDate;
+            } catch (dateError) {
+              console.error("Error setting scheduledDate field:", dateError);
+            }
+          }
+        }
       } catch (validationError: any) {
         console.error("Validation error:", JSON.stringify(validationError));
         return res.status(400).json({ 
@@ -497,10 +566,18 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Save post to storage
+      console.log("Saving post to storage with data:", {
+        status: postData.status,
+        scheduledDate: postData.scheduledDate ? postData.scheduledDate.toISOString() : null,
+        scheduledPublishDate: postData.scheduledPublishDate,
+        scheduledPublishTime: postData.scheduledPublishTime
+      });
+      
       const post = await storage.createBlogPost(postData);
       
-      // If status is 'published' and we have a Shopify connection, publish to Shopify
-      if (post.status === 'published') {
+      // If status is 'published' or 'scheduled' and we have a Shopify connection, send to Shopify
+      if (post.status === 'published' || post.status === 'scheduled') {
+        console.log(`Processing post with status: ${post.status} for Shopify API`);
         const connection = await storage.getShopifyConnection();
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
@@ -527,32 +604,54 @@ export async function registerRoutes(app: Express): Promise<void> {
               trialEndsAt: null
             };
             
+            // Use the complete post object, including all scheduling fields
+            console.log("Sending to Shopify API:", {
+              postId: post.id,
+              title: post.title,
+              status: post.status,
+              hasScheduledDate: !!post.scheduledDate,
+              scheduledDate: post.scheduledDate,
+              hasScheduledPublishDate: !!post.scheduledPublishDate,
+              scheduledPublishDate: post.scheduledPublishDate,
+              hasScheduledPublishTime: !!post.scheduledPublishTime,
+              scheduledPublishTime: post.scheduledPublishTime
+            });
+            
             const shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
-              shopifyPostId: shopifyArticle.id
+              shopifyPostId: shopifyArticle.id,
+              shopifyBlogId: connection.defaultBlogId
             });
             
-            // Create sync activity
+            // Create appropriate sync activity based on status
+            const activityType = post.status === 'published' ? 'Published' : 'Scheduled';
+            const details = post.status === 'published' 
+              ? 'Successfully published to Shopify'
+              : `Successfully scheduled for publication on ${post.scheduledPublishDate} at ${post.scheduledPublishTime}`;
+            
             await storage.createSyncActivity({
-              activity: `Published "${post.title}"`,
+              activity: `${activityType} "${post.title}"`,
               status: "success",
-              details: `Successfully published to Shopify`
+              details: details
             });
             
             return res.json({ post: updatedPost });
           } catch (shopifyError: any) {
             // Log error but don't fail the request
-            console.error("Error publishing to Shopify:", shopifyError);
+            console.error("Error sending to Shopify:", shopifyError);
             
             // Create sync activity
+            const activityType = post.status === 'published' ? 'publishing' : 'scheduling';
             await storage.createSyncActivity({
-              activity: `Failed to publish "${post.title}"`,
+              activity: `Failed ${activityType} "${post.title}"`,
               status: "failed",
               details: shopifyError.message
             });
           }
+        } else {
+          console.log("No valid Shopify connection available for publishing/scheduling");
         }
       }
       
