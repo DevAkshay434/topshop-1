@@ -940,11 +940,32 @@ export class ShopifyService {
         }
       }
       
-      const page = {
+      // Prepare page data for Shopify API
+      const page: any = {
         title,
         body_html: processedContent, // Use processed content with direct image URLs
         published
       };
+      
+      // Add scheduling information if provided
+      if (scheduledAt) {
+        // For scheduled pages, we need to set published_at to the future date
+        // but keep published=false to prevent immediate publication
+        page.published_at = scheduledAt;
+        
+        if (new Date(scheduledAt) > new Date()) {
+          // If scheduled date is in future, ensure it's not published immediately
+          page.published = false;
+          console.log(`Page will be scheduled for: ${scheduledAt}, setting published=false`);
+        }
+      }
+      
+      // Log the page data being sent to Shopify
+      console.log(`Creating Shopify page "${title}" with data:`, {
+        published: page.published, 
+        published_at: page.published_at,
+        scheduledAt
+      });
       
       const response = await client.post('/pages.json', { page });
       return response.data.page;
@@ -1017,7 +1038,13 @@ export const getAllCollections = (store: ShopifyStore, limit?: number) => shopif
 
 // Page methods
 export const getPage = (store: ShopifyStore, pageId: string) => shopifyServiceInstance.getPage(store, pageId);
-export const createPage = (store: ShopifyStore, title: string, content: string, published?: boolean) => shopifyServiceInstance.createPage(store, title, content, published);
+export const createPage = (
+  store: ShopifyStore, 
+  title: string, 
+  content: string, 
+  published?: boolean,
+  scheduledAt?: string
+) => shopifyServiceInstance.createPage(store, title, content, published, scheduledAt);
 
 // Utility methods
 export const testConnection = (store: ShopifyStore) => shopifyServiceInstance.testConnection(store);

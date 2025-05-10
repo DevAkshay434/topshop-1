@@ -1300,11 +1300,36 @@ Place this at a logical position in the content, typically after introducing a c
       } else {
         // Create page in Shopify
         try {
+          // Determine if this is a scheduled post/page
+          const isScheduled = requestData.publicationType === "schedule" && 
+                             requestData.scheduleDate && 
+                             requestData.scheduleTime;
+          
+          let scheduledAt: string | undefined = undefined;
+          
+          // If scheduled, create proper date for scheduling
+          if (isScheduled) {
+            // Import timezone utilities
+            const { createDateInTimezone } = await import('../../shared/timezone');
+            
+            // Create a proper date object for scheduling
+            const scheduledDate = createDateInTimezone(
+              requestData.scheduleDate,
+              requestData.scheduleTime,
+              store.timezone || 'America/New_York'
+            );
+            
+            // Format for Shopify API
+            scheduledAt = scheduledDate.toISOString();
+            console.log(`Setting page scheduled publication date to: ${scheduledAt}`);
+          }
+          
           const page = await createPage(
             store,
             generatedContent.title || requestData.title,
             finalContent,
-            requestData.postStatus === 'publish'
+            requestData.postStatus === 'publish' && !isScheduled, // Only publish now if not scheduled
+            scheduledAt
           );
           
           contentId = page.id;
