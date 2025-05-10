@@ -816,18 +816,18 @@ ${productsInfo.length > 0 ? `Products: ${productsInfo.map(p => p.title).join(', 
 ${collectionsInfo.length > 0 ? `Collections: ${collectionsInfo.map(c => c.title).join(', ')}` : ''}
 Type: ${requestData.articleType === 'blog' ? 'Blog Post' : 'Shopify Page'}
 ${keywordInfo}
-Writing Perspective: ${requestData.writingPerspective.replace(/_/g, ' ')}
+Writing Perspective: ${requestData.writingPerspective ? requestData.writingPerspective.replace(/_/g, ' ') : 'first person plural'}
 Formatting Options:
 - Tables: ${requestData.enableTables ? 'Yes' : 'No'}
 - Lists: ${requestData.enableLists ? 'Yes' : 'No'}
 - H3 Headings: ${requestData.enableH3s ? 'Yes' : 'No'}
-- Intro Type: ${requestData.introType}
-- FAQ Type: ${requestData.faqType}
+- Intro Type: ${requestData.introType || 'search_intent'}
+- FAQ Type: ${requestData.faqType || 'short'}
 - Citations/Links: ${requestData.enableCitations ? 'Yes' : 'No'}
-Tone of Voice: ${requestData.toneOfVoice}
+Tone of Voice: ${requestData.toneOfVoice || 'friendly'}
 
 Instructions:
-1. Begin with a ${requestData.introType === 'search_intent' ? 'search intent-focused intro' : requestData.introType === 'standard' ? 'standard compelling intro' : 'direct entry into the topic'}.
+1. Begin with a ${requestData.introType ? (requestData.introType === 'search_intent' ? 'search intent-focused intro' : requestData.introType === 'standard' ? 'standard compelling intro' : 'direct entry into the topic') : 'search intent-focused intro'}.
 2. Each H2 section must:
    - Have a compelling heading
    - Include 2-4 natural, helpful paragraphs

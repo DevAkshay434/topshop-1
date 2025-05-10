@@ -1,0 +1,12 @@
+{
+  "articleType": "page",
+  "title": "Scheduled Page Test",
+  "content": "<p>This is a test page with scheduling.</p>",
+  "publicationType": "schedule",
+  "postStatus": "draft",
+  "scheduleDate": "2025-05-11",
+  "scheduleTime": "14:30",
+  "region": "us",
+  "toneOfVoice": "friendly",
+  "keywords": ["test"]
+}
