@@ -1181,8 +1181,8 @@ export async function registerRoutes(app: Express): Promise<void> {
             shopName: shop, // Using the shop domain as the shopName
             accessToken,
             scope: "read_products,write_products,read_content,write_content,read_themes,write_publications",
-            isConnected: true,
-            lastSynced: new Date()
+            isConnected: true
+            // lastSynced will be set by default
           });
           storeId = store.id;
           

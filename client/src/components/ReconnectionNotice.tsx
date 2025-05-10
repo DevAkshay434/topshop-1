@@ -22,7 +22,13 @@ export function ReconnectionNotice() {
       
       // Redirect to Shopify's OAuth flow
       if (data.success && data.authUrl) {
-        window.location.href = data.authUrl;
+        console.log('Opening Shopify auth URL:', data.authUrl);
+        // Open in new tab for more reliable OAuth flow
+        window.open(data.authUrl, '_blank');
+        // Also set a timeout to reset the button state
+        setTimeout(() => {
+          setIsReconnecting(false);
+        }, 2000);
       } else {
         console.error('Failed to get Shopify auth URL', data);
         setIsReconnecting(false);
