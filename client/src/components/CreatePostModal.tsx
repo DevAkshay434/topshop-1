@@ -327,17 +327,31 @@ export default function CreatePostModal({
       }
       
       // Set status and dates based on publication type
+      // Log the selected publication type for debugging
+      console.log(`Using publication type: ${values.publicationType}`, {
+        scheduleDate: values.scheduleDate,
+        scheduleTime: values.scheduleTime
+      });
+      
+      // Reset all publication-related fields first to avoid conflicts
+      postData.publishedDate = null;
+      postData.scheduledDate = null;
+      postData.scheduledPublishDate = null;
+      postData.scheduledPublishTime = null;
+      
       if (values.publicationType === "publish") {
+        // Publish immediately
         postData.status = "published";
+        postData.postStatus = "publish"; // Explicit flag for backend
+        
         // Make sure date is properly formatted as ISO string
         const currentDate = new Date();
         postData.publishedDate = currentDate;
-        // For publish, explicitly clear all scheduling fields
-        postData.scheduledDate = null;
-        postData.scheduledPublishDate = null;
-        postData.scheduledPublishTime = null;
+        
       } else if (values.publicationType === "schedule") {
+        // Schedule for later publication
         postData.status = "scheduled";
+        postData.postStatus = "schedule"; // Explicit flag for backend
         
         // Combine date and time for scheduled date
         if (values.scheduleDate && values.scheduleTime) {
