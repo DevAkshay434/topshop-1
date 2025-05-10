@@ -1106,6 +1106,15 @@ export class ShopifyService {
    * @param published Whether to publish the page
    * @returns The created Shopify page
    */
+  /**
+   * Create a page in Shopify
+   * @param store - The Shopify store
+   * @param title - The page title 
+   * @param content - The page content
+   * @param published - Whether to publish immediately (for scheduled content, this MUST be false)
+   * @param scheduledAt - ISO date string for scheduled publication (if scheduling)
+   * @returns The created page
+   */
   public async createPage(
     store: ShopifyStore, 
     title: string, 
