@@ -181,7 +181,6 @@ export default function CreatePostModal({
       scheduleTime: initialData?.scheduledDate 
         ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
         : "09:30",
-      status: initialData?.status || "draft",
       // Default values for new fields
       buyerProfile: initialData?.buyerProfile || "auto",
       articleLength: initialData?.articleLength || "medium",
@@ -245,7 +244,6 @@ export default function CreatePostModal({
         scheduleTime: initialData.scheduledDate 
           ? formatToTimezone(new Date(initialData.scheduledDate), storeTimezone, 'time') 
           : "09:30",
-        status: initialData.status || "draft",
       });
       
       // Set additional fields after reset
