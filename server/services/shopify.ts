@@ -382,9 +382,23 @@ export class ShopifyService {
       
       // Determine whether this is a scheduled post - check both publicationType and status
       // The frontend may use publicationType while the backend uses status
+      // Also check for existence of scheduledPublishDate and scheduledPublishTime fields
       const isScheduled = 
-        post.status === 'scheduled' || 
-        (post as any).publicationType === 'schedule';
+        (post.status === 'scheduled' && post.scheduledPublishDate && post.scheduledPublishTime) || 
+        ((post as any).publicationType === 'schedule' && post.scheduledPublishDate && post.scheduledPublishTime);
+      
+      // Add detailed logging about schedule detection
+      console.log("Schedule detection details:", {
+        postStatus: post.status,
+        isStatusScheduled: post.status === 'scheduled',
+        hasPublicationType: !!(post as any).publicationType,
+        publicationType: (post as any).publicationType,
+        hasScheduledDate: !!post.scheduledPublishDate,
+        scheduledDate: post.scheduledPublishDate,
+        hasScheduledTime: !!post.scheduledPublishTime,
+        scheduledTime: post.scheduledPublishTime,
+        isScheduled: isScheduled
+      });
       
       // Get the post status, with fallbacks for backward compatibility
       const postStatus = (post as any).postStatus || post.status;
