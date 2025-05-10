@@ -278,16 +278,25 @@ export class ShopifyService {
           
           console.log(`Parsed date components: Year=${year}, Month=${month}, Day=${day}, Hours=${hours}, Minutes=${minutes}`);
           
-          // Create a date object for the scheduled time
-          // Note: month is 0-indexed in JavaScript Date
-          const scheduledDate = new Date(year, month - 1, day, hours, minutes, 0);
+          // Create a date string in ISO format
+          // Shopify expects dates in ISO format
+          // Format: YYYY-MM-DDTHH:MM:SS+00:00 (or Z for UTC)
+          const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+          
+          // Create a date object from the ISO string
+          const scheduledDate = new Date(isoDateString);
           
           // Make sure the date is valid before using it
           if (!isNaN(scheduledDate.getTime())) {
+            // For Shopify scheduled posts, we need the exact ISO format
             publishedAt = scheduledDate.toISOString();
-            console.log(`Post will be published at: ${publishedAt} (local date: ${scheduledDate.toString()})`);
+            
+            console.log(`Post will be published at: ${publishedAt}`);
+            console.log(`ISO date string: ${isoDateString}`);
+            console.log(`Resulting local date: ${scheduledDate.toString()}`);
           } else {
             console.error(`Invalid scheduled date/time: ${post.scheduledPublishDate} ${post.scheduledPublishTime}`);
+            console.error(`Failed to parse ISO date: ${isoDateString}`);
             // For invalid scheduled dates, leave publishedAt as undefined
             // This will create a draft post in Shopify
           }

@@ -1071,7 +1071,7 @@ export default function CreatePostModal({
                   )}
                 </div>
                 
-                {form.watch("tags") && form.watch("tags").trim() && (
+                {form.watch("tags") && typeof form.watch("tags") === 'string' && form.watch("tags").trim() && (
                   <div className="mt-4">
                     <h3 className="text-sm font-medium text-muted-foreground mb-2">Tags:</h3>
                     <div className="flex flex-wrap gap-2">
@@ -1082,12 +1082,13 @@ export default function CreatePostModal({
                   </div>
                 )}
                 
-                {publicationType === "schedule" && (
+                {publicationType === "schedule" && form.watch("scheduleDate") && form.watch("scheduleTime") && (
                   <div className="mt-4 text-sm">
                     <Badge variant="outline" className="mt-2 flex items-center gap-1 w-fit">
                       <span>Will be published on:</span>
                       <span className="font-medium">
-                        {form.watch("scheduleDate")} at {form.watch("scheduleTime")} {storeInfo?.timezone_abbreviation || storeInfo?.iana_timezone || 'UTC'}
+                        {form.watch("scheduleDate")} at {form.watch("scheduleTime")} 
+                        {storeInfo ? ` (${storeInfo.timezone_abbreviation || storeInfo.iana_timezone || 'UTC'})` : ' (Store timezone)'}
                       </span>
                     </Badge>
                   </div>

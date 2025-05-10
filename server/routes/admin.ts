@@ -1228,12 +1228,36 @@ Place this at a logical position in the content, typically after introducing a c
                                ? requestData.categories.join(',') 
                                : categoryValue;
         
+        // Check if this is a scheduled post
+        const isScheduled = requestData.publicationType === "schedule" && 
+                          requestData.scheduleDate && 
+                          requestData.scheduleTime;
+
+        // Prepare post data with proper status
+        const postStatus = requestData.postStatus === 'publish' 
+                         ? 'published' 
+                         : isScheduled 
+                           ? 'scheduled' 
+                           : 'draft';
+
+        // Log post creation info
+        console.log(`Creating post with status: ${postStatus}`, {
+          title: generatedContent.title || requestData.title,
+          postStatus: requestData.postStatus,
+          publicationType: requestData.publicationType,
+          scheduleDate: requestData.scheduleDate,
+          scheduleTime: requestData.scheduleTime
+        });
+
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           title: generatedContent.title || requestData.title,
           content: finalContent,
-          status: requestData.postStatus === 'publish' ? 'published' : 'draft',
+          status: postStatus,
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
+          // Add scheduled date information if applicable
+          scheduledPublishDate: isScheduled ? requestData.scheduleDate : undefined,
+          scheduledPublishTime: isScheduled ? requestData.scheduleTime : undefined,
           author: connection.storeName.replace('.myshopify.com', ''),
           tags: generatedContent.tags?.join(',') || '',
           category: categoryValue,
@@ -1244,10 +1268,11 @@ Place this at a logical position in the content, typically after introducing a c
         
         contentId = post.id;
         
-        // If set to publish, create in Shopify too
-        if (requestData.postStatus === 'publish') {
-          console.log(`Publishing to Shopify blog ID: ${blogId}`);
+        // If set to publish or scheduled, create in Shopify too
+        if (requestData.postStatus === 'publish' || isScheduled) {
+          console.log(`Publishing to Shopify blog ID: ${blogId}${isScheduled ? ' (scheduled)' : ''}`);
           try {
+            // Pass the post to Shopify API - include the scheduled date if applicable
             const shopifyArticle = await createArticle(store, blogId, post);
             
             // Update the local post with Shopify IDs
