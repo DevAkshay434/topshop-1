@@ -748,12 +748,14 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       
       if (requestData.productIds && requestData.productIds.length > 0) {
         // For simplicity, we'll use the product search API
-        const allProducts = await getProducts(store, 100);
+        const allProducts = await shopifyService.getProducts(store, 100);
         productsInfo = allProducts.filter(p => requestData.productIds?.includes(p.id));
       }
       
       if (requestData.collectionIds && requestData.collectionIds.length > 0) {
-        const allCollections = await getAllCollections(store, 100);
+        const customCollections = await shopifyService.getCollections(store, 'custom', 100);
+        const smartCollections = await shopifyService.getCollections(store, 'smart', 100);
+        const allCollections = [...customCollections, ...smartCollections];
         collectionsInfo = allCollections.filter(c => requestData.collectionIds?.includes(c.id));
       }
       
@@ -1087,7 +1089,9 @@ Place this at a logical position in the content, typically after introducing a c
           // Fetch product information for the productIds
           try {
             console.log(`No product info available, trying to fetch details for products: ${requestData.productIds.join(', ')}`);
-            availableProducts = await shopifyService.getProductsById(store, requestData.productIds);
+            // Since getProductsById doesn't exist, we'll use getProducts and filter the results
+            const allProducts = await shopifyService.getProducts(store, 100);
+            availableProducts = allProducts.filter(p => requestData.productIds?.includes(p.id));
             console.log(`Successfully fetched ${availableProducts.length} products for interlinking`);
           } catch (productFetchError) {
             console.error("Failed to fetch product details for interlinking:", productFetchError);
@@ -1294,7 +1298,7 @@ Place this at a logical position in the content, typically after introducing a c
           console.log(`Publishing to Shopify blog ID: ${blogId}${isScheduled ? ' (scheduled)' : ''}`);
           try {
             // Pass the post to Shopify API - include the scheduled date if applicable
-            const shopifyArticle = await createArticle(store, blogId, post);
+            const shopifyArticle = await shopifyService.createArticle(store, blogId, post);
             
             // Update the local post with Shopify IDs
             await storage.updateBlogPost(post.id, {
@@ -1356,7 +1360,7 @@ Place this at a logical position in the content, typically after introducing a c
             
             // Create a proper date object for scheduling
             // Get shop info for timezone
-            const shopInfo = await getShopInfo(store);
+            const shopInfo = await shopifyService.getStore(store);
             const storeTimezone = shopInfo?.iana_timezone || 'America/New_York';
             
             console.log(`Using timezone: ${storeTimezone} for scheduling`);
@@ -1378,7 +1382,7 @@ Place this at a logical position in the content, typically after introducing a c
           
           console.log(`Creating page with publish setting: ${shouldPublishNow ? 'PUBLISH NOW' : isScheduled ? 'SCHEDULED' : 'DRAFT'}`);
           
-          const page = await createPage(
+          const page = await shopifyService.createPage(
             store,
             generatedContent.title || requestData.title,
             finalContent,
