@@ -438,27 +438,28 @@ export class ShopifyService {
         }
       }
       
-      // Determine whether this is a scheduled post - check both publicationType and status
-      // The frontend may use publicationType while the backend uses status
-      // Also check for existence of scheduledPublishDate and scheduledPublishTime fields
-      let shouldSchedulePublication: boolean | string = 
-        (post.status === 'scheduled' && post.scheduledPublishDate && post.scheduledPublishTime) || 
-        ((post as any).publicationType === 'schedule' && post.scheduledPublishDate && post.scheduledPublishTime);
+      // COMPLETE REWRITE OF SCHEDULING DETECTION
+      // We need to be explicit about scheduling to make the right API calls
       
-      // Preserve string values for compatibility - scheduledPublishTime could be passed directly
-      if (post.scheduledPublishTime && !shouldSchedulePublication) {
-        shouldSchedulePublication = post.scheduledPublishTime;
-      }
+      // Determine if post should be scheduled based on reliable indicators
+      let shouldSchedulePublication = false;
       
-      // IMPORTANT FIX: If we have valid scheduling information, force scheduling
-      // This ensures any post with scheduledPublishDate/Time will be properly scheduled
-      if (post.scheduledPublishDate && post.scheduledPublishTime) {
-        // Override with boolean true to ensure scheduling logic is triggered
-        if (typeof shouldSchedulePublication !== 'boolean') {
-          console.log(`Converting scheduling value ${shouldSchedulePublication} to boolean true`);
-        }
+      // First, check if post has all required scheduling information
+      const hasScheduleData = post.scheduledPublishDate && post.scheduledPublishTime;
+      
+      // Then check if status or publicationType indicates scheduling
+      const hasScheduleStatus = post.status === 'scheduled';
+      const hasSchedulePublicationType = (post as any).publicationType === 'schedule';
+      
+      // If we have the scheduling data AND either status or publicationType indicates scheduling
+      if (hasScheduleData && (hasScheduleStatus || hasSchedulePublicationType)) {
         shouldSchedulePublication = true;
-        console.log(`Forcing scheduled mode for post with future date`);
+        console.log(`Post will be scheduled: data + intent detected`);
+      }
+      // Fallback: If we have date/time data but no explicit schedule status
+      else if (hasScheduleData) {
+        shouldSchedulePublication = true;
+        console.log(`Post will be scheduled: scheduling data detected without explicit status`);
       }
       
       // Add detailed logging about schedule detection
@@ -576,8 +577,50 @@ export class ShopifyService {
         scheduledTime: post.scheduledPublishTime,
         tags: article.tags
       });
+      // CRITICAL FIX FOR SCHEDULING: We must ensure these fields are correctly set for Shopify API
+      // Reference: https://shopify.dev/docs/api/admin-rest/2023-10/resources/article#post-blogs-blog-id-articles
+      
+      if (shouldSchedulePublication && publishedAt) {
+        // For scheduled posts, we MUST have:
+        // 1. published: false
+        // 2. published_at: future date
+        article.published = false;
+        article.published_at = publishedAt;
+      } else if (post.status === 'draft') {
+        // For drafts, we MUST have:
+        // 1. published: false
+        // 2. published_at: null (or omitted)
+        article.published = false;
+        delete article.published_at;
+      } else if (post.status === 'published') {
+        // For immediate publication:
+        // 1. published: true
+        // 2. published_at can be now or specific time
+        article.published = true;
+      }
+      
+      // Final log of exact request data to verify
+      console.log(`FINAL REQUEST TO SHOPIFY API:`, {
+        url: `/blogs/${blogId}/articles.json`,
+        method: 'POST',
+        article: {
+          title: article.title,
+          published: article.published,
+          published_at: article.published_at,
+          tags: article.tags
+        }
+      });
+      
       const response = await client.post(`/blogs/${blogId}/articles.json`, {
         article
+      });
+      
+      console.log(`SHOPIFY API RESPONSE:`, {
+        id: response.data.article.id,
+        title: response.data.article.title,
+        published: response.data.article.published,
+        published_at: response.data.article.published_at,
+        created_at: response.data.article.created_at
       });
       
       console.log(`Successfully created Shopify article with ID: ${response.data.article.id}`);
