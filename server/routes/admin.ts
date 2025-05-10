@@ -1360,7 +1360,8 @@ Place this at a logical position in the content, typically after introducing a c
             
             // Create a proper date object for scheduling
             // Get shop info for timezone
-            const shopInfo = await shopifyService.getStore(store);
+            const shopifyServiceInstance = new shopifyService.ShopifyService();
+            const shopInfo = await shopifyServiceInstance.getShopInfo(store);
             const storeTimezone = shopInfo?.iana_timezone || 'America/New_York';
             
             console.log(`Using timezone: ${storeTimezone} for scheduling`);
@@ -1382,7 +1383,8 @@ Place this at a logical position in the content, typically after introducing a c
           
           console.log(`Creating page with publish setting: ${shouldPublishNow ? 'PUBLISH NOW' : isScheduled ? 'SCHEDULED' : 'DRAFT'}`);
           
-          const page = await shopifyService.createPage(
+          const shopifyServiceInstance = new shopifyService.ShopifyService();
+          const page = await shopifyServiceInstance.createPage(
             store,
             generatedContent.title || requestData.title,
             finalContent,
