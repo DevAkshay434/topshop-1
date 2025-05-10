@@ -49,7 +49,25 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Loader2, CheckCircle, XCircle, Sparkles, FileText, BarChart, Save, Download, Trash, Calendar, Clock, Copy, ExternalLink, Package, Plus, X } from 'lucide-react';
+import { 
+  BarChart, 
+  Calendar, 
+  CalendarCheck,
+  CheckCircle, 
+  Clock, 
+  Copy, 
+  Download, 
+  ExternalLink, 
+  FileText, 
+  Loader2, 
+  Package, 
+  Plus, 
+  Save, 
+  Sparkles, 
+  Trash, 
+  X, 
+  XCircle 
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1925,10 +1943,28 @@ export default function AdminPanel() {
                         name="postStatus"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Publish Status</FormLabel>
+                            <div className="flex items-center gap-2">
+                              <FormLabel>Publish Status</FormLabel>
+                              {form.getValues('scheduledPublishDate') && (
+                                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                                  <CalendarCheck className="h-3 w-3 mr-1" />
+                                  Scheduled
+                                </Badge>
+                              )}
+                            </div>
                             <Select 
-                              onValueChange={field.onChange} 
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                // Update publicationType to match the selected status
+                                form.setValue('publicationType', value === 'publish' ? 'publish' : 'draft');
+                                
+                                // If scheduling is active, ensure it takes precedence
+                                if (form.getValues('scheduledPublishDate')) {
+                                  form.setValue('publicationType', 'schedule');
+                                }
+                              }} 
                               defaultValue={field.value}
+                              disabled={!!form.getValues('scheduledPublishDate')}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -1990,9 +2026,15 @@ export default function AdminPanel() {
                           control={form.control}
                           name="scheduledPublishDate"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center gap-4 space-y-0 mt-2">
-                              <FormControl>
+                            <FormItem className="rounded-md border border-slate-200 p-4 mt-4">
+                              <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center">
+                                  <CalendarCheck className="h-5 w-5 text-blue-500 mr-2" />
+                                  <FormLabel className="text-lg font-medium">
+                                    Schedule for later
+                                  </FormLabel>
+                                </div>
+                                <FormControl>
                                   <Checkbox
                                     checked={!!field.value}
                                     onCheckedChange={(checked) => {
@@ -2002,21 +2044,23 @@ export default function AdminPanel() {
                                         tomorrow.setDate(tomorrow.getDate() + 1);
                                         tomorrow.setHours(9, 0, 0, 0);
                                         field.onChange(tomorrow.toISOString().split('T')[0]);
+                                        
+                                        // Also update the publicationType to indicate scheduling
+                                        form.setValue('publicationType', 'schedule');
                                       } else {
                                         field.onChange(undefined);
+                                        // Reset publicationType based on postStatus when scheduling is unchecked
+                                        const currentPostStatus = form.getValues('postStatus');
+                                        form.setValue('publicationType', 
+                                          currentPostStatus === 'publish' ? 'publish' : 'draft');
                                       }
                                     }}
                                   />
-                                  <div className="ml-2">
-                                    <FormLabel className="font-medium">
-                                      Schedule for later
-                                    </FormLabel>
-                                    <FormDescription>
-                                      Set a future date and time when this post should be published on your site
-                                    </FormDescription>
-                                  </div>
-                                </div>
-                              </FormControl>
+                                </FormControl>
+                              </div>
+                              <FormDescription className="mb-3">
+                                Set a future date and time when this post should be published automatically on your Shopify store
+                              </FormDescription>
                               
                               {field.value && (
                                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mt-2">
