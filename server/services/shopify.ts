@@ -476,13 +476,21 @@ export class ShopifyService {
         author: post.author || store.shopName,
         body_html: processedContent, // Use processed content with direct image URLs
         tags: post.tags || "",
-        // CRITICAL: Only mark as published if status is 'published' and not scheduled
-        // When scheduling, published MUST be false and published_at set to future date
-        published: post.status === 'published' && !shouldSchedulePublication,
+        // CRITICAL: For scheduling to work with Shopify API:
+        // 1. We MUST set published=false for scheduled content
+        // 2. published_at must be set to a future date
+        // 3. This applies to both scheduleDate/scheduleTime and scheduledPublishDate/scheduledPublishTime
+        published: false, // Always start with false for safety
         // Use published_at for both immediate publishing and scheduling future dates
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
+      
+      // Only set published=true if explicitly publishing immediately (not scheduling)
+      if (post.status === 'published' && !shouldSchedulePublication) {
+        console.log('Setting article to publish immediately (not scheduled)');
+        article.published = true;
+      }
       
       // For scheduled posts check the date is actually in the future
       if (shouldSchedulePublication && publishedAt) {
@@ -690,7 +698,12 @@ export class ShopifyService {
       });
       
       // Properly handle date formatting for Shopify API
+      // Start with published=false as the default for safety
+      article.published = false;
+      
+      // Now handle specific publish scenarios
       if (post.status === 'published' && !isScheduled) {
+        // Only set to true if explicitly publishing immediately (not scheduling)
         article.published = true;
         
         // Make sure the date is properly formatted as an ISO string
@@ -701,9 +714,10 @@ export class ShopifyService {
           publishedAt = new Date().toISOString();
         }
         article.published_at = publishedAt;
+        console.log(`Article will be published immediately with date: ${publishedAt}`);
       } else if (post.status === 'scheduled' || isScheduled) {
-        // Handle scheduled posts
-        article.published = false; // Must be false for scheduled posts
+        // Handle scheduled posts - must be false for scheduled posts
+        article.published = false; // CRITICAL: Must be false for scheduling to work
         
         // Set the publication date in the future
         if (post.scheduledPublishDate && post.scheduledPublishTime) {
