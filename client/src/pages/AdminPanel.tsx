@@ -2272,12 +2272,17 @@ export default function AdminPanel() {
                               <YouTubeEmbed />
                               <div dangerouslySetInnerHTML={{ 
                                 __html: content.substring(content.length / 3)
-                                  // Make sure all image URLs are absolute and not relative
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
                                   .replace(
                                     /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
                                     '<img$1src="https://$2"$3>'
                                   )
-                                  // Add styling to all images
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
                                   .replace(
                                     /<img([^>]*?)>/gi, 
                                     '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
