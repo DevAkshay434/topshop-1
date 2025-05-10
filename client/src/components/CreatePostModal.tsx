@@ -870,15 +870,10 @@ export default function CreatePostModal({
                         .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
                         .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
                         .replace(/<\/h3>([^\n<])/g, '</h3><br />$1')
-                        // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                        // Make sure all image URLs are absolute and not relative
                         .replace(
-                          /<img([^>]*?)src=["'"](?!http)([^"']+)["'"]([^>]*?)>/gi,
+                          /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
                           '<img$1src="https://$2"$3>'
-                        )
-                        // Fix image URLs that might be missing domain (starting with //)
-                        .replace(
-                          /<img([^>]*?)src=["'"](\/\/)([^"']+)["'"]([^>]*?)>/gi,
-                          '<img$1src="https://$3"$4>'
                         )
                         // Enhance image display with inline styles
                         .replace(
@@ -910,16 +905,11 @@ export default function CreatePostModal({
                     // For content with image tags without src (placeholders), handle them separately
                     if (hasEmbeddedImages && !hasImageWithSrc) {
                       // Remove img tags without proper src attributes
-                        // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                        .replace(
-                          /<img([^>]*?)src=["'"](?!http)([^"']+)["'"]([^>]*?)>/gi,
-                          '<img$1src="https://$2"$3>'
-                        )
-                        // Fix image URLs that might be missing domain (starting with //)
-                        .replace(
-                          /<img([^>]*?)src=["'"](\/\/)([^"']+)["'"]([^>]*?)>/gi,
-                          '<img$1src="https://$3"$4>'
-                        )
+                      let processedContent = cleanedContent
+                        .replace(/\n/g, '<br />')
+                        .replace(/<\/strong>([^\n<])/g, '</strong><br />$1')
+                        .replace(/<\/h2>([^\n<])/g, '</h2><br />$1')
+                        .replace(/<\/h3>([^\n<])/g, '</h3><br />$1')
                         // Make sure all image URLs are absolute and not relative
                         .replace(
                           /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
