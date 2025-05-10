@@ -384,7 +384,10 @@ export class ShopifyService {
       const isScheduled = post.status === 'scheduled';
       const postStatus = (post as any).postStatus || post.status;
       
-      console.log(`Preparing article with postStatus: ${postStatus} and status: ${post.status}`);
+      console.log(`Preparing article with postStatus: ${postStatus} and status: ${post.status}`, {
+        isScheduled,
+        publishedAt
+      });
       
       // Prepare article data for Shopify API
       const article = {
@@ -392,12 +395,19 @@ export class ShopifyService {
         author: post.author || store.shopName,
         body_html: processedContent, // Use processed content with direct image URLs
         tags: post.tags || "",
-        // Only mark as published if status is 'published' and not scheduled
+        // CRITICAL: Only mark as published if status is 'published' and not scheduled
+        // When scheduling, published MUST be false and published_at set to future date
         published: post.status === 'published' && !isScheduled,
         // Use published_at for both immediate publishing and scheduling future dates
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
+      
+      // Double check scheduling logic
+      if (isScheduled && publishedAt) {
+        console.log(`SCHEDULING POST - Setting published=false, published_at=${publishedAt}`);
+        article.published = false; // Must be false for scheduling to work properly
+      }
       
       // Log the article data being sent to Shopify
       console.log(`Creating Shopify article "${post.title}" in blog ${blogId} with data:`, {

@@ -353,8 +353,16 @@ export default function CreatePostModal({
         
       } else if (values.publicationType === "schedule") {
         // Schedule for later publication
-        postData.status = "scheduled";
-        postData.postStatus = "schedule"; // Explicit flag for backend
+        postData.status = "scheduled";  // This is for our local database
+        postData.postStatus = "draft";  // This prevents immediate publishing in Shopify
+        postData.publicationType = "schedule"; // Critical flag for backend to recognize scheduling
+        
+        console.log("📅 Preparing scheduled post:", {
+          publicationType: values.publicationType,
+          scheduleDate: values.scheduleDate,
+          scheduleTime: values.scheduleTime,
+          storeTimezone
+        });
         
         // Combine date and time for scheduled date
         if (values.scheduleDate && values.scheduleTime) {
@@ -365,7 +373,11 @@ export default function CreatePostModal({
             storeTimezone
           );
           
+          console.log(`Scheduled for publication at: ${scheduledDate.toISOString()} (${storeTimezone})`);
+          
           // For Shopify API integration - store date and time separately
+          postData.scheduleDate = values.scheduleDate;
+          postData.scheduleTime = values.scheduleTime;
           postData.scheduledPublishDate = values.scheduleDate;
           postData.scheduledPublishTime = values.scheduleTime;
           
@@ -788,7 +800,29 @@ export default function CreatePostModal({
                       <FormLabel>Publication Status</FormLabel>
                       <FormControl>
                         <RadioGroup
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            // When changing publication type, update form state
+                            field.onChange(value);
+                            
+                            // This ensures we don't have conflicting settings
+                            // For scheduling we need to make sure we're not publishing immediately
+                            if (value === "schedule") {
+                              // Scheduling flag handling through form values (safely ignore the type error)
+                              // @ts-ignore - This is a form field we're using for workflow control
+                              form.setValue("postStatus", "draft");
+                              console.log("Set to SCHEDULE mode - postStatus set to draft");
+                            } else if (value === "publish") {
+                              // For immediate publishing
+                              // @ts-ignore - This is a form field we're using for workflow control
+                              form.setValue("postStatus", "publish");
+                              console.log("Set to PUBLISH mode - postStatus set to publish");
+                            } else {
+                              // For drafts
+                              // @ts-ignore - This is a form field we're using for workflow control
+                              form.setValue("postStatus", "draft");
+                              console.log("Set to DRAFT mode - postStatus set to draft");
+                            }
+                          }}
                           defaultValue={field.value}
                           className="flex flex-col space-y-1"
                         >
@@ -1088,7 +1122,7 @@ export default function CreatePostModal({
                   )}
                 </div>
                 
-                {form.watch("tags") && typeof form.watch("tags") === 'string' && form.watch("tags").trim() && (
+                {form.watch("tags") && typeof form.watch("tags") === 'string' && form.watch("tags")?.trim() && (
                   <div className="mt-4">
                     <h3 className="text-sm font-medium text-muted-foreground mb-2">Tags:</h3>
                     <div className="flex flex-wrap gap-2">
