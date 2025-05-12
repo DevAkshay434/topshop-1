@@ -88,12 +88,12 @@ export default function EnhancedWorkflowDemo() {
   
   const selectedBlogId = blogsData?.blogs?.[0]?.id;
   
-  // Generate simple content function
-  const generateContent = async () => {
-    if (!topic) {
+  // Generate topic suggestions based on products and keywords
+  const generateTopicSuggestions = async () => {
+    if (selectedProducts.length === 0 && selectedKeywords.length === 0) {
       toast({
-        title: "Topic Required",
-        description: "Please enter a blog topic",
+        title: "Selection Required",
+        description: "Please select at least one product or enter keywords",
         variant: "destructive",
       });
       return;
@@ -102,39 +102,147 @@ export default function EnhancedWorkflowDemo() {
     setIsGenerating(true);
     
     try {
-      // In a real implementation this would call the API
-      // but for demo purposes we'll just create some content
-      const mockGeneratedContent = {
-        title: `${topic}: Complete Guide for 2025`,
-        content: `<h2>Introduction to ${topic}</h2>
-        <p>In this comprehensive guide to ${topic}, we'll explore everything you need to know about this fascinating subject. From basic concepts to advanced strategies, this guide has you covered.</p>
-        
-        <h2>Why ${topic} Matters in 2025</h2>
-        <p>As we move further into 2025, ${topic} continues to gain importance across multiple industries. Understanding the fundamental principles can give you a significant advantage.</p>
-        
-        <h2>Key Strategies for Success</h2>
-        <p>To succeed with ${topic}, you'll want to focus on these proven approaches:</p>
-        <ul>
-          <li>Research thoroughly before getting started</li>
-          <li>Implement best practices from day one</li>
-          <li>Continuously monitor and improve your results</li>
-          <li>Stay updated with the latest developments</li>
-        </ul>
-        
-        <h2>Common Challenges and Solutions</h2>
-        <p>While working with ${topic}, you might encounter several challenges. Here's how to address the most common ones effectively.</p>
-        
-        <h2>Conclusion</h2>
-        <p>By applying the knowledge from this guide, you'll be well-equipped to leverage ${topic} for your specific needs in 2025 and beyond.</p>`,
-        tags: topic.split(' ').concat(['guide', '2025', 'tutorial']),
-        category: "Guides"
-      };
+      // Get selected products data
+      const productsData = demoProducts.filter(product => 
+        selectedProducts.includes(product.id)
+      );
       
-      setGeneratedContent(mockGeneratedContent);
+      // Extract keywords from selected keywords
+      const keywordsList = selectedKeywords.map(k => k.keyword);
+      
+      // In a real app, this would call the Claude API for topic suggestions
+      // For demo, we'll generate them based on products and keywords
+      const mockTopics: string[] = [];
+      
+      if (productsData.length > 0) {
+        const mainProduct = productsData[0];
+        
+        // Add product-based topics
+        mockTopics.push(
+          `The Ultimate Guide to ${mainProduct.title}`,
+          `Top 10 Benefits of Using a ${mainProduct.title}`,
+          `How to Choose the Right ${mainProduct.title} for Your Home`,
+          `${mainProduct.title} vs Competitors: A Comprehensive Comparison`,
+          `Common Problems with ${mainProduct.title} and How to Fix Them`
+        );
+        
+        // Add product + keyword topics if keywords exist
+        if (keywordsList.length > 0) {
+          keywordsList.forEach(keyword => {
+            mockTopics.push(
+              `How ${mainProduct.title} Improves Your ${keyword}`,
+              `Why ${keyword} Matters When Choosing a ${mainProduct.title}`
+            );
+          });
+        }
+      } else if (keywordsList.length > 0) {
+        // Just keyword-based topics
+        keywordsList.forEach(keyword => {
+          mockTopics.push(
+            `The Complete Guide to ${keyword}`,
+            `Understanding ${keyword}: Benefits and Applications`,
+            `${keyword} 101: Everything You Need to Know`,
+            `How to Optimize Your ${keyword} Strategy`
+          );
+        });
+      }
+      
+      // Set the generated topics
+      setGeneratedTopics(mockTopics);
+      
       toast({
-        title: "Content Generated",
-        description: "Demo content has been created successfully",
+        title: "Topics Generated",
+        description: "Select a topic to continue",
       });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: (error as Error)?.message || "Failed to generate topics",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  // Add or remove a keyword from the selected keywords list
+  const toggleKeyword = (keyword: string) => {
+    const keywordObj = { keyword, score: 0.8 };
+    
+    if (selectedKeywords.some(k => k.keyword === keyword)) {
+      setSelectedKeywords(selectedKeywords.filter(k => k.keyword !== keyword));
+    } else {
+      setSelectedKeywords([...selectedKeywords, keywordObj]);
+    }
+  };
+  
+  // Add a custom keyword
+  const addCustomKeyword = () => {
+    if (!keywords.trim()) return;
+    
+    const newKeywords = keywords.split(',').map(k => k.trim()).filter(Boolean);
+    
+    const newKeywordObjects = newKeywords.map(keyword => ({
+      keyword,
+      score: 0.7
+    }));
+    
+    setSelectedKeywords([...selectedKeywords, ...newKeywordObjects]);
+    setKeywords('');
+  };
+  
+  // Generate content based on selected topic and content type
+  const generateContent = async () => {
+    if (!selectedTopic && !topic) {
+      toast({
+        title: "Topic Required",
+        description: "Please select or enter a topic",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const topicToUse = selectedTopic || topic;
+    
+    setIsGenerating(true);
+    
+    try {
+      if (contentType === "single") {
+        // This is a demo, so we'll create mock content
+        // In a real app, this would call an API
+        const mockGeneratedContent = {
+          id: "demo1",
+          title: topicToUse,
+          content: `<h2>Introduction to ${topicToUse}</h2>
+          <p>This comprehensive guide explores everything you need to know about ${topicToUse} in 2025, with a focus on the latest trends and best practices.</p>
+          
+          <h2>Key Factors to Consider</h2>
+          <p>When working with ${topicToUse}, keep these important factors in mind:</p>
+          <ul>
+            <li>Start with a clear strategy</li>
+            <li>Focus on measurable outcomes</li>
+            <li>Always consider the user experience</li>
+            <li>Stay updated with the latest developments</li>
+          </ul>
+          
+          <h2>Common Challenges and Solutions</h2>
+          <p>While working with ${topicToUse}, you might encounter several challenges. Here's how to address the most common ones effectively.</p>
+          
+          <h2>Conclusion</h2>
+          <p>By applying the knowledge from this guide, you'll be well-equipped to leverage ${topicToUse} for your specific needs in 2025 and beyond.</p>`,
+          tags: topicToUse.split(' ').concat(selectedKeywords.map(k => k.keyword)),
+          category: "Guides"
+        };
+        
+        setGeneratedContent(mockGeneratedContent);
+        toast({
+          title: "Content Generated",
+          description: "Demo content has been created successfully",
+        });
+      } else {
+        // For cluster generation, use the existing cluster generation logic
+        generateCluster();
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -145,7 +253,7 @@ export default function EnhancedWorkflowDemo() {
       setIsGenerating(false);
     }
   };
-  
+
   // Generate a content cluster
   const generateCluster = async () => {
     if (!topic) {
