@@ -248,9 +248,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         trialEndsAt: null
       };
       
-      // Get shop info with timezone
-      const shopifyServiceInstance = new shopifyService.ShopifyService();
-      const shopInfo = await shopifyServiceInstance.getShopInfo(store);
+      // Get shop info with timezone directly from the shopifyService singleton
+      const shopInfo = await shopifyService.getShopInfo(store);
       
       res.json({
         success: true,
