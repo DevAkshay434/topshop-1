@@ -26,6 +26,89 @@ adminRouter.get("/regions", async (_req: Request, res: Response) => {
   res.json({ regions });
 });
 
+// Check scheduled post status in Shopify
+adminRouter.get("/check-scheduled-post/:articleId", async (req: Request, res: Response) => {
+  try {
+    const { articleId } = req.params;
+    if (!articleId) {
+      return res.status(400).json({
+        success: false,
+        message: "Article ID is required"
+      });
+    }
+    
+    // Get the store
+    const stores = await storage.getShopifyStores();
+    if (!stores || stores.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No Shopify stores found"
+      });
+    }
+    
+    // Use the first store
+    const store: ShopifyStore = stores[0];
+    
+    // Get all blogs to find the one containing our article
+    const blogs = await shopifyService.getBlogs(store);
+    
+    // Initialize result variable
+    let articleData = null;
+    
+    // Search for the article in each blog
+    for (const blog of blogs) {
+      try {
+        const articles = await shopifyService.getArticles(store, blog.id);
+        console.log(`Checking ${articles.length} articles in blog ${blog.id} for ID ${articleId}`);
+        
+        // Debug first few articles
+        if (articles.length > 0) {
+          console.log("First article ID:", articles[0].id, "Type:", typeof articles[0].id);
+        }
+        
+        // Convert to string for comparison since IDs might be coming as numbers
+        const foundArticle = articles.find(article => String(article.id) === String(articleId));
+        
+        if (foundArticle) {
+          console.log("Found article:", foundArticle.title);
+          articleData = {
+            ...foundArticle,
+            blogId: blog.id
+          };
+          break;
+        }
+      } catch (error) {
+        console.error(`Error fetching articles for blog ${blog.id}:`, error);
+      }
+    }
+    
+    if (!articleData) {
+      return res.status(404).json({
+        success: false,
+        message: "Article not found in any blog"
+      });
+    }
+    
+    // Return the result with scheduling status
+    return res.json({
+      success: true,
+      article: articleData,
+      schedulingStatus: {
+        isScheduled: articleData.published_at && new Date(articleData.published_at) > new Date(),
+        publishDate: articleData.published_at,
+        currentStatus: articleData.published ? "published" : "draft" // If not published but has future date, it's scheduled
+      }
+    });
+  } catch (error) {
+    console.error("Error checking scheduled post:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to check scheduled post status",
+      error: String(error)
+    });
+  }
+});
+
 // Get products from Shopify
 adminRouter.get("/products", async (req: Request, res: Response) => {
   try {
