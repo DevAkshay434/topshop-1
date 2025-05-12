@@ -143,6 +143,7 @@ export default function OpenAIWorkflow() {
   const [enableBolding, setEnableBolding] = useState<boolean>(true);
   const [enableExternalLinks, setEnableExternalLinks] = useState<boolean>(true);
   const [includeYouTube, setIncludeYouTube] = useState<boolean>(false);
+  const [youtubeUrl, setYoutubeUrl] = useState<string>("");
   const [includeTOC, setIncludeTOC] = useState<boolean>(true);
   const [authorInfo, setAuthorInfo] = useState<string | null>(null);
   const [buyerProfileText, setBuyerProfileText] = useState<string>('');
@@ -721,7 +722,15 @@ export default function OpenAIWorkflow() {
           enableTables,
           enableLists,
           enableH1,
-          enableCitations
+          enableBolding,
+          enableCitations,
+          enableExternalLinks,
+          includeYouTube,
+          youtubeUrl: includeYouTube ? youtubeUrl : '',
+          includeTOC,
+          authorInfo,
+          numH2s,
+          articleLength
         },
         images: selectedImages.map(img => ({
           url: img.url || img.src?.medium,
@@ -1816,13 +1825,31 @@ export default function OpenAIWorkflow() {
                     <Label htmlFor="enableExternalLinks">Include External Links (.gov, .edu, Wikipedia)</Label>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="includeYouTube" 
-                      checked={includeYouTube}
-                      onCheckedChange={val => setIncludeYouTube(!!val)}
-                    />
-                    <Label htmlFor="includeYouTube">Include YouTube Videos</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="includeYouTube" 
+                        checked={includeYouTube}
+                        onCheckedChange={val => setIncludeYouTube(!!val)}
+                      />
+                      <Label htmlFor="includeYouTube">Include YouTube Videos</Label>
+                    </div>
+                    
+                    {includeYouTube && (
+                      <div className="pl-6 mt-2">
+                        <Label htmlFor="youtubeUrl" className="mb-1 block text-sm">YouTube Video URL or Embed Code</Label>
+                        <Input
+                          id="youtubeUrl"
+                          placeholder="https://www.youtube.com/watch?v=VIDEO_ID or <iframe> code"
+                          value={youtubeUrl}
+                          onChange={(e) => setYoutubeUrl(e.target.value)}
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Paste a YouTube video URL or embed iframe code to include in your content
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center space-x-2">
