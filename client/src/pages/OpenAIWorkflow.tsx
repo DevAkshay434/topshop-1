@@ -130,6 +130,17 @@ export default function OpenAIWorkflow() {
   const [enableLists, setEnableLists] = useState<boolean>(true);
   const [enableH1, setEnableH1] = useState<boolean>(true);
   const [enableCitations, setEnableCitations] = useState<boolean>(true);
+  
+  // Advanced content settings
+  const [contentType, setContentType] = useState<'blog' | 'page'>('blog');
+  const [numH2s, setNumH2s] = useState<number>(5);
+  const [articleLength, setArticleLength] = useState<string>("medium");
+  const [enableBolding, setEnableBolding] = useState<boolean>(true);
+  const [enableExternalLinks, setEnableExternalLinks] = useState<boolean>(true);
+  const [includeYouTube, setIncludeYouTube] = useState<boolean>(false);
+  const [includeTOC, setIncludeTOC] = useState<boolean>(false);
+  const [authorInfo, setAuthorInfo] = useState<string | null>(null);
+  const [buyerProfileText, setBuyerProfileText] = useState<string>('');
 
   // Loading states
   const [isLoadingKeywords, setIsLoadingKeywords] = useState(false);
@@ -1455,6 +1466,26 @@ export default function OpenAIWorkflow() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-4">Content Type</h3>
+            <div className="flex space-x-2">
+              <Button 
+                variant={contentType === 'blog' ? "default" : "outline"}
+                onClick={() => setContentType('blog')}
+                className="flex-1"
+              >
+                Blog Post
+              </Button>
+              <Button 
+                variant={contentType === 'page' ? "default" : "outline"}
+                onClick={() => setContentType('page')}
+                className="flex-1"
+              >
+                Page
+              </Button>
+            </div>
+          </div>
+          
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-6">
               <div>
@@ -1471,9 +1502,11 @@ export default function OpenAIWorkflow() {
                         <SelectValue placeholder="Choose writing perspective" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="first-person">First Person (I, We)</SelectItem>
-                        <SelectItem value="second-person">Second Person (You)</SelectItem>
-                        <SelectItem value="third-person">Third Person (They, It)</SelectItem>
+                        <SelectItem value="we">We</SelectItem>
+                        <SelectItem value="i">I</SelectItem>
+                        <SelectItem value="you">You</SelectItem>
+                        <SelectItem value="they">They</SelectItem>
+                        <SelectItem value="professional">Professional</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1488,10 +1521,14 @@ export default function OpenAIWorkflow() {
                         <SelectValue placeholder="Choose tone of voice" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="friendly">Friendly & Conversational</SelectItem>
-                        <SelectItem value="professional">Professional & Formal</SelectItem>
-                        <SelectItem value="authoritative">Authoritative & Expert</SelectItem>
-                        <SelectItem value="enthusiastic">Enthusiastic & Energetic</SelectItem>
+                        <SelectItem value="friendly">Friendly (Default)</SelectItem>
+                        <SelectItem value="neutral">Neutral</SelectItem>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="empathic">Empathic</SelectItem>
+                        <SelectItem value="casual">Casual</SelectItem>
+                        <SelectItem value="excited">Excited</SelectItem>
+                        <SelectItem value="formal">Formal</SelectItem>
+                        <SelectItem value="humorous">Humorous</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1506,10 +1543,9 @@ export default function OpenAIWorkflow() {
                         <SelectValue placeholder="Choose introduction style" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="search-intent-focused">Search Intent Focused</SelectItem>
-                        <SelectItem value="problem-solution">Problem-Solution</SelectItem>
-                        <SelectItem value="story-based">Story-Based</SelectItem>
-                        <SelectItem value="statistical">Statistical/Data-Driven</SelectItem>
+                        <SelectItem value="search-intent-focused">Search Intent Focused (Default)</SelectItem>
+                        <SelectItem value="standard">Standard Introduction</SelectItem>
+                        <SelectItem value="none">No Introduction</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1524,9 +1560,9 @@ export default function OpenAIWorkflow() {
                         <SelectValue placeholder="Choose FAQ style" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="short">Short & Concise</SelectItem>
-                        <SelectItem value="detailed">Detailed & Comprehensive</SelectItem>
-                        <SelectItem value="none">No FAQs</SelectItem>
+                        <SelectItem value="short">Short FAQ (3-5 Questions)</SelectItem>
+                        <SelectItem value="long">Long FAQ (5-7 Questions)</SelectItem>
+                        <SelectItem value="none">No FAQ</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
