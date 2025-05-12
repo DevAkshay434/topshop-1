@@ -27,6 +27,8 @@ interface PexelsImage {
   isProductImage?: boolean;
   productId?: string;
   source?: 'pexels' | 'pixabay' | 'product';
+  isFeatured?: boolean; 
+  isContentImage?: boolean;
 }
 
 interface SearchHistory {
@@ -242,7 +244,11 @@ export default function ImageSearchDialog({
   // Handle image selection confirmation
   const confirmImageSelection = () => {
     // Make sure featured image is first in the array
-    let orderedImages = [...selectedImages];
+    let orderedImages = [...selectedImages].map(img => ({
+      ...img,
+      isFeatured: img.id === featuredImageId,
+      isContentImage: contentImageIds.includes(img.id)
+    }));
     
     if (featuredImageId && orderedImages.length > 0) {
       // Remove featured image from array if it exists
@@ -278,6 +284,32 @@ export default function ImageSearchDialog({
     toast({
       title: "Featured image set",
       description: "This will be the main image for your content",
+      variant: "default"
+    });
+  };
+  
+  // Toggle image as content image (for product linking)
+  const toggleContentImage = (imageId: string) => {
+    // Make sure image is selected first
+    const isSelected = selectedImages.some(img => img.id === imageId);
+    if (!isSelected) {
+      toggleImageSelection(imageId);
+    }
+    
+    // Toggle content image status
+    setContentImageIds(prev => {
+      if (prev.includes(imageId)) {
+        return prev.filter(id => id !== imageId);
+      } else {
+        return [...prev, imageId];
+      }
+    });
+    
+    toast({
+      title: contentImageIds.includes(imageId) ? "Removed from content" : "Added to content",
+      description: contentImageIds.includes(imageId) 
+        ? "This image will no longer be linked with products in the content" 
+        : "This image will be linked with selected products in the content",
       variant: "default"
     });
   };
@@ -518,6 +550,15 @@ export default function ImageSearchDialog({
                             </div>
                           )}
                           
+                          {/* Content image badge */}
+                          {contentImageIds.includes(image.id) && featuredImageId !== image.id && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                                Content
+                              </span>
+                            </div>
+                          )}
+                          
                           {/* Selection indicator */}
                           {image.selected && (
                             <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
@@ -527,19 +568,30 @@ export default function ImageSearchDialog({
                             </div>
                           )}
                           
-                          {/* Featured button */}
+                          {/* Image actions */}
                           {image.selected && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-center">
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-between gap-1">
                               <Button
                                 variant={featuredImageId === image.id ? "default" : "secondary"}
                                 size="sm"
-                                className="h-7 text-xs w-full"
+                                className="h-7 text-xs flex-1"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setAsFeaturedImage(image.id);
                                 }}
                               >
-                                {featuredImageId === image.id ? "Featured" : "Set as Featured"}
+                                {featuredImageId === image.id ? "Featured" : "Set Featured"}
+                              </Button>
+                              <Button
+                                variant={contentImageIds.includes(image.id) ? "default" : "secondary"}
+                                size="sm"
+                                className="h-7 text-xs flex-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleContentImage(image.id);
+                                }}
+                              >
+                                {contentImageIds.includes(image.id) ? "In Content" : "Add to Content"}
                               </Button>
                             </div>
                           )}
