@@ -294,7 +294,7 @@ export default function OpenAIWorkflow() {
         setKeywordsList(formattedKeywords);
         
         // Move to the next step
-        setCurrentStep(2);
+        setCurrentStep(3);
         
       } else {
         throw new Error(response.message || "Failed to generate keywords");
@@ -437,7 +437,7 @@ export default function OpenAIWorkflow() {
       setFeaturedKeyword(mockKeywords[0].keyword);
       setMainKeywords(mockKeywords.slice(0, 3).map(k => k.keyword));
       setKeywordsList(mockKeywords);
-      setCurrentStep(2);
+      setCurrentStep(3);
     } finally {
       setIsLoadingKeywords(false);
     }
