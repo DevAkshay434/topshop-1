@@ -22,8 +22,32 @@ export function SchedulingPermissionNotice({ storeName }: SchedulingPermissionNo
       const data = await response.json();
       
       if (data.success && data.authUrl) {
-        // Redirect to Shopify auth URL
-        window.location.href = data.authUrl;
+        // Display manual instructions if we detect localhost in the URL
+        if (data.authUrl.includes('localhost')) {
+          // Extract the shop and client_id from the URL
+          const url = new URL(data.authUrl);
+          const shop = url.hostname; 
+          const clientId = url.searchParams.get('client_id');
+          
+          // Create a direct URL without the callback and state parameters
+          const directUrl = `https://${shop}/admin/oauth/authorize?client_id=${clientId}&scope=read_products,write_products,read_content,write_content,read_themes,write_publications`;
+          
+          // Copy to clipboard if available
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(directUrl)
+              .then(() => {
+                setError('Authorization URL copied to clipboard. Please open it in a new tab to grant permissions.');
+              })
+              .catch(() => {
+                setError(`Please open this URL in your browser: ${directUrl}`);
+              });
+          } else {
+            setError(`Please open this URL in your browser: ${directUrl}`);
+          }
+        } else {
+          // Normal redirect for production environments
+          window.location.href = data.authUrl;
+        }
       } else {
         setError('Could not generate reconnection URL. Please try again.');
       }
