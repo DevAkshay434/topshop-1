@@ -89,15 +89,17 @@ adminRouter.get("/check-scheduled-post/:articleId", async (req: Request, res: Re
       });
     }
     
-    // Return the result with scheduling status
+    // Add a note about the scheduling discrepancy
     return res.json({
       success: true,
       article: articleData,
       schedulingStatus: {
         isScheduled: articleData.published_at && new Date(articleData.published_at) > new Date(),
         publishDate: articleData.published_at,
-        currentStatus: articleData.published ? "published" : "draft" // If not published but has future date, it's scheduled
-      }
+        currentStatus: articleData.published ? "published" : "draft", // If not published but has future date, it's scheduled
+        note: "The Shopify API returns the current date in published_at even for scheduled posts. Check the actual post in Shopify Admin to confirm scheduling."
+      },
+      verificationUrl: `https://${store.shopName}/admin/blogs/${articleData.blog_id}/articles/${articleData.id}`
     });
   } catch (error) {
     console.error("Error checking scheduled post:", error);
