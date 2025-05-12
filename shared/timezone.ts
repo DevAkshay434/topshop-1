@@ -15,24 +15,14 @@ export function createDateInTimezone(
   timeString: string, 
   timezone: string = 'UTC'
 ): Date {
-  // Log input parameters
   console.log(`Creating date in timezone: ${timezone} with date: ${dateString} and time: ${timeString}`);
   
-  // Parse the date and time components
-  const [year, month, day] = dateString.split('-').map(Number);
-  const [hour, minute] = timeString.split(':').map(Number);
-  
-  console.log(`Parsed components: year=${year}, month=${month}, day=${day}, hour=${hour}, minute=${minute}`);
-  
   try {
-    // Create an ISO 8601 string that can be parsed to a Date
-    // This format works universally across browsers: YYYY-MM-DDTHH:MM:SS
-    // We manually zero-pad single-digit months/days/hours/minutes
-    const isoDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
-    console.log(`ISO date string: ${isoDateString}`);
+    // Parse the date and time components
+    const [year, month, day] = dateString.split('-').map(Number);
+    const [hour, minute] = timeString.split(':').map(Number);
     
-    // Create a Date object from the ISO string - but we need to consider the timezone
-    const localDate = new Date(isoDateString);
+    console.log(`Parsed components: year=${year}, month=${month}, day=${day}, hour=${hour}, minute=${minute}`);
     
     // If timezone contains a prefix like (GMT-05:00), extract just the IANA part
     let cleanTimezone = timezone;
@@ -45,53 +35,37 @@ export function createDateInTimezone(
       }
     }
     
-    // Convert to target timezone by calculating the offset
-    try {
-      // Use Intl.DateTimeFormat to get proper timezone information
-      const formatOptions: Intl.DateTimeFormatOptions = {
-        timeZone: cleanTimezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      };
-      
-      const formatter = new Intl.DateTimeFormat('en-US', formatOptions);
-      console.log(`Date in ${cleanTimezone}: ${formatter.format(localDate)}`);
-      
-      // Format the date with timezone info for Shopify API
-      // This is necessary for scheduled posts to work correctly
-      
-      // First, create a date string that represents the exact date+time in the target timezone
-      // We'll use the UTC methods to ensure consistent behavior across environments
-      // The ISO string will properly convert to the correct UTC timestamp needed by Shopify
-      
-      // This approach ensures the date is scheduled for the exact time in the target store's timezone
-      const dateObj = new Date(Date.UTC(
-        year,
-        month - 1, // JavaScript months are 0-indexed
-        day,
-        hour,
-        minute,
-        0 // Seconds
-      ));
-      
-      console.log(`Date converted to UTC: ${dateObj.toISOString()}`);
-      // Note: Shopify expects the date in ISO format, which is what toISOString() provides
-      
-      return dateObj;
-    } catch (formatError) {
-      console.warn(`Error handling timezone ${cleanTimezone}:`, formatError);
-      // Fallback to simpler approach if timezone handling fails
-      return localDate;
+    // IMPORTANT: For scheduling to work in Shopify, we need to create a date in the future
+    // We'll just set it directly to the provided date components in UTC
+    // This forces Shopify to treat it as a future date for scheduling
+    const futureDate = new Date(Date.UTC(
+      year,
+      month - 1,  // JS months are 0-indexed
+      day,
+      hour,
+      minute,
+      0
+    ));
+    
+    console.log(`Created future date in UTC: ${futureDate.toISOString()}`);
+    
+    // Check if the date is truly in the future
+    const now = new Date();
+    if (futureDate <= now) {
+      console.warn(`Created date is not in the future. Now: ${now.toISOString()}, Created: ${futureDate.toISOString()}`);
+      // Force it to be at least 1 hour in the future
+      const safeDate = new Date();
+      safeDate.setHours(safeDate.getHours() + 1);
+      console.log(`Adjusting to safe future date: ${safeDate.toISOString()}`);
+      return safeDate;
     }
+    
+    return futureDate;
   } catch (error) {
-    console.error(`Error creating date in timezone ${timezone}:`, error);
-    // Fallback to a simpler approach
-    const fallbackDate = new Date(year, month - 1, day, hour, minute, 0);
+    console.error(`Error creating date:`, error);
+    // Fallback to a date 1 hour in the future
+    const fallbackDate = new Date();
+    fallbackDate.setHours(fallbackDate.getHours() + 1);
     console.log(`Using fallback date: ${fallbackDate.toISOString()}`);
     return fallbackDate;
   }
