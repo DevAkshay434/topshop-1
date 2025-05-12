@@ -1748,7 +1748,7 @@ export default function OpenAIWorkflow() {
                         <SelectValue placeholder="Choose author" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Author</SelectItem>
+                        <SelectItem value="none">No Author</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="editor">Editor</SelectItem>
                         <SelectItem value="expert">Water Expert</SelectItem>
