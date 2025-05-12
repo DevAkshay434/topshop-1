@@ -34,11 +34,22 @@ export function createDateInTimezone(
     // Create a Date object from the ISO string - but we need to consider the timezone
     const localDate = new Date(isoDateString);
     
+    // If timezone contains a prefix like (GMT-05:00), extract just the IANA part
+    let cleanTimezone = timezone;
+    if (timezone.includes(' ')) {
+      // Extract just the IANA part after the space
+      const parts = timezone.split(' ');
+      if (parts.length > 1) {
+        cleanTimezone = parts[parts.length - 1];
+        console.log(`Extracted clean timezone: ${cleanTimezone} from ${timezone}`);
+      }
+    }
+    
     // Convert to target timezone by calculating the offset
     try {
       // Use Intl.DateTimeFormat to get proper timezone information
       const formatOptions: Intl.DateTimeFormatOptions = {
-        timeZone: timezone,
+        timeZone: cleanTimezone,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -49,7 +60,7 @@ export function createDateInTimezone(
       };
       
       const formatter = new Intl.DateTimeFormat('en-US', formatOptions);
-      console.log(`Date in ${timezone}: ${formatter.format(localDate)}`);
+      console.log(`Date in ${cleanTimezone}: ${formatter.format(localDate)}`);
       
       // Format the date with timezone info for Shopify API
       // This is necessary for scheduled posts to work correctly
@@ -73,7 +84,7 @@ export function createDateInTimezone(
       
       return dateObj;
     } catch (formatError) {
-      console.warn(`Error handling timezone ${timezone}:`, formatError);
+      console.warn(`Error handling timezone ${cleanTimezone}:`, formatError);
       // Fallback to simpler approach if timezone handling fails
       return localDate;
     }

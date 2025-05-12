@@ -19,6 +19,7 @@ interface ShopifyBlogPost {
   tags?: string | null;
   category?: string | null;
   categories?: string | null;
+  publicationType?: string | null;
 }
 
 interface ShopifyBlog {
@@ -297,37 +298,48 @@ export class ShopifyService {
         publishedAt = new Date().toISOString();
       }
       
+      // Handle scheduled posts specifically
+      const isScheduledPublishing = (post.status === 'scheduled' || isScheduled || 
+        ((post as any).publicationType === 'schedule'));
+      
+      // Calculate the future publish date (if scheduled)
+      let futurePublishDate: Date | null = null;
+      
+      if (isScheduledPublishing && publishedAt) {
+        try {
+          futurePublishDate = new Date(publishedAt);
+          console.log(`Parsed scheduled date: ${futurePublishDate.toISOString()}`);
+        } catch (e) {
+          console.error('Failed to parse scheduled date:', e);
+        }
+      } else if (publishDate) {
+        futurePublishDate = publishDate;
+        console.log(`Using explicit publish date: ${futurePublishDate.toISOString()}`);
+      }
+      
       // Create the article object
       const article: any = {
         title: post.title,
         author: post.author || store.shopName,
         body_html: processedContent,
         tags: post.tags || "",
-        // Default - only publish immediately if explicitly set to publish and not scheduled
-        published: post.status === 'published' && !isScheduled && !publishDate,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
-      // If explicit publishDate is provided or scheduling info exists in post,
-      // set published_at for scheduled publishing
-      if (publishDate) {
-        // Explicit publishDate takes precedence (like from API call)
-        console.log(`Using explicit publishDate for scheduling: ${publishDate.toISOString()}`);
-        
-        // CRITICAL: Ensure published is false for scheduling to work
+      // For scheduled posts: 
+      // 1. Always set published=false to prevent immediate publishing
+      // 2. Use published_at to specify when the post should be published
+      if (isScheduledPublishing && futurePublishDate) {
+        console.log(`Setting up scheduled publishing for: ${futurePublishDate.toISOString()}`);
         article.published = false;
-        article.published_at = publishDate.toISOString();
-        
-      } else if (isScheduled && publishedAt) {
-        // Use the publishedAt calculated from post's scheduling fields
-        console.log(`Using post's scheduledPublishDate/Time for scheduling: ${publishedAt}`);
-        
-        // CRITICAL: Ensure published is false for scheduling to work
-        article.published = false;
-        article.published_at = publishedAt;
+        article.published_at = futurePublishDate.toISOString();
       } else if (post.status === 'published') {
-        // For immediate publishing, set published_at to now
+        // For immediate publishing
+        article.published = true;
         article.published_at = new Date().toISOString();
+      } else {
+        // For drafts
+        article.published = false;
       }
       
       // Log the scheduling configuration
