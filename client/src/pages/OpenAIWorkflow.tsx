@@ -132,6 +132,10 @@ export default function OpenAIWorkflow() {
   const [enableH1, setEnableH1] = useState<boolean>(true);
   const [enableCitations, setEnableCitations] = useState<boolean>(true);
   
+  // Content creation mode and blog selection
+  const [contentMode, setContentMode] = useState<'cluster' | 'single'>('cluster');
+  const [selectedBlog, setSelectedBlog] = useState<string | null>(null);
+  
   // Advanced content settings
   const [contentType, setContentType] = useState<'blog' | 'page'>('blog');
   const [numH2s, setNumH2s] = useState<number>(5);
@@ -158,14 +162,14 @@ export default function OpenAIWorkflow() {
     queryKey: ['/api/admin/collections'],
   });
   
+  // Get store blogs
+  const { data: blogsData, isLoading: isLoadingBlogs } = useQuery<any>({
+    queryKey: ['/api/admin/blogs'],
+  });
+  
   // Get permissions
   const { data: permissionsData } = useQuery<any>({
     queryKey: ['/api/shopify/check-permissions'],
-  });
-  
-  // Get blogs
-  const { data: blogsData } = useQuery<any>({
-    queryKey: ['/api/admin/blogs'],
   });
   
   // Extract data from queries
@@ -919,6 +923,81 @@ export default function OpenAIWorkflow() {
     }
   };
   
+  // Render content mode selection step
+  const renderContentModeSelection = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <BookOpen className="mr-2 h-5 w-5" />
+            Step 1: Choose Content Creation Mode
+          </CardTitle>
+          <CardDescription>
+            Select whether to create a content cluster or a single post
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Card 
+                className={`cursor-pointer hover:border-primary transition-colors ${contentMode === 'cluster' ? 'border-primary bg-primary/5' : 'border'}`} 
+                onClick={() => setContentMode('cluster')}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Content Cluster</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">Create multiple related articles optimized for SEO performance.</p>
+                </CardContent>
+              </Card>
+              
+              <Card 
+                className={`cursor-pointer hover:border-primary transition-colors ${contentMode === 'single' ? 'border-primary bg-primary/5' : 'border'}`}
+                onClick={() => setContentMode('single')}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Single Post</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">Create a single blog post or page with targeted keywords.</p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {contentType === 'blog' && (
+              <div className="space-y-3">
+                <Label>Select Blog</Label>
+                <Select 
+                  value={selectedBlog || ""} 
+                  onValueChange={setSelectedBlog}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a blog" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {blogsData?.blogs?.map((blog: any) => (
+                      <SelectItem key={blog.id} value={blog.id.toString()}>
+                        {blog.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            onClick={() => setCurrentStep(2)} 
+            disabled={contentType === 'blog' && !selectedBlog}
+          >
+            Continue
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  };
+
   // Render product selection step
   const renderProductSelection = () => {
     return (
@@ -926,10 +1005,10 @@ export default function OpenAIWorkflow() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Store className="mr-2 h-5 w-5" />
-            Step 1: Select Products or Collections
+            Step 2: Select Products or Collections
           </CardTitle>
           <CardDescription>
-            Choose products or collections to feature in your content cluster
+            Choose products or collections to feature in your content
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1725,6 +1804,18 @@ export default function OpenAIWorkflow() {
                           alt={image.alt || "Selected image"} 
                           className="w-full h-32 object-cover"
                         />
+                        <div className="absolute top-1 left-1 flex space-x-1">
+                          {image.isFeatured && (
+                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                              Featured
+                            </Badge>
+                          )}
+                          {image.isContentImage && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                              Content
+                            </Badge>
+                          )}
+                        </div>
                         <Button
                           size="icon"
                           variant="destructive"
@@ -1863,33 +1954,40 @@ export default function OpenAIWorkflow() {
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? 'bg-primary text-white' : 'bg-muted'}`}>
             1
           </div>
-          <span className="text-xs mt-1">Products</span>
+          <span className="text-xs mt-1">Mode</span>
         </div>
         <div className={`flex-1 h-1 mx-2 self-center ${currentStep >= 2 ? 'bg-primary' : 'bg-muted'}`} />
         <div className={`flex flex-col items-center ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? 'bg-primary text-white' : 'bg-muted'}`}>
             2
           </div>
-          <span className="text-xs mt-1">Keywords</span>
+          <span className="text-xs mt-1">Products</span>
         </div>
         <div className={`flex-1 h-1 mx-2 self-center ${currentStep >= 3 ? 'bg-primary' : 'bg-muted'}`} />
         <div className={`flex flex-col items-center ${currentStep >= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? 'bg-primary text-white' : 'bg-muted'}`}>
             3
           </div>
-          <span className="text-xs mt-1">Topics</span>
+          <span className="text-xs mt-1">Keywords</span>
         </div>
         <div className={`flex-1 h-1 mx-2 self-center ${currentStep >= 4 ? 'bg-primary' : 'bg-muted'}`} />
         <div className={`flex flex-col items-center ${currentStep >= 4 ? 'text-primary' : 'text-muted-foreground'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 4 ? 'bg-primary text-white' : 'bg-muted'}`}>
             4
           </div>
-          <span className="text-xs mt-1">Styling</span>
+          <span className="text-xs mt-1">Topics</span>
         </div>
         <div className={`flex-1 h-1 mx-2 self-center ${currentStep >= 5 ? 'bg-primary' : 'bg-muted'}`} />
         <div className={`flex flex-col items-center ${currentStep >= 5 ? 'text-primary' : 'text-muted-foreground'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 5 ? 'bg-primary text-white' : 'bg-muted'}`}>
             5
+          </div>
+          <span className="text-xs mt-1">Styling</span>
+        </div>
+        <div className={`flex-1 h-1 mx-2 self-center ${currentStep >= 6 ? 'bg-primary' : 'bg-muted'}`} />
+        <div className={`flex flex-col items-center ${currentStep >= 6 ? 'text-primary' : 'text-muted-foreground'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 6 ? 'bg-primary text-white' : 'bg-muted'}`}>
+            6
           </div>
           <span className="text-xs mt-1">Content</span>
         </div>
@@ -1905,26 +2003,29 @@ export default function OpenAIWorkflow() {
         {renderWorkflowSteps()}
         
         <div className="grid grid-cols-1 gap-6">
-          {/* Step 1: Product Selection */}
-          {currentStep === 1 && renderProductSelection()}
+          {/* Step 1: Content Mode Selection */}
+          {currentStep === 1 && renderContentModeSelection()}
           
-          {/* Step 2: Keyword Selection */}
-          {currentStep === 2 && renderKeywordSelection()}
+          {/* Step 2: Product Selection */}
+          {currentStep === 2 && renderProductSelection()}
           
-          {/* Step 3: Topic Selection */}
-          {currentStep === 3 && renderTopicSuggestions()}
+          {/* Step 3: Keyword Selection */}
+          {currentStep === 3 && renderKeywordSelection()}
           
-          {/* Step 4: Styling & Image Selection */}
-          {currentStep === 4 && renderStylingAndImageSelection()}
+          {/* Step 4: Topic Selection */}
+          {currentStep === 4 && renderTopicSuggestions()}
           
-          {/* Step 5: Content Review */}
-          {currentStep === 5 && (
+          {/* Step 5: Styling & Image Selection */}
+          {currentStep === 5 && renderStylingAndImageSelection()}
+          
+          {/* Step 6: Content Review */}
+          {currentStep === 6 && (
             <ClusterWorkflow
               articles={generatedArticles}
               isLoading={isGeneratingCluster}
               onSave={handleSaveAllArticles}
               canSchedule={canSchedule}
-              blogId={blogId}
+              blogId={selectedBlog || blogId}
               products={selectedProducts}
             />
           )}
