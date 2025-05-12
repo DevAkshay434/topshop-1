@@ -728,12 +728,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            // Get function references
-            const { setConnection, createArticle } = shopifyService;
-            
-            // Set connection first
-            setConnection(connection);
-            
             // Create a temporary store object for using with the new API
             const tempStore = {
               id: connection.id,
@@ -810,7 +804,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             }
             
             // Pass the explicit Date object as the 4th parameter for scheduling
-            const shopifyArticle = await createArticle(
+            const shopifyArticle = await shopifyService.shopifyService.createArticle(
               tempStore, 
               connection.defaultBlogId, 
               post,
