@@ -36,6 +36,25 @@ export default function EnhancedWorkflowDemo() {
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [demoCluster, setDemoCluster] = useState<any[]>([]);
   
+  // Demo products for the cluster workflow
+  const [demoProducts, setDemoProducts] = useState<any[]>([
+    { 
+      id: "prod1", 
+      title: "Premium Water Softener",
+      description: "Our top-of-the-line water softener for residential use" 
+    },
+    { 
+      id: "prod2", 
+      title: "Water Filter System",
+      description: "Complete water filtration system for cleaner, healthier water" 
+    },
+    { 
+      id: "prod3", 
+      title: "Water Testing Kit",
+      description: "Professional-grade water testing kit for home use" 
+    }
+  ]);
+  
   // Check scheduling permissions
   const { data: permissionsData } = useQuery<{ success: boolean; hasPermission: boolean; }>({
     queryKey: ['/api/shopify/check-permissions'],
@@ -268,6 +287,7 @@ export default function EnhancedWorkflowDemo() {
                     articles={demoCluster}
                     canSchedule={permissionsData?.hasPermission}
                     blogId={selectedBlogId}
+                    products={demoProducts}
                     onSave={async (articles) => {
                       toast({
                         title: "Demo Mode",

@@ -76,10 +76,32 @@ export default function ClusterWorkflow({
   isLoading = false,
   onSave,
   canSchedule = true,
-  blogId
+  blogId,
+  products = []
 }: ClusterWorkflowProps) {
   const { toast } = useToast();
   const { storeInfo } = useStore();
+  
+  // Content creation steps
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [mainTopic, setMainTopic] = useState<string>("");
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([]);
+  const [customKeywords, setCustomKeywords] = useState<string>("");
+  
+  // Formatting options
+  const [writingPerspective, setWritingPerspective] = useState<string>("second-person");
+  const [toneOfVoice, setToneOfVoice] = useState<string>("friendly");
+  const [introStyle, setIntroStyle] = useState<string>("search-intent-focused");
+  const [faqStyle, setFaqStyle] = useState<string>("short");
+  
+  // Content options
+  const [enableTables, setEnableTables] = useState<boolean>(true);
+  const [enableLists, setEnableLists] = useState<boolean>(true);
+  const [enableH1, setEnableH1] = useState<boolean>(true);
+  const [enableCitations, setEnableCitations] = useState<boolean>(true);
+  
+  // Generated content
   const [editedArticles, setEditedArticles] = useState<Article[]>(articles);
   const [selectedArticles, setSelectedArticles] = useState<Record<string, boolean>>({});
   const [bulkAction, setBulkAction] = useState<'draft' | 'published' | 'scheduled'>('draft');
@@ -88,6 +110,13 @@ export default function ClusterWorkflow({
   );
   const [scheduleTime, setScheduleTime] = useState<string>("09:30");
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Keyword suggestions (mock data for UI development)
+  const [suggestedKeywords, setSuggestedKeywords] = useState<Keyword[]>([
+    { keyword: "water softener", score: 45 },
+    { keyword: "water testing", score: 35 },
+    { keyword: "water softener installation", score: 27 },
+  ]);
   
   // Update local state when articles prop changes
   React.useEffect(() => {
@@ -240,18 +269,428 @@ export default function ClusterWorkflow({
   // Determine if an article is selected
   const isSelected = (id: string) => !!selectedArticles[id];
   
+  // Generate a cluster of content based on inputs
+  const generateClusterContent = async () => {
+    if (!mainTopic) {
+      toast({
+        title: "Topic Required",
+        description: "Please enter a main topic for your content cluster",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Prepare keywords array from both selected suggestions and custom entries
+    const allKeywords = [
+      ...selectedKeywords.map(k => k.keyword),
+      ...customKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+    ];
+    
+    // Get product info for selected products
+    const selectedProductsInfo = products.filter(p => selectedProducts.includes(p.id));
+    
+    // For demo purposes we'll use this data in a toast
+    toast({
+      title: "Generating Content Cluster",
+      description: `Creating cluster for "${mainTopic}" with ${selectedProductsInfo.length} products and ${allKeywords.length} keywords`,
+    });
+    
+    // In a real implementation, we would call the API
+    // const response = await apiRequest("POST", "/api/claude/cluster", {
+    //   topic: mainTopic,
+    //   products: selectedProductsInfo,
+    //   keywords: allKeywords,
+    //   options: {
+    //     writingPerspective,
+    //     toneOfVoice,
+    //     introStyle,
+    //     faqStyle,
+    //     enableTables,
+    //     enableLists,
+    //     enableH1,
+    //     enableCitations
+    //   }
+    // });
+    
+    // TODO: In a real implementation, set the articles from the API response
+    // setEditedArticles(response.articles);
+    
+    // Move to the articles view
+    setCurrentStep(4);
+  };
+  
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Content Cluster Management</CardTitle>
+        <CardTitle>Content Cluster Generator</CardTitle>
         <CardDescription>
-          Review and edit your generated content cluster before publishing
+          {currentStep < 4 
+            ? "Generate SEO-optimized content clusters for your Shopify store" 
+            : "Review and edit your generated content cluster before publishing"}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : currentStep === 1 ? (
+          // Step 1: Select Products
+          <div className="space-y-6">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">1</div>
+                <h3 className="text-lg font-medium">Select Products</h3>
+              </div>
+              <div className="flex space-x-2">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">2</div>
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">3</div>
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">4</div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label>Cluster Topic</Label>
+                <Input 
+                  value={mainTopic}
+                  onChange={(e) => setMainTopic(e.target.value)}
+                  placeholder="e.g., Water Softener Installation Guide"
+                  className="mt-1"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  This will be the main topic for your content cluster
+                </p>
+              </div>
+              
+              <div>
+                <Label>Select Products</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Choose products to feature in your content
+                </p>
+                
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {products.length === 0 ? (
+                    <div className="text-center py-4 border rounded-md bg-muted/30">
+                      <p className="text-muted-foreground">No products available</p>
+                    </div>
+                  ) : (
+                    products.map(product => (
+                      <div key={product.id} className="flex items-start space-x-2 p-2 border rounded-md">
+                        <Checkbox 
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProducts(prev => [...prev, product.id]);
+                            } else {
+                              setSelectedProducts(prev => prev.filter(id => id !== product.id));
+                            }
+                          }}
+                        />
+                        <div>
+                          <p className="font-medium">{product.title}</p>
+                          {product.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <Button onClick={() => setCurrentStep(2)}>
+                Next: Keywords <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : currentStep === 2 ? (
+          // Step 2: Choose Keywords
+          <div className="space-y-6">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">1</div>
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">2</div>
+              </div>
+              <div className="flex space-x-2">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">3</div>
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">4</div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center">
+                  <Label>Selected Keywords</Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedKeywords([])}
+                    disabled={selectedKeywords.length === 0}
+                  >
+                    Clear All
+                  </Button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mt-2 min-h-[60px] p-2 border rounded-md">
+                  {selectedKeywords.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No keywords selected</p>
+                  ) : (
+                    selectedKeywords.map(keyword => (
+                      <Badge 
+                        key={keyword.keyword} 
+                        className="flex items-center gap-1 px-3 py-1"
+                        variant="secondary"
+                      >
+                        {keyword.keyword}
+                        <span className="text-xs opacity-70">({keyword.score})</span>
+                        <button 
+                          className="ml-1 text-muted-foreground hover:text-foreground" 
+                          onClick={() => setSelectedKeywords(prev => 
+                            prev.filter(k => k.keyword !== keyword.keyword)
+                          )}
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <Label>Suggested Keywords</Label>
+                <div className="space-y-2 mt-2">
+                  {suggestedKeywords.map(keyword => (
+                    <div 
+                      key={keyword.keyword}
+                      className="flex items-center justify-between p-2 border rounded-md"
+                    >
+                      <div className="flex items-center">
+                        <span className="font-medium">{keyword.keyword}</span>
+                        <Badge className="ml-2" variant="outline">{keyword.score}</Badge>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={selectedKeywords.some(k => k.keyword === keyword.keyword) ? "default" : "outline"}
+                        onClick={() => {
+                          if (selectedKeywords.some(k => k.keyword === keyword.keyword)) {
+                            setSelectedKeywords(prev => prev.filter(k => k.keyword !== keyword.keyword));
+                          } else {
+                            setSelectedKeywords(prev => [...prev, keyword]);
+                          }
+                        }}
+                      >
+                        {selectedKeywords.some(k => k.keyword === keyword.keyword) ? 'Selected' : 'Select'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <Label>Custom Keywords</Label>
+                <Input
+                  placeholder="Enter custom keywords separated by commas"
+                  value={customKeywords}
+                  onChange={(e) => setCustomKeywords(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Add additional keywords separated by commas
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                Back: Products
+              </Button>
+              <Button onClick={() => setCurrentStep(3)}>
+                Next: Style <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : currentStep === 3 ? (
+          // Step 3: Style & Settings
+          <div className="space-y-6">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">1</div>
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">2</div>
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">3</div>
+              </div>
+              <div className="flex space-x-2">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">4</div>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Style & Formatting</h3>
+                
+                <div>
+                  <Label>Writing Perspective</Label>
+                  <Select 
+                    value={writingPerspective}
+                    onValueChange={setWritingPerspective}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select writing perspective" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="first-person">First Person (I, We)</SelectItem>
+                      <SelectItem value="second-person">Second Person (You, Your)</SelectItem>
+                      <SelectItem value="third-person">Third Person (They, It)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label>Tone of Voice</Label>
+                  <Select 
+                    value={toneOfVoice}
+                    onValueChange={setToneOfVoice}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select tone of voice" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="friendly">Friendly</SelectItem>
+                      <SelectItem value="professional">Professional</SelectItem>
+                      <SelectItem value="casual">Casual</SelectItem>
+                      <SelectItem value="formal">Formal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label>Introduction Style</Label>
+                  <Select 
+                    value={introStyle}
+                    onValueChange={setIntroStyle}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select introduction style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="search-intent-focused">Search Intent Focused</SelectItem>
+                      <SelectItem value="problem-solution">Problem-Solution</SelectItem>
+                      <SelectItem value="story-based">Story-based</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label>FAQ Section</Label>
+                  <Select 
+                    value={faqStyle}
+                    onValueChange={setFaqStyle}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select FAQ style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="short">Short (3-5 Q&As)</SelectItem>
+                      <SelectItem value="medium">Medium (5-8 Q&As)</SelectItem>
+                      <SelectItem value="detailed">Detailed (8-10 Q&As)</SelectItem>
+                      <SelectItem value="none">No FAQ Section</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Content Options</h3>
+                
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="enable-tables" 
+                    checked={enableTables}
+                    onCheckedChange={(checked) => setEnableTables(!!checked)}
+                  />
+                  <div>
+                    <Label 
+                      htmlFor="enable-tables" 
+                      className="font-medium"
+                    >
+                      Enable Tables
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Use comparison tables
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="enable-lists" 
+                    checked={enableLists}
+                    onCheckedChange={(checked) => setEnableLists(!!checked)}
+                  />
+                  <div>
+                    <Label 
+                      htmlFor="enable-lists" 
+                      className="font-medium"
+                    >
+                      Enable Lists
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Use bullet points
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="enable-h1" 
+                    checked={enableH1}
+                    onCheckedChange={(checked) => setEnableH1(!!checked)}
+                  />
+                  <div>
+                    <Label 
+                      htmlFor="enable-h1" 
+                      className="font-medium"
+                    >
+                      Enable H1 Headings
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Use sub-headings
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="enable-citations" 
+                    checked={enableCitations}
+                    onCheckedChange={(checked) => setEnableCitations(!!checked)}
+                  />
+                  <div>
+                    <Label 
+                      htmlFor="enable-citations" 
+                      className="font-medium"
+                    >
+                      Enable Citations
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Add external links
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                Back: Keywords
+              </Button>
+              <Button onClick={generateClusterContent}>
+                Generate Content <Sparkles className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ) : editedArticles.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
