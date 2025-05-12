@@ -748,7 +748,7 @@ export default function OpenAIWorkflow() {
         });
         
         // Move to the content review step
-        setCurrentStep(5);
+        setCurrentStep(6);
       } else {
         throw new Error(response.message || "Failed to generate content cluster");
       }
@@ -1540,7 +1540,7 @@ export default function OpenAIWorkflow() {
           </ScrollArea>
         </CardContent>
         <CardFooter className="justify-between">
-          <Button variant="outline" onClick={() => setCurrentStep(2)}>
+          <Button variant="outline" onClick={() => setCurrentStep(3)}>
             Back to Keywords
           </Button>
           <Button 
@@ -1576,7 +1576,7 @@ export default function OpenAIWorkflow() {
               <p className="text-muted-foreground mt-2">Please go back and select a topic first</p>
               <Button 
                 className="mt-4"
-                onClick={() => setCurrentStep(3)}
+                onClick={() => setCurrentStep(4)}
               >
                 Back to Topics
               </Button>
@@ -2001,7 +2001,7 @@ export default function OpenAIWorkflow() {
         <CardFooter className="justify-between">
           <Button 
             variant="outline" 
-            onClick={() => setCurrentStep(3)}
+            onClick={() => setCurrentStep(4)}
           >
             Back to Topics
           </Button>
