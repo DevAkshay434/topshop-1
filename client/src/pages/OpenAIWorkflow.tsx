@@ -138,7 +138,7 @@ export default function OpenAIWorkflow() {
   const [enableBolding, setEnableBolding] = useState<boolean>(true);
   const [enableExternalLinks, setEnableExternalLinks] = useState<boolean>(true);
   const [includeYouTube, setIncludeYouTube] = useState<boolean>(false);
-  const [includeTOC, setIncludeTOC] = useState<boolean>(false);
+  const [includeTOC, setIncludeTOC] = useState<boolean>(true);
   const [authorInfo, setAuthorInfo] = useState<string | null>(null);
   const [buyerProfileText, setBuyerProfileText] = useState<string>('');
 
@@ -1570,6 +1570,66 @@ export default function OpenAIWorkflow() {
               </div>
               
               <div>
+                <h3 className="text-lg font-medium mb-4">Advanced Article Settings</h3>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Number of H2 Headings</Label>
+                    <Select 
+                      value={numH2s.toString()} 
+                      onValueChange={(val) => setNumH2s(parseInt(val))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose number of headings" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="3">3 Headings</SelectItem>
+                        <SelectItem value="4">4 Headings</SelectItem>
+                        <SelectItem value="5">5 Headings</SelectItem>
+                        <SelectItem value="6">6 Headings</SelectItem>
+                        <SelectItem value="7">7 Headings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Article Length</Label>
+                    <Select 
+                      value={articleLength} 
+                      onValueChange={setArticleLength}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose article length" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="short">Short (~1000 words)</SelectItem>
+                        <SelectItem value="medium">Medium (~1500 words)</SelectItem>
+                        <SelectItem value="long">Long (~2000+ words)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Author Information</Label>
+                    <Select 
+                      value={authorInfo || ""} 
+                      onValueChange={setAuthorInfo}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose author" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Author</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="editor">Editor</SelectItem>
+                        <SelectItem value="expert">Water Expert</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
                 <h3 className="text-lg font-medium mb-4">Content Elements</h3>
                 
                 <div className="space-y-3">
@@ -1602,11 +1662,47 @@ export default function OpenAIWorkflow() {
                   
                   <div className="flex items-center space-x-2">
                     <Checkbox 
+                      id="enableBolding" 
+                      checked={enableBolding}
+                      onCheckedChange={val => setEnableBolding(!!val)}
+                    />
+                    <Label htmlFor="enableBolding">Use Bold Formatting</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
                       id="enableCitations" 
                       checked={enableCitations}
                       onCheckedChange={val => setEnableCitations(!!val)}
                     />
                     <Label htmlFor="enableCitations">Include Citations</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="enableExternalLinks" 
+                      checked={enableExternalLinks}
+                      onCheckedChange={val => setEnableExternalLinks(!!val)}
+                    />
+                    <Label htmlFor="enableExternalLinks">Include External Links (.gov, .edu, Wikipedia)</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="includeYouTube" 
+                      checked={includeYouTube}
+                      onCheckedChange={val => setIncludeYouTube(!!val)}
+                    />
+                    <Label htmlFor="includeYouTube">Include YouTube Videos</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="includeTOC" 
+                      checked={includeTOC}
+                      onCheckedChange={val => setIncludeTOC(!!val)}
+                    />
+                    <Label htmlFor="includeTOC">Include Table of Contents</Label>
                   </div>
                 </div>
               </div>
