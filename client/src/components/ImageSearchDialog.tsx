@@ -382,7 +382,7 @@ export default function ImageSearchDialog({
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
-            Search for images related to your content using keywords. Choose from multiple sources.
+            Search for images related to your content using keywords. You can select <span className="text-yellow-500 font-medium">Featured</span> images for your article header and <span className="text-blue-500 font-medium">Content</span> images to be embedded within your article.
           </DialogDescription>
         </DialogHeader>
         
@@ -413,6 +413,21 @@ export default function ImageSearchDialog({
             {/* Search Tab */}
             <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 space-y-4">
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-200 mb-3">
+                  <h4 className="text-sm font-medium text-blue-800 mb-1">Image Selection Guide</h4>
+                  <p className="text-xs text-blue-700 mb-2">
+                    1. Search for relevant images using keywords
+                  </p>
+                  <p className="text-xs text-blue-700 mb-2">
+                    2. Click images to select them
+                  </p>
+                  <p className="text-xs text-blue-700 mb-2">
+                    3. Mark images as <span className="text-yellow-600 font-medium">Featured</span> or <span className="text-blue-600 font-medium">Content</span>
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    4. Click "Use Selected Images" when finished
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Enter keywords to search for images..."

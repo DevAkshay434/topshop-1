@@ -1898,17 +1898,34 @@ export default function OpenAIWorkflow() {
                   </div>
                 </div>
                 
-                <p className="text-sm text-muted-foreground mb-4">
-                  Select images to include in your content. These will be interlinked with your products.
-                </p>
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mb-4">
+                  <h3 className="text-sm font-medium text-blue-800 mb-2">Image Selection</h3>
+                  <p className="text-sm text-blue-700 mb-2">
+                    Select images to include in your content. These will be interlinked with your products.
+                  </p>
+                  <div className="flex flex-col space-y-2 text-xs text-blue-700">
+                    <div className="flex items-center">
+                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1.5"></span>
+                      <strong>Featured Image:</strong> Main image shown at the top of your article
+                    </div>
+                    <div className="flex items-center">
+                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
+                      <strong>Content Images:</strong> Additional images embedded within your article
+                    </div>
+                  </div>
+                </div>
                 
                 {selectedImages.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     {selectedImages.map((image, index) => (
                       <div 
                         key={index} 
-                        className={`relative rounded-md overflow-hidden border-2 shadow-sm 
-                          ${image.isFeatured ? 'border-yellow-500 ring-2 ring-yellow-200' : image.isContentImage ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}
+                        className={`relative rounded-md overflow-hidden border-2 shadow-sm transition-all duration-200
+                          ${image.isFeatured 
+                            ? 'border-yellow-500 ring-2 ring-yellow-200 shadow-yellow-100' 
+                            : image.isContentImage 
+                              ? 'border-blue-500 ring-2 ring-blue-200 shadow-blue-100' 
+                              : 'border-gray-200'}`}
                       >
                         <img 
                           src={image.url || image.src?.medium} 
@@ -1917,14 +1934,18 @@ export default function OpenAIWorkflow() {
                         />
                         <div className="absolute top-1 left-1 flex space-x-1">
                           {image.isFeatured && (
-                            <Badge variant="secondary" className="bg-yellow-500 text-white hover:bg-yellow-600 flex items-center">
-                              <span className="inline-block w-1.5 h-1.5 bg-white rounded-full mr-1"></span>
+                            <Badge variant="secondary" className="bg-yellow-500 text-white hover:bg-yellow-600 flex items-center shadow-sm">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
                               Featured
                             </Badge>
                           )}
                           {image.isContentImage && (
-                            <Badge variant="secondary" className="bg-blue-500 text-white hover:bg-blue-600 flex items-center">
-                              <span className="inline-block w-1.5 h-1.5 bg-white rounded-full mr-1"></span>
+                            <Badge variant="secondary" className="bg-blue-500 text-white hover:bg-blue-600 flex items-center shadow-sm">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                              </svg>
                               Content
                             </Badge>
                           )}
@@ -1945,10 +1966,13 @@ export default function OpenAIWorkflow() {
                     ))}
                   </div>
                 ) : (
-                  <div className="border rounded-md flex items-center justify-center h-32 mb-4 bg-muted/50">
-                    <div className="text-center">
-                      <Image className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">No images selected</p>
+                  <div className="border-2 border-dashed border-blue-200 rounded-md flex items-center justify-center h-40 mb-4 bg-blue-50/50">
+                    <div className="text-center p-4">
+                      <Image className="w-8 h-8 mx-auto mb-3 text-blue-300" />
+                      <p className="text-sm font-medium text-blue-700 mb-1">No images selected</p>
+                      <p className="text-xs text-blue-600 max-w-[220px] mx-auto">
+                        Click the "Select Images" button below to choose images for your content
+                      </p>
                     </div>
                   </div>
                 )}
