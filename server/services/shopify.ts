@@ -179,6 +179,7 @@ export class ShopifyService {
    * @param store The store to create the article in
    * @param blogId The ID of the blog to create the article in
    * @param post The blog post to create
+   * @param publishDate Optional Date object for scheduled publishing
    * @returns The created Shopify article
    */
   public async createArticle(

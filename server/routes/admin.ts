@@ -1297,8 +1297,50 @@ Place this at a logical position in the content, typically after introducing a c
         if (requestData.postStatus === 'publish' || isScheduled) {
           console.log(`Publishing to Shopify blog ID: ${blogId}${isScheduled ? ' (scheduled)' : ''}`);
           try {
-            // Pass the post to Shopify API - include the scheduled date if applicable
-            const shopifyArticle = await shopifyService.createArticle(store, blogId, post);
+            // For scheduled posts, create a proper Date object to pass to Shopify API
+            let scheduledPublishDate: Date | undefined = undefined;
+            
+            if (isScheduled && requestData.scheduleDate && requestData.scheduleTime) {
+              console.log(`Preparing scheduled date for Shopify API: ${requestData.scheduleDate} at ${requestData.scheduleTime}`);
+              
+              try {
+                // Get shop timezone for proper date creation
+                const shopInfo = await shopifyService.getShopInfo(store);
+                const storeTimezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
+                console.log(`Using store timezone for scheduling: ${storeTimezone}`);
+                
+                // Import timezone utilities
+                const { createDateInTimezone } = await import('../../shared/timezone');
+                
+                // Create a date in the store's timezone
+                scheduledPublishDate = createDateInTimezone(
+                  requestData.scheduleDate,
+                  requestData.scheduleTime,
+                  storeTimezone
+                );
+                
+                console.log(`Created scheduled publish date: ${scheduledPublishDate.toISOString()}`);
+              } catch (error) {
+                console.error(`Error creating scheduled date:`, error);
+                // Fallback to a simple date creation
+                try {
+                  const [year, month, day] = requestData.scheduleDate.split('-').map(Number);
+                  const [hours, minutes] = requestData.scheduleTime.split(':').map(Number);
+                  scheduledPublishDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+                  console.log(`Fallback scheduled date: ${scheduledPublishDate.toISOString()}`);
+                } catch (fallbackError) {
+                  console.error(`Fallback date creation failed:`, fallbackError);
+                }
+              }
+            }
+            
+            // Pass the post and scheduled date to Shopify API
+            const shopifyArticle = await shopifyService.createArticle(
+              store, 
+              blogId, 
+              post,
+              scheduledPublishDate  // This triggers the scheduling logic in Shopify
+            );
             
             // Update the local post with Shopify IDs
             await storage.updateBlogPost(post.id, {

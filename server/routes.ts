@@ -675,7 +675,59 @@ export async function registerRoutes(app: Express): Promise<void> {
               scheduledPublishTime: post.scheduledPublishTime
             });
             
-            const shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
+            // For scheduled posts, create a proper Date object for scheduling
+            let scheduledPublishDate: Date | undefined = undefined;
+            
+            if (post.status === 'scheduled' && post.scheduledPublishDate && post.scheduledPublishTime) {
+              console.log(`Processing scheduled post with date: ${post.scheduledPublishDate} and time: ${post.scheduledPublishTime}`);
+              
+              try {
+                // Get shop's timezone from the store info
+                const shopInfo = await shopifyService.getShopInfo(tempStore);
+                const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
+                console.log(`Using timezone: ${timezone} for scheduling`);
+                
+                // Import the timezone-aware date creation function
+                const { createDateInTimezone } = await import('@shared/timezone');
+                
+                // Create a proper Date object in the store's timezone
+                scheduledPublishDate = createDateInTimezone(
+                  post.scheduledPublishDate,
+                  post.scheduledPublishTime,
+                  timezone
+                );
+                
+                console.log(`Created scheduled publish date: ${scheduledPublishDate.toISOString()}`);
+                
+                // Ensure the date is in the future
+                const now = new Date();
+                if (scheduledPublishDate <= now) {
+                  console.warn(`Scheduled date is in the past, adjusting to 1 hour from now`);
+                  scheduledPublishDate = new Date();
+                  scheduledPublishDate.setHours(scheduledPublishDate.getHours() + 1);
+                }
+              } catch (error) {
+                console.error(`Error creating scheduled date:`, error);
+                // Fallback to simple date creation
+                try {
+                  const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
+                  const [hours, minutes] = post.scheduledPublishTime.split(':').map(Number);
+                  
+                  scheduledPublishDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+                  console.log(`Fallback scheduled date: ${scheduledPublishDate.toISOString()}`);
+                } catch (fallbackError) {
+                  console.error(`Fallback date creation failed:`, fallbackError);
+                }
+              }
+            }
+            
+            // Pass the explicit Date object as the 4th parameter for scheduling
+            const shopifyArticle = await createArticle(
+              tempStore, 
+              connection.defaultBlogId, 
+              post,
+              scheduledPublishDate // This will trigger the scheduling logic in createArticle
+            );
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
@@ -825,8 +877,35 @@ export async function registerRoutes(app: Express): Promise<void> {
               chargeId: null,
               trialEndsAt: null
             };
+            // For scheduled posts, create a proper Date object for scheduling
+            let scheduledPublishDate: Date | undefined = undefined;
             
-            const shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
+            if (post.status === 'scheduled' && post.scheduledPublishDate && post.scheduledPublishTime) {
+              try {
+                // Get shop info for timezone
+                const shopInfo = await shopifyService.getShopInfo(tempStore);
+                const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
+                
+                // Create a date in the shop's timezone
+                const { createDateInTimezone } = await import('@shared/timezone');
+                scheduledPublishDate = createDateInTimezone(
+                  post.scheduledPublishDate,
+                  post.scheduledPublishTime,
+                  timezone
+                );
+                
+                console.log(`Created scheduled date for updated post: ${scheduledPublishDate.toISOString()}`);
+              } catch (error) {
+                console.error('Error creating scheduled date for update:', error);
+              }
+            }
+            
+            const shopifyArticle = await createArticle(
+              tempStore, 
+              connection.defaultBlogId, 
+              post,
+              scheduledPublishDate
+            );
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
