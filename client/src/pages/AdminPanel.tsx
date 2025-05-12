@@ -825,7 +825,14 @@ export default function AdminPanel() {
 
   return (
     <div className="container max-w-7xl mx-auto py-10">
-      {/* ReconnectionNotice removed as requested */}
+      {/* Show scheduling permission notice if needed */}
+      {permissionsData?.success && !permissionsData.hasPermission && (
+        <div className="mb-4">
+          <SchedulingPermissionNotice 
+            storeName={permissionsData.store?.name || 'your store'} 
+          />
+        </div>
+      )}
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 text-transparent bg-clip-text mb-2">

@@ -1,14 +1,26 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import PostList from "@/components/PostList";
 import CreatePostModal from "@/components/CreatePostModal";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { BlogPost } from "@shared/schema";
+import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
 
 export default function ScheduledPosts() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  
+  // Check if the store has the scheduling permission
+  const { data: permissionsData } = useQuery<{ 
+    success: boolean; 
+    hasPermission: boolean;
+    store: { name: string; }
+  }>({
+    queryKey: ['/api/shopify/check-permissions'],
+    enabled: true,
+  });
   
   const handleCreatePost = () => {
     setSelectedPost(null);
@@ -22,6 +34,14 @@ export default function ScheduledPosts() {
   
   return (
     <Layout>
+      {/* Show scheduling permission notice if needed */}
+      {permissionsData?.success && !permissionsData.hasPermission && (
+        <div className="mb-4">
+          <SchedulingPermissionNotice 
+            storeName={permissionsData.store?.name || 'your store'} 
+          />
+        </div>
+      )}
       <div className="md:flex md:items-center md:justify-between mb-6">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-semibold text-neutral-900">Scheduled Posts</h2>
