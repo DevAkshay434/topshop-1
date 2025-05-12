@@ -395,6 +395,21 @@ export default function ImageSearchDialog({
                   </Button>
                 </div>
                 
+                {/* Image selection help text */}
+                <div className="bg-blue-50 p-3 rounded-md mb-3">
+                  <h3 className="text-sm font-medium text-blue-800 mb-1">Image Selection Guide</h3>
+                  <div className="flex flex-col space-y-2 text-xs text-blue-700">
+                    <div className="flex items-center">
+                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1.5"></span>
+                      <strong>Featured Image:</strong> Main image shown at the top of your content.
+                    </div>
+                    <div className="flex items-center">
+                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
+                      <strong>Content Images:</strong> Additional images embedded throughout your article.
+                    </div>
+                  </div>
+                </div>
+                
                 {/* Suggested searches - show when no search has been performed */}
                 {!searchedImages.length && !isSearchingImages && (
                   <div className="bg-blue-50 p-3 rounded-md">
@@ -544,7 +559,8 @@ export default function ImageSearchDialog({
                           {/* Featured badge */}
                           {featuredImageId === image.id && (
                             <div className="absolute top-2 right-2 z-10">
-                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center">
+                                <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
                                 Featured
                               </span>
                             </div>
@@ -553,7 +569,8 @@ export default function ImageSearchDialog({
                           {/* Content image badge */}
                           {contentImageIds.includes(image.id) && featuredImageId !== image.id && (
                             <div className="absolute top-2 right-2 z-10">
-                              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center">
+                                <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
                                 Content
                               </span>
                             </div>
@@ -574,24 +591,34 @@ export default function ImageSearchDialog({
                               <Button
                                 variant={featuredImageId === image.id ? "default" : "secondary"}
                                 size="sm"
-                                className="h-7 text-xs flex-1"
+                                className={`h-7 text-xs flex-1 ${featuredImageId === image.id ? 'bg-yellow-500 hover:bg-yellow-600' : ''}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setAsFeaturedImage(image.id);
                                 }}
                               >
-                                {featuredImageId === image.id ? "Featured" : "Set Featured"}
+                                {featuredImageId === image.id ? (
+                                  <span className="flex items-center justify-center">
+                                    <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
+                                    Featured
+                                  </span>
+                                ) : "Set Featured"}
                               </Button>
                               <Button
                                 variant={contentImageIds.includes(image.id) ? "default" : "secondary"}
                                 size="sm"
-                                className="h-7 text-xs flex-1"
+                                className={`h-7 text-xs flex-1 ${contentImageIds.includes(image.id) ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   toggleContentImage(image.id);
                                 }}
                               >
-                                {contentImageIds.includes(image.id) ? "In Content" : "Add to Content"}
+                                {contentImageIds.includes(image.id) ? (
+                                  <span className="flex items-center justify-center">
+                                    <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
+                                    In Content
+                                  </span>
+                                ) : "Add to Content"}
                               </Button>
                             </div>
                           )}
@@ -621,10 +648,16 @@ export default function ImageSearchDialog({
               <div className="p-4 space-y-4">
                 <div className="bg-blue-50 p-3 rounded-md">
                   <h3 className="text-sm font-medium text-blue-800 mb-1">Selected Images</h3>
-                  <p className="text-xs text-blue-700">
-                    The first image will be used as the featured image for your content.
-                    Click "Set as Featured" to choose which image appears first.
-                  </p>
+                  <div className="flex flex-col space-y-2 text-xs text-blue-700">
+                    <div className="flex items-center">
+                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1.5"></span>
+                      <strong>Featured Image:</strong> Main image shown at the top of your content and in article previews.
+                    </div>
+                    <div className="flex items-center">
+                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
+                      <strong>Content Images:</strong> Additional images that will be embedded throughout your article.
+                    </div>
+                  </div>
                 </div>
               </div>
               
