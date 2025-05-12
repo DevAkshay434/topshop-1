@@ -858,7 +858,7 @@ export default function OpenAIWorkflow() {
       ];
       
       setGeneratedArticles(mockArticles);
-      setCurrentStep(5);
+      setCurrentStep(6);
     } finally {
       setIsGeneratingCluster(false);
     }
