@@ -2107,6 +2107,7 @@ export default function OpenAIWorkflow() {
               canSchedule={canSchedule}
               blogId={selectedBlog || blogId}
               products={selectedProducts}
+              onBack={() => setCurrentStep(5)}
             />
           )}
         </div>

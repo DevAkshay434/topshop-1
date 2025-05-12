@@ -1019,9 +1019,19 @@ export default function ClusterWorkflow({
         )}
       </CardContent>
       <CardFooter className="flex justify-between">
-        <span className="text-sm text-muted-foreground">
-          {editedArticles.length} articles in this cluster
-        </span>
+        <div className="flex space-x-2">
+          <span className="text-sm text-muted-foreground self-center">
+            {editedArticles.length} articles in this cluster
+          </span>
+          {onBack && (
+            <Button 
+              variant="outline" 
+              onClick={onBack}
+            >
+              Back to Styling
+            </Button>
+          )}
+        </div>
         <Button
           onClick={saveAllArticles}
           disabled={isSaving || editedArticles.length === 0}
