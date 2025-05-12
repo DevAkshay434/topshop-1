@@ -141,12 +141,13 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
           console.log(`Generating content with Claude for topic "${topic}"`);
           
           // Generate content with Claude API
-          const generatedContent = await generateBlogContentWithClaude({
+          const generatedContent = await generateBlogContentWithClaude(
             topic,
-            tone: "professional",
-            length: "medium",
-            customPrompt: topicPrompt
-          });
+            [], // keywords
+            topicPrompt, // customPrompt
+            "", // productName
+            "" // productDescription 
+          );
           
           console.log(`Claude content generated successfully for "${topic}". Title: "${generatedContent.title}"`);
           
@@ -307,12 +308,13 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         console.log(`Generating content with Claude for topic: "${topic}"`);
         
         try {
-          const generatedContent = await generateBlogContentWithClaude({
+          const generatedContent = await generateBlogContentWithClaude(
             topic,
-            tone: "professional",
-            length: "medium",
-            customPrompt: topicPrompt
-          });
+            [], // keywords
+            topicPrompt || "",
+            "", // productName
+            "" // productDescription
+          );
           
           console.log(`Claude content generated successfully for "${topic}". Title: "${generatedContent.title}"`);
           

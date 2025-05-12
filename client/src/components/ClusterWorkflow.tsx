@@ -311,43 +311,113 @@ export default function ClusterWorkflow({
       return;
     }
     
-    // Prepare keywords array from both selected suggestions and custom entries
-    const allKeywords = [
-      ...selectedKeywords.map(k => k.keyword),
-      ...customKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
-    ];
+    // Show loading state
+    setIsSaving(true);
     
-    // Get product info for selected products
-    const selectedProductsInfo = products.filter(p => selectedProducts.includes(p.id));
-    
-    // For demo purposes we'll use this data in a toast
-    toast({
-      title: "Generating Content Cluster",
-      description: `Creating cluster for "${mainTopic}" with ${selectedProductsInfo.length} products and ${allKeywords.length} keywords`,
-    });
-    
-    // In a real implementation, we would call the API
-    // const response = await apiRequest("POST", "/api/claude/cluster", {
-    //   topic: mainTopic,
-    //   products: selectedProductsInfo,
-    //   keywords: allKeywords,
-    //   options: {
-    //     writingPerspective,
-    //     toneOfVoice,
-    //     introStyle,
-    //     faqStyle,
-    //     enableTables,
-    //     enableLists,
-    //     enableH1,
-    //     enableCitations
-    //   }
-    // });
-    
-    // TODO: In a real implementation, set the articles from the API response
-    // setEditedArticles(response.articles);
-    
-    // Move to the articles view
-    setCurrentStep(4);
+    try {
+      // Prepare keywords array from both selected suggestions and custom entries
+      const allKeywords = [
+        ...selectedKeywords.map(k => k.keyword),
+        ...customKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+      ];
+      
+      // Get product info for selected products
+      const selectedProductsInfo = products.filter(p => selectedProducts.includes(p.id));
+      
+      toast({
+        title: "Generating Content Cluster",
+        description: `Creating cluster for "${mainTopic}" with ${selectedProductsInfo.length} products and ${allKeywords.length} keywords`,
+      });
+      
+      // In a real implementation, we would call the Claude API
+      try {
+        const response = await apiRequest("POST", "/api/claude/cluster", {
+          topic: mainTopic,
+          products: selectedProductsInfo,
+          keywords: allKeywords,
+          options: {
+            writingPerspective,
+            toneOfVoice,
+            introStyle,
+            faqStyle,
+            enableTables,
+            enableLists,
+            enableH1,
+            enableCitations
+          }
+        });
+        
+        // Process the response from Claude
+        if (response.success && response.cluster) {
+          // Convert the cluster data into the format expected by our UI
+          const articles = response.cluster.subtopics.map((article: any, index: number) => ({
+            id: `cluster-${index + 1}`,
+            title: article.title,
+            content: article.content,
+            tags: article.keywords || [mainTopic],
+            status: 'draft' as const
+          }));
+          
+          setEditedArticles(articles);
+          
+          toast({
+            title: "Cluster Generated",
+            description: `Successfully generated ${articles.length} articles for your content cluster`,
+          });
+        } else {
+          throw new Error(response.message || "Failed to generate content cluster");
+        }
+      } catch (error) {
+        console.log("Using demo content due to API error:", error);
+        
+        // For demo/fallback purposes, generate some mock content
+        // This would normally come from Claude but we provide fallback content
+        const clusterTopics = [
+          `Complete Guide to ${mainTopic}: Everything You Need to Know`,
+          `How to Choose the Best ${mainTopic} for Your Home`,
+          `${mainTopic} Installation: Step-by-Step Instructions`,
+          `Troubleshooting Common ${mainTopic} Problems`
+        ];
+        
+        const mockCluster = clusterTopics.map((title: string, index: number) => ({
+          id: `demo-${index + 1}`,
+          title,
+          content: `<h2>Introduction to ${title}</h2>
+          <p>This comprehensive article about ${title} explores everything you need to know, with a focus on our premium products.</p>
+          
+          <h2>Key Points About ${mainTopic}</h2>
+          <p>When considering a ${mainTopic}, keep these important factors in mind:</p>
+          <ul>
+            <li>Quality materials ensure longer lifespan</li>
+            <li>Proper installation is critical for performance</li>
+            <li>Regular maintenance prevents expensive repairs</li>
+          </ul>
+          
+          <h2>Conclusion</h2>
+          <p>Investing in a high-quality ${mainTopic} provides lasting benefits for your home and family.</p>`,
+          tags: [mainTopic, ...selectedKeywords.slice(0, 3).map(k => k.keyword)],
+          status: 'draft' as const
+        }));
+        
+        setEditedArticles(mockCluster);
+        
+        toast({
+          title: "Demo Mode",
+          description: `Generated ${mockCluster.length} articles using sample content`,
+        });
+      }
+      
+      // Move to the articles view
+      setCurrentStep(4);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: (error as Error)?.message || "Failed to generate content cluster",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   return (
