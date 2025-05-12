@@ -64,6 +64,7 @@ export default function ImageSearchDialog({
   const [availableSources, setAvailableSources] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'selected'>('search');
   const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
+  const [contentImageIds, setContentImageIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Reset selected images when initialSelectedImages changes
