@@ -564,15 +564,24 @@ export default function ImageSearchDialog({
                             ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'}
                             ${image.isProductImage ? 'border-green-500' : ''}
                             ${featuredImageId === image.id ? 'ring-4 ring-yellow-400' : ''}
+                            ${contentImageIds.includes(image.id) ? 'border-blue-500 ring-2 ring-blue-300' : ''}
                           `}
                         >
-                          <div className="aspect-[4/3] bg-slate-100" onClick={() => toggleImageSelection(image.id)}>
+                          <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
                             <img 
                               src={image.src?.medium || image.url} 
                               alt={image.alt || 'Image'} 
                               className="w-full h-full object-cover"
                               loading="lazy"
                             />
+                            
+                            {image.selected && (
+                              <div className="absolute top-2 right-2 z-20 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                              </div>
+                            )}
                           </div>
                           
                           {/* Source badge */}
@@ -597,8 +606,10 @@ export default function ImageSearchDialog({
                           {/* Featured badge */}
                           {featuredImageId === image.id && (
                             <div className="absolute top-2 right-2 z-10">
-                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center">
-                                <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
+                              <span className="bg-yellow-600 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
                                 Featured
                               </span>
                             </div>
@@ -607,8 +618,10 @@ export default function ImageSearchDialog({
                           {/* Content image badge */}
                           {contentImageIds.includes(image.id) && featuredImageId !== image.id && (
                             <div className="absolute top-2 right-2 z-10">
-                              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center">
-                                <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
+                              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                </svg>
                                 Content
                               </span>
                             </div>
@@ -684,16 +697,30 @@ export default function ImageSearchDialog({
             {/* Selected Images Tab */}
             <TabsContent value="selected" className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 space-y-4">
-                <div className="bg-blue-50 p-3 rounded-md">
-                  <h3 className="text-sm font-medium text-blue-800 mb-1">Selected Images</h3>
-                  <div className="flex flex-col space-y-2 text-xs text-blue-700">
-                    <div className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1.5"></span>
-                      <strong>Featured Image:</strong> Main image shown at the top of your content and in article previews.
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+                  <h3 className="text-sm font-medium text-blue-800 mb-2">Image Types</h3>
+                  <div className="flex flex-col space-y-3 text-xs text-blue-700">
+                    <div className="flex items-start">
+                      <div className="mt-0.5 mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <strong>Featured Image:</strong> 
+                        <p className="mt-0.5">Main image shown at the top of your content and in article previews. You should select only one featured image.</p>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
-                      <strong>Content Images:</strong> Additional images that will be embedded throughout your article.
+                    <div className="flex items-start">
+                      <div className="mt-0.5 mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <strong>Content Images:</strong> 
+                        <p className="mt-0.5">Additional images that will be embedded throughout your article body. You can select multiple content images.</p>
+                      </div>
                     </div>
                   </div>
                 </div>
