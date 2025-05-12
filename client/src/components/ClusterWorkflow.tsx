@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, ChevronRight, Sparkles } from 'lucide-react';
+import { Calendar, ChevronRight, Sparkles, Bot, Terminal } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -269,6 +269,37 @@ export default function ClusterWorkflow({
   // Determine if an article is selected
   const isSelected = (id: string) => !!selectedArticles[id];
   
+  // Test the Claude API connection
+  const testClaudeConnection = async () => {
+    try {
+      toast({
+        title: "Testing Claude API Connection",
+        description: "Checking connection to Claude AI..."
+      });
+      
+      const response = await apiRequest("GET", "/api/content/test-claude");
+      
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Connected to Claude AI successfully!"
+        });
+      } else {
+        toast({
+          title: "Connection Error",
+          description: response.message || "Failed to connect to Claude AI",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Connection Error",
+        description: (error as Error)?.message || "Failed to connect to Claude AI",
+        variant: "destructive"
+      });
+    }
+  };
+  
   // Generate a cluster of content based on inputs
   const generateClusterContent = async () => {
     if (!mainTopic) {
@@ -400,7 +431,17 @@ export default function ClusterWorkflow({
               </div>
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={testClaudeConnection}
+                className="flex items-center gap-2"
+              >
+                <Bot className="h-4 w-4" />
+                Test Claude Connection
+              </Button>
+              
               <Button onClick={() => setCurrentStep(2)}>
                 Next: Keywords <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
@@ -505,9 +546,20 @@ export default function ClusterWorkflow({
             </div>
             
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                Back: Products
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                  Back: Products
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={testClaudeConnection}
+                  className="flex items-center gap-2"
+                >
+                  <Bot className="h-4 w-4" />
+                  Test Claude
+                </Button>
+              </div>
               <Button onClick={() => setCurrentStep(3)}>
                 Next: Style <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
@@ -684,9 +736,20 @@ export default function ClusterWorkflow({
             </div>
             
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                Back: Keywords
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                  Back: Keywords
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={testClaudeConnection}
+                  className="flex items-center gap-2"
+                >
+                  <Bot className="h-4 w-4" />
+                  Test Claude
+                </Button>
+              </div>
               <Button onClick={generateClusterContent}>
                 Generate Content <Sparkles className="ml-2 h-4 w-4" />
               </Button>
