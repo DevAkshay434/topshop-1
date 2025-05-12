@@ -67,6 +67,45 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  // Check if store has scheduling permissions
+  apiRouter.get("/shopify/check-permissions", async (req: Request, res: Response) => {
+    try {
+      const { hasSchedulingPermission, getMissingSchedulingPermissions } = await import('../shared/permissions');
+      
+      // Get current store
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          hasPermission: false,
+          message: "No stores found"
+        });
+      }
+      
+      const store = stores[0]; // Use first store for now
+      const hasPermission = hasSchedulingPermission(store.scope || '');
+      const missingPermissions = getMissingSchedulingPermissions(store.scope || '');
+      
+      res.json({
+        success: true,
+        hasPermission,
+        missingPermissions,
+        store: {
+          id: store.id,
+          name: store.shopName,
+          scope: store.scope
+        }
+      });
+    } catch (error: any) {
+      console.error("Error checking store permissions:", error);
+      res.status(500).json({
+        success: false,
+        hasPermission: false,
+        message: error.message || "Failed to check permissions"
+      });
+    }
+  });
+  
   // Special route to handle reconnection with the new write_publications scope
   apiRouter.get("/shopify/reconnect", async (req: Request, res: Response) => {
     try {

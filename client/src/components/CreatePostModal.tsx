@@ -12,6 +12,7 @@ import {
   getTomorrowInTimezone 
 } from "@shared/timezone";
 import { useStore } from "@/contexts/StoreContext";
+import { SchedulingPermissionNotice } from "./SchedulingPermissionNotice";
 import { 
   Dialog,
   DialogContent, 
@@ -139,7 +140,17 @@ export default function CreatePostModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formattedTags = useRef<string>("");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
-
+  
+  // Check if the store has the scheduling permission
+  const { data: permissionsData } = useQuery<{ 
+    success: boolean; 
+    hasPermission: boolean;
+    store: { name: string; }
+  }>({
+    queryKey: ['/api/shopify/check-permissions'],
+    enabled: open,
+  });
+  
   // Query for blogs
   const { data: blogsData } = useQuery<{ success: boolean; blogs: Array<{ id: string; title: string; handle: string; }> }>({
     queryKey: ['/api/admin/blogs'],
