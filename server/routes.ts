@@ -138,8 +138,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       };
       nonceStore.set(nonce, nonceData);
       
-      // Hard-code the callback URL to match the one registered in the Shopify app
-      const redirectUri = 'https://shopify-app.justinlofton.com/shopify/callback';
+      // Use app URL for OAuth callback (will be proxied through to the actual app server)
+      // In local dev or testing, use the current hostname
+      const hostname = req.headers.host || 'localhost:5000';
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const baseUrl = `${protocol}://${hostname}`;
+      
+      const redirectUri = `${baseUrl}/oauth/shopify/callback`;
       
       // Create the auth URL with the new write_publications scope
       const authUrl = `https://${shop}/admin/oauth/authorize?` +
@@ -1219,7 +1224,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Use the exact redirect URL configured in the Shopify Partner Dashboard
-      const redirectUri = `https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/shopify/callback`;
+      // Use app URL for OAuth callback (will be proxied through to the actual app server)
+      // In local dev or testing, use the current hostname
+      const hostname = req.headers.host || 'localhost:5000';
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const baseUrl = `${protocol}://${hostname}`;
+      
+      const redirectUri = `${baseUrl}/oauth/shopify/callback`;
       
       // Create the authorization URL, passing host parameter for embedded apps
       const authUrl = createAuthUrl(shop, apiKey, redirectUri, nonce, host as string | undefined);

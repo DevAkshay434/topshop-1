@@ -322,7 +322,11 @@ export default function CreatePostModal({
       const hasSchedulingPermission = permissionsData?.hasPermission || false;
       
       // If user is trying to schedule but doesn't have permission, convert to immediate publish
-      if (values.publicationType === 'schedule' && !hasSchedulingPermission) {
+      // Note: The scheduler logic is handled on the backend, this flag is for the UI toast
+      const formValues = form.getValues();
+      const isAttemptingToSchedule = (initialData?.status === 'scheduled' || 
+        formValues.publicationType === 'schedule');
+      if (isAttemptingToSchedule && !hasSchedulingPermission) {
         console.log("Store lacks scheduling permission - converting scheduled post to draft");
         postData.publicationType = 'draft';
         
