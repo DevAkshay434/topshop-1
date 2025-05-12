@@ -15,6 +15,7 @@ import { shopifyService } from './services/shopify';
 import contentRouter from './routes/content';
 import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
+import openaiRouter from './routes/openai';
 import { pexelsService } from './services/pexels';
 import { 
   validateShopDomain, 
@@ -1173,6 +1174,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // Add admin panel routes under /api/admin
   apiRouter.use('/admin', adminRouter);
+  
+  // Add OpenAI routes under /api/openai
+  apiRouter.use('/openai', openaiRouter);
   
   // Get stats for dashboard
   apiRouter.get("/stats", async (req: Request, res: Response) => {

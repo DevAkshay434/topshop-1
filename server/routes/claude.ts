@@ -1,7 +1,33 @@
 import { Router, Request, Response } from 'express';
-import { generateCluster } from '../services/claude';
+import { generateCluster, testClaudeConnection } from '../services/claude';
 
 const router = Router();
+
+// Test Claude API connection
+router.get('/test-claude', async (_req: Request, res: Response) => {
+  try {
+    const isConnected = await testClaudeConnection();
+    
+    if (isConnected) {
+      return res.status(200).json({
+        success: true,
+        message: 'Successfully connected to Claude API'
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to connect to Claude API'
+      });
+    }
+  } catch (error) {
+    console.error('Error testing Claude connection:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error testing Claude API connection',
+      error: (error as Error).message
+    });
+  }
+});
 
 // Generate a topic cluster using Claude AI
 router.post('/cluster', async (req: Request, res: Response) => {

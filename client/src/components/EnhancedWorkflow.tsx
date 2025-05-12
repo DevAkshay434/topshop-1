@@ -146,12 +146,31 @@ export default function EnhancedWorkflow({
           postData.publicationType = 'draft';
           postData.status = 'draft';
         } else {
+          // Set up scheduled post data
           postData.publicationType = 'schedule';
           postData.status = 'scheduled';
-          postData.scheduleDate = values.scheduledPublishDate;
-          postData.scheduleTime = values.scheduledPublishTime || "09:30";
-          postData.scheduledPublishDate = values.scheduledPublishDate;
-          postData.scheduledPublishTime = values.scheduledPublishTime || "09:30";
+          
+          // Make sure we have date and time
+          if (!values.scheduledPublishDate || !values.scheduledPublishTime) {
+            // Get the store timezone or fall back to UTC
+            const storeTimezone = storeInfo?.iana_timezone || 'UTC';
+            
+            // Get tomorrow's date in the store's timezone for scheduling
+            const tomorrow = getTomorrowInTimezone(storeTimezone);
+            const defaultDate = format(tomorrow, 'yyyy-MM-dd');
+            
+            postData.scheduledPublishDate = values.scheduledPublishDate || defaultDate;
+            postData.scheduledPublishTime = values.scheduledPublishTime || "09:30";
+          } else {
+            postData.scheduledPublishDate = values.scheduledPublishDate;
+            postData.scheduledPublishTime = values.scheduledPublishTime;
+          }
+          
+          // Backward compatibility
+          postData.scheduleDate = postData.scheduledPublishDate;
+          postData.scheduleTime = postData.scheduledPublishTime;
+          
+          console.log(`Scheduling post for ${postData.scheduledPublishDate} at ${postData.scheduledPublishTime}`);
         }
       } else {
         // Handle publish or draft
@@ -286,14 +305,26 @@ export default function EnhancedWorkflow({
                 <TabsContent value="preview">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-xl font-bold">{form.watch('title')}</h3>
-                      {form.watch('tags') && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {form.watch('tags').split(',').map((tag: string, index: number) => (
-                            <Badge key={index} variant="outline">{tag.trim()}</Badge>
-                          ))}
-                        </div>
-                      )}
+                      <h3 className="text-xl font-bold">{form.watch('title') || 'Untitled Post'}</h3>
+                      {(() => {
+                        const tagValue = form.watch('tags');
+                        if (!tagValue || typeof tagValue !== 'string' || !tagValue.trim()) {
+                          return null;
+                        }
+                        
+                        const tagList = tagValue.split(',').filter(tag => tag.trim());
+                        if (tagList.length === 0) {
+                          return null;
+                        }
+                        
+                        return (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {tagList.map((tag, index) => (
+                              <Badge key={index} variant="outline">{tag.trim()}</Badge>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                     
                     {/* Content preview */}

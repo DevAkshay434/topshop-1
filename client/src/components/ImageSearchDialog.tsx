@@ -43,6 +43,7 @@ interface ImageSearchDialogProps {
     keyword: string;
     isMainKeyword?: boolean;
   }>;
+  searchKeyword?: string;
 }
 
 export default function ImageSearchDialog({
@@ -50,13 +51,15 @@ export default function ImageSearchDialog({
   onOpenChange,
   onImagesSelected,
   initialSelectedImages = [],
-  selectedKeywords = []
+  selectedKeywords = [],
+  searchKeyword = ''
 }: ImageSearchDialogProps) {
-  const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
+  const [imageSearchQuery, setImageSearchQuery] = useState<string>(searchKeyword || '');
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>(initialSelectedImages || []);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<SearchHistory[]>([]);
+  const [hasInitialSearchRun, setHasInitialSearchRun] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'product'>('all');
   const [availableSources, setAvailableSources] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'selected'>('search');
@@ -87,8 +90,18 @@ export default function ImageSearchDialog({
 
   // Pre-populate with main keyword if available and auto-search with it
   useEffect(() => {
-    if (open && imageSearchHistory.length === 0 && !searchedImages.length) {
-      // Find the main keyword if available
+    if (open && !hasInitialSearchRun && imageSearchHistory.length === 0 && !searchedImages.length) {
+      // Set the flag to prevent repeated searches
+      setHasInitialSearchRun(true);
+      
+      // If searchKeyword is provided, use it first
+      if (searchKeyword && searchKeyword.trim() !== '') {
+        console.log(`Pre-populated and searching with provided keyword: ${searchKeyword}`);
+        handleImageSearch(searchKeyword);
+        return;
+      }
+      
+      // Otherwise, find the main keyword if available
       const mainKeyword = selectedKeywords.find(kw => kw.isMainKeyword);
       
       if (mainKeyword) {

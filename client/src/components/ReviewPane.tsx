@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { format } from 'date-fns';
 import { useStore } from '@/contexts/StoreContext';
 import { SchedulingPermissionNotice } from './SchedulingPermissionNotice';
-import { createDateInTimezone, getTomorrowInTimezone } from '@shared/timezone';
+import { createDateInTimezone } from '@shared/timezone';
 
 import {
   Card,
@@ -27,12 +27,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Edit, Eye } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Define schema for review form
@@ -65,14 +64,7 @@ export function ReviewPane({
   hasSchedulingPermission = true,
 }: ReviewPaneProps) {
   const { storeInfo } = useStore();
-  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
-  
-  // Get the store timezone or fall back to UTC
-  const storeTimezone = storeInfo?.iana_timezone || 'UTC';
-  
-  // Get tomorrow's date in the store's timezone for scheduling
-  const tomorrow = getTomorrowInTimezone(storeTimezone);
-  const defaultScheduleDate = format(tomorrow, 'yyyy-MM-dd');
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('preview');
   
   // Initialize form with provided values
   const form = useForm<ReviewFormValues>({
@@ -81,7 +73,8 @@ export function ReviewPane({
       title: title || "",
       content: content || "",
       publicationType: "draft",
-      scheduledPublishDate: defaultScheduleDate,
+      // Get tomorrow's date in store timezone
+      scheduledPublishDate: format(new Date(Date.now() + 86400000), 'yyyy-MM-dd'),
       scheduledPublishTime: "09:30",
       tags: Array.isArray(tags) ? tags.join(", ") : ""
     }
@@ -127,7 +120,7 @@ export function ReviewPane({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Review & Edit Content</CardTitle>
+        <CardTitle>Review Content</CardTitle>
         <CardDescription>
           Review and edit your content before publishing
         </CardDescription>
@@ -136,15 +129,9 @@ export function ReviewPane({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'edit' | 'preview')}>
-              <TabsList className="grid grid-cols-2 mb-4">
-                <TabsTrigger value="edit" className="flex items-center">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </TabsTrigger>
-                <TabsTrigger value="preview" className="flex items-center">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </TabsTrigger>
+              <TabsList>
+                <TabsTrigger value="edit">Edit</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
               </TabsList>
               
               <TabsContent value="edit" className="space-y-4 pt-4">
@@ -155,11 +142,7 @@ export function ReviewPane({
                     <FormItem>
                       <FormLabel>Title</FormLabel>
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          className="text-lg font-medium"
-                          placeholder="Enter a title for your post" 
-                        />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -173,10 +156,9 @@ export function ReviewPane({
                     <FormItem>
                       <FormLabel>Content</FormLabel>
                       <FormControl>
-                        <Textarea
+                        <textarea
                           {...field}
-                          className="min-h-[400px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm"
-                          placeholder="Enter your post content (HTML is supported)"
+                          className="min-h-[300px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
                         />
                       </FormControl>
                       <FormMessage />
@@ -191,10 +173,7 @@ export function ReviewPane({
                     <FormItem>
                       <FormLabel>Tags (comma separated)</FormLabel>
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          placeholder="e.g. marketing, seo, tutorial" 
-                        />
+                        <Input {...field} />
                       </FormControl>
                       <FormDescription>
                         Enter tags separated by commas
@@ -206,17 +185,31 @@ export function ReviewPane({
               </TabsContent>
               
               <TabsContent value="preview" className="pt-4">
-                <div className="space-y-4 border rounded-md p-5 bg-white">
+                <div className="space-y-4">
                   <div>
-                    <h2 className="text-2xl font-bold mb-2">{form.watch('title')}</h2>
+                    <h2 className="text-2xl font-bold mb-2">{form.watch('title') || 'Untitled Post'}</h2>
                     
-                    {form.watch('tags') && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {form.watch('tags')?.split(',').map((tag: string, index: number) => (
-                          <Badge key={index} variant="outline">{tag.trim()}</Badge>
-                        ))}
-                      </div>
-                    )}
+                    {(() => {
+                      const tagValue = form.watch('tags');
+                      // Safe check that we have a non-empty string
+                      if (!tagValue || typeof tagValue !== 'string' || !tagValue.trim()) {
+                        return null;
+                      }
+                      
+                      // Split tags and filter out empty ones
+                      const tagList = tagValue.split(',').filter(tag => tag.trim());
+                      if (tagList.length === 0) {
+                        return null;
+                      }
+                      
+                      return (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {tagList.map((tag, index) => (
+                            <Badge key={index} variant="outline">{tag.trim()}</Badge>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                   
                   {renderPreview()}

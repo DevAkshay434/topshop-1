@@ -76,8 +76,11 @@ Generate content with the following structure:
     
     // Extract the content from Claude's response
     let content = '';
-    if (response.content && response.content.length > 0 && 'text' in response.content[0]) {
-      content = response.content[0].text;
+    if (response.content && response.content.length > 0) {
+      const firstContentBlock = response.content[0];
+      if (typeof firstContentBlock === 'object' && firstContentBlock !== null && 'text' in firstContentBlock) {
+        content = firstContentBlock.text as string;
+      }
     }
     
     if (!content) {
@@ -176,32 +179,115 @@ Return the response as a JSON object with this structure:
       ],
     });
 
-    // Extract the JSON response from Claude's output
+    // Extract the JSON response from Claude's output with advanced error handling
     let content = '';
-    if (response.content && response.content.length > 0 && 'text' in response.content[0]) {
-      content = response.content[0].text;
+    if (response.content && response.content.length > 0) {
+      const firstContentBlock = response.content[0];
+      if (typeof firstContentBlock === 'object' && firstContentBlock !== null && 'text' in firstContentBlock) {
+        content = firstContentBlock.text as string;
+      }
     }
     
     if (!content) {
       throw new Error("Empty response from Claude");
     }
     
-    // Find the JSON portion within the content
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    console.log("Raw Claude cluster response (first 200 chars):", content.substring(0, 200));
     
-    if (!jsonMatch) {
-      throw new Error("Invalid response format from Claude");
+    // Try multiple strategies to extract valid JSON
+    let extractedJson = '';
+    
+    // Strategy 1: Look for JSON in code blocks
+    if (content.includes('```json')) {
+      const jsonBlockMatch = content.match(/```json\s*([\s\S]*?)```/);
+      if (jsonBlockMatch && jsonBlockMatch[1]) {
+        console.log('Found JSON code block, extracting...');
+        extractedJson = jsonBlockMatch[1].trim();
+      } else {
+        // If markers exist but the regex failed, use a more aggressive approach
+        extractedJson = content
+          .replace(/```json/g, '')
+          .replace(/```/g, '')
+          .trim();
+      }
     }
     
-    // Parse and validate the cluster data
-    const clusterData = JSON.parse(jsonMatch[0]) as ClusterTopic;
-    
-    // Ensure the response has the correct structure
-    if (!clusterData.mainTopic || !Array.isArray(clusterData.subtopics)) {
-      throw new Error("Malformed response from Claude");
+    // Strategy 2: Find a complete JSON object if no code blocks
+    if (!extractedJson) {
+      const jsonObjectMatch = content.match(/\{\s*"mainTopic"\s*:[\s\S]*"subtopics"\s*:\s*\[[\s\S]*?\]\s*\}/);
+      if (jsonObjectMatch) {
+        console.log('Found JSON object pattern');
+        extractedJson = jsonObjectMatch[0];
+      }
     }
     
-    return clusterData;
+    // If still no JSON found, use the entire content
+    if (!extractedJson) {
+      console.log('Using full content and attempting to clean');
+      extractedJson = content;
+      
+      // Try to find the start of JSON
+      const startIndex = extractedJson.indexOf('{');
+      if (startIndex > 0) {
+        extractedJson = extractedJson.substring(startIndex);
+      }
+      
+      // Clean up common issues that break JSON parsing
+      extractedJson = extractedJson
+        .replace(/(\r\n|\n|\r)/gm, ' ') // Replace newlines with spaces
+        .replace(/,\s*\]/g, ']')        // Remove trailing commas in arrays
+        .replace(/,\s*\}/g, '}');       // Remove trailing commas in objects
+    }
+    
+    console.log("Cleaned Claude cluster JSON (first 100 chars):", extractedJson.substring(0, 100));
+    
+    try {
+      // Parse and validate the cluster data
+      const clusterData = JSON.parse(extractedJson) as ClusterTopic;
+      
+      // Ensure the response has the correct structure
+      if (!clusterData.mainTopic || !Array.isArray(clusterData.subtopics)) {
+        throw new Error("Malformed response structure from Claude");
+      }
+      
+      return clusterData;
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      
+      // Try to fix common JSON syntax errors
+      try {
+        console.log("Attempting to fix JSON syntax errors...");
+        
+        // Try to balance braces and brackets
+        let balancedJson = extractedJson;
+        const openBraces = (balancedJson.match(/\{/g) || []).length;
+        const closeBraces = (balancedJson.match(/\}/g) || []).length;
+        const openBrackets = (balancedJson.match(/\[/g) || []).length;
+        const closeBrackets = (balancedJson.match(/\]/g) || []).length;
+        
+        // Add missing closing braces/brackets
+        if (openBraces > closeBraces) {
+          balancedJson += '}' .repeat(openBraces - closeBraces);
+        }
+        
+        if (openBrackets > closeBrackets) {
+          balancedJson += ']' .repeat(openBrackets - closeBrackets);
+        }
+        
+        // Try parsing again with the fixed JSON
+        const fixedData = JSON.parse(balancedJson) as ClusterTopic;
+        
+        if (fixedData.mainTopic && Array.isArray(fixedData.subtopics)) {
+          console.log("Successfully fixed JSON syntax issues");
+          return fixedData;
+        }
+      } catch (fixError) {
+        console.error("Failed to fix JSON syntax:", fixError);
+      }
+      
+      // If all parsing attempts fail, throw a descriptive error
+      throw new Error(`Failed to parse Claude response: ${(parseError as Error).message}`);
+    }
     
   } catch (error) {
     console.error("Error generating content cluster with Claude:", error);

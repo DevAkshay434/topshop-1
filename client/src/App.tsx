@@ -19,6 +19,8 @@ import Settings from "@/pages/Settings";
 import Help from "@/pages/Help";
 import AdminPanel from "@/pages/AdminPanel";
 import EnhancedWorkflowDemo from "@/pages/EnhancedWorkflowDemo";
+import ClusterWorkflowDemo from "@/pages/ClusterWorkflowDemo";
+import OpenAIWorkflow from "@/pages/OpenAIWorkflow";
 import { useEffect, useState } from "react";
 
 function Router() {
@@ -59,7 +61,7 @@ function Router() {
         <Switch>
           {/* If we're at root with embedded params, show EmbeddedApp */}
           <Route path="/">
-            {isEmbedded ? <EmbeddedApp /> : <EnhancedWorkflowDemo />}
+            {isEmbedded ? <EmbeddedApp /> : <OpenAIWorkflow />}
           </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
@@ -67,20 +69,21 @@ function Router() {
           <Route path="/simple-bulk-generation" component={SimpleBulkGeneration} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
-          <Route path="/billing-callback" component={EnhancedWorkflowDemo} />
+          <Route path="/billing-callback" component={OpenAIWorkflow} />
           <Route path="/embedded" component={EmbeddedApp} />
-          <Route path="/dashboard" component={EnhancedWorkflowDemo} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/install" component={AppInstall} />
           <Route path="/partner-install" component={PartnerInstall} />
-          <Route path="/shopify/callback" component={EnhancedWorkflowDemo} />
-          <Route path="/shopify/auth/callback" component={EnhancedWorkflowDemo} />
+          <Route path="/shopify/callback" component={OpenAIWorkflow} />
+          <Route path="/shopify/auth/callback" component={OpenAIWorkflow} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
           <Route path="/help" component={Help} />
-          <Route path="/admin" component={EnhancedWorkflowDemo} />
+          <Route path="/admin" component={AdminPanel} />
           <Route path="/legacy-dashboard" component={Dashboard} />
           <Route path="/enhanced-workflow" component={EnhancedWorkflowDemo} />
-          <Route path="/enhanced" component={EnhancedWorkflowDemo} />
+          <Route path="/cluster" component={ClusterWorkflowDemo} />
+          <Route path="/openai-workflow" component={OpenAIWorkflow} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />

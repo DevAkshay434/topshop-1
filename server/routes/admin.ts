@@ -1,1654 +1,587 @@
-import { Router, Request, Response } from "express";
-import { z } from "zod";
-import { storage } from "../storage";
-import { shopifyService } from "../services/shopify";
-import { dataForSEOService, KeywordData } from "../services/dataforseo";
-import { pexelsService, type PexelsImage } from "../services/pexels";
-import { pixabayService, type PixabayImage } from "../services/pixabay";
-import { generateBlogContentWithClaude } from "../services/claude";
-import OpenAI from "openai";
-import { ShopifyStore } from "../../shared/schema";
+import { Router, Request, Response } from 'express';
+import axios from 'axios';
+import { storage } from '../storage';
+import { shopifyService } from '../services/shopify';
+import { dataSEOService } from '../services/dataseo';
+import { pexelsService } from '../services/pexels';
+import { pixabayService } from '../services/pixabay';
 
-const adminRouter = Router();
+const router = Router();
 
-// Get supported regions
-adminRouter.get("/regions", async (_req: Request, res: Response) => {
-  const regions = [
-    { id: "us", name: "United States" },
-    { id: "gb", name: "United Kingdom" },
-    { id: "ca", name: "Canada" },
-    { id: "au", name: "Australia" },
-    { id: "nz", name: "New Zealand" },
-    { id: "in", name: "India" },
-    { id: "eu", name: "European Union" }
-  ];
-  
-  res.json({ regions });
-});
-
-// Check scheduled post status in Shopify
-adminRouter.get("/check-scheduled-post/:articleId", async (req: Request, res: Response) => {
+// Get products from connected Shopify store
+router.get('/products', async (req: Request, res: Response) => {
   try {
-    const { articleId } = req.params;
-    if (!articleId) {
-      return res.status(400).json({
-        success: false,
-        message: "Article ID is required"
-      });
-    }
+    const storeId = req.query.storeId ? Number(req.query.storeId) : undefined;
+    let products: any[] = [];
     
     // Get the store
-    const stores = await storage.getShopifyStores();
-    if (!stores || stores.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No Shopify stores found"
-      });
-    }
-    
-    // Use the first store
-    const store: ShopifyStore = stores[0];
-    
-    // Get all blogs to find the one containing our article
-    const blogs = await shopifyService.getBlogs(store);
-    
-    // Initialize result variable
-    let articleData = null;
-    
-    // Search for the article in each blog
-    for (const blog of blogs) {
-      try {
-        const articles = await shopifyService.getArticles(store, blog.id);
-        console.log(`Checking ${articles.length} articles in blog ${blog.id} for ID ${articleId}`);
-        
-        // Debug first few articles
-        if (articles.length > 0) {
-          console.log("First article ID:", articles[0].id, "Type:", typeof articles[0].id);
-        }
-        
-        // Convert to string for comparison since IDs might be coming as numbers
-        const foundArticle = articles.find(article => String(article.id) === String(articleId));
-        
-        if (foundArticle) {
-          console.log("Found article:", foundArticle.title);
-          articleData = {
-            ...foundArticle,
-            blogId: blog.id
-          };
-          break;
-        }
-      } catch (error) {
-        console.error(`Error fetching articles for blog ${blog.id}:`, error);
+    let store: any;
+    if (storeId) {
+      store = await storage.getShopifyStore(storeId);
+    } else {
+      const conn = await storage.getShopifyConnection();
+      if (conn) {
+        store = {
+          id: conn.id,
+          shopName: conn.storeName,
+          accessToken: conn.accessToken,
+          scope: '',
+          defaultBlogId: conn.defaultBlogId || '',
+          isConnected: conn.isConnected,
+          lastSynced: conn.lastSynced,
+          installedAt: new Date(),
+          uninstalledAt: null,
+          planName: null,
+          chargeId: null,
+          trialEndsAt: null
+        };
       }
     }
     
-    if (!articleData) {
+    if (!store) {
       return res.status(404).json({
         success: false,
-        message: "Article not found in any blog"
+        message: 'No active Shopify store found'
       });
     }
     
-    // Add a note about the scheduling discrepancy
-    return res.json({
-      success: true,
-      article: articleData,
-      schedulingStatus: {
-        isScheduled: articleData.published_at && new Date(articleData.published_at) > new Date(),
-        publishDate: articleData.published_at,
-        currentStatus: articleData.published ? "published" : "draft", // If not published but has future date, it's scheduled
-        note: "The Shopify API returns the current date in published_at even for scheduled posts. Check the actual post in Shopify Admin to confirm scheduling."
-      },
-      verificationUrl: `https://${store.shopName}/admin/blogs/${articleData.blog_id}/articles/${articleData.id}`
-    });
-  } catch (error) {
-    console.error("Error checking scheduled post:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to check scheduled post status",
-      error: String(error)
-    });
-  }
-});
-
-// Get products from Shopify
-adminRouter.get("/products", async (req: Request, res: Response) => {
-  try {
-    // Get the Shopify connection
-    const connection = await storage.getShopifyConnection();
-    if (!connection || !connection.isConnected) {
-      return res.status(400).json({
-        success: false,
-        error: "No active Shopify connection found"
-      });
+    // Get products from Shopify
+    try {
+      const shopifyProducts = await shopifyService.getProducts(store);
+      products = shopifyProducts.map((product: any) => ({
+        id: product.id,
+        title: product.title,
+        description: product.body_html,
+        image: product.image ? product.image : null,
+        variants: product.variants,
+        tags: product.tags,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at
+      }));
+    } catch (error) {
+      console.error('Error fetching products from Shopify:', error);
     }
     
-    // Create temporary store object
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || '',
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
-    
-    // Get limit from query params
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-    
-    // Get products
-    const products = await shopifyService.getProducts(store, limit);
-    
-    res.json({
+    return res.status(200).json({
       success: true,
       products
     });
-  } catch (error: any) {
-    console.error("Error fetching products:", error);
-    res.status(500).json({
+  } catch (error) {
+    console.error('Error in admin/products route:', error);
+    return res.status(500).json({
       success: false,
-      error: error.message || "Failed to fetch products"
+      message: 'Failed to fetch products',
+      error: (error as Error).message
     });
   }
 });
 
-// Get collections from Shopify
-adminRouter.get("/collections", async (req: Request, res: Response) => {
+// Get collections from connected Shopify store
+router.get('/collections', async (req: Request, res: Response) => {
   try {
-    // Get the Shopify connection
-    const connection = await storage.getShopifyConnection();
-    if (!connection || !connection.isConnected) {
-      return res.status(400).json({
+    const storeId = req.query.storeId ? Number(req.query.storeId) : undefined;
+    let collections = [];
+    
+    // Get the store
+    let store: any;
+    if (storeId) {
+      store = await storage.getShopifyStore(storeId);
+    } else {
+      const conn = await storage.getShopifyConnection();
+      if (conn) {
+        store = {
+          id: conn.id,
+          shopName: conn.storeName,
+          accessToken: conn.accessToken,
+          scope: '',
+          defaultBlogId: conn.defaultBlogId || '',
+          isConnected: conn.isConnected,
+          lastSynced: conn.lastSynced,
+          installedAt: new Date(),
+          uninstalledAt: null,
+          planName: null,
+          chargeId: null,
+          trialEndsAt: null
+        };
+      }
+    }
+    
+    if (!store) {
+      return res.status(404).json({
         success: false,
-        error: "No active Shopify connection found"
+        message: 'No active Shopify store found'
       });
     }
     
-    // Create temporary store object
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || '',
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
+    // Get collections from Shopify
+    try {
+      // Get custom collections
+      const customCollections = await shopifyService.getCollections(store, 'custom');
+      const formattedCustom = customCollections.map((collection: any) => ({
+        id: collection.id,
+        title: collection.title,
+        description: collection.body_html,
+        image: collection.image ? collection.image : null,
+        handle: collection.handle,
+        productsCount: collection.products_count || 0,
+        updatedAt: collection.updated_at
+      }));
+      
+      // Get smart collections
+      const smartCollections = await shopifyService.getCollections(store, 'smart');
+      const formattedSmart = smartCollections.map((collection: any) => ({
+        id: collection.id,
+        title: collection.title,
+        description: collection.body_html,
+        image: collection.image ? collection.image : null,
+        handle: collection.handle,
+        productsCount: collection.products_count || 0,
+        updatedAt: collection.updated_at,
+        isSmartCollection: true
+      }));
+
+      // Combine both collection types
+      collections = [...formattedCustom, ...formattedSmart];
+      
+    } catch (error) {
+      console.error('Error fetching collections from Shopify:', error);
+    }
     
-    // Get limit from query params
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-    
-    // Get all collections (both smart and custom)
-    const customCollections = await shopifyService.getCollections(store, 'custom', limit);
-    const smartCollections = await shopifyService.getCollections(store, 'smart', limit);
-    const collections = [...customCollections, ...smartCollections];
-    
-    res.json({
+    return res.status(200).json({
       success: true,
       collections
     });
-  } catch (error: any) {
-    console.error("Error fetching collections:", error);
-    res.status(500).json({
+  } catch (error) {
+    console.error('Error in admin/collections route:', error);
+    return res.status(500).json({
       success: false,
-      error: error.message || "Failed to fetch collections"
+      message: 'Failed to fetch collections',
+      error: (error as Error).message
     });
   }
 });
 
-// Get blogs from Shopify
-adminRouter.get("/blogs", async (_req: Request, res: Response) => {
+// Get blogs from connected Shopify store
+router.get('/blogs', async (req: Request, res: Response) => {
   try {
-    // Get the Shopify connection
-    const connection = await storage.getShopifyConnection();
-    if (!connection || !connection.isConnected) {
-      return res.status(400).json({
+    const storeId = req.query.storeId ? Number(req.query.storeId) : undefined;
+    let blogs: any[] = [];
+    
+    // Get the store
+    let store: any;
+    if (storeId) {
+      store = await storage.getShopifyStore(storeId);
+    } else {
+      const conn = await storage.getShopifyConnection();
+      if (conn) {
+        store = {
+          id: conn.id,
+          shopName: conn.storeName,
+          accessToken: conn.accessToken,
+          scope: '',
+          defaultBlogId: conn.defaultBlogId || '',
+          isConnected: conn.isConnected,
+          lastSynced: conn.lastSynced,
+          installedAt: new Date(),
+          uninstalledAt: null,
+          planName: null,
+          chargeId: null,
+          trialEndsAt: null
+        };
+      }
+    }
+    
+    if (!store) {
+      return res.status(404).json({
         success: false,
-        error: "No active Shopify connection found"
+        message: 'No active Shopify store found'
       });
     }
     
-    // Create temporary store object
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || '',
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
+    // Get blogs from Shopify
+    try {
+      const shopifyBlogs = await shopifyService.getBlogs(store);
+      blogs = shopifyBlogs;
+    } catch (error) {
+      console.error('Error fetching blogs from Shopify:', error);
+    }
     
-    // Get blogs
-    const blogs = await shopifyService.getBlogs(store);
-    
-    res.json({
+    return res.status(200).json({
       success: true,
       blogs
     });
-  } catch (error: any) {
-    console.error("Error fetching blogs:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to fetch blogs"
-    });
-  }
-});
-
-// Generate keyword suggestions for a product or topic
-adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
-  try {
-    console.log("Title suggestions requested with data:", req.body);
-    const { keywords, keywordData, productTitle } = req.body;
-    
-    if (!Array.isArray(keywords) || keywords.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "Keywords are required for title generation"
-      });
-    }
-    
-    // Prioritize keywords with higher search volume
-    const sortedKeywords = [...keywordData].sort((a, b) => {
-      const volumeA = a.searchVolume || 0;
-      const volumeB = b.searchVolume || 0;
-      return volumeB - volumeA;
-    });
-    
-    const keywordStrings = sortedKeywords.map(k => k.keyword);
-    const topKeywords = keywordStrings.slice(0, 5); // Use top 5 keywords by search volume
-    
-    // Generate titles using Claude or other service
-    let titles: string[] = [];
-    try {
-      // Create a clean product title without repetition for prompting
-      let cleanProductTitle = '';
-      
-      if (productTitle) {
-        // Check if this is a multi-product title and handle appropriately
-        if (productTitle.includes(' - ')) {
-          // Split by dash and take just the first product to avoid long confusing titles
-          cleanProductTitle = productTitle.split(' - ')[0].replace(/\[.*?\]/g, '').trim();
-          console.log("Multi-product title detected. Using first product:", cleanProductTitle);
-        } else {
-          cleanProductTitle = productTitle.replace(/\[.*?\]/g, '').trim();
-        }
-        
-        // If still too long (>40 chars), truncate for better title generation
-        if (cleanProductTitle.length > 40) {
-          const shortened = cleanProductTitle.substring(0, 40).trim();
-          console.log(`Product title too long (${cleanProductTitle.length} chars). Shortened to: ${shortened}`);
-          cleanProductTitle = shortened;
-        }
-      }
-      
-      // Enhanced Claude prompt for trending, Google-optimized titles
-      const claudeRequest = {
-        prompt: `Generate 8 unique, highly SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that strategically incorporate these keywords: ${topKeywords.join(", ")}.
-        
-        IMPORTANT CONTEXT: 
-        - Primary product: ${cleanProductTitle || topKeywords[0]}
-        - Primary keywords: ${topKeywords.slice(0, 3).join(", ")}
-        - Secondary keywords: ${topKeywords.slice(3).join(", ") || "N/A"}
-        - Current year: ${new Date().getFullYear()}
-        
-        IMPORTANT SEO GUIDELINES:
-        - Each title MUST naturally include at least one of the provided keywords in full
-        - Always place the most important keyword as close to the beginning of the title as possible
-        - Create titles that directly match search intent (informational, commercial, etc.)
-        - Use trending headline patterns like "Ultimate Guide", "Complete Breakdown", or "${new Date().getFullYear()} Review"
-        - Include the current year (${new Date().getFullYear()}) in at least 2 titles for freshness signals
-        - For clickthrough optimization, use powerful words like "essential", "complete", "proven", or "ultimate"
-        - Create naturally engaging titles that avoid obvious keyword stuffing
-        - Focus on titles with strong CTR potential in search results
-        - Follow these specific title formats for maximum SEO value:
-          * Include 2 numbered list titles (e.g., "7 Best...", "10 Ways to...")
-          * Include 1 "How to" title specifically targeting informational searches
-          * Include 1 comparison title (e.g., "X vs Y: Which...")
-          * Include 1 question-format title that includes a keyword (e.g., "What is...")
-          * Include 1 title with "Ultimate Guide to [keyword]" format
-          * Include 1 title with a "Why" format (e.g., "Why [keyword] is...")
-          * Include 1 title with "[Current Year] Review/Guide" format
-        - Keep titles between 50-65 characters for optimal SEO click-through rates
-        - Avoid ALL-CAPS words, excessive punctuation, or clickbait tactics
-        
-        Format your response as a JSON array of exactly 8 strings, with no additional text.`,
-        responseFormat: "json"
-      };
-      
-      // Log the Claude request for debugging
-      console.log("Sending title generation request to Claude with data:", {
-        productTitle: cleanProductTitle || topKeywords[0],
-        keywords: topKeywords,
-        yearContext: new Date().getFullYear()
-      });
-      
-      const claudeService = require("../services/claude");
-      const claudeResponse = await claudeService.generateTitles(claudeRequest);
-      
-      if (claudeResponse && claudeResponse.titles && Array.isArray(claudeResponse.titles)) {
-        console.log("Claude generated title suggestions:", claudeResponse.titles);
-        titles = claudeResponse.titles;
-      } else {
-        console.error("Claude response missing titles array:", claudeResponse);
-      }
-    } catch (claudeError) {
-      console.error("Claude title generation failed:", claudeError);
-      
-      // Create a clean product title without repetition for fallback using the same logic
-      let cleanProductTitle = '';
-      
-      if (productTitle) {
-        // Check if this is a multi-product title and handle appropriately
-        if (productTitle.includes(' - ')) {
-          // Split by dash and take just the first product to avoid long confusing titles
-          cleanProductTitle = productTitle.split(' - ')[0].replace(/\[.*?\]/g, '').trim();
-          console.log("Multi-product title detected in fallback. Using first product:", cleanProductTitle);
-        } else {
-          cleanProductTitle = productTitle.replace(/\[.*?\]/g, '').trim();
-        }
-        
-        // If still too long (>40 chars), truncate for better title generation
-        if (cleanProductTitle.length > 40) {
-          const shortened = cleanProductTitle.substring(0, 40).trim();
-          console.log(`Product title too long in fallback (${cleanProductTitle.length} chars). Shortened to: ${shortened}`);
-          cleanProductTitle = shortened;
-        }
-      }
-      
-      // Extract a short product name for more compact titles
-      const productShortName = cleanProductTitle.split(' ').slice(0, 2).join(' ');
-      
-      // Generate dynamic titles based on the product and keywords
-      const currentYear = new Date().getFullYear();
-      const keyword1 = topKeywords[0] || "product";
-      const keyword2 = topKeywords[1] || keyword1;
-      const keyword3 = topKeywords[2] || keyword1;
-      
-      titles = [
-        // SEO-optimized titles as fallbacks
-        `${keyword1}: The Ultimate Guide for ${currentYear}`,
-        `10 Best ${keyword1} Features You Need to Know (${currentYear})`,
-        `How to Choose the Perfect ${keyword2} in ${currentYear}`,
-        `${keyword1} vs Traditional Systems: Which is Better?`,
-        `What is ${keyword1}? Complete ${currentYear} Buyer's Guide`,
-        `Why ${keyword1} is Essential for Modern Homes`,
-        `7 Reasons ${keyword2} Outperforms the Competition`,
-        `${currentYear} ${keyword1} Review: Everything You Need to Know`
-      ];
-    }
-    
-    // Return titles
-    return res.json({
-      success: true,
-      titles
-    });
-    
-  } catch (error: any) {
-    console.error("Title suggestions error:", error);
+  } catch (error) {
+    console.error('Error in admin/blogs route:', error);
     return res.status(500).json({
       success: false,
-      error: error.message || "Failed to generate title suggestions"
+      message: 'Failed to fetch blogs',
+      error: (error as Error).message
     });
   }
 });
 
-adminRouter.post("/keywords-for-product", async (req: Request, res: Response) => {
+// Generate keywords for products or collections using DataSEO API
+router.post('/keywords-for-product', async (req: Request, res: Response) => {
   try {
-    const { productId, productTitle, productUrl, topic } = req.body;
+    const requestBody = req.body;
+    console.log("Keywords request body type:", typeof requestBody);
+    console.log("Keywords request body:", JSON.stringify(requestBody, null, 2));
     
-    // Accept either a direct topic, productTitle, or productUrl
-    const searchTerm = topic || productTitle || productUrl;
-    
-    if (!searchTerm) {
+    // Ensure we have a valid request body as an object
+    if (!requestBody || typeof requestBody !== 'object') {
       return res.status(400).json({
         success: false,
-        error: "A search term (topic, product title, or URL) is required for keyword generation"
+        error: 'Invalid request body'
       });
     }
     
-    // Execute keyword search
-    console.log(`Searching for keywords related to: ${searchTerm}`);
+    const { products, collections } = requestBody;
     
-    // Use the proper method from dataForSEOService
-    let keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
+    // Check if we have either products or collections
+    const hasProducts = products && Array.isArray(products) && products.length > 0;
+    const hasCollections = collections && Array.isArray(collections) && collections.length > 0;
     
-    // Process keywords to ensure they're not just showing the product name
-    if (keywords.length > 0) {
-      // Clean up helper function
-      const cleanKeyword = (keyword: string): string => {
-        return keyword
-          .replace(/®|™|©/g, '') // Remove trademark symbols
-          .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets/parentheses
-          .replace(/\s+/g, ' ') // Normalize spaces
-          .trim();
-      };
-      
-      // Process each keyword
-      keywords = keywords.map(kw => {
-        let processedKeyword = cleanKeyword(kw.keyword);
+    console.log(`hasProducts: ${hasProducts}, hasCollections: ${hasCollections}`);
+    
+    if (!hasProducts && !hasCollections) {
+      return res.status(400).json({
+        success: false,
+        error: 'A valid array of products or collections is required'
+      });
+    }
+    
+    let contentItems = [];
+    let contentType = '';
+    
+    // Process content based on what was provided
+    if (hasProducts) {
+      contentType = 'products';
+      contentItems = products.map((product: any) => ({
+        title: product.title,
+        description: product.description || ''
+      }));
+    } else if (hasCollections) {
+      contentType = 'collections';
+      contentItems = collections.map((collection: any) => ({
+        title: collection.title,
+        description: collection.description || ''
+      }));
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Failed to process content items'
+      });
+    }
+    
+    // Generate seed keywords from content titles
+    const seedKeywords = contentItems
+      .map(item => {
+        // Extract main keywords from title and description
+        const titleParts = item.title.split(' ').filter((word: string) => word.length > 3);
+        const descParts = item.description 
+          ? item.description.split(' ').filter((word: string) => word.length > 3) 
+          : [];
         
-        // If the keyword is still just the full product name, try to extract a more meaningful term
-        if (searchTerm && processedKeyword.length > 30 && 
-            processedKeyword.toLowerCase() === cleanKeyword(searchTerm).toLowerCase()) {
-          // Extract meaningful part (e.g., "water softener" from "SoftPro Elite Salt Free Water Conditioner")
-          const parts = processedKeyword.split(' ');
-          if (parts.length > 3) {
-            // Try to find meaningful pairs of words for specific categories
-            const categoryKeywords = [
-              'water softener', 'water conditioner', 'water filter', 
-              'salt free', 'water treatment', 'softener system',
-              'jacket', 'smartphone', 'laptop', 'camera', 'headphones'
-            ];
-            
-            for (const catKeyword of categoryKeywords) {
-              if (processedKeyword.toLowerCase().includes(catKeyword)) {
-                processedKeyword = catKeyword;
-                break;
-              }
-            }
-            
-            // If still using full product name, use the last 2-3 words which often contain the product category
-            if (processedKeyword.length > 30) {
-              processedKeyword = parts.slice(-Math.min(3, parts.length)).join(' ');
-            }
+        // Use title parts as primary keywords, add unique description words
+        const combined = [...titleParts];
+        descParts.forEach((word: string) => {
+          if (!combined.includes(word)) {
+            combined.push(word);
+          }
+        });
+        
+        // Return up to 5 seed keywords per item
+        return combined.slice(0, 5);
+      })
+      .flat()
+      .filter((keyword: string, index: number, self: string[]) => 
+        // Remove duplicates
+        self.indexOf(keyword) === index
+      )
+      .slice(0, 10); // Limit to 10 seed keywords
+    
+    console.log(`Generated seed keywords for ${contentType}:`, seedKeywords);
+    
+    try {
+      // Use our DataSEO service to get comprehensive keywords
+      const keywords = await dataSEOService.getComprehensiveKeywords(seedKeywords, 150);
+      
+      return res.status(200).json({
+        success: true,
+        keywords,
+        message: `Generated ${keywords.length} keywords for ${contentType}`,
+        contentType
+      });
+      
+    } catch (apiError) {
+      console.error('DataSEO API error:', apiError);
+      
+      // If DataSEO service fails, use the fallback method built into the service
+      const combinedText = contentItems.map(item => `${item.title}. ${item.description}`).join(' ');
+      const fallbackKeywords = generateFallbackKeywords(combinedText);
+      
+      return res.status(200).json({
+        success: true,
+        keywords: fallbackKeywords,
+        message: `Using fallback keywords for ${contentType} due to API error`,
+        contentType
+      });
+    }
+    
+  } catch (error) {
+    console.error(`Error generating keywords:`, error);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to generate keywords`,
+      error: (error as Error).message
+    });
+  }
+});
+
+// Image search with Pexels API
+router.get('/image-search', async (req: Request, res: Response) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'A valid search query is required'
+      });
+    }
+    
+    const pexelsApiKey = process.env.PEXELS_API_KEY || '';
+    
+    try {
+      const response = await axios.get(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15`,
+        {
+          headers: {
+            'Authorization': pexelsApiKey
           }
         }
-        
-        return {
-          ...kw,
-          keyword: processedKeyword
-        };
-      });
-    }
-    
-    res.json({
-      success: true,
-      productId,
-      topic: searchTerm,
-      keywords
-    });
-  } catch (error: any) {
-    console.error("Error generating keywords:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to generate keywords"
-    });
-  }
-});
-
-// Generate product-specific image search suggestions using OpenAI
-adminRouter.post("/image-suggestions-for-product", async (req: Request, res: Response) => {
-  try {
-    const { productId, productTitle, productDescription, productType, productTags } = req.body;
-    
-    if (!productTitle) {
-      return res.status(400).json({
-        success: false,
-        error: "Product title is required for generating image suggestions"
-      });
-    }
-    
-    // Import the OpenAI image suggestion service
-    const { generateProductImageSuggestions } = await import("../services/openai-image-suggestions");
-    
-    // Create product details object
-    const productDetails = {
-      title: productTitle,
-      description: productDescription || '',
-      type: productType || '',
-      tags: productTags || []
-    };
-    
-    console.log(`Generating image suggestions for product: "${productTitle}"`);
-    
-    // Get suggestions using OpenAI
-    const suggestions = await generateProductImageSuggestions(productDetails, 8);
-    
-    // Return the suggestions
-    res.json({
-      success: true,
-      productId,
-      productTitle,
-      suggestions
-    });
-    
-  } catch (error: any) {
-    console.error("Error generating image suggestions:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to generate image suggestions"
-    });
-  }
-});
-
-// Title suggestion endpoint already defined above
-
-// Save selected keywords
-adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) => {
-  try {
-    const { productId, keywords } = req.body;
-    
-    if (!productId || !keywords || !Array.isArray(keywords)) {
-      return res.status(400).json({
-        success: false,
-        error: "Product ID and keywords array are required"
-      });
-    }
-    
-    // TODO: Save to database when needed
-    
-    res.json({
-      success: true,
-      productId,
-      keywordCount: keywords.length
-    });
-  } catch (error: any) {
-    console.error("Error saving keywords:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to save keywords"
-    });
-  }
-});
-
-// Generate images from Pexels
-adminRouter.post("/generate-images", async (req: Request, res: Response) => {
-  try {
-    console.log("Generate images request body:", req.body);
-    const { query, count, source } = req.body;
-    
-    if (!query) {
-      console.log("Missing query in request body:", req.body);
-      return res.status(400).json({
-        success: false,
-        error: "Search query is required for image generation"
-      });
-    }
-    
-    const imageCount = count || 10;
-    const requestedSource = source || 'all'; // Default to 'all' if not specified
-    
-    // Prepare response containers
-    let images: PexelsImage[] = [];
-    let fallbackUsed = false;
-    let sourcesUsed: string[] = [];
-    
-    // Try Pexels first if source is 'all' or 'pexels'
-    if (requestedSource === 'all' || requestedSource === 'pexels') {
-      try {
-        console.log(`Searching Pexels for: "${query}" (requesting ${imageCount} images)`);
-        const pexelsResult = await pexelsService.safeSearchImages(query, imageCount);
-        
-        // Add source property to each image
-        images = pexelsResult.images.map(img => ({
-          ...img,
+      );
+      
+      if (response.data && response.data.photos) {
+        const images = response.data.photos.map((photo: any) => ({
+          id: photo.id,
+          url: photo.src.medium,
+          large_url: photo.src.large,
+          original_url: photo.src.original,
+          width: photo.width,
+          height: photo.height,
+          photographer: photo.photographer,
+          photographer_url: photo.photographer_url,
           source: 'pexels'
         }));
         
-        fallbackUsed = pexelsResult.fallbackUsed;
-        sourcesUsed.push('pexels');
-      } catch (error) {
-        console.error("Pexels search failed:", error);
-        fallbackUsed = true;
+        return res.status(200).json({
+          success: true,
+          images
+        });
+      } else {
+        throw new Error('No images found');
       }
-    }
-    
-    // If Pexels returned no results or failed and source is 'all' or 'pixabay', try Pixabay
-    if ((images.length === 0 || requestedSource === 'pixabay') && 
-        (requestedSource === 'all' || requestedSource === 'pixabay')) {
+    } catch (pexelsError) {
+      console.error('Pexels API error:', pexelsError);
+      
+      // Try Pixabay as a fallback
       try {
-        console.log(`Searching Pixabay for: "${query}" (requesting ${imageCount} images)`);
-        const pixabayResult = await pixabayService.safeGenerateImages(query, imageCount);
+        const pixabayApiKey = process.env.PIXABAY_API_KEY || '';
         
-        // Convert Pixabay format to Pexels format for consistent client handling
-        const pixabayImages: PexelsImage[] = pixabayResult.images.map(img => ({
-          id: img.id,
-          width: img.width,
-          height: img.height,
-          url: img.url,
-          src: {
-            original: img.url,
-            large: img.url,
-            medium: img.url,
-            small: img.url,
-            thumbnail: img.url
-          },
-          photographer: 'Pixabay',
-          photographer_url: 'https://pixabay.com',
-          alt: img.alt || query,
-          source: 'pixabay'
-        }));
+        const pixabayResponse = await axios.get(
+          `https://pixabay.com/api/?key=${pixabayApiKey}&q=${encodeURIComponent(query)}&image_type=photo&per_page=15`,
+        );
         
-        // If no images from Pexels or if explicitly requested Pixabay, use Pixabay images
-        if (images.length === 0 || requestedSource === 'pixabay') {
-          images = pixabayImages;
-        } else {
-          // Otherwise, add some Pixabay images to supplement Pexels
-          const remainingSlots = imageCount - images.length;
-          if (remainingSlots > 0) {
-            // Add Pixabay images until we reach the desired count
-            images = [...images, ...pixabayImages.slice(0, remainingSlots)];
-          }
-        }
-        
-        sourcesUsed.push('pixabay');
-        fallbackUsed = fallbackUsed || pixabayResult.fallbackUsed;
-      } catch (error) {
-        console.error("Pixabay search failed:", error);
-        // If Pexels already failed, we're in full fallback mode
-        fallbackUsed = true;
-      }
-    }
-    
-    // Search for product images if productId is provided
-    if (req.body.productId) {
-      try {
-        const { productId } = req.body;
-        const connection = await storage.getShopifyConnection();
-        
-        if (connection && connection.isConnected) {
-          // Create temporary store object
-          const store = {
-            id: connection.id,
-            shopName: connection.storeName,
-            accessToken: connection.accessToken,
-            scope: '',
-            defaultBlogId: connection.defaultBlogId || '',
-            isConnected: connection.isConnected,
-            lastSynced: connection.lastSynced,
-            installedAt: new Date(),
-            uninstalledAt: null,
-            planName: null,
-            chargeId: null,
-            trialEndsAt: null
-          };
+        if (pixabayResponse.data && pixabayResponse.data.hits) {
+          const images = pixabayResponse.data.hits.map((image: any) => ({
+            id: image.id,
+            url: image.webformatURL,
+            large_url: image.largeImageURL,
+            original_url: image.imageURL || image.largeImageURL,
+            width: image.imageWidth,
+            height: image.imageHeight,
+            photographer: image.user,
+            photographer_url: `https://pixabay.com/users/${image.user}-${image.user_id}/`,
+            source: 'pixabay'
+          }));
           
-          // Get the specific product to fetch its images
-          const products = await shopifyService.getProducts(store, 1);
-          
-          if (products.length > 0 && products[0].images) {
-            const productImages = products[0].images.map((img: any, index: number) => ({
-              id: `product-${productId}-img-${index}`,
-              width: img.width || 800,
-              height: img.height || 800,
-              url: img.src,
-              src: {
-                original: img.src,
-                large: img.src,
-                medium: img.src,
-                small: img.src,
-                thumbnail: img.src
-              },
-              photographer: 'Product Image',
-              photographer_url: '',
-              alt: img.alt || products[0].title,
-              isProductImage: true,
-              productId: productId,
-              source: 'product'
-            }));
-            
-            // Add product images to the results
-            if (productImages.length > 0) {
-              // Add product images at the beginning for prominence
-              images = [...productImages, ...images];
-              sourcesUsed.push('product');
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching product images:", error);
-        // Continue with other images, don't fail the entire request
-      }
-    }
-    
-    res.json({
-      success: true,
-      query,
-      images,
-      fallbackUsed,
-      sourcesUsed
-    });
-  } catch (error: any) {
-    console.error("Error generating images:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Failed to generate images"
-    });
-  }
-});
-
-// Enhanced content generation endpoint with all new parameters
-adminRouter.post("/generate-content", async (req: Request, res: Response) => {
-  console.log("Content generation request received with body:", JSON.stringify(req.body));
-  
-  try {
-    // Validate request body with all required fields
-    const requestSchema = z.object({
-      title: z.string().min(3),
-      region: z.string().optional(),
-      productIds: z.array(z.string()).optional(),
-      collectionIds: z.array(z.string()).optional(),
-      articleType: z.enum(["blog", "page"]),
-      blogId: z.string().optional(),
-      keywords: z.array(z.string()).optional(),
-      writingPerspective: z.enum(["first_person_plural", "first_person_singular", "second_person", "third_person", "professional"]).default("first_person_plural"),
-      enableTables: z.boolean().default(true),
-      enableLists: z.boolean().default(true),
-      enableH3s: z.boolean().default(true),
-      introType: z.enum(["none", "standard", "search_intent"]).default("standard"),
-      faqType: z.enum(["none", "short", "long"]).default("short"),
-      enableCitations: z.boolean().default(true),
-      mainImageIds: z.array(z.string()).optional(),
-      internalImageIds: z.array(z.string()).optional(),
-      selectedImageIds: z.array(z.string()).optional(), // Added for user-selected Pexels images
-      toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]).default("friendly"),
-      postStatus: z.enum(["publish", "draft", "scheduled"]).default("draft"),
-      // Support for explicit scheduling controls
-      publicationType: z.enum(["publish", "draft", "schedule"]).optional(),
-      scheduleDate: z.string().optional(),
-      scheduleTime: z.string().optional(),
-      scheduledPublishDate: z.string().optional(),
-      scheduledPublishTime: z.string().optional(),
-      generateImages: z.boolean().default(true),
-      // New fields for content generation options
-      buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
-      articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
-      headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
-      youtubeUrl: z.string().optional(),
-      // Category support
-      categories: z.array(z.string()).optional(),
-      // Additional fields from client
-      selectedKeywordData: z.array(z.any()).optional()
-    });
-    
-    // Parse the request data to verify it matches the schema
-    try {
-      requestSchema.parse(req.body);
-    } catch (parseError) {
-      console.error("Request validation failed:", parseError);
-      return res.status(400).json({
-        success: false,
-        error: "Invalid request data",
-        details: parseError instanceof Error ? parseError.message : String(parseError)
-      });
-    }
-    
-    // Get the Shopify connection to check if it exists
-    const connection = await storage.getShopifyConnection();
-    if (!connection || !connection.isConnected) {
-      return res.status(400).json({
-        success: false,
-        error: "No active Shopify connection found"
-      });
-    }
-    
-    // Parse request data for easier access
-    const requestData = req.body;
-    
-    // Create temporary store object
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || (requestData.blogId || ''),
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
-    
-    // Create a record of the content generation request
-    const contentRequest = await storage.createContentGenRequest({
-      topic: requestData.title,
-      tone: requestData.toneOfVoice,
-      length: "medium", // Default length
-      status: "pending",
-      generatedContent: null
-    });
-    
-    try {
-      // 1. Fetch product and collection details if IDs provided
-      let productsInfo: Array<any> = [];
-      let collectionsInfo: Array<any> = [];
-      
-      if (requestData.productIds && requestData.productIds.length > 0) {
-        // For simplicity, we'll use the product search API
-        const allProducts = await shopifyService.getProducts(store, 100);
-        productsInfo = allProducts.filter(p => requestData.productIds?.includes(p.id));
-      }
-      
-      if (requestData.collectionIds && requestData.collectionIds.length > 0) {
-        const customCollections = await shopifyService.getCollections(store, 'custom', 100);
-        const smartCollections = await shopifyService.getCollections(store, 'smart', 100);
-        const allCollections = [...customCollections, ...smartCollections];
-        collectionsInfo = allCollections.filter(c => requestData.collectionIds?.includes(c.id));
-      }
-      
-      // 2. Generate Claude prompt based on all parameters
-      let claudeSystemPrompt = `You are an expert SEO blog writer and content strategist specializing in keyword optimization. Your goal is to write high-quality, engaging, and SEO-optimized ${requestData.articleType === 'blog' ? 'blog posts' : 'pages'} that sound natural, helpful, and authoritative.
-      
-Your primary objective is to create content that ranks well on search engines by incorporating ALL provided keywords naturally throughout the content. Keywords should appear in strategic locations:
-1. In the title (most important keywords)
-2. In H2 and H3 headings
-3. In the first and last paragraphs
-4. Throughout the body content in a natural, reader-friendly way
-
-When given keywords with search volume data, prioritize higher-volume keywords by giving them more prominence and using them more frequently.`;
-      
-      // Get selected keyword data with volume information if available
-      const selectedKeywordData = requestData.selectedKeywordData || [];
-      const hasKeywordData = selectedKeywordData && selectedKeywordData.length > 0;
-      
-      // Sort keywords by search volume if available to prioritize high-volume keywords
-      let prioritizedKeywords = [...selectedKeywordData];
-      if (hasKeywordData) {
-        try {
-          prioritizedKeywords.sort((a, b) => {
-            const volumeA = a.searchVolume || 0;
-            const volumeB = b.searchVolume || 0;
-            return volumeB - volumeA; // Sort from highest to lowest volume
+          return res.status(200).json({
+            success: true,
+            images,
+            source: 'pixabay'
           });
-        } catch (err) {
-          console.log("Error sorting keywords by volume:", err);
-        }
-      }
-      
-      // Extract just the keyword text strings for easier use
-      const keywordStrings = hasKeywordData 
-        ? prioritizedKeywords.map(k => k.keyword) 
-        : (requestData.keywords || []);
-      
-      // Build a more detailed keyword section with search volumes
-      let keywordInfo = '';
-      if (hasKeywordData) {
-        keywordInfo = `
-Keywords (by search volume):
-${prioritizedKeywords.map(k => {
-  return `- ${k.keyword}${k.searchVolume ? ` (${k.searchVolume.toLocaleString()} monthly searches)` : ''}${k.intent ? `, ${k.intent} intent` : ''}`;
-}).join('\n')}`;
-      } else if (requestData.keywords?.length) {
-        keywordInfo = `Keywords: ${requestData.keywords.join(', ')}`;
-      } else {
-        keywordInfo = 'Keywords: None provided';
-      }
-      
-      // Build a detailed prompt with all the parameters
-      let claudeUserPrompt = `
-Create a complete ${requestData.articleType === 'blog' ? 'blog post' : 'Shopify page'} based on the following inputs:
-
-Title: "${requestData.title}"
-${requestData.region ? `Region: ${requestData.region}` : ''}
-${productsInfo.length > 0 ? `Products: ${productsInfo.map(p => p.title).join(', ')}` : ''}
-${collectionsInfo.length > 0 ? `Collections: ${collectionsInfo.map(c => c.title).join(', ')}` : ''}
-Type: ${requestData.articleType === 'blog' ? 'Blog Post' : 'Shopify Page'}
-${keywordInfo}
-Writing Perspective: ${requestData.writingPerspective ? requestData.writingPerspective.replace(/_/g, ' ') : 'first person plural'}
-Formatting Options:
-- Tables: ${requestData.enableTables ? 'Yes' : 'No'}
-- Lists: ${requestData.enableLists ? 'Yes' : 'No'}
-- H3 Headings: ${requestData.enableH3s ? 'Yes' : 'No'}
-- Intro Type: ${requestData.introType || 'search_intent'}
-- FAQ Type: ${requestData.faqType || 'short'}
-- Citations/Links: ${requestData.enableCitations ? 'Yes' : 'No'}
-Tone of Voice: ${requestData.toneOfVoice || 'friendly'}
-
-Instructions:
-1. Begin with a ${requestData.introType ? (requestData.introType === 'search_intent' ? 'search intent-focused intro' : requestData.introType === 'standard' ? 'standard compelling intro' : 'direct entry into the topic') : 'search intent-focused intro'}.
-2. Each H2 section must:
-   - Have a compelling heading
-   - Include 2-4 natural, helpful paragraphs
-   ${requestData.enableH3s ? '   - Include relevant H3 subheadings where appropriate' : ''}
-   ${requestData.enableLists ? '   - Use bullet or numbered lists when presenting multiple items or steps' : ''}
-   ${requestData.enableTables ? '   - Use HTML tables for comparing items or presenting structured data' : ''}
-3. Maintain a ${requestData.toneOfVoice} tone throughout.
-4. Use the ${requestData.writingPerspective.replace(/_/g, ' ')} perspective consistently.
-5. VERY IMPORTANT - Use ALL the provided keywords naturally in the content - each keyword should appear at least once, with higher search volume keywords appearing more prominently and in important positions (title, headings, early paragraphs).
-${productsInfo.length > 0 ? '6. Naturally mention and link to the provided products where relevant.' : ''}
-${collectionsInfo.length > 0 ? `${productsInfo.length > 0 ? '7' : '6'}. Naturally mention and link to the provided collections where relevant.` : ''}
-${requestData.enableCitations ? `${productsInfo.length > 0 || collectionsInfo.length > 0 ? '8' : '6'}. Include 2-3 authoritative external citations or references.` : ''}
-${requestData.faqType !== 'none' ? `${(productsInfo.length > 0 || collectionsInfo.length > 0 || requestData.enableCitations) ? '9' : '7'}. Include a FAQ section with ${requestData.faqType === 'short' ? '3-5 concise questions and answers' : '5-7 detailed questions and answers'}.` : ''}
-
-IMPORTANT FORMATTING REQUIREMENTS:
-1. Format the content using proper HTML (h2, h3, p, ul, li, table, etc.)
-2. NO H1 TAGS - the title will be set separately
-3. Always add a <br> tag after bolded text in introductions (e.g., <strong>Bolded text</strong><br>Next sentence)
-4. Add proper spacing between sections with an extra line break (<br>) after each closing paragraph tag
-5. Center-align tables with inline styles (style="margin: 0 auto;width: 100%;text-align: center;")
-6. For links to products, use: <a href="{product-url}">{product-name}</a>
-7. For links to collections, use: <a href="{collection-url}">{collection-name}</a>
-8. For external citations, use proper hyperlinks
-9. Don't include repetitive conclusions or generic phrases
-10. Include all selected keywords in the content - this is critical for SEO
-
-Please suggest a meta description at the end of your response that includes at least 2 of the top keywords.
-`;
-
-      console.log(`Generating content with Claude for: "${requestData.title}"`);
-      
-      // Map articleLength to actual length values for Claude
-      let contentLength = "medium";
-      if (requestData.articleLength === "short") {
-        contentLength = "short";
-      } else if (requestData.articleLength === "long") {
-        contentLength = "long";
-      } else if (requestData.articleLength === "comprehensive") {
-        contentLength = "comprehensive";
-      }
-      
-      // Update the prompt based on new fields
-      // Add buyer profile information
-      if (requestData.buyerProfile && requestData.buyerProfile !== "auto") {
-        claudeUserPrompt += `\nBuyer Profile: ${requestData.buyerProfile}
-Target this content specifically for ${requestData.buyerProfile}-level users with appropriate depth and terminology.`;
-      }
-      
-      // Add headings count information
-      if (requestData.headingsCount) {
-        claudeUserPrompt += `\nStructure: Include exactly ${requestData.headingsCount} main sections with H2 headings.`;
-      }
-      
-      // Add category information if provided
-      if (requestData.categories && Array.isArray(requestData.categories) && requestData.categories.length > 0) {
-        claudeUserPrompt += `\nCategories: ${requestData.categories.join(', ')}
-When writing this content, specifically tailor it for these categories. Ensure the content emphasizes features, benefits, and topics that would be most relevant to readers interested in these categories.`;
-      }
-      
-      // Add YouTube video embed instruction if URL is provided
-      if (requestData.youtubeUrl) {
-        const videoId = requestData.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
-        
-        if (videoId) {
-          claudeUserPrompt += `\nYouTube Video: Please indicate where to place a YouTube video embed with ID "${videoId}" by adding this placeholder:
-[YOUTUBE_EMBED_PLACEHOLDER]
-Place this at a logical position in the content, typically after introducing a concept that the video demonstrates.`;
-        }
-      }
-      
-      // 3. Generate content with Claude
-      const generatedContent = await generateBlogContentWithClaude({
-        topic: requestData.title,
-        tone: requestData.toneOfVoice,
-        length: contentLength,
-        customPrompt: claudeUserPrompt,
-        systemPrompt: claudeSystemPrompt,
-        includeProducts: productsInfo.length > 0,
-        includeCollections: collectionsInfo.length > 0,
-        includeKeywords: requestData.keywords && requestData.keywords.length > 0
-      });
-      
-      // 4. Update content generation request
-      await storage.updateContentGenRequest(contentRequest.id, {
-        status: "completed",
-        generatedContent: JSON.stringify(generatedContent)
-      });
-      
-      // 5. Handle images from Pexels if needed
-      let featuredImage = null;
-      let additionalImages: PexelsImage[] = [];
-      
-      // If user has selected specific images, use ONLY those
-      if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
-        try {
-          console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
-          
-          // Directly fetch the selected images by ID
-          const selectedImages = await pexelsService.getImagesByIds(requestData.selectedImageIds);
-          
-          console.log(`Fetched ${selectedImages.length} images out of ${requestData.selectedImageIds.length} requested IDs`);
-          
-          if (selectedImages.length > 0) {
-            // Use the first image as featured image
-            featuredImage = selectedImages[0];
-            console.log(`Using user-selected featured image: ${featuredImage.url}`);
-            
-            // Save any additional images for insertion into content
-            if (selectedImages.length > 1) {
-              additionalImages = selectedImages.slice(1);
-              console.log(`Using ${additionalImages.length} additional images for content body`);
-            }
-          } else {
-            console.warn("Could not fetch any of the selected images by ID");
-            
-            // Fallback to searching if direct fetching fails
-            console.log("Attempting fallback search for images");
-            const { images } = await pexelsService.safeSearchImages(requestData.title, 50);
-            
-            // Filter to ONLY use the specifically selected images
-            const fallbackImages = images.filter((img: PexelsImage) => 
-              requestData.selectedImageIds && 
-              requestData.selectedImageIds.includes(String(img.id))
-            );
-            
-            if (fallbackImages.length > 0) {
-              featuredImage = fallbackImages[0];
-              if (fallbackImages.length > 1) {
-                additionalImages = fallbackImages.slice(1);
-              }
-              console.log(`Found ${fallbackImages.length} images through fallback search`);
-            }
-          }
-        } catch (imageError) {
-          console.error('Error retrieving selected images:', imageError);
-        }
-      } else if (requestData.generateImages) {
-        // ONLY if no specific images were selected AND generateImages is true, find some images
-        try {
-          console.log(`Generating images for: "${requestData.title}"`);
-          const { images } = await pexelsService.safeSearchImages(requestData.title, 3);
-          if (images && images.length > 0) {
-            featuredImage = images[0];
-            
-            // Save additional generated images if available
-            if (images.length > 1) {
-              additionalImages = images.slice(1);
-            }
-          }
-        } catch (imageError) {
-          console.error('Error generating images:', imageError);
-          // Continue even if image generation fails
-        }
-      }
-      
-      // 6. Prepare content for blog post or page
-      let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
-      
-      // Add YouTube video embed if provided
-      if (requestData.youtubeUrl) {
-        const videoId = requestData.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
-        
-        if (videoId) {
-          // Create the YouTube embed HTML
-          const youtubeEmbed = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-</div>`;
-          
-          // Check if Claude inserted a placeholder
-          if (finalContent.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
-            // Replace the placeholder with the actual embed
-            finalContent = finalContent.replace('[YOUTUBE_EMBED_PLACEHOLDER]', youtubeEmbed);
-            console.log('Inserted YouTube video at placeholder position');
-          } else {
-            // If no placeholder, insert the video after the first H2 or paragraph
-            const h2Match = finalContent.match(/<\/h2>/i);
-            const pMatch = finalContent.match(/<\/p>/i);
-            
-            if (h2Match && pMatch) {
-              // Insert after whichever comes first
-              const h2Index = h2Match.index || 0;
-              const pIndex = pMatch.index || 0;
-              const insertIndex = Math.min(h2Index, pIndex) + (h2Index < pIndex ? 5 : 4); // Length of </h2> or </p>
-              
-              finalContent = finalContent.substring(0, insertIndex) + 
-                             '\n\n' + youtubeEmbed + '\n\n' + 
-                             finalContent.substring(insertIndex);
-              
-              console.log('Inserted YouTube video after first heading or paragraph');
-            } else if (h2Match) {
-              // Insert after the first H2
-              const insertIndex = (h2Match.index || 0) + 5; // Length of </h2>
-              
-              finalContent = finalContent.substring(0, insertIndex) + 
-                             '\n\n' + youtubeEmbed + '\n\n' + 
-                             finalContent.substring(insertIndex);
-              
-              console.log('Inserted YouTube video after first heading');
-            } else if (pMatch) {
-              // Insert after the first paragraph
-              const insertIndex = (pMatch.index || 0) + 4; // Length of </p>
-              
-              finalContent = finalContent.substring(0, insertIndex) + 
-                             '\n\n' + youtubeEmbed + '\n\n' + 
-                             finalContent.substring(insertIndex);
-              
-              console.log('Inserted YouTube video after first paragraph');
-            } else {
-              // Fallback: Just prepend the video
-              finalContent = youtubeEmbed + '\n\n' + finalContent;
-              console.log('Inserted YouTube video at the beginning of content');
-            }
-          }
-        }
-      }
-      
-      // Add featured image at the beginning if available
-      if (featuredImage) {
-        // Make sure we have a valid image URL - use Pexels medium or large src image
-        // Only use URL from src properties, which are the actual image URLs
-        const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.src?.small || featuredImage.src?.original;
-        
-        if (!imageUrl) {
-          console.warn("Featured image is missing valid src URLs, skipping featured image");
         } else {
-          console.log(`Using featured image URL: ${imageUrl}`);
-          
-          // For Shopify compatibility, we need to use direct image URLs
-          // This will ensure images work both in preview and on Shopify
-          console.log(`Using direct image URL for featured image: ${imageUrl}`);
-          
-          // Remove photographer credit as per request
-          
-          // If we have products, link the featured image to the first product
-          let featuredImageHtml = '';
-          if (productsInfo.length > 0) {
-            // Use the first product URL for the featured image with absolute URL
-            const productUrl = `https://${store.shopName}/products/${productsInfo[0].handle}`;
-            console.log(`Linking featured image to product URL: ${productUrl}`);
-            
-            featuredImageHtml = `<div class="image-container" style="text-align: center; margin: 20px 0;"><a href="${productUrl}" title="${productsInfo[0].title}"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
-          } else {
-            // No product to link to
-            featuredImageHtml = `<div class="image-container" style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
-          }
-          
-          finalContent = `${featuredImageHtml}\n${finalContent}`;
+          throw new Error('No images found in Pixabay');
         }
+      } catch (pixabayError) {
+        console.error('Pixabay API error:', pixabayError);
+        throw new Error('Failed to fetch images from both Pexels and Pixabay');
       }
-      
-      // Insert secondary images throughout the content
-      if (additionalImages.length > 0) {
-        // Get product info either from productsInfo or from the request's productIds
-        let availableProducts = productsInfo;
-        
-        // If we don't have productsInfo but we do have productIds in the request, use those productIds
-        if ((!availableProducts || availableProducts.length === 0) && requestData.productIds && requestData.productIds.length > 0) {
-          // Fetch product information for the productIds
-          try {
-            console.log(`No product info available, trying to fetch details for products: ${requestData.productIds.join(', ')}`);
-            // Since getProductsById doesn't exist, we'll use getProducts and filter the results
-            const allProducts = await shopifyService.getProducts(store, 100);
-            availableProducts = allProducts.filter(p => requestData.productIds?.includes(p.id));
-            console.log(`Successfully fetched ${availableProducts.length} products for interlinking`);
-          } catch (productFetchError) {
-            console.error("Failed to fetch product details for interlinking:", productFetchError);
-          }
-        }
-        
-        // Determine if we're inserting images with or without product links
-        const hasProducts = availableProducts && availableProducts.length > 0;
-        
-        console.log(`Inserting ${additionalImages.length} secondary images into content body ${hasProducts ? 'with' : 'without'} product links`);
-        
-        // Find potential spots to insert images (after paragraphs or headings)
-        const insertPoints = [];
-        let match;
-        const tagPattern = /<\/(p|h2|h3|h4|div|section)>/g;
-        
-        // Find all potential insertion points
-        while ((match = tagPattern.exec(finalContent)) !== null) {
-          // Skip the first 15% of the content for the first image insertion
-          if (match.index > finalContent.length * 0.15) {
-            insertPoints.push(match.index + match[0].length);
-          }
-        }
-        
-        // If we have insertion points and images, start inserting images
-        if (insertPoints.length > 0) {
-          // Use ALL additional images, not just a limited number
-          const insertCount = Math.min(additionalImages.length, insertPoints.length);
-          
-          if (insertCount > 0) {
-            // Create evenly spaced insertion indices to distribute images throughout the content
-            const contentSections = insertCount + 1;
-            const sectionSize = insertPoints.length / contentSections;
-            
-            // Distribute images evenly
-            let modifiedContent = finalContent;
-            let insertionOffset = 0;
-            
-            for (let i = 0; i < insertCount; i++) {
-              // Calculate insertion index - distribute evenly throughout content
-              const insertIndex = Math.floor(sectionSize * (i + 1));
-              
-              if (insertIndex < insertPoints.length) {
-                // Get the image
-                const imageIndex = i % additionalImages.length;
-                const image = additionalImages[imageIndex];
-                
-                // Get the actual position in the content
-                const position = insertPoints[insertIndex] + insertionOffset;
-                
-                // Ensure we have valid image URLs from src properties
-                // Get highest quality image URL but avoid original which can be very large
-                const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
-                if (!imageUrl) {
-                  console.warn(`Image ${image.id || 'unknown'} is missing valid src URLs, skipping insertion`);
-                  continue;
-                }
-                
-                // For Shopify compatibility, we need to use direct image URLs
-                // This will ensure images work both in preview and on Shopify
-                console.log(`Using direct image URL for content: ${imageUrl}`);
-                
-                let imageHtml;
-                
-                // If we have products, link the image to a product
-                if (hasProducts) {
-                  // Use the first product for all images if only one product is available
-                  const productIndex = availableProducts.length > 1 ? (i % availableProducts.length) : 0;
-                  const product = availableProducts[productIndex];
-                  
-                  // Make sure we have valid image ALT text
-                  const imageAlt = image.alt || product.title || requestData.title;
-                  
-                  // Ensure product URL is correctly formatted with store domain - CRITICAL FIX
-                  const productUrl = `https://${store.shopName}/products/${product.handle}`;
-                  
-                  console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
-                  
-                  // Create center-aligned div with link to product - Using direct image URL
-                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><a href="${productUrl}" title="${product.title}"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></a>
-<p style="margin-top: 5px; font-size: 0.9em;"><a href="${productUrl}">${product.title}</a></p></div>\n`;
-                } else {
-                  // No product to link to - just insert the image
-                  const imageAlt = image.alt || requestData.title;                  
-                  console.log(`Inserting standalone image with URL: ${imageUrl}`);
-                  
-                  // Create center-aligned div without product link - Using direct image URL
-                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></div>\n`;
-                }
-                
-                // Insert the image HTML at the position
-                modifiedContent = modifiedContent.slice(0, position) + imageHtml + modifiedContent.slice(position);
-                
-                // Adjust offset for subsequent insertions
-                insertionOffset += imageHtml.length;
-                
-                console.log(`Inserted image ${i+1}/${insertCount} at position ${position}`);
-              }
-            }
-            
-            finalContent = modifiedContent;
-          }
-        } else {
-          console.warn("Could not find suitable insertion points for additional images");
-        }
-      } else {
-        console.log("No additional images available to insert into content.");
-      }
-      
-      // 7. Create a blog post or page based on article type
-      let contentId, contentUrl;
-      
-      if (requestData.articleType === 'blog') {
-        // Must have a blog ID for blog posts
-        const blogId = requestData.blogId || store.defaultBlogId;
-        if (!blogId) {
-          throw new Error('Blog ID is required for blog posts');
-        }
-        
-        // Create blog post in DB
-        // Use custom categories if available, or fall back to default category
-        let categoryValue = "";
-        
-        if (requestData.categories && Array.isArray(requestData.categories) && requestData.categories.length > 0) {
-          // Use the first category as the main category for the post
-          categoryValue = requestData.categories[0];
-          console.log(`Using custom category for post: ${categoryValue}`);
-        } else {
-          // Check if we have product information for setting the proper category
-          const hasCategoryProducts = productsInfo.length > 0 || 
-                               (requestData.productIds && requestData.productIds.length > 0);
-          categoryValue = hasCategoryProducts ? "Selected" : "Generated Content";
-          console.log(`Using default category for post: ${categoryValue}`);
-        }
-        
-        // Prepare categories string for storage
-        const categoriesString = requestData.categories && Array.isArray(requestData.categories) 
-                               ? requestData.categories.join(',') 
-                               : categoryValue;
-        
-        // CRITICAL: Check if this is a scheduled post - publicationType takes precedence over postStatus
-        const isScheduled = 
-            // First check explicit publicationType (from form radio buttons)
-            (requestData.publicationType === "schedule" && 
-            requestData.scheduleDate && 
-            requestData.scheduleTime) || 
-            // Fallback to postStatus for backward compatibility
-            (requestData.postStatus === 'schedule' && 
-            requestData.scheduleDate && 
-            requestData.scheduleTime);
-                          
-        console.log("Processing post/page creation:", {
-          publicationType: requestData.publicationType,
-          postStatus: requestData.postStatus,
-          scheduleDate: requestData.scheduleDate,
-          scheduleTime: requestData.scheduleTime,
-          isScheduled: isScheduled
-        });
-        
-        // OVERRIDE postStatus when scheduling is selected
-        // This ensures immediate publication is NOT triggered when scheduling is selected
-        if (isScheduled) {
-          console.log("SCHEDULING MODE ACTIVATED - Setting status to scheduled");
-          requestData.postStatus = 'draft'; // Prevent immediate publishing
-        }
-
-        // Prepare post data with proper status - publicationType takes precedence
-        const postStatus = isScheduled
-                         ? 'scheduled'  
-                         : requestData.postStatus === 'publish'
-                           ? 'published'
-                           : 'draft';
-
-        // Log post creation info
-        console.log(`Creating post with status: ${postStatus}`, {
-          title: generatedContent.title || requestData.title,
-          postStatus: requestData.postStatus,
-          publicationType: requestData.publicationType,
-          scheduleDate: requestData.scheduleDate,
-          scheduleTime: requestData.scheduleTime
-        });
-
-        // @ts-ignore - Categories field is supported in the database but might not be in the type yet
-        const post = await storage.createBlogPost({
-          title: generatedContent.title || requestData.title,
-          content: finalContent,
-          status: postStatus,
-          publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
-          // Add scheduled date information if applicable
-          scheduledPublishDate: isScheduled ? requestData.scheduleDate : undefined,
-          scheduledPublishTime: isScheduled ? requestData.scheduleTime : undefined,
-          author: connection.storeName.replace('.myshopify.com', ''),
-          tags: generatedContent.tags?.join(',') || '',
-          category: categoryValue,
-          categories: categoriesString,
-          shopifyPostId: null,
-          shopifyBlogId: blogId
-        });
-        
-        contentId = post.id;
-        
-        // If set to publish or scheduled, create in Shopify too
-        if (requestData.postStatus === 'publish' || isScheduled) {
-          console.log(`Publishing to Shopify blog ID: ${blogId}${isScheduled ? ' (scheduled)' : ''}`);
-          try {
-            // For scheduled posts, create a proper Date object to pass to Shopify API
-            let scheduledPublishDate: Date | undefined = undefined;
-            
-            if (isScheduled && requestData.scheduleDate && requestData.scheduleTime) {
-              console.log(`Preparing scheduled date for Shopify API: ${requestData.scheduleDate} at ${requestData.scheduleTime}`);
-              
-              try {
-                // Get shop timezone for proper date creation
-                const shopInfo = await shopifyService.getShopInfo(store);
-                const storeTimezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
-                console.log(`Using store timezone for scheduling: ${storeTimezone}`);
-                
-                // Import timezone utilities
-                const { createDateInTimezone } = await import('../../shared/timezone');
-                
-                // Create a date in the store's timezone
-                scheduledPublishDate = createDateInTimezone(
-                  requestData.scheduleDate,
-                  requestData.scheduleTime,
-                  storeTimezone
-                );
-                
-                console.log(`Created scheduled publish date: ${scheduledPublishDate.toISOString()}`);
-              } catch (error) {
-                console.error(`Error creating scheduled date:`, error);
-                // Fallback to a simple date creation
-                try {
-                  const [year, month, day] = requestData.scheduleDate.split('-').map(Number);
-                  const [hours, minutes] = requestData.scheduleTime.split(':').map(Number);
-                  scheduledPublishDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
-                  console.log(`Fallback scheduled date: ${scheduledPublishDate.toISOString()}`);
-                } catch (fallbackError) {
-                  console.error(`Fallback date creation failed:`, fallbackError);
-                }
-              }
-            }
-            
-            // Pass the post and scheduled date to Shopify API
-            const shopifyArticle = await shopifyService.createArticle(
-              store, 
-              blogId, 
-              post,
-              scheduledPublishDate  // This triggers the scheduling logic in Shopify
-            );
-            
-            // Update the local post with Shopify IDs
-            await storage.updateBlogPost(post.id, {
-              shopifyPostId: shopifyArticle.id,
-              shopifyBlogId: blogId
-            });
-            
-            // Get the blog handle/slug instead of using the numeric ID in the URL
-            let blogHandle;
-            try {
-              const blogDetails = await shopifyService.getBlogById(store, shopifyArticle.blog_id);
-              blogHandle = blogDetails.handle;
-              console.log(`Using blog handle "${blogHandle}" instead of ID for URL`);
-            } catch (blogError) {
-              console.warn(`Could not fetch blog handle, falling back to ID: ${blogError}`);
-              blogHandle = shopifyArticle.blog_id;
-            }
-            contentUrl = `https://${store.shopName}/blogs/${blogHandle}/${shopifyArticle.handle}`;
-          } catch (shopifyError: any) {
-            console.error('Error creating Shopify article:', shopifyError);
-            throw new Error(`Failed to publish to Shopify: ${shopifyError.message || 'Unknown error'}`);
-          }
-        }
-      } else {
-        // Create page in Shopify
-        try {
-          // CRITICAL: Check if this is a scheduled page - publicationType takes precedence
-          const isScheduled = 
-              // First check explicit publicationType (from form radio buttons)
-              (requestData.publicationType === "schedule" && 
-              requestData.scheduleDate && 
-              requestData.scheduleTime) || 
-              // Fallback to postStatus for backward compatibility
-              (requestData.postStatus === 'schedule' && 
-              requestData.scheduleDate && 
-              requestData.scheduleTime);
-                            
-          console.log("Processing page creation:", {
-            publicationType: requestData.publicationType,
-            postStatus: requestData.postStatus,
-            scheduleDate: requestData.scheduleDate,
-            scheduleTime: requestData.scheduleTime,
-            isScheduled: isScheduled
-          });
-          
-          // OVERRIDE postStatus when scheduling is selected
-          // This ensures immediate publication is NOT triggered when scheduling is selected
-          if (isScheduled) {
-            console.log("SCHEDULING MODE ACTIVATED FOR PAGE - Setting status to scheduled");
-            requestData.postStatus = 'draft'; // Prevent immediate publishing
-          }
-          
-          let scheduledAt: Date | undefined = undefined;
-          
-          // If scheduled, create proper date for scheduling
-          if (isScheduled) {
-            // Import timezone utilities
-            const { createDateInTimezone } = await import('../../shared/timezone');
-            
-            // Create a proper date object for scheduling
-            // Get shop info for timezone using the singleton
-            const shopInfo = await shopifyService.getShopInfo(store);
-            const storeTimezone = shopInfo?.iana_timezone || 'America/New_York';
-            
-            console.log(`Using timezone: ${storeTimezone} for scheduling`);
-            
-            // Create a JavaScript Date object for scheduling
-            const scheduledDate = createDateInTimezone(
-              requestData.scheduleDate,
-              requestData.scheduleTime,
-              storeTimezone
-            );
-            
-            // Set for Shopify API - must be a Date object for the createPage method
-            scheduledAt = new Date(scheduledDate);
-            console.log(`Setting page scheduled publication date to: ${scheduledAt}`);
-          }
-          
-          // Determine publish setting - critical for correct scheduling
-          // Only publish immediately if explicitly set to publish AND not scheduled
-          const shouldPublishNow = requestData.postStatus === 'publish' && !isScheduled;
-          
-          console.log(`Creating page with publish setting: ${shouldPublishNow ? 'PUBLISH NOW' : isScheduled ? 'SCHEDULED' : 'DRAFT'}`);
-          
-          const page = await shopifyService.createPage(
-            store,
-            generatedContent.title || requestData.title,
-            finalContent,
-            shouldPublishNow, // Only publish now if explicitly set and not scheduled
-            scheduledAt
-          );
-          
-          contentId = page.id;
-          contentUrl = `https://${store.shopName}/pages/${page.handle}`;
-        } catch (pageError: any) {
-          console.error('Error creating Shopify page:', pageError);
-          throw new Error(`Failed to create page: ${pageError?.message || 'Unknown error'}`);
-        }
-      }
-      
-      // 8. Return the result
-      return res.json({
-        success: true,
-        contentId,
-        contentUrl,
-        content: generatedContent.content,
-        title: generatedContent.title,
-        tags: generatedContent.tags,
-        metaDescription: generatedContent.metaDescription || '',
-        featuredImage: featuredImage
-      });
-    } catch (error: any) {
-      console.error("Error in content generation process:", error);
-      
-      // Update request as failed if we created one
-      if (contentRequest && contentRequest.id) {
-        try {
-          await storage.updateContentGenRequest(contentRequest.id, {
-            status: "failed",
-            generatedContent: JSON.stringify({ 
-              error: "Content generation failed: " + (error instanceof Error ? error.message : String(error))
-            })
-          });
-        } catch (updateError) {
-          console.error("Failed to update content request status:", updateError);
-        }
-      }
-      
-      return res.status(500).json({
-        success: false,
-        error: "Content generation failed",
-        details: error.message || String(error)
-      });
     }
-  } catch (error: any) {
-    console.error("Unexpected error in generate-content endpoint:", error);
+    
+  } catch (error) {
+    console.error('Error searching for images:', error);
     return res.status(500).json({
       success: false,
-      error: "An unexpected error occurred",
-      details: error.message || String(error)
+      message: 'Failed to search for images',
+      error: (error as Error).message
     });
   }
 });
 
-// Test connections to external services
-adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
-  const results = {
-    shopify: false,
-    claude: false,
-    dataForSEO: false,
-    pexels: false
-  };
+// Generate fallback keywords when API fails
+function generateFallbackKeywords(text: string): Array<{ keyword: string, score: number, volume: string, difficulty: number }> {
+  // Extract potential keywords from text
+  const words = text.toLowerCase().split(/\s+/);
+  const phrases: { [key: string]: number } = {};
   
-  // Test Shopify connection
-  try {
-    const connection = await storage.getShopifyConnection();
-    if (connection && connection.isConnected) {
-      const store = {
-        id: connection.id,
-        shopName: connection.storeName,
-        accessToken: connection.accessToken,
-        scope: '',
-        defaultBlogId: connection.defaultBlogId,
-        isConnected: connection.isConnected,
-        lastSynced: connection.lastSynced,
-        installedAt: new Date(),
-        uninstalledAt: null,
-        planName: null,
-        chargeId: null,
-        trialEndsAt: null
-      };
+  // Generate single word and two-word phrases
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i].replace(/[^a-z0-9]/g, '');
+    if (word.length > 3) {
+      phrases[word] = (phrases[word] || 0) + 1;
       
-      const testResult = await shopifyService.testConnection(store);
-      results.shopify = testResult;
+      if (i < words.length - 1) {
+        const nextWord = words[i + 1].replace(/[^a-z0-9]/g, '');
+        if (nextWord.length > 3) {
+          const twoWordPhrase = `${word} ${nextWord}`;
+          phrases[twoWordPhrase] = (phrases[twoWordPhrase] || 0) + 2;
+        }
+      }
+      
+      if (i < words.length - 2) {
+        const nextWord = words[i + 1].replace(/[^a-z0-9]/g, '');
+        const thirdWord = words[i + 2].replace(/[^a-z0-9]/g, '');
+        if (nextWord.length > 2 && thirdWord.length > 2) {
+          const threeWordPhrase = `${word} ${nextWord} ${thirdWord}`;
+          phrases[threeWordPhrase] = (phrases[threeWordPhrase] || 0) + 3;
+        }
+      }
     }
-  } catch (error) {
-    console.error("Shopify connection test failed:", error);
   }
   
-  // Test Claude connection
-  try {
-    const { testClaudeConnection } = await import("../services/claude");
-    const claudeTest = await testClaudeConnection();
-    results.claude = claudeTest.success;
-  } catch (error) {
-    console.error("Claude connection test failed:", error);
-  }
+  // Convert to array and sort by frequency
+  const keywordArray = Object.entries(phrases)
+    .map(([keyword, count]) => ({
+      keyword,
+      count
+    }))
+    .filter(k => k.keyword.length > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20)
+    .map((k, i) => {
+      // Generate fake stats for the keywords
+      const baseVolume = 1000 - (i * 40);
+      const randomVariation = Math.floor(Math.random() * 200) - 100;
+      const volume = Math.max(50, baseVolume + randomVariation);
+      
+      return {
+        keyword: k.keyword,
+        score: Math.round(100 - (i * 3)),
+        volume: `${volume}/mo`,
+        difficulty: Math.round(30 + (Math.random() * 40))
+      };
+    });
   
-  // Test DataForSEO connection with detailed logging
+  return keywordArray;
+}
+
+// New enhanced POST endpoint for image generation with multiple sources
+router.post('/generate-images', async (req: Request, res: Response) => {
   try {
-    // Log the current DataForSEO credentials format (without revealing sensitive data)
-    const apiKey = process.env.DATAFORSEO_API_KEY || '';
-    const hasCredentials = apiKey.length > 0;
-    const hasCorrectFormat = apiKey.includes(':');
+    const { query, count = 24, source } = req.body;
     
-    console.log(`DataForSEO credentials check - Has credentials: ${hasCredentials}, Has correct format: ${hasCorrectFormat}`);
-    if (hasCredentials) {
-      const parts = apiKey.split(':');
-      console.log(`DataForSEO login length: ${parts[0]?.length || 0}, password length: ${parts[1]?.length || 0}`);
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'A valid search query is required'
+      });
     }
     
-    console.log("Testing DataForSEO connection...");
-    const dataForSEOTest = await dataForSEOService.testConnection();
-    console.log("DataForSEO test result:", dataForSEOTest);
+    console.log(`Generating images for query: "${query}", count: ${count}, source: ${source || 'all'}`);
     
-    results.dataForSEO = dataForSEOTest.success;
+    // Prepare to collect results from multiple sources
+    let allImages: any[] = [];
+    const sourcesUsed: string[] = [];
+    
+    // Helper function to standardize image format
+    const formatImage = (img: any, src: string) => ({
+      ...img,
+      source: src,
+      // Make sure we have consistent property names
+      url: img.url || img.src?.medium || img.webformatURL,
+      large_url: img.src?.large || img.largeImageURL || img.large_url || img.url,
+      original_url: img.src?.original || img.imageURL || img.original_url || img.large_url || img.url
+    });
+    
+    // Determine sources to query
+    const fetchFromPexels = !source || source === 'all' || source === 'pexels';
+    const fetchFromPixabay = !source || source === 'all' || source === 'pixabay';
+    
+    // Split the requested count between sources
+    const pexelsCount = fetchFromPexels && fetchFromPixabay ? Math.ceil(count / 2) : count;
+    const pixabayCount = fetchFromPexels && fetchFromPixabay ? Math.floor(count / 2) : count;
+    
+    // Try Pexels API
+    if (fetchFromPexels) {
+      try {
+        console.log(`Fetching ${pexelsCount} images from Pexels for "${query}"`);
+        const { images, fallbackUsed } = await pexelsService.safeSearchImages(query, pexelsCount);
+        
+        if (images && images.length > 0) {
+          const pexelsImages = images.map(img => formatImage(img, 'pexels'));
+          allImages = [...allImages, ...pexelsImages];
+          sourcesUsed.push('pexels');
+          console.log(`Found ${images.length} images from Pexels`);
+        }
+      } catch (pexelsError) {
+        console.error('Pexels search error:', pexelsError);
+      }
+    }
+    
+    // Try Pixabay API
+    if (fetchFromPixabay) {
+      try {
+        console.log(`Fetching ${pixabayCount} images from Pixabay for "${query}"`);
+        const { images, fallbackUsed } = await pixabayService.safeGenerateImages(query, pixabayCount);
+        
+        if (images && images.length > 0) {
+          const pixabayImages = images.map(img => formatImage(img, 'pixabay'));
+          allImages = [...allImages, ...pixabayImages];
+          sourcesUsed.push('pixabay');
+          console.log(`Found ${images.length} images from Pixabay`);
+        }
+      } catch (pixabayError) {
+        console.error('Pixabay search error:', pixabayError);
+      }
+    }
+    
+    // Return results
+    if (allImages.length > 0) {
+      return res.status(200).json({
+        success: true,
+        images: allImages,
+        sourcesUsed,
+        count: allImages.length,
+        query
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: 'No images found for the given query',
+        query
+      });
+    }
+    
   } catch (error) {
-    console.error("DataForSEO connection test failed:", error);
+    console.error('Error generating images:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate images',
+      error: (error as Error).message
+    });
   }
-  
-  // Test Pexels connection
-  try {
-    const pexelsTest = await pexelsService.testConnection();
-    results.pexels = pexelsTest.success;
-  } catch (error) {
-    console.error("Pexels connection test failed:", error);
-  }
-  
-  res.json({
-    success: true,
-    connections: results
-  });
 });
 
-export default adminRouter;
+export default router;
