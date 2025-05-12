@@ -29,8 +29,9 @@ export function SchedulingPermissionNotice({ storeName }: SchedulingPermissionNo
           const shop = url.hostname; 
           const clientId = url.searchParams.get('client_id');
           
-          // Create a direct URL with the production callback URL
-          const directUrl = `https://${shop}/admin/oauth/authorize?client_id=${clientId}&scope=read_products,write_products,read_content,write_content,read_themes,write_publications&redirect_uri=https://shopify-app.justinlofton.com/shopify/callback`;
+          // Create a direct URL with the correct callback URL for this environment
+          const replitUrl = "https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/oauth/shopify/callback";
+          const directUrl = `https://${shop}/admin/oauth/authorize?client_id=${clientId}&scope=read_products,write_products,read_content,write_content,read_themes,write_publications&redirect_uri=${encodeURIComponent(replitUrl)}`;
           
           // Copy to clipboard if available
           if (navigator.clipboard) {
