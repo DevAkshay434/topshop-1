@@ -27,35 +27,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Layout from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Plus, Wand, FileText, Layers } from 'lucide-react';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Plus, Wand } from 'lucide-react';
 
 export default function EnhancedWorkflowDemo() {
   const { toast } = useToast();
-  
-  // Content generation states
   const [topic, setTopic] = useState("");
-  const [generatedTopics, setGeneratedTopics] = useState<string[]>([]);
-  const [selectedTopic, setSelectedTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [demoCluster, setDemoCluster] = useState<any[]>([]);
-  const [contentType, setContentType] = useState<"single" | "cluster">("single");
-  
-  // Product selection state
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  
-  // Keywords state
-  const [keywords, setKeywords] = useState("");
-  const [selectedKeywords, setSelectedKeywords] = useState<{keyword: string; score: number}[]>([]);
   
   // Demo products for the cluster workflow
   const [demoProducts, setDemoProducts] = useState<any[]>([
@@ -88,161 +67,53 @@ export default function EnhancedWorkflowDemo() {
   
   const selectedBlogId = blogsData?.blogs?.[0]?.id;
   
-  // Generate topic suggestions based on products and keywords
-  const generateTopicSuggestions = async () => {
-    if (selectedProducts.length === 0 && selectedKeywords.length === 0) {
-      toast({
-        title: "Selection Required",
-        description: "Please select at least one product or enter keywords",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsGenerating(true);
-    
-    try {
-      // Get selected products data
-      const productsData = demoProducts.filter(product => 
-        selectedProducts.includes(product.id)
-      );
-      
-      // Extract keywords from selected keywords
-      const keywordsList = selectedKeywords.map(k => k.keyword);
-      
-      // In a real app, this would call the Claude API for topic suggestions
-      // For demo, we'll generate them based on products and keywords
-      const mockTopics: string[] = [];
-      
-      if (productsData.length > 0) {
-        const mainProduct = productsData[0];
-        
-        // Add product-based topics
-        mockTopics.push(
-          `The Ultimate Guide to ${mainProduct.title}`,
-          `Top 10 Benefits of Using a ${mainProduct.title}`,
-          `How to Choose the Right ${mainProduct.title} for Your Home`,
-          `${mainProduct.title} vs Competitors: A Comprehensive Comparison`,
-          `Common Problems with ${mainProduct.title} and How to Fix Them`
-        );
-        
-        // Add product + keyword topics if keywords exist
-        if (keywordsList.length > 0) {
-          keywordsList.forEach(keyword => {
-            mockTopics.push(
-              `How ${mainProduct.title} Improves Your ${keyword}`,
-              `Why ${keyword} Matters When Choosing a ${mainProduct.title}`
-            );
-          });
-        }
-      } else if (keywordsList.length > 0) {
-        // Just keyword-based topics
-        keywordsList.forEach(keyword => {
-          mockTopics.push(
-            `The Complete Guide to ${keyword}`,
-            `Understanding ${keyword}: Benefits and Applications`,
-            `${keyword} 101: Everything You Need to Know`,
-            `How to Optimize Your ${keyword} Strategy`
-          );
-        });
-      }
-      
-      // Set the generated topics
-      setGeneratedTopics(mockTopics);
-      
-      toast({
-        title: "Topics Generated",
-        description: "Select a topic to continue",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error)?.message || "Failed to generate topics",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-  
-  // Add or remove a keyword from the selected keywords list
-  const toggleKeyword = (keyword: string) => {
-    const keywordObj = { keyword, score: 0.8 };
-    
-    if (selectedKeywords.some(k => k.keyword === keyword)) {
-      setSelectedKeywords(selectedKeywords.filter(k => k.keyword !== keyword));
-    } else {
-      setSelectedKeywords([...selectedKeywords, keywordObj]);
-    }
-  };
-  
-  // Add a custom keyword
-  const addCustomKeyword = () => {
-    if (!keywords.trim()) return;
-    
-    const newKeywords = keywords.split(',').map(k => k.trim()).filter(Boolean);
-    
-    const newKeywordObjects = newKeywords.map(keyword => ({
-      keyword,
-      score: 0.7
-    }));
-    
-    setSelectedKeywords([...selectedKeywords, ...newKeywordObjects]);
-    setKeywords('');
-  };
-  
-  // Generate content based on selected topic and content type
+  // Generate simple content function
   const generateContent = async () => {
-    if (!selectedTopic && !topic) {
+    if (!topic) {
       toast({
         title: "Topic Required",
-        description: "Please select or enter a topic",
+        description: "Please enter a blog topic",
         variant: "destructive",
       });
       return;
     }
     
-    const topicToUse = selectedTopic || topic;
-    
     setIsGenerating(true);
     
     try {
-      if (contentType === "single") {
-        // This is a demo, so we'll create mock content
-        // In a real app, this would call an API
-        const mockGeneratedContent = {
-          id: "demo1",
-          title: topicToUse,
-          content: `<h2>Introduction to ${topicToUse}</h2>
-          <p>This comprehensive guide explores everything you need to know about ${topicToUse} in 2025, with a focus on the latest trends and best practices.</p>
-          
-          <h2>Key Factors to Consider</h2>
-          <p>When working with ${topicToUse}, keep these important factors in mind:</p>
-          <ul>
-            <li>Start with a clear strategy</li>
-            <li>Focus on measurable outcomes</li>
-            <li>Always consider the user experience</li>
-            <li>Stay updated with the latest developments</li>
-          </ul>
-          
-          <h2>Common Challenges and Solutions</h2>
-          <p>While working with ${topicToUse}, you might encounter several challenges. Here's how to address the most common ones effectively.</p>
-          
-          <h2>Conclusion</h2>
-          <p>By applying the knowledge from this guide, you'll be well-equipped to leverage ${topicToUse} for your specific needs in 2025 and beyond.</p>`,
-          tags: topicToUse.split(' ').concat(selectedKeywords.map(k => k.keyword)),
-          category: "Guides"
-        };
+      // In a real implementation this would call the API
+      // but for demo purposes we'll just create some content
+      const mockGeneratedContent = {
+        title: `${topic}: Complete Guide for 2025`,
+        content: `<h2>Introduction to ${topic}</h2>
+        <p>In this comprehensive guide to ${topic}, we'll explore everything you need to know about this fascinating subject. From basic concepts to advanced strategies, this guide has you covered.</p>
         
-        setGeneratedContent(mockGeneratedContent);
-        toast({
-          title: "Content Generated",
-          description: "Demo content has been created successfully",
-        });
-      } else {
-        // For cluster generation, use the existing cluster generation logic
-        generateCluster();
-      }
+        <h2>Why ${topic} Matters in 2025</h2>
+        <p>As we move further into 2025, ${topic} continues to gain importance across multiple industries. Understanding the fundamental principles can give you a significant advantage.</p>
+        
+        <h2>Key Strategies for Success</h2>
+        <p>To succeed with ${topic}, you'll want to focus on these proven approaches:</p>
+        <ul>
+          <li>Research thoroughly before getting started</li>
+          <li>Implement best practices from day one</li>
+          <li>Continuously monitor and improve your results</li>
+          <li>Stay updated with the latest developments</li>
+        </ul>
+        
+        <h2>Common Challenges and Solutions</h2>
+        <p>While working with ${topic}, you might encounter several challenges. Here's how to address the most common ones effectively.</p>
+        
+        <h2>Conclusion</h2>
+        <p>By applying the knowledge from this guide, you'll be well-equipped to leverage ${topic} for your specific needs in 2025 and beyond.</p>`,
+        tags: topic.split(' ').concat(['guide', '2025', 'tutorial']),
+        category: "Guides"
+      };
+      
+      setGeneratedContent(mockGeneratedContent);
+      toast({
+        title: "Content Generated",
+        description: "Demo content has been created successfully",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -253,13 +124,13 @@ export default function EnhancedWorkflowDemo() {
       setIsGenerating(false);
     }
   };
-
+  
   // Generate a content cluster
   const generateCluster = async () => {
     if (!topic) {
       toast({
         title: "Topic Required",
-        description: "Please enter a topic for your content cluster",
+        description: "Please enter a main topic for the cluster",
         variant: "destructive",
       });
       return;
@@ -268,92 +139,108 @@ export default function EnhancedWorkflowDemo() {
     setIsGenerating(true);
     
     try {
-      // In a real implementation, we would call the Claude API here
-      // For demo purposes, we're using realistic mock data
-      
-      // Simulate network delay - would be replaced with actual API call to /api/claude/cluster
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // The cluster topics would normally be generated by Claude based on the
-      // topic, selected products, keywords, and formatting options
-      const clusterTopics = [
-        `Complete Guide to ${topic}: Everything You Need to Know`,
-        `How to Choose the Best ${topic} for Your Home`,
-        `${topic} Installation: Step-by-Step Instructions`,
-        `Troubleshooting Common ${topic} Problems`
+      // This would call the API in a real implementation
+      // For the demo we create mock data
+      const mockCluster = [
+        {
+          id: "cluster-1",
+          title: `Complete Guide to ${topic}`,
+          content: `<h2>Introduction to ${topic}</h2>
+          <p>This comprehensive guide explores everything you need to know about ${topic}, including its history, benefits, and practical applications.</p>
+          
+          <h2>The Evolution of ${topic}</h2>
+          <p>The concept of ${topic} has evolved significantly over time, with major developments including...</p>
+          
+          <h2>Key Components and Benefits</h2>
+          <p>Several core elements make ${topic} valuable:</p>
+          <ul>
+            <li><strong>Component A:</strong> Provides foundation and structure</li>
+            <li><strong>Component B:</strong> Enhances functionality and reach</li>
+            <li><strong>Component C:</strong> Optimizes performance metrics</li>
+          </ul>
+          
+          <h2>Implementation Strategies</h2>
+          <p>To successfully implement ${topic} in your organization, consider these approaches...</p>
+          
+          <h2>Conclusion</h2>
+          <p>By understanding and applying the principles of ${topic}, you can achieve significant benefits for your business or personal projects.</p>`,
+          tags: [topic, "guide", "comprehensive"],
+          status: "draft"
+        },
+        {
+          id: "cluster-2",
+          title: `${topic} Best Practices for 2025`,
+          content: `<h2>Introduction</h2>
+          <p>As we move through 2025, implementing the right ${topic} best practices has become increasingly critical for success.</p>
+          
+          <h2>Current Trends Shaping ${topic}</h2>
+          <p>Several significant trends are influencing how organizations approach ${topic} today:</p>
+          <ul>
+            <li><strong>Trend 1:</strong> Integration with emerging technologies</li>
+            <li><strong>Trend 2:</strong> Focus on sustainability and ethical considerations</li>
+            <li><strong>Trend 3:</strong> Enhanced analytics and performance measurement</li>
+          </ul>
+          
+          <h2>Essential Best Practices</h2>
+          <p>To maximize the value of your ${topic} implementation, follow these proven best practices:</p>
+          <ol>
+            <li>Start with clear objectives and KPIs</li>
+            <li>Build a robust framework that can scale</li>
+            <li>Incorporate feedback loops for continuous improvement</li>
+            <li>Maintain flexibility to adapt to changing conditions</li>
+            <li>Regularly review and update your approach</li>
+          </ol>
+          
+          <h2>Case Studies: Success Stories</h2>
+          <p>Several organizations have achieved remarkable results by following these ${topic} best practices...</p>
+          
+          <h2>Looking Ahead</h2>
+          <p>The future of ${topic} will likely involve further integration with AI, enhanced personalization, and more sophisticated analytics capabilities.</p>`,
+          tags: [topic, "best practices", "2025", "trends"],
+          status: "draft"
+        },
+        {
+          id: "cluster-3",
+          title: `Common ${topic} Mistakes and How to Avoid Them`,
+          content: `<h2>Introduction</h2>
+          <p>While ${topic} offers significant benefits, many organizations make common mistakes that limit its effectiveness.</p>
+          
+          <h2>Top ${topic} Mistakes</h2>
+          <p>Be aware of these frequent errors when implementing ${topic}:</p>
+          
+          <h3>1. Insufficient Planning</h3>
+          <p>Many organizations rush into ${topic} without adequate preparation, leading to disorganized implementation and poor results. Instead:</p>
+          <ul>
+            <li>Develop a comprehensive strategy before beginning</li>
+            <li>Identify clear objectives and success metrics</li>
+            <li>Create a realistic timeline with milestone checkpoints</li>
+          </ul>
+          
+          <h3>2. Neglecting User Experience</h3>
+          <p>Technical aspects often overshadow user needs, resulting in low adoption rates and engagement. Better approaches include:</p>
+          <ul>
+            <li>Conduct user research before and during implementation</li>
+            <li>Create intuitive interfaces and workflows</li>
+            <li>Collect and act on user feedback regularly</li>
+          </ul>
+          
+          <h3>3. Failing to Measure Results</h3>
+          <p>Without proper measurement, you can't determine ROI or make improvements. Instead:</p>
+          <ul>
+            <li>Establish baseline metrics before implementation</li>
+            <li>Track relevant KPIs throughout the process</li>
+            <li>Analyze results and make data-driven adjustments</li>
+          </ul>
+          
+          <h2>Prevention Strategies</h2>
+          <p>To avoid these and other common ${topic} mistakes, implement these preventative measures...</p>
+          
+          <h2>Conclusion</h2>
+          <p>By learning from these common mistakes, you can implement ${topic} more effectively and achieve better results for your organization.</p>`,
+          tags: [topic, "mistakes", "troubleshooting", "best practices"],
+          status: "draft"
+        }
       ];
-      
-      // In a real implementation, Claude would generate complete articles 
-      // based on the selected products and keywords
-      const mockCluster = clusterTopics.map((title, index) => ({
-        id: `demo-${index + 1}`,
-        title,
-        content: `<h2>Introduction to ${title}</h2>
-        <p>This comprehensive article about ${title} explores everything from selection to maintenance, with a focus on our premium products.</p>
-        
-        <h2>Why Quality Matters for ${topic}</h2>
-        <p>When investing in a ${topic}, quality makes all the difference. Our Premium Water Softener offers:</p>
-        <ul>
-          <li>Superior filtration technology</li>
-          <li>Extended lifespan with proper maintenance</li>
-          <li>Energy-efficient operation</li>
-          <li>Comprehensive warranty coverage</li>
-        </ul>
-        
-        <h2>Key Considerations for Your Purchase</h2>
-        <p>Before selecting your ideal ${topic}, consider these important factors:</p>
-        <ol>
-          <li>Your specific water quality needs</li>
-          <li>Available installation space</li>
-          <li>Household size and water usage</li>
-          <li>Budget and long-term operating costs</li>
-        </ol>
-        
-        <h2>Expert Installation Tips</h2>
-        <p>For optimal performance of your ${topic}, follow these professional installation guidelines:</p>
-        <ol>
-          <li>Always shut off the main water supply first</li>
-          <li>Install the unit in a dry, level location</li>
-          <li>Ensure proper drainage for backwash cycles</li>
-          <li>Consider professional installation for warranty protection</li>
-        </ol>
-        
-        <h2>Maintenance Schedule</h2>
-        <table border="1">
-          <tr>
-            <th>Task</th>
-            <th>Frequency</th>
-            <th>Importance</th>
-          </tr>
-          <tr>
-            <td>Check salt levels</td>
-            <td>Monthly</td>
-            <td>High</td>
-          </tr>
-          <tr>
-            <td>Clean brine tank</td>
-            <td>Annually</td>
-            <td>Medium</td>
-          </tr>
-          <tr>
-            <td>Replace pre-filter</td>
-            <td>Every 3-6 months</td>
-            <td>High</td>
-          </tr>
-        </table>
-        
-        <h2>FAQ About ${topic}</h2>
-        <h3>How long should a quality ${topic} last?</h3>
-        <p>With proper maintenance, a high-quality system like our Premium Water Softener can last 10-15 years or more.</p>
-        
-        <h3>Can I install a ${topic} myself?</h3>
-        <p>While DIY installation is possible with our comprehensive instructions, professional installation ensures optimal performance and warranty protection.</p>
-        
-        <h2>Conclusion</h2>
-        <p>Investing in a high-quality ${topic} provides lasting benefits for your home and family. Our selection of premium products ensures you'll find the perfect solution for your specific needs.</p>`,
-        tags: [topic, 'water softener', 'water filter', 'water testing', 'home improvement'],
-        status: 'draft'
-      }));
       
       setDemoCluster(mockCluster);
       toast({
@@ -370,7 +257,7 @@ export default function EnhancedWorkflowDemo() {
       setIsGenerating(false);
     }
   };
-  
+
   return (
     <Layout>
       <div className="container py-6">
@@ -379,217 +266,51 @@ export default function EnhancedWorkflowDemo() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <Card className="md:col-span-1">
             <CardHeader>
-              <CardTitle>Content Generator</CardTitle>
+              <CardTitle>Generate Content</CardTitle>
               <CardDescription>
-                Start with product and keyword selection
+                Enter a topic to generate content
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {/* Step 1: Product Selection */}
-                <div className="space-y-3">
-                  <div className="text-base font-medium flex items-center">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">1</span>
-                    <Label>Select Products</Label>
-                  </div>
-                  <div className="space-y-2 ml-7">
-                    {demoProducts.map(product => (
-                      <div key={product.id} className="flex items-start space-x-2">
-                        <Checkbox 
-                          id={`product-${product.id}`}
-                          checked={selectedProducts.includes(product.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProducts([...selectedProducts, product.id]);
-                            } else {
-                              setSelectedProducts(selectedProducts.filter(id => id !== product.id));
-                            }
-                          }}
-                        />
-                        <div>
-                          <Label 
-                            htmlFor={`product-${product.id}`}
-                            className="font-medium cursor-pointer"
-                          >
-                            {product.title}
-                          </Label>
-                          <p className="text-xs text-muted-foreground">{product.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Step 2: Keyword Selection */}
-                <div className="space-y-3">
-                  <div className="text-base font-medium flex items-center">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">2</span>
-                    <Label>Add Keywords</Label>
-                  </div>
-                  <div className="space-y-3 ml-7">
-                    <div className="flex space-x-2">
-                      <Input
-                        placeholder="Enter keywords, comma separated"
-                        value={keywords}
-                        onChange={(e) => setKeywords(e.target.value)}
-                      />
-                      <Button size="sm" onClick={addCustomKeyword}>Add</Button>
-                    </div>
-                    
-                    {/* Display selected keywords */}
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {selectedKeywords.map(kw => (
-                        <Badge 
-                          key={kw.keyword} 
-                          variant="secondary"
-                          className="cursor-pointer"
-                          onClick={() => toggleKeyword(kw.keyword)}
-                        >
-                          {kw.keyword} ✕
-                        </Badge>
-                      ))}
-                    </div>
-                    
-                    {/* Common keyword suggestions */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Common keywords:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {['water quality', 'home improvement', 'installation', 'maintenance', 'cost savings'].map(kw => (
-                          <Badge 
-                            key={kw} 
-                            variant="outline"
-                            className="cursor-pointer text-xs"
-                            onClick={() => toggleKeyword(kw)}
-                          >
-                            {kw}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Step 3: Generate Topics */}
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <div className="text-base font-medium flex items-center">
-                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">3</span>
-                    <Label>Generate Topics</Label>
-                  </div>
-                  <div className="ml-7">
-                    <Button
-                      onClick={generateTopicSuggestions}
-                      disabled={isGenerating || (selectedProducts.length === 0 && selectedKeywords.length === 0)}
-                      className="w-full"
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Wand className="h-4 w-4 mr-2" />
-                      )}
-                      Generate Topic Ideas
-                    </Button>
-                  </div>
+                  <Label htmlFor="topic">Topic</Label>
+                  <Input 
+                    id="topic" 
+                    placeholder="e.g. Sustainable Fashion"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                  />
                 </div>
                 
-                {/* Step 4: Select Topic and Content Type */}
-                {generatedTopics.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="text-base font-medium flex items-center">
-                      <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">4</span>
-                      <Label>Select Topic & Type</Label>
-                    </div>
-                    <div className="ml-7 space-y-3">
-                      <Select
-                        value={selectedTopic}
-                        onValueChange={setSelectedTopic}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a topic" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {generatedTopics.map(topic => (
-                            <SelectItem key={topic} value={topic}>
-                              {topic}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <Button
-                          variant={contentType === "single" ? "default" : "outline"}
-                          onClick={() => setContentType("single")}
-                          className="w-full"
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Single Post
-                        </Button>
-                        
-                        <Button
-                          variant={contentType === "cluster" ? "default" : "outline"}
-                          onClick={() => setContentType("cluster")}
-                          className="w-full"
-                        >
-                          <Layers className="h-4 w-4 mr-2" />
-                          Cluster
-                        </Button>
-                      </div>
-                      
-                      <Button
-                        onClick={generateContent}
-                        disabled={isGenerating || !selectedTopic}
-                        className="w-full"
-                      >
-                        {isGenerating ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Wand className="h-4 w-4 mr-2" />
-                        )}
-                        Generate Content
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Direct topic entry for backward compatibility */}
-                {generatedTopics.length === 0 && (
-                  <div className="space-y-2 border-t pt-4">
-                    <Label htmlFor="direct-topic">Or Enter Topic Directly</Label>
-                    <Input 
-                      id="direct-topic" 
-                      placeholder="e.g. Water Filtration Systems"
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                    />
-                    
-                    <div className="grid grid-cols-2 gap-2 pt-2">
-                      <Button
-                        onClick={() => {
-                          setContentType("single");
-                          generateContent();
-                        }}
-                        disabled={isGenerating || !topic}
-                        className="w-full"
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Single Post
-                      </Button>
-                      
-                      <Button
-                        onClick={() => {
-                          setContentType("cluster");
-                          generateContent();
-                        }}
-                        disabled={isGenerating || !topic}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        <Layers className="h-4 w-4 mr-2" />
-                        Cluster
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={generateContent}
+                    disabled={isGenerating || !topic}
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand className="h-4 w-4 mr-2" />
+                    )}
+                    Single Post
+                  </Button>
+                  
+                  <Button
+                    onClick={generateCluster}
+                    disabled={isGenerating || !topic}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    Cluster
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -604,67 +325,20 @@ export default function EnhancedWorkflowDemo() {
               
               <TabsContent value="enhanced">
                 <ScrollArea className="h-[calc(100vh-240px)]">
-                  <EnhancedWorkflow
-                    isGenerating={isGenerating}
-                    generatedContent={generatedContent}
-                    selectedBlogId={selectedBlogId}
-                    canSchedule={permissionsData?.hasPermission}
-                    onPublish={async (values) => {
-                      toast({
-                        title: "Demo Mode",
-                        description: `In a real implementation, this would save the content as ${values.publicationType}`,
-                      });
-                      
-                      // In a demo we just log the values
-                      console.log("Publishing with values:", values);
-                      
-                      // Clear content after "publishing"
-                      setGeneratedContent(null);
-                    }}
-                  />
-                </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="cluster">
-                <ScrollArea className="h-[calc(100vh-240px)]">
-                  <ClusterWorkflow
-                    isLoading={isGenerating}
-                    articles={demoCluster}
-                    canSchedule={permissionsData?.hasPermission}
-                    blogId={selectedBlogId}
-                    products={demoProducts}
-                    onSave={async (articles) => {
-                      toast({
-                        title: "Demo Mode",
-                        description: `In a real implementation, this would save ${articles.length} articles`,
-                      });
-                      
-                      // In a demo we just log the values
-                      console.log("Saving articles:", articles);
-                      
-                      // Clear content after "publishing"
-                      setDemoCluster([]);
-                    }}
-                  />
-                </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="classic">
-                <ScrollArea className="h-[calc(100vh-240px)]">
                   {generatedContent ? (
-                    <ReviewPane
-                      content={generatedContent.content}
-                      title={generatedContent.title}
-                      tags={generatedContent.tags}
-                      isSubmitting={isGenerating}
-                      hasSchedulingPermission={permissionsData?.hasPermission}
-                      onSubmit={async (values) => {
+                    <EnhancedWorkflow
+                      isGenerating={isGenerating}
+                      generatedContent={generatedContent}
+                      selectedBlogId={selectedBlogId}
+                      canSchedule={permissionsData?.hasPermission}
+                      onPublish={async (values) => {
                         toast({
-                          title: "Classic View",
-                          description: `In a real implementation, this would publish using the classic workflow`,
+                          title: "Demo Mode",
+                          description: `In a real implementation, this would save the content as ${values.publicationType}`,
                         });
                         
-                        console.log("Classic submission:", values);
+                        // In a demo we just log the values
+                        console.log("Publishing with values:", values);
                         
                         // Clear content after "publishing"
                         setGeneratedContent(null);
@@ -680,6 +354,71 @@ export default function EnhancedWorkflowDemo() {
                     </Card>
                   )}
                 </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="cluster">
+                <ScrollArea className="h-[calc(100vh-240px)]">
+                  {demoCluster.length > 0 ? (
+                    <ClusterWorkflow
+                      isLoading={isGenerating}
+                      articles={demoCluster}
+                      canSchedule={permissionsData?.hasPermission}
+                      blogId={selectedBlogId}
+                      products={demoProducts}
+                      onSave={async (articles) => {
+                        toast({
+                          title: "Demo Mode",
+                          description: `In a real implementation, this would save ${articles.length} cluster articles`,
+                        });
+                        
+                        // In a demo we just log the values
+                        console.log("Saving cluster with articles:", articles);
+                        
+                        // Clear content after "publishing"
+                        setDemoCluster([]);
+                      }}
+                    />
+                  ) : (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <p className="text-muted-foreground">
+                          Generate a cluster to see the content here.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="classic">
+                {generatedContent ? (
+                  <ScrollArea className="h-[calc(100vh-240px)]">
+                    <ReviewPane 
+                      title={generatedContent.title}
+                      content={generatedContent.content}
+                      hasSchedulingPermission={permissionsData?.hasPermission}
+                      onSubmit={async (values) => {
+                        toast({
+                          title: "Classic View",
+                          description: `In a real implementation, this would publish using the classic workflow`,
+                        });
+                        
+                        console.log("Classic submission:", values);
+                        
+                        // Clear content after "publishing"
+                        setGeneratedContent(null);
+                      }}
+                    />
+                  </ScrollArea>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <p className="text-muted-foreground">
+                        Generate content to see a preview here.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
           </div>
