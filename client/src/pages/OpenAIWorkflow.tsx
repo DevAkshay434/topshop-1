@@ -686,8 +686,14 @@ export default function OpenAIWorkflow() {
   
   // Handle image selection
   const handleImagesSelected = (images: any[]) => {
+    console.log("Images selected:", images);
     setSelectedImages(images);
-    setIsImageDialogOpen(false);
+    
+    // Show toast to confirm images were received
+    toast({
+      title: "Images Updated",
+      description: `${images.length} image${images.length !== 1 ? 's' : ''} added to content`,
+    });
   };
   
   // Generate the content cluster with selected styling and images

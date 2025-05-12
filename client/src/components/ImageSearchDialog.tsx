@@ -205,7 +205,13 @@ export default function ImageSearchDialog({
   const toggleImageSelection = (imageId: string) => {
     // Get the current selection state
     const currentImage = searchedImages.find(img => img.id === imageId);
-    const newSelectedState = !(currentImage?.selected || false);
+    if (!currentImage) {
+      console.error("Could not find image with ID:", imageId);
+      return;
+    }
+    
+    const newSelectedState = !(currentImage.selected || false);
+    console.log(`Toggling image ${imageId} to selected=${newSelectedState}`);
     
     // Update in current search results
     setSearchedImages(prev => 
@@ -233,22 +239,46 @@ export default function ImageSearchDialog({
       // Add to selected images if not already there
       const imageToAdd = searchedImages.find(img => img.id === imageId);
       if (imageToAdd && !selectedImages.some(img => img.id === imageId)) {
+        console.log("Adding image to selected images:", imageToAdd);
         setSelectedImages(prev => [...prev, { ...imageToAdd, selected: true }]);
+        
+        // Show toast when selecting an image
+        toast({
+          title: "Image Selected",
+          description: "Click 'Set as Featured' to make it the main image",
+          variant: "default"
+        });
       }
     } else {
       // Remove from selected images
+      console.log("Removing image from selected images:", imageId);
       setSelectedImages(prev => prev.filter(img => img.id !== imageId));
+      
+      // If this was the featured image, remove that too
+      if (featuredImageId === imageId) {
+        setFeaturedImageId(null);
+      }
+      
+      // Remove from content images too if needed
+      if (contentImageIds.includes(imageId)) {
+        setContentImageIds(prev => prev.filter(id => id !== imageId));
+      }
     }
   };
 
   // Handle image selection confirmation
   const confirmImageSelection = () => {
+    console.log("Confirming image selection. Selected images:", selectedImages);
+    
     // Make sure featured image is first in the array
     let orderedImages = [...selectedImages].map(img => ({
       ...img,
       isFeatured: img.id === featuredImageId,
       isContentImage: contentImageIds.includes(img.id)
     }));
+    
+    console.log("Featured image ID:", featuredImageId);
+    console.log("Content image IDs:", contentImageIds);
     
     if (featuredImageId && orderedImages.length > 0) {
       // Remove featured image from array if it exists
@@ -263,9 +293,17 @@ export default function ImageSearchDialog({
       }
     }
     
+    console.log("Ordered images to return:", orderedImages);
+    
     // Pass selected images back to parent component with featured image first
     onImagesSelected(orderedImages);
     onOpenChange(false);
+    
+    // Show toast confirmation
+    toast({
+      title: "Images Selected",
+      description: `You've selected ${orderedImages.length} images for your content`,
+    });
   };
   
   // Set an image as featured
