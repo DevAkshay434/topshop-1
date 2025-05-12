@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select, 
@@ -1763,6 +1764,46 @@ export default function OpenAIWorkflow() {
                   onImagesSelected={handleImagesSelected}
                   searchKeyword={selectedTopic?.title || ''}
                 />
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-medium mb-4">Buyer Profile Generator</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Define your target audience for better content personalization.
+                </p>
+                
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="Describe your target buyer here. For example: 'Homeowners aged 35-55 concerned about water quality, with disposable income who prioritize health and eco-friendly solutions.'"
+                    value={buyerProfileText}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBuyerProfileText(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setBuyerProfileText("Young homeowners (25-35) with growing families concerned about water quality and its effects on children's health.")}
+                    >
+                      Family-focused
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setBuyerProfileText("Eco-conscious individuals (30-45) seeking sustainable home solutions that reduce plastic waste and environmental impact.")}
+                    >
+                      Eco-conscious
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setBuyerProfileText("Budget-conscious homeowners looking for long-term cost savings on water bills and plumbing maintenance.")}
+                    >
+                      Budget-savvy
+                    </Button>
+                  </div>
+                </div>
               </div>
               
               <div className="pt-6 mt-auto">
