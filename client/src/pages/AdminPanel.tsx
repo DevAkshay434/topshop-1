@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { 
   Card, 
   CardContent, 
@@ -305,6 +306,16 @@ export default function AdminPanel() {
   const collectionsQuery = useQuery<CollectionsResponse>({
     queryKey: ['/api/admin/collections'],
     enabled: selectedTab === "generate"
+  });
+  
+  // Check if the store has the scheduling permission
+  const { data: permissionsData } = useQuery<{ 
+    success: boolean; 
+    hasPermission: boolean;
+    store: { name: string; }
+  }>({
+    queryKey: ['/api/shopify/check-permissions'],
+    enabled: true,
   });
 
   // Query for blogs

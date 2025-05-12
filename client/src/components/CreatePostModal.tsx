@@ -407,6 +407,13 @@ export default function CreatePostModal({
           </DialogTitle>
         </DialogHeader>
         
+        {/* Show scheduling permission notice if needed */}
+        {permissionsData?.success && !permissionsData.hasPermission && (
+          <SchedulingPermissionNotice 
+            storeName={permissionsData.store?.name || storeInfo?.name || 'your store'} 
+          />
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
