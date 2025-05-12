@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
@@ -25,12 +25,20 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from 'lucide-react';
+import { Calendar, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Article {
   id: string;
@@ -43,12 +51,24 @@ interface Article {
   scheduledTime?: string;
 }
 
+interface Product {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+interface Keyword {
+  keyword: string;
+  score: number;
+}
+
 interface ClusterWorkflowProps {
   articles: Article[];
   isLoading?: boolean;
   onSave?: (articles: Article[]) => Promise<void>;
   canSchedule?: boolean;
   blogId?: string;
+  products?: Product[];
 }
 
 export default function ClusterWorkflow({
