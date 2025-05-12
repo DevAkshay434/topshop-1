@@ -27,14 +27,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Layout from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Plus, Wand } from 'lucide-react';
+import { Loader2, Plus, Wand, FileText, Layers } from 'lucide-react';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function EnhancedWorkflowDemo() {
   const { toast } = useToast();
+  
+  // Content generation states
   const [topic, setTopic] = useState("");
+  const [generatedTopics, setGeneratedTopics] = useState<string[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [demoCluster, setDemoCluster] = useState<any[]>([]);
+  const [contentType, setContentType] = useState<"single" | "cluster">("single");
+  
+  // Product selection state
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  
+  // Keywords state
+  const [keywords, setKeywords] = useState("");
+  const [selectedKeywords, setSelectedKeywords] = useState<{keyword: string; score: number}[]>([]);
   
   // Demo products for the cluster workflow
   const [demoProducts, setDemoProducts] = useState<any[]>([
