@@ -379,51 +379,217 @@ export default function EnhancedWorkflowDemo() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <Card className="md:col-span-1">
             <CardHeader>
-              <CardTitle>Generate Content</CardTitle>
+              <CardTitle>Content Generator</CardTitle>
               <CardDescription>
-                Enter a topic to generate content
+                Start with product and keyword selection
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="topic">Topic</Label>
-                  <Input 
-                    id="topic" 
-                    placeholder="e.g. Sustainable Fashion"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                  />
+              <div className="space-y-6">
+                {/* Step 1: Product Selection */}
+                <div className="space-y-3">
+                  <div className="text-base font-medium flex items-center">
+                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">1</span>
+                    <Label>Select Products</Label>
+                  </div>
+                  <div className="space-y-2 ml-7">
+                    {demoProducts.map(product => (
+                      <div key={product.id} className="flex items-start space-x-2">
+                        <Checkbox 
+                          id={`product-${product.id}`}
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProducts([...selectedProducts, product.id]);
+                            } else {
+                              setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                            }
+                          }}
+                        />
+                        <div>
+                          <Label 
+                            htmlFor={`product-${product.id}`}
+                            className="font-medium cursor-pointer"
+                          >
+                            {product.title}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">{product.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    onClick={generateContent}
-                    disabled={isGenerating || !topic}
-                    className="w-full"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Wand className="h-4 w-4 mr-2" />
-                    )}
-                    Single Post
-                  </Button>
-                  
-                  <Button
-                    onClick={generateCluster}
-                    disabled={isGenerating || !topic}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    Cluster
-                  </Button>
+                {/* Step 2: Keyword Selection */}
+                <div className="space-y-3">
+                  <div className="text-base font-medium flex items-center">
+                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">2</span>
+                    <Label>Add Keywords</Label>
+                  </div>
+                  <div className="space-y-3 ml-7">
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Enter keywords, comma separated"
+                        value={keywords}
+                        onChange={(e) => setKeywords(e.target.value)}
+                      />
+                      <Button size="sm" onClick={addCustomKeyword}>Add</Button>
+                    </div>
+                    
+                    {/* Display selected keywords */}
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {selectedKeywords.map(kw => (
+                        <Badge 
+                          key={kw.keyword} 
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() => toggleKeyword(kw.keyword)}
+                        >
+                          {kw.keyword} ✕
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    {/* Common keyword suggestions */}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Common keywords:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {['water quality', 'home improvement', 'installation', 'maintenance', 'cost savings'].map(kw => (
+                          <Badge 
+                            key={kw} 
+                            variant="outline"
+                            className="cursor-pointer text-xs"
+                            onClick={() => toggleKeyword(kw)}
+                          >
+                            {kw}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                
+                {/* Step 3: Generate Topics */}
+                <div className="space-y-2">
+                  <div className="text-base font-medium flex items-center">
+                    <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">3</span>
+                    <Label>Generate Topics</Label>
+                  </div>
+                  <div className="ml-7">
+                    <Button
+                      onClick={generateTopicSuggestions}
+                      disabled={isGenerating || (selectedProducts.length === 0 && selectedKeywords.length === 0)}
+                      className="w-full"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Wand className="h-4 w-4 mr-2" />
+                      )}
+                      Generate Topic Ideas
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Step 4: Select Topic and Content Type */}
+                {generatedTopics.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="text-base font-medium flex items-center">
+                      <span className="bg-primary text-primary-foreground w-5 h-5 rounded-full text-xs flex items-center justify-center mr-2">4</span>
+                      <Label>Select Topic & Type</Label>
+                    </div>
+                    <div className="ml-7 space-y-3">
+                      <Select
+                        value={selectedTopic}
+                        onValueChange={setSelectedTopic}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a topic" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {generatedTopics.map(topic => (
+                            <SelectItem key={topic} value={topic}>
+                              {topic}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <Button
+                          variant={contentType === "single" ? "default" : "outline"}
+                          onClick={() => setContentType("single")}
+                          className="w-full"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Single Post
+                        </Button>
+                        
+                        <Button
+                          variant={contentType === "cluster" ? "default" : "outline"}
+                          onClick={() => setContentType("cluster")}
+                          className="w-full"
+                        >
+                          <Layers className="h-4 w-4 mr-2" />
+                          Cluster
+                        </Button>
+                      </div>
+                      
+                      <Button
+                        onClick={generateContent}
+                        disabled={isGenerating || !selectedTopic}
+                        className="w-full"
+                      >
+                        {isGenerating ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Wand className="h-4 w-4 mr-2" />
+                        )}
+                        Generate Content
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Direct topic entry for backward compatibility */}
+                {generatedTopics.length === 0 && (
+                  <div className="space-y-2 border-t pt-4">
+                    <Label htmlFor="direct-topic">Or Enter Topic Directly</Label>
+                    <Input 
+                      id="direct-topic" 
+                      placeholder="e.g. Water Filtration Systems"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <Button
+                        onClick={() => {
+                          setContentType("single");
+                          generateContent();
+                        }}
+                        disabled={isGenerating || !topic}
+                        className="w-full"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Single Post
+                      </Button>
+                      
+                      <Button
+                        onClick={() => {
+                          setContentType("cluster");
+                          generateContent();
+                        }}
+                        disabled={isGenerating || !topic}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Layers className="h-4 w-4 mr-2" />
+                        Cluster
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
