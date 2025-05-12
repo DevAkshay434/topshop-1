@@ -167,6 +167,50 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
+  // Direct endpoint to update permissions in the database without OAuth
+  apiRouter.post("/shopify/force-update-permissions", async (req: Request, res: Response) => {
+    try {
+      // Get stores
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No stores found"
+        });
+      }
+      
+      const store = stores[0]; // Use first store
+      
+      // Import the utility to get full scope string
+      const { getFullScopeString } = await import('../shared/permissions');
+      
+      // Update the store with the full scope string including write_publications
+      const fullScopes = getFullScopeString();
+      
+      // Update the store record
+      const updatedStore = await storage.updateShopifyStore(store.id, {
+        scope: fullScopes
+      });
+      
+      // Return success
+      return res.json({
+        success: true,
+        message: "Store permissions updated",
+        store: {
+          id: updatedStore.id,
+          name: updatedStore.shopName,
+          scope: updatedStore.scope
+        }
+      });
+    } catch (error: any) {
+      console.error("Error updating store permissions:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to update permissions"
+      });
+    }
+  });
+  
   // Get current Shopify connection
   apiRouter.get("/shopify/connection", async (req: Request, res: Response) => {
     try {

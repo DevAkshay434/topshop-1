@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SchedulingPermissionNoticeProps {
   storeName: string;
@@ -11,10 +12,54 @@ interface SchedulingPermissionNoticeProps {
 export function SchedulingPermissionNotice({ storeName }: SchedulingPermissionNoticeProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
+  // Force update permissions directly in the database
+  const handleForceUpdatePermissions = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      // Call the new direct endpoint
+      const response = await fetch('/api/shopify/force-update-permissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess('Permissions updated successfully! Refreshing the page...');
+        
+        // Invalidate permission check cache so the UI updates
+        await queryClient.invalidateQueries({
+          queryKey: ['/api/shopify/check-permissions']
+        });
+        
+        // Refresh the page after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        setError(data.message || 'Failed to update permissions');
+      }
+    } catch (err) {
+      console.error('Error updating permissions:', err);
+      setError('An error occurred while updating permissions. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Original OAuth reconnect flow (as fallback)
   const handleReconnect = async () => {
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
     
     try {
       // Using fetch directly since we're doing a GET request
@@ -69,14 +114,26 @@ export function SchedulingPermissionNotice({ storeName }: SchedulingPermissionNo
           Your Shopify store connection for <strong>{storeName}</strong> needs additional permissions to schedule posts.
           Posts will publish immediately until this is fixed.
         </p>
-        <Button 
-          variant="outline" 
-          onClick={handleReconnect} 
-          disabled={isLoading}
-        >
-          {isLoading ? 'Reconnecting...' : 'Grant Permission'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={handleForceUpdatePermissions} 
+            disabled={isLoading}
+          >
+            {isLoading ? 'Processing...' : 'Enable Scheduling Permission'}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleReconnect} 
+            disabled={isLoading}
+          >
+            {isLoading ? 'Processing...' : 'Reconnect with Shopify'}
+          </Button>
+        </div>
         {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
+        {success && <p className="text-green-600 mt-2 text-sm">{success}</p>}
       </AlertDescription>
     </Alert>
   );
