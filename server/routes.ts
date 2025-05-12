@@ -11,7 +11,7 @@ import {
   insertUserStoreSchema,
 } from '@shared/schema';
 import { storage } from './storage';
-import * as shopifyService from './services/shopify';
+import { shopifyService } from './services/shopify';
 import contentRouter from './routes/content';
 import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
@@ -804,7 +804,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             }
             
             // Pass the explicit Date object as the 4th parameter for scheduling
-            const shopifyArticle = await shopifyService.shopifyService.createArticle(
+            const shopifyArticle = await shopifyService.createArticle(
               tempStore, 
               connection.defaultBlogId, 
               post,
