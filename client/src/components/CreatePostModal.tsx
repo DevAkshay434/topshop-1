@@ -318,6 +318,22 @@ export default function CreatePostModal({
       // IMPORTANT: Add publicationType to postData for server-side processing
       postData.publicationType = values.publicationType;
       
+      // Check if the store has scheduling permissions - if not, prevent scheduling
+      const hasSchedulingPermission = permissionsData?.hasPermission || false;
+      
+      // If user is trying to schedule but doesn't have permission, convert to immediate publish
+      if (values.publicationType === 'schedule' && !hasSchedulingPermission) {
+        console.log("Store lacks scheduling permission - converting scheduled post to draft");
+        postData.publicationType = 'draft';
+        
+        // Show toast notification about permission issue
+        toast({
+          title: "Permission Required",
+          description: "Your store doesn't have scheduling permission. Post saved as draft instead.",
+          variant: "destructive",
+        });
+      }
+      
       // For existing content, preserve its current publishing status
       if (initialData?.id) {
         console.log("Updating existing content, preserving current status:", initialData.status);
@@ -331,12 +347,16 @@ export default function CreatePostModal({
           postData.publishedDate = initialData.publishedDate;
         }
         
-        // Keep scheduling information if it's already scheduled
-        if (initialData.status === "scheduled") {
+        // Keep scheduling information if it's already scheduled and has permission
+        if (initialData.status === "scheduled" && hasSchedulingPermission) {
           postData.scheduledDate = initialData.scheduledDate;
           postData.scheduledPublishDate = initialData.scheduledPublishDate;
           postData.scheduledPublishTime = initialData.scheduledPublishTime;
           // Keep the original scheduled publication details
+        } else if (initialData.status === "scheduled" && !hasSchedulingPermission) {
+          // If scheduled but now lacks permission, convert to draft
+          postData.status = "draft";
+          postData.postStatus = "draft";
         }
         
         // For published content, ensure it stays published
