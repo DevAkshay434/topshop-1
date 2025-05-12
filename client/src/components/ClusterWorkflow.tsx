@@ -69,6 +69,7 @@ interface ClusterWorkflowProps {
   canSchedule?: boolean;
   blogId?: string;
   products?: Product[];
+  onBack?: () => void;  // Added callback for back button
 }
 
 export default function ClusterWorkflow({
@@ -77,7 +78,8 @@ export default function ClusterWorkflow({
   onSave,
   canSchedule = true,
   blogId,
-  products = []
+  products = [],
+  onBack
 }: ClusterWorkflowProps) {
   const { toast } = useToast();
   const { storeInfo } = useStore();
