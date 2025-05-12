@@ -595,7 +595,7 @@ export default function OpenAIWorkflow() {
         });
         
         // Move to topic selection step
-        setCurrentStep(3);
+        setCurrentStep(4);
       } else {
         throw new Error(response.message || "Failed to generate topic suggestions");
       }
@@ -664,7 +664,7 @@ export default function OpenAIWorkflow() {
       ];
       
       setSuggestedTopics(mockTopics);
-      setCurrentStep(3);
+      setCurrentStep(4);
     } finally {
       setIsLoadingTopics(false);
     }
@@ -675,7 +675,7 @@ export default function OpenAIWorkflow() {
     setSelectedTopic(topic);
     
     // Move to the styling & image selection step
-    setCurrentStep(4);
+    setCurrentStep(5);
     
     toast({
       title: "Topic Selected",
@@ -1460,7 +1460,7 @@ export default function OpenAIWorkflow() {
           </div>
         </CardContent>
         <CardFooter className="justify-between">
-          <Button variant="outline" onClick={() => setCurrentStep(1)}>
+          <Button variant="outline" onClick={() => setCurrentStep(2)}>
             Back to Products
           </Button>
           <Button 
