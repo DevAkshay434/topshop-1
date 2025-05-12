@@ -5,7 +5,6 @@ import { apiRequest } from '@/lib/queryClient';
 
 // Import our enhanced workflow components
 import EnhancedWorkflow from '../components/EnhancedWorkflow';
-import ClusterWorkflow from '../components/ClusterWorkflow';
 import { ReviewPane } from '../components/ReviewPane';
 
 // Import UI components
@@ -27,33 +26,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Layout from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Plus, Wand } from 'lucide-react';
+import { Loader2, Wand } from 'lucide-react';
 
 export default function EnhancedWorkflowDemo() {
   const { toast } = useToast();
   const [topic, setTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
-  const [demoCluster, setDemoCluster] = useState<any[]>([]);
-  
-  // Demo products for the cluster workflow
-  const [demoProducts, setDemoProducts] = useState<any[]>([
-    { 
-      id: "prod1", 
-      title: "Premium Water Softener",
-      description: "Our top-of-the-line water softener for residential use" 
-    },
-    { 
-      id: "prod2", 
-      title: "Water Filter System",
-      description: "Complete water filtration system for cleaner, healthier water" 
-    },
-    { 
-      id: "prod3", 
-      title: "Water Testing Kit",
-      description: "Professional-grade water testing kit for home use" 
-    }
-  ]);
   
   // Check scheduling permissions
   const { data: permissionsData } = useQuery<{ success: boolean; hasPermission: boolean; }>({
@@ -124,139 +103,6 @@ export default function EnhancedWorkflowDemo() {
       setIsGenerating(false);
     }
   };
-  
-  // Generate a content cluster
-  const generateCluster = async () => {
-    if (!topic) {
-      toast({
-        title: "Topic Required",
-        description: "Please enter a main topic for the cluster",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsGenerating(true);
-    
-    try {
-      // This would call the API in a real implementation
-      // For the demo we create mock data
-      const mockCluster = [
-        {
-          id: "cluster-1",
-          title: `Complete Guide to ${topic}`,
-          content: `<h2>Introduction to ${topic}</h2>
-          <p>This comprehensive guide explores everything you need to know about ${topic}, including its history, benefits, and practical applications.</p>
-          
-          <h2>The Evolution of ${topic}</h2>
-          <p>The concept of ${topic} has evolved significantly over time, with major developments including...</p>
-          
-          <h2>Key Components and Benefits</h2>
-          <p>Several core elements make ${topic} valuable:</p>
-          <ul>
-            <li><strong>Component A:</strong> Provides foundation and structure</li>
-            <li><strong>Component B:</strong> Enhances functionality and reach</li>
-            <li><strong>Component C:</strong> Optimizes performance metrics</li>
-          </ul>
-          
-          <h2>Implementation Strategies</h2>
-          <p>To successfully implement ${topic} in your organization, consider these approaches...</p>
-          
-          <h2>Conclusion</h2>
-          <p>By understanding and applying the principles of ${topic}, you can achieve significant benefits for your business or personal projects.</p>`,
-          tags: [topic, "guide", "comprehensive"],
-          status: "draft"
-        },
-        {
-          id: "cluster-2",
-          title: `${topic} Best Practices for 2025`,
-          content: `<h2>Introduction</h2>
-          <p>As we move through 2025, implementing the right ${topic} best practices has become increasingly critical for success.</p>
-          
-          <h2>Current Trends Shaping ${topic}</h2>
-          <p>Several significant trends are influencing how organizations approach ${topic} today:</p>
-          <ul>
-            <li><strong>Trend 1:</strong> Integration with emerging technologies</li>
-            <li><strong>Trend 2:</strong> Focus on sustainability and ethical considerations</li>
-            <li><strong>Trend 3:</strong> Enhanced analytics and performance measurement</li>
-          </ul>
-          
-          <h2>Essential Best Practices</h2>
-          <p>To maximize the value of your ${topic} implementation, follow these proven best practices:</p>
-          <ol>
-            <li>Start with clear objectives and KPIs</li>
-            <li>Build a robust framework that can scale</li>
-            <li>Incorporate feedback loops for continuous improvement</li>
-            <li>Maintain flexibility to adapt to changing conditions</li>
-            <li>Regularly review and update your approach</li>
-          </ol>
-          
-          <h2>Case Studies: Success Stories</h2>
-          <p>Several organizations have achieved remarkable results by following these ${topic} best practices...</p>
-          
-          <h2>Looking Ahead</h2>
-          <p>The future of ${topic} will likely involve further integration with AI, enhanced personalization, and more sophisticated analytics capabilities.</p>`,
-          tags: [topic, "best practices", "2025", "trends"],
-          status: "draft"
-        },
-        {
-          id: "cluster-3",
-          title: `Common ${topic} Mistakes and How to Avoid Them`,
-          content: `<h2>Introduction</h2>
-          <p>While ${topic} offers significant benefits, many organizations make common mistakes that limit its effectiveness.</p>
-          
-          <h2>Top ${topic} Mistakes</h2>
-          <p>Be aware of these frequent errors when implementing ${topic}:</p>
-          
-          <h3>1. Insufficient Planning</h3>
-          <p>Many organizations rush into ${topic} without adequate preparation, leading to disorganized implementation and poor results. Instead:</p>
-          <ul>
-            <li>Develop a comprehensive strategy before beginning</li>
-            <li>Identify clear objectives and success metrics</li>
-            <li>Create a realistic timeline with milestone checkpoints</li>
-          </ul>
-          
-          <h3>2. Neglecting User Experience</h3>
-          <p>Technical aspects often overshadow user needs, resulting in low adoption rates and engagement. Better approaches include:</p>
-          <ul>
-            <li>Conduct user research before and during implementation</li>
-            <li>Create intuitive interfaces and workflows</li>
-            <li>Collect and act on user feedback regularly</li>
-          </ul>
-          
-          <h3>3. Failing to Measure Results</h3>
-          <p>Without proper measurement, you can't determine ROI or make improvements. Instead:</p>
-          <ul>
-            <li>Establish baseline metrics before implementation</li>
-            <li>Track relevant KPIs throughout the process</li>
-            <li>Analyze results and make data-driven adjustments</li>
-          </ul>
-          
-          <h2>Prevention Strategies</h2>
-          <p>To avoid these and other common ${topic} mistakes, implement these preventative measures...</p>
-          
-          <h2>Conclusion</h2>
-          <p>By learning from these common mistakes, you can implement ${topic} more effectively and achieve better results for your organization.</p>`,
-          tags: [topic, "mistakes", "troubleshooting", "best practices"],
-          status: "draft"
-        }
-      ];
-      
-      setDemoCluster(mockCluster);
-      toast({
-        title: "Cluster Generated",
-        description: `Created ${mockCluster.length} articles in this content cluster`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error)?.message || "Failed to generate content cluster",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   return (
     <Layout>
@@ -283,7 +129,7 @@ export default function EnhancedWorkflowDemo() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2">
+                <div>
                   <Button
                     onClick={generateContent}
                     disabled={isGenerating || !topic}
@@ -294,21 +140,7 @@ export default function EnhancedWorkflowDemo() {
                     ) : (
                       <Wand className="h-4 w-4 mr-2" />
                     )}
-                    Single Post
-                  </Button>
-                  
-                  <Button
-                    onClick={generateCluster}
-                    disabled={isGenerating || !topic}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    Cluster
+                    Generate Content
                   </Button>
                 </div>
               </div>
@@ -319,7 +151,6 @@ export default function EnhancedWorkflowDemo() {
             <Tabs defaultValue="enhanced" className="w-full">
               <TabsList className="mb-4">
                 <TabsTrigger value="enhanced">Enhanced Single Post</TabsTrigger>
-                <TabsTrigger value="cluster">Topic Cluster</TabsTrigger>
                 <TabsTrigger value="classic">Classic View</TabsTrigger>
               </TabsList>
               
@@ -349,40 +180,6 @@ export default function EnhancedWorkflowDemo() {
                       <CardContent className="py-12 text-center">
                         <p className="text-muted-foreground">
                           Generate content to see a preview here.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="cluster">
-                <ScrollArea className="h-[calc(100vh-240px)]">
-                  {demoCluster.length > 0 ? (
-                    <ClusterWorkflow
-                      isLoading={isGenerating}
-                      articles={demoCluster}
-                      canSchedule={permissionsData?.hasPermission}
-                      blogId={selectedBlogId}
-                      products={demoProducts}
-                      onSave={async (articles) => {
-                        toast({
-                          title: "Demo Mode",
-                          description: `In a real implementation, this would save ${articles.length} cluster articles`,
-                        });
-                        
-                        // In a demo we just log the values
-                        console.log("Saving cluster with articles:", articles);
-                        
-                        // Clear content after "publishing"
-                        setDemoCluster([]);
-                      }}
-                    />
-                  ) : (
-                    <Card>
-                      <CardContent className="py-12 text-center">
-                        <p className="text-muted-foreground">
-                          Generate a cluster to see the content here.
                         </p>
                       </CardContent>
                     </Card>
