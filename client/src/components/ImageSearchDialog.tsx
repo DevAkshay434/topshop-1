@@ -763,24 +763,43 @@ export default function ImageSearchDialog({
                         )}
                         
                         {/* Action buttons */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-between gap-1">
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-1 flex justify-between gap-1">
                           <Button
                             variant="destructive"
                             size="sm"
                             className="h-7 text-xs flex-1"
                             onClick={() => toggleImageSelection(image.id)}
                           >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
                             Remove
                           </Button>
                           
                           <Button
                             variant={featuredImageId === image.id ? "default" : "secondary"}
                             size="sm"
-                            className="h-7 text-xs flex-1"
+                            className={`h-7 text-xs flex-1 ${featuredImageId === image.id ? 'bg-yellow-500 hover:bg-yellow-600' : ''}`}
                             onClick={() => setAsFeaturedImage(image.id)}
                             disabled={featuredImageId === image.id}
                           >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
                             {featuredImageId === image.id ? "Featured" : "Set as Featured"}
+                          </Button>
+                          
+                          <Button
+                            variant={contentImageIds.includes(image.id) && featuredImageId !== image.id ? "default" : "secondary"}
+                            size="sm"
+                            className={`h-7 text-xs flex-1 ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
+                            onClick={() => setAsContentImage(image.id)}
+                            disabled={featuredImageId === image.id}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                            </svg>
+                            Content
                           </Button>
                         </div>
                       </div>
