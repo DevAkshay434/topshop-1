@@ -103,7 +103,7 @@ export default function EnhancedWorkflowDemo() {
       setIsGenerating(false);
     }
   };
-
+  
   return (
     <Layout>
       <div className="container py-6">
@@ -188,11 +188,13 @@ export default function EnhancedWorkflowDemo() {
               </TabsContent>
               
               <TabsContent value="classic">
-                {generatedContent ? (
-                  <ScrollArea className="h-[calc(100vh-240px)]">
-                    <ReviewPane 
-                      title={generatedContent.title}
+                <ScrollArea className="h-[calc(100vh-240px)]">
+                  {generatedContent ? (
+                    <ReviewPane
                       content={generatedContent.content}
+                      title={generatedContent.title}
+                      tags={generatedContent.tags}
+                      isSubmitting={isGenerating}
                       hasSchedulingPermission={permissionsData?.hasPermission}
                       onSubmit={async (values) => {
                         toast({
@@ -206,16 +208,16 @@ export default function EnhancedWorkflowDemo() {
                         setGeneratedContent(null);
                       }}
                     />
-                  </ScrollArea>
-                ) : (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <p className="text-muted-foreground">
-                        Generate content to see a preview here.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
+                  ) : (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <p className="text-muted-foreground">
+                          Generate content to see a preview here.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </ScrollArea>
               </TabsContent>
             </Tabs>
           </div>
