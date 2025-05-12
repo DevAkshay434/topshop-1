@@ -597,28 +597,42 @@ export default function ImageSearchDialog({
                             />
                             
                             {image.selected && (
-                              <div className="absolute top-2 right-2 z-20 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                              <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                                <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                  </svg>
+                                </div>
                               </div>
                             )}
                           </div>
                           
                           {/* Source badge */}
-                          <div className="absolute top-2 left-2 z-10">
+                          <div className="absolute top-2 left-2 z-20">
                             {image.source === 'pexels' && (
-                              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md">
+                              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
+                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm0 17.5c-4.136 0-7.5-3.364-7.5-7.5S5.864 2.5 10 2.5s7.5 3.364 7.5 7.5-3.364 7.5-7.5 7.5z"/>
+                                  <path d="M6.667 12.917h1.666V7.083H6.667v5.834zm5-5.834v5.834h1.666V7.083h-1.666z"/>
+                                </svg>
                                 Pexels
                               </span>
                             )}
                             {image.source === 'pixabay' && (
-                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md">
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
+                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M5.5 9.511c.076.954.83 1.697 2.182 1.785V12h.6v-.709c1.4-.098 2.218-.846 2.218-1.932 0-.987-.626-1.496-1.745-1.76l-.473-.112V5.57c.6.068.982.396 1.074.85h1.052c-.076-.919-.864-1.638-2.126-1.716V4h-.6v.719c-1.195.117-2.01.836-2.01 1.853 0 .9.606 1.472 1.613 1.707l.397.098v2.034c-.615-.093-1.022-.43-1.114-.9H5.5zm2.177-2.166c-.59-.137-.91-.416-.91-.773 0-.387.317-.7.91-.773v1.546zm.615 2.725c.658.132 1.051.407 1.051.81 0 .414-.332.732-1.051.81v-1.62z"></path>
+                                  <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zm0-18a8 8 0 1 1 0 16 8 8 0 0 1 0-16z"></path>
+                                </svg>
                                 Pixabay
                               </span>
                             )}
                             {image.isProductImage && (
-                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md">
+                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
+                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M20 4H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2zM4 6h16v2H4V6zm0 12v-8h16.001l.001 8H4z"/>
+                                  <path d="M6 14h8v2H6z"/>
+                                </svg>
                                 Product
                               </span>
                             )}
@@ -626,7 +640,7 @@ export default function ImageSearchDialog({
                           
                           {/* Featured badge */}
                           {featuredImageId === image.id && (
-                            <div className="absolute top-2 right-2 z-10">
+                            <div className="absolute top-2 right-2 z-20">
                               <span className="bg-yellow-600 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center shadow-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -638,7 +652,7 @@ export default function ImageSearchDialog({
                           
                           {/* Content image badge */}
                           {contentImageIds.includes(image.id) && featuredImageId !== image.id && (
-                            <div className="absolute top-2 right-2 z-10">
+                            <div className="absolute top-2 right-2 z-20">
                               <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center shadow-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
@@ -648,14 +662,7 @@ export default function ImageSearchDialog({
                             </div>
                           )}
                           
-                          {/* Selection indicator */}
-                          {image.selected && (
-                            <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                              <div className="bg-blue-500 text-white p-2 rounded-full">
-                                <CheckCircle size={20} />
-                              </div>
-                            </div>
-                          )}
+                          {/* Selection indicator is already added above */}
                           
                           {/* Image actions */}
                           {image.selected && (
