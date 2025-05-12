@@ -17,11 +17,13 @@ export function SchedulingPermissionNotice({ storeName }: SchedulingPermissionNo
     setError(null);
     
     try {
-      const response = await apiRequest('/api/shopify/reconnect');
+      // Using fetch directly since we're doing a GET request
+      const response = await fetch('/api/shopify/reconnect');
+      const data = await response.json();
       
-      if (response.success && response.authUrl) {
+      if (data.success && data.authUrl) {
         // Redirect to Shopify auth URL
-        window.location.href = response.authUrl;
+        window.location.href = data.authUrl;
       } else {
         setError('Could not generate reconnection URL. Please try again.');
       }
