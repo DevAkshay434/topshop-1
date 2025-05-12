@@ -1839,7 +1839,32 @@ export default function OpenAIWorkflow() {
             
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium mb-4">Image Selection</h3>
+                <h3 className="text-lg font-medium mb-2">Image Selection</h3>
+                
+                <div className="mb-4 bg-blue-50 p-3 rounded-md">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">Image Types</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-start space-x-2">
+                      <div className="flex items-center mt-0.5">
+                        <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-1.5"></span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-blue-800">Featured Image</p>
+                        <p className="text-xs text-blue-700">Main image shown at the top of your content.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <div className="flex items-center mt-0.5">
+                        <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-1.5"></span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-blue-800">Content Images</p>
+                        <p className="text-xs text-blue-700">Additional images within your article.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 <p className="text-sm text-muted-foreground mb-4">
                   Select images to include in your content. These will be interlinked with your products.
                 </p>
@@ -1847,7 +1872,11 @@ export default function OpenAIWorkflow() {
                 {selectedImages.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     {selectedImages.map((image, index) => (
-                      <div key={index} className="relative rounded-md overflow-hidden border">
+                      <div 
+                        key={index} 
+                        className={`relative rounded-md overflow-hidden border-2 shadow-sm 
+                          ${image.isFeatured ? 'border-yellow-500 ring-2 ring-yellow-200' : image.isContentImage ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}`}
+                      >
                         <img 
                           src={image.url || image.src?.medium} 
                           alt={image.alt || "Selected image"} 
@@ -1855,12 +1884,14 @@ export default function OpenAIWorkflow() {
                         />
                         <div className="absolute top-1 left-1 flex space-x-1">
                           {image.isFeatured && (
-                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                            <Badge variant="secondary" className="bg-yellow-500 text-white hover:bg-yellow-600 flex items-center">
+                              <span className="inline-block w-1.5 h-1.5 bg-white rounded-full mr-1"></span>
                               Featured
                             </Badge>
                           )}
                           {image.isContentImage && (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                            <Badge variant="secondary" className="bg-blue-500 text-white hover:bg-blue-600 flex items-center">
+                              <span className="inline-block w-1.5 h-1.5 bg-white rounded-full mr-1"></span>
                               Content
                             </Badge>
                           )}
