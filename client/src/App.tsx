@@ -18,6 +18,7 @@ import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import Help from "@/pages/Help";
 import AdminPanel from "@/pages/AdminPanel";
+import EnhancedWorkflowDemo from "@/pages/EnhancedWorkflowDemo";
 import { useEffect, useState } from "react";
 
 function Router() {
@@ -58,7 +59,7 @@ function Router() {
         <Switch>
           {/* If we're at root with embedded params, show EmbeddedApp */}
           <Route path="/">
-            {isEmbedded ? <EmbeddedApp /> : <AdminPanel />}
+            {isEmbedded ? <EmbeddedApp /> : <EnhancedWorkflowDemo />}
           </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
@@ -66,18 +67,20 @@ function Router() {
           <Route path="/simple-bulk-generation" component={SimpleBulkGeneration} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
-          <Route path="/billing-callback" component={AdminPanel} />
+          <Route path="/billing-callback" component={EnhancedWorkflowDemo} />
           <Route path="/embedded" component={EmbeddedApp} />
-          <Route path="/dashboard" component={AdminPanel} />
+          <Route path="/dashboard" component={EnhancedWorkflowDemo} />
           <Route path="/install" component={AppInstall} />
           <Route path="/partner-install" component={PartnerInstall} />
-          <Route path="/shopify/callback" component={AdminPanel} />
-          <Route path="/shopify/auth/callback" component={AdminPanel} />
+          <Route path="/shopify/callback" component={EnhancedWorkflowDemo} />
+          <Route path="/shopify/auth/callback" component={EnhancedWorkflowDemo} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
           <Route path="/help" component={Help} />
-          <Route path="/admin" component={AdminPanel} />
+          <Route path="/admin" component={EnhancedWorkflowDemo} />
           <Route path="/legacy-dashboard" component={Dashboard} />
+          <Route path="/enhanced-workflow" component={EnhancedWorkflowDemo} />
+          <Route path="/enhanced" component={EnhancedWorkflowDemo} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />

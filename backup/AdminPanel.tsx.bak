@@ -2222,22 +2222,115 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Content Preview</CardTitle>
-                <CardDescription>
-                  Preview of your generated content
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isGenerating ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Generating content with AI. This might take a minute...
-                    </p>
-                  </div>
-                ) : generatedContent ? (
+            <div className="lg:col-span-1">
+              {/* Use our new ReviewPane component instead of a Card */}
+              <ReviewPane 
+                isGenerating={isGenerating}
+                generatedContent={generatedContent}
+                selectedBlogId={form.watch('blogId')}
+                articleType={form.watch('articleType') as "blog" | "page"}
+                categories={form.watch('categories') || []}
+                hasPermissions={{
+                  canSchedule: hasSchedulingPermission
+                }}
+                onPublish={async (values) => {
+                  // Create a modified version of our existing handleSubmit
+                  try {
+                    // Process YouTube embed if available
+                    let finalContent = values.content;
+                    if (values.youtubeUrl) {
+                      const videoId = values.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                      if (videoId) {
+                        finalContent = `${finalContent}\n\n<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">\n  <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n</div>`;
+                      }
+                    }
+                    
+                    // Prepare scheduling information
+                    let scheduleDate: string | undefined = undefined;
+                    let scheduleTime: string | undefined = undefined;
+                    let publicationType = values.publicationType || "draft";
+                    
+                    // Handle scheduling information
+                    if (values.publicationType === 'schedule' && values.scheduledPublishDate) {
+                      scheduleDate = values.scheduledPublishDate;
+                      scheduleTime = values.scheduledPublishTime || "09:30";
+                      
+                      console.log("Content will be scheduled for", scheduleDate, "at", scheduleTime);
+                      
+                      // Add explicit debugging log to confirm scheduling is being set
+                      console.log("SCHEDULING MODE ACTIVE in ReviewPane submission", {
+                        scheduledPublishDate: values.scheduledPublishDate,
+                        scheduledPublishTime: values.scheduledPublishTime || "09:30",
+                        publicationType,
+                        scheduleDate,
+                        scheduleTime
+                      });
+                    }
+                    
+                    // Prepare the final data for submission
+                    const processedData = {
+                      ...values,
+                      content: finalContent,
+                      // Critical scheduling fields - ensure multiple formats for backend compatibility
+                      publicationType,
+                      status: publicationType === "schedule" ? "scheduled" : (publicationType === "publish" ? "published" : "draft"),
+                      postStatus: publicationType === "schedule" ? "scheduled" : (publicationType === "publish" ? "published" : "draft"),
+                      scheduleDate,
+                      scheduleTime,
+                      scheduledPublishDate: values.scheduledPublishDate || null,
+                      scheduledPublishTime: values.scheduledPublishTime || (values.scheduledPublishDate ? "09:30" : null),
+                      // Ensure these are always arrays of strings
+                      productIds: Array.isArray(values.productIds) 
+                        ? values.productIds.map(id => String(id)) 
+                        : [],
+                      collectionIds: form.watch('collectionIds') || [],
+                      keywords: selectedKeywords || [],
+                      categories: Array.isArray(values.categories) ? values.categories : [],
+                    };
+                    
+                    // Submit the data
+                    const response = await apiRequest(
+                      "POST", 
+                      "/api/admin/generate-content", 
+                      processedData
+                    );
+                    
+                    if (response.success) {
+                      // Show toast depending on publication type
+                      const actionText = 
+                        values.publicationType === 'publish' ? 'Published' :
+                        values.publicationType === 'schedule' ? 'Scheduled' : 'Saved as Draft';
+                      
+                      toast({
+                        title: `Content ${actionText}`,
+                        description: `The content has been successfully ${values.publicationType === 'schedule' ? 'scheduled for publication' : (values.publicationType === 'publish' ? 'published' : 'saved as a draft')}`,
+                      });
+                      
+                      // Reload drafts and published content
+                      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/posts/recent"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/posts/scheduled"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/posts/published"] });
+                      
+                      // Clear generated content so user can start fresh
+                      setGeneratedContent(null);
+                      
+                      // Optionally reset the form
+                      form.reset();
+                    } else {
+                      throw new Error(response.error || "Failed to save content");
+                    }
+                  } catch (error) {
+                    console.error("Error in content submission:", error);
+                    toast({
+                      title: "Error",
+                      description: (error as Error)?.message || "Failed to save content",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              />
+            </div>
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-xl font-bold">{generatedContent.title}</h3>
@@ -2548,8 +2641,6 @@ export default function AdminPanel() {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Keyword Selector Dialog */}
