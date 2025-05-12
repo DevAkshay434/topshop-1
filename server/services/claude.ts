@@ -1,23 +1,7 @@
-// Integration with Anthropic's Claude API
 import Anthropic from '@anthropic-ai/sdk';
+import dotenv from 'dotenv';
 
-interface BlogContentRequest {
-  topic: string;
-  tone: string;
-  length: string;
-  customPrompt?: string;
-  systemPrompt?: string;
-  includeProducts?: boolean;
-  includeCollections?: boolean;
-  includeKeywords?: boolean;
-}
-
-interface BlogContent {
-  title: string;
-  content: string;
-  tags: string[];
-  metaDescription: string;
-}
+dotenv.config();
 
 // Initialize the Anthropic client
 const anthropic = new Anthropic({
@@ -27,317 +11,200 @@ const anthropic = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
-// Function to generate blog content using Claude
-export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
+// Test the Claude connection by making a simple request
+export async function testClaudeConnection(): Promise<boolean> {
   try {
-    console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
-    
-    // Determine content length based on request
-    let contentLength = "approximately 800-1000 words";
-    if (request.length.toLowerCase().includes("short")) {
-      contentLength = "approximately 500-700 words";
-    } else if (request.length.toLowerCase().includes("long")) {
-      contentLength = "approximately 1500-2000 words";
-    }
-    
-    // Enhanced base prompt for Claude with proper structure
-    let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${request.tone} tone, ${contentLength}.
-    
-    The blog post MUST follow this exact structure:
-    1. A compelling title that includes the main topic and primary keywords
-    2. Multiple clearly defined sections with H2 headings that incorporate important keywords
-    3. Appropriate H3 subheadings within each section where needed
-    4. Well-organized paragraphs (2-4 paragraphs per section)
-    5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
-    6. Lists and tables where appropriate to improve readability
-    7. A conclusion with a clear call to action
-    
-    IMPORTANT FORMATTING REQUIREMENTS:
-    - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
-    - DO NOT use <h1> tags, as this will be the post title
-    - Make sure sections flow logically and coherently
-    - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
-    - Include a meta description of 155-160 characters that includes at least 2 primary keywords
-    - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
-    - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
-    
-    IMPORTANT IMAGE AND LINK GUIDELINES:
-    - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
-    - NEVER reference competitor websites or external commercial domains in any links or image sources
-    - DO NOT include ANY external links except to trusted reference sites like .gov, .edu, or wikipedia.org
-    - DO NOT include external images from third-party domains - the system will automatically insert optimized images
-    - All images will be center-aligned and properly linked to product pages
-    - Do not include any image placeholders or special markup - the system will handle image insertion automatically
-    - Images will be distributed evenly throughout the content at logical section breaks
-    - Each image will include a caption with a link back to the relevant product to enhance SEO value
-    
-    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
-    
-    // Add custom prompt if provided
-    if (request.customPrompt) {
-      const customPromptFormatted = request.customPrompt.replace(/\[TOPIC\]/g, request.topic);
-      promptText = `${promptText}
-      
-      IMPORTANT: Follow these specific instructions for the content:
-      ${customPromptFormatted}
-      
-      The content must directly address these instructions while maintaining a ${request.tone} tone and proper blog structure.`;
-    }
-    
-    // Make API call to Claude with increased token limit for longer content
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 8000,
+      max_tokens: 10,
       messages: [
-        {
-          role: 'user',
-          content: `${promptText}
-          
-          IMPORTANT: Return the response in JSON format with the following structure:
-          {
-            "title": "The title of the blog post",
-            "content": "The complete HTML content of the blog post",
-            "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-            "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
-          }
-          
-          Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
-        }
+        { role: 'user', content: 'Hello!' }
       ],
     });
     
-    // Extract and parse the JSON response
-    const responseText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : JSON.stringify(response.content[0]);
-    
-    console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
-    
-    // Try different strategies to extract valid JSON from Claude's response
-    let jsonContent;
-    
-    try {
-      // Strategy 1: Find the most complete JSON object in the response
-      const jsonObjectRegex = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}/g;
-      const jsonMatches = responseText.match(jsonObjectRegex);
-      
-      if (jsonMatches && jsonMatches.length > 0) {
-        // Find the longest match, which is likely the complete JSON
-        const longestMatch = jsonMatches.reduce((longest, current) => 
-          current.length > longest.length ? current : longest, "");
-        
-        if (longestMatch) {
-          console.log("Found JSON object match:", longestMatch.substring(0, 100) + "...");
-          jsonContent = JSON.parse(longestMatch);
-        }
-      }
-    } catch (jsonError: any) {
-      console.log("Error parsing complete JSON object:", jsonError?.message || "Unknown error");
-    }
-    
-    // Strategy 2: If strategy 1 fails, try to extract JSON by matching braces
-    if (!jsonContent) {
-      try {
-        let braceCount = 0;
-        let startIndex = -1;
-        let jsonCandidate = "";
-        
-        // Find the opening brace
-        startIndex = responseText.indexOf('{');
-        
-        if (startIndex >= 0) {
-          for (let i = startIndex; i < responseText.length; i++) {
-            jsonCandidate += responseText[i];
-            
-            if (responseText[i] === '{') braceCount++;
-            if (responseText[i] === '}') braceCount--;
-            
-            // When braces are balanced, we've found a complete JSON object
-            if (braceCount === 0 && jsonCandidate.length > 2) {
-              console.log("Found balanced JSON via brace counting:", jsonCandidate.substring(0, 100) + "...");
-              jsonContent = JSON.parse(jsonCandidate);
-              break;
-            }
-          }
-        }
-      } catch (balancedError: any) {
-        console.log("Error parsing balanced braces JSON:", balancedError?.message || "Unknown error");
-      }
-    }
-    
-    // Strategy 3: Manual extraction of key fields if JSON parsing fails
-    if (!jsonContent) {
-      console.log("Attempting manual extraction of content components...");
-      
-      // Extract title
-      const titleMatch = responseText.match(/"title"\s*:\s*"([^"]+)"/);
-      const title = titleMatch ? titleMatch[1] : "Blog Post";
-      
-      // Extract content - look for content field followed by a large HTML block
-      const contentMatch = responseText.match(/"content"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*})/);
-      let content = contentMatch ? contentMatch[1] : "";
-      
-      // Unescape content string
-      content = content.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-      
-      // Extract tags
-      const tagsMatch = responseText.match(/"tags"\s*:\s*\[([\s\S]+?)\]/);
-      const tagsString = tagsMatch ? tagsMatch[1] : "";
-      const tags = tagsString.split(',').map(tag => 
-        tag.trim().replace(/^"|"$/g, '')
-      ).filter(Boolean);
-      
-      // Extract meta description
-      const metaMatch = responseText.match(/"metaDescription"\s*:\s*"([^"]+)"/);
-      const metaDescription = metaMatch ? metaMatch[1] : "";
-      
-      jsonContent = {
-        title,
-        content,
-        tags,
-        metaDescription
-      };
-    }
-    
-    if (!jsonContent) {
-      throw new Error("Failed to extract content from Claude response using all available methods");
-    }
-    
-    return {
-      title: jsonContent.title,
-      content: jsonContent.content,
-      tags: jsonContent.tags,
-      metaDescription: jsonContent.metaDescription || ''
-    };
-  } catch (error: any) {
-    console.error("Error generating content with Claude:", error);
-    const errorMessage = error && typeof error === 'object' && 'message' in error 
-      ? error.message 
-      : 'Unknown error during Claude content generation';
-    throw new Error(`Failed to generate content with Claude: ${errorMessage}`);
+    return response.content && response.content.length > 0;
+  } catch (error) {
+    console.error('Claude connection test failed:', error);
+    return false;
   }
 }
 
-// Function to generate title suggestions using Claude
-export async function generateTitles(request: { prompt: string, responseFormat: string }): Promise<{ titles: string[] }> {
+// Generate blog content using Claude
+export async function generateBlogContentWithClaude(
+  topic: string, 
+  keywords: string[] = [], 
+  customPrompt: string = '', 
+  productName: string = '', 
+  productDescription: string = ''
+): Promise<any> {
   try {
-    console.log("Generating title suggestions with Claude model:", CLAUDE_MODEL);
+    // Build the prompt based on inputs
+    let promptText = customPrompt || 
+      `Please write a comprehensive blog post about ${topic}.`;
     
-    // Make API call to Claude
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: request.prompt
-        }
-      ],
-    });
-    
-    // Extract response text
-    const responseText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : JSON.stringify(response.content[0]);
-    
-    console.log("Claude raw response:", responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-    
-    // Parse the response based on format
-    if (request.responseFormat === 'json') {
-      try {
-        // Find JSON content - handle any wrapping text Claude might add
-        const jsonRegex = /\[[\s\S]*\]/;
-        const match = responseText.match(jsonRegex);
-        
-        if (match) {
-          console.log("Found JSON array in Claude response:", match[0]);
-          const titles = JSON.parse(match[0]);
-          return { titles };
-        } else {
-          console.log("No JSON array found, trying to parse entire response as JSON");
-          // If no JSON array found, try to parse the entire response as JSON
-          const jsonResponse = JSON.parse(responseText);
-          if (Array.isArray(jsonResponse)) {
-            console.log("Response is an array:", jsonResponse);
-            return { titles: jsonResponse };
-          } else if (jsonResponse.titles && Array.isArray(jsonResponse.titles)) {
-            console.log("Response has titles property:", jsonResponse.titles);
-            return { titles: jsonResponse.titles };
-          } else {
-            console.error("Unable to find titles array in JSON response:", jsonResponse);
-          }
-        }
-      } catch (parseError) {
-        console.error("Error parsing JSON from Claude response:", parseError);
-        // Fall back to extracting titles from text
+    // Add product context if provided
+    if (productName) {
+      promptText += ` The blog should focus on our product ${productName}.`;
+      
+      if (productDescription) {
+        promptText += ` Product details: ${productDescription}`;
       }
     }
     
-    // If parsing fails or format is not JSON, extract titles from text
-    // Look for numbered lines, bullet points, or line breaks
-    const lines = responseText.split(/[\n\r]+/);
-    const titleCandidates = lines.filter(line => 
-      line.trim().length > 10 && // Minimum reasonable title length
-      !line.includes("Here are") && // Skip intro lines
-      !line.includes("suggestions") &&
-      !line.includes("titles") &&
-      (
-        /^\d+[\.\)]\s+/.test(line.trim()) || // numbered items
-        /^[-*•]\s+/.test(line.trim()) || // bullet points
-        /^["'].*["']$/.test(line.trim()) // quoted text
-      )
-    );
-    
-    // Clean up the titles
-    const titles = titleCandidates.map(title => 
-      title.replace(/^\d+[\.\)]\s+|^[-*•]\s+|^["']|["']$/g, '').trim()
-    ).filter(title => title.length > 0);
-    
-    // Return at least some titles
-    if (titles.length === 0) {
-      // If we couldn't extract any titles, just return 5 lines that look like titles
-      return { 
-        titles: lines
-          .filter(line => line.trim().length > 15 && line.trim().length < 100)
-          .slice(0, 5)
-          .map(line => line.trim())
-      };
+    // Add keyword optimization if provided
+    if (keywords.length > 0) {
+      promptText += ` Please optimize the content for these keywords: ${keywords.join(', ')}.`;
     }
     
-    return { titles };
-  } catch (error: any) {
-    console.error("Error generating titles with Claude:", error);
-    throw new Error(`Failed to generate titles with Claude: ${error.message || 'Unknown error'}`);
-  }
-}
-
-// Test function to check if Claude API is working
-export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
-  try {
+    promptText += ' Include a compelling title, meta description, and naturally incorporate the keywords throughout the content.';
+    
+    // Call Claude API
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 50,
+      max_tokens: 4000,
+      system: `You are an expert content writer creating SEO-optimized blog content. 
+Your writing should be professional, engaging, and formatted properly with headings and paragraphs.
+Generate content with the following structure:
+1. Title (compelling, SEO-friendly)
+2. Meta description (under 160 characters)
+3. Main content with appropriate headings (H2, H3)
+4. Include a conclusion section`,
       messages: [
-        {
-          role: 'user',
-          content: 'Hello, please respond with "Claude API is connected successfully!" if you receive this message.'
-        }
+        { role: 'user', content: promptText }
       ],
     });
     
-    const responseText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : JSON.stringify(response.content[0]);
-      
+    // Extract the content from Claude's response
+    let content = '';
+    if (response.content && response.content.length > 0 && 'text' in response.content[0]) {
+      content = response.content[0].text;
+    }
+    
+    if (!content) {
+      throw new Error('Empty response from Claude');
+    }
+    
+    // Extract title, meta description, and main content
+    const titleMatch = content.match(/^#\s*(.*?)\s*$/m) ||
+                      content.match(/^(.*?)\s*$/m);
+    const metaDescMatch = content.match(/(?:Meta description:|META DESCRIPTION:)\s*(.*?)(?:\n|$)/i);
+    
+    // Remove title and meta description from the main content
+    let mainContent = content;
+    if (titleMatch) {
+      mainContent = mainContent.replace(titleMatch[0], '').trim();
+    }
+    if (metaDescMatch) {
+      mainContent = mainContent.replace(metaDescMatch[0], '').trim();
+    }
+    
     return {
-      success: true,
-      message: responseText.trim()
+      title: titleMatch ? titleMatch[1].trim() : topic,
+      metaDescription: metaDescMatch ? metaDescMatch[1].trim() : '',
+      content: mainContent,
+      rawResponse: content,
     };
-  } catch (error: any) {
-    console.error("Claude connection test failed:", error);
-    return {
-      success: false,
-      message: error.message || "Failed to connect to Claude API"
-    };
+  } catch (error) {
+    console.error('Error generating content with Claude:', error);
+    throw error;
+  }
+}
+
+export interface ClusterArticle {
+  title: string;
+  content: string;
+  keywords: string[];
+}
+
+export interface ClusterTopic {
+  mainTopic: string;
+  subtopics: ClusterArticle[];
+}
+
+export async function generateCluster(
+  topic: string,
+  productName?: string,
+  productDescription?: string,
+  keywords?: string[]
+): Promise<ClusterTopic> {
+  try {
+    // Format keywords for the prompt
+    const keywordsText = keywords && keywords.length > 0 
+      ? `The following keywords should be incorporated into the articles: ${keywords.join(', ')}.` 
+      : '';
+
+    // Format product information for the prompt
+    const productText = productName 
+      ? `Create content focused on the product: ${productName}.${productDescription ? ` Product details: ${productDescription}` : ''}`
+      : '';
+
+    // Create the system prompt for Claude
+    const systemPrompt = `You are an expert content strategist and SEO specialist. 
+Create a comprehensive content cluster on the topic provided, following these guidelines:
+
+1. Generate one main pillar article and 3-4 supporting articles that create a complete content cluster
+2. The pillar article should be comprehensive (800-1000 words) and cover the primary topic in detail
+3. Support articles should be focused on specific subtopics (500-700 words each)
+4. All content should be SEO optimized, factually accurate, and written in a professional tone
+5. Each article should include a clear title and well-structured content with appropriate headings
+6. Include references to the other articles in the cluster where relevant for internal linking opportunities
+${productText ? `\n7. ${productText}` : ''}
+${keywordsText ? `\n8. ${keywordsText}` : ''}
+
+Return the response as a JSON object with this structure:
+{
+  "mainTopic": "The main pillar topic title",
+  "subtopics": [
+    {
+      "title": "Article title",
+      "content": "Article content with markdown formatting",
+      "keywords": ["keyword1", "keyword2"]
+    }
+  ]
+}`;
+
+    // Make the API call to Claude
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 4000,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: `Create a content cluster for the topic: "${topic}"`
+        }
+      ],
+    });
+
+    // Extract the JSON response from Claude's output
+    let content = '';
+    if (response.content && response.content.length > 0 && 'text' in response.content[0]) {
+      content = response.content[0].text;
+    }
+    
+    if (!content) {
+      throw new Error("Empty response from Claude");
+    }
+    
+    // Find the JSON portion within the content
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (!jsonMatch) {
+      throw new Error("Invalid response format from Claude");
+    }
+    
+    // Parse and validate the cluster data
+    const clusterData = JSON.parse(jsonMatch[0]) as ClusterTopic;
+    
+    // Ensure the response has the correct structure
+    if (!clusterData.mainTopic || !Array.isArray(clusterData.subtopics)) {
+      throw new Error("Malformed response from Claude");
+    }
+    
+    return clusterData;
+    
+  } catch (error) {
+    console.error("Error generating content cluster with Claude:", error);
+    throw error;
   }
 }

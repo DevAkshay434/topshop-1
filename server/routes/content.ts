@@ -32,12 +32,13 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       // Generate content with Claude as the primary service
       console.log(`Generating content with Claude for topic: "${topic}"`);
       
-      const generatedContent = await generateBlogContentWithClaude({
+      const generatedContent = await generateBlogContentWithClaude(
         topic,
-        tone: "professional",
-        length: "medium",
-        customPrompt
-      });
+        [], // keywords
+        customPrompt || "",
+        "", // productName
+        "" // productDescription
+      );
       
       // Log the returned content (truncated for readability)
       console.log(`Claude content generated successfully. Title: "${generatedContent.title}", Content length: ${generatedContent.content ? generatedContent.content.length : 0} characters`);
@@ -406,14 +407,14 @@ contentRouter.get("/test-claude", async (req: Request, res: Response) => {
     console.log(`Claude API Key status: Present (first 3 chars: ${process.env.ANTHROPIC_API_KEY.substring(0, 3)}...)`);
     
     // Test connection to Claude API
-    const testResult = await testClaudeConnection();
+    const isConnected = await testClaudeConnection();
     
     return res.json({ 
-      success: testResult.success, 
-      message: testResult.message,
+      success: isConnected, 
+      message: isConnected ? "Claude API connection successful" : "Claude API connection failed",
       data: { 
         model: "claude-3-7-sonnet-20250219",
-        status: testResult.success ? "success" : "error"
+        status: isConnected ? "success" : "error"
       }
     });
   } catch (error) {

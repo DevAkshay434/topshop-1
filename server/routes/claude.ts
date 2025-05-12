@@ -1,80 +1,42 @@
-import { Router, Request, Response } from "express";
-import { generateBlogContentWithClaude, testClaudeConnection } from "../services/claude";
-import { z } from "zod";
+import { Router, Request, Response } from 'express';
+import { generateCluster } from '../services/claude';
 
-const claudeRouter = Router();
+const router = Router();
 
-// Test Claude integration directly
-claudeRouter.get("/test", async (_req: Request, res: Response) => {
+// Generate a topic cluster using Claude AI
+router.post('/cluster', async (req: Request, res: Response) => {
   try {
-    // Check if Claude API key is available
-    if (!process.env.ANTHROPIC_API_KEY) {
+    const { topic, productName, productDescription, keywords } = req.body;
+    
+    if (!topic) {
       return res.status(400).json({ 
         success: false, 
-        error: "Claude API key is not configured"
+        message: 'Topic is required for cluster generation' 
       });
     }
     
-    // Test the connection
-    const testResult = await testClaudeConnection();
-    
-    res.json({
-      success: testResult.success,
-      message: testResult.message,
-      model: "claude-3-7-sonnet-20250219"
-    });
-  } catch (error) {
-    console.error("Claude test route error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Unknown error"
-    });
-  }
-});
-
-// Generate content using Claude directly
-claudeRouter.post("/generate", async (req: Request, res: Response) => {
-  try {
-    // Validate the request body
-    const schema = z.object({
-      topic: z.string().min(1),
-      tone: z.string().default("professional"),
-      length: z.string().default("medium"),
-      customPrompt: z.string().optional()
-    });
-    
-    const { topic, tone, length, customPrompt } = schema.parse(req.body);
-    
-    console.log(`Generating content with Claude for topic: "${topic}"`);
-    
-    // Check for API key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Claude API key is not configured"
-      });
-    }
-    
-    // Generate content
-    const content = await generateBlogContentWithClaude({
+    // Generate content cluster using Claude
+    const clusterData = await generateCluster(
       topic,
-      tone,
-      length,
-      customPrompt
+      productName,
+      productDescription,
+      keywords
+    );
+    
+    // Return the generated cluster
+    return res.status(200).json({
+      success: true,
+      cluster: clusterData
     });
     
-    res.json({
-      success: true,
-      model: "claude-3-7-sonnet-20250219",
-      content
-    });
   } catch (error) {
-    console.error("Claude generation error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Unknown error" 
+    console.error('Error generating topic cluster:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to generate topic cluster',
+      error: (error as Error).message
     });
   }
 });
 
-export default claudeRouter;
+export default router;
