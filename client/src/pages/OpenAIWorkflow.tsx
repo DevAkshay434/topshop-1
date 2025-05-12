@@ -938,34 +938,67 @@ export default function OpenAIWorkflow() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <Card 
-                className={`cursor-pointer hover:border-primary transition-colors ${contentMode === 'cluster' ? 'border-primary bg-primary/5' : 'border'}`} 
-                onClick={() => setContentMode('cluster')}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Content Cluster</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">Create multiple related articles optimized for SEO performance.</p>
-                </CardContent>
-              </Card>
-              
-              <Card 
-                className={`cursor-pointer hover:border-primary transition-colors ${contentMode === 'single' ? 'border-primary bg-primary/5' : 'border'}`}
-                onClick={() => setContentMode('single')}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Single Post</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">Create a single blog post or page with targeted keywords.</p>
-                </CardContent>
-              </Card>
+            <div className="mb-6">
+              <h3 className="text-base font-medium mb-3">1. Select Content Mode</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <Card 
+                  className={`cursor-pointer hover:border-primary transition-colors ${contentMode === 'cluster' ? 'border-primary bg-primary/5' : 'border'}`} 
+                  onClick={() => setContentMode('cluster')}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Content Cluster</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Create multiple related articles optimized for SEO performance.</p>
+                  </CardContent>
+                </Card>
+                
+                <Card 
+                  className={`cursor-pointer hover:border-primary transition-colors ${contentMode === 'single' ? 'border-primary bg-primary/5' : 'border'}`}
+                  onClick={() => setContentMode('single')}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Single Post</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">Create a single blog post or page with targeted keywords.</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <h3 className="text-base font-medium mb-3">2. Select Content Type</h3>
+              <div className="flex space-x-4">
+                <Button 
+                  variant={contentType === 'blog' ? "default" : "outline"}
+                  onClick={() => setContentType('blog')}
+                  className="flex-1 py-6"
+                >
+                  <div className="flex flex-col items-center">
+                    <BookOpen className="h-6 w-6 mb-2" />
+                    <span>Blog Post</span>
+                  </div>
+                </Button>
+                <Button 
+                  variant={contentType === 'page' ? "default" : "outline"}
+                  onClick={() => setContentType('page')}
+                  className="flex-1 py-6"
+                >
+                  <div className="flex flex-col items-center">
+                    <FolderOpen className="h-6 w-6 mb-2" />
+                    <span>Page</span>
+                  </div>
+                </Button>
+              </div>
             </div>
             
             {contentType === 'blog' && (
-              <div className="space-y-3">
+              <div className="space-y-3 mt-4">
+                <div className="bg-blue-50 p-3 rounded-md mb-4">
+                  <div className="text-sm font-medium text-blue-800">Content Type: Blog Post</div>
+                  <p className="text-xs text-blue-700 mt-1">Select where this content will be published</p>
+                </div>
                 <Label>Select Blog</Label>
                 <Select 
                   value={selectedBlog || ""} 
@@ -984,9 +1017,25 @@ export default function OpenAIWorkflow() {
                 </Select>
               </div>
             )}
+            
+            {contentType === 'page' && (
+              <div className="space-y-3 mt-4">
+                <div className="bg-green-50 p-3 rounded-md">
+                  <div className="text-sm font-medium text-green-800">Content Type: Page</div>
+                  <p className="text-xs text-green-700 mt-1">Pages are published directly to your Shopify store</p>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex justify-between items-center">
+          <div className="text-sm text-gray-500">
+            {contentType === 'blog' && !selectedBlog && (
+              <span className="text-amber-600 flex items-center">
+                <Info className="h-4 w-4 mr-1" /> Please select a blog before continuing
+              </span>
+            )}
+          </div>
           <Button 
             onClick={() => setCurrentStep(2)} 
             disabled={contentType === 'blog' && !selectedBlog}
