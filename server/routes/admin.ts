@@ -7,6 +7,7 @@ import { pexelsService, type PexelsImage } from "../services/pexels";
 import { pixabayService, type PixabayImage } from "../services/pixabay";
 import { generateBlogContentWithClaude } from "../services/claude";
 import OpenAI from "openai";
+import { ShopifyStore } from "../../shared/schema";
 
 const adminRouter = Router();
 

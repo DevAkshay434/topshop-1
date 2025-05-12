@@ -327,15 +327,16 @@ export class ShopifyService {
       };
       
       // For scheduled posts, we need to implement a different approach
-      // Shopify's API behavior requires:
-      // 1. For drafts: just set published=false (no published_at)
+      // Shopify's API behavior is more complex:
+      // 1. For drafts: set published=false (no published_at)
       // 2. For immediate publishing: set published=true (with current published_at)  
-      // 3. For scheduled: set published=true BUT with a future published_at date
+      // 3. For scheduled: set published=false AND use published_at for the future date
+      //    (this is different from Shopify Admin UI which shows published=true)
       
       if (isScheduledPublishing && futurePublishDate) {
         console.log(`Setting up scheduled publishing for future date: ${futurePublishDate.toISOString()}`);
-        // For scheduling: published MUST be true with future date for it to be scheduled
-        article.published = true; 
+        // For scheduling: Must set published=false with future published_at date
+        article.published = false; 
         article.published_at = futurePublishDate.toISOString();
         // Add a custom property for tracking in the response
         article.isScheduledPost = true;
