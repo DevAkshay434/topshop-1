@@ -181,7 +181,12 @@ export class ShopifyService {
    * @param post The blog post to create
    * @returns The created Shopify article
    */
-  public async createArticle(store: ShopifyStore, blogId: string, post: BlogPost | ShopifyBlogPost): Promise<ShopifyArticle> {
+  public async createArticle(
+    store: ShopifyStore, 
+    blogId: string, 
+    post: BlogPost | ShopifyBlogPost,
+    publishDate?: Date
+  ): Promise<ShopifyArticle> {
     try {
       const client = this.getClient(store);
       
@@ -191,7 +196,8 @@ export class ShopifyService {
         title: post.title,
         status: post.status,
         scheduledPublishDate: post.scheduledPublishDate,
-        scheduledPublishTime: post.scheduledPublishTime
+        scheduledPublishTime: post.scheduledPublishTime,
+        hasExplicitPublishDate: !!publishDate
       });
       
       // Process content to handle any proxied image URLs
@@ -291,23 +297,45 @@ export class ShopifyService {
       }
       
       // Create the article object
-      const article = {
+      const article: any = {
         title: post.title,
         author: post.author || store.shopName,
         body_html: processedContent,
         tags: post.tags || "",
-        published: post.status === 'published', // Only true for immediate publishing
-        published_at: publishedAt,
+        // Default - only publish immediately if explicitly set to publish and not scheduled
+        published: post.status === 'published' && !isScheduled && !publishDate,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
       
-      // CRITICAL: For scheduling to work in Shopify, we must have:
-      // 1. published = false 
-      // 2. published_at = future date
-      if (isScheduled) {
+      // If explicit publishDate is provided or scheduling info exists in post,
+      // set published_at for scheduled publishing
+      if (publishDate) {
+        // Explicit publishDate takes precedence (like from API call)
+        console.log(`Using explicit publishDate for scheduling: ${publishDate.toISOString()}`);
+        
+        // CRITICAL: Ensure published is false for scheduling to work
         article.published = false;
-        console.log(`SCHEDULED POST: Setting published=false with published_at=${publishedAt}`);
+        article.published_at = publishDate.toISOString();
+        
+      } else if (isScheduled && publishedAt) {
+        // Use the publishedAt calculated from post's scheduling fields
+        console.log(`Using post's scheduledPublishDate/Time for scheduling: ${publishedAt}`);
+        
+        // CRITICAL: Ensure published is false for scheduling to work
+        article.published = false;
+        article.published_at = publishedAt;
+      } else if (post.status === 'published') {
+        // For immediate publishing, set published_at to now
+        article.published_at = new Date().toISOString();
       }
+      
+      // Log the scheduling configuration
+      console.log(`Article scheduling configuration:`, {
+        published: article.published,
+        published_at: article.published_at,
+        isScheduled,
+        status: post.status
+      });
       
       // Log the request
       console.log(`Sending to Shopify API:`, {
