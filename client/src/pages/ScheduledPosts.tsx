@@ -20,6 +20,9 @@ export default function ScheduledPosts() {
   }>({
     queryKey: ['/api/shopify/check-permissions'],
     enabled: true,
+    onSuccess: (data) => {
+      console.log('Scheduled Posts - Permissions check result:', data);
+    }
   });
   
   const handleCreatePost = () => {

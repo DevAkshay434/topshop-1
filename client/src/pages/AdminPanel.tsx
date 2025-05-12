@@ -316,6 +316,9 @@ export default function AdminPanel() {
   }>({
     queryKey: ['/api/shopify/check-permissions'],
     enabled: true,
+    onSuccess: (data) => {
+      console.log('Permissions check result:', data);
+    }
   });
 
   // Query for blogs
