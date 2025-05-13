@@ -250,13 +250,16 @@ Return the response as a JSON object with this structure:
         extractedJson = extractedJson.substring(0, endIndex);
       }
       
-      // Clean up common issues that break JSON parsing
+      // Enhanced cleanup for JSON parsing issues
       extractedJson = extractedJson
         .replace(/(\r\n|\n|\r)/gm, ' ') // Replace newlines with spaces
         .replace(/,\s*\]/g, ']')        // Remove trailing commas in arrays
         .replace(/,\s*\}/g, '}')        // Remove trailing commas in objects
         .replace(/\\"/g, '"')           // Handle escaped quotes
-        .replace(/\\'/g, "'");          // Handle escaped single quotes
+        .replace(/\\'/g, "'")           // Handle escaped single quotes
+        .replace(/([{,])\s*'([^']+)'\s*:/g, '$1"$2":') // Replace single quotes in keys with double quotes
+        .replace(/:\s*'([^']*)'/g, ':"$1"')  // Replace single quotes in values with double quotes
+        .replace(/[\x00-\x1F\x7F]/g, ''); // Remove any invalid control characters
     }
     
     console.log("Cleaned Claude cluster JSON (first 100 chars):", extractedJson.substring(0, 100));
@@ -274,21 +277,27 @@ Return the response as a JSON object with this structure:
     } catch (parseError) {
       console.error("JSON parse error:", parseError);
       
-      // Try to fix common JSON syntax errors
+      // ENHANCED JSON RECOVERY: Try multiple approaches to fix common JSON syntax errors
       try {
         console.log("Attempting to fix JSON syntax errors...");
         
-        // Try to balance braces and brackets
+        // APPROACH 1: More aggressive cleanup
         let balancedJson = extractedJson;
         
-        // Replace single quotes with double quotes for property names
+        // Fix any unescaped quotes inside string values
+        balancedJson = balancedJson.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, function(match) {
+          return match.replace(/([^\\])"/g, '$1\\"');
+        });
+        
+        // Fix unterminated strings
+        balancedJson = balancedJson.replace(/"([^"]*)(?=[,}\]])/g, '"$1"');
+        
+        // Fix quotes in keys and values
         balancedJson = balancedJson.replace(/'([^']+)':/g, '"$1":');
+        balancedJson = balancedJson.replace(/:\s*'([^']*)'/g, ':"$1"');
         
-        // Fix unescaped quotes in values
-        balancedJson = balancedJson.replace(/:\s*"([^"]*)"([^,\}\]])/g, ': "$1"$2');
-        
-        // Remove any invalid control characters
-        balancedJson = balancedJson.replace(/[\x00-\x1F\x7F]/g, '');
+        // Handle property value issues
+        balancedJson = balancedJson.replace(/:\s*"([^"]*)([^\\])"([^,}\]])/g, ':"$1$2\\"$3');
         
         // Count braces and brackets
         const openBraces = (balancedJson.match(/\{/g) || []).length;
@@ -313,7 +322,7 @@ Return the response as a JSON object with this structure:
           return fixedData;
         }
         
-        // If we're still here but have a partial response, try to construct a valid response
+        // If we have partial data, try to construct a valid response
         if (fixedData.mainTopic && !Array.isArray(fixedData.subtopics)) {
           console.log("Constructing a valid response from partial data");
           return {
@@ -325,7 +334,62 @@ Return the response as a JSON object with this structure:
         console.error("Failed to fix JSON syntax:", fixError);
       }
       
-      // If all parsing attempts fail, throw a descriptive error
+      // APPROACH 2: Manual extraction of topic data using regex
+      try {
+        console.log("Attempting manual extraction of topic data");
+        const mainTopicMatch = responseContent.match(/"mainTopic"\s*:\s*"([^"]+)"/);
+        const mainTopic = mainTopicMatch ? mainTopicMatch[1] : topic;
+        
+        // Extract subtopic titles using regex
+        const subtitleRegex = /"title"\s*:\s*"([^"]+)"/g;
+        const subtopics = [];
+        let subtitleMatch;
+        
+        while ((subtitleMatch = subtitleRegex.exec(responseContent)) !== null) {
+          subtopics.push({
+            title: subtitleMatch[1],
+            outline: {
+              introduction: "Content generation encountered an error. Please regenerate this article.",
+              mainPoints: [],
+              faqs: [],
+              conclusion: ""
+            }
+          });
+        }
+        
+        if (subtopics.length > 0) {
+          console.log(`Manually extracted ${subtopics.length} topics`);
+          return {
+            mainTopic,
+            subtopics
+          };
+        }
+      } catch (manualError) {
+        console.error("Failed manual extraction:", manualError);
+      }
+      
+      // APPROACH 3: Fallback to minimal valid response
+      try {
+        console.log("Creating fallback response structure");
+        return {
+          mainTopic: topic,
+          subtopics: [
+            {
+              title: `${topic} - Overview`,
+              outline: {
+                introduction: "This content could not be generated properly. Please try again.",
+                mainPoints: [],
+                faqs: [],
+                conclusion: ""
+              }
+            }
+          ]
+        };
+      } catch (fallbackError) {
+        console.error("Even fallback creation failed:", fallbackError);
+      }
+      
+      // If all recovery methods fail, throw a descriptive error
       throw new Error(`Failed to parse Claude response: ${(parseError as Error).message}`);
     }
     
