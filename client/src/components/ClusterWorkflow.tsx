@@ -833,6 +833,14 @@ export default function ClusterWorkflow({
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Step 6: Review Content */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">6</div>
+                <h3 className="text-lg font-medium">Review Content</h3>
+              </div>
+            </div>
+            
             {/* Bulk actions */}
             <div className="bg-muted/40 rounded-md p-4 space-y-4">
               <div className="flex justify-between items-center">
