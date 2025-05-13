@@ -166,33 +166,52 @@ export default function ImageSearchDialog({
         const newImages = response.images.map((img: any) => ({
           ...img,
           selected: selectedImages.some(selected => selected.id === img.id),
-          // Ensure URL is always set from the response
-          url: img.url || img.src?.medium || img.src?.original || img.large_url || img.original_url
+          // Ensure URL is always set from the response with multiple fallbacks
+          url: img.url || 
+               img.src?.medium || 
+               img.src?.original || 
+               img.large_url || 
+               img.original_url || 
+               (img.source === 'pexels' && img.id 
+                 ? `https://images.pexels.com/photos/${img.id}/pexels-photo-${img.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
+                 : null)
         }));
         
-        console.log('First image:', newImages[0]);
+        // Filter out images without valid URLs to prevent rendering issues
+        const validImages = newImages.filter(img => img.url);
+        
+        console.log('Valid images count:', validImages.length);
+        console.log('First image:', validImages.length > 0 ? validImages[0] : 'No valid images');
         
         // Track available image sources from the response
         if (response.sourcesUsed && Array.isArray(response.sourcesUsed)) {
           setAvailableSources(response.sourcesUsed);
         }
         
-        setSearchedImages(newImages);
+        setSearchedImages(validImages);
         
         // Add to search history
         setImageSearchHistory(prev => [
           ...prev,
           { 
             query: trimmedQuery, 
-            images: newImages 
+            images: validImages 
           }
         ]);
         
-        toast({
-          title: "Images found",
-          description: `Found ${newImages.length} images for "${trimmedQuery}"`,
-          variant: "default"
-        });
+        if (validImages.length > 0) {
+          toast({
+            title: "Images found",
+            description: `Found ${validImages.length} images for "${trimmedQuery}"`,
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Image loading issues",
+            description: "Found images but couldn't load them properly. Try another search term.",
+            variant: "destructive"
+          });
+        }
       } else {
         toast({
           title: "No images found",
