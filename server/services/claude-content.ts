@@ -32,6 +32,7 @@ export interface ClaudeContentResponse {
   message?: string;
   article?: any;
   cluster?: any;
+  topics?: any[];
 }
 
 /**
@@ -152,6 +153,100 @@ Remember, high-quality content:
 /**
  * Generate a content cluster with Claude AI
  */
+export async function generateTopicSuggestions(
+  keywords: string[] = [],
+  products: any[] = [],
+  collections: any[] = [],
+  contentType: string = 'blog'
+): Promise<ClaudeContentResponse> {
+  try {
+    // Validate inputs
+    if (keywords.length === 0 && products.length === 0 && collections.length === 0) {
+      return {
+        success: false,
+        message: 'At least one keyword or product/collection is required'
+      };
+    }
+
+    // Prepare context for Claude
+    let contentContext = '';
+    
+    if (products.length > 0) {
+      contentContext += `\n\nProducts Information:\n`;
+      products.forEach((product, index) => {
+        contentContext += `${index + 1}. "${product.title}"${product.description ? ': ' + product.description : ''}\n`;
+      });
+    }
+    
+    if (collections.length > 0) {
+      contentContext += `\n\nCollections Information:\n`;
+      collections.forEach((collection, index) => {
+        contentContext += `${index + 1}. "${collection.title}"${collection.description ? ': ' + collection.description : ''}\n`;
+      });
+    }
+
+    // Create the prompt for Claude
+    const systemPrompt = `You are a professional SEO content strategist helping a Shopify store owner create engaging, high-quality ${contentType} content. 
+    
+I need you to generate topic suggestions that are optimized for SEO, engaging to readers, and relevant to the provided keywords and products.
+
+FORMAT YOUR RESPONSE AS A JSON ARRAY with this structure:
+[
+  {
+    "title": "Compelling, SEO-friendly title with keyword(s)",
+    "description": "Brief explanation of what the article would cover",
+    "keywords": ["primary keyword", "secondary keyword"]
+  }
+]${contentContext}`;
+    
+    // Call Claude API for topic suggestions
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL,
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [
+        { role: "user", content: `Generate 7-9 topic suggestions optimized for these keywords: ${keywords.join(', ')}. Focus on ${contentType} content.` }
+      ],
+    });
+
+    // Get the text content from Claude's response
+    let content = '';
+    if (response.content && response.content.length > 0) {
+      const block = response.content[0];
+      if (block.type === 'text') {
+        content = block.text;
+      }
+    }
+    
+    if (!content) {
+      throw new Error('Empty response from Claude');
+    }
+    
+    // Parse the JSON response
+    try {
+      // Find JSON in the response (sometimes Claude wraps it in code blocks)
+      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || 
+                        content.match(/```\n([\s\S]*?)\n```/) || 
+                        content.match(/\[([\s\S]*?)\]/);
+                        
+      const jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
+      const topics = JSON.parse(jsonString);
+      
+      return {
+        success: true,
+        topics: Array.isArray(topics) ? topics : [],
+        contentType
+      };
+    } catch (parseError) {
+      console.error('Error parsing Claude response:', parseError);
+      throw new Error('Failed to parse topic suggestions from Claude');
+    }
+  } catch (error: any) {
+    console.error('Claude API error:', error);
+    throw new Error(`Failed to generate topic suggestions: ${error.message}`);
+  }
+}
+
 export async function generateContentCluster(
   topic: string,
   keywords: string[] = [],
