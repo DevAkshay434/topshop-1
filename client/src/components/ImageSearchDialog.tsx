@@ -379,14 +379,25 @@ export default function ImageSearchDialog({
       toggleImageSelection(imageId);
     }
     
-    // Set as featured image
-    setFeaturedImageId(imageId);
-    
-    toast({
-      title: "Featured image set",
-      description: "This will be the main image for your content",
-      variant: "default"
-    });
+    // Check if this image is already featured
+    if (featuredImageId === imageId) {
+      // If it's already the featured image, unset it
+      setFeaturedImageId("");
+      toast({
+        title: "Featured Image Removed",
+        description: "This image is no longer set as featured",
+        variant: "default"
+      });
+    } else {
+      // Set as featured image
+      setFeaturedImageId(imageId);
+      
+      toast({
+        title: "Featured image set",
+        description: "This will be the main image for your content",
+        variant: "default"
+      });
+    }
   };
   
   // Toggle image as content image (for product linking)
