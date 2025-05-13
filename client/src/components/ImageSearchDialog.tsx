@@ -378,7 +378,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-screen flex flex-col">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -565,7 +565,7 @@ export default function ImageSearchDialog({
               </div>
               
               {/* Search results grid - with improved scrolling */}
-              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 150px)" }}>
+              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 230px)", overflowY: "auto" }}>
                 {searchedImages.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
                     {searchedImages
@@ -754,7 +754,7 @@ export default function ImageSearchDialog({
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 150px)" }}>
+              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 230px)", overflowY: "auto" }}>
                 {selectedImages.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {selectedImages.map((image, index) => (
