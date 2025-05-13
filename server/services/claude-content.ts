@@ -344,7 +344,9 @@ ${productInfo}
 Create a topic cluster with a pillar article and ${numSubtopics} subtopic articles. The pillar article should provide a comprehensive overview of the main topic, while each subtopic article should dive deeper into a specific aspect.
 
 # OUTPUT FORMAT
-Please provide the content cluster in the following JSON format:
+EXTREMELY IMPORTANT: You MUST return a properly formatted JSON object exactly as specified below.
+Do not include any explanatory text, markdown formatting, or other content outside of the JSON structure.
+
 {
   "pillar": {
     "title": "SEO-optimized title for the pillar article",
@@ -358,10 +360,11 @@ Please provide the content cluster in the following JSON format:
       "meta_description": "Compelling meta description for subtopic 1",
       "content": "Full HTML content of subtopic 1 article",
       "suggested_tags": ["tag1", "tag2", "tag3"]
-    },
-    // Repeat for each subtopic
+    }
   ]
 }
+
+REMEMBER: Your entire response must be valid JSON. No text before or after the JSON object.
 
 Remember that:
 1. Each article should have an engaging introduction
@@ -374,14 +377,12 @@ Remember that:
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL,
       max_tokens: 12000,
-      temperature: 0.5, // Lower temperature for more structured output
-      system: "You are an expert SEO content strategist helping to create comprehensive topic clusters for online stores. Your content is detailed, engaging, and optimized for search engines. You MUST output your response in proper JSON format.",
+      temperature: 0.3, // Lower temperature for more structured output
+      system: "You are an expert SEO content strategist who ONLY responds with valid JSON. Your output MUST be a single valid JSON object with no other text before or after it. If asked to generate content, always provide it in the exact JSON structure requested.",
       messages: [
         { 
           role: "user", 
-          content: `${prompt}
-          
-IMPORTANT: Your response MUST be valid JSON. Do not include any text outside of the JSON structure. Format your entire response as a single valid JSON object.`
+          content: prompt
         }
       ],
     });
@@ -391,35 +392,59 @@ IMPORTANT: Your response MUST be valid JSON. Do not include any text outside of 
     let cluster;
     
     try {
-      // Find JSON in the response (sometimes Claude wraps it in code blocks)
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || 
-                         content.match(/```\n([\s\S]*?)\n```/) || 
-                         content.match(/{[\s\S]*?}/);
-                         
-      let jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
+      // Log the raw response for debugging
+      console.log('Raw Claude cluster response (first 200 chars):', content.substring(0, 200));
       
-      // Additional sanitization for common JSON parsing issues
-      // Fix trailing commas in objects
+      // Find JSON in the response (sometimes Claude wraps it in code blocks)
+      let jsonString = '';
+      
+      // Try to extract JSON from code blocks first
+      const jsonBlockMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```\n([\s\S]*?)\n```/);
+      if (jsonBlockMatch && jsonBlockMatch[1]) {
+        jsonString = jsonBlockMatch[1];
+        console.log('Extracted JSON from code block');
+      } else {
+        // Look for JSON object pattern
+        const jsonObjectMatch = content.match(/{[\s\S]*}/);
+        if (jsonObjectMatch) {
+          jsonString = jsonObjectMatch[0];
+          console.log('Extracted JSON object pattern');
+        } else {
+          // Use the full content as a last resort
+          jsonString = content;
+          console.log('Using full content and attempting to clean');
+        }
+      }
+      
+      // Additional sanitization
+      jsonString = jsonString.trim();
+      // Remove non-standard JSON artifacts that Claude might add
+      jsonString = jsonString.replace(/[\u0000-\u001F]+/g, ' ');
+      // Fix trailing commas
       jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
-      // Fix any unquoted property names
+      // Fix missing quotes around property names
       jsonString = jsonString.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
       
+      console.log('Cleaned Claude cluster JSON (first 100 chars):', jsonString.substring(0, 100));
+      
       try {
-        // First attempt to parse as is
+        // Parse the sanitized JSON
         cluster = JSON.parse(jsonString);
       } catch (parseError) {
-        console.log("First JSON parse attempt failed, trying alternative approach");
+        console.log('JSON parse error:', parseError);
         
-        // If direct parsing fails, try a more aggressive approach
-        // Extract just the cluster structure without any additional text
-        const mainObjectMatch = jsonString.match(/{[\s\S]*}/);
-        if (mainObjectMatch) {
-          const cleanJson = mainObjectMatch[0];
-          cluster = JSON.parse(cleanJson);
-        } else {
-          // If still failing, create a basic structure to avoid complete failure
-          console.error("Could not extract valid JSON, creating fallback structure");
-          throw new Error("Failed to parse Claude response into valid JSON");
+        // Last attempt - use regex to extract just the object structure
+        console.log('Attempting to fix JSON syntax errors...');
+        const extractJson = jsonString.replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ');
+        try {
+          cluster = JSON.parse(extractJson);
+        } catch (finalError) {
+          console.log('Failed to fix JSON syntax:', finalError);
+          console.log('Attempting manual extraction of topic data');
+          
+          // If we still can't parse JSON, use a very basic fallback structure
+          console.log('Creating fallback response structure');
+          throw new Error('Could not parse JSON from Claude response');
         }
       }
     } catch (error: any) {
