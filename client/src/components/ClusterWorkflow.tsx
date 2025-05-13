@@ -271,15 +271,33 @@ export default function ClusterWorkflow({
   const handleImagesSelected = (images: PexelsImage[]) => {
     if (!currentArticleId) return;
     
+    console.log("Images selected for article:", currentArticleId, images);
+    
+    // Make sure we have a featured image if images are selected
+    let hasProcessedFeatured = false;
+    
     // Convert PexelsImages to the Article image format
-    const processedImages = images.map(img => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt || '',
-      source: img.source,
-      isFeatured: !!img.isFeatured,
-      isContentImage: !!img.isContentImage
-    }));
+    const processedImages = images.map(img => {
+      // Check if any image is marked as featured
+      if (img.isFeatured) {
+        hasProcessedFeatured = true;
+      }
+      
+      return {
+        id: img.id,
+        url: img.url || '',
+        alt: img.alt || '',
+        source: img.source || 'pexels',
+        isFeatured: !!img.isFeatured,
+        isContentImage: !!img.isContentImage
+      };
+    });
+    
+    // If no featured image was explicitly set but we have images, mark the first one as featured
+    if (!hasProcessedFeatured && processedImages.length > 0) {
+      processedImages[0].isFeatured = true;
+      console.log("No featured image found, setting first image as featured:", processedImages[0].id);
+    }
     
     setEditedArticles(prev => 
       prev.map(article => {
@@ -293,9 +311,11 @@ export default function ClusterWorkflow({
       })
     );
     
+    const articleTitle = editedArticles.find(a => a.id === currentArticleId)?.title || 'article';
+    
     toast({
       title: "Images Updated",
-      description: `Updated images for article: ${editedArticles.find(a => a.id === currentArticleId)?.title}`,
+      description: `${processedImages.length} image${processedImages.length !== 1 ? 's' : ''} added to "${articleTitle}"`,
     });
   };
   
@@ -1114,41 +1134,85 @@ export default function ClusterWorkflow({
                             />
                           </div>
                           
-                          <div className="flex justify-between items-center">
-                            <Label htmlFor={`images-${article.id}`}>Images</Label>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openImageDialog(article.id)}
-                              className="flex items-center gap-1"
-                            >
-                              <ImageIcon className="h-4 w-4" />
-                              {article.images && article.images.length > 0 ? 
-                                `${article.images.length} Image${article.images.length > 1 ? 's' : ''}` : 
-                                'Add Images'}
-                            </Button>
-                          </div>
-                          
-                          {/* Display selected images thumbnails */}
-                          {article.images && article.images.length > 0 && (
-                            <div className="grid grid-cols-4 gap-2 mb-4">
-                              {article.images.map((img: any) => (
-                                <div key={img.id} className="relative rounded-md overflow-hidden border">
-                                  <img 
-                                    src={`/api/proxy/image/${img.id}`}
-                                    alt={img.alt || "Selected image"}
-                                    className="w-full h-auto aspect-[4/3] object-cover"
-                                  />
-                                  {img.isFeatured && (
-                                    <div className="absolute top-1 right-1 bg-yellow-500 rounded-full p-1">
-                                      <span className="sr-only">Featured Image</span>
-                                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <Label htmlFor={`images-${article.id}`}>Images</Label>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openImageDialog(article.id)}
+                                className="flex items-center gap-1"
+                              >
+                                <ImageIcon className="h-4 w-4" />
+                                {article.images && article.images.length > 0 ? 
+                                  `${article.images.length} Image${article.images.length > 1 ? 's' : ''}` : 
+                                  'Add Images'}
+                              </Button>
                             </div>
-                          )}
+                            
+                            {/* Display selected images as a gallery with badges */}
+                            {article.images && article.images.length > 0 ? (
+                              <div className="mb-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                  {(article.images || []).map((img: any) => (
+                                    <div key={img.id} className="group relative rounded-md overflow-hidden border hover:border-primary transition-colors">
+                                      <div className="aspect-[4/3] bg-slate-50 relative">
+                                        <img 
+                                          src={`/api/proxy/image/${img.id}`}
+                                          alt={img.alt || "Selected image"}
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            // Fallback on error
+                                            const target = e.target as HTMLImageElement;
+                                            target.onerror = null;
+                                            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f5f5f5'/%3E%3Cpath d='M65,35 L35,65 M35,35 L65,65' stroke='%23999' stroke-width='2'/%3E%3C/svg%3E";
+                                          }}
+                                        />
+                                        
+                                        {/* Image type badges */}
+                                        <div className="absolute top-0 right-0 p-1">
+                                          {img.isFeatured && (
+                                            <div className="bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded mb-1">
+                                              Featured
+                                            </div>
+                                          )}
+                                          {img.isContentImage && (
+                                            <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded">
+                                              Content
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Edit overlay on hover */}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                          <Button 
+                                            size="sm"
+                                            variant="secondary"
+                                            className="bg-white/90"
+                                            onClick={() => openImageDialog(article.id)}
+                                          >
+                                            Change Images
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="mb-4 border border-dashed rounded-md p-6 flex flex-col items-center justify-center bg-slate-50 text-slate-500">
+                                <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
+                                <p className="text-sm mb-3">No images added yet</p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openImageDialog(article.id)}
+                                >
+                                  Add Images
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                           
                           <div>
                             <Label htmlFor={`content-${article.id}`}>Content</Label>
@@ -1234,30 +1298,56 @@ export default function ClusterWorkflow({
                           />
                           
                           {/* Display inline content images if any */}
-                          {article.images && article.images.length > 1 && (
+                          {article.images && article.images.length > 0 && (
                             <div className="mt-6 border-t pt-4">
-                              <h4 className="text-sm font-medium mb-3">Content Images</h4>
+                              <h4 className="text-sm font-medium mb-3">Article Images</h4>
                               <div className="grid grid-cols-3 gap-3">
                                 {article.images
-                                  .filter(img => !img.isFeatured) // Skip featured image
+                                  .filter(img => !img.isFeatured || article.images.length === 1) // Show all images if there's only one
                                   .map((img) => (
                                     <div key={img.id} className="border rounded-md overflow-hidden">
-                                      <img 
-                                        src={`/api/proxy/image/${img.id}`} 
-                                        alt={img.alt || "Content image"}
-                                        className="w-full h-auto object-cover aspect-[4/3]"
-                                        onError={(e) => {
-                                          // On error, replace with placeholder or fallback
-                                          const target = e.target as HTMLImageElement;
-                                          target.onerror = null; // Prevent infinite reload
-                                          target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f5f5f5'/%3E%3Cpath d='M65,35 L35,65 M35,35 L65,65' stroke='%23999' stroke-width='2'/%3E%3C/svg%3E";
-                                        }}
-                                      />
-                                      {img.isContentImage && (
-                                        <div className="bg-blue-50 p-1 text-xs font-medium text-blue-700 text-center">
-                                          Content Image
+                                      <div className="relative">
+                                        <img 
+                                          src={`/api/proxy/image/${img.id}`} 
+                                          alt={img.alt || "Content image"}
+                                          className="w-full h-auto object-cover aspect-[4/3]"
+                                          onError={(e) => {
+                                            // On error, replace with placeholder or fallback
+                                            const target = e.target as HTMLImageElement;
+                                            target.onerror = null; // Prevent infinite reload
+                                            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f5f5f5'/%3E%3Cpath d='M65,35 L35,65 M35,35 L65,65' stroke='%23999' stroke-width='2'/%3E%3C/svg%3E";
+                                          }}
+                                          loading="lazy"
+                                        />
+                                        
+                                        {/* Badge overlay for image type */}
+                                        <div className="absolute top-2 right-2">
+                                          {img.isFeatured && (
+                                            <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-sm">
+                                              Featured
+                                            </span>
+                                          )}
+                                          {img.isContentImage && (
+                                            <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-sm">
+                                              Content
+                                            </span>
+                                          )}
                                         </div>
-                                      )}
+                                      </div>
+                                      
+                                      <div className={`p-1 text-xs font-medium text-center ${
+                                        img.isFeatured 
+                                          ? 'bg-yellow-50 text-yellow-700' 
+                                          : img.isContentImage 
+                                            ? 'bg-blue-50 text-blue-700' 
+                                            : 'bg-gray-50 text-gray-700'
+                                      }`}>
+                                        {img.isFeatured 
+                                          ? 'Featured Image' 
+                                          : img.isContentImage 
+                                            ? 'Content Image' 
+                                            : 'Additional Image'}
+                                      </div>
                                     </div>
                                   ))
                                 }
