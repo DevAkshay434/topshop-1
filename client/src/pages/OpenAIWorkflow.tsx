@@ -1629,6 +1629,31 @@ export default function OpenAIWorkflow() {
                 Page
               </Button>
             </div>
+            
+            {/* Blog selection - only show when content type is blog */}
+            {contentType === 'blog' && (
+              <div className="mt-4">
+                <Label className="mb-2 block">Select Blog</Label>
+                <Select 
+                  value={selectedBlog || ""} 
+                  onValueChange={setSelectedBlog}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a blog" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {blogsData?.blogs.map((blog: any) => (
+                      <SelectItem key={blog.id} value={blog.id}>
+                        {blog.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select the blog where this content will be published
+                </p>
+              </div>
+            )}
           </div>
           
           <div className="grid md:grid-cols-2 gap-6">
@@ -1878,7 +1903,7 @@ export default function OpenAIWorkflow() {
                       checked={enableCitations}
                       onCheckedChange={val => setEnableCitations(!!val)}
                     />
-                    <Label htmlFor="enableCitations">Include Citations</Label>
+                    <Label htmlFor="enableCitations">Include Citations (trusted sources: .gov, .edu, Wikipedia)</Label>
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -1887,7 +1912,7 @@ export default function OpenAIWorkflow() {
                       checked={enableExternalLinks}
                       onCheckedChange={val => setEnableExternalLinks(!!val)}
                     />
-                    <Label htmlFor="enableExternalLinks">Include External Links (.gov, .edu, Wikipedia)</Label>
+                    <Label htmlFor="enableExternalLinks">Include External Links (to relevant, authoritative sources)</Label>
                   </div>
                   
                   <div className="space-y-2">
@@ -1897,7 +1922,7 @@ export default function OpenAIWorkflow() {
                         checked={includeYouTube}
                         onCheckedChange={val => setIncludeYouTube(!!val)}
                       />
-                      <Label htmlFor="includeYouTube">Include YouTube Videos</Label>
+                      <Label htmlFor="includeYouTube">Include YouTube Videos (iframe embeds)</Label>
                     </div>
                     
                     {includeYouTube && (
