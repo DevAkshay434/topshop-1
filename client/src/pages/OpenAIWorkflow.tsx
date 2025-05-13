@@ -1672,10 +1672,29 @@ export default function OpenAIWorkflow() {
                 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Writing Perspective</Label>
+                    <Label>Gender Perspective</Label>
                     <Select 
                       value={writingPerspective} 
                       onValueChange={setWritingPerspective}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose gender perspective" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select the gender perspective for your content writer
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Writing Perspective</Label>
+                    <Select 
+                      value={contentPerspective || "first-person"} 
+                      onValueChange={(val) => setContentPerspective && setContentPerspective(val)}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choose writing perspective" />
