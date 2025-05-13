@@ -589,12 +589,13 @@ export default function ImageSearchDialog({
               <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 230px)", overflowY: "auto" }}>
                 {/* Helpful guidance */}
                 <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
-                  <h3 className="text-sm font-medium text-blue-800 mb-1">How to select images:</h3>
+                  <h3 className="text-sm font-semibold text-blue-800 mb-1">How to select images:</h3>
                   <ol className="text-xs text-blue-700 space-y-1 list-decimal pl-5">
+                    <li><strong>Search</strong> using keywords related to your product</li>
                     <li><strong>Click</strong> on an image to select it</li>
-                    <li>After selecting, use the buttons to set as Featured or Content</li>
-                    <li>Featured image (yellow badge) appears at the top of your article</li>
-                    <li>Content images (blue badges) are embedded throughout the article</li>
+                    <li>Use the <span className="px-1 py-0.5 bg-yellow-100 text-yellow-700 rounded">Featured</span> button for your main image</li>
+                    <li>Use the <span className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded">Content</span> button for additional images</li>
+                    <li>When finished, click <strong>Confirm Selection</strong> at the bottom</li>
                   </ol>
                 </div>
                 
@@ -623,13 +624,27 @@ export default function ImageSearchDialog({
                           <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
                             {image.url || image.src?.medium ? (
                               <img 
-                                src={image.url || image.src?.medium || image.large_url || image.original_url} 
+                                src={
+                                  // Try to use the most reliable image URL format
+                                  image.src?.medium ? image.src.medium :
+                                  image.src?.small ? image.src.small :
+                                  image.src?.thumbnail ? image.src.thumbnail :
+                                  image.url && image.url.startsWith('http') ? image.url :
+                                  image.source === 'pexels' && image.id ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` :
+                                  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E"
+                                } 
                                 alt={image.alt || 'Image'} 
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                                 onError={(e) => {
-                                  console.error('Image failed to load:', image);
-                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                  // If image fails to load, try alternate URLs before showing placeholder
+                                  if (image.src?.small && e.currentTarget.src !== image.src.small) {
+                                    e.currentTarget.src = image.src.small;
+                                  } else if (image.src?.thumbnail && e.currentTarget.src !== image.src.thumbnail) {
+                                    e.currentTarget.src = image.src.thumbnail;
+                                  } else {
+                                    e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                  }
                                 }}
                               />
                             ) : (
