@@ -726,8 +726,8 @@ export default function OpenAIWorkflow() {
         description: `Creating content cluster for "${selectedTopic.title}"`,
       });
       
-      // Call the content generation API
-      const response = await apiRequest("POST", "/api/claude/cluster", {
+      // Call the content generation API with Claude AI
+      const response = await apiRequest("POST", "/api/claude-content/cluster", {
         topic: selectedTopic.title,
         products: selectedProducts,
         keywords: selectedTopic.keywords,
@@ -757,19 +757,26 @@ export default function OpenAIWorkflow() {
       });
       
       if (response.success && response.cluster) {
+        // Handle the Claude AI response format
+        const pillar = response.cluster.pillar;
+        const subtopics = response.cluster.subtopics || [];
+        
+        // Combine pillar and subtopics to form the complete cluster
+        const allArticles = [pillar, ...(subtopics || [])].filter(Boolean);
+        
         // Convert the cluster data into the format expected by our UI
-        const articles: GeneratedArticle[] = response.cluster.subtopics.map((article: any, index: number) => ({
-          id: `cluster-${index + 1}`,
+        const articles: GeneratedArticle[] = allArticles.map((article: any, index: number) => ({
+          id: `cluster-${index}`,
           title: article.title,
           content: article.content,
-          tags: article.keywords || selectedTopic.keywords,
+          tags: article.suggested_tags || selectedTopic.keywords,
           status: 'draft'
         }));
         
         setGeneratedArticles(articles);
         
         toast({
-          title: "Cluster Generated",
+          title: "Claude AI Cluster Generated",
           description: `Successfully generated ${articles.length} articles for your content cluster`,
         });
         
