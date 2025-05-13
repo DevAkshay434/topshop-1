@@ -234,8 +234,7 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY with this structure:
       
       return {
         success: true,
-        topics: Array.isArray(topics) ? topics : [],
-        contentType
+        topics: Array.isArray(topics) ? topics : []
       };
     } catch (parseError) {
       console.error('Error parsing Claude response:', parseError);
