@@ -441,7 +441,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] overflow-hidden flex flex-col p-0 no-scrollbar">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] flex flex-col p-0" style={{ overflow: 'hidden' }}>
         <DialogHeader className="px-6 pt-6 pb-3">
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -659,9 +659,9 @@ export default function ImageSearchDialog({
               </div>
               
               {/* Search results grid - with improved scrolling */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1" style={{ overflowY: 'auto', maxHeight: 'calc(85vh - 200px)' }}>
                 {/* Helpful guidance */}
-                <div className="sticky top-0 z-10 pt-4 pb-2 px-4 bg-white">
+                <div className="sticky top-0 z-50 pt-4 pb-2 px-4 bg-white">
                   <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
                     <h3 className="text-sm font-semibold text-blue-800 mb-1">How to select images:</h3>
                     <ol className="text-xs text-blue-700 space-y-1 list-decimal pl-5">
@@ -674,9 +674,9 @@ export default function ImageSearchDialog({
                   </div>
                 </div>
                 
-                <div className="px-4 pb-4 overflow-y-auto">
+                <div className="px-4 pb-4">
                   {searchedImages.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-20">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" style={{ position: 'relative', zIndex: 40 }}>
                       {searchedImages
                       .filter(image => {
                         // Apply source filtering
@@ -690,12 +690,13 @@ export default function ImageSearchDialog({
                         <div 
                           key={image.id}
                           className={`
-                            relative rounded-lg overflow-hidden border-2 shadow-md cursor-pointer group transition-all hover:scale-105 hover:shadow-lg z-10
+                            relative rounded-lg overflow-hidden border-2 shadow-md cursor-pointer group transition-all hover:scale-105 hover:shadow-lg
                             ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200 hover:border-blue-300'}
                             ${image.isProductImage ? 'border-green-500' : ''}
                             ${featuredImageId === image.id ? 'ring-4 ring-yellow-400 border-yellow-500 shadow-yellow-100' : ''}
                             ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'border-blue-500 ring-2 ring-blue-300 shadow-blue-100' : ''}
                           `}
+                          style={{ position: 'relative', zIndex: 41 }}
                           onClick={() => toggleImageSelection(image.id)}
                         >
                           <div className="aspect-[4/3] bg-slate-100 relative">
@@ -760,12 +761,16 @@ export default function ImageSearchDialog({
                           </div>
                           
                           {/* Image actions */}
-                          <div className="flex p-1 bg-gradient-to-b from-gray-50 to-gray-100">
+                          <div className="flex p-1 bg-gradient-to-b from-gray-50 to-gray-100" style={{ position: 'relative', zIndex: 47 }}>
                             <Button 
                               className="flex-1 text-xs h-7 rounded-sm"
                               variant={featuredImageId === image.id ? "default" : "secondary"}
                               size="sm"
-                              onClick={() => setAsFeaturedImage(image.id)}
+                              style={{ position: 'relative', zIndex: 48 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAsFeaturedImage(image.id);
+                              }}
                             >
                               {featuredImageId === image.id ? (
                                 <span className="flex items-center justify-center">
