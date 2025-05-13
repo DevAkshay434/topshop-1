@@ -14,6 +14,7 @@ import { storage } from './storage';
 import { shopifyService } from './services/shopify';
 import contentRouter from './routes/content';
 import claudeRouter from './routes/claude';
+import claudeContentRouter from './routes/claude-content';
 import adminRouter from './routes/admin';
 import openaiRouter from './routes/openai';
 import { pexelsService } from './services/pexels';
@@ -1171,6 +1172,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // Add Claude routes under /api/claude
   apiRouter.use('/claude', claudeRouter);
+  
+  // Add Claude content generation routes under /api/claude-content
+  apiRouter.use('/claude-content', claudeContentRouter);
   
   // Add admin panel routes under /api/admin
   apiRouter.use('/admin', adminRouter);
