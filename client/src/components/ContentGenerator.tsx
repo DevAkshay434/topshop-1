@@ -99,10 +99,9 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
             description: `Successfully generated a content cluster with ${data.cluster.subtopics?.length || 0} related articles`,
           });
           
-          // Handle cluster data differently since it contains multiple articles
+          // Pass the entire cluster data to the parent component
           if (onContentGenerated && data.cluster.subtopics && data.cluster.subtopics.length > 0) {
-            // For now, just pass the first article to the existing flow
-            // In a complete implementation, you'd handle the complete cluster
+            // Pass first article content + mode + full cluster data
             const firstArticle = data.cluster.subtopics[0];
             const contentData = {
               title: firstArticle.title || data.cluster.mainTopic || "",
