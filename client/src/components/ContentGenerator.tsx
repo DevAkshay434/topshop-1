@@ -82,7 +82,7 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
         }
       } else if (contentMode === 'cluster') {
         // For cluster mode, use the Claude cluster endpoint
-        data = await apiRequest("POST", "/api/claude/cluster", {
+        data = await apiRequest("POST", "/api/claude-content/cluster", {
           topic,
           keywords: [], // Optional keywords
           products: [], // Optional products
@@ -94,19 +94,26 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
         });
         
         if (data.success && data.cluster) {
+          // Handle the structure returned by claude-content.ts
+          // It returns { pillar: {...}, subtopics: [...] }
+          const pillar = data.cluster.pillar;
+          const subtopics = data.cluster.subtopics || [];
+          
+          // Combine pillar and subtopics for a full cluster
+          const allArticles = [pillar, ...(subtopics || [])].filter(Boolean);
+          
           toast({
             title: "Claude AI Content Cluster Generated",
-            description: `Successfully generated a content cluster with ${data.cluster.subtopics?.length || 0} related articles`,
+            description: `Successfully generated a content cluster with ${allArticles.length} related articles`,
           });
           
-          // Pass the entire cluster data to the parent component
-          if (onContentGenerated && data.cluster.subtopics && data.cluster.subtopics.length > 0) {
-            // Pass first article content + mode + full cluster data
-            const firstArticle = data.cluster.subtopics[0];
+          // Pass article content to the parent component for handling
+          if (onContentGenerated && allArticles.length > 0) {
+            const firstArticle = allArticles[0];
             const contentData = {
-              title: firstArticle.title || data.cluster.mainTopic || "",
+              title: firstArticle.title || "",
               content: firstArticle.content || "",
-              tags: firstArticle.keywords || []
+              tags: firstArticle.suggested_tags || []
             };
             onContentGenerated(contentData);
           }
