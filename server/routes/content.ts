@@ -33,14 +33,16 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
     
     try {
       // Generate content with Claude as the primary service
-      console.log(`Generating content with Claude for topic: "${topic}"`);
+      console.log(`Generating content with Claude for topic: "${topic}" with tone: ${tone}, length: ${length}`);
       
       const generatedContent = await generateBlogContentWithClaude(
         topic,
         [], // keywords
         customPrompt || "",
         "", // productName
-        "" // productDescription
+        "", // productDescription
+        tone, // pass tone parameter
+        length // pass length parameter
       );
       
       // Log the returned content (truncated for readability)
