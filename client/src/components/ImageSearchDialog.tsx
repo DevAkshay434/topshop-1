@@ -434,22 +434,30 @@ export default function ImageSearchDialog({
             {/* Search Tab */}
             <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 space-y-4">
-                <div className="bg-blue-50 p-3 rounded-md border border-blue-200 mb-3">
-                  <h4 className="text-sm font-medium text-blue-800 mb-1">Image Selection Guide</h4>
-                  <p className="text-xs text-blue-700 mb-2">
-                    1. Search for relevant images using keywords
-                  </p>
-                  <p className="text-xs text-blue-700 mb-2">
-                    2. Click images to select them
-                  </p>
-                  <p className="text-xs text-blue-700 mb-2">
-                    3. Mark images as <span className="text-yellow-600 font-medium">Featured</span> or <span className="text-blue-600 font-medium">Content</span>
-                  </p>
-                  <p className="text-xs text-blue-700">
-                    4. Click "Use Selected Images" when finished
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                    <h4 className="text-sm font-medium text-blue-800 mb-1">Image Selection Guide</h4>
+                    <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
+                      <li>Search for relevant images using keywords</li>
+                      <li>Click images to select them</li>
+                      <li>Mark one image as <span className="bg-yellow-100 text-yellow-700 px-1 py-0.5 rounded font-medium">Featured</span></li>
+                      <li>Mark additional images as <span className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded font-medium">Content</span></li>
+                      <li>Click "Confirm Selection" when finished</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                    <h4 className="text-sm font-medium text-yellow-800 mb-1">Image Search Tips</h4>
+                    <ul className="text-xs text-yellow-700 space-y-1 list-disc pl-4">
+                      <li>Try including your product type in search</li>
+                      <li>Add keywords like "lifestyle" or "in use"</li>
+                      <li>Search for related settings or environments</li>
+                      <li>Use simple, descriptive terms</li>
+                      <li>Try different search terms if needed</li>
+                    </ul>
+                  </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
@@ -459,7 +467,7 @@ export default function ImageSearchDialog({
                         </svg>
                       </div>
                       <Input
-                        placeholder="Search for product or topic images..."
+                        placeholder="Search for images related to your product..."
                         value={imageSearchQuery}
                         onChange={(e) => setImageSearchQuery(e.target.value)}
                         onKeyDown={(e) => {
@@ -467,55 +475,83 @@ export default function ImageSearchDialog({
                             handleImageSearch(imageSearchQuery);
                           }
                         }}
-                        className="pl-10 flex-1"
+                        className="pl-10 flex-1 border-blue-200 focus-visible:ring-blue-400"
                       />
                     </div>
                     <Button 
                       type="button" 
                       onClick={() => handleImageSearch(imageSearchQuery)}
                       disabled={isSearchingImages || !imageSearchQuery.trim()}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className={`whitespace-nowrap ${isSearchingImages ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'}`}
                     >
                       {isSearchingImages ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Searching...
                         </>
-                      ) : "Search Images"}
+                      ) : (
+                        <>
+                          <Search className="mr-2 h-4 w-4" />
+                          Search Images
+                        </>
+                      )}
                     </Button>
                   </div>
-                  <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
-                    <span>Try:</span>
-                    {['product close-up', 'lifestyle use', 'before & after', 'installation'].map((suggestion, i) => (
-                      <Badge 
-                        key={i}
-                        variant="outline" 
-                        className="cursor-pointer hover:bg-blue-50 text-xs"
-                        onClick={() => {
-                          setImageSearchQuery(suggestion);
-                          handleImageSearch(suggestion);
-                        }}
-                      >
-                        {suggestion}
-                      </Badge>
-                    ))}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500">Try searching:</span>
+                    {selectedKeywords?.length > 0 ? (
+                      selectedKeywords.map((k, i) => (
+                        <Badge 
+                          key={i}
+                          variant={k.isMainKeyword ? "default" : "outline"}
+                          className={`cursor-pointer hover:bg-blue-50 text-xs ${k.isMainKeyword ? 'bg-green-100 hover:bg-green-200 text-green-800 hover:text-green-900' : ''}`}
+                          onClick={() => {
+                            setImageSearchQuery(k.keyword);
+                            handleImageSearch(k.keyword);
+                          }}
+                        >
+                          {k.keyword}
+                        </Badge>
+                      ))
+                    ) : (
+                      ['product display', 'lifestyle use', 'before & after', 'hands-on', 'happy customer'].map((suggestion, i) => (
+                        <Badge 
+                          key={`default-${i}`}
+                          variant="outline" 
+                          className="cursor-pointer hover:bg-blue-50 text-xs"
+                          onClick={() => {
+                            setImageSearchQuery(suggestion);
+                            handleImageSearch(suggestion);
+                          }}
+                        >
+                          {suggestion}
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 </div>
                 
-                {/* Image selection help text */}
-                <div className="bg-blue-50 p-3 rounded-md mb-3">
-                  <h3 className="text-sm font-medium text-blue-800 mb-1">Image Selection Guide</h3>
-                  <div className="flex flex-col space-y-2 text-xs text-blue-700">
-                    <div className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1.5"></span>
-                      <strong>Featured Image:</strong> Main image shown at the top of your content.
-                    </div>
-                    <div className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1.5"></span>
-                      <strong>Content Images:</strong> Additional images embedded throughout your article.
+                {/* Search history */}
+                {imageSearchHistory.length > 0 && (
+                  <div className="border border-blue-100 bg-blue-50/50 rounded-md p-3">
+                    <h3 className="text-sm font-medium text-blue-800 mb-2">Recent searches:</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {imageSearchHistory.map((history, index) => (
+                        <Badge 
+                          key={index}
+                          variant={history.query === imageSearchQuery ? "default" : "outline"} 
+                          className={`cursor-pointer text-xs ${history.query === imageSearchQuery ? 'bg-blue-100 text-blue-800' : ''}`}
+                          onClick={() => {
+                            setImageSearchQuery(history.query);
+                            setSearchedImages(history.images);
+                          }}
+                        >
+                          {history.query}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
                 
                 {/* Suggested searches - show when no search has been performed */}
                 {!searchedImages.length && !isSearchingImages && (
