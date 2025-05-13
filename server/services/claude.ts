@@ -337,7 +337,7 @@ Return the response as a JSON object with this structure:
       // APPROACH 2: Manual extraction of topic data using regex
       try {
         console.log("Attempting manual extraction of topic data");
-        const mainTopicMatch = responseContent.match(/"mainTopic"\s*:\s*"([^"]+)"/);
+        const mainTopicMatch = content.match(/"mainTopic"\s*:\s*"([^"]+)"/);
         const mainTopic = mainTopicMatch ? mainTopicMatch[1] : topic;
         
         // Extract subtopic titles using regex
@@ -345,15 +345,11 @@ Return the response as a JSON object with this structure:
         const subtopics = [];
         let subtitleMatch;
         
-        while ((subtitleMatch = subtitleRegex.exec(responseContent)) !== null) {
+        while ((subtitleMatch = subtitleRegex.exec(content)) !== null) {
           subtopics.push({
             title: subtitleMatch[1],
-            outline: {
-              introduction: "Content generation encountered an error. Please regenerate this article.",
-              mainPoints: [],
-              faqs: [],
-              conclusion: ""
-            }
+            content: `<h1>${subtitleMatch[1]}</h1><p>Content generation encountered an error. Please regenerate this article.</p>`,
+            keywords: keywords || []
           });
         }
         
@@ -376,12 +372,8 @@ Return the response as a JSON object with this structure:
           subtopics: [
             {
               title: `${topic} - Overview`,
-              outline: {
-                introduction: "This content could not be generated properly. Please try again.",
-                mainPoints: [],
-                faqs: [],
-                conclusion: ""
-              }
+              content: `<h1>${topic}</h1><p>This content could not be generated properly. Please try again.</p>`,
+              keywords: keywords || []
             }
           ]
         };
