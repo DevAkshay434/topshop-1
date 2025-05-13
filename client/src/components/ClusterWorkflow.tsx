@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, ChevronRight, Clock, FileText, Sparkles, Bot, Terminal, Trash, Upload, Search, Loader2 } from 'lucide-react';
+import { Calendar, ChevronRight, Clock, FileText, Sparkles, Bot, Terminal, Trash, Upload, Search, Loader2, ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import ImageSearchDialog from './ImageSearchDialog';
 
 interface Article {
   id: string;
@@ -143,6 +144,11 @@ export default function ClusterWorkflow({
     { keyword: "water softener installation", score: 27 },
   ]);
   
+  // Image selection modal
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [currentArticleId, setCurrentArticleId] = useState<string>("");
+  const [searchKeyword, setSearchKeyword] = useState<string>("");
+  
   // Update local state when articles prop changes
   React.useEffect(() => {
     setEditedArticles(articles);
@@ -205,6 +211,47 @@ export default function ClusterWorkflow({
     
     // Clear selection after applying action
     setSelectedArticles({});
+  };
+  
+  // Open image selection dialog for an article
+  const openImageDialog = (articleId: string) => {
+    const article = editedArticles.find(a => a.id === articleId);
+    if (article) {
+      setCurrentArticleId(articleId);
+      
+      // Set search keyword from article title or tags
+      let keyword = article.title.split(' ').slice(0, 2).join(' ');
+      if (article.tags && article.tags.length > 0) {
+        keyword = article.tags[0];
+      }
+      setSearchKeyword(keyword);
+      
+      // Open dialog
+      setIsImageDialogOpen(true);
+    }
+  };
+  
+  // Handle images selected from dialog
+  const handleImagesSelected = (images: any[]) => {
+    if (!currentArticleId) return;
+    
+    // Get the current article and update its images
+    setEditedArticles(prev => 
+      prev.map(article => {
+        if (article.id === currentArticleId) {
+          return {
+            ...article,
+            images: images,
+          };
+        }
+        return article;
+      })
+    );
+    
+    toast({
+      title: "Images Updated",
+      description: `Updated images for article: ${editedArticles.find(a => a.id === currentArticleId)?.title}`,
+    });
   };
   
   // Update article title
@@ -1013,6 +1060,42 @@ export default function ClusterWorkflow({
                               onChange={(e) => updateArticleTitle(article.id, e.target.value)}
                             />
                           </div>
+                          
+                          <div className="flex justify-between items-center">
+                            <Label htmlFor={`images-${article.id}`}>Images</Label>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openImageDialog(article.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <ImageIcon className="h-4 w-4" />
+                              {article.images && article.images.length > 0 ? 
+                                `${article.images.length} Image${article.images.length > 1 ? 's' : ''}` : 
+                                'Add Images'}
+                            </Button>
+                          </div>
+                          
+                          {/* Display selected images thumbnails */}
+                          {article.images && article.images.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mb-4">
+                              {article.images.map((img: any) => (
+                                <div key={img.id} className="relative rounded-md overflow-hidden border">
+                                  <img 
+                                    src={`/api/proxy/image/${img.id}`}
+                                    alt={img.alt || "Selected image"}
+                                    className="w-full h-auto aspect-[4/3] object-cover"
+                                  />
+                                  {img.isFeatured && (
+                                    <div className="absolute top-1 right-1 bg-yellow-500 rounded-full p-1">
+                                      <span className="sr-only">Featured Image</span>
+                                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           
                           <div>
                             <Label htmlFor={`content-${article.id}`}>Content</Label>
