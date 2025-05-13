@@ -144,6 +144,7 @@ export default function ImageSearchDialog({
     setIsSearchingImages(true);
     
     try {
+      console.log('Searching for images with query:', trimmedQuery);
       const response = await apiRequest({
         url: '/api/admin/generate-images',
         method: 'POST',
@@ -154,12 +155,20 @@ export default function ImageSearchDialog({
         }
       });
       
+      console.log('API response:', response);
+      
       if (response.success && response.images && response.images.length > 0) {
+        console.log(`Found ${response.images.length} images`);
+        
         // Mark images as selected if they're already in selectedImages
         const newImages = response.images.map((img: any) => ({
           ...img,
-          selected: selectedImages.some(selected => selected.id === img.id)
+          selected: selectedImages.some(selected => selected.id === img.id),
+          // Ensure URL is always set from the response
+          url: img.url || img.src?.medium || img.src?.original || img.large_url || img.original_url
         }));
+        
+        console.log('First image:', newImages[0]);
         
         // Track available image sources from the response
         if (response.sourcesUsed && Array.isArray(response.sourcesUsed)) {
@@ -566,6 +575,14 @@ export default function ImageSearchDialog({
               
               {/* Search results grid - with improved scrolling */}
               <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 230px)", overflowY: "auto" }}>
+                {/* Show a debug count of images */}
+                <div className="mb-2 p-2 bg-blue-50 rounded-md">
+                  <p className="text-xs text-blue-700">
+                    {searchedImages.length} images found. 
+                    {searchedImages.length > 0 && ` First image: ${searchedImages[0]?.id || 'unknown'}`}
+                  </p>
+                </div>
+                
                 {searchedImages.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
                     {searchedImages
@@ -589,12 +606,22 @@ export default function ImageSearchDialog({
                           `}
                         >
                           <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
-                            <img 
-                              src={image.src?.medium || image.url} 
-                              alt={image.alt || 'Image'} 
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
+                            {image.url || image.src?.medium ? (
+                              <img 
+                                src={image.url || image.src?.medium || image.large_url || image.original_url} 
+                                alt={image.alt || 'Image'} 
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                  console.error('Image failed to load:', image);
+                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-red-50">
+                                <span className="text-xs text-red-500">Image URL missing</span>
+                              </div>
+                            )}
                             
                             {image.selected && (
                               <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[1px] z-10 flex items-center justify-center">
@@ -766,12 +793,22 @@ export default function ImageSearchDialog({
                         `}
                       >
                         <div className="aspect-[4/3] bg-slate-100">
-                          <img 
-                            src={image.src?.medium || image.url} 
-                            alt={image.alt || 'Image'} 
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
+                          {image.url || image.src?.medium ? (
+                            <img 
+                              src={image.url || image.src?.medium || image.large_url || image.original_url} 
+                              alt={image.alt || 'Image'} 
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                console.error('Selected image failed to load:', image);
+                                e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-red-50">
+                              <span className="text-xs text-red-500">Image URL missing</span>
+                            </div>
+                          )}
                         </div>
                         
                         {/* Order badge */}
