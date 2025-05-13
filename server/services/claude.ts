@@ -35,9 +35,21 @@ export async function generateBlogContentWithClaude(
   keywords: string[] = [], 
   customPrompt: string = '', 
   productName: string = '', 
-  productDescription: string = ''
+  productDescription: string = '',
+  tone: string = 'Professional',
+  length: string = 'Medium'
 ): Promise<any> {
   try {
+    // Determine word count based on length parameter
+    let wordCount = "800";
+    if (length.toLowerCase().includes('short')) {
+      wordCount = "400";
+    } else if (length.toLowerCase().includes('medium')) {
+      wordCount = "800";
+    } else if (length.toLowerCase().includes('long')) {
+      wordCount = "1200";
+    }
+
     // Build the prompt based on inputs
     let promptText = customPrompt || 
       `Please write a comprehensive blog post about ${topic}.`;
@@ -56,18 +68,21 @@ export async function generateBlogContentWithClaude(
       promptText += ` Please optimize the content for these keywords: ${keywords.join(', ')}.`;
     }
     
+    // Add tone and length instructions
+    promptText += ` Write in a ${tone} tone and aim for approximately ${wordCount} words.`;
+    
     promptText += ' Include a compelling title, meta description, and naturally incorporate the keywords throughout the content.';
     
     // Call Claude API
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 4000,
+      max_tokens: length.toLowerCase().includes('long') ? 6000 : 4000, // Increase token limit for long posts
       system: `You are an expert content writer creating SEO-optimized blog content. 
-Your writing should be professional, engaging, and formatted properly with headings and paragraphs.
+Your writing should be ${tone.toLowerCase()}, engaging, and formatted properly with headings and paragraphs.
 Generate content with the following structure:
 1. Title (compelling, SEO-friendly)
 2. Meta description (under 160 characters)
-3. Main content with appropriate headings (H2, H3)
+3. Main content with appropriate headings (H2, H3) - target length of ${wordCount} words
 4. Include a conclusion section`,
       messages: [
         { role: 'user', content: promptText }
