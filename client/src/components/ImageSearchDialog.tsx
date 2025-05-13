@@ -685,29 +685,47 @@ export default function ImageSearchDialog({
                           `}
                         >
                           <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
-                            {image.url || image.src?.medium ? (
+                            {true ? (
                               <img 
                                 src={
-                                  // Try to use the most reliable image URL format
-                                  image.src?.medium ? image.src.medium :
-                                  image.src?.small ? image.src.small :
-                                  image.src?.thumbnail ? image.src.thumbnail :
-                                  image.url && image.url.startsWith('http') ? image.url :
-                                  image.source === 'pexels' && image.id ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` :
-                                  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E"
+                                  // Try all possible URL formats in order of preference
+                                  image.src?.medium || 
+                                  image.url || 
+                                  image.large_url || 
+                                  image.src?.large || 
+                                  image.original_url || 
+                                  image.src?.original || 
+                                  image.src?.small || 
+                                  image.src?.thumbnail || 
+                                  (image.source === 'pexels' && image.id ? 
+                                    `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` : 
+                                    (image.source === 'pixabay' && image.id ? 
+                                      `https://pixabay.com/get/${image.id}?height=350` : 
+                                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E"
+                                    )
+                                  )
                                 } 
                                 alt={image.alt || 'Image'} 
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                                 onError={(e) => {
-                                  // If image fails to load, try alternate URLs before showing placeholder
-                                  if (image.src?.small && e.currentTarget.src !== image.src.small) {
-                                    e.currentTarget.src = image.src.small;
-                                  } else if (image.src?.thumbnail && e.currentTarget.src !== image.src.thumbnail) {
-                                    e.currentTarget.src = image.src.thumbnail;
-                                  } else {
-                                    e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                  // Log the failed URL and image
+                                  console.log("Image failed to load:", e.currentTarget.src, image);
+                                  
+                                  // Try with a direct Pexels URL as fallback for Pexels images
+                                  if (image.source === 'pexels' && image.id && !e.currentTarget.src.includes(`pexels-photo-${image.id}`)) {
+                                    e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
+                                    return;
                                   }
+                                  
+                                  // Try with a direct Pixabay URL as fallback for Pixabay images
+                                  if (image.source === 'pixabay' && image.id && !e.currentTarget.src.includes('pixabay.com')) {
+                                    e.currentTarget.src = `https://pixabay.com/get/${image.id}?height=350`;
+                                    return;
+                                  }
+                                  
+                                  // If all else fails, use a placeholder SVG
+                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
                                 }}
                               />
                             ) : (

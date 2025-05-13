@@ -1,0 +1,132 @@
+App UI Needs Enhancement
+
+❌ Current Problem: App interface looks unpolished and unprofessional.
+
+✅ Expected Behavior: Apply clean, modern, and responsive design — especially under the “Styling” tab (focus on Writing Perspective Field and layout consistency).
+
+Cluster Generation Error
+
+❌ Current Problem: Error encountered during content cluster generation.
+
+✅ Expected Behavior: Ensure seamless backend process for generating clusters without errors.
+
+Step 6 Flow Issue
+
+❌ Current Problem: In step 6, the user is still required to select a product to generate a title, even after previous selections.
+
+
+🧠 Claude AI Prompt Instruction Structure
+When preparing the prompt to be sent to Claude AI, ensure it includes the following metadata and field selections by the user:
+
+📑 Required Content Structure
+Include in prompt sent to Claude:
+
+✅ H1 & H2 Headings
+
+✅ Article Length: Variable based on intent
+
+✅ Author Info (Fetched from store.Details)
+
+✅ Table of Contents
+
+✅ Tables, Lists, and Bullet Points
+
+✅ Bold formatting
+
+✅ Citations (trusted sources: .gov, .edu, Wikipedia)
+
+✅ Embedded YouTube Videos (iframe)
+
+✅ Featured Images and In-Content Images (linked to selected product)
+
+✅ Buyer Profile
+
+✅ Check user’s selected options before submission
+
+✅ Style fields should look polished and UX-friendly
+
+📥 User Input Fields (Pre-filled into Claude AI prompt)
+👤 Copywriter Gender
+Options: Male, Female
+
+✍️ Content Style (Field Label: "Choose the style of content")
+Options:
+
+Direct-Response
+
+Digital & Modern-Day
+
+Scientific & Data-Driven
+
+Brand & Ethical Storytelling
+
+🎙️ Tone of Content (Field Label: "Choose the tone of content")
+Full option list:
+
+Direct, Punchy
+
+Serious, Persuasive
+
+Engaging, Persuasive
+
+Punchy, Direct
+
+Refined, Persuasive
+
+Professional, Data-Driven
+
+Results-Driven, Persuasive
+
+Optimized, Direct
+
+Conversion-Focused, Persuasive
+
+Engaging, Conversion-Focused
+
+Engaging, Digital
+
+Scientific, Analytical
+
+In-depth, Intellectual
+
+Data-Driven, Technical
+
+Creative, Persuasive
+
+Optimized, High-Conversion
+
+Ethical, Storytelling
+
+Authentic, Heart-Centered
+
+Heartfelt, Authentic
+
+Persuasive, Long-Form
+
+Data-Driven, Conversion-Oriented
+
+SEO-Focused, Technical
+
+Creative, Engaging
+
+High-Converting, Authentic
+
+Engaging, Customer-Centered
+
+Heart-Centered, Persuasive
+
+Authentic, Storytelling
+
+Ethical, Nurturing
+
+Heartfelt, Persuasive
+
+Innovative, Persuasive
+
+Iconic, Persuasive
+
+Authentic, Relationship-Building
+
+ Copywriter Logic (To be used by Replit in building Claude prompt)
+Match the selected gender, style, and tone to the most appropriate copywriter persona.
+
