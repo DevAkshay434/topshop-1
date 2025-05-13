@@ -236,12 +236,19 @@ export default function ClusterWorkflow({
     if (!currentArticleId) return;
     
     // Get the current article and update its images
+    // Make sure to add necessary width/height properties to make TypeScript happy
+    const processedImages = images.map(img => ({
+      ...img,
+      width: img.width || 800,
+      height: img.height || 600
+    }));
+    
     setEditedArticles(prev => 
       prev.map(article => {
         if (article.id === currentArticleId) {
           return {
             ...article,
-            images: images,
+            images: processedImages,
           };
         }
         return article;
@@ -1111,14 +1118,27 @@ export default function ClusterWorkflow({
                       
                       <TabsContent value="preview">
                         <div className="prose prose-sm max-w-none border rounded-md p-4 bg-white shadow-sm">
-                          {/* Featured image - show first image if any */}
-                          {article.images && article.images.length > 0 && article.images[0] && (
+                          {/* Featured image - show featured image or first image if any */}
+                          {article.images && article.images.length > 0 && (
                             <div className="mb-4 rounded-md overflow-hidden border">
-                              <img 
-                                src={`/api/proxy/image/${article.images[0].id}`} 
-                                alt={article.images[0].alt || article.title}
-                                className="w-full h-auto object-cover max-h-[300px]"
-                              />
+                              {article.images.find(img => img.isFeatured) ? (
+                                // Show featured image if available
+                                <img 
+                                  src={`/api/proxy/image/${article.images.find(img => img.isFeatured)?.id}`} 
+                                  alt={article.images.find(img => img.isFeatured)?.alt || article.title}
+                                  className="w-full h-auto object-cover max-h-[300px]"
+                                />
+                              ) : (
+                                // Otherwise show first image
+                                <img 
+                                  src={`/api/proxy/image/${article.images[0].id}`} 
+                                  alt={article.images[0].alt || article.title}
+                                  className="w-full h-auto object-cover max-h-[300px]"
+                                />
+                              )}
+                              <div className="bg-gradient-to-r from-primary/20 to-transparent p-2 text-xs font-medium">
+                                Featured Image
+                              </div>
                             </div>
                           )}
                           
@@ -1152,15 +1172,23 @@ export default function ClusterWorkflow({
                             <div className="mt-6 border-t pt-4">
                               <h4 className="text-sm font-medium mb-3">Content Images</h4>
                               <div className="grid grid-cols-3 gap-3">
-                                {article.images.slice(1).map((img: any) => (
-                                  <div key={img.id} className="border rounded-md overflow-hidden">
-                                    <img 
-                                      src={`/api/proxy/image/${img.id}`} 
-                                      alt={img.alt || "Content image"}
-                                      className="w-full h-auto object-cover aspect-[4/3]"
-                                    />
-                                  </div>
-                                ))}
+                                {article.images
+                                  .filter(img => !img.isFeatured) // Skip featured image
+                                  .map((img: any) => (
+                                    <div key={img.id} className="border rounded-md overflow-hidden">
+                                      <img 
+                                        src={`/api/proxy/image/${img.id}`} 
+                                        alt={img.alt || "Content image"}
+                                        className="w-full h-auto object-cover aspect-[4/3]"
+                                      />
+                                      {img.isContentImage && (
+                                        <div className="bg-blue-50 p-1 text-xs font-medium text-blue-700 text-center">
+                                          Content Image
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))
+                                }
                               </div>
                             </div>
                           )}
@@ -1310,6 +1338,21 @@ export default function ClusterWorkflow({
           </Button>
         )}
       </CardFooter>
+      
+      {/* Image selection dialog */}
+      <ImageSearchDialog
+        open={isImageDialogOpen}
+        onOpenChange={setIsImageDialogOpen}
+        onImagesSelected={handleImagesSelected}
+        initialSelectedImages={currentArticleId ? 
+          // We need to ensure the images have width/height properties to satisfy PexelsImage type
+          (editedArticles.find(a => a.id === currentArticleId)?.images || []).map(img => ({
+            ...img,
+            width: img.width || 800,
+            height: img.height || 600
+          })) : []}
+        searchKeyword={searchKeyword}
+      />
     </Card>
   );
 }
