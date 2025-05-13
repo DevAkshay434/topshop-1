@@ -229,8 +229,35 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY with this structure:
                         content.match(/```\n([\s\S]*?)\n```/) || 
                         content.match(/\[([\s\S]*?)\]/);
                         
-      const jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
-      const topics = JSON.parse(jsonString);
+      let jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
+      
+      // Additional sanitization for common JSON parsing issues
+      // Fix trailing commas in arrays
+      jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+      // Fix any unquoted property names
+      jsonString = jsonString.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+      
+      // Ensure it's a proper array
+      if (!jsonString.trim().startsWith('[')) {
+        jsonString = '[' + jsonString + ']';
+      }
+      
+      let topics;
+      try {
+        topics = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.log("First JSON parse attempt failed for topics, trying alternative approach");
+        
+        // If direct parsing fails, try to find any array structure
+        const arrayMatch = jsonString.match(/\[([\s\S]*?)\]/);
+        if (arrayMatch) {
+          const cleanJson = arrayMatch[0];
+          topics = JSON.parse(cleanJson);
+        } else {
+          // If still failing, throw the error to be handled by outer catch
+          throw parseError;
+        }
+      }
       
       return {
         success: true,
@@ -348,8 +375,32 @@ Remember that:
                          content.match(/```\n([\s\S]*?)\n```/) || 
                          content.match(/{[\s\S]*?}/);
                          
-      const jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
-      cluster = JSON.parse(jsonString);
+      let jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
+      
+      // Additional sanitization for common JSON parsing issues
+      // Fix trailing commas in objects
+      jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+      // Fix any unquoted property names
+      jsonString = jsonString.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+      
+      try {
+        // First attempt to parse as is
+        cluster = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.log("First JSON parse attempt failed, trying alternative approach");
+        
+        // If direct parsing fails, try a more aggressive approach
+        // Extract just the cluster structure without any additional text
+        const mainObjectMatch = jsonString.match(/{[\s\S]*}/);
+        if (mainObjectMatch) {
+          const cleanJson = mainObjectMatch[0];
+          cluster = JSON.parse(cleanJson);
+        } else {
+          // If still failing, create a basic structure to avoid complete failure
+          console.error("Could not extract valid JSON, creating fallback structure");
+          throw new Error("Failed to parse Claude response into valid JSON");
+        }
+      }
     } catch (error: any) {
       console.error("Failed to parse JSON from Claude response", error);
       return {
