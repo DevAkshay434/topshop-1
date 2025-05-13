@@ -4,6 +4,52 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Define types for the content generation
+interface ContentGenerationOptions {
+  toneOfVoice?: string;
+  introStyle?: string;
+  writingPerspective?: string;
+  buyerProfile?: string;
+  copywriter?: string;
+  numH2s?: number;
+  faqStyle?: string;
+  style?: string;
+  gender?: string;
+  articleLength?: string;
+  enableTables?: boolean;
+  enableLists?: boolean;
+  enableCitations?: boolean;
+}
+
+interface ContentGenerationRequest {
+  topic: string;
+  keywords?: string[];
+  products?: any[];
+  options?: ContentGenerationOptions;
+}
+
+interface GeneratedArticle {
+  title: string;
+  metaDescription: string;
+  content: string;
+  tags: string[];
+}
+
+interface ClusterResult {
+  success: boolean;
+  cluster?: {
+    mainTopic: string;
+    subtopics: GeneratedArticle[];
+  };
+  message?: string;
+}
+
+interface SinglePostResult {
+  success: boolean;
+  article?: GeneratedArticle;
+  message?: string;
+}
+
 // Initialize Anthropic client
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -173,7 +219,7 @@ Output in valid JSON format:
 /**
  * Generate cluster content using Claude AI
  */
-export async function generateClusterContent(request: any) {
+export async function generateClusterContent(request: ContentGenerationRequest): Promise<ClusterResult> {
   try {
     // Fill in template values
     const prompt = CLUSTER_PROMPT_TEMPLATE
@@ -203,7 +249,13 @@ export async function generateClusterContent(request: any) {
     });
 
     // Extract and parse the JSON content
-    const content = response.content[0].text;
+    const contentBlock = response.content[0];
+    if (contentBlock.type !== 'text') {
+      throw new Error('Unexpected response format from Claude API');
+    }
+    
+    // Explicitly cast to string since we've verified it's a text block
+    const content = contentBlock.text as string;
     console.log('Raw Claude cluster response (first 200 chars):', content.substring(0, 200));
     
     // Try to find and extract JSON from the response
@@ -223,7 +275,7 @@ export async function generateClusterContent(request: any) {
     
     try {
       // Try to parse the JSON
-      const articles = JSON.parse(jsonContent);
+      const articles = JSON.parse(jsonContent) as GeneratedArticle[];
       
       // Return the result
       return {
@@ -247,7 +299,7 @@ export async function generateClusterContent(request: any) {
           .replace(/,\s*}/g, '}')           // Remove trailing commas
           .replace(/,\s*]/g, ']');          // Remove trailing commas in arrays
           
-        const articles = JSON.parse(fixedJson);
+        const articles = JSON.parse(fixedJson) as GeneratedArticle[];
         return {
           success: true,
           cluster: {
@@ -266,7 +318,7 @@ export async function generateClusterContent(request: any) {
         
         if (articleMatches.length > 1) {
           // Create minimal article objects
-          const manuallyExtractedArticles = articleMatches.slice(1).map((article, index) => {
+          const manuallyExtractedArticles = articleMatches.slice(1).map((article: string, index: number) => {
             // Try to extract title
             const titleMatch = article.match(/(?:Title|#)[:\s]*([^\n]+)/i);
             const title = titleMatch ? titleMatch[1].trim() : `Article ${index + 1}`;
@@ -275,11 +327,11 @@ export async function generateClusterContent(request: any) {
             const contentSample = article.replace(/(?:Title|Meta|Tags)[:\s]*[^\n]+/gi, '').trim();
             
             return {
-              id: `manual-extract-${Date.now()}-${index}`,
               title: title,
               content: contentSample.substring(0, 5000), // Limit content length
               tags: [`topic-${index + 1}`, request.topic],
-            };
+              metaDescription: `Article about ${title} - part of ${request.topic} content cluster.`
+            } as GeneratedArticle;
           });
           
           console.log(`Manually extracted ${manuallyExtractedArticles.length} articles`);
@@ -297,11 +349,12 @@ export async function generateClusterContent(request: any) {
         throw new Error('Failed to parse content from Claude API. Response format not recognized.');
       }
     }
-  } catch (error) {
-    console.error('Error generating cluster content with Claude:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error generating cluster content with Claude:', errorMessage);
     return {
       success: false,
-      message: error.message || 'Failed to generate content with Claude AI'
+      message: errorMessage || 'Failed to generate content with Claude AI'
     };
   }
 }
@@ -309,7 +362,7 @@ export async function generateClusterContent(request: any) {
 /**
  * Generate single post content using Claude AI
  */
-export async function generateSinglePostContent(request: any) {
+export async function generateSinglePostContent(request: ContentGenerationRequest): Promise<SinglePostResult> {
   try {
     // Fill in template values
     const prompt = SINGLE_POST_PROMPT_TEMPLATE
@@ -339,7 +392,13 @@ export async function generateSinglePostContent(request: any) {
     });
 
     // Extract and parse the JSON content
-    const content = response.content[0].text;
+    const contentBlock = response.content[0];
+    if (contentBlock.type !== 'text') {
+      throw new Error('Unexpected response format from Claude API');
+    }
+    
+    // Explicitly cast to string since we've verified it's a text block
+    const content = contentBlock.text as string;
     console.log('Raw Claude single post response (first 200 chars):', content.substring(0, 200));
     
     // Try to find and extract JSON from the response
@@ -359,7 +418,7 @@ export async function generateSinglePostContent(request: any) {
     
     try {
       // Try to parse the JSON
-      const article = JSON.parse(jsonContent);
+      const article = JSON.parse(jsonContent) as GeneratedArticle;
       
       // Return the result
       return {
@@ -380,7 +439,7 @@ export async function generateSinglePostContent(request: any) {
           .replace(/,\s*}/g, '}')           // Remove trailing commas
           .replace(/,\s*]/g, ']');          // Remove trailing commas in arrays
           
-        const article = JSON.parse(fixedJson);
+        const article = JSON.parse(fixedJson) as GeneratedArticle;
         return {
           success: true,
           article
@@ -402,11 +461,11 @@ export async function generateSinglePostContent(request: any) {
           .trim();
         
         // Create a minimal article object
-        const manualArticle = {
-          id: `manual-extract-${Date.now()}`,
+        const manualArticle: GeneratedArticle = {
           title: title,
           content: contentSample.substring(0, 20000), // Limit content length
           tags: [request.topic],
+          metaDescription: `Article about ${title} - generated using Claude AI.`
         };
         
         console.log('Manually extracted article data');
@@ -417,11 +476,12 @@ export async function generateSinglePostContent(request: any) {
         };
       }
     }
-  } catch (error) {
-    console.error('Error generating single post content with Claude:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error generating single post content with Claude:', errorMessage);
     return {
       success: false,
-      message: error.message || 'Failed to generate content with Claude AI'
+      message: errorMessage || 'Failed to generate content with Claude AI'
     };
   }
 }
