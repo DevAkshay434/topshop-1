@@ -27,8 +27,10 @@ interface PexelsImage {
   isProductImage?: boolean;
   productId?: string;
   source?: 'pexels' | 'pixabay' | 'product';
-  isFeatured?: boolean; 
+  isFeatured?: boolean;
   isContentImage?: boolean;
+  large_url?: string;
+  original_url?: string;
 }
 
 interface SearchHistory {
@@ -212,15 +214,25 @@ export default function ImageSearchDialog({
   
   // Toggle image selection
   const toggleImageSelection = (imageId: string) => {
+    console.log("Toggle selection called for image ID:", imageId);
+    console.log("Current searchedImages length:", searchedImages.length);
+    console.log("Current selectedImages:", selectedImages.map(img => img.id).join(', '));
+    
     // Get the current selection state
     const currentImage = searchedImages.find(img => img.id === imageId);
     if (!currentImage) {
-      console.error("Could not find image with ID:", imageId);
+      console.error("Could not find image with ID:", imageId, "in searchedImages.");
+      // Try to find in history
+      const inHistory = imageSearchHistory.some(history => 
+        history.images.some(img => img.id === imageId)
+      );
+      console.log("Image found in history:", inHistory);
       return;
     }
     
     const newSelectedState = !(currentImage.selected || false);
     console.log(`Toggling image ${imageId} to selected=${newSelectedState}`);
+    console.log("Current image details:", currentImage);
     
     // Update in current search results
     setSearchedImages(prev => 
