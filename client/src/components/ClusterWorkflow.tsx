@@ -33,6 +33,17 @@ import { cn } from '@/lib/utils';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   Select,
   SelectContent,
@@ -119,6 +130,14 @@ export default function ClusterWorkflow({
   isDemo = false,
 }: ClusterWorkflowProps) {
   const { toast } = useToast();
+  const { storeInfo } = useStore();
+  
+  // Query for store information as backup if context doesn't have it
+  const { data: storeInfoData } = useQuery<{ shopInfo: { timezone?: string, name?: string } }>({
+    queryKey: ["/api/shopify/store-info"],
+    enabled: !storeInfo, // Only run query if storeInfo is not available in context
+  });
+  
   // Query for blogs instead of using store context
   const { data: blogsData } = useQuery<{ blogs: { id: string, title: string }[] }>({
     queryKey: ["/api/shopify/blogs"],
