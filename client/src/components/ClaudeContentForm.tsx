@@ -94,7 +94,7 @@ export default function ClaudeContentForm({ onContentGenerated, products = [], k
       // Choose endpoint based on mode
       const endpoint = values.mode === 'cluster' 
         ? '/api/claude-content/cluster' 
-        : '/api/claude-content/single-post';
+        : '/api/claude-content/single';
       
       // Make API request to generate content
       const response = await apiRequest(endpoint, {

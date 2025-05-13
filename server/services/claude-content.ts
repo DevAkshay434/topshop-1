@@ -117,7 +117,7 @@ Remember, high-quality content:
     });
 
     // Extract JSON content from response
-    const content = response.content[0].text;
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
     let article;
     
     try {
@@ -128,11 +128,11 @@ Remember, high-quality content:
                          
       const jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
       article = JSON.parse(jsonString);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to parse JSON from Claude response", error);
       return {
         success: false, 
-        message: "Failed to parse the generated content"
+        message: error?.message || "Failed to parse the generated content"
       };
     }
 
@@ -140,11 +140,11 @@ Remember, high-quality content:
       success: true,
       article
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating content with Claude:", error);
     return {
       success: false,
-      message: error.message || "Failed to generate content with Claude AI"
+      message: error?.message || "Failed to generate content with Claude AI"
     };
   }
 }
@@ -245,7 +245,7 @@ Remember that:
     });
 
     // Extract JSON content from response
-    const content = response.content[0].text;
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
     let cluster;
     
     try {
@@ -256,11 +256,11 @@ Remember that:
                          
       const jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
       cluster = JSON.parse(jsonString);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to parse JSON from Claude response", error);
       return {
         success: false, 
-        message: "Failed to parse the generated content cluster"
+        message: error?.message || "Failed to parse the generated content cluster"
       };
     }
 
