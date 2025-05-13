@@ -62,7 +62,7 @@ function Router() {
         <Switch>
           {/* If we're at root with embedded params, show EmbeddedApp */}
           <Route path="/">
-            {isEmbedded ? <EmbeddedApp /> : <Dashboard />}
+            {isEmbedded ? <EmbeddedApp /> : <OpenAIWorkflow />}
           </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
@@ -72,7 +72,7 @@ function Router() {
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/billing-callback" component={Dashboard} />
           <Route path="/embedded" component={EmbeddedApp} />
-          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/dashboard" component={OpenAIWorkflow} />
           <Route path="/install" component={AppInstall} />
           <Route path="/partner-install" component={PartnerInstall} />
           <Route path="/shopify/callback" component={Dashboard} />
