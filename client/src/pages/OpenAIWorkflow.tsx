@@ -1681,12 +1681,13 @@ export default function OpenAIWorkflow() {
                         <SelectValue placeholder="Choose writing perspective" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="first-person">First Person (I, We)</SelectItem>
+                        <SelectItem value="second-person">Second Person (You, Your)</SelectItem>
+                        <SelectItem value="third-person">Third Person (They, It)</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Select the gender perspective for your content writer
+                      Select the perspective from which your content will be written
                     </p>
                   </div>
                   
