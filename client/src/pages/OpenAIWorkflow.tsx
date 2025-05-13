@@ -1642,17 +1642,17 @@ export default function OpenAIWorkflow() {
                       value={writingPerspective} 
                       onValueChange={setWritingPerspective}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choose writing perspective" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="we">We</SelectItem>
-                        <SelectItem value="i">I</SelectItem>
-                        <SelectItem value="you">You</SelectItem>
-                        <SelectItem value="they">They</SelectItem>
-                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select the gender perspective for your content writer
+                    </p>
                   </div>
                   
                   <div className="space-y-2">
@@ -1661,20 +1661,65 @@ export default function OpenAIWorkflow() {
                       value={toneOfVoice} 
                       onValueChange={setToneOfVoice}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choose tone of voice" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="friendly">Friendly (Default)</SelectItem>
-                        <SelectItem value="neutral">Neutral</SelectItem>
-                        <SelectItem value="professional">Professional</SelectItem>
-                        <SelectItem value="empathic">Empathic</SelectItem>
-                        <SelectItem value="casual">Casual</SelectItem>
-                        <SelectItem value="excited">Excited</SelectItem>
-                        <SelectItem value="formal">Formal</SelectItem>
-                        <SelectItem value="humorous">Humorous</SelectItem>
+                        <SelectItem value="direct-punchy">Direct, Punchy</SelectItem>
+                        <SelectItem value="serious-persuasive">Serious, Persuasive</SelectItem>
+                        <SelectItem value="engaging-persuasive">Engaging, Persuasive</SelectItem>
+                        <SelectItem value="punchy-direct">Punchy, Direct</SelectItem>
+                        <SelectItem value="refined-persuasive">Refined, Persuasive</SelectItem>
+                        <SelectItem value="professional-data-driven">Professional, Data-Driven</SelectItem>
+                        <SelectItem value="results-driven-persuasive">Results-Driven, Persuasive</SelectItem>
+                        <SelectItem value="optimized-direct">Optimized, Direct</SelectItem>
+                        <SelectItem value="conversion-focused-persuasive">Conversion-Focused, Persuasive</SelectItem>
+                        <SelectItem value="engaging-conversion-focused">Engaging, Conversion-Focused</SelectItem>
+                        <SelectItem value="engaging-digital">Engaging, Digital</SelectItem>
+                        <SelectItem value="scientific-analytical">Scientific, Analytical</SelectItem>
+                        <SelectItem value="in-depth-intellectual">In-depth, Intellectual</SelectItem>
+                        <SelectItem value="data-driven-technical">Data-Driven, Technical</SelectItem>
+                        <SelectItem value="creative-persuasive">Creative, Persuasive</SelectItem>
+                        <SelectItem value="optimized-high-conversion">Optimized, High-Conversion</SelectItem>
+                        <SelectItem value="ethical-storytelling">Ethical, Storytelling</SelectItem>
+                        <SelectItem value="authentic-heart-centered">Authentic, Heart-Centered</SelectItem>
+                        <SelectItem value="heartfelt-authentic">Heartfelt, Authentic</SelectItem>
+                        <SelectItem value="persuasive-long-form">Persuasive, Long-Form</SelectItem>
+                        <SelectItem value="data-driven-conversion-oriented">Data-Driven, Conversion-Oriented</SelectItem>
+                        <SelectItem value="seo-focused-technical">SEO-Focused, Technical</SelectItem>
+                        <SelectItem value="creative-engaging">Creative, Engaging</SelectItem>
+                        <SelectItem value="high-converting-authentic">High-Converting, Authentic</SelectItem>
+                        <SelectItem value="engaging-customer-centered">Engaging, Customer-Centered</SelectItem>
+                        <SelectItem value="heart-centered-persuasive">Heart-Centered, Persuasive</SelectItem>
+                        <SelectItem value="authentic-storytelling">Authentic, Storytelling</SelectItem>
+                        <SelectItem value="ethical-nurturing">Ethical, Nurturing</SelectItem>
+                        <SelectItem value="heartfelt-persuasive">Heartfelt, Persuasive</SelectItem>
+                        <SelectItem value="innovative-persuasive">Innovative, Persuasive</SelectItem>
+                        <SelectItem value="iconic-persuasive">Iconic, Persuasive</SelectItem>
+                        <SelectItem value="authentic-relationship-building">Authentic, Relationship-Building</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Content Style</Label>
+                    <Select 
+                      value={contentStyle || "direct-response"} 
+                      onValueChange={setContentStyle}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose the style of content" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="direct-response">Direct-Response</SelectItem>
+                        <SelectItem value="digital-modern">Digital & Modern-Day</SelectItem>
+                        <SelectItem value="scientific-data">Scientific & Data-Driven</SelectItem>
+                        <SelectItem value="brand-ethical">Brand & Ethical Storytelling</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Choose the overall style for your content
+                    </p>
                   </div>
                   
                   <div className="space-y-2">
@@ -1683,13 +1728,13 @@ export default function OpenAIWorkflow() {
                       value={introStyle} 
                       onValueChange={setIntroStyle}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choose introduction style" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="search-intent-focused">Search Intent Focused (Default)</SelectItem>
-                        <SelectItem value="standard">Standard Introduction</SelectItem>
-                        <SelectItem value="none">No Introduction</SelectItem>
+                        <SelectItem value="search-intent-focused">Search Intent Focused</SelectItem>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
