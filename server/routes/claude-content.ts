@@ -32,11 +32,12 @@ router.post('/cluster', async (req: Request, res: Response) => {
     const result = await generateClusterContent(request);
     
     return res.json(result);
-  } catch (error) {
-    console.error('Error in cluster content generation route:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in cluster content generation route:', errorMessage);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Failed to generate cluster content'
+      message: errorMessage || 'Failed to generate cluster content'
     });
   }
 });
@@ -69,11 +70,12 @@ router.post('/single-post', async (req: Request, res: Response) => {
     const result = await generateSinglePostContent(request);
     
     return res.json(result);
-  } catch (error) {
-    console.error('Error in single post generation route:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error in single post generation route:', errorMessage);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Failed to generate single post content'
+      message: errorMessage || 'Failed to generate single post content'
     });
   }
 });
@@ -99,11 +101,12 @@ router.get('/test', async (req: Request, res: Response) => {
       success: true,
       message: 'Claude API connection successful'
     });
-  } catch (error) {
-    console.error('Error testing Claude API connection:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error testing Claude API connection:', errorMessage);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Failed to connect to Claude API'
+      message: errorMessage || 'Failed to connect to Claude API'
     });
   }
 });
