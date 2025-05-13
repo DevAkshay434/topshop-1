@@ -913,13 +913,35 @@ export default function ImageSearchDialog({
                         <div className="aspect-[4/3] bg-slate-100">
                           {image.url || image.src?.medium ? (
                             <img 
-                              src={image.url || image.src?.medium || image.large_url || image.original_url} 
+                              src={
+                                // Try to use the most reliable image URL format in cascading priority
+                                image.src?.medium ? image.src.medium :
+                                image.url ? image.url :
+                                image.large_url ? image.large_url :
+                                image.original_url ? image.original_url :
+                                image.src?.small ? image.src.small :
+                                image.src?.thumbnail ? image.src.thumbnail :
+                                image.source === 'pexels' && image.id ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` :
+                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E"
+                              } 
                               alt={image.alt || 'Image'} 
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={(e) => {
-                                console.error('Selected image failed to load:', image);
-                                e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                console.log('Selected image failed to load, trying fallbacks:', image.id);
+                                // If image fails to load, try alternate URLs before showing placeholder
+                                if (image.src?.small && e.currentTarget.src !== image.src.small) {
+                                  e.currentTarget.src = image.src.small;
+                                } else if (image.url && e.currentTarget.src !== image.url && e.currentTarget.src.indexOf(image.url) === -1) {
+                                  e.currentTarget.src = image.url;
+                                } else if (image.src?.thumbnail && e.currentTarget.src !== image.src.thumbnail) {
+                                  e.currentTarget.src = image.src.thumbnail;
+                                } else if (image.source === 'pexels' && image.id) {
+                                  // Try a direct Pexels URL as last resort
+                                  e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
+                                } else {
+                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                }
                               }}
                             />
                           ) : (
@@ -945,45 +967,66 @@ export default function ImageSearchDialog({
                           </div>
                         )}
                         
-                        {/* Action buttons */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-1 flex justify-between gap-1">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="h-7 text-xs flex-1"
-                            onClick={() => toggleImageSelection(image.id)}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                            Remove
-                          </Button>
-                          
-                          <Button
-                            variant={featuredImageId === image.id ? "default" : "secondary"}
-                            size="sm"
-                            className={`h-7 text-xs flex-1 ${featuredImageId === image.id ? 'bg-yellow-500 hover:bg-yellow-600' : ''}`}
-                            onClick={() => setAsFeaturedImage(image.id)}
-                            disabled={featuredImageId === image.id}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            {featuredImageId === image.id ? "Featured" : "Set as Featured"}
-                          </Button>
-                          
-                          <Button
-                            variant={contentImageIds.includes(image.id) && featuredImageId !== image.id ? "default" : "secondary"}
-                            size="sm"
-                            className={`h-7 text-xs flex-1 ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
-                            onClick={() => toggleContentImage(image.id)}
-                            disabled={featuredImageId === image.id}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                            </svg>
-                            {contentImageIds.includes(image.id) ? "Content" : "Set as Content"}
-                          </Button>
+                        {/* Hover action buttons */}
+                        <div 
+                          className="absolute inset-0 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200 bg-black/75" 
+                        >
+                          <div className="flex flex-col gap-2 w-4/5">
+                            <Button
+                              variant={featuredImageId === image.id ? "default" : "secondary"}
+                              size="sm"
+                              className={`h-8 text-xs ${featuredImageId === image.id ? 'bg-yellow-500 hover:bg-yellow-600 border border-yellow-400' : 'border border-yellow-400'}`}
+                              onClick={() => setAsFeaturedImage(image.id)}
+                              disabled={featuredImageId === image.id}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              {featuredImageId === image.id ? "Featured Image" : "Set as Featured"}
+                            </Button>
+                            
+                            <Button
+                              variant={contentImageIds.includes(image.id) && featuredImageId !== image.id ? "default" : "secondary"}
+                              size="sm"
+                              className={`h-8 text-xs ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'bg-blue-500 hover:bg-blue-600 border border-blue-400' : 'border border-blue-400'}`}
+                              onClick={() => toggleContentImage(image.id)}
+                              disabled={featuredImageId === image.id}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                              </svg>
+                              {contentImageIds.includes(image.id) ? "Content Image" : "Set as Content"}
+                            </Button>
+                            
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="h-8 text-xs border border-red-500"
+                              onClick={() => toggleImageSelection(image.id)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                              Remove Image
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Fixed bottom label */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent backdrop-blur-sm p-1">
+                          {featuredImageId === image.id ? (
+                            <span className="text-white text-xs px-2 py-1 bg-yellow-500/90 rounded-sm font-medium">
+                              Featured Image
+                            </span>
+                          ) : contentImageIds.includes(image.id) ? (
+                            <span className="text-white text-xs px-2 py-1 bg-blue-500/90 rounded-sm font-medium">
+                              Content Image
+                            </span>
+                          ) : (
+                            <span className="text-white text-xs px-2 py-1 font-medium">
+                              Selected Image
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1009,22 +1052,53 @@ export default function ImageSearchDialog({
           </Tabs>
         </div>
         
-        <DialogFooter>
-          <div className="flex gap-2 ml-auto">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="button"
-              onClick={confirmImageSelection}
-              disabled={selectedImages.length === 0}
-            >
-              Use {selectedImages.length} Selected Image{selectedImages.length !== 1 ? 's' : ''}
-            </Button>
+        <DialogFooter className="border-t p-4">
+          <div className="w-full flex justify-between items-center gap-3">
+            <div className="flex items-center space-x-2">
+              {featuredImageId && (
+                <div className="flex items-center bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Featured image selected
+                </div>
+              )}
+              {contentImageIds.length > 0 && (
+                <div className="flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {contentImageIds.length} content image{contentImageIds.length !== 1 ? 's' : ''} selected
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button"
+                onClick={confirmImageSelection}
+                disabled={selectedImages.length === 0}
+                className={selectedImages.length > 0 ? "bg-green-600 hover:bg-green-700" : ""}
+              >
+                {selectedImages.length === 0 ? (
+                  "Select Images"
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Confirm Selection ({selectedImages.length})
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </DialogFooter>
       </DialogContent>
