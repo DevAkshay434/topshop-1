@@ -339,6 +339,7 @@ export default function ClusterWorkflow({
             content: article.content,
             tags: [mainTopic, ...(article.keywords?.slice(0, 3) || [])],
             status: 'draft' as const,
+            images: [], // Initialize with empty images array that can be filled later
           }));
           
           setEditedArticles(articles);
@@ -374,7 +375,8 @@ export default function ClusterWorkflow({
           <h2>Conclusion</h2>
           <p>Investing in a high-quality ${mainTopic} provides lasting benefits for your home and family.</p>`,
           tags: [mainTopic, ...selectedKeywords.slice(0, 3).map(k => k.keyword)],
-          status: 'draft' as const
+          status: 'draft' as const,
+          images: [] // Initialize with empty images array that can be filled later
         }));
         
         setEditedArticles(mockCluster);
