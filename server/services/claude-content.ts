@@ -1,510 +1,314 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { Request, Response } from 'express';
 import dotenv from 'dotenv';
+import Anthropic from '@anthropic-ai/sdk';
 
 dotenv.config();
 
-// Define types for the content generation
-interface ContentGenerationOptions {
+// Initialize the Anthropic client with API key
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+const DEFAULT_MODEL = 'claude-3-7-sonnet-20250219';
+
+export interface ContentGenerationOptions {
   toneOfVoice?: string;
-  introStyle?: string;
   writingPerspective?: string;
+  introStyle?: string;
   buyerProfile?: string;
   copywriter?: string;
-  numH2s?: number;
-  faqStyle?: string;
   style?: string;
   gender?: string;
+  faqStyle?: string;
   articleLength?: string;
+  numH2s?: number;
   enableTables?: boolean;
   enableLists?: boolean;
   enableCitations?: boolean;
 }
 
-interface ContentGenerationRequest {
-  topic: string;
-  keywords?: string[];
-  products?: any[];
-  options?: ContentGenerationOptions;
-}
-
-interface GeneratedArticle {
-  title: string;
-  metaDescription: string;
-  content: string;
-  tags: string[];
-}
-
-interface ClusterResult {
+export interface ClaudeContentResponse {
   success: boolean;
-  cluster?: {
-    mainTopic: string;
-    subtopics: GeneratedArticle[];
-  };
   message?: string;
+  article?: any;
+  cluster?: any;
 }
 
-interface SinglePostResult {
-  success: boolean;
-  article?: GeneratedArticle;
-  message?: string;
-}
+/**
+ * Generate a single blog post with Claude AI
+ */
+export async function generateSinglePost(
+  topic: string,
+  keywords: string[] = [],
+  products: any[] = [],
+  options: ContentGenerationOptions = {}
+): Promise<ClaudeContentResponse> {
+  try {
+    // Validate the topic
+    if (!topic || topic.trim().length === 0) {
+      return {
+        success: false,
+        message: 'A topic is required to generate content'
+      };
+    }
 
-// Initialize Anthropic client
-// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY as string
-});
+    // Build product information section
+    let productInfo = "";
+    if (products && products.length > 0) {
+      productInfo = "Information about the products mentioned in this post:\n\n";
+      
+      products.forEach((product, index) => {
+        productInfo += `Product ${index + 1}: ${product.title}\n`;
+        if (product.description) productInfo += `Description: ${product.description}\n`;
+        if (product.price) productInfo += `Price: ${product.price}\n`;
+        productInfo += "\n";
+      });
+    }
 
-// Template for cluster content generation
-const CLUSTER_PROMPT_TEMPLATE = `
-You are a top-tier SEO content strategist and AI writing assistant.
+    // Build keywords section
+    let keywordsText = "";
+    if (keywords && keywords.length > 0) {
+      keywordsText = "Keywords to incorporate into the content:\n";
+      keywordsText += keywords.join(", ");
+      keywordsText += "\n\n";
+    }
 
-Generate a full **content cluster** based on the topic: **{topic}** with a tone of voice: **{tone}** and introduction style: **{introStyle}**. Write from the **{writingPerspective}** point of view. The target audience is: **{buyerProfile}**. All content must reflect the writing style, tone, and structure of the selected copywriter: **{copywriter}**.
+    // Format options for the prompt
+    const optionsText = formatOptionsForPrompt(options);
 
----
+    // Construct the prompt
+    const prompt = `You are an expert SEO content writer creating a high-quality blog post for an online store. 
+Your goal is to create engaging, informative content that ranks well in search engines.
 
-Each cluster must include:
+# TOPIC
+${topic}
 
-### 🔷 STRUCTURE:
-1. **Main Pillar Article**:
-   - Acts as the central guide on the topic
-   - Must include broad coverage, with deep internal linking to sub-articles
-   - Include a Table of Contents and summary
+# CONTENT REQUIREMENTS
+${keywordsText}
+${optionsText}
+${productInfo}
 
-2. **5-7 Sub-Topic Articles (Cluster Articles)**:
-   - Each article must focus on one aspect or question related to the main topic
-   - Follow SEO blog structure (title, intro, H2s, H3s, conclusion)
-   - Interlink articles within the cluster (use anchor text naturally)
-   - All articles must include an SEO-optimized meta description (155–160 characters with primary keywords)
-
----
-
-### 🔷 FORMATTING & CONTENT RULES:
-- Use proper HTML tags: \`<h2>\`, \`<h3>\`, \`<p>\`, \`<ul>\`, \`<li>\`, \`<table>\`, \`<strong>\`, etc.
-- Each article should contain **{numberOfH2Headings} H2 sections**.
-- Add **lists, bullet points**, and **tables** where relevant to improve readability.
-- Use **bold formatting** with \`<strong>\` for key phrases and intro sentences.
-- Include **citations** only from trusted sources: **.gov, .edu, Wikipedia** (no commercial links).
-- Use a \`<iframe>\` embed for **one relevant YouTube video** per article.
-- Insert placeholders for a **featured image** and **content images**.
-  - **Content images must be linked** to the selected product (image link anchor: "View Product")
-  - Position featured image at the top; inline images should match paragraph context.
-- Include an **FAQ section** at the end of each article using a {faqStyle} format.
-- Add a clear **conclusion** with a call-to-action (CTA) tailored to the audience's intent.
-- Incorporate **author info** in the footer using:
-  - Author: **{copywriter}** (Copywriter profile style: {style}, Tone: {tone}, Gender: {gender})
-  - Writing perspective: **{writingPerspective}**
-
----
-
-### 🔷 ARTICLE LENGTH:
-- Pillar article: **{articleLengthPillar}**
-- Sub-topic articles: **{articleLengthCluster}**
-
----
-
-### 🔷 OUTPUT FORMAT:
-Return all cluster articles as a **list of objects** in valid JSON format:
-\`\`\`json
-[
-  {
-    "title": "Title of Article",
-    "metaDescription": "SEO meta description",
-    "content": "<html-formatted content including TOC, H2s, lists, images, tables, FAQs, embedded video, author info, and CTA>",
-    "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
-  }
-]
-\`\`\`
-`;
-
-// Template for single post content generation
-const SINGLE_POST_PROMPT_TEMPLATE = `
-You are a professional SEO content writer trained in high-converting blog frameworks.
-
-Generate a well-structured, SEO-optimized blog post about **{topic}** in a **{tone}** tone, from a **{writingPerspective}** perspective, and following the writing style and tone of copywriter **{copywriter}** (Style: {style}, Gender: {gender}).
-
----
-
-### ✍️ ARTICLE STRUCTURE & FORMAT REQUIREMENTS:
-
-#### 1. **Title**
-- A compelling, keyword-optimized title for SEO and click-throughs.
-- Should contain the **main keyword(s)** and clearly reflect the content.
-
-#### 2. **Meta Description**
-- 155–160 characters
-- Must include at least two primary keywords
-- Persuasive and action-oriented
-
-#### 3. **Introduction**
-- First sentence bold using \`<strong>\` tags
-- Add \`<br>\` after each sentence in the intro paragraph
-- Intro must hook the reader and introduce the problem or benefit
-
-#### 4. **Body Sections**
-Structure with clear **H2 headings** (number: {numberOfH2Headings}) and **H3 subheadings**:
-- Use \`<h2>\` for each section
-- Use \`<h3>\` for sub-points within those sections
-- Write 2–4 paragraphs per section
-
-Include:
-- **Lists & Bullet Points** using \`<ul>\` and \`<li>\` tags when appropriate
-- **Tables** (if {includeTables} is true) for comparison or data
-- **Bold important phrases** throughout using \`<strong>\`
-- Interlink product images: "<a href='[productURL]'><img src='[image-placeholder]' alt='Product'></a>"
-
-#### 5. **Multimedia**
-- Insert placeholder for a **YouTube video iframe**: \`<iframe src="YOUTUBE_URL" ... ></iframe>\`
-- Use a **Featured Image** placeholder at the top of the article
-- Insert **Content Images** in relevant sections, linking them to product pages
-
-#### 6. **FAQs**
-- Add an FAQ section at the bottom with 3–5 questions
-- Use the style: **{faqStyle}**
-- Format each question with \`<h3>\` and answer in \`<p>\`
-
-#### 7. **Conclusion**
-- Summarize key takeaways
-- End with a **strong call to action** appropriate for the buyer intent
-
-#### 8. **Author Info Block**
-- Include author profile summary at the end:
-  - Name: {copywriter}
-  - Tone: {tone}
-  - Perspective: {writingPerspective}
-  - Style Category: {style}
-
----
-
-### ✅ TECHNICAL FORMATTING RULES:
-- Use only proper HTML tags: \`<h2>\`, \`<h3>\`, \`<p>\`, \`<ul>\`, \`<li>\`, \`<strong>\`, \`<table>\`, \`<iframe>\`, \`<img>\`
-- DO NOT use \`<h1>\` (reserved for blog title)
-- DO NOT link to competitor sites or use external images
-- DO NOT include any external links except to \`.gov\`, \`.edu\`, or \`wikipedia.org\` for citations
-- DO NOT hardcode image URLs – use placeholders instead
-
----
-
-### 📦 Additional Context:
-- **Target Buyer Profile**: {buyerProfile}
-- **Include Tables**: {includeTables}
-- **Include Lists & Bullets**: {includeLists}
-- **Include H1**: false
-- **Use Bold Formatting**: true
-- **Include Citations**: {includeCitations}
-- **Featured Image Placeholder**: Yes
-- **Content Images (interlinked to products)**: Yes
-
----
-
-### 📌 Tags:
-Provide 5–7 relevant, SEO-optimized **tags** based on:
-- Primary keyword intent
-- Subtopics
-- Product use cases
-- Audience pain points
-
-Output in valid JSON format:
-\`\`\`json
+# OUTPUT FORMAT
+Please provide the blog post in the following JSON format:
 {
-  "title": "SEO optimized title",
-  "metaDescription": "155-160 character meta description with keywords",
-  "content": "Full HTML content with proper tags",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  "title": "Compelling SEO-optimized title",
+  "content": "The full HTML content of the blog post",
+  "meta_description": "A compelling meta description under 160 characters",
+  "estimated_reading_time": "Estimated reading time in minutes",
+  "suggested_tags": ["tag1", "tag2", "tag3"]
 }
-\`\`\`
+
+Remember, high-quality content:
+1. Has an engaging introduction that hooks the reader
+2. Contains well-structured sections with clear H2 and H3 headings
+3. Includes useful information and actionable advice
+4. Naturally incorporates keywords without keyword stuffing
+5. Has a clear call-to-action in the conclusion
+6. Uses proper HTML formatting for headings, paragraphs, lists, etc.`;
+
+    // Generate content with Claude
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL,
+      max_tokens: 4000,
+      system: "You are an expert SEO content writer helping to create high-quality blog posts for online stores. Your content is detailed, engaging, and optimized for search engines.",
+      messages: [
+        { role: "user", content: prompt }
+      ],
+    });
+
+    // Extract JSON content from response
+    const content = response.content[0].text;
+    let article;
+    
+    try {
+      // Find JSON in the response (sometimes Claude wraps it in code blocks)
+      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || 
+                         content.match(/```\n([\s\S]*?)\n```/) || 
+                         content.match(/{[\s\S]*?}/);
+                         
+      const jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
+      article = JSON.parse(jsonString);
+    } catch (error) {
+      console.error("Failed to parse JSON from Claude response", error);
+      return {
+        success: false, 
+        message: "Failed to parse the generated content"
+      };
+    }
+
+    return {
+      success: true,
+      article
+    };
+  } catch (error) {
+    console.error("Error generating content with Claude:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to generate content with Claude AI"
+    };
+  }
+}
+
+/**
+ * Generate a content cluster with Claude AI
+ */
+export async function generateContentCluster(
+  topic: string,
+  keywords: string[] = [],
+  products: any[] = [],
+  options: ContentGenerationOptions = {}
+): Promise<ClaudeContentResponse> {
+  try {
+    // Validate the topic
+    if (!topic || topic.trim().length === 0) {
+      return {
+        success: false,
+        message: 'A topic is required to generate content cluster'
+      };
+    }
+
+    // Build product information section
+    let productInfo = "";
+    if (products && products.length > 0) {
+      productInfo = "Information about the products related to this topic cluster:\n\n";
+      
+      products.forEach((product, index) => {
+        productInfo += `Product ${index + 1}: ${product.title}\n`;
+        if (product.description) productInfo += `Description: ${product.description}\n`;
+        if (product.price) productInfo += `Price: ${product.price}\n`;
+        productInfo += "\n";
+      });
+    }
+
+    // Build keywords section
+    let keywordsText = "";
+    if (keywords && keywords.length > 0) {
+      keywordsText = "Keywords to incorporate into the cluster content:\n";
+      keywordsText += keywords.join(", ");
+      keywordsText += "\n\n";
+    }
+
+    // Format options for the prompt
+    const optionsText = formatOptionsForPrompt(options);
+
+    // Calculate number of subtopics based on the topic complexity
+    const numSubtopics = Math.min(Math.max(3, Math.floor(topic.length / 10)), 7);
+
+    // Construct the prompt
+    const prompt = `You are an expert SEO content strategist creating a topic cluster for an online store.
+
+# MAIN TOPIC
+${topic}
+
+# CONTENT REQUIREMENTS
+${keywordsText}
+${optionsText}
+${productInfo}
+
+Create a topic cluster with a pillar article and ${numSubtopics} subtopic articles. The pillar article should provide a comprehensive overview of the main topic, while each subtopic article should dive deeper into a specific aspect.
+
+# OUTPUT FORMAT
+Please provide the content cluster in the following JSON format:
+{
+  "pillar": {
+    "title": "SEO-optimized title for the pillar article",
+    "meta_description": "Compelling meta description under 160 characters",
+    "content": "Full HTML content of the pillar article",
+    "suggested_tags": ["tag1", "tag2", "tag3"]
+  },
+  "subtopics": [
+    {
+      "title": "SEO-optimized title for subtopic 1",
+      "meta_description": "Compelling meta description for subtopic 1",
+      "content": "Full HTML content of subtopic 1 article",
+      "suggested_tags": ["tag1", "tag2", "tag3"]
+    },
+    // Repeat for each subtopic
+  ]
+}
+
+Remember that:
+1. Each article should have an engaging introduction
+2. Use proper HTML formatting with h2 and h3 tags for structure
+3. Include internal linking between the pillar and subtopic articles
+4. Naturally incorporate keywords without keyword stuffing
+5. Each article should have a clear call-to-action`;
+
+    // Generate content with Claude
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL,
+      max_tokens: 12000,
+      system: "You are an expert SEO content strategist helping to create comprehensive topic clusters for online stores. Your content is detailed, engaging, and optimized for search engines.",
+      messages: [
+        { role: "user", content: prompt }
+      ],
+    });
+
+    // Extract JSON content from response
+    const content = response.content[0].text;
+    let cluster;
+    
+    try {
+      // Find JSON in the response (sometimes Claude wraps it in code blocks)
+      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || 
+                         content.match(/```\n([\s\S]*?)\n```/) || 
+                         content.match(/{[\s\S]*?}/);
+                         
+      const jsonString = jsonMatch ? jsonMatch[0].replace(/```json\n|```\n|```/g, '') : content;
+      cluster = JSON.parse(jsonString);
+    } catch (error) {
+      console.error("Failed to parse JSON from Claude response", error);
+      return {
+        success: false, 
+        message: "Failed to parse the generated content cluster"
+      };
+    }
+
+    return {
+      success: true,
+      cluster
+    };
+  } catch (error) {
+    console.error("Error generating content cluster with Claude:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to generate content cluster with Claude AI"
+    };
+  }
+}
+
+/**
+ * Format the options for the prompt
+ */
+function formatOptionsForPrompt(options: ContentGenerationOptions): string {
+  const {
+    toneOfVoice = 'professional',
+    writingPerspective = 'third-person',
+    introStyle = 'problem-focused',
+    buyerProfile = 'general',
+    copywriter = 'Expert SEO Content Writer',
+    style = 'authoritative',
+    gender = 'neutral',
+    faqStyle = 'detailed',
+    articleLength = 'medium',
+    numH2s = 5,
+    enableTables = true,
+    enableLists = true,
+    enableCitations = true
+  } = options;
+
+  return `Style and formatting requirements:
+- Tone of voice: ${toneOfVoice}
+- Writing perspective: ${writingPerspective}
+- Introduction style: ${introStyle}
+- Target audience: ${buyerProfile}
+- Writing style: ${style}
+- Gender perspective: ${gender}
+- Article length: ${articleLength} (${articleLength === 'short' ? '800-1000 words' : articleLength === 'medium' ? '1200-1500 words' : '1800-2200 words'})
+- Include approximately ${numH2s} main sections with H2 headings
+${enableTables ? '- Include at least one comparison table where appropriate' : '- Do not include tables'}
+${enableLists ? '- Include bulleted or numbered lists where appropriate' : '- Do not include lists'}
+${enableCitations ? '- Include citations or references where appropriate' : '- Do not include citations'}
+${faqStyle !== 'none' ? `- Include a FAQ section with ${faqStyle === 'brief' ? '3-4 brief' : '5-7 detailed'} questions and answers` : '- Do not include a FAQ section'}
 `;
-
-/**
- * Generate cluster content using Claude AI
- */
-export async function generateClusterContent(request: ContentGenerationRequest): Promise<ClusterResult> {
-  try {
-    // Fill in template values
-    const prompt = CLUSTER_PROMPT_TEMPLATE
-      .replace('{topic}', request.topic || '')
-      .replace('{tone}', request.options?.toneOfVoice || 'professional')
-      .replace('{introStyle}', request.options?.introStyle || 'problem-focused')
-      .replace('{writingPerspective}', request.options?.writingPerspective || 'neutral')
-      .replace('{buyerProfile}', request.options?.buyerProfile || 'homeowners')
-      .replace('{copywriter}', request.options?.copywriter || 'Expert Content Writer')
-      .replace('{numberOfH2Headings}', request.options?.numH2s?.toString() || '5')
-      .replace('{faqStyle}', request.options?.faqStyle || 'detailed')
-      .replace('{style}', request.options?.style || 'authoritative')
-      .replace('{gender}', request.options?.gender || 'neutral')
-      .replace('{articleLengthPillar}', getArticleLengthDescription(request.options?.articleLength || 'medium', true))
-      .replace('{articleLengthCluster}', getArticleLengthDescription(request.options?.articleLength || 'medium', false));
-
-    // Make request to Claude
-    console.log('Calling Claude API for cluster content generation...');
-    const response = await anthropic.messages.create({
-      model: 'claude-3-7-sonnet-20250219',
-      max_tokens: 100000,
-      temperature: 0.7,
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      system: 'You are a professional SEO content writer specializing in e-commerce and product marketing. You create detailed, well-structured content with proper HTML formatting. Always respond with valid JSON that can be parsed directly.'
-    });
-
-    // Extract and parse the JSON content
-    const contentBlock = response.content[0];
-    if (contentBlock.type !== 'text') {
-      throw new Error('Unexpected response format from Claude API');
-    }
-    
-    // Explicitly cast to string since we've verified it's a text block
-    const content = contentBlock.text as string;
-    console.log('Raw Claude cluster response (first 200 chars):', content.substring(0, 200));
-    
-    // Try to find and extract JSON from the response
-    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
-    let jsonContent = '';
-    
-    if (jsonMatch && jsonMatch[1]) {
-      jsonContent = jsonMatch[1].trim();
-      console.log('Found JSON object pattern');
-    } else {
-      // If no JSON block found, try to use the whole response
-      jsonContent = content.trim();
-      console.log('No JSON block found, using full response');
-    }
-    
-    console.log('Cleaned Claude response for parsing (first 100 chars):', jsonContent.substring(0, 100));
-    
-    try {
-      // Try to parse the JSON
-      const articles = JSON.parse(jsonContent) as GeneratedArticle[];
-      
-      // Return the result
-      return {
-        success: true,
-        cluster: {
-          mainTopic: request.topic,
-          subtopics: articles
-        }
-      };
-    } catch (parseError) {
-      console.error('Failed to parse JSON from Claude:', parseError);
-      
-      // Attempt to fix common JSON syntax errors
-      console.log('Attempting to fix JSON syntax errors...');
-      
-      try {
-        // Replace any non-valid JSON quotes or syntax issues
-        const fixedJson = jsonContent
-          .replace(/([''])/g, '"')          // Replace single quotes with double quotes
-          .replace(/(\w+):/g, '"$1":')      // Add quotes to keys
-          .replace(/,\s*}/g, '}')           // Remove trailing commas
-          .replace(/,\s*]/g, ']');          // Remove trailing commas in arrays
-          
-        const articles = JSON.parse(fixedJson) as GeneratedArticle[];
-        return {
-          success: true,
-          cluster: {
-            mainTopic: request.topic,
-            subtopics: articles
-          }
-        };
-      } catch (fixError) {
-        console.error('Failed to fix JSON syntax:', fixError);
-        
-        // Manual extraction as fallback
-        console.log('Attempting manual extraction of topic data');
-        
-        // Attempt very basic extraction of articles by splitting on something that might separate them
-        const articleMatches = content.split(/(?:Article|Subtopic)\s+\d+:/i);
-        
-        if (articleMatches.length > 1) {
-          // Create minimal article objects
-          const manuallyExtractedArticles = articleMatches.slice(1).map((article: string, index: number) => {
-            // Try to extract title
-            const titleMatch = article.match(/(?:Title|#)[:\s]*([^\n]+)/i);
-            const title = titleMatch ? titleMatch[1].trim() : `Article ${index + 1}`;
-            
-            // Try to extract some content
-            const contentSample = article.replace(/(?:Title|Meta|Tags)[:\s]*[^\n]+/gi, '').trim();
-            
-            return {
-              title: title,
-              content: contentSample.substring(0, 5000), // Limit content length
-              tags: [`topic-${index + 1}`, request.topic],
-              metaDescription: `Article about ${title} - part of ${request.topic} content cluster.`
-            } as GeneratedArticle;
-          });
-          
-          console.log(`Manually extracted ${manuallyExtractedArticles.length} articles`);
-          
-          return {
-            success: true,
-            cluster: {
-              mainTopic: request.topic,
-              subtopics: manuallyExtractedArticles
-            }
-          };
-        }
-        
-        // If all extraction attempts fail
-        throw new Error('Failed to parse content from Claude API. Response format not recognized.');
-      }
-    }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('Error generating cluster content with Claude:', errorMessage);
-    return {
-      success: false,
-      message: errorMessage || 'Failed to generate content with Claude AI'
-    };
-  }
-}
-
-/**
- * Generate single post content using Claude AI
- */
-export async function generateSinglePostContent(request: ContentGenerationRequest): Promise<SinglePostResult> {
-  try {
-    // Fill in template values
-    const prompt = SINGLE_POST_PROMPT_TEMPLATE
-      .replace('{topic}', request.topic || '')
-      .replace('{tone}', request.options?.toneOfVoice || 'professional')
-      .replace('{writingPerspective}', request.options?.writingPerspective || 'neutral')
-      .replace('{copywriter}', request.options?.copywriter || 'Expert Content Writer')
-      .replace('{style}', request.options?.style || 'authoritative')
-      .replace('{gender}', request.options?.gender || 'neutral')
-      .replace('{numberOfH2Headings}', request.options?.numH2s?.toString() || '5')
-      .replace('{includeTables}', (request.options?.enableTables ? 'true' : 'false'))
-      .replace('{includeLists}', (request.options?.enableLists ? 'true' : 'false'))
-      .replace('{includeCitations}', (request.options?.enableCitations ? 'true' : 'false'))
-      .replace('{faqStyle}', request.options?.faqStyle || 'detailed')
-      .replace('{buyerProfile}', request.options?.buyerProfile || 'homeowners');
-
-    // Make request to Claude
-    console.log('Calling Claude API for single post content generation...');
-    const response = await anthropic.messages.create({
-      model: 'claude-3-7-sonnet-20250219',
-      max_tokens: 40000,
-      temperature: 0.7,
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      system: 'You are a professional SEO content writer specializing in e-commerce and product marketing. You create detailed, well-structured content with proper HTML formatting. Always respond with valid JSON that can be parsed directly.'
-    });
-
-    // Extract and parse the JSON content
-    const contentBlock = response.content[0];
-    if (contentBlock.type !== 'text') {
-      throw new Error('Unexpected response format from Claude API');
-    }
-    
-    // Explicitly cast to string since we've verified it's a text block
-    const content = contentBlock.text as string;
-    console.log('Raw Claude single post response (first 200 chars):', content.substring(0, 200));
-    
-    // Try to find and extract JSON from the response
-    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
-    let jsonContent = '';
-    
-    if (jsonMatch && jsonMatch[1]) {
-      jsonContent = jsonMatch[1].trim();
-      console.log('Found JSON object pattern');
-    } else {
-      // If no JSON block found, try to use the whole response
-      jsonContent = content.trim();
-      console.log('No JSON block found, using full response');
-    }
-    
-    console.log('Cleaned Claude response for parsing (first 100 chars):', jsonContent.substring(0, 100));
-    
-    try {
-      // Try to parse the JSON
-      const article = JSON.parse(jsonContent) as GeneratedArticle;
-      
-      // Return the result
-      return {
-        success: true,
-        article
-      };
-    } catch (parseError) {
-      console.error('Failed to parse JSON from Claude:', parseError);
-      
-      // Attempt to fix common JSON syntax errors
-      console.log('Attempting to fix JSON syntax errors...');
-      
-      try {
-        // Replace any non-valid JSON quotes or syntax issues
-        const fixedJson = jsonContent
-          .replace(/([''])/g, '"')          // Replace single quotes with double quotes
-          .replace(/(\w+):/g, '"$1":')      // Add quotes to keys
-          .replace(/,\s*}/g, '}')           // Remove trailing commas
-          .replace(/,\s*]/g, ']');          // Remove trailing commas in arrays
-          
-        const article = JSON.parse(fixedJson) as GeneratedArticle;
-        return {
-          success: true,
-          article
-        };
-      } catch (fixError) {
-        console.error('Failed to fix JSON syntax:', fixError);
-        
-        // Manual extraction as fallback
-        console.log('Attempting manual extraction of article data');
-        
-        // Try to extract title
-        const titleMatch = content.match(/(?:Title|#)[:\s]*([^\n]+)/i);
-        const title = titleMatch ? titleMatch[1].trim() : request.topic;
-        
-        // Try to extract content (everything that's not clearly metadata)
-        const contentSample = content
-          .replace(/(?:Title|Meta Description|Tags)[:\s]*[^\n]+/gi, '')
-          .replace(/```json[\s\S]*?```/g, '') // Remove JSON blocks
-          .trim();
-        
-        // Create a minimal article object
-        const manualArticle: GeneratedArticle = {
-          title: title,
-          content: contentSample.substring(0, 20000), // Limit content length
-          tags: [request.topic],
-          metaDescription: `Article about ${title} - generated using Claude AI.`
-        };
-        
-        console.log('Manually extracted article data');
-        
-        return {
-          success: true,
-          article: manualArticle
-        };
-      }
-    }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('Error generating single post content with Claude:', errorMessage);
-    return {
-      success: false,
-      message: errorMessage || 'Failed to generate content with Claude AI'
-    };
-  }
-}
-
-/**
- * Helper function to convert article length to word count description
- */
-function getArticleLengthDescription(length: string, isPillar: boolean): string {
-  if (isPillar) {
-    // Pillar articles are longer
-    switch (length) {
-      case 'short': return '1500-2000 words';
-      case 'medium': return '2500-3000 words';
-      case 'long': return '3500-4500 words';
-      default: return '2500-3000 words';
-    }
-  } else {
-    // Regular cluster articles
-    switch (length) {
-      case 'short': return '800-1000 words';
-      case 'medium': return '1200-1500 words';
-      case 'long': return '1800-2500 words';
-      default: return '1200-1500 words';
-    }
-  }
 }
