@@ -49,6 +49,14 @@ interface Article {
   publicationType?: 'draft' | 'published' | 'scheduled';
   scheduledDate?: string;
   scheduledTime?: string;
+  images?: Array<{
+    id: string;
+    url?: string;
+    alt?: string;
+    source?: string;
+    isFeatured?: boolean;
+    isContentImage?: boolean;
+  }>;
 }
 
 interface Product {
