@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/Layout';
 import ClusterWorkflow from '@/components/ClusterWorkflow';
-import ImageSearchDialog from '@/components/ImageSearchDialog';
+import FixedImageSearchDialog from '@/components/FixedImageSearchDialog';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
@@ -2100,7 +2100,7 @@ export default function OpenAIWorkflow() {
                   Browse Images
                 </Button>
                 
-                <ImageSearchDialog
+                <FixedImageSearchDialog
                   open={isImageDialogOpen}
                   onOpenChange={setIsImageDialogOpen}
                   onImagesSelected={handleImagesSelected}
