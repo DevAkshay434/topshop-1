@@ -22,6 +22,7 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
   const [topic, setTopic] = useState("");
   const [tone, setTone] = useState("Professional");
   const [length, setLength] = useState("Medium (500-800 words)");
+  const [model, setModel] = useState("claude"); // Default to Claude AI
   const [isGenerating, setIsGenerating] = useState(false);
   
   const generateContent = useCallback(async () => {
@@ -38,22 +39,23 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
     
     try {
       toast({
-        title: "Generating Content",
+        title: "Generating Content with Claude AI",
         description: "This might take a minute...",
       });
       
       const data = await apiRequest("POST", "/api/generate-content", {
         topic,
         tone,
-        length
+        length,
+        model
       });
       
       if (data.success) {
         toast({
-          title: "Content Generated",
+          title: "Claude AI Content Generated",
           description: data.fallbackUsed 
             ? "Blog content has been created using our fallback system" 
-            : "Blog content has been successfully created",
+            : "Blog content has been successfully created with Claude AI",
         });
         
         // Invalidate posts query to show new post
@@ -80,14 +82,19 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
     } finally {
       setIsGenerating(false);
     }
-  }, [topic, tone, length, toast, onContentGenerated]);
+  }, [topic, tone, length, model, toast, onContentGenerated]);
   
   return (
     <Card>
       <CardHeader className="border-b border-neutral-200">
-        <CardTitle>AI Content Generator</CardTitle>
+        <CardTitle className="flex items-center">
+          <span className="mr-2">Claude AI Content Generator</span>
+          <span className="bg-amber-100 text-amber-800 text-xs py-0.5 px-2 rounded-full">
+            Powered by Anthropic
+          </span>
+        </CardTitle>
         <CardDescription>
-          Quickly create blog posts with AI assistance
+          Create high-quality blog posts with Claude AI assistance
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
@@ -137,9 +144,10 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
               className="w-full" 
               onClick={generateContent}
               disabled={isGenerating}
+              variant="default"
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              {isGenerating ? "Generating..." : "Generate Content"}
+              {isGenerating ? "Generating with Claude AI..." : "Generate with Claude AI"}
             </Button>
           </div>
         </div>
