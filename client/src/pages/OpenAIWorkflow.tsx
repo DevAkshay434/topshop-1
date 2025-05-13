@@ -123,8 +123,9 @@ export default function OpenAIWorkflow() {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   
   // Styling & formatting options
-  const [writingPerspective, setWritingPerspective] = useState<string>("second-person");
-  const [toneOfVoice, setToneOfVoice] = useState<string>("friendly");
+  const [writingPerspective, setWritingPerspective] = useState<string>("male");
+  const [contentStyle, setContentStyle] = useState<string>("direct-response");
+  const [toneOfVoice, setToneOfVoice] = useState<string>("direct-punchy");
   const [introStyle, setIntroStyle] = useState<string>("search-intent-focused");
   const [faqStyle, setFaqStyle] = useState<string>("short");
   const [enableTables, setEnableTables] = useState<boolean>(true);
@@ -1745,15 +1746,19 @@ export default function OpenAIWorkflow() {
                       value={faqStyle} 
                       onValueChange={setFaqStyle}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choose FAQ style" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="short">Short FAQ (3-5 Questions)</SelectItem>
-                        <SelectItem value="long">Long FAQ (5-7 Questions)</SelectItem>
+                        <SelectItem value="medium">Medium FAQ (5-7 Questions)</SelectItem>
+                        <SelectItem value="long">Long FAQ (7-10 Questions)</SelectItem>
                         <SelectItem value="none">No FAQ</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Include FAQ section with specific number of questions
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1768,7 +1773,7 @@ export default function OpenAIWorkflow() {
                       value={numH2s.toString()} 
                       onValueChange={(val) => setNumH2s(parseInt(val))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choose number of headings" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1777,8 +1782,12 @@ export default function OpenAIWorkflow() {
                         <SelectItem value="5">5 Headings</SelectItem>
                         <SelectItem value="6">6 Headings</SelectItem>
                         <SelectItem value="7">7 Headings</SelectItem>
+                        <SelectItem value="8">8 Headings</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Choose how many H2 sections your article will have
+                    </p>
                   </div>
                   
                   <div className="space-y-2">
@@ -1787,14 +1796,19 @@ export default function OpenAIWorkflow() {
                       value={articleLength} 
                       onValueChange={setArticleLength}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choose article length" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="short">Short (~1000 words)</SelectItem>
                         <SelectItem value="medium">Medium (~1500 words)</SelectItem>
-                        <SelectItem value="long">Long (~2000+ words)</SelectItem>
+                        <SelectItem value="long">Long (~2000 words)</SelectItem>
+                        <SelectItem value="very-long">Very Long (~2500+ words)</SelectItem>
+                        <SelectItem value="variable">Variable (based on intent)</SelectItem>
                       </SelectContent>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Select the desired length for your content
+                      </p>
                     </Select>
                   </div>
                   
