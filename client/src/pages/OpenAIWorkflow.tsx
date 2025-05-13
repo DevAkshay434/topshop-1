@@ -94,7 +94,7 @@ interface GeneratedArticle {
   status: 'draft' | 'published' | 'scheduled';
 }
 
-export default function OpenAIWorkflow() {
+export default function OpenAIWorkflow() { // Using Claude AI under the hood
   const { toast } = useToast();
   
   // Step tracking
@@ -536,7 +536,7 @@ export default function OpenAIWorkflow() {
     return filtered;
   };
   
-  // Step 3: Generate topic suggestions with OpenAI based on selected content and keywords
+  // Step 3: Generate topic suggestions with Claude AI based on selected content and keywords
   const generateTopicSuggestions = async () => {
     if (selectedKeywords.length === 0 && !customKeywords.trim()) {
       toast({
@@ -579,8 +579,8 @@ export default function OpenAIWorkflow() {
       
       console.log("Sending topic generation request with data:", JSON.stringify(requestData));
       
-      // Call the OpenAI topic suggestion API
-      const response = await apiRequest("POST", "/api/openai/topic-suggestions", requestData);
+      // Call the Claude AI topic suggestion API instead of OpenAI
+      const response = await apiRequest("POST", "/api/claude-content/topic-suggestions", requestData);
       
       if (response.success && response.topics) {
         const topics: TopicSuggestion[] = response.topics.map((topic: any, index: number) => ({
@@ -593,8 +593,8 @@ export default function OpenAIWorkflow() {
         setSuggestedTopics(topics);
         
         toast({
-          title: "Topics Generated",
-          description: `Generated ${topics.length} topic suggestions`
+          title: "Claude AI Topics Generated",
+          description: `Generated ${topics.length} topic suggestions using Claude AI`
         });
         
         // Move to topic selection step
