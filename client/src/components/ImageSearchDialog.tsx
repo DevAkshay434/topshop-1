@@ -449,30 +449,57 @@ export default function ImageSearchDialog({
                     4. Click "Use Selected Images" when finished
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter keywords to search for images..."
-                    value={imageSearchQuery}
-                    onChange={(e) => setImageSearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && imageSearchQuery.trim()) {
-                        handleImageSearch(imageSearchQuery);
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Button 
-                    type="button" 
-                    onClick={() => handleImageSearch(imageSearchQuery)}
-                    disabled={isSearchingImages || !imageSearchQuery.trim()}
-                  >
-                    {isSearchingImages ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Searching...
-                      </>
-                    ) : "Search"}
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                      </div>
+                      <Input
+                        placeholder="Search for product or topic images..."
+                        value={imageSearchQuery}
+                        onChange={(e) => setImageSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && imageSearchQuery.trim()) {
+                            handleImageSearch(imageSearchQuery);
+                          }
+                        }}
+                        className="pl-10 flex-1"
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={() => handleImageSearch(imageSearchQuery)}
+                      disabled={isSearchingImages || !imageSearchQuery.trim()}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isSearchingImages ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Searching...
+                        </>
+                      ) : "Search Images"}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+                    <span>Try:</span>
+                    {['product close-up', 'lifestyle use', 'before & after', 'installation'].map((suggestion, i) => (
+                      <Badge 
+                        key={i}
+                        variant="outline" 
+                        className="cursor-pointer hover:bg-blue-50 text-xs"
+                        onClick={() => {
+                          setImageSearchQuery(suggestion);
+                          handleImageSearch(suggestion);
+                        }}
+                      >
+                        {suggestion}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
                 
                 {/* Image selection help text */}
@@ -614,11 +641,11 @@ export default function ImageSearchDialog({
                         <div 
                           key={image.id}
                           className={`
-                            relative rounded-lg overflow-hidden border-2 shadow cursor-pointer group
-                            ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'}
+                            relative rounded-lg overflow-hidden border-2 shadow-md cursor-pointer group transition-all hover:scale-105 hover:shadow-lg
+                            ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200 hover:border-blue-300'}
                             ${image.isProductImage ? 'border-green-500' : ''}
-                            ${featuredImageId === image.id ? 'ring-4 ring-yellow-400 border-yellow-500' : ''}
-                            ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'border-blue-500 ring-2 ring-blue-300' : ''}
+                            ${featuredImageId === image.id ? 'ring-4 ring-yellow-400 border-yellow-500 shadow-yellow-100' : ''}
+                            ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'border-blue-500 ring-2 ring-blue-300 shadow-blue-100' : ''}
                           `}
                         >
                           <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
@@ -685,38 +712,43 @@ export default function ImageSearchDialog({
                               </div>
                             )}
                             
-                            {/* Hover action buttons */}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 z-30">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleImageSelection(image.id);
-                                  if (!image.selected) return;
-                                  setAsFeaturedImage(image.id);
-                                }}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-white p-1.5 rounded-full"
-                                title="Set as Featured Image"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                </svg>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleImageSelection(image.id);
-                                  if (!image.selected) return;
-                                  toggleContentImage(image.id);
-                                }}
-                                className="bg-blue-500 hover:bg-blue-600 text-white p-1.5 rounded-full"
-                                title="Toggle Content Image"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                  <polyline points="21 15 16 10 5 21"></polyline>
-                                </svg>
-                              </button>
+                            {/* Hover action buttons with labels */}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-3 z-30">
+                              <div className="flex flex-col items-center">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleImageSelection(image.id);
+                                    if (!image.selected) return;
+                                    setAsFeaturedImage(image.id);
+                                  }}
+                                  className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-md shadow-md flex items-center gap-1.5 mb-1 px-3 transition-transform transform hover:scale-105"
+                                  title="Set as Featured Image"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                  </svg>
+                                  <span className="text-xs font-medium">Featured Image</span>
+                                </button>
+                                
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleImageSelection(image.id);
+                                    if (!image.selected) return;
+                                    toggleContentImage(image.id);
+                                  }}
+                                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md shadow-md flex items-center gap-1.5 px-3 transition-transform transform hover:scale-105"
+                                  title="Toggle Content Image"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21 15 16 10 5 21"></polyline>
+                                  </svg>
+                                  <span className="text-xs font-medium">Content Image</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                           
