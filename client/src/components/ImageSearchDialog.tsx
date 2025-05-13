@@ -231,29 +231,49 @@ export default function ImageSearchDialog({
     }
   };
   
-  // Toggle image selection
+  // Toggle image selection with improved reliability
   const toggleImageSelection = (imageId: string) => {
     console.log("Toggle selection called for image ID:", imageId);
-    console.log("Current searchedImages length:", searchedImages.length);
-    console.log("Current selectedImages:", selectedImages.map(img => img.id).join(', '));
     
-    // Get the current selection state
-    const currentImage = searchedImages.find(img => img.id === imageId);
-    if (!currentImage) {
-      console.error("Could not find image with ID:", imageId, "in searchedImages.");
-      // Try to find in history
-      const inHistory = imageSearchHistory.some(history => 
-        history.images.some(img => img.id === imageId)
-      );
-      console.log("Image found in history:", inHistory);
+    // First, try to find the image in searchedImages
+    let imageToToggle = searchedImages.find(img => img.id === imageId);
+    
+    // If not found in search results, check selected images
+    if (!imageToToggle) {
+      imageToToggle = selectedImages.find(img => img.id === imageId);
+    }
+    
+    // If still not found, check history
+    if (!imageToToggle) {
+      for (const history of imageSearchHistory) {
+        const historyImage = history.images.find(img => img.id === imageId);
+        if (historyImage) {
+          imageToToggle = historyImage;
+          break;
+        }
+      }
+    }
+    
+    // If image is still not found, show error and return
+    if (!imageToToggle) {
+      console.error("Could not find image with ID:", imageId);
+      toast({
+        title: "Selection Error",
+        description: "Could not select this image. Please try again.",
+        variant: "destructive"
+      });
       return;
     }
     
-    const newSelectedState = !(currentImage.selected || false);
-    console.log(`Toggling image ${imageId} to selected=${newSelectedState}`);
-    console.log("Current image details:", currentImage);
+    // Determine the new selection state (flip the current state)
+    const currentlySelected = imageToToggle.selected || selectedImages.some(img => img.id === imageId);
+    const newSelectedState = !currentlySelected;
     
-    // Update in current search results
+    console.log(`Toggling image ${imageId} to selected=${newSelectedState}`);
+    
+    // Update selection state in all relevant places
+    
+    // 1. Update searchedImages
     setSearchedImages(prev => 
       prev.map(img => 
         img.id === imageId 
@@ -262,7 +282,7 @@ export default function ImageSearchDialog({
       )
     );
     
-    // Update in search history
+    // 2. Update imageSearchHistory
     setImageSearchHistory(prev => 
       prev.map(history => ({
         ...history,
@@ -274,15 +294,19 @@ export default function ImageSearchDialog({
       }))
     );
     
-    // Update selected images list
+    // 3. Update selectedImages collection
     if (newSelectedState) {
-      // Add to selected images if not already there
-      const imageToAdd = searchedImages.find(img => img.id === imageId);
-      if (imageToAdd && !selectedImages.some(img => img.id === imageId)) {
-        console.log("Adding image to selected images:", imageToAdd);
-        setSelectedImages(prev => [...prev, { ...imageToAdd, selected: true }]);
+      // Only add if not already in the selection
+      if (!selectedImages.some(img => img.id === imageId)) {
+        // Create a new object with all the image properties plus selected=true
+        const fullImageObject = {
+          ...imageToToggle,
+          selected: true
+        };
         
-        // Show toast when selecting an image
+        setSelectedImages(prev => [...prev, fullImageObject]);
+        
+        // Show toast as feedback
         toast({
           title: "Image Selected",
           description: "Click 'Set as Featured' to make it the main image",
@@ -291,7 +315,6 @@ export default function ImageSearchDialog({
       }
     } else {
       // Remove from selected images
-      console.log("Removing image from selected images:", imageId);
       setSelectedImages(prev => prev.filter(img => img.id !== imageId));
       
       // If this was the featured image, remove that too
@@ -418,7 +441,7 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] overflow-hidden flex flex-col p-0 no-scrollbar">
         <DialogHeader className="px-6 pt-6 pb-3">
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
@@ -651,9 +674,9 @@ export default function ImageSearchDialog({
                   </div>
                 </div>
                 
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-4 overflow-y-auto">
                   {searchedImages.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 relative z-20">
                       {searchedImages
                       .filter(image => {
                         // Apply source filtering
@@ -667,19 +690,20 @@ export default function ImageSearchDialog({
                         <div 
                           key={image.id}
                           className={`
-                            relative rounded-lg overflow-hidden border-2 shadow-md cursor-pointer group transition-all hover:scale-105 hover:shadow-lg
+                            relative rounded-lg overflow-hidden border-2 shadow-md cursor-pointer group transition-all hover:scale-105 hover:shadow-lg z-10
                             ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200 hover:border-blue-300'}
                             ${image.isProductImage ? 'border-green-500' : ''}
                             ${featuredImageId === image.id ? 'ring-4 ring-yellow-400 border-yellow-500 shadow-yellow-100' : ''}
                             ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'border-blue-500 ring-2 ring-blue-300 shadow-blue-100' : ''}
                           `}
+                          onClick={() => toggleImageSelection(image.id)}
                         >
-                          <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
+                          <div className="aspect-[4/3] bg-slate-100 relative">
                             {/* Use direct proxy URL to ensure images load */}
                             <img 
                               src={`/api/proxy/image/${image.id}`}
                               alt={image.alt || 'Product image'} 
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover pointer-events-none"
                               onError={(e) => {
                                 // Fallback to placeholder if direct proxy fails
                                 const target = e.target as HTMLImageElement;
@@ -687,6 +711,18 @@ export default function ImageSearchDialog({
                               }}
                               loading="lazy"
                             />
+                            
+                            {/* Selection overlay */}
+                            <div className="absolute inset-0 bg-black/5 pointer-events-none"></div>
+                            
+                            {/* Big selection checkmark */}
+                            {image.selected && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-blue-500/20 pointer-events-none">
+                                <div className="bg-white rounded-full p-2 shadow-lg">
+                                  <CheckCircle className="h-8 w-8 text-blue-500" />
+                                </div>
+                              </div>
+                            )}
                             
                             {/* Status badges at top right */}
                             <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">

@@ -1,0 +1,74 @@
+TASK FOR REPLIT AGENTS: FIX IMAGE SELECTION DIALOG AND STEP 6 ACCORDION
+1. Image Dialog Fixes
+Issue:
+
+The image selection popup loads images, but users cannot see or select them.
+
+Another element (layout structure) is covering or blocking the image view.
+
+Clicking images does not always register the selection due to a glitch in the interaction logic.
+
+Required Fixes:
+
+Update CSS stacking context to ensure images are visible on top of all other elements inside the modal.
+
+Fix layout and positioning to remove or push any blocking elements below the image layer.
+
+Add a visual indication (such as a border or checkmark) to confirm when an image is selected.
+
+Resolve any issues with event listeners or DOM interference that block the image selection click.
+
+Expected Outcome:
+
+All images are clearly visible and selectable by users inside the popup.
+
+Visual feedback appears instantly when a user selects one or more images.
+
+Selection events work consistently without glitch or delay.
+
+2. Step 6 Fixes – Content Cluster Accordion
+Issue:
+
+In Step 6, the cluster content is not rendering correctly.
+
+There are errors when generating or displaying accordion views for multiple articles.
+
+Current UI lacks structure for organized article preview and editing.
+
+Required Structure:
+
+Each cluster should be displayed in an accordion format. For each article:
+
+Accordion Title: Use the article title.
+
+Accordion Content: Include two tabs:
+
+Preview Tab:
+
+Show the full article content.
+
+Display featured image and inline content images, linked to relevant product(s).
+
+Show all standard formatting: H1, H2, table of contents, FAQ sections, etc.
+
+Edit Tab:
+
+Show a WYSIWYG or markdown editor with the full article content, allowing in-place editing.
+
+Accordion Footer Buttons:
+
+Save as Draft to Shopify
+
+Publish to Shopify
+
+Schedule for Publish Later
+
+Technical Requirements:
+
+The accordion should support multiple open states simultaneously.
+
+Each accordion item must independently switch between Preview and Edit tabs.
+
+Handle rendering errors gracefully with user-friendly fallback or retry options.
+
+All footer buttons must correctly trigger Shopify-related backend actions.
