@@ -984,9 +984,60 @@ export default function ClusterWorkflow({
                       </TabsContent>
                       
                       <TabsContent value="preview">
-                        <div className="prose prose-sm max-w-none">
-                          <h2>{article.title}</h2>
-                          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                        <div className="prose prose-sm max-w-none border rounded-md p-4 bg-white shadow-sm">
+                          {/* Featured image - show first image if any */}
+                          {article.featuredImage && (
+                            <div className="mb-4 rounded-md overflow-hidden border">
+                              <img 
+                                src={`/api/proxy/image/${article.featuredImage.id}`} 
+                                alt={article.featuredImage.alt || article.title}
+                                className="w-full h-auto object-cover max-h-[300px]"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Article title */}
+                          <h1 className="text-2xl font-bold mb-4">{article.title}</h1>
+                          
+                          {/* Table of contents summary */}
+                          <div className="bg-slate-50 p-3 rounded-md border mb-6">
+                            <h4 className="text-sm font-medium mb-2">Table of Contents</h4>
+                            <ul className="text-sm space-y-1">
+                              {/* Extract h2s from content to build TOC */}
+                              {article.content.match(/<h2[^>]*>(.*?)<\/h2>/g)?.map((match, i) => {
+                                const heading = match.replace(/<[^>]+>/g, '');
+                                return (
+                                  <li key={i} className="text-blue-600 hover:underline">
+                                    • {heading}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                          
+                          {/* Article content with styled preview */}
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: article.content }} 
+                            className="article-preview"
+                          />
+                          
+                          {/* Display inline content images if any */}
+                          {article.contentImages && article.contentImages.length > 0 && (
+                            <div className="mt-6 border-t pt-4">
+                              <h4 className="text-sm font-medium mb-3">Content Images</h4>
+                              <div className="grid grid-cols-3 gap-3">
+                                {article.contentImages.map(img => (
+                                  <div key={img.id} className="border rounded-md overflow-hidden">
+                                    <img 
+                                      src={`/api/proxy/image/${img.id}`} 
+                                      alt={img.alt || "Content image"}
+                                      className="w-full h-auto object-cover aspect-[4/3]"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </TabsContent>
                     </Tabs>
