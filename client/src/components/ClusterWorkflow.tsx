@@ -1232,7 +1232,19 @@ export default function ClusterWorkflow({
                           {article.images && article.images.length > 0 && (
                             <div className="mb-4 rounded-md overflow-hidden border">
                               {(() => {
-                                const featuredImage = article.images.find(img => img.isFeatured);
+                                const images = article.images || [];
+                                const featuredImage = images.find(img => img.isFeatured);
+                                
+                                // Featured image placeholder SVG
+                                const fallbackImageSrc = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'%3E%3Crect width='800' height='400' fill='%23f5f5f5'/%3E%3Ctext x='400' y='200' font-family='Arial' font-size='30' text-anchor='middle' alignment-baseline='middle' fill='%23999'%3EFeatured Image%3C/text%3E%3C/svg%3E";
+                                
+                                // Error handler for images
+                                const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null; // Prevent infinite reload
+                                  target.src = fallbackImageSrc;
+                                };
+                                
                                 if (featuredImage) {
                                   // Show featured image if available
                                   return (
@@ -1240,27 +1252,19 @@ export default function ClusterWorkflow({
                                       src={`/api/proxy/image/${featuredImage.id}`} 
                                       alt={featuredImage.alt || article.title}
                                       className="w-full h-auto object-cover max-h-[300px]"
-                                      onError={(e) => {
-                                        // On error, replace with placeholder
-                                        const target = e.target as HTMLImageElement;
-                                        target.onerror = null; // Prevent infinite reload
-                                        target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'%3E%3Crect width='800' height='400' fill='%23f5f5f5'/%3E%3Ctext x='400' y='200' font-family='Arial' font-size='30' text-anchor='middle' alignment-baseline='middle' fill='%23999'%3EFeatured Image%3C/text%3E%3C/svg%3E";
-                                      }}
+                                      onError={handleImageError}
+                                      loading="lazy"
                                     />
                                   );
-                                } else if (article.images.length > 0) {
+                                } else if (images.length > 0) {
                                   // Otherwise show first image
                                   return (
                                     <img 
-                                      src={`/api/proxy/image/${article.images[0].id}`} 
-                                      alt={article.images[0].alt || article.title}
+                                      src={`/api/proxy/image/${images[0].id}`} 
+                                      alt={images[0].alt || article.title}
                                       className="w-full h-auto object-cover max-h-[300px]"
-                                      onError={(e) => {
-                                        // On error, replace with placeholder
-                                        const target = e.target as HTMLImageElement;
-                                        target.onerror = null; // Prevent infinite reload
-                                        target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'%3E%3Crect width='800' height='400' fill='%23f5f5f5'/%3E%3Ctext x='400' y='200' font-family='Arial' font-size='30' text-anchor='middle' alignment-baseline='middle' fill='%23999'%3EImage%3C/text%3E%3C/svg%3E";
-                                      }}
+                                      onError={handleImageError}
+                                      loading="lazy"
                                     />
                                   );
                                 }
@@ -1302,8 +1306,8 @@ export default function ClusterWorkflow({
                             <div className="mt-6 border-t pt-4">
                               <h4 className="text-sm font-medium mb-3">Article Images</h4>
                               <div className="grid grid-cols-3 gap-3">
-                                {article.images
-                                  .filter(img => !img.isFeatured || article.images.length === 1) // Show all images if there's only one
+                                {(article.images || [])
+                                  .filter(img => !img.isFeatured || (article.images?.length === 1)) // Show all images if there's only one
                                   .map((img) => (
                                     <div key={img.id} className="border rounded-md overflow-hidden">
                                       <div className="relative">
@@ -1389,72 +1393,138 @@ export default function ClusterWorkflow({
                             className="col-span-1"
                           >
                             <Clock className="w-4 h-4 mr-2" />
-                            Schedule
+                            {article.status === 'scheduled' 
+                              ? `Scheduled${article.scheduledDate ? ` (${article.scheduledDate})` : ''}` 
+                              : 'Schedule'}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-4">
                           <div className="space-y-4">
-                            <h4 className="font-medium">Schedule Publication</h4>
-                            <div className="grid gap-2">
-                              <Label>Date</Label>
-                              <CalendarComponent
-                                mode="single"
-                                selected={scheduleDate}
-                                onSelect={setScheduleDate}
-                                disabled={(date) => date < new Date()}
-                                className="rounded-md border"
-                              />
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">Schedule Publication</h4>
+                              {article.status === 'scheduled' && (
+                                <Badge variant="outline" className="text-blue-600 bg-blue-50">
+                                  Currently Scheduled
+                                </Badge>
+                              )}
                             </div>
-                            <div className="grid gap-2">
-                              <Label>Time</Label>
+                            
+                            <div className="space-y-1">
+                              <Label htmlFor={`schedule-date-${article.id}`}>Publication Date</Label>
+                              <div className="relative">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={scheduleDate || (article.scheduledDate ? new Date(article.scheduledDate) : undefined)}
+                                  onSelect={(date) => {
+                                    setScheduleDate(date);
+                                    // When user selects a date, set a default time if none is set
+                                    if (date && !scheduleTime) {
+                                      setScheduleTime('09:00');
+                                    }
+                                  }}
+                                  disabled={(date) => date < new Date()}
+                                  className="rounded-md border"
+                                  initialFocus
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Select a future date for publication
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <Label htmlFor={`schedule-time-${article.id}`}>Publication Time</Label>
                               <Input
+                                id={`schedule-time-${article.id}`}
                                 type="time"
-                                value={scheduleTime}
+                                value={scheduleTime || (article.scheduledTime || '09:00')}
                                 onChange={(e) => setScheduleTime(e.target.value)}
+                                className="w-full"
                               />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Time in store's local timezone ({storeInfo?.timezone || 'local time'})
+                              </p>
                             </div>
-                            <Button 
-                              onClick={() => {
-                                if (!scheduleDate) {
-                                  toast({
-                                    title: "Date Required",
-                                    description: "Please select a publication date",
-                                    variant: "destructive",
-                                  });
-                                  return;
-                                }
-                                
-                                updateArticleStatus(
-                                  article.id, 
-                                  'scheduled', 
-                                  format(scheduleDate, 'yyyy-MM-dd'),
-                                  scheduleTime
-                                );
-                              }}
-                              className="w-full"
-                            >
-                              Schedule Publication
-                            </Button>
+                            
+                            <div className="flex space-x-2 pt-2">
+                              <Button 
+                                onClick={() => {
+                                  if (!scheduleDate && !article.scheduledDate) {
+                                    toast({
+                                      title: "Date Required",
+                                      description: "Please select a publication date",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  
+                                  const date = scheduleDate 
+                                    ? format(scheduleDate, 'yyyy-MM-dd')
+                                    : article.scheduledDate;
+                                    
+                                  const time = scheduleTime || article.scheduledTime || '09:00';
+                                  
+                                  updateArticleStatus(
+                                    article.id, 
+                                    'scheduled', 
+                                    date,
+                                    time
+                                  );
+                                }}
+                                className="flex-1"
+                              >
+                                {article.status === 'scheduled' ? 'Update Schedule' : 'Schedule Publication'}
+                              </Button>
+                              
+                              {article.status === 'scheduled' && (
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => updateArticleStatus(article.id, 'draft')}
+                                >
+                                  Cancel
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </PopoverContent>
                       </Popover>
                       
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="col-span-3 mt-2 flex items-center justify-center"
-                        onClick={() => {
-                          // Remove article from the cluster
-                          setEditedArticles(prev => prev.filter(a => a.id !== article.id));
-                          toast({
-                            title: "Article removed",
-                            description: "The article has been removed from the cluster",
-                          });
-                        }}
-                      >
-                        <Trash className="w-4 h-4 mr-2" />
-                        Remove Article
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="col-span-3 mt-2 flex items-center justify-center"
+                          >
+                            <Trash className="w-4 h-4 mr-2" />
+                            Remove Article
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove article from cluster?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently remove "{article.title}" from this cluster. 
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                // Remove article from the cluster
+                                setEditedArticles(prev => prev.filter(a => a.id !== article.id));
+                                toast({
+                                  title: "Article removed",
+                                  description: "The article has been removed from the cluster",
+                                });
+                              }}
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
