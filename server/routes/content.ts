@@ -9,21 +9,24 @@ const contentRouter = Router();
 // Generate content for a single topic with optional custom prompt
 contentRouter.post("/generate-content", async (req: Request, res: Response) => {
   try {
-    // Validate request body with custom prompt support
+    // Validate request body with enhanced options
     const reqSchema = z.object({
       topic: z.string().min(1),
-      customPrompt: z.string().optional()
+      customPrompt: z.string().optional(),
+      tone: z.string().optional().default("Professional"),
+      length: z.string().optional().default("Medium (500-800 words)"),
+      model: z.string().optional().default("claude")
     });
     
-    const { topic, customPrompt } = reqSchema.parse(req.body);
+    const { topic, customPrompt, tone, length, model } = reqSchema.parse(req.body);
     
-    console.log(`Generating content for topic: "${topic}" ${customPrompt ? 'with custom prompt' : ''}`);
+    console.log(`Generating content for topic: "${topic}" using ${model === "claude" ? "Claude AI" : "AI"} with tone: ${tone}, length: ${length}`);
     
     // Create a record of the content generation request
     const contentRequest = await storage.createContentGenRequest({
       topic,
-      tone: customPrompt ? "custom" : "professional", // Using tone field to track if custom prompt was used
-      length: "medium", // Default length
+      tone: customPrompt ? "custom" : tone, // Use specified tone or mark as custom if using custom prompt
+      length: length.split(' ')[0].toLowerCase(), // Extract just the size portion (short, medium, long)
       status: "pending",
       generatedContent: null
     });
