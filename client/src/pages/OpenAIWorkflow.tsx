@@ -2352,10 +2352,10 @@ export default function OpenAIWorkflow() { // Using Claude AI under the hood
           {/* Step 6: Content Review */}
           {currentStep === 6 && (
             <ClusterWorkflow
-              articles={generatedArticles}
-              initialProducts={selectedProducts}
+              articles={convertToArticles(generatedArticles, selectedImages)}
+              initialProducts={[] /* Skip sending products to avoid type conflicts */}
               onBack={() => setCurrentStep(5)}
-              onComplete={handleSaveAllArticles}
+              onComplete={(articles) => handleSaveAllArticles(articles)}
             />
           )}
         </div>
