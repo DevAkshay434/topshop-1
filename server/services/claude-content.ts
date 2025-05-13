@@ -374,9 +374,15 @@ Remember that:
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL,
       max_tokens: 12000,
-      system: "You are an expert SEO content strategist helping to create comprehensive topic clusters for online stores. Your content is detailed, engaging, and optimized for search engines.",
+      temperature: 0.5, // Lower temperature for more structured output
+      system: "You are an expert SEO content strategist helping to create comprehensive topic clusters for online stores. Your content is detailed, engaging, and optimized for search engines. You MUST output your response in proper JSON format.",
       messages: [
-        { role: "user", content: prompt }
+        { 
+          role: "user", 
+          content: `${prompt}
+          
+IMPORTANT: Your response MUST be valid JSON. Do not include any text outside of the JSON structure. Format your entire response as a single valid JSON object.`
+        }
       ],
     });
 
