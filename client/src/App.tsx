@@ -21,6 +21,7 @@ import AdminPanel from "@/pages/AdminPanel";
 import EnhancedWorkflowDemo from "@/pages/EnhancedWorkflowDemo";
 import ClusterWorkflowDemo from "@/pages/ClusterWorkflowDemo";
 import OpenAIWorkflow from "@/pages/OpenAIWorkflow";
+import ClaudeWorkflow from "@/pages/ClaudeWorkflow";
 import { useEffect, useState } from "react";
 
 function Router() {
@@ -84,6 +85,7 @@ function Router() {
           <Route path="/enhanced-workflow" component={EnhancedWorkflowDemo} />
           <Route path="/cluster" component={ClusterWorkflowDemo} />
           <Route path="/openai-workflow" component={OpenAIWorkflow} />
+          <Route path="/claude-workflow" component={ClaudeWorkflow} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />

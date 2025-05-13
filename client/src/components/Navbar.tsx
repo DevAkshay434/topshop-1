@@ -14,6 +14,8 @@ export default function Navbar() {
     { name: 'Dashboard', path: '/', visible: true },
     { name: 'Blog Posts', path: '/blog-posts', visible: true },
     { name: 'Scheduled Posts', path: '/scheduled-posts', visible: true },
+    { name: 'OpenAI Content', path: '/openai-workflow', visible: true },
+    { name: 'Claude AI Content', path: '/claude-workflow', visible: true },
     { name: 'Shopify Connection', path: '/shopify-connection', visible: true },
     { name: 'Billing Settings', path: '/billing-settings', visible: true },
     { name: 'Install App', path: '/install', visible: true },
