@@ -268,11 +268,11 @@ Remember that:
       success: true,
       cluster
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating content cluster with Claude:", error);
     return {
       success: false,
-      message: error.message || "Failed to generate content cluster with Claude AI"
+      message: error?.message || "Failed to generate content cluster with Claude AI"
     };
   }
 }

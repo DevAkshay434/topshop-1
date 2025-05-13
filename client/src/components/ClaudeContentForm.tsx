@@ -29,7 +29,7 @@ const formSchema = z.object({
   gender: z.string().optional(),
   faqStyle: z.string().optional(),
   articleLength: z.string().optional(),
-  numH2s: z.string().transform(val => parseInt(val) || 5).optional(),
+  numH2s: z.coerce.number().default(5),
   enableTables: z.boolean().optional(),
   enableLists: z.boolean().optional(),
   enableCitations: z.boolean().optional(),
@@ -62,7 +62,7 @@ export default function ClaudeContentForm({ onContentGenerated, products = [], k
       gender: 'neutral',
       faqStyle: 'detailed',
       articleLength: 'medium',
-      numH2s: '5', // this will be transformed to number by zod
+      numH2s: 5,
       enableTables: true,
       enableLists: true,
       enableCitations: true,
@@ -317,7 +317,9 @@ export default function ClaudeContentForm({ onContentGenerated, products = [], k
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Number of Sections (H2s)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        onValueChange={(value) => field.onChange(Number(value))} 
+                        defaultValue={field.value.toString()}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select number" />
