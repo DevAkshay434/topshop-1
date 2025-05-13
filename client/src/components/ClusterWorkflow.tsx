@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, ChevronRight, Sparkles, Bot, Terminal } from 'lucide-react';
+import { Calendar, ChevronRight, Clock, FileText, Sparkles, Bot, Terminal, Trash, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -986,11 +986,11 @@ export default function ClusterWorkflow({
                       <TabsContent value="preview">
                         <div className="prose prose-sm max-w-none border rounded-md p-4 bg-white shadow-sm">
                           {/* Featured image - show first image if any */}
-                          {article.featuredImage && (
+                          {article.images && article.images.length > 0 && article.images[0] && (
                             <div className="mb-4 rounded-md overflow-hidden border">
                               <img 
-                                src={`/api/proxy/image/${article.featuredImage.id}`} 
-                                alt={article.featuredImage.alt || article.title}
+                                src={`/api/proxy/image/${article.images[0].id}`} 
+                                alt={article.images[0].alt || article.title}
                                 className="w-full h-auto object-cover max-h-[300px]"
                               />
                             </div>
@@ -1022,11 +1022,11 @@ export default function ClusterWorkflow({
                           />
                           
                           {/* Display inline content images if any */}
-                          {article.contentImages && article.contentImages.length > 0 && (
+                          {article.images && article.images.length > 1 && (
                             <div className="mt-6 border-t pt-4">
                               <h4 className="text-sm font-medium mb-3">Content Images</h4>
                               <div className="grid grid-cols-3 gap-3">
-                                {article.contentImages.map(img => (
+                                {article.images.slice(1).map((img: any) => (
                                   <div key={img.id} className="border rounded-md overflow-hidden">
                                     <img 
                                       src={`/api/proxy/image/${img.id}`} 
@@ -1044,10 +1044,11 @@ export default function ClusterWorkflow({
                     
                     <Separator className="my-4" />
                     
-                    <div className="flex justify-end space-x-2">
+                    <div className="grid grid-cols-3 gap-2 mt-4">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="w-full flex items-center justify-center"
                         onClick={() => {
                           saveArticle({
                             ...article,
@@ -1055,11 +1056,13 @@ export default function ClusterWorkflow({
                           });
                         }}
                       >
+                        <FileText className="w-4 h-4 mr-2" />
                         Save as Draft
                       </Button>
                       <Button
                         variant="default"
                         size="sm"
+                        className="w-full flex items-center justify-center"
                         onClick={() => {
                           saveArticle({
                             ...article,
@@ -1067,7 +1070,38 @@ export default function ClusterWorkflow({
                           });
                         }}
                       >
-                        Publish Now
+                        <Upload className="w-4 h-4 mr-2" />
+                        Publish to Shopify
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-full flex items-center justify-center"
+                        onClick={() => {
+                          saveArticle({
+                            ...article,
+                            status: 'scheduled'
+                          });
+                        }}
+                      >
+                        <Clock className="w-4 h-4 mr-2" />
+                        Schedule
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="col-span-3 mt-2 flex items-center justify-center"
+                        onClick={() => {
+                          // Remove article from the cluster
+                          setEditedArticles(prev => prev.filter(a => a.id !== article.id));
+                          toast({
+                            title: "Article removed",
+                            description: "The article has been removed from the cluster",
+                          });
+                        }}
+                      >
+                        <Trash className="w-4 h-4 mr-2" />
+                        Remove Article
                       </Button>
                     </div>
                   </AccordionContent>
