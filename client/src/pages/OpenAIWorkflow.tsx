@@ -124,6 +124,7 @@ export default function OpenAIWorkflow() {
   
   // Styling & formatting options
   const [writingPerspective, setWritingPerspective] = useState<string>("male");
+  const [contentPerspective, setContentPerspective] = useState<string>("first-person");
   const [contentStyle, setContentStyle] = useState<string>("direct-response");
   const [toneOfVoice, setToneOfVoice] = useState<string>("direct-punchy");
   const [introStyle, setIntroStyle] = useState<string>("search-intent-focused");

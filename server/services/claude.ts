@@ -232,11 +232,31 @@ Return the response as a JSON object with this structure:
         extractedJson = extractedJson.substring(startIndex);
       }
       
+      // Find a balanced JSON object
+      let openBraces = 0;
+      let endIndex = -1;
+      
+      for (let i = 0; i < extractedJson.length; i++) {
+        if (extractedJson[i] === '{') openBraces++;
+        if (extractedJson[i] === '}') openBraces--;
+        
+        if (openBraces === 0 && i > 0) {
+          endIndex = i + 1;
+          break;
+        }
+      }
+      
+      if (endIndex > 0) {
+        extractedJson = extractedJson.substring(0, endIndex);
+      }
+      
       // Clean up common issues that break JSON parsing
       extractedJson = extractedJson
         .replace(/(\r\n|\n|\r)/gm, ' ') // Replace newlines with spaces
         .replace(/,\s*\]/g, ']')        // Remove trailing commas in arrays
-        .replace(/,\s*\}/g, '}');       // Remove trailing commas in objects
+        .replace(/,\s*\}/g, '}')        // Remove trailing commas in objects
+        .replace(/\\"/g, '"')           // Handle escaped quotes
+        .replace(/\\'/g, "'");          // Handle escaped single quotes
     }
     
     console.log("Cleaned Claude cluster JSON (first 100 chars):", extractedJson.substring(0, 100));
@@ -260,6 +280,17 @@ Return the response as a JSON object with this structure:
         
         // Try to balance braces and brackets
         let balancedJson = extractedJson;
+        
+        // Replace single quotes with double quotes for property names
+        balancedJson = balancedJson.replace(/'([^']+)':/g, '"$1":');
+        
+        // Fix unescaped quotes in values
+        balancedJson = balancedJson.replace(/:\s*"([^"]*)"([^,\}\]])/g, ': "$1"$2');
+        
+        // Remove any invalid control characters
+        balancedJson = balancedJson.replace(/[\x00-\x1F\x7F]/g, '');
+        
+        // Count braces and brackets
         const openBraces = (balancedJson.match(/\{/g) || []).length;
         const closeBraces = (balancedJson.match(/\}/g) || []).length;
         const openBrackets = (balancedJson.match(/\[/g) || []).length;
@@ -280,6 +311,15 @@ Return the response as a JSON object with this structure:
         if (fixedData.mainTopic && Array.isArray(fixedData.subtopics)) {
           console.log("Successfully fixed JSON syntax issues");
           return fixedData;
+        }
+        
+        // If we're still here but have a partial response, try to construct a valid response
+        if (fixedData.mainTopic && !Array.isArray(fixedData.subtopics)) {
+          console.log("Constructing a valid response from partial data");
+          return {
+            mainTopic: fixedData.mainTopic,
+            subtopics: []
+          };
         }
       } catch (fixError) {
         console.error("Failed to fix JSON syntax:", fixError);
