@@ -178,7 +178,7 @@ export default function ImageSearchDialog({
         }));
         
         // Filter out images without valid URLs to prevent rendering issues
-        const validImages = newImages.filter(img => img.url);
+        const validImages = newImages.filter((img: PexelsImage) => img.url);
         
         console.log('Valid images count:', validImages.length);
         console.log('First image:', validImages.length > 0 ? validImages[0] : 'No valid images');
@@ -418,8 +418,8 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-3">
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
             Search for images related to your content using keywords. You can select <span className="text-yellow-500 font-medium">Featured</span> images for your article header and <span className="text-blue-500 font-medium">Content</span> images to be embedded within your article.
@@ -427,12 +427,11 @@ export default function ImageSearchDialog({
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Tabs for Search vs Selected Images */}
           <Tabs 
             defaultValue="search" 
             value={activeTab} 
             onValueChange={(value) => setActiveTab(value as 'search' | 'selected')}
-            className="w-full"
+            className="w-full flex flex-col flex-1"
           >
             <div className="border-b px-4">
               <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -459,46 +458,40 @@ export default function ImageSearchDialog({
                     <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
                       <li>Search for relevant images using keywords</li>
                       <li>Click images to select them</li>
-                      <li>Mark one image as <span className="bg-yellow-100 text-yellow-700 px-1 py-0.5 rounded font-medium">Featured</span></li>
-                      <li>Mark additional images as <span className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded font-medium">Content</span></li>
-                      <li>Click "Confirm Selection" when finished</li>
+                      <li>Choose Featured and Content images</li>
+                      <li>Select at least one featured image for your article</li>
                     </ul>
                   </div>
                   
                   <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
-                    <h4 className="text-sm font-medium text-yellow-800 mb-1">Image Search Tips</h4>
+                    <h4 className="text-sm font-medium text-yellow-800 mb-1">Image Types</h4>
                     <ul className="text-xs text-yellow-700 space-y-1 list-disc pl-4">
-                      <li>Try including your product type in search</li>
-                      <li>Add keywords like "lifestyle" or "in use"</li>
-                      <li>Search for related settings or environments</li>
-                      <li>Use simple, descriptive terms</li>
-                      <li>Try different search terms if needed</li>
+                      <li><strong>Featured Image:</strong> Main image for your article (required)</li>
+                      <li><strong>Content Images:</strong> Additional images to use in your content</li>
+                      <li>You can select multiple images</li>
                     </ul>
                   </div>
                 </div>
+                
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="11" cy="11" r="8"></circle>
-                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
+                        <Search className="h-4 w-4" />
                       </div>
                       <Input
-                        placeholder="Search for images related to your product..."
                         value={imageSearchQuery}
                         onChange={(e) => setImageSearchQuery(e.target.value)}
+                        placeholder="Search for images..."
+                        className="pl-10"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && imageSearchQuery.trim()) {
+                          if (e.key === 'Enter') {
                             handleImageSearch(imageSearchQuery);
                           }
                         }}
-                        className="pl-10 flex-1 border-blue-200 focus-visible:ring-blue-400"
                       />
                     </div>
                     <Button 
-                      type="button" 
                       onClick={() => handleImageSearch(imageSearchQuery)}
                       disabled={isSearchingImages || !imageSearchQuery.trim()}
                       className={`whitespace-nowrap ${isSearchingImages ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'}`}
@@ -509,79 +502,67 @@ export default function ImageSearchDialog({
                           Searching...
                         </>
                       ) : (
-                        <>
-                          <Search className="mr-2 h-4 w-4" />
-                          Search Images
-                        </>
+                        "Search Images"
                       )}
                     </Button>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500">Try searching:</span>
-                    {selectedKeywords?.length > 0 ? (
-                      selectedKeywords.map((k, i) => (
-                        <Badge 
-                          key={i}
-                          variant={k.isMainKeyword ? "default" : "outline"}
-                          className={`cursor-pointer hover:bg-blue-50 text-xs ${k.isMainKeyword ? 'bg-green-100 hover:bg-green-200 text-green-800 hover:text-green-900' : ''}`}
-                          onClick={() => {
-                            setImageSearchQuery(k.keyword);
-                            handleImageSearch(k.keyword);
-                          }}
+                  
+                  {/* Source filters if we have multiple sources */}
+                  {availableSources.length > 1 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-gray-500">Filter sources:</span>
+                      <Button
+                        variant={sourceFilter === 'all' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSourceFilter('all')}
+                        className="h-8"
+                      >
+                        All Sources
+                      </Button>
+                      {availableSources.includes('pexels') && (
+                        <Button
+                          variant={sourceFilter === 'pexels' ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSourceFilter('pexels')}
+                          className="h-8"
                         >
-                          {k.keyword}
-                        </Badge>
-                      ))
-                    ) : (
-                      ['product display', 'lifestyle use', 'before & after', 'hands-on', 'happy customer'].map((suggestion, i) => (
-                        <Badge 
-                          key={`default-${i}`}
-                          variant="outline" 
-                          className="cursor-pointer hover:bg-blue-50 text-xs"
-                          onClick={() => {
-                            setImageSearchQuery(suggestion);
-                            handleImageSearch(suggestion);
-                          }}
+                          Pexels
+                        </Button>
+                      )}
+                      {availableSources.includes('pixabay') && (
+                        <Button
+                          variant={sourceFilter === 'pixabay' ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSourceFilter('pixabay')}
+                          className="h-8"
                         >
-                          {suggestion}
-                        </Badge>
-                      ))
-                    )}
-                  </div>
+                          Pixabay
+                        </Button>
+                      )}
+                      {availableSources.includes('product') && (
+                        <Button
+                          variant={sourceFilter === 'product' ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSourceFilter('product')}
+                          className="h-8"
+                        >
+                          Product Images
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
-                {/* Search history */}
-                {imageSearchHistory.length > 0 && (
-                  <div className="border border-blue-100 bg-blue-50/50 rounded-md p-3">
-                    <h3 className="text-sm font-medium text-blue-800 mb-2">Recent searches:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {imageSearchHistory.map((history, index) => (
-                        <Badge 
-                          key={index}
-                          variant={history.query === imageSearchQuery ? "default" : "outline"} 
-                          className={`cursor-pointer text-xs ${history.query === imageSearchQuery ? 'bg-blue-100 text-blue-800' : ''}`}
-                          onClick={() => {
-                            setImageSearchQuery(history.query);
-                            setSearchedImages(history.images);
-                          }}
-                        >
-                          {history.query}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Suggested searches - show when no search has been performed */}
+                {/* Suggestions if no search yet */}
                 {!searchedImages.length && !isSearchingImages && (
-                  <div className="bg-blue-50 p-3 rounded-md">
-                    <div className="text-sm font-medium text-blue-800 mb-2">Try these search terms:</div>
+                  <div className="border border-blue-100 bg-blue-50/50 rounded-md p-3">
+                    <p className="text-sm font-medium text-blue-800 mb-1">Try searching for:</p>
                     <div className="flex flex-wrap gap-2">
                       {suggestedSearches.map((term, idx) => (
                         <Badge
                           key={idx}
-                          variant="secondary"
-                          className="cursor-pointer hover:bg-blue-100"
+                          variant="outline"
+                          className="bg-white hover:bg-blue-50 cursor-pointer border-blue-200"
                           onClick={() => {
                             setImageSearchQuery(term);
                             handleImageSearch(term);
@@ -594,58 +575,45 @@ export default function ImageSearchDialog({
                   </div>
                 )}
                 
-                {/* Search history */}
+                {/* Recent searches */}
                 {imageSearchHistory.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {imageSearchHistory.map((history, index) => (
-                      <Badge
-                        key={index}
-                        variant={history.query === imageSearchQuery ? "default" : "outline"} 
-                        className="cursor-pointer"
-                        onClick={() => {
-                          setImageSearchQuery(history.query);
-                          setSearchedImages(history.images);
-                        }}
-                      >
-                        {history.query}
-                      </Badge>
-                    ))}
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <div className="text-sm font-medium text-blue-800 mb-2">Recent searches:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {imageSearchHistory.map((history, idx) => (
+                        <Badge
+                          key={idx}
+                          variant="outline"
+                          className="bg-white hover:bg-blue-50 cursor-pointer border-blue-200 flex items-center"
+                          onClick={() => {
+                            setImageSearchQuery(history.query);
+                            setSearchedImages(history.images);
+                          }}
+                        >
+                          {history.query}
+                          <span className="ml-1 text-xs text-gray-500">({history.images.length})</span>
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
                 
-                {/* Source filters */}
-                {searchedImages.length > 0 && availableSources.length > 0 && (
+                {/* Selected images counter */}
+                {selectedImages.length > 0 && (
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium">Filter by source:</span>
-                    <div className="flex gap-2">
-                      <Badge 
-                        variant={sourceFilter === 'all' ? 'default' : 'outline'} 
-                        className="cursor-pointer"
-                        onClick={() => setSourceFilter('all')}
-                      >
-                        All Sources
-                      </Badge>
-                      
-                      {availableSources.includes('pexels') && (
-                        <Badge 
-                          variant={sourceFilter === 'pexels' ? 'default' : 'outline'}
-                          className="cursor-pointer"
-                          onClick={() => setSourceFilter('pexels')}
-                        >
-                          Pexels
-                        </Badge>
-                      )}
-                      
-                      {availableSources.includes('pixabay') && (
-                        <Badge 
-                          variant={sourceFilter === 'pixabay' ? 'default' : 'outline'}
-                          className="cursor-pointer"
-                          onClick={() => setSourceFilter('pixabay')}
-                        >
-                          Pixabay
-                        </Badge>
-                      )}
-                    </div>
+                    <Badge variant="outline" className="bg-blue-50 border-blue-200">
+                      <div className="flex gap-2">
+                        <CheckCircle className="h-4 w-4 text-blue-500" /> 
+                        <span>{selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected</span>
+                      </div>
+                    </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setActiveTab('selected')}
+                    >
+                      View selected
+                    </Button>
                   </div>
                 )}
                 
@@ -668,22 +636,25 @@ export default function ImageSearchDialog({
               </div>
               
               {/* Search results grid - with improved scrolling */}
-              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 230px)", overflowY: "auto" }}>
+              <div className="flex-1 overflow-y-auto">
                 {/* Helpful guidance */}
-                <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
-                  <h3 className="text-sm font-semibold text-blue-800 mb-1">How to select images:</h3>
-                  <ol className="text-xs text-blue-700 space-y-1 list-decimal pl-5">
-                    <li><strong>Search</strong> using keywords related to your product</li>
-                    <li><strong>Click</strong> on an image to select it</li>
-                    <li>Use the <span className="px-1 py-0.5 bg-yellow-100 text-yellow-700 rounded">Featured</span> button for your main image</li>
-                    <li>Use the <span className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded">Content</span> button for additional images</li>
-                    <li>When finished, click <strong>Confirm Selection</strong> at the bottom</li>
-                  </ol>
+                <div className="sticky top-0 z-10 pt-4 pb-2 px-4 bg-white">
+                  <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <h3 className="text-sm font-semibold text-blue-800 mb-1">How to select images:</h3>
+                    <ol className="text-xs text-blue-700 space-y-1 list-decimal pl-5">
+                      <li><strong>Search</strong> using keywords related to your product</li>
+                      <li><strong>Click</strong> on an image to select it</li>
+                      <li>Use the <span className="px-1 py-0.5 bg-yellow-100 text-yellow-700 rounded">Featured</span> button for your main image</li>
+                      <li>Use the <span className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded">Content</span> button for additional images</li>
+                      <li>When finished, click <strong>Confirm Selection</strong> at the bottom</li>
+                    </ol>
+                  </div>
                 </div>
                 
-                {searchedImages.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
-                    {searchedImages
+                <div className="px-4 pb-4">
+                  {searchedImages.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {searchedImages
                       .filter(image => {
                         // Apply source filtering
                         if (sourceFilter === 'all') return true;
@@ -706,199 +677,97 @@ export default function ImageSearchDialog({
                           <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
                             <img 
                               src={
+                                image.url ||
                                 image.src?.medium || 
-                                image.url || 
                                 image.large_url || 
                                 (image.source === 'pexels' && image.id 
                                   ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
-                                  : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E")
+                                  : "/api/proxy/image/placeholder")
                               } 
                               alt={image.alt || 'Product image'} 
                               className="w-full h-full object-cover"
-                              loading="lazy"
                               onError={(e) => {
-                                // Try Pexels URL directly if other URLs fail
-                                if (image.source === 'pexels' && image.id) {
-                                  e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
-                                } else {
-                                  // Fallback to placeholder
-                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
+                                // Try multiple fallbacks if the image fails to load
+                                const target = e.target as HTMLImageElement;
+                                const currentSrc = target.src;
+                                
+                                if (currentSrc.includes('pexels.com')) {
+                                  // Try the pixabay URL if pexels fails
+                                  if (image.id) {
+                                    target.src = `/api/proxy/image/${image.id}`;
+                                  } else {
+                                    target.src = "/api/proxy/image/placeholder";
+                                  }
+                                } else if (currentSrc.includes('/api/proxy/image/')) {
+                                  // If proxy fails, use a placeholder
+                                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
                                 }
                               }}
+                              loading="lazy"
                             />
                             
                             {/* Status badges at top right */}
                             <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
                               {featuredImageId === image.id && (
-                                <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
-                                  <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                  </svg>
+                                <Badge className="bg-yellow-500 hover:bg-yellow-600 border-yellow-600">
                                   Featured
-                                </span>
+                                </Badge>
                               )}
                               {contentImageIds.includes(image.id) && featuredImageId !== image.id && (
-                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
-                                  <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                    <polyline points="21 15 16 10 5 21"></polyline>
-                                  </svg>
+                                <Badge className="bg-blue-500 hover:bg-blue-600 border-blue-600">
                                   Content
-                                </span>
+                                </Badge>
                               )}
                             </div>
                             
-                            {image.selected && (
-                              <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                                <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                  </svg>
+                            {/* Selection indicator */}
+                            <div className={`absolute inset-0 bg-black/10 flex items-center justify-center transition-opacity ${image.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'}`}>
+                              {image.selected ? (
+                                <div className="bg-white text-blue-600 rounded-full p-1">
+                                  <CheckCircle className="h-5 w-5" />
                                 </div>
-                              </div>
-                            )}
-                            
-                            {/* Hover action buttons with labels */}
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-3 z-30">
-                              <div className="flex flex-col items-center">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleImageSelection(image.id);
-                                    if (!image.selected) return;
-                                    setAsFeaturedImage(image.id);
-                                  }}
-                                  className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-md shadow-md flex items-center gap-1.5 mb-1 px-3 transition-transform transform hover:scale-105"
-                                  title="Set as Featured Image"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                  </svg>
-                                  <span className="text-xs font-medium">Featured Image</span>
-                                </button>
-                                
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleImageSelection(image.id);
-                                    if (!image.selected) return;
-                                    toggleContentImage(image.id);
-                                  }}
-                                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md shadow-md flex items-center gap-1.5 px-3 transition-transform transform hover:scale-105"
-                                  title="Toggle Content Image"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                    <polyline points="21 15 16 10 5 21"></polyline>
-                                  </svg>
-                                  <span className="text-xs font-medium">Content Image</span>
-                                </button>
-                              </div>
+                              ) : (
+                                <div className="bg-white text-blue-600 rounded-full p-1 opacity-0 group-hover:opacity-100">
+                                  <Plus className="h-5 w-5" />
+                                </div>
+                              )}
                             </div>
                           </div>
-                          
-                          {/* Source badge */}
-                          <div className="absolute top-2 left-2 z-20">
-                            {image.source === 'pexels' && (
-                              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
-                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm0 17.5c-4.136 0-7.5-3.364-7.5-7.5S5.864 2.5 10 2.5s7.5 3.364 7.5 7.5-3.364 7.5-7.5 7.5z"/>
-                                  <path d="M6.667 12.917h1.666V7.083H6.667v5.834zm5-5.834v5.834h1.666V7.083h-1.666z"/>
-                                </svg>
-                                Pexels
-                              </span>
-                            )}
-                            {image.source === 'pixabay' && (
-                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
-                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                  <path d="M5.5 9.511c.076.954.83 1.697 2.182 1.785V12h.6v-.709c1.4-.098 2.218-.846 2.218-1.932 0-.987-.626-1.496-1.745-1.76l-.473-.112V5.57c.6.068.982.396 1.074.85h1.052c-.076-.919-.864-1.638-2.126-1.716V4h-.6v.719c-1.195.117-2.01.836-2.01 1.853 0 .9.606 1.472 1.613 1.707l.397.098v2.034c-.615-.093-1.022-.43-1.114-.9H5.5zm2.177-2.166c-.59-.137-.91-.416-.91-.773 0-.387.317-.7.91-.773v1.546zm.615 2.725c.658.132 1.051.407 1.051.81 0 .414-.332.732-1.051.81v-1.62z"></path>
-                                  <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zm0-18a8 8 0 1 1 0 16 8 8 0 0 1 0-16z"></path>
-                                </svg>
-                                Pixabay
-                              </span>
-                            )}
-                            {image.isProductImage && (
-                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md shadow-sm flex items-center font-medium">
-                                <svg className="w-3 h-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M20 4H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2zM4 6h16v2H4V6zm0 12v-8h16.001l.001 8H4z"/>
-                                  <path d="M6 14h8v2H6z"/>
-                                </svg>
-                                Product
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Featured badge */}
-                          {featuredImageId === image.id && (
-                            <div className="absolute top-2 right-2 z-20">
-                              <span className="bg-yellow-600 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                                Featured
-                              </span>
-                            </div>
-                          )}
-                          
-                          {/* Content image badge */}
-                          {contentImageIds.includes(image.id) && featuredImageId !== image.id && (
-                            <div className="absolute top-2 right-2 z-20">
-                              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-md font-medium flex items-center shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                                </svg>
-                                Content
-                              </span>
-                            </div>
-                          )}
-                          
-                          {/* Selection indicator is already added above */}
                           
                           {/* Image actions */}
-                          {image.selected && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-between gap-1">
-                              <Button
-                                variant={featuredImageId === image.id ? "default" : "secondary"}
-                                size="sm"
-                                className={`h-7 text-xs flex-1 ${featuredImageId === image.id ? 'bg-yellow-500 hover:bg-yellow-600' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAsFeaturedImage(image.id);
-                                }}
-                              >
-                                {featuredImageId === image.id ? (
-                                  <span className="flex items-center justify-center">
-                                    <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
-                                    Featured
-                                  </span>
-                                ) : "Set Featured"}
-                              </Button>
-                              <Button
-                                variant={contentImageIds.includes(image.id) ? "default" : "secondary"}
-                                size="sm"
-                                className={`h-7 text-xs flex-1 ${contentImageIds.includes(image.id) ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleContentImage(image.id);
-                                }}
-                              >
-                                {contentImageIds.includes(image.id) ? (
-                                  <span className="flex items-center justify-center">
-                                    <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
-                                    In Content
-                                  </span>
-                                ) : "Add to Content"}
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex p-1 bg-gradient-to-b from-gray-50 to-gray-100">
+                            <Button 
+                              className="flex-1 text-xs h-7 rounded-sm"
+                              variant={featuredImageId === image.id ? "default" : "secondary"}
+                              size="sm"
+                              onClick={() => setAsFeaturedImage(image.id)}
+                            >
+                              {featuredImageId === image.id ? (
+                                <span className="flex items-center justify-center">
+                                  <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
+                                  Featured
+                                </span>
+                              ) : "Set Featured"}
+                            </Button>
+                            <Button
+                              variant={contentImageIds.includes(image.id) ? "default" : "secondary"}
+                              className={`ml-1 flex-1 text-xs h-7 rounded-sm ${contentImageIds.includes(image.id) ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
+                              size="sm"
+                              onClick={() => setAsContentImage(image.id)}
+                            >
+                              {contentImageIds.includes(image.id) ? (
+                                <span className="flex items-center justify-center">
+                                  <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
+                                  Content
+                                </span>
+                              ) : "Set Content"}
+                            </Button>
+                          </div>
                         </div>
                       ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    {isSearchingImages ? (
+                    </div>
+                  ) : (
+                    isSearchingImages ? (
                       <div className="text-center">
                         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
                         <p>Searching for images...</p>
@@ -908,9 +777,9 @@ export default function ImageSearchDialog({
                         <Search className="h-12 w-12 mx-auto mb-2 opacity-20" />
                         <p>Enter keywords above and click Search to find images</p>
                       </div>
-                    )}
-                  </div>
-                )}
+                    )
+                  )}
+                </div>
               </div>
             </TabsContent>
             
@@ -922,31 +791,27 @@ export default function ImageSearchDialog({
                   <div className="flex flex-col space-y-3 text-xs text-blue-700">
                     <div className="flex items-start">
                       <div className="mt-0.5 mr-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
+                        <Badge className="bg-yellow-500 border-yellow-600">Featured</Badge>
                       </div>
                       <div>
-                        <strong>Featured Image:</strong> 
-                        <p className="mt-0.5">Main image shown at the top of your content and in article previews. You should select only one featured image.</p>
+                        <p className="font-medium">Featured Image</p>
+                        <p>The main image used at the top of your article. This should be eye-catching and relevant to your topic.</p>
                       </div>
                     </div>
                     <div className="flex items-start">
                       <div className="mt-0.5 mr-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                        </svg>
+                        <Badge className="bg-blue-500 border-blue-600">Content</Badge>
                       </div>
                       <div>
-                        <strong>Content Images:</strong> 
-                        <p className="mt-0.5">Additional images that will be embedded throughout your article body. You can select multiple content images.</p>
+                        <p className="font-medium">Content Image</p>
+                        <p>Additional images that will be placed throughout your article content. These should support your text and showcase products.</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 230px)", overflowY: "auto" }}>
+              <div className="flex-1 overflow-y-auto p-4">
                 {selectedImages.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {selectedImages.map((image, index) => (
@@ -960,129 +825,73 @@ export default function ImageSearchDialog({
                         <div className="aspect-[4/3] bg-slate-100">
                           <img 
                             src={
-                              image.src?.medium || 
                               image.url || 
+                              image.src?.medium || 
                               image.large_url || 
                               (image.source === 'pexels' && image.id 
                                 ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
-                                : (image.source === 'pixabay' && image.id
-                                  ? `https://pixabay.com/get/${image.id}?height=350`
-                                  : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E")
-                              )
+                                : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E")
                             } 
-                            alt={image.alt || 'Product image'} 
+                            alt={image.alt || 'Selected image'} 
                             className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              console.log('Selected image failed to load, trying Pexels direct URL for:', image.id);
-                              
-                              // Try Pexels URL directly if other URLs fail
-                              if (image.source === 'pexels' && image.id) {
-                                e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
-                              } else if (image.source === 'pixabay' && image.id) {
-                                e.currentTarget.src = `https://pixabay.com/get/${image.id}?height=350`;
-                              } else {
-                                // Fallback to placeholder
-                                e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
-                              }
-                            }}
                           />
                         </div>
                         
-                        {/* Order badge */}
-                        <div className="absolute top-2 left-2 z-10">
-                          <span className={`text-white text-xs px-2 py-1 rounded-md font-medium ${index === 0 ? 'bg-yellow-500' : 'bg-blue-500'}`}>
-                            {index === 0 ? 'Featured' : `Image ${index + 1}`}
-                          </span>
-                        </div>
-                        
-                        {/* Featured badge */}
-                        {featuredImageId === image.id && index !== 0 && (
-                          <div className="absolute top-2 right-2 z-10">
-                            <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium">
-                              Featured
-                            </span>
-                          </div>
-                        )}
-                        
-                        {/* Hover action buttons */}
-                        <div 
-                          className="absolute inset-0 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200 bg-black/75" 
+                        {/* Remove badge */}
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-7 w-7 bg-white bg-opacity-90 hover:bg-opacity-100 text-red-500 hover:text-red-600 border border-red-200"
+                          onClick={() => toggleImageSelection(image.id)}
                         >
-                          <div className="flex flex-col gap-2 w-4/5">
-                            <Button
-                              variant={featuredImageId === image.id ? "default" : "secondary"}
-                              size="sm"
-                              className={`h-8 text-xs ${featuredImageId === image.id ? 'bg-yellow-500 hover:bg-yellow-600 border border-yellow-400' : 'border border-yellow-400'}`}
-                              onClick={() => setAsFeaturedImage(image.id)}
-                              disabled={featuredImageId === image.id}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              {featuredImageId === image.id ? "Featured Image" : "Set as Featured"}
-                            </Button>
-                            
-                            <Button
-                              variant={contentImageIds.includes(image.id) && featuredImageId !== image.id ? "default" : "secondary"}
-                              size="sm"
-                              className={`h-8 text-xs ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'bg-blue-500 hover:bg-blue-600 border border-blue-400' : 'border border-blue-400'}`}
-                              onClick={() => toggleContentImage(image.id)}
-                              disabled={featuredImageId === image.id}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                              </svg>
-                              {contentImageIds.includes(image.id) ? "Content Image" : "Set as Content"}
-                            </Button>
-                            
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="h-8 text-xs border border-red-500"
-                              onClick={() => toggleImageSelection(image.id)}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                              Remove Image
-                            </Button>
-                          </div>
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Image type badge */}
+                        <div className="absolute top-2 left-2">
+                          {featuredImageId === image.id ? (
+                            <Badge className="bg-yellow-500 hover:bg-yellow-600 border-yellow-600">Featured</Badge>
+                          ) : contentImageIds.includes(image.id) ? (
+                            <Badge className="bg-blue-500 hover:bg-blue-600 border-blue-600">Content</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-white/90">Regular</Badge>
+                          )}
                         </div>
                         
-                        {/* Fixed bottom label */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent backdrop-blur-sm p-1">
-                          {featuredImageId === image.id ? (
-                            <span className="text-white text-xs px-2 py-1 bg-yellow-500/90 rounded-sm font-medium">
-                              Featured Image
-                            </span>
-                          ) : contentImageIds.includes(image.id) ? (
-                            <span className="text-white text-xs px-2 py-1 bg-blue-500/90 rounded-sm font-medium">
-                              Content Image
-                            </span>
-                          ) : (
-                            <span className="text-white text-xs px-2 py-1 font-medium">
-                              Selected Image
-                            </span>
-                          )}
+                        {/* Action buttons */}
+                        <div className="flex p-1 bg-gradient-to-b from-gray-50 to-gray-100">
+                          <Button 
+                            className="flex-1 text-xs h-7 rounded-sm"
+                            variant={featuredImageId === image.id ? "default" : "secondary"}
+                            size="sm"
+                            onClick={() => setAsFeaturedImage(image.id)}
+                          >
+                            {featuredImageId === image.id ? "Featured ✓" : "Set Featured"}
+                          </Button>
+                          <Button
+                            variant={contentImageIds.includes(image.id) ? "default" : "secondary"}
+                            className={`ml-1 flex-1 text-xs h-7 rounded-sm ${contentImageIds.includes(image.id) ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
+                            size="sm"
+                            onClick={() => setAsContentImage(image.id)}
+                          >
+                            {contentImageIds.includes(image.id) ? "Content ✓" : "Set Content"}
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-gray-500">
-                      <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                      <p>No images selected yet</p>
-                      <Button 
-                        variant="outline" 
-                        className="mt-3" 
-                        size="sm"
-                        onClick={() => setActiveTab('search')}
-                      >
-                        Go to Search
-                      </Button>
-                    </div>
+                  <div className="text-center py-10 text-gray-500">
+                    <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                    <p className="text-lg mb-2">No images selected yet</p>
+                    <p className="text-sm mb-4">Go to the search tab to find and select images for your content</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setActiveTab('search')}
+                    >
+                      Go to Search
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1090,51 +899,27 @@ export default function ImageSearchDialog({
           </Tabs>
         </div>
         
-        <DialogFooter className="border-t p-4">
-          <div className="w-full flex justify-between items-center gap-3">
-            <div className="flex items-center space-x-2">
-              {featuredImageId && (
-                <div className="flex items-center bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md text-xs">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Featured image selected
-                </div>
-              )}
-              {contentImageIds.length > 0 && (
-                <div className="flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {contentImageIds.length} content image{contentImageIds.length !== 1 ? 's' : ''} selected
-                </div>
-              )}
+        <DialogFooter className="p-4 border-t">
+          <div className="flex flex-col sm:flex-row gap-2 justify-between items-center w-full">
+            <div className="text-sm text-muted-foreground">
+              {selectedImages.length > 0 ? 
+                `${selectedImages.length} image${selectedImages.length !== 1 ? 's' : ''} selected` : 
+                "No images selected"
+              }
+              {featuredImageId && " (including 1 featured)"}
             </div>
-            
             <div className="flex gap-2">
               <Button 
-                type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
               >
                 Cancel
               </Button>
               <Button 
-                type="button"
                 onClick={confirmImageSelection}
                 disabled={selectedImages.length === 0}
-                className={selectedImages.length > 0 ? "bg-green-600 hover:bg-green-700" : ""}
               >
-                {selectedImages.length === 0 ? (
-                  "Select Images"
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Confirm Selection ({selectedImages.length})
-                  </>
-                )}
+                Confirm Selection
               </Button>
             </div>
           </div>
