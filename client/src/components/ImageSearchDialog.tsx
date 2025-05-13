@@ -696,7 +696,7 @@ export default function ImageSearchDialog({
                             ${featuredImageId === image.id ? 'ring-4 ring-yellow-400 border-yellow-500 shadow-yellow-100' : ''}
                             ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'border-blue-500 ring-2 ring-blue-300 shadow-blue-100' : ''}
                           `}
-                          style={{ position: 'relative', zIndex: 41 }}
+                          style={{ position: 'relative', zIndex: 999 }}
                           onClick={() => toggleImageSelection(image.id)}
                         >
                           <div className="aspect-[4/3] bg-slate-100 relative">
