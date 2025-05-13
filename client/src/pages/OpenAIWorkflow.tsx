@@ -708,6 +708,15 @@ export default function OpenAIWorkflow() {
       return;
     }
     
+    if (contentType === 'blog' && !selectedBlog) {
+      toast({
+        title: "Blog Selection Required",
+        description: "Please select a blog before generating blog post content",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsGeneratingCluster(true);
     
     try {
@@ -2148,7 +2157,7 @@ export default function OpenAIWorkflow() {
           </Button>
           <Button 
             onClick={generateContentCluster}
-            disabled={isGeneratingCluster}
+            disabled={isGeneratingCluster || (contentType === 'blog' && !selectedBlog)}
           >
             {isGeneratingCluster ? (
               <>
