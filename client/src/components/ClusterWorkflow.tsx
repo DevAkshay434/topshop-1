@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
+import { useQuery } from '@tanstack/react-query';
 import { useStore } from '@/contexts/StoreContext';
 import {
   Card,
@@ -40,6 +41,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import ImageSearchDialog from './ImageSearchDialog';
+
+// Local definition of PexelsImage to match what's in ImageSearchDialog
+interface PexelsImage {
+  id: string;
+  url: string;
+  width: number;
+  height: number;
+  alt?: string;
+  src?: {
+    original: string;
+    large: string;
+    medium: string;
+    small: string;
+    thumbnail: string;
+  };
+  photographer?: string;
+  photographer_url?: string;
+  selected?: boolean;
+  isProductImage?: boolean;
+  productId?: string;
+  source?: 'pexels' | 'pixabay' | 'product';
+  isFeatured?: boolean;
+  isContentImage?: boolean;
+}
 
 interface Article {
   id: string;
@@ -94,7 +119,18 @@ export default function ClusterWorkflow({
   isDemo = false,
 }: ClusterWorkflowProps) {
   const { toast } = useToast();
-  const { blogs, defaultBlog } = useStore();
+  // Query for blogs instead of using store context
+  const { data: blogsData } = useQuery<{ blogs: { id: string, title: string }[] }>({
+    queryKey: ["/api/shopify/blogs"],
+  });
+  
+  const { data: connectionData } = useQuery<{ connection: { defaultBlogId?: string } }>({
+    queryKey: ["/api/shopify/connection"],
+  });
+  
+  // Use these fetched blogs with fallbacks
+  const blogs = blogsData?.blogs || [];
+  const defaultBlog = connectionData?.connection?.defaultBlogId;
   
   // UI state
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -108,7 +144,7 @@ export default function ClusterWorkflow({
   // Article creation options
   const [numberOfArticles, setNumberOfArticles] = useState<string>('3');
   const [selectedWritingPerspective, setSelectedWritingPerspective] = useState<string>('male');
-  const [selectedBlog, setSelectedBlog] = useState<string>(defaultBlog?.id || '');
+  const [selectedBlog, setSelectedBlog] = useState<string>(defaultBlog || '');
   const [toneOfVoice, setToneOfVoice] = useState<string>('authoritative');
   const [introStyle, setIntroStyle] = useState<string>('problem-focused');
   const [articleLength, setArticleLength] = useState<string>('medium');
@@ -232,15 +268,17 @@ export default function ClusterWorkflow({
   };
   
   // Handle images selected from dialog
-  const handleImagesSelected = (images: any[]) => {
+  const handleImagesSelected = (images: PexelsImage[]) => {
     if (!currentArticleId) return;
     
-    // Get the current article and update its images
-    // Make sure to add necessary width/height properties to make TypeScript happy
+    // Convert PexelsImages to the Article image format
     const processedImages = images.map(img => ({
-      ...img,
-      width: img.width || 800,
-      height: img.height || 600
+      id: img.id,
+      url: img.url,
+      alt: img.alt || '',
+      source: img.source,
+      isFeatured: !!img.isFeatured,
+      isContentImage: !!img.isContentImage
     }));
     
     setEditedArticles(prev => 
@@ -387,10 +425,18 @@ export default function ClusterWorkflow({
         });
         
         if (response.success && response.cluster) {
-          const articles = response.cluster.subtopics.map((article: any, index: number) => ({
+          // Log the response structure for debugging
+          console.log('Claude cluster response structure:', response.cluster);
+          
+          // Handle both structured formats that Claude might return
+          const subtopics = response.cluster.subtopics || [];
+          console.log('Subtopics detected:', subtopics.length);
+          
+          // Create articles from the subtopics with proper error handling
+          const articles = subtopics.map((article: any, index: number) => ({
             id: `article-${Date.now()}-${index}`,
-            title: article.title,
-            content: article.content,
+            title: article.title || `Article ${index + 1}`,
+            content: article.content || '<p>Content is being processed...</p>',
             tags: [mainTopic, ...(article.keywords?.slice(0, 3) || [])],
             status: 'draft' as const,
             images: [], // Initialize with empty images array that can be filled later
@@ -721,7 +767,7 @@ export default function ClusterWorkflow({
                       <SelectValue placeholder="Choose blog" />
                     </SelectTrigger>
                     <SelectContent>
-                      {blogs.map(blog => (
+                      {blogs.map((blog: { id: string; title: string }) => (
                         <SelectItem key={blog.id} value={blog.id.toString()}>
                           {blog.title}
                         </SelectItem>
@@ -1121,21 +1167,41 @@ export default function ClusterWorkflow({
                           {/* Featured image - show featured image or first image if any */}
                           {article.images && article.images.length > 0 && (
                             <div className="mb-4 rounded-md overflow-hidden border">
-                              {article.images.find(img => img.isFeatured) ? (
-                                // Show featured image if available
-                                <img 
-                                  src={`/api/proxy/image/${article.images.find(img => img.isFeatured)?.id}`} 
-                                  alt={article.images.find(img => img.isFeatured)?.alt || article.title}
-                                  className="w-full h-auto object-cover max-h-[300px]"
-                                />
-                              ) : (
-                                // Otherwise show first image
-                                <img 
-                                  src={`/api/proxy/image/${article.images[0].id}`} 
-                                  alt={article.images[0].alt || article.title}
-                                  className="w-full h-auto object-cover max-h-[300px]"
-                                />
-                              )}
+                              {(() => {
+                                const featuredImage = article.images.find(img => img.isFeatured);
+                                if (featuredImage) {
+                                  // Show featured image if available
+                                  return (
+                                    <img 
+                                      src={`/api/proxy/image/${featuredImage.id}`} 
+                                      alt={featuredImage.alt || article.title}
+                                      className="w-full h-auto object-cover max-h-[300px]"
+                                      onError={(e) => {
+                                        // On error, replace with placeholder
+                                        const target = e.target as HTMLImageElement;
+                                        target.onerror = null; // Prevent infinite reload
+                                        target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'%3E%3Crect width='800' height='400' fill='%23f5f5f5'/%3E%3Ctext x='400' y='200' font-family='Arial' font-size='30' text-anchor='middle' alignment-baseline='middle' fill='%23999'%3EFeatured Image%3C/text%3E%3C/svg%3E";
+                                      }}
+                                    />
+                                  );
+                                } else if (article.images.length > 0) {
+                                  // Otherwise show first image
+                                  return (
+                                    <img 
+                                      src={`/api/proxy/image/${article.images[0].id}`} 
+                                      alt={article.images[0].alt || article.title}
+                                      className="w-full h-auto object-cover max-h-[300px]"
+                                      onError={(e) => {
+                                        // On error, replace with placeholder
+                                        const target = e.target as HTMLImageElement;
+                                        target.onerror = null; // Prevent infinite reload
+                                        target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='400' viewBox='0 0 800 400'%3E%3Crect width='800' height='400' fill='%23f5f5f5'/%3E%3Ctext x='400' y='200' font-family='Arial' font-size='30' text-anchor='middle' alignment-baseline='middle' fill='%23999'%3EImage%3C/text%3E%3C/svg%3E";
+                                      }}
+                                    />
+                                  );
+                                }
+                                return null;
+                              })()}
                               <div className="bg-gradient-to-r from-primary/20 to-transparent p-2 text-xs font-medium">
                                 Featured Image
                               </div>
@@ -1174,12 +1240,18 @@ export default function ClusterWorkflow({
                               <div className="grid grid-cols-3 gap-3">
                                 {article.images
                                   .filter(img => !img.isFeatured) // Skip featured image
-                                  .map((img: any) => (
+                                  .map((img) => (
                                     <div key={img.id} className="border rounded-md overflow-hidden">
                                       <img 
                                         src={`/api/proxy/image/${img.id}`} 
                                         alt={img.alt || "Content image"}
                                         className="w-full h-auto object-cover aspect-[4/3]"
+                                        onError={(e) => {
+                                          // On error, replace with placeholder or fallback
+                                          const target = e.target as HTMLImageElement;
+                                          target.onerror = null; // Prevent infinite reload
+                                          target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f5f5f5'/%3E%3Cpath d='M65,35 L35,65 M35,35 L65,65' stroke='%23999' stroke-width='2'/%3E%3C/svg%3E";
+                                        }}
                                       />
                                       {img.isContentImage && (
                                         <div className="bg-blue-50 p-1 text-xs font-medium text-blue-700 text-center">
@@ -1345,11 +1417,26 @@ export default function ClusterWorkflow({
         onOpenChange={setIsImageDialogOpen}
         onImagesSelected={handleImagesSelected}
         initialSelectedImages={currentArticleId ? 
-          // We need to ensure the images have width/height properties to satisfy PexelsImage type
+          // Convert article images to PexelsImage type with required properties
           (editedArticles.find(a => a.id === currentArticleId)?.images || []).map(img => ({
-            ...img,
-            width: img.width || 800,
-            height: img.height || 600
+            id: img.id,
+            url: img.url || '', // Ensure url is never undefined
+            alt: img.alt || '',
+            source: ((img.source === 'pexels' || img.source === 'pixabay' || img.source === 'product') 
+              ? img.source 
+              : 'product') as 'pexels' | 'pixabay' | 'product', // Cast to expected type
+            isFeatured: !!img.isFeatured,
+            isContentImage: !!img.isContentImage,
+            selected: true, // Mark as selected in the dialog
+            width: 800, // Default width
+            height: 600, // Default height
+            src: {
+              original: img.url || '',
+              large: img.url || '',
+              medium: img.url || '',
+              small: img.url || '',
+              thumbnail: img.url || ''
+            }
           })) : []}
         searchKeyword={searchKeyword}
       />

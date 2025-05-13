@@ -8,7 +8,7 @@ import { Loader2, CheckCircle, XCircle, Plus, Search, ImageIcon } from 'lucide-r
 import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface PexelsImage {
+export interface PexelsImage {
   id: string;
   url: string;
   width: number;
@@ -301,15 +301,24 @@ export default function ImageSearchDialog({
         // Create a new object with all the image properties plus selected=true
         const fullImageObject = {
           ...imageToToggle,
-          selected: true
+          selected: true,
+          // Automatically make it featured if it's the first image selected
+          isFeatured: selectedImages.length === 0
         };
         
         setSelectedImages(prev => [...prev, fullImageObject]);
         
+        // If it's the first image, automatically set it as featured
+        if (selectedImages.length === 0) {
+          setFeaturedImageId(imageId);
+        }
+        
         // Show toast as feedback
         toast({
           title: "Image Selected",
-          description: "Click 'Set as Featured' to make it the main image",
+          description: selectedImages.length === 0 
+            ? "First image automatically set as featured. You can select more images." 
+            : "You can select multiple images. Click 'Set as Featured' to make any image the main one.",
           variant: "default"
         });
       }
