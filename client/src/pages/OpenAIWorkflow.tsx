@@ -50,11 +50,37 @@ import {
 } from 'lucide-react';
 
 // Define types for our workflow
+// Product interface for OpenAIWorkflow internal use
 interface Product {
   id: string;
   title: string;
   description?: string;
   image?: string;
+}
+
+// Product interface for ClusterWorkflow component
+interface ClusterProduct {
+  id: string;
+  title: string;
+  handle?: string;
+  price?: string;
+  compareAtPrice?: string;
+  image?: {
+    src: string;
+    alt?: string;
+  };
+}
+
+// Convert Product to ClusterProduct
+const convertToClusterProducts = (products: Product[]): ClusterProduct[] => {
+  return products.map(product => ({
+    id: String(product.id),
+    title: product.title,
+    image: product.image ? {
+      src: product.image,
+      alt: product.title
+    } : undefined
+  }));
 }
 
 interface Collection {
@@ -92,6 +118,52 @@ interface GeneratedArticle {
   content: string;
   tags: string[];
   status: 'draft' | 'published' | 'scheduled';
+}
+
+// Interface to match ClusterWorkflow component's Article type
+interface Article {
+  id: string;
+  title: string;
+  content: string;
+  tags?: string[];
+  status?: 'draft' | 'published' | 'scheduled';
+  publicationType?: 'draft' | 'published' | 'scheduled';
+  scheduledDate?: string;
+  scheduledTime?: string;
+  images?: Array<{
+    id: string;
+    url?: string;
+    alt?: string;
+    source?: string;
+    isFeatured?: boolean;
+    isContentImage?: boolean;
+  }>;
+}
+
+// Interface for selected images
+interface SelectedImage {
+  id: string;
+  src?: {
+    large?: string;
+  };
+  large_url?: string;
+  alt?: string;
+  source?: string;
+}
+
+// Convert GeneratedArticle to Article
+const convertToArticles = (generatedArticles: GeneratedArticle[], selectedImgs: SelectedImage[]): Article[] => {
+  return generatedArticles.map(article => ({
+    ...article,
+    publicationType: article.status,
+    images: selectedImgs.map((img: SelectedImage) => ({
+      id: img.id,
+      url: img.src?.large || img.large_url,
+      alt: img.alt || '',
+      source: img.source || '',
+      isFeatured: true
+    }))
+  }));
 }
 
 export default function OpenAIWorkflow() { // Using Claude AI under the hood
@@ -2281,12 +2353,9 @@ export default function OpenAIWorkflow() { // Using Claude AI under the hood
           {currentStep === 6 && (
             <ClusterWorkflow
               articles={generatedArticles}
-              isLoading={isGeneratingCluster}
-              onSave={handleSaveAllArticles}
-              canSchedule={canSchedule}
-              blogId={selectedBlog || blogId}
-              products={selectedProducts}
+              initialProducts={selectedProducts}
               onBack={() => setCurrentStep(5)}
+              onComplete={handleSaveAllArticles}
             />
           )}
         </div>
