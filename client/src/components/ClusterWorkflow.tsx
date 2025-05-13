@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, ChevronRight, Clock, FileText, Sparkles, Bot, Terminal, Trash, Upload } from 'lucide-react';
+import { Calendar, ChevronRight, Clock, FileText, Sparkles, Bot, Terminal, Trash, Upload, Search, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -62,48 +62,64 @@ interface Article {
 interface Product {
   id: string;
   title: string;
-  description?: string;
+  handle?: string;
+  price?: string;
+  compareAtPrice?: string;
+  image?: {
+    src: string;
+    alt?: string;
+  };
 }
 
 interface Keyword {
   keyword: string;
-  score: number;
+  score?: number;
+  isMainKeyword?: boolean;
 }
 
 interface ClusterWorkflowProps {
-  articles: Article[];
-  isLoading?: boolean;
-  onSave?: (articles: Article[]) => Promise<void>;
-  canSchedule?: boolean;
-  blogId?: string;
-  products?: Product[];
-  onBack?: () => void;  // Added callback for back button
+  onBack?: () => void;
+  onComplete?: (articles: Article[]) => void;
+  articles?: Article[];
+  initialProducts?: Product[];
+  isDemo?: boolean;
 }
 
 export default function ClusterWorkflow({
+  onBack,
+  onComplete,
   articles = [],
-  isLoading = false,
-  onSave,
-  canSchedule = true,
-  blogId,
-  products = [],
-  onBack
+  initialProducts = [],
+  isDemo = false,
 }: ClusterWorkflowProps) {
   const { toast } = useToast();
-  const { storeInfo } = useStore();
+  const { blogs, defaultBlog } = useStore();
   
-  // Content creation steps
+  // UI state
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [mainTopic, setMainTopic] = useState<string>("");
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([]);
-  const [customKeywords, setCustomKeywords] = useState<string>("");
   
-  // Formatting options
-  const [writingPerspective, setWritingPerspective] = useState<string>("second-person");
-  const [toneOfVoice, setToneOfVoice] = useState<string>("friendly");
-  const [introStyle, setIntroStyle] = useState<string>("search-intent-focused");
-  const [faqStyle, setFaqStyle] = useState<string>("short");
+  // Selected products
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>(initialProducts);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [mainTopic, setMainTopic] = useState<string>('');
+  
+  // Article creation options
+  const [numberOfArticles, setNumberOfArticles] = useState<string>('3');
+  const [selectedWritingPerspective, setSelectedWritingPerspective] = useState<string>('male');
+  const [selectedBlog, setSelectedBlog] = useState<string>(defaultBlog?.id || '');
+  const [toneOfVoice, setToneOfVoice] = useState<string>('authoritative');
+  const [introStyle, setIntroStyle] = useState<string>('problem-focused');
+  const [articleLength, setArticleLength] = useState<string>('medium');
+  const [faqStyle, setFaqStyle] = useState<string>('detailed');
+  const [includeTOC, setIncludeTOC] = useState<boolean>(true);
+  const [includeYouTube, setIncludeYouTube] = useState<boolean>(false);
+  const [youtubeUrl, setYoutubeUrl] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  
+  // Keyword selection
+  const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([]);
+  const [customKeywords, setCustomKeywords] = useState<string>('');
   
   // Content options
   const [enableTables, setEnableTables] = useState<boolean>(true);
@@ -119,7 +135,6 @@ export default function ClusterWorkflow({
     new Date(new Date().setDate(new Date().getDate() + 1))
   );
   const [scheduleTime, setScheduleTime] = useState<string>("09:30");
-  const [isSaving, setIsSaving] = useState(false);
   
   // Keyword suggestions (mock data for UI development)
   const [suggestedKeywords, setSuggestedKeywords] = useState<Keyword[]>([
@@ -153,35 +168,29 @@ export default function ClusterWorkflow({
   // Count selected articles
   const selectedCount = Object.values(selectedArticles).filter(Boolean).length;
   
-  // Update an article's content
-  const updateArticleContent = (id: string, content: string) => {
-    setEditedArticles(prev => 
-      prev.map(article => 
-        article.id === id ? { ...article, content } : article
-      )
-    );
-  };
-  
-  // Update an article's title
-  const updateArticleTitle = (id: string, title: string) => {
-    setEditedArticles(prev => 
-      prev.map(article => 
-        article.id === id ? { ...article, title } : article
-      )
-    );
-  };
+  // Check if scheduling is possible (needs date and time)
+  const canSchedule = !!scheduleDate && !!scheduleTime;
   
   // Apply bulk action to selected articles
   const applyBulkAction = () => {
+    if (selectedCount === 0) {
+      toast({
+        title: "No articles selected",
+        description: "Please select at least one article to apply action",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const updatedArticles = editedArticles.map(article => {
       if (selectedArticles[article.id]) {
         return {
           ...article,
           status: bulkAction,
-          ...(bulkAction === 'scheduled' ? {
-            scheduledDate: scheduleDate ? format(scheduleDate, 'yyyy-MM-dd') : undefined,
-            scheduledTime: scheduleTime
-          } : {})
+          scheduledDate: bulkAction === 'scheduled' && scheduleDate 
+            ? format(scheduleDate, 'yyyy-MM-dd')
+            : undefined,
+          scheduledTime: bulkAction === 'scheduled' ? scheduleTime : undefined,
         };
       }
       return article;
@@ -190,93 +199,52 @@ export default function ClusterWorkflow({
     setEditedArticles(updatedArticles);
     
     toast({
-      title: "Bulk Action Applied",
-      description: `Applied ${bulkAction} to ${selectedCount} articles`,
+      title: "Action applied",
+      description: `${selectedCount} article${selectedCount > 1 ? 's' : ''} set to ${bulkAction}${bulkAction === 'scheduled' ? ` for ${format(scheduleDate!, 'yyyy-MM-dd')} at ${scheduleTime}` : ''}`,
+    });
+    
+    // Clear selection after applying action
+    setSelectedArticles({});
+  };
+  
+  // Update article title
+  const updateArticleTitle = (id: string, title: string) => {
+    setEditedArticles(prevArticles => 
+      prevArticles.map(article => 
+        article.id === id ? { ...article, title } : article
+      )
+    );
+  };
+  
+  // Update article content
+  const updateArticleContent = (id: string, content: string) => {
+    setEditedArticles(prevArticles => 
+      prevArticles.map(article => 
+        article.id === id ? { ...article, content } : article
+      )
+    );
+  };
+  
+  // Update article status
+  const updateArticleStatus = (id: string, status: 'draft' | 'published' | 'scheduled', scheduledDate?: string, scheduledTime?: string) => {
+    setEditedArticles(prevArticles => 
+      prevArticles.map(article => 
+        article.id === id ? { 
+          ...article, 
+          status,
+          scheduledDate,
+          scheduledTime
+        } : article
+      )
+    );
+    
+    toast({
+      title: "Status updated",
+      description: `Article set to ${status}${status === 'scheduled' && scheduledDate ? ` for ${scheduledDate} at ${scheduledTime}` : ''}`,
     });
   };
   
-  // Save all articles
-  const saveAllArticles = async () => {
-    if (!onSave) return;
-    
-    setIsSaving(true);
-    
-    try {
-      await onSave(editedArticles);
-      
-      toast({
-        title: "Success",
-        description: `Saved ${editedArticles.length} articles`,
-      });
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/posts/recent"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/posts/scheduled"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/posts/published"] });
-      
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error)?.message || "Failed to save articles",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
-  // Save a single article
-  const saveArticle = async (article: Article) => {
-    if (!blogId) {
-      toast({
-        title: "Error",
-        description: "No blog selected for publication",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      // Prepare post data
-      const postData: any = {
-        title: article.title,
-        content: article.content,
-        blogId: blogId,
-        status: article.status || 'draft',
-        publicationType: article.status || 'draft',
-        tags: Array.isArray(article.tags) ? article.tags.join(',') : '',
-      };
-      
-      // Add scheduling info if needed
-      if (article.status === 'scheduled') {
-        postData.scheduledPublishDate = article.scheduledDate;
-        postData.scheduledPublishTime = article.scheduledTime || "09:30";
-        postData.scheduleDate = article.scheduledDate;
-        postData.scheduleTime = article.scheduledTime || "09:30";
-      }
-      
-      // Send request
-      await apiRequest("POST", "/api/posts", postData);
-      
-      toast({
-        title: "Success",
-        description: `Article "${article.title}" saved as ${article.status}`,
-      });
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error)?.message || "Failed to save article",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Determine if an article is selected
+  // Check if article is selected for bulk actions
   const isSelected = (id: string) => !!selectedArticles[id];
   
   // Test the Claude API connection
@@ -332,71 +300,71 @@ export default function ClusterWorkflow({
       ];
       
       // Get product info for selected products
-      const selectedProductsInfo = products.filter(p => selectedProducts.includes(p.id));
+      const products = selectedProducts.map(product => ({
+        id: product.id,
+        title: product.title,
+        description: '',
+      }));
       
-      toast({
-        title: "Generating Content Cluster",
-        description: `Creating cluster for "${mainTopic}" with ${selectedProductsInfo.length} products and ${allKeywords.length} keywords`,
-      });
-      
-      // In a real implementation, we would call the Claude API
-      try {
+      if (!isDemo) {
+        // Make API call to generate content
         const response = await apiRequest("POST", "/api/claude/cluster", {
           topic: mainTopic,
-          products: selectedProductsInfo,
           keywords: allKeywords,
+          products,
           options: {
-            writingPerspective,
-            toneOfVoice,
-            introStyle,
-            faqStyle,
+            writingPerspective: selectedWritingPerspective,
+            toneOfVoice: toneOfVoice,
+            introStyle: introStyle,
+            faqStyle: faqStyle,
             enableTables,
             enableLists,
             enableH1,
-            enableCitations
+            enableBolding: true,
+            enableCitations,
+            enableExternalLinks: true,
+            includeYouTube,
+            youtubeUrl: youtubeUrl || '',
+            includeTOC,
+            authorInfo: null,
+            numH2s: 5,
+            articleLength: articleLength,
           }
         });
         
-        // Process the response from Claude
         if (response.success && response.cluster) {
-          // Convert the cluster data into the format expected by our UI
           const articles = response.cluster.subtopics.map((article: any, index: number) => ({
-            id: `cluster-${index + 1}`,
+            id: `article-${Date.now()}-${index}`,
             title: article.title,
             content: article.content,
-            tags: article.keywords || [mainTopic],
-            status: 'draft' as const
+            tags: [mainTopic, ...(article.keywords?.slice(0, 3) || [])],
+            status: 'draft' as const,
           }));
           
           setEditedArticles(articles);
           
           toast({
-            title: "Cluster Generated",
-            description: `Successfully generated ${articles.length} articles for your content cluster`,
+            title: "Content Generated",
+            description: `Generated ${articles.length} articles in your cluster`,
           });
         } else {
-          throw new Error(response.message || "Failed to generate content cluster");
+          throw new Error(response.message || "Failed to generate content");
         }
-      } catch (error) {
-        console.log("Using demo content due to API error:", error);
-        
-        // For demo/fallback purposes, generate some mock content
-        // This would normally come from Claude but we provide fallback content
-        const clusterTopics = [
-          `Complete Guide to ${mainTopic}: Everything You Need to Know`,
-          `How to Choose the Best ${mainTopic} for Your Home`,
-          `${mainTopic} Installation: Step-by-Step Instructions`,
-          `Troubleshooting Common ${mainTopic} Problems`
-        ];
-        
-        const mockCluster = clusterTopics.map((title: string, index: number) => ({
-          id: `demo-${index + 1}`,
-          title,
-          content: `<h2>Introduction to ${title}</h2>
-          <p>This comprehensive article about ${title} explores everything you need to know, with a focus on our premium products.</p>
+      } else {
+        // Create mock content for development
+        const mockCluster = Array.from({ length: parseInt(numberOfArticles) }, (_, i) => ({
+          id: `article-${Date.now()}-${i}`,
+          title: `${mainTopic} ${["Guide", "Tips", "Benefits", "Installation", "Review"][i % 5]} - ${i + 1}`,
+          content: `<h1>${mainTopic} ${["Guide", "Tips", "Benefits", "Installation", "Review"][i % 5]}</h1>
           
-          <h2>Key Points About ${mainTopic}</h2>
-          <p>When considering a ${mainTopic}, keep these important factors in mind:</p>
+          <p>In this comprehensive guide, we'll explore everything you need to know about ${mainTopic} systems for your home.</p>
+          
+          <h2>Why Choose a Quality ${mainTopic}?</h2>
+          <p>Selecting the right ${mainTopic} for your home is crucial for ensuring clean, safe water for your family.</p>
+          
+          <h2>Top Features to Consider</h2>
+          <p>When shopping for a ${mainTopic}, look for these important features:</p>
+          
           <ul>
             <li>Quality materials ensure longer lifespan</li>
             <li>Proper installation is critical for performance</li>
@@ -418,7 +386,7 @@ export default function ClusterWorkflow({
       }
       
       // Move to the articles view
-      setCurrentStep(4);
+      setCurrentStep(6);
     } catch (error) {
       toast({
         title: "Error",
@@ -435,7 +403,7 @@ export default function ClusterWorkflow({
       <CardHeader>
         <CardTitle>Content Cluster Generator</CardTitle>
         <CardDescription>
-          {currentStep < 4 
+          {currentStep < 6 
             ? "Generate SEO-optimized content clusters for your Shopify store" 
             : "Review and edit your generated content cluster before publishing"}
         </CardDescription>
@@ -460,71 +428,110 @@ export default function ClusterWorkflow({
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <Label>Cluster Topic</Label>
-                <Input 
-                  value={mainTopic}
-                  onChange={(e) => setMainTopic(e.target.value)}
-                  placeholder="e.g., Water Softener Installation Guide"
-                  className="mt-1"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  This will be the main topic for your content cluster
-                </p>
-              </div>
-              
+            <div className="grid gap-6">
               <div>
                 <Label>Select Products</Label>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Choose products to feature in your content
+                <p className="text-sm text-muted-foreground mb-3">
+                  Choose products you want to create content for
                 </p>
                 
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                  {products.length === 0 ? (
-                    <div className="text-center py-4 border rounded-md bg-muted/30">
-                      <p className="text-muted-foreground">No products available</p>
-                    </div>
-                  ) : (
-                    products.map(product => (
-                      <div key={product.id} className="flex items-start space-x-2 p-2 border rounded-md">
-                        <Checkbox 
-                          checked={selectedProducts.includes(product.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProducts(prev => [...prev, product.id]);
+                <div className="flex items-center space-x-2 mb-4">
+                  <Input
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                  />
+                  <Button variant="outline" size="icon">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <ScrollArea className="h-[300px] border rounded-md">
+                  <div className="p-4 grid gap-2">
+                    {/* Filtered products here */}
+                    {initialProducts
+                      .filter(product => 
+                        !searchQuery || 
+                        product.title.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .map(product => (
+                        <div 
+                          key={product.id}
+                          className={cn(
+                            "flex items-center space-x-3 p-3 rounded-md cursor-pointer transition-colors",
+                            selectedProducts.some(p => p.id === product.id)
+                              ? "bg-primary/10 hover:bg-primary/15"
+                              : "hover:bg-muted"
+                          )}
+                          onClick={() => {
+                            if (selectedProducts.some(p => p.id === product.id)) {
+                              setSelectedProducts(selectedProducts.filter(p => p.id !== product.id));
                             } else {
-                              setSelectedProducts(prev => prev.filter(id => id !== product.id));
+                              setSelectedProducts([...selectedProducts, product]);
                             }
                           }}
-                        />
-                        <div>
-                          <p className="font-medium">{product.title}</p>
-                          {product.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                        >
+                          <Checkbox 
+                            checked={selectedProducts.some(p => p.id === product.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                if (!selectedProducts.some(p => p.id === product.id)) {
+                                  setSelectedProducts([...selectedProducts, product]);
+                                }
+                              } else {
+                                setSelectedProducts(selectedProducts.filter(p => p.id !== product.id));
+                              }
+                            }}
+                          />
+                          
+                          {product.image && (
+                            <div className="h-10 w-10 rounded-md overflow-hidden flex-shrink-0">
+                              <img 
+                                src={product.image.src} 
+                                alt={product.image.alt || product.title}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
                           )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{product.title}</div>
+                            {product.price && (
+                              <div className="text-sm text-muted-foreground">
+                                ${product.price}
+                                {product.compareAtPrice && (
+                                  <span className="ml-2 line-through text-xs">
+                                    ${product.compareAtPrice}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      ))}
+                  </div>
+                </ScrollArea>
               </div>
-            </div>
-            
-            <div className="flex justify-between">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={testClaudeConnection}
-                className="flex items-center gap-2"
-              >
-                <Bot className="h-4 w-4" />
-                Test Claude Connection
-              </Button>
               
-              <Button onClick={() => setCurrentStep(2)}>
-                Next: Keywords <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div>
+                <Label htmlFor="main-topic">Main Topic</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Enter the main topic for your content cluster
+                </p>
+                <Input
+                  id="main-topic"
+                  placeholder="e.g., Water Softener Installation Guide"
+                  value={mainTopic}
+                  onChange={(e) => setMainTopic(e.target.value)}
+                />
+              </div>
+              
+              <div className="flex justify-end">
+                <Button onClick={() => setCurrentStep(2)}>
+                  Continue <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         ) : currentStep === 2 ? (
@@ -532,117 +539,67 @@ export default function ClusterWorkflow({
           <div className="space-y-6">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">1</div>
                 <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">2</div>
-              </div>
-              <div className="flex space-x-2">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">3</div>
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">4</div>
+                <h3 className="text-lg font-medium">Choose Keywords</h3>
               </div>
             </div>
             
-            <div className="space-y-4">
+            <div className="grid gap-6">
               <div>
-                <div className="flex justify-between items-center">
-                  <Label>Selected Keywords</Label>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setSelectedKeywords([])}
-                    disabled={selectedKeywords.length === 0}
-                  >
-                    Clear All
-                  </Button>
-                </div>
+                <Label>Keyword Suggestions</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Select keywords to include in your content
+                </p>
                 
-                <div className="flex flex-wrap gap-2 mt-2 min-h-[60px] p-2 border rounded-md">
-                  {selectedKeywords.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No keywords selected</p>
-                  ) : (
-                    selectedKeywords.map(keyword => (
-                      <Badge 
-                        key={keyword.keyword} 
-                        className="flex items-center gap-1 px-3 py-1"
-                        variant="secondary"
-                      >
-                        {keyword.keyword}
-                        <span className="text-xs opacity-70">({keyword.score})</span>
-                        <button 
-                          className="ml-1 text-muted-foreground hover:text-foreground" 
-                          onClick={() => setSelectedKeywords(prev => 
-                            prev.filter(k => k.keyword !== keyword.keyword)
-                          )}
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <Label>Suggested Keywords</Label>
-                <div className="space-y-2 mt-2">
-                  {suggestedKeywords.map(keyword => (
-                    <div 
-                      key={keyword.keyword}
-                      className="flex items-center justify-between p-2 border rounded-md"
-                    >
-                      <div className="flex items-center">
-                        <span className="font-medium">{keyword.keyword}</span>
-                        <Badge className="ml-2" variant="outline">{keyword.score}</Badge>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={selectedKeywords.some(k => k.keyword === keyword.keyword) ? "default" : "outline"}
+                <div className="mb-4 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedKeywords.map((keyword, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors cursor-pointer",
+                          selectedKeywords.some(k => k.keyword === keyword.keyword)
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted"
+                        )}
                         onClick={() => {
                           if (selectedKeywords.some(k => k.keyword === keyword.keyword)) {
-                            setSelectedKeywords(prev => prev.filter(k => k.keyword !== keyword.keyword));
+                            setSelectedKeywords(selectedKeywords.filter(k => k.keyword !== keyword.keyword));
                           } else {
-                            setSelectedKeywords(prev => [...prev, keyword]);
+                            setSelectedKeywords([...selectedKeywords, keyword]);
                           }
                         }}
                       >
-                        {selectedKeywords.some(k => k.keyword === keyword.keyword) ? 'Selected' : 'Select'}
-                      </Button>
-                    </div>
-                  ))}
+                        <span>{keyword.keyword}</span>
+                        {keyword.score && <Badge variant="outline" className="text-xs">{keyword.score}</Badge>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="custom-keywords">Custom Keywords</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Add your own keywords (comma separated)
+                  </p>
+                  <Textarea
+                    id="custom-keywords"
+                    placeholder="e.g., water filter, water quality, home water system"
+                    value={customKeywords}
+                    onChange={(e) => setCustomKeywords(e.target.value)}
+                    className="resize-none"
+                  />
                 </div>
               </div>
               
-              <div>
-                <Label>Custom Keywords</Label>
-                <Input
-                  placeholder="Enter custom keywords separated by commas"
-                  value={customKeywords}
-                  onChange={(e) => setCustomKeywords(e.target.value)}
-                  className="mt-1"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Add additional keywords separated by commas
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex justify-between">
-              <div className="flex gap-2">
+              <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                  Back: Products
+                  Back
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={testClaudeConnection}
-                  className="flex items-center gap-2"
-                >
-                  <Bot className="h-4 w-4" />
-                  Test Claude
+                <Button onClick={() => setCurrentStep(3)}>
+                  Continue <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-              <Button onClick={() => setCurrentStep(3)}>
-                Next: Style <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
             </div>
           </div>
         ) : currentStep === 3 ? (
@@ -650,27 +607,106 @@ export default function ClusterWorkflow({
           <div className="space-y-6">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">1</div>
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">2</div>
                 <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">3</div>
-              </div>
-              <div className="flex space-x-2">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">4</div>
+                <h3 className="text-lg font-medium">Style & Settings</h3>
               </div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Style & Formatting</h3>
-                
-                <div>
+            <div className="grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
                   <Label>Writing Perspective</Label>
                   <Select 
-                    value={writingPerspective}
-                    onValueChange={setWritingPerspective}
+                    value={selectedWritingPerspective} 
+                    onValueChange={setSelectedWritingPerspective}
                   >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select writing perspective" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose writing perspective" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male Perspective</SelectItem>
+                      <SelectItem value="female">Female Perspective</SelectItem>
+                      <SelectItem value="neutral">Gender Neutral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select the gender perspective for your content
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Number of Articles</Label>
+                  <Select 
+                    value={numberOfArticles} 
+                    onValueChange={setNumberOfArticles}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose number of articles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3 Articles</SelectItem>
+                      <SelectItem value="5">5 Articles</SelectItem>
+                      <SelectItem value="7">7 Articles</SelectItem>
+                      <SelectItem value="10">10 Articles</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    How many articles to generate in this cluster
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Blog</Label>
+                  <Select 
+                    value={selectedBlog} 
+                    onValueChange={setSelectedBlog}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose blog" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {blogs.map(blog => (
+                        <SelectItem key={blog.id} value={blog.id.toString()}>
+                          {blog.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Select which blog to publish to
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Article Length</Label>
+                  <Select 
+                    value={articleLength} 
+                    onValueChange={setArticleLength}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose article length" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="short">Short (~800 words)</SelectItem>
+                      <SelectItem value="medium">Medium (~1200 words)</SelectItem>
+                      <SelectItem value="long">Long (~2000 words)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    How long each article should be
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Writing Perspective</Label>
+                  <Select 
+                    value={selectedWritingPerspective} 
+                    onValueChange={setSelectedWritingPerspective}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose writing perspective" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="first-person">First Person (I, We)</SelectItem>
@@ -678,145 +714,142 @@ export default function ClusterWorkflow({
                       <SelectItem value="third-person">Third Person (They, It)</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select the perspective from which your content will be written
+                  </p>
                 </div>
                 
-                <div>
+                <div className="space-y-2">
                   <Label>Tone of Voice</Label>
                   <Select 
-                    value={toneOfVoice}
+                    value={toneOfVoice} 
                     onValueChange={setToneOfVoice}
                   >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select tone of voice" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose tone of voice" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="friendly">Friendly</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="casual">Casual</SelectItem>
-                      <SelectItem value="formal">Formal</SelectItem>
+                      <SelectItem value="authoritative">Authoritative</SelectItem>
+                      <SelectItem value="conversational">Conversational</SelectItem>
+                      <SelectItem value="direct-punchy">Direct & Punchy</SelectItem>
+                      <SelectItem value="educational">Educational</SelectItem>
+                      <SelectItem value="persuasive">Persuasive</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The overall tone for your content
+                  </p>
                 </div>
                 
-                <div>
+                <div className="space-y-2">
                   <Label>Introduction Style</Label>
                   <Select 
-                    value={introStyle}
+                    value={introStyle} 
                     onValueChange={setIntroStyle}
                   >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select introduction style" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose introduction style" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="problem-focused">Problem Focused</SelectItem>
+                      <SelectItem value="storytelling">Storytelling</SelectItem>
+                      <SelectItem value="stats-focused">Statistics Focused</SelectItem>
                       <SelectItem value="search-intent-focused">Search Intent Focused</SelectItem>
-                      <SelectItem value="problem-solution">Problem-Solution</SelectItem>
-                      <SelectItem value="story-based">Story-based</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    How to start your articles
+                  </p>
                 </div>
                 
-                <div>
-                  <Label>FAQ Section</Label>
+                <div className="space-y-2">
+                  <Label>FAQ Style</Label>
                   <Select 
-                    value={faqStyle}
+                    value={faqStyle} 
                     onValueChange={setFaqStyle}
                   >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select FAQ style" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose FAQ style" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="short">Short (3-5 Q&As)</SelectItem>
-                      <SelectItem value="medium">Medium (5-8 Q&As)</SelectItem>
-                      <SelectItem value="detailed">Detailed (8-10 Q&As)</SelectItem>
-                      <SelectItem value="none">No FAQ Section</SelectItem>
+                      <SelectItem value="detailed">Detailed</SelectItem>
+                      <SelectItem value="short">Short & Concise</SelectItem>
+                      <SelectItem value="none">No FAQs</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    How to format FAQs in your content
+                  </p>
                 </div>
               </div>
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Content Options</h3>
-                
-                <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="enable-tables" 
-                    checked={enableTables}
-                    onCheckedChange={(checked) => setEnableTables(!!checked)}
-                  />
-                  <div>
-                    <Label 
-                      htmlFor="enable-tables" 
-                      className="font-medium"
-                    >
-                      Enable Tables
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Use comparison tables
-                    </p>
+                <h4 className="text-sm font-medium">Formatting Options</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="enable-tables" 
+                      checked={enableTables}
+                      onCheckedChange={(checked) => setEnableTables(!!checked)}
+                    />
+                    <Label htmlFor="enable-tables">Enable Tables</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="enable-lists" 
+                      checked={enableLists}
+                      onCheckedChange={(checked) => setEnableLists(!!checked)}
+                    />
+                    <Label htmlFor="enable-lists">Enable Lists</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="enable-h1" 
+                      checked={enableH1}
+                      onCheckedChange={(checked) => setEnableH1(!!checked)}
+                    />
+                    <Label htmlFor="enable-h1">Enable H1 Headers</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="enable-citations" 
+                      checked={enableCitations}
+                      onCheckedChange={(checked) => setEnableCitations(!!checked)}
+                    />
+                    <Label htmlFor="enable-citations">Enable Citations</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="include-toc"
+                      checked={includeTOC}
+                      onCheckedChange={(checked) => setIncludeTOC(!!checked)}
+                    />
+                    <Label htmlFor="include-toc">Include Table of Contents</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="include-youtube"
+                      checked={includeYouTube}
+                      onCheckedChange={(checked) => setIncludeYouTube(!!checked)}
+                    />
+                    <Label htmlFor="include-youtube">Include YouTube Video</Label>
                   </div>
                 </div>
                 
-                <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="enable-lists" 
-                    checked={enableLists}
-                    onCheckedChange={(checked) => setEnableLists(!!checked)}
-                  />
-                  <div>
-                    <Label 
-                      htmlFor="enable-lists" 
-                      className="font-medium"
-                    >
-                      Enable Lists
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Use bullet points
-                    </p>
+                {includeYouTube && (
+                  <div className="mt-4">
+                    <Label htmlFor="youtube-url">YouTube Video URL</Label>
+                    <Input
+                      id="youtube-url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                    />
                   </div>
-                </div>
-                
-                <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="enable-h1" 
-                    checked={enableH1}
-                    onCheckedChange={(checked) => setEnableH1(!!checked)}
-                  />
-                  <div>
-                    <Label 
-                      htmlFor="enable-h1" 
-                      className="font-medium"
-                    >
-                      Enable H1 Headings
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Use sub-headings
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="enable-citations" 
-                    checked={enableCitations}
-                    onCheckedChange={(checked) => setEnableCitations(!!checked)}
-                  />
-                  <div>
-                    <Label 
-                      htmlFor="enable-citations" 
-                      className="font-medium"
-                    >
-                      Enable Citations
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Add external links
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
-            </div>
-            
-            <div className="flex justify-between">
-              <div className="flex gap-2">
+              
+              <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setCurrentStep(2)}>
                   Back: Keywords
                 </Button>
@@ -835,11 +868,11 @@ export default function ClusterWorkflow({
               </Button>
             </div>
           </div>
-        ) : editedArticles.length === 0 ? (
+        ) : currentStep === 6 && editedArticles.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>No articles in this cluster yet.</p>
           </div>
-        ) : (
+        ) : currentStep === 6 ? (
           <div className="space-y-6">
             {/* Step 6: Review Content */}
             <div className="flex justify-between items-center mb-2">
@@ -913,8 +946,8 @@ export default function ClusterWorkflow({
                     )}
                     
                     <Button 
-                      size="sm" 
                       onClick={applyBulkAction}
+                      disabled={selectedCount === 0 || (bulkAction === 'scheduled' && !canSchedule)}
                     >
                       Apply
                     </Button>
@@ -1052,49 +1085,85 @@ export default function ClusterWorkflow({
                     
                     <Separator className="my-4" />
                     
-                    <div className="grid grid-cols-3 gap-2 mt-4">
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
-                        variant="outline"
+                        variant={article.status === 'draft' ? "default" : "outline"}
                         size="sm"
-                        className="w-full flex items-center justify-center"
-                        onClick={() => {
-                          saveArticle({
-                            ...article,
-                            status: 'draft'
-                          });
-                        }}
+                        className="col-span-1"
+                        onClick={() => updateArticleStatus(article.id, 'draft')}
                       >
                         <FileText className="w-4 h-4 mr-2" />
                         Save as Draft
                       </Button>
+                      
                       <Button
-                        variant="default"
+                        variant={article.status === 'published' ? "default" : "outline"}
                         size="sm"
-                        className="w-full flex items-center justify-center"
-                        onClick={() => {
-                          saveArticle({
-                            ...article,
-                            status: 'published'
-                          });
-                        }}
+                        className="col-span-1"
+                        onClick={() => updateArticleStatus(article.id, 'published')}
                       >
                         <Upload className="w-4 h-4 mr-2" />
-                        Publish to Shopify
+                        Publish Now
                       </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-full flex items-center justify-center"
-                        onClick={() => {
-                          saveArticle({
-                            ...article,
-                            status: 'scheduled'
-                          });
-                        }}
-                      >
-                        <Clock className="w-4 h-4 mr-2" />
-                        Schedule
-                      </Button>
+                      
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={article.status === 'scheduled' ? "default" : "outline"}
+                            size="sm"
+                            className="col-span-1"
+                          >
+                            <Clock className="w-4 h-4 mr-2" />
+                            Schedule
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-4">
+                          <div className="space-y-4">
+                            <h4 className="font-medium">Schedule Publication</h4>
+                            <div className="grid gap-2">
+                              <Label>Date</Label>
+                              <CalendarComponent
+                                mode="single"
+                                selected={scheduleDate}
+                                onSelect={setScheduleDate}
+                                disabled={(date) => date < new Date()}
+                                className="rounded-md border"
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label>Time</Label>
+                              <Input
+                                type="time"
+                                value={scheduleTime}
+                                onChange={(e) => setScheduleTime(e.target.value)}
+                              />
+                            </div>
+                            <Button 
+                              onClick={() => {
+                                if (!scheduleDate) {
+                                  toast({
+                                    title: "Date Required",
+                                    description: "Please select a publication date",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+                                
+                                updateArticleStatus(
+                                  article.id, 
+                                  'scheduled', 
+                                  format(scheduleDate, 'yyyy-MM-dd'),
+                                  scheduleTime
+                                );
+                              }}
+                              className="w-full"
+                            >
+                              Schedule Publication
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      
                       <Button
                         variant="destructive"
                         size="sm"
@@ -1117,6 +1186,10 @@ export default function ClusterWorkflow({
               ))}
             </Accordion>
           </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Error: Unknown step encountered</p>
+          </div>
         )}
       </CardContent>
       <CardFooter className="flex justify-between">
@@ -1129,23 +1202,28 @@ export default function ClusterWorkflow({
               variant="outline" 
               onClick={onBack}
             >
-              Back to Styling
+              Back
             </Button>
           )}
         </div>
-        <Button
-          onClick={saveAllArticles}
-          disabled={isSaving || editedArticles.length === 0}
-        >
-          {isSaving ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-              Saving...
-            </>
-          ) : (
-            "Save All"
-          )}
-        </Button>
+        
+        {onComplete && editedArticles.length > 0 && (
+          <Button 
+            onClick={() => onComplete(editedArticles)}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Complete
+              </>
+            )}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
