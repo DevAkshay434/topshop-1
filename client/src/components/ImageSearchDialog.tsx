@@ -675,33 +675,15 @@ export default function ImageSearchDialog({
                           `}
                         >
                           <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
+                            {/* Use direct proxy URL to ensure images load */}
                             <img 
-                              src={
-                                image.url ||
-                                image.src?.medium || 
-                                image.large_url || 
-                                (image.source === 'pexels' && image.id 
-                                  ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
-                                  : "/api/proxy/image/placeholder")
-                              } 
+                              src={`/api/proxy/image/${image.id}`}
                               alt={image.alt || 'Product image'} 
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                // Try multiple fallbacks if the image fails to load
+                                // Fallback to placeholder if direct proxy fails
                                 const target = e.target as HTMLImageElement;
-                                const currentSrc = target.src;
-                                
-                                if (currentSrc.includes('pexels.com')) {
-                                  // Try the pixabay URL if pexels fails
-                                  if (image.id) {
-                                    target.src = `/api/proxy/image/${image.id}`;
-                                  } else {
-                                    target.src = "/api/proxy/image/placeholder";
-                                  }
-                                } else if (currentSrc.includes('/api/proxy/image/')) {
-                                  // If proxy fails, use a placeholder
-                                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
-                                }
+                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
                               }}
                               loading="lazy"
                             />
@@ -824,16 +806,14 @@ export default function ImageSearchDialog({
                       >
                         <div className="aspect-[4/3] bg-slate-100">
                           <img 
-                            src={
-                              image.url || 
-                              image.src?.medium || 
-                              image.large_url || 
-                              (image.source === 'pexels' && image.id 
-                                ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
-                                : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E")
-                            } 
+                            src={`/api/proxy/image/${image.id}`} 
                             alt={image.alt || 'Selected image'} 
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to placeholder if direct proxy fails
+                              const target = e.target as HTMLImageElement;
+                              target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
+                            }}
                           />
                         </div>
                         
