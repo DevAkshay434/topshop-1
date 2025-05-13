@@ -685,54 +685,28 @@ export default function ImageSearchDialog({
                           `}
                         >
                           <div className="aspect-[4/3] bg-slate-100 relative" onClick={() => toggleImageSelection(image.id)}>
-                            {true ? (
-                              <img 
-                                src={
-                                  // Try all possible URL formats in order of preference
-                                  image.src?.medium || 
-                                  image.url || 
-                                  image.large_url || 
-                                  image.src?.large || 
-                                  image.original_url || 
-                                  image.src?.original || 
-                                  image.src?.small || 
-                                  image.src?.thumbnail || 
-                                  (image.source === 'pexels' && image.id ? 
-                                    `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` : 
-                                    (image.source === 'pixabay' && image.id ? 
-                                      `https://pixabay.com/get/${image.id}?height=350` : 
-                                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E"
-                                    )
-                                  )
-                                } 
-                                alt={image.alt || 'Image'} 
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                onError={(e) => {
-                                  // Log the failed URL and image
-                                  console.log("Image failed to load:", e.currentTarget.src, image);
-                                  
-                                  // Try with a direct Pexels URL as fallback for Pexels images
-                                  if (image.source === 'pexels' && image.id && !e.currentTarget.src.includes(`pexels-photo-${image.id}`)) {
-                                    e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
-                                    return;
-                                  }
-                                  
-                                  // Try with a direct Pixabay URL as fallback for Pixabay images
-                                  if (image.source === 'pixabay' && image.id && !e.currentTarget.src.includes('pixabay.com')) {
-                                    e.currentTarget.src = `https://pixabay.com/get/${image.id}?height=350`;
-                                    return;
-                                  }
-                                  
-                                  // If all else fails, use a placeholder SVG
-                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-red-50">
-                                <span className="text-xs text-red-500">Image URL missing</span>
-                              </div>
-                            )}
+                            <img 
+                              src={
+                                image.src?.medium || 
+                                image.url || 
+                                image.large_url || 
+                                (image.source === 'pexels' && image.id 
+                                  ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
+                                  : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E")
+                              } 
+                              alt={image.alt || 'Product image'} 
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                // Try Pexels URL directly if other URLs fail
+                                if (image.source === 'pexels' && image.id) {
+                                  e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
+                                } else {
+                                  // Fallback to placeholder
+                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
+                                }
+                              }}
+                            />
                             
                             {/* Status badges at top right */}
                             <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
@@ -965,44 +939,35 @@ export default function ImageSearchDialog({
                         `}
                       >
                         <div className="aspect-[4/3] bg-slate-100">
-                          {image.url || image.src?.medium ? (
-                            <img 
-                              src={
-                                // Try to use the most reliable image URL format in cascading priority
-                                image.src?.medium ? image.src.medium :
-                                image.url ? image.url :
-                                image.large_url ? image.large_url :
-                                image.original_url ? image.original_url :
-                                image.src?.small ? image.src.small :
-                                image.src?.thumbnail ? image.src.thumbnail :
-                                image.source === 'pexels' && image.id ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` :
-                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E"
-                              } 
-                              alt={image.alt || 'Image'} 
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                              onError={(e) => {
-                                console.log('Selected image failed to load, trying fallbacks:', image.id);
-                                // If image fails to load, try alternate URLs before showing placeholder
-                                if (image.src?.small && e.currentTarget.src !== image.src.small) {
-                                  e.currentTarget.src = image.src.small;
-                                } else if (image.url && e.currentTarget.src !== image.url && e.currentTarget.src.indexOf(image.url) === -1) {
-                                  e.currentTarget.src = image.url;
-                                } else if (image.src?.thumbnail && e.currentTarget.src !== image.src.thumbnail) {
-                                  e.currentTarget.src = image.src.thumbnail;
-                                } else if (image.source === 'pexels' && image.id) {
-                                  // Try a direct Pexels URL as last resort
-                                  e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
-                                } else {
-                                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-red-50">
-                              <span className="text-xs text-red-500">Image URL missing</span>
-                            </div>
-                          )}
+                          <img 
+                            src={
+                              image.src?.medium || 
+                              image.url || 
+                              image.large_url || 
+                              (image.source === 'pexels' && image.id 
+                                ? `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
+                                : (image.source === 'pixabay' && image.id
+                                  ? `https://pixabay.com/get/${image.id}?height=350`
+                                  : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E")
+                              )
+                            } 
+                            alt={image.alt || 'Product image'} 
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              console.log('Selected image failed to load, trying Pexels direct URL for:', image.id);
+                              
+                              // Try Pexels URL directly if other URLs fail
+                              if (image.source === 'pexels' && image.id) {
+                                e.currentTarget.src = `https://images.pexels.com/photos/${image.id}/pexels-photo-${image.id}.jpeg?auto=compress&cs=tinysrgb&h=350`;
+                              } else if (image.source === 'pixabay' && image.id) {
+                                e.currentTarget.src = `https://pixabay.com/get/${image.id}?height=350`;
+                              } else {
+                                // Fallback to placeholder
+                                e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
+                              }
+                            }}
+                          />
                         </div>
                         
                         {/* Order badge */}
