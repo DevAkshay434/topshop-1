@@ -712,8 +712,8 @@ export default function ImageSearchDialog({
                               loading="lazy"
                             />
                             
-                            {/* Selection overlay */}
-                            <div className="absolute inset-0 bg-black/5 pointer-events-none"></div>
+                            {/* Hover state overlay */}
+                            <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors pointer-events-none"></div>
                             
                             {/* Big selection checkmark */}
                             {image.selected && (
@@ -723,6 +723,13 @@ export default function ImageSearchDialog({
                                 </div>
                               </div>
                             )}
+                            
+                            {/* Selection instruction overlay on hover */}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                              <div className="bg-black/40 px-3 py-1 rounded-md">
+                                <span className="text-white text-xs font-medium">Click to select</span>
+                              </div>
+                            </div>
                             
                             {/* Status badges at top right */}
                             <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
