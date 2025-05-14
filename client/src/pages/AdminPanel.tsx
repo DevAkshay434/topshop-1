@@ -735,8 +735,9 @@ export default function AdminPanel() {
         status: publicationType === "schedule" ? "scheduled" : (values.postStatus || "draft"),
         scheduleDate,
         scheduleTime,
-        scheduledPublishDate: values.scheduledPublishDate || null,
-        scheduledPublishTime: values.scheduledPublishTime || (values.scheduledPublishDate ? "09:30" : null),
+        // Use empty string instead of null to avoid validation errors
+        scheduledPublishDate: values.scheduledPublishDate || "",
+        scheduledPublishTime: values.scheduledPublishTime || (values.scheduledPublishDate ? "09:30" : ""),
         
         // If we're scheduling, keep post as draft until scheduled time
         postStatus: publicationType === "schedule" ? "scheduled" : values.postStatus,
