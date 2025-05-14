@@ -336,16 +336,31 @@ export class ShopifyService {
       if (isScheduledPublishing && futurePublishDate) {
         console.log(`Setting up scheduled publishing for future date: ${futurePublishDate.toISOString()}`);
         
-        // CRITICAL FIX: For Shopify scheduling to work properly:
-        // 1. Set published=false (so it stays as a draft)
-        // 2. Set published_at to the future date (for when to publish)
-        article.published = false; 
-        article.published_at = futurePublishDate.toISOString();
+        // CRITICAL FIX - UPDATED: For Shopify API v2023-07 and above:
+        // When scheduling content, we need TWO parameters:
+        // 1. published: false - to keep it as a draft until the scheduled date
+        // 2. published_at: future date - when it should be published
+        article.published = false;
+        
+        // Make sure the date is in the future (at least tomorrow)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Use the future date (ensuring it's actually future)
+        const scheduledTime = futurePublishDate.getTime();
+        const tomorrowTime = tomorrow.getTime();
+        if (scheduledTime <= tomorrowTime) {
+          console.log(`WARNING: Schedule date not far enough in future, adjusting to tomorrow`);
+          article.published_at = tomorrow.toISOString();
+        } else {
+          article.published_at = futurePublishDate.toISOString();
+        }
+        
+        // For debugging
+        console.log(`CRITICAL SCHEDULING UPDATE: Article will publish at ${article.published_at}`);
         
         // Add a custom property for tracking in the response
         article.isScheduledPost = true;
-        
-        console.log('SCHEDULING FIX: Setting article as unpublished draft with future publish_at date');
       } else if (post.status === 'published') {
         // For immediate publishing
         article.published = true;
@@ -388,6 +403,52 @@ export class ShopifyService {
           isScheduled: isScheduledPublishing
         }
       });
+      
+      // Verify the scheduling was successful by checking if the published_at date matches
+      // what we sent (or is very close to it)
+      if (isScheduledPublishing && futurePublishDate) {
+        const responseDate = new Date(response.data.article.published_at);
+        const sentDate = new Date(article.published_at);
+        const timeDiff = Math.abs(responseDate.getTime() - sentDate.getTime());
+        const oneHourInMs = 60 * 60 * 1000;
+        
+        if (timeDiff > oneHourInMs) {
+          console.warn(`WARNING: Scheduled publish time doesn't match what was sent!`);
+          console.warn(`  Sent: ${sentDate.toISOString()}`);
+          console.warn(`  Received: ${responseDate.toISOString()}`);
+          console.warn(`  Difference: ${Math.round(timeDiff / (60 * 1000))} minutes`);
+          
+          // If today's date was returned instead of the future date,
+          // it means Shopify likely published immediately
+          const now = new Date();
+          const nowDiff = Math.abs(responseDate.getTime() - now.getTime());
+          if (nowDiff < oneHourInMs) {
+            console.error(`CRITICAL ERROR: Shopify appears to have published immediately instead of scheduling!`);
+            // Attempt to fix by making a second API call to update the article
+            try {
+              console.log(`Attempting to fix by updating the article with scheduled date...`);
+              const updateResponse = await client.put(
+                `/blogs/${blogId}/articles/${response.data.article.id}.json`, 
+                { 
+                  article: {
+                    id: response.data.article.id,
+                    published: false,
+                    published_at: article.published_at
+                  } 
+                }
+              );
+              console.log(`Update response:`, {
+                published: updateResponse.data.article.published,
+                published_at: updateResponse.data.article.published_at
+              });
+            } catch (updateError) {
+              console.error(`Failed to update article with scheduling:`, updateError);
+            }
+          }
+        } else {
+          console.log(`Scheduling confirmed successful: ${responseDate.toISOString()}`);
+        }
+      }
       
       return response.data.article;
     } catch (error: any) {
@@ -666,13 +727,25 @@ export class ShopifyService {
       if (publishDate) {
         console.log(`Page scheduled for future date: ${publishDate.toISOString()}`);
         
-        // CRITICAL FIX: Shopify requires published=false for scheduling to work correctly
-        // This ensures the page stays as a draft until the scheduled time
+        // CRITICAL FIX - UPDATED: Ensure it works with Shopify API v2023-07 and above
+        // Force published=false for scheduled content
         pageData.page.published = false;
         
-        // Set the future publish date
-        pageData.page.published_at = publishDate.toISOString();
+        // Make sure the date is in the future (at least tomorrow)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
         
+        // Use the future date (ensuring it's actually future)
+        const scheduledTime = publishDate.getTime();
+        const tomorrowTime = tomorrow.getTime();
+        if (scheduledTime <= tomorrowTime) {
+          console.log(`WARNING: Schedule date not far enough in future, adjusting to tomorrow`);
+          pageData.page.published_at = tomorrow.toISOString();
+        } else {
+          pageData.page.published_at = publishDate.toISOString();
+        }
+        
+        console.log(`CRITICAL SCHEDULING UPDATE: Page will publish at ${pageData.page.published_at}`);
         console.log(`Final page data for scheduling:`, JSON.stringify(pageData, null, 2));
       }
       
@@ -689,6 +762,52 @@ export class ShopifyService {
           isScheduled: !!publishDate
         }
       });
+      
+      // Verify the scheduling was successful by checking if the published_at date matches
+      // what we sent (or is very close to it)
+      if (publishDate) {
+        const responseDate = new Date(response.data.page.published_at);
+        const sentDate = new Date(pageData.page.published_at);
+        const timeDiff = Math.abs(responseDate.getTime() - sentDate.getTime());
+        const oneHourInMs = 60 * 60 * 1000;
+        
+        if (timeDiff > oneHourInMs) {
+          console.warn(`WARNING: Scheduled publish time for page doesn't match what was sent!`);
+          console.warn(`  Sent: ${sentDate.toISOString()}`);
+          console.warn(`  Received: ${responseDate.toISOString()}`);
+          console.warn(`  Difference: ${Math.round(timeDiff / (60 * 1000))} minutes`);
+          
+          // If today's date was returned instead of the future date,
+          // it means Shopify likely published immediately
+          const now = new Date();
+          const nowDiff = Math.abs(responseDate.getTime() - now.getTime());
+          if (nowDiff < oneHourInMs) {
+            console.error(`CRITICAL ERROR: Shopify appears to have published page immediately instead of scheduling!`);
+            // Attempt to fix by making a second API call to update the page
+            try {
+              console.log(`Attempting to fix by updating the page with scheduled date...`);
+              const updateResponse = await client.put(
+                `/pages/${response.data.page.id}.json`, 
+                { 
+                  page: {
+                    id: response.data.page.id,
+                    published: false,
+                    published_at: pageData.page.published_at
+                  } 
+                }
+              );
+              console.log(`Update response:`, {
+                published: updateResponse.data.page.published,
+                published_at: updateResponse.data.page.published_at
+              });
+            } catch (updateError) {
+              console.error(`Failed to update page with scheduling:`, updateError);
+            }
+          }
+        } else {
+          console.log(`Page scheduling confirmed successful: ${responseDate.toISOString()}`);
+        }
+      }
       
       return response.data.page;
     } catch (error: any) {
