@@ -2363,13 +2363,50 @@ export default function AdminPanel() {
                                 const imgElement = fullMatch;
                                 const imgSrc = match[2];
                                 
-                                // Find a matching product if possible
-                                const matchingProduct = products.find(p => p.image && p.image.includes(imgSrc));
+                                // Normalize the img source for comparison
+                                let normalizedImgSrc = imgSrc;
+                                // Remove http/https and domain for comparison
+                                if (normalizedImgSrc.startsWith('http')) {
+                                  try {
+                                    // Try to get just the path portion for more flexible matching
+                                    const url = new URL(normalizedImgSrc);
+                                    normalizedImgSrc = url.pathname;
+                                  } catch (e) {
+                                    // If URL parsing fails, continue with the original
+                                    console.log("Failed to parse URL:", imgSrc);
+                                  }
+                                }
+                                
+                                // Find a matching product if possible - with more flexible matching
+                                const matchingProduct = products.find(p => {
+                                  if (!p.image) return false;
+                                  
+                                  // Try to normalize product image as well
+                                  let normalizedProductImg = p.image;
+                                  if (normalizedProductImg.startsWith('http')) {
+                                    try {
+                                      const url = new URL(normalizedProductImg);
+                                      normalizedProductImg = url.pathname;
+                                    } catch (e) {
+                                      // If URL parsing fails, continue with the original
+                                    }
+                                  }
+                                  
+                                  // Check if either image includes parts of the other
+                                  return normalizedProductImg.includes(normalizedImgSrc) || 
+                                         normalizedImgSrc.includes(normalizedProductImg);
+                                });
+                                
+                                // Style the image regardless of product match
+                                const styledImg = imgElement.replace(/<img/, '<img style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;"');
                                 
                                 if (matchingProduct) {
                                   // Replace the image with a linked version
-                                  const linkedImg = `<a href="${matchingProduct.admin_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${imgElement.replace(/<img/, '<img style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;"')}</a>`;
+                                  const linkedImg = `<a href="${matchingProduct.admin_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
                                   enhancedContent = enhancedContent.replace(imgElement, linkedImg);
+                                } else {
+                                  // Still replace with styled version even without product match
+                                  enhancedContent = enhancedContent.replace(imgElement, styledImg);
                                 }
                               }
                             });
@@ -2385,12 +2422,35 @@ export default function AdminPanel() {
                               .replace(
                                 /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
                                 '<img$1src="https://$3"$4>'
-                              )
-                              // Add styling to all remaining images for proper display
-                              .replace(
-                                /<img([^>]*?)>/gi, 
-                                '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
                               );
+                              
+                            // Wrap standalone images (those not in an <a> tag) with clickable links
+                            const imgRegexStandalone = /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
+                            enhancedContent = enhancedContent.replace(
+                              imgRegexStandalone,
+                              (match, imgTag, imgSrc) => {
+                                return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
+                              }
+                            );
+                            
+                            // Log for debugging
+                            console.log("Content before final processing:", enhancedContent);
+                            
+                            // Add styling to all remaining images that don't already have style
+                            enhancedContent = enhancedContent.replace(
+                              /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi, 
+                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
+                            );
+                            
+                            // Ensure all images have cursor pointer
+                            enhancedContent = enhancedContent.replace(
+                              /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
+                              (match, before, style, after) => {
+                                // Add cursor: pointer if it's not already there
+                                const updatedStyle = style.includes('cursor:') ? style : style + '; cursor: pointer;';
+                                return `<img${before}style="${updatedStyle}"${after}>`;
+                              }
+                            );
                             
                             // Return the enhanced content with proper image styling
                             return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
