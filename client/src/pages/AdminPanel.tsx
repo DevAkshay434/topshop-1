@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ContentPreview } from '../components/ContentPreview';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { 
   Card, 
@@ -2268,12 +2267,6 @@ export default function AdminPanel() {
                       {(() => {
                         // Get content
                         const content = generatedContent.content;
-                        console.log("Content preview data:", { 
-                          content: content?.substring(0, 200) + "...", 
-                          hasImgTags: content?.includes("<img"),
-                          secondaryImages: generatedContent.secondaryImages,
-                          selectedProducts: selectedProducts?.length || 0
-                        });
                         if (!content) return <p>No content available</p>;
 
                         // Get YouTube data if exists
@@ -2319,11 +2312,15 @@ export default function AdminPanel() {
                         // Check for image tags in content 
                         const hasImageTags = content.includes('<img');
 
-                        // ALWAYS process content as if it has images, regardless of whether we detect them
-                        // This ensures we handle cases where image tags might be malformed or in unexpected formats
-                        {
-                          // Enhanced processing for all content with images
-                          let enhancedContent = content;
+                        // If content has no YouTube placeholder but has secondary images or image tags
+                        if (secondaryImages.length > 0 || hasImageTags) {
+                          // Always consider content as having proper images
+                          // This ensures embedded images are always preserved
+                          const hasProperImages = true;
+                          
+                          if (hasProperImages) {
+                            // Enhanced processing for all content with images
+                            let enhancedContent = content;
                             
                             // Process all <a> tags with embedded images to ensure they display properly and are clickable
                             enhancedContent = enhancedContent.replace(
@@ -2455,10 +2452,17 @@ export default function AdminPanel() {
                               }
                             );
                             
-                            // Use our improved ContentPreview component
-                            return <ContentPreview content={content} selectedProducts={selectedProducts} />;
-                        }
-                      })()}
+                            // Return the enhanced content with proper image styling
+                            return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
+                          } else {
+                            // Remove any img tags without proper src
+                            let cleanedContent = content;
+                            if (hasImageTags) {
+                              cleanedContent = content.replace(/<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi, '');
+                            }
+                            
+                            // Split into paragraphs
+                            const paragraphs = cleanedContent.split(/\n\n+/);
                             const result: React.ReactNode[] = [];
                             let imageIndex = 0;
                             
