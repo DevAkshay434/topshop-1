@@ -28,6 +28,8 @@ export async function schedulePost(
   scheduledDate: Date
 ): Promise<any> {
   try {
+    console.log(`Scheduling post for future publishing at ${scheduledDate.toISOString()}`);
+    
     // Create a client for the Shopify API
     const client = axios.create({
       baseURL: `https://${store.shopName}/admin/api/2023-10`,
@@ -44,6 +46,7 @@ export async function schedulePost(
       body_html: post.content || "",
       tags: post.tags || "",
       published: false, // Always create as draft
+      published_at: null, // Explicitly set to null to ensure it stays in draft mode
     };
 
     if (post.featuredImage) {
@@ -52,36 +55,42 @@ export async function schedulePost(
 
     console.log(`Creating draft article (custom scheduling approach):`, {
       title: article.title,
-      published: article.published
+      published: article.published,
+      published_at: article.published_at
     });
 
     // Create the draft article
     const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
     
-    console.log(`Draft article created:`, {
-      id: response.data.article.id,
-      title: response.data.article.title,
-      published: response.data.article.published
+    const createdArticle = response.data.article;
+    
+    console.log(`Draft article created successfully:`, {
+      id: createdArticle.id,
+      title: createdArticle.title,
+      published: createdArticle.published,
+      published_at: createdArticle.published_at
     });
 
     // Update our database with scheduling information
     if (post.id) {
-      await storage.updateBlogPost(post.id, {
-        shopifyPostId: response.data.article.id,
+      const updateData = {
+        shopifyPostId: String(createdArticle.id),
         shopifyBlogId: blogId,
         status: 'scheduled',
-        scheduledDate: scheduledDate
-      });
+        scheduledDate: scheduledDate,
+        scheduledPublishDate: formatDate(scheduledDate),
+        scheduledPublishTime: formatTime(scheduledDate)
+      };
+      
+      console.log(`Updating local database with scheduling info:`, updateData);
+      
+      await storage.updateBlogPost(post.id, updateData);
 
-      console.log(`Local database updated with scheduling info:`, {
-        postId: post.id,
-        shopifyPostId: response.data.article.id,
-        scheduledDate: scheduledDate.toISOString()
-      });
+      console.log(`Local database updated successfully for post ID ${post.id}`);
     }
 
     return {
-      ...response.data.article,
+      ...createdArticle,
       scheduledDate: scheduledDate.toISOString(),
       customScheduled: true
     };
@@ -95,6 +104,20 @@ export async function schedulePost(
     }
     throw new Error(`Failed to schedule post: ${error?.message || 'Unknown error'}`);
   }
+}
+
+/**
+ * Format a date as YYYY-MM-DD
+ */
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Format a time as HH:MM
+ */
+function formatTime(date: Date): string {
+  return date.toISOString().split('T')[1].substring(0, 5);
 }
 
 /**
@@ -174,6 +197,8 @@ export async function publishScheduledArticle(
   articleId: string
 ): Promise<any> {
   try {
+    console.log(`Publishing scheduled article ${articleId} in blog ${blogId} for store ${store.shopName}`);
+    
     // Create a client for the Shopify API
     const client = axios.create({
       baseURL: `https://${store.shopName}/admin/api/2023-10`,
@@ -183,7 +208,21 @@ export async function publishScheduledArticle(
       }
     });
 
-    console.log(`Publishing scheduled article ${articleId} in blog ${blogId}`);
+    // First, get the current article to ensure it exists and verify its state
+    try {
+      const getResponse = await client.get(`/blogs/${blogId}/articles/${articleId}.json`);
+      console.log(`Retrieved article for publishing:`, {
+        id: getResponse.data.article.id,
+        title: getResponse.data.article.title,
+        published: getResponse.data.article.published,
+        published_at: getResponse.data.article.published_at
+      });
+    } catch (getError: any) {
+      console.error(`Error retrieving article before publishing:`, getError);
+      throw new Error(`Article ${articleId} not found or inaccessible`);
+    }
+
+    console.log(`Sending publish request for article ${articleId}`);
 
     // Update the article to published status
     const response = await client.put(
@@ -199,6 +238,7 @@ export async function publishScheduledArticle(
 
     console.log(`Article published successfully:`, {
       id: response.data.article.id,
+      title: response.data.article.title,
       published: response.data.article.published,
       published_at: response.data.article.published_at
     });
@@ -229,36 +269,66 @@ export async function checkScheduledPosts(): Promise<void> {
     console.log(`Checking ${scheduledPosts.length} scheduled posts`);
 
     for (const post of scheduledPosts) {
-      // Skip posts without Shopify IDs
-      if (!post.shopifyPostId || !post.shopifyBlogId) {
-        console.log(`Skipping post ${post.id} - missing Shopify IDs`);
-        continue;
-      }
+      try {
+        // Skip posts without Shopify IDs
+        if (!post.shopifyPostId || !post.shopifyBlogId) {
+          console.log(`Skipping post ${post.id} - missing Shopify IDs`);
+          continue;
+        }
 
-      // Skip posts without scheduled date
-      if (!post.scheduledDate) {
-        console.log(`Skipping post ${post.id} - no scheduled date`);
-        continue;
-      }
+        // Skip posts without scheduled date
+        if (!post.scheduledDate) {
+          console.log(`Skipping post ${post.id} - no scheduled date`);
+          continue;
+        }
 
-      const scheduledDate = new Date(post.scheduledDate);
-      
-      // If it's time to publish
-      if (scheduledDate <= now) {
-        console.log(`Time to publish post ${post.id} (${post.title})`);
+        // Create a proper Date object from the scheduled date
+        let scheduledDate: Date;
         
-        try {
-          // Get the store for this post
+        // Handle different date formats
+        if (typeof post.scheduledDate === 'string') {
+          if (post.scheduledPublishDate && post.scheduledPublishTime) {
+            // If we have specific date and time fields, use those
+            const dateStr = `${post.scheduledPublishDate}T${post.scheduledPublishTime}:00`;
+            scheduledDate = new Date(dateStr);
+          } else {
+            // Otherwise parse the string directly
+            scheduledDate = new Date(post.scheduledDate);
+          }
+        } else {
+          // If it's already a Date object
+          scheduledDate = post.scheduledDate;
+        }
+        
+        // Handle invalid dates
+        if (isNaN(scheduledDate.getTime())) {
+          console.log(`Skipping post ${post.id} - invalid scheduled date: ${post.scheduledDate}`);
+          continue;
+        }
+        
+        // If it's time to publish (current time is after or equal to scheduled time)
+        if (scheduledDate <= now) {
+          console.log(`Time to publish post ${post.id} - "${post.title}"`);
+          console.log(`Scheduled time: ${scheduledDate.toISOString()}, Current time: ${now.toISOString()}`);
+          
+          // Get the store for this post - first try by store ID
           const stores = await storage.getShopifyStores();
-          const store = stores.find(s => s.defaultBlogId === post.shopifyBlogId);
+          let store = post.storeId ? stores.find(s => s.id === post.storeId) : undefined;
+          
+          // If store not found by ID, try by blog ID
+          if (!store) {
+            store = stores.find(s => s.defaultBlogId === post.shopifyBlogId);
+          }
           
           if (!store) {
-            console.error(`Store not found for post ${post.id}`);
+            console.error(`Store not found for post ${post.id} (using blogId: ${post.shopifyBlogId})`);
             continue;
           }
           
+          console.log(`Found store: ${store.shopName} (ID: ${store.id})`);
+          
           // Publish the post
-          await publishScheduledArticle(
+          const publishedArticle = await publishScheduledArticle(
             store, 
             post.shopifyBlogId, 
             post.shopifyPostId
@@ -267,19 +337,25 @@ export async function checkScheduledPosts(): Promise<void> {
           // Update local post status
           await storage.updateBlogPost(post.id, {
             status: 'published',
-            publishedDate: new Date()
+            publishedDate: new Date(),
+            updatedAt: new Date()
           });
           
-          console.log(`Successfully published scheduled post ${post.id}`);
-        } catch (error) {
-          console.error(`Error publishing scheduled post ${post.id}:`, error);
+          console.log(`Successfully published scheduled post ${post.id} - "${post.title}"`);
+          console.log(`Published at ${publishedArticle.published_at}`);
+        } else {
+          // Calculate minutes until publishing
+          const timeUntilPublish = Math.round((scheduledDate.getTime() - now.getTime()) / (60 * 1000));
+          console.log(`Post ${post.id} - "${post.title}" will be published in approximately ${timeUntilPublish} minutes`);
+          console.log(`Scheduled time: ${scheduledDate.toISOString()}`);
         }
-      } else {
-        const timeUntilPublish = Math.round((scheduledDate.getTime() - now.getTime()) / (60 * 1000));
-        console.log(`Post ${post.id} will be published in approximately ${timeUntilPublish} minutes`);
+      } catch (postError: any) {
+        console.error(`Error processing scheduled post ${post.id}:`, postError.message);
       }
     }
-  } catch (error) {
-    console.error(`Error checking scheduled posts:`, error);
+    
+    console.log(`Finished checking scheduled posts`);
+  } catch (error: any) {
+    console.error(`Error in checkScheduledPosts:`, error.message);
   }
 }
