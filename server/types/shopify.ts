@@ -7,8 +7,14 @@ export type ShopifyStore = {
   shopName: string;
   accessToken: string;
   scope: string;
-  isConnected: boolean;
-  defaultBlogId?: string;
+  isConnected: boolean | null;
+  defaultBlogId?: string | null;
+  lastSynced?: Date | null;
+  installedAt?: Date;
+  uninstalledAt?: Date | null;
+  planName?: string | null;
+  chargeId?: string | null;
+  trialEndsAt?: Date | null;
 };
 
 export interface ShopifyBlog {

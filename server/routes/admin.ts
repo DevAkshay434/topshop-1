@@ -1182,7 +1182,7 @@ Place this at a logical position in the content, typically after introducing a c
             availableProducts = allProducts.filter(p => {
               // Convert both to strings to ensure proper comparison
               const productId = String(p.id);
-              return requestData.productIds?.some(id => String(id) === productId);
+              return requestData.productIds?.some((id: string | number) => String(id) === productId);
             });
             console.log(`Available products after filtering: ${JSON.stringify(availableProducts.map(p => ({ id: p.id, title: p.title })))}`);
             
@@ -1433,31 +1433,42 @@ Place this at a logical position in the content, typically after introducing a c
               }
             }
             
-            // For scheduled posts, use the special scheduling implementation
+            // Handle post creation based on scheduling requirements
             let shopifyArticle;
+            
             if (isScheduled && scheduledPublishDate) {
-              console.log('Using specialized scheduling implementation for future-dated content');
+              console.log('Using custom scheduling implementation for future-dated content');
               
-              // Import the specialized scheduling implementation
-              const { createScheduledArticle } = await import('../services/shopify-scheduling-fix');
+              // Import the custom scheduling implementation
+              const { schedulePost } = await import('../services/custom-scheduler');
               
-              // Call the specialized implementation with explicit API version
-              shopifyArticle = await createScheduledArticle(
-                store,
-                blogId,
-                post.title,
-                post.content || '',
-                scheduledPublishDate,
-                post.tags || '',
-                post.featuredImage || undefined
-              );
+              // Schedule the post with our custom implementation
+              // This will create a draft post and store scheduling info locally
+              try {
+                shopifyArticle = await schedulePost(
+                  store,
+                  blogId,
+                  post,
+                  scheduledPublishDate
+                );
+                
+                console.log('Post scheduled successfully with custom scheduler:', {
+                  id: shopifyArticle.id,
+                  title: shopifyArticle.title,
+                  scheduledDate: scheduledPublishDate.toISOString()
+                });
+              } catch (schedulingError) {
+                console.error('Error with custom scheduling:', schedulingError);
+                // Fallback to creating as draft
+                shopifyArticle = await shopifyService.createArticle(store, blogId, post);
+              }
             } else {
               // For non-scheduled posts, use the regular implementation
               shopifyArticle = await shopifyService.createArticle(
                 store, 
                 blogId, 
                 post,
-                isScheduled ? scheduledPublishDate : undefined  // Only pass date if scheduled
+                undefined // Don't pass any scheduled date to avoid issues
               );
             }
             
@@ -1544,29 +1555,48 @@ Place this at a logical position in the content, typically after introducing a c
           
           console.log(`Creating page with publish setting: ${shouldPublishNow ? 'PUBLISH NOW' : isScheduled ? 'SCHEDULED' : 'DRAFT'}`);
           
-          // For scheduled pages, use the special scheduling implementation
+          // Handle page creation based on scheduling requirements
           let page;
+          
           if (isScheduled && scheduledAt) {
-            console.log('Using specialized scheduling implementation for future-dated page');
+            console.log('Using custom scheduling implementation for future-dated page');
             
-            // Import the specialized scheduling implementation
-            const { createScheduledPage } = await import('../services/shopify-scheduling-fix');
+            // Import the custom scheduling implementation
+            const { schedulePage } = await import('../services/custom-scheduler');
             
-            // Call the specialized implementation with explicit API version
-            page = await createScheduledPage(
-              store,
-              generatedContent.title || requestData.title,
-              finalContent,
-              scheduledAt
-            );
+            try {
+              // Create a draft page and store scheduling info locally
+              page = await schedulePage(
+                store,
+                generatedContent.title || requestData.title,
+                finalContent,
+                scheduledAt
+              );
+              
+              console.log('Page scheduled successfully with custom scheduler:', {
+                id: page.id,
+                title: page.title,
+                scheduledDate: scheduledAt.toISOString()
+              });
+            } catch (schedulingError) {
+              console.error('Error with custom page scheduling:', schedulingError);
+              // Fallback to creating as draft
+              page = await shopifyService.createPage(
+                store,
+                generatedContent.title || requestData.title,
+                finalContent,
+                false, // Create as draft
+                undefined // Don't pass any scheduled date
+              );
+            }
           } else {
             // For non-scheduled pages, use the regular implementation
             page = await shopifyService.createPage(
               store,
               generatedContent.title || requestData.title,
               finalContent,
-              shouldPublishNow, // Only publish now if explicitly set and not scheduled
-              isScheduled ? scheduledAt : undefined // Only pass date if scheduled
+              shouldPublishNow, // Only publish now if explicitly set
+              undefined // Don't pass any scheduled date to avoid issues
             );
           }
           
