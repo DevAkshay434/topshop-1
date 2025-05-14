@@ -135,6 +135,7 @@ interface Product {
   handle: string;
   image?: string;
   body_html?: string;
+  admin_url?: string;
 }
 
 interface Collection {
