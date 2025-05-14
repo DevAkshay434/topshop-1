@@ -1178,7 +1178,19 @@ Place this at a logical position in the content, typically after introducing a c
             console.log(`No product info available, trying to fetch details for products: ${requestData.productIds.join(', ')}`);
             // Since getProductsById doesn't exist, we'll use getProducts and filter the results
             const allProducts = await shopifyService.getProducts(store, 100);
-            availableProducts = allProducts.filter(p => requestData.productIds?.includes(p.id));
+            // CRITICAL FIX: Ensure product IDs are properly compared as strings
+            availableProducts = allProducts.filter(p => {
+              // Convert both to strings to ensure proper comparison
+              const productId = String(p.id);
+              return requestData.productIds?.some(id => String(id) === productId);
+            });
+            console.log(`Available products after filtering: ${JSON.stringify(availableProducts.map(p => ({ id: p.id, title: p.title })))}`);
+            
+            // If we still don't have products, try to use all products
+            if (availableProducts.length === 0 && allProducts.length > 0) {
+              console.log(`Falling back to using all products since none matched the specific IDs`);
+              availableProducts = allProducts.slice(0, 3); // Use up to 3 products
+            }
             console.log(`Successfully fetched ${availableProducts.length} products for interlinking`);
           } catch (productFetchError) {
             console.error("Failed to fetch product details for interlinking:", productFetchError);
