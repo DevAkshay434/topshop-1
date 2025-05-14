@@ -335,11 +335,17 @@ export class ShopifyService {
       
       if (isScheduledPublishing && futurePublishDate) {
         console.log(`Setting up scheduled publishing for future date: ${futurePublishDate.toISOString()}`);
-        // For scheduling: Must set published=false with future published_at date
+        
+        // CRITICAL FIX: For Shopify scheduling to work properly:
+        // 1. Set published=false (so it stays as a draft)
+        // 2. Set published_at to the future date (for when to publish)
         article.published = false; 
         article.published_at = futurePublishDate.toISOString();
+        
         // Add a custom property for tracking in the response
         article.isScheduledPost = true;
+        
+        console.log('SCHEDULING FIX: Setting article as unpublished draft with future publish_at date');
       } else if (post.status === 'published') {
         // For immediate publishing
         article.published = true;
@@ -644,7 +650,7 @@ export class ShopifyService {
     try {
       const client = this.getClient(store);
       
-      console.log(`Creating page in store ${store.shopName} with publish setting: ${published ? 'published' : 'draft'}`);
+      console.log(`Creating page in store ${store.shopName} with publish setting: ${published ? 'published' : publishDate ? 'scheduled' : 'draft'}`);
       
       const pageData: any = {
         page: {
@@ -658,9 +664,10 @@ export class ShopifyService {
       // 1. published=false (so it doesn't publish immediately)
       // 2. published_at=future date (for when to publish)
       if (publishDate) {
-        console.log(`Page scheduled for: ${publishDate.toISOString()}`);
+        console.log(`Page scheduled for future date: ${publishDate.toISOString()}`);
         
-        // Ensure we're setting published to false for scheduled posts
+        // CRITICAL FIX: Shopify requires published=false for scheduling to work correctly
+        // This ensures the page stays as a draft until the scheduled time
         pageData.page.published = false;
         
         // Set the future publish date
@@ -671,7 +678,17 @@ export class ShopifyService {
       
       const response = await client.post('/pages.json', pageData);
       
-      console.log(`Page created successfully with ID: ${response.data.page.id}`);
+      // Log more detailed information about the created page
+      console.log(`Page created successfully with ID: ${response.data.page.id}`, {
+        title: response.data.page.title,
+        published: response.data.page.published,
+        published_at: response.data.page.published_at,
+        sentRequest: {
+          published: pageData.page.published,
+          published_at: pageData.page.published_at,
+          isScheduled: !!publishDate
+        }
+      });
       
       return response.data.page;
     } catch (error: any) {
