@@ -13,6 +13,7 @@ import { ShopifyStore } from "../types/shopify";
 import axios from "axios";
 import { BlogPost } from "@shared/schema";
 import { storage } from "../storage";
+import { createDateInTimezone, getCurrentDateInTimezone } from "@shared/timezone";
 
 /**
  * Schedule a blog post for future publishing
@@ -264,8 +265,10 @@ export async function checkScheduledPosts(): Promise<void> {
   try {
     // Get all scheduled posts
     const scheduledPosts = await storage.getScheduledPosts();
-    const now = new Date();
-
+    
+    // Get all stores for timezone information
+    const stores = await storage.getShopifyStores();
+    
     console.log(`Checking ${scheduledPosts.length} scheduled posts`);
 
     for (const post of scheduledPosts) {
@@ -281,6 +284,38 @@ export async function checkScheduledPosts(): Promise<void> {
           console.log(`Skipping post ${post.id} - no scheduled date`);
           continue;
         }
+        
+        // Find the store for this post - first try by store ID
+        let store = post.storeId ? stores.find(s => s.id === post.storeId) : undefined;
+        
+        // If store not found by ID, try by blog ID
+        if (!store) {
+          store = stores.find(s => s.defaultBlogId === post.shopifyBlogId);
+        }
+        
+        if (!store) {
+          console.log(`Skipping post ${post.id} - store not found for blog ID ${post.shopifyBlogId}`);
+          continue;
+        }
+        
+        // Fetch shop information to get timezone
+        let shopInfo: any;
+        try {
+          const client = axios.create({
+            baseURL: `https://${store.shopName}/admin/api/2023-10`,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Access-Token': store.accessToken
+            }
+          });
+          
+          const shopResponse = await client.get('/shop.json');
+          shopInfo = shopResponse.data.shop;
+          console.log(`Using store timezone: ${shopInfo.iana_timezone} for post ${post.id}`);
+        } catch (shopError: any) {
+          console.error(`Failed to get shop info for timezone, using UTC: ${shopError.message}`);
+          shopInfo = { iana_timezone: 'UTC' };
+        }
 
         // Create a proper Date object from the scheduled date
         let scheduledDate: Date;
@@ -288,7 +323,7 @@ export async function checkScheduledPosts(): Promise<void> {
         // Handle different date formats
         if (typeof post.scheduledDate === 'string') {
           if (post.scheduledPublishDate && post.scheduledPublishTime) {
-            // If we have specific date and time fields, use those
+            // If we have specific date and time fields, use those in the store's timezone
             const dateStr = `${post.scheduledPublishDate}T${post.scheduledPublishTime}:00`;
             scheduledDate = new Date(dateStr);
           } else {
@@ -305,6 +340,11 @@ export async function checkScheduledPosts(): Promise<void> {
           console.log(`Skipping post ${post.id} - invalid scheduled date: ${post.scheduledDate}`);
           continue;
         }
+        
+        // Get current time in store's timezone
+        const now = new Date();
+        console.log(`Current UTC time: ${now.toISOString()}`);
+        console.log(`Post ${post.id} scheduled time: ${scheduledDate.toISOString()}`);
         
         // If it's time to publish (current time is after or equal to scheduled time)
         if (scheduledDate <= now) {

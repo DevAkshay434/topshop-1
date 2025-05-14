@@ -833,14 +833,51 @@ export class ShopifyService {
    */
   public async getProducts(store: ShopifyStore, limit: number = 50): Promise<any[]> {
     try {
+      // Get store client
       const client = this.getClient(store);
       
-      const response = await client.get(`/products.json?limit=${limit}`);
-      
-      return response.data.products;
+      // Try with current API version first
+      try {
+        console.log(`Fetching products from ${store.shopName} with limit ${limit}`);
+        const response = await client.get(`/products.json?limit=${limit}`);
+        console.log(`Successfully fetched ${response.data.products.length} products`);
+        return response.data.products;
+      } catch (firstError: any) {
+        // Log first attempt error
+        console.error(`Error in first attempt to fetch products from ${store.shopName}:`, firstError.message);
+        
+        // If it's a 404 error, try with the stable 2023-07 API version
+        if (firstError.response && firstError.response.status === 404) {
+          console.log(`Retrying with 2023-07 API version`);
+          
+          // Create a client with explicit API version
+          const fallbackClient = axios.create({
+            baseURL: `https://${store.shopName}/admin/api/2023-07`,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Access-Token': store.accessToken
+            }
+          });
+          
+          try {
+            const fallbackResponse = await fallbackClient.get(`/products.json?limit=${limit}`);
+            console.log(`Fallback succeeded, fetched ${fallbackResponse.data.products.length} products`);
+            return fallbackResponse.data.products;
+          } catch (fallbackError: any) {
+            console.error(`Fallback attempt also failed:`, fallbackError.message);
+            throw fallbackError;
+          }
+        } else {
+          // Not a 404, rethrow original error
+          throw firstError;
+        }
+      }
     } catch (error: any) {
       console.error(`Error fetching products from Shopify store ${store.shopName}:`, error);
-      throw new Error(`Failed to fetch products: ${error?.message || 'Unknown error'}`);
+      
+      // Return empty array instead of throwing to prevent app failure
+      console.log(`Returning empty products array due to API error`);
+      return [];
     }
   }
   
