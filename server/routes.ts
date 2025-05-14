@@ -1613,6 +1613,87 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     }
   });
+  
+  // Endpoint to manually publish a scheduled post
+  apiRouter.post("/posts/:id/publish", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id, 10);
+      const force = req.body?.force === true;
+      
+      console.log(`Manual publish request for post ${postId}, force: ${force}`);
+      
+      // Get the post data
+      const post = await storage.getBlogPost(postId);
+      if (!post) {
+        return res.status(404).json({
+          status: "error",
+          message: `Post with ID ${postId} not found`
+        });
+      }
+      
+      // Verify it has the required Shopify IDs
+      if (!post.shopifyPostId || !post.shopifyBlogId) {
+        return res.status(400).json({
+          status: "error",
+          message: "Post is missing Shopify IDs and cannot be published"
+        });
+      }
+      
+      // Get the store info
+      const stores = await storage.getShopifyStores();
+      let store = post.storeId ? stores.find(s => s.id === post.storeId) : undefined;
+      
+      // Try to find by blog ID if store ID not available
+      if (!store) {
+        store = stores.find(s => s.defaultBlogId === post.shopifyBlogId);
+      }
+      
+      if (!store) {
+        return res.status(400).json({
+          status: "error",
+          message: "Could not find associated store for this post"
+        });
+      }
+      
+      console.log(`Publishing post ${postId} to store ${store.shopName}`);
+      
+      // Import the publishing function from custom-scheduler
+      const { publishScheduledArticle } = await import("./services/custom-scheduler");
+      
+      // Publish the post
+      const publishedArticle = await publishScheduledArticle(
+        store,
+        post.shopifyBlogId,
+        post.shopifyPostId,
+        post
+      );
+      
+      // Update the post status in the database
+      await storage.updateBlogPost(postId, {
+        status: "published",
+        publishedDate: new Date()
+      });
+      
+      return res.json({
+        status: "success",
+        message: "Post published successfully",
+        post: {
+          id: postId,
+          title: post.title,
+          shopifyPostId: post.shopifyPostId,
+          publishedArticle
+        }
+      });
+      
+    } catch (error) {
+      console.error("Error publishing post:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to publish post",
+        error: String(error)
+      });
+    }
+  });
 
   // Mount API routes with /api prefix
   app.use('/api', apiRouter);
