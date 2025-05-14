@@ -11,7 +11,15 @@
  * 2. published_at: future date
  */
 
-import { ShopifyStore } from "../storage";
+// Define the ShopifyStore type inline
+type ShopifyStore = {
+  id: number;
+  shopName: string;
+  accessToken: string;
+  scope: string;
+  isConnected: boolean;
+  defaultBlogId?: string;
+};
 import axios, { AxiosInstance } from "axios";
 
 /**

@@ -1437,7 +1437,7 @@ Place this at a logical position in the content, typically after introducing a c
                 post.content || '',
                 scheduledPublishDate,
                 post.tags || '',
-                post.featuredImage
+                post.featuredImage || undefined
               );
             } else {
               // For non-scheduled posts, use the regular implementation
