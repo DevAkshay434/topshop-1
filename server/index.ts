@@ -225,7 +225,7 @@ app.use((req, res, next) => {
       } catch (error) {
         console.error("Scheduled post check error:", error);
       }
-    }, 5 * 60 * 1000); // Check every 5 minutes
+    }, 60 * 1000); // Check every 1 minute for more precise scheduling
     
     // Handle graceful shutdown
     const handleShutdown = () => {

@@ -488,7 +488,31 @@ export async function checkScheduledPosts(): Promise<void> {
         }
         
         // If the original scheduled time has passed OR the adjusted time is now or in the past, publish
-        const shouldPublish = (originalScheduledDate && originalScheduledDate <= now) || scheduledDate <= now;
+        // Compare dates with exact minute precision to publish at the exact scheduled time
+        let shouldPublish = false;
+        
+        // If we have the original date (which is what the user set), use it as primary check
+        if (originalScheduledDate) {
+          // For exact comparison - get current time in same timezone down to the minute
+          const currentMinutes = new Date(now.getTime());
+          currentMinutes.setSeconds(0, 0); // ignore seconds and milliseconds
+          
+          const scheduledMinutes = new Date(originalScheduledDate.getTime());
+          scheduledMinutes.setSeconds(0, 0); // ignore seconds and milliseconds
+          
+          console.log(`Comparing precise times - Current: ${currentMinutes.toISOString()}, Scheduled: ${scheduledMinutes.toISOString()}`);
+          
+          // Now do the comparison - if scheduled time is now or in the past
+          shouldPublish = scheduledMinutes.getTime() <= currentMinutes.getTime();
+          
+          if (shouldPublish) {
+            console.log(`Exact time match or passed! Will publish now.`);
+          }
+        } 
+        // Fallback to regular comparison if no original date
+        else {
+          shouldPublish = scheduledDate <= now;
+        }
         
         // If it's time to publish
         if (shouldPublish) {
