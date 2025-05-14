@@ -9,6 +9,7 @@ import {
   Store, 
   HelpCircle,
   FileCode,
+  Sparkles,
   Zap
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";

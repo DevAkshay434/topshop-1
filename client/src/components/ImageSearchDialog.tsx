@@ -8,7 +8,7 @@ import { Loader2, CheckCircle, XCircle, Plus, Search, ImageIcon } from 'lucide-r
 import { apiRequest } from '@/lib/queryClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export interface PexelsImage {
+interface PexelsImage {
   id: string;
   url: string;
   width: number;
@@ -27,10 +27,6 @@ export interface PexelsImage {
   isProductImage?: boolean;
   productId?: string;
   source?: 'pexels' | 'pixabay' | 'product';
-  isFeatured?: boolean;
-  isContentImage?: boolean;
-  large_url?: string;
-  original_url?: string;
 }
 
 interface SearchHistory {
@@ -47,7 +43,6 @@ interface ImageSearchDialogProps {
     keyword: string;
     isMainKeyword?: boolean;
   }>;
-  searchKeyword?: string;
 }
 
 export default function ImageSearchDialog({
@@ -55,20 +50,17 @@ export default function ImageSearchDialog({
   onOpenChange,
   onImagesSelected,
   initialSelectedImages = [],
-  selectedKeywords = [],
-  searchKeyword = ''
+  selectedKeywords = []
 }: ImageSearchDialogProps) {
-  const [imageSearchQuery, setImageSearchQuery] = useState<string>(searchKeyword || '');
+  const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>(initialSelectedImages || []);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<SearchHistory[]>([]);
-  const [hasInitialSearchRun, setHasInitialSearchRun] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'product'>('all');
   const [availableSources, setAvailableSources] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'selected'>('search');
   const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
-  const [contentImageIds, setContentImageIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Reset selected images when initialSelectedImages changes
@@ -95,18 +87,8 @@ export default function ImageSearchDialog({
 
   // Pre-populate with main keyword if available and auto-search with it
   useEffect(() => {
-    if (open && !hasInitialSearchRun && imageSearchHistory.length === 0 && !searchedImages.length) {
-      // Set the flag to prevent repeated searches
-      setHasInitialSearchRun(true);
-      
-      // If searchKeyword is provided, use it first
-      if (searchKeyword && searchKeyword.trim() !== '') {
-        console.log(`Pre-populated and searching with provided keyword: ${searchKeyword}`);
-        handleImageSearch(searchKeyword);
-        return;
-      }
-      
-      // Otherwise, find the main keyword if available
+    if (open && imageSearchHistory.length === 0 && !searchedImages.length) {
+      // Find the main keyword if available
       const mainKeyword = selectedKeywords.find(kw => kw.isMainKeyword);
       
       if (mainKeyword) {
@@ -146,7 +128,6 @@ export default function ImageSearchDialog({
     setIsSearchingImages(true);
     
     try {
-      console.log('Searching for images with query:', trimmedQuery);
       const response = await apiRequest({
         url: '/api/admin/generate-images',
         method: 'POST',
@@ -157,61 +138,34 @@ export default function ImageSearchDialog({
         }
       });
       
-      console.log('API response:', response);
-      
       if (response.success && response.images && response.images.length > 0) {
-        console.log(`Found ${response.images.length} images`);
-        
         // Mark images as selected if they're already in selectedImages
         const newImages = response.images.map((img: any) => ({
           ...img,
-          selected: selectedImages.some(selected => selected.id === img.id),
-          // Ensure URL is always set from the response with multiple fallbacks
-          url: img.url || 
-               img.src?.medium || 
-               img.src?.original || 
-               img.large_url || 
-               img.original_url || 
-               (img.source === 'pexels' && img.id 
-                 ? `https://images.pexels.com/photos/${img.id}/pexels-photo-${img.id}.jpeg?auto=compress&cs=tinysrgb&h=350` 
-                 : null)
+          selected: selectedImages.some(selected => selected.id === img.id)
         }));
-        
-        // Filter out images without valid URLs to prevent rendering issues
-        const validImages = newImages.filter((img: PexelsImage) => img.url);
-        
-        console.log('Valid images count:', validImages.length);
-        console.log('First image:', validImages.length > 0 ? validImages[0] : 'No valid images');
         
         // Track available image sources from the response
         if (response.sourcesUsed && Array.isArray(response.sourcesUsed)) {
           setAvailableSources(response.sourcesUsed);
         }
         
-        setSearchedImages(validImages);
+        setSearchedImages(newImages);
         
         // Add to search history
         setImageSearchHistory(prev => [
           ...prev,
           { 
             query: trimmedQuery, 
-            images: validImages 
+            images: newImages 
           }
         ]);
         
-        if (validImages.length > 0) {
-          toast({
-            title: "Images found",
-            description: `Found ${validImages.length} images for "${trimmedQuery}"`,
-            variant: "default"
-          });
-        } else {
-          toast({
-            title: "Image loading issues",
-            description: "Found images but couldn't load them properly. Try another search term.",
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Images found",
+          description: `Found ${newImages.length} images for "${trimmedQuery}"`,
+          variant: "default"
+        });
       } else {
         toast({
           title: "No images found",
@@ -231,49 +185,13 @@ export default function ImageSearchDialog({
     }
   };
   
-  // Toggle image selection with improved reliability
+  // Toggle image selection
   const toggleImageSelection = (imageId: string) => {
-    console.log("Toggle selection called for image ID:", imageId);
+    // Get the current selection state
+    const currentImage = searchedImages.find(img => img.id === imageId);
+    const newSelectedState = !(currentImage?.selected || false);
     
-    // First, try to find the image in searchedImages
-    let imageToToggle = searchedImages.find(img => img.id === imageId);
-    
-    // If not found in search results, check selected images
-    if (!imageToToggle) {
-      imageToToggle = selectedImages.find(img => img.id === imageId);
-    }
-    
-    // If still not found, check history
-    if (!imageToToggle) {
-      for (const history of imageSearchHistory) {
-        const historyImage = history.images.find(img => img.id === imageId);
-        if (historyImage) {
-          imageToToggle = historyImage;
-          break;
-        }
-      }
-    }
-    
-    // If image is still not found, show error and return
-    if (!imageToToggle) {
-      console.error("Could not find image with ID:", imageId);
-      toast({
-        title: "Selection Error",
-        description: "Could not select this image. Please try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Determine the new selection state (flip the current state)
-    const currentlySelected = imageToToggle.selected || selectedImages.some(img => img.id === imageId);
-    const newSelectedState = !currentlySelected;
-    
-    console.log(`Toggling image ${imageId} to selected=${newSelectedState}`);
-    
-    // Update selection state in all relevant places
-    
-    // 1. Update searchedImages
+    // Update in current search results
     setSearchedImages(prev => 
       prev.map(img => 
         img.id === imageId 
@@ -282,7 +200,7 @@ export default function ImageSearchDialog({
       )
     );
     
-    // 2. Update imageSearchHistory
+    // Update in search history
     setImageSearchHistory(prev => 
       prev.map(history => ({
         ...history,
@@ -294,63 +212,23 @@ export default function ImageSearchDialog({
       }))
     );
     
-    // 3. Update selectedImages collection
+    // Update selected images list
     if (newSelectedState) {
-      // Only add if not already in the selection
-      if (!selectedImages.some(img => img.id === imageId)) {
-        // Create a new object with all the image properties plus selected=true
-        const fullImageObject = {
-          ...imageToToggle,
-          selected: true,
-          // Automatically make it featured if it's the first image selected
-          isFeatured: selectedImages.length === 0
-        };
-        
-        setSelectedImages(prev => [...prev, fullImageObject]);
-        
-        // If it's the first image, automatically set it as featured
-        if (selectedImages.length === 0) {
-          setFeaturedImageId(imageId);
-        }
-        
-        // Show toast as feedback
-        toast({
-          title: "Image Selected",
-          description: selectedImages.length === 0 
-            ? "First image automatically set as featured. You can select more images." 
-            : "You can select multiple images. Click 'Set as Featured' to make any image the main one.",
-          variant: "default"
-        });
+      // Add to selected images if not already there
+      const imageToAdd = searchedImages.find(img => img.id === imageId);
+      if (imageToAdd && !selectedImages.some(img => img.id === imageId)) {
+        setSelectedImages(prev => [...prev, { ...imageToAdd, selected: true }]);
       }
     } else {
       // Remove from selected images
       setSelectedImages(prev => prev.filter(img => img.id !== imageId));
-      
-      // If this was the featured image, remove that too
-      if (featuredImageId === imageId) {
-        setFeaturedImageId(null);
-      }
-      
-      // Remove from content images too if needed
-      if (contentImageIds.includes(imageId)) {
-        setContentImageIds(prev => prev.filter(id => id !== imageId));
-      }
     }
   };
 
   // Handle image selection confirmation
   const confirmImageSelection = () => {
-    console.log("Confirming image selection. Selected images:", selectedImages);
-    
     // Make sure featured image is first in the array
-    let orderedImages = [...selectedImages].map(img => ({
-      ...img,
-      isFeatured: img.id === featuredImageId,
-      isContentImage: contentImageIds.includes(img.id)
-    }));
-    
-    console.log("Featured image ID:", featuredImageId);
-    console.log("Content image IDs:", contentImageIds);
+    let orderedImages = [...selectedImages];
     
     if (featuredImageId && orderedImages.length > 0) {
       // Remove featured image from array if it exists
@@ -365,17 +243,9 @@ export default function ImageSearchDialog({
       }
     }
     
-    console.log("Ordered images to return:", orderedImages);
-    
     // Pass selected images back to parent component with featured image first
     onImagesSelected(orderedImages);
     onOpenChange(false);
-    
-    // Show toast confirmation
-    toast({
-      title: "Images Selected",
-      description: `You've selected ${orderedImages.length} images for your content`,
-    });
   };
   
   // Set an image as featured
@@ -388,57 +258,14 @@ export default function ImageSearchDialog({
       toggleImageSelection(imageId);
     }
     
-    // Check if this image is already featured
-    if (featuredImageId === imageId) {
-      // If it's already the featured image, unset it
-      setFeaturedImageId("");
-      toast({
-        title: "Featured Image Removed",
-        description: "This image is no longer set as featured",
-        variant: "default"
-      });
-    } else {
-      // Set as featured image
-      setFeaturedImageId(imageId);
-      
-      toast({
-        title: "Featured image set",
-        description: "This will be the main image for your content",
-        variant: "default"
-      });
-    }
-  };
-  
-  // Toggle image as content image (for product linking)
-  const toggleContentImage = (imageId: string) => {
-    // Make sure image is selected first
-    const isSelected = selectedImages.some(img => img.id === imageId);
-    if (!isSelected) {
-      toggleImageSelection(imageId);
-    }
-    
-    // Toggle content image status
-    setContentImageIds(prev => {
-      if (prev.includes(imageId)) {
-        return prev.filter(id => id !== imageId);
-      } else {
-        return [...prev, imageId];
-      }
-    });
+    // Set as featured image
+    setFeaturedImageId(imageId);
     
     toast({
-      title: contentImageIds.includes(imageId) ? "Removed from content" : "Added to content",
-      description: contentImageIds.includes(imageId) 
-        ? "This image will no longer be linked with products in the content" 
-        : "This image will be linked with selected products in the content",
+      title: "Featured image set",
+      description: "This will be the main image for your content",
       variant: "default"
     });
-  };
-  
-  // Function used by the "Set as Content" button
-  const setAsContentImage = (imageId: string) => {
-    // Simply delegate to the toggle function
-    toggleContentImage(imageId);
   };
   
   // Suggestion options for the search field
@@ -461,20 +288,21 @@ export default function ImageSearchDialog({
         }
         onOpenChange(open);
       }}>
-      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-[85vh] flex flex-col p-0" style={{ overflow: 'hidden' }}>
-        <DialogHeader className="px-6 pt-6 pb-3">
+      <DialogContent className="sm:max-w-[800px] lg:max-w-[1000px] xl:max-w-[1200px] h-[85vh] max-h-screen flex flex-col">
+        <DialogHeader>
           <DialogTitle>Select Images for Your Content</DialogTitle>
           <DialogDescription>
-            Search for images related to your content using keywords. You can select <span className="text-yellow-500 font-medium">Featured</span> images for your article header and <span className="text-blue-500 font-medium">Content</span> images to be embedded within your article.
+            Search for images related to your content using keywords. Choose from multiple sources.
           </DialogDescription>
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Tabs for Search vs Selected Images */}
           <Tabs 
             defaultValue="search" 
             value={activeTab} 
             onValueChange={(value) => setActiveTab(value as 'search' | 'selected')}
-            className="w-full flex flex-col flex-1"
+            className="w-full"
           >
             <div className="border-b px-4">
               <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -495,117 +323,42 @@ export default function ImageSearchDialog({
             {/* Search Tab */}
             <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                  <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                    <h4 className="text-sm font-medium text-blue-800 mb-1">Image Selection Guide</h4>
-                    <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
-                      <li>Search for relevant images using keywords</li>
-                      <li>Click images to select them</li>
-                      <li>Choose Featured and Content images</li>
-                      <li>Select at least one featured image for your article</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
-                    <h4 className="text-sm font-medium text-yellow-800 mb-1">Image Types</h4>
-                    <ul className="text-xs text-yellow-700 space-y-1 list-disc pl-4">
-                      <li><strong>Featured Image:</strong> Main image for your article (required)</li>
-                      <li><strong>Content Images:</strong> Additional images to use in your content</li>
-                      <li>You can select multiple images</li>
-                    </ul>
-                  </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter keywords to search for images..."
+                    value={imageSearchQuery}
+                    onChange={(e) => setImageSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && imageSearchQuery.trim()) {
+                        handleImageSearch(imageSearchQuery);
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={() => handleImageSearch(imageSearchQuery)}
+                    disabled={isSearchingImages || !imageSearchQuery.trim()}
+                  >
+                    {isSearchingImages ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Searching...
+                      </>
+                    ) : "Search"}
+                  </Button>
                 </div>
                 
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                        <Search className="h-4 w-4" />
-                      </div>
-                      <Input
-                        value={imageSearchQuery}
-                        onChange={(e) => setImageSearchQuery(e.target.value)}
-                        placeholder="Search for images..."
-                        className="pl-10"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleImageSearch(imageSearchQuery);
-                          }
-                        }}
-                      />
-                    </div>
-                    <Button 
-                      onClick={() => handleImageSearch(imageSearchQuery)}
-                      disabled={isSearchingImages || !imageSearchQuery.trim()}
-                      className={`whitespace-nowrap ${isSearchingImages ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-                    >
-                      {isSearchingImages ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Searching...
-                        </>
-                      ) : (
-                        "Search Images"
-                      )}
-                    </Button>
-                  </div>
-                  
-                  {/* Source filters if we have multiple sources */}
-                  {availableSources.length > 1 && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-gray-500">Filter sources:</span>
-                      <Button
-                        variant={sourceFilter === 'all' ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSourceFilter('all')}
-                        className="h-8"
-                      >
-                        All Sources
-                      </Button>
-                      {availableSources.includes('pexels') && (
-                        <Button
-                          variant={sourceFilter === 'pexels' ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSourceFilter('pexels')}
-                          className="h-8"
-                        >
-                          Pexels
-                        </Button>
-                      )}
-                      {availableSources.includes('pixabay') && (
-                        <Button
-                          variant={sourceFilter === 'pixabay' ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSourceFilter('pixabay')}
-                          className="h-8"
-                        >
-                          Pixabay
-                        </Button>
-                      )}
-                      {availableSources.includes('product') && (
-                        <Button
-                          variant={sourceFilter === 'product' ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSourceFilter('product')}
-                          className="h-8"
-                        >
-                          Product Images
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Suggestions if no search yet */}
+                {/* Suggested searches - show when no search has been performed */}
                 {!searchedImages.length && !isSearchingImages && (
-                  <div className="border border-blue-100 bg-blue-50/50 rounded-md p-3">
-                    <p className="text-sm font-medium text-blue-800 mb-1">Try searching for:</p>
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <div className="text-sm font-medium text-blue-800 mb-2">Try these search terms:</div>
                     <div className="flex flex-wrap gap-2">
                       {suggestedSearches.map((term, idx) => (
                         <Badge
                           key={idx}
-                          variant="outline"
-                          className="bg-white hover:bg-blue-50 cursor-pointer border-blue-200"
+                          variant="secondary"
+                          className="cursor-pointer hover:bg-blue-100"
                           onClick={() => {
                             setImageSearchQuery(term);
                             handleImageSearch(term);
@@ -618,45 +371,58 @@ export default function ImageSearchDialog({
                   </div>
                 )}
                 
-                {/* Recent searches */}
+                {/* Search history */}
                 {imageSearchHistory.length > 0 && (
-                  <div className="bg-blue-50 p-3 rounded-md">
-                    <div className="text-sm font-medium text-blue-800 mb-2">Recent searches:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {imageSearchHistory.map((history, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="outline"
-                          className="bg-white hover:bg-blue-50 cursor-pointer border-blue-200 flex items-center"
-                          onClick={() => {
-                            setImageSearchQuery(history.query);
-                            setSearchedImages(history.images);
-                          }}
-                        >
-                          {history.query}
-                          <span className="ml-1 text-xs text-gray-500">({history.images.length})</span>
-                        </Badge>
-                      ))}
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {imageSearchHistory.map((history, index) => (
+                      <Badge
+                        key={index}
+                        variant={history.query === imageSearchQuery ? "default" : "outline"} 
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setImageSearchQuery(history.query);
+                          setSearchedImages(history.images);
+                        }}
+                      >
+                        {history.query}
+                      </Badge>
+                    ))}
                   </div>
                 )}
                 
-                {/* Selected images counter */}
-                {selectedImages.length > 0 && (
+                {/* Source filters */}
+                {searchedImages.length > 0 && availableSources.length > 0 && (
                   <div className="flex items-center gap-4">
-                    <Badge variant="outline" className="bg-blue-50 border-blue-200">
-                      <div className="flex gap-2">
-                        <CheckCircle className="h-4 w-4 text-blue-500" /> 
-                        <span>{selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected</span>
-                      </div>
-                    </Badge>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setActiveTab('selected')}
-                    >
-                      View selected
-                    </Button>
+                    <span className="text-sm font-medium">Filter by source:</span>
+                    <div className="flex gap-2">
+                      <Badge 
+                        variant={sourceFilter === 'all' ? 'default' : 'outline'} 
+                        className="cursor-pointer"
+                        onClick={() => setSourceFilter('all')}
+                      >
+                        All Sources
+                      </Badge>
+                      
+                      {availableSources.includes('pexels') && (
+                        <Badge 
+                          variant={sourceFilter === 'pexels' ? 'default' : 'outline'}
+                          className="cursor-pointer"
+                          onClick={() => setSourceFilter('pexels')}
+                        >
+                          Pexels
+                        </Badge>
+                      )}
+                      
+                      {availableSources.includes('pixabay') && (
+                        <Badge 
+                          variant={sourceFilter === 'pixabay' ? 'default' : 'outline'}
+                          className="cursor-pointer"
+                          onClick={() => setSourceFilter('pixabay')}
+                        >
+                          Pixabay
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 )}
                 
@@ -679,25 +445,10 @@ export default function ImageSearchDialog({
               </div>
               
               {/* Search results grid - with improved scrolling */}
-              <div className="flex-1" style={{ overflowY: 'auto', maxHeight: 'calc(85vh - 200px)' }}>
-                {/* Helpful guidance */}
-                <div className="sticky top-0 z-50 pt-4 pb-2 px-4 bg-white">
-                  <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
-                    <h3 className="text-sm font-semibold text-blue-800 mb-1">How to select images:</h3>
-                    <ol className="text-xs text-blue-700 space-y-1 list-decimal pl-5">
-                      <li><strong>Search</strong> using keywords related to your product</li>
-                      <li><strong>Click</strong> on an image to select it</li>
-                      <li>Use the <span className="px-1 py-0.5 bg-yellow-100 text-yellow-700 rounded">Featured</span> button for your main image</li>
-                      <li>Use the <span className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded">Content</span> button for additional images</li>
-                      <li>When finished, click <strong>Confirm Selection</strong> at the bottom</li>
-                    </ol>
-                  </div>
-                </div>
-                
-                <div className="px-4 pb-4">
-                  {searchedImages.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" style={{ position: 'relative', zIndex: 40 }}>
-                      {searchedImages
+              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 150px)" }}>
+                {searchedImages.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
+                    {searchedImages
                       .filter(image => {
                         // Apply source filtering
                         if (sourceFilter === 'all') return true;
@@ -710,114 +461,80 @@ export default function ImageSearchDialog({
                         <div 
                           key={image.id}
                           className={`
-                            relative rounded-lg overflow-hidden border-2 shadow-md cursor-pointer group transition-all hover:scale-105 hover:shadow-lg
-                            ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200 hover:border-blue-300'}
+                            relative rounded-lg overflow-hidden border-2 shadow cursor-pointer
+                            ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'}
                             ${image.isProductImage ? 'border-green-500' : ''}
-                            ${featuredImageId === image.id ? 'ring-4 ring-yellow-400 border-yellow-500 shadow-yellow-100' : ''}
-                            ${contentImageIds.includes(image.id) && featuredImageId !== image.id ? 'border-blue-500 ring-2 ring-blue-300 shadow-blue-100' : ''}
+                            ${featuredImageId === image.id ? 'ring-4 ring-yellow-400' : ''}
                           `}
-                          style={{ position: 'relative', zIndex: 999 }}
-                          onClick={() => toggleImageSelection(image.id)}
                         >
-                          <div className="aspect-[4/3] bg-slate-100 relative">
-                            {/* Use direct proxy URL to ensure images load */}
+                          <div className="aspect-[4/3] bg-slate-100" onClick={() => toggleImageSelection(image.id)}>
                             <img 
-                              src={`/api/proxy/image/${image.id}`}
-                              alt={image.alt || 'Product image'} 
-                              className="w-full h-full object-cover pointer-events-none"
-                              onError={(e) => {
-                                // Fallback to placeholder if direct proxy fails
-                                const target = e.target as HTMLImageElement;
-                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
-                              }}
+                              src={image.src?.medium || image.url} 
+                              alt={image.alt || 'Image'} 
+                              className="w-full h-full object-cover"
                               loading="lazy"
                             />
-                            
-                            {/* Hover state overlay */}
-                            <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors pointer-events-none"></div>
-                            
-                            {/* Big selection checkmark */}
-                            {image.selected && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-blue-500/20 pointer-events-none">
-                                <div className="bg-white rounded-full p-2 shadow-lg">
-                                  <CheckCircle className="h-8 w-8 text-blue-500" />
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Selection instruction overlay on hover */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                              <div className="bg-black/40 px-3 py-1 rounded-md">
-                                <span className="text-white text-xs font-medium">Click to select</span>
-                              </div>
-                            </div>
-                            
-                            {/* Status badges at top right */}
-                            <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
-                              {featuredImageId === image.id && (
-                                <Badge className="bg-yellow-500 hover:bg-yellow-600 border-yellow-600">
-                                  Featured
-                                </Badge>
-                              )}
-                              {contentImageIds.includes(image.id) && featuredImageId !== image.id && (
-                                <Badge className="bg-blue-500 hover:bg-blue-600 border-blue-600">
-                                  Content
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            {/* Selection indicator */}
-                            <div className={`absolute inset-0 bg-black/10 flex items-center justify-center transition-opacity ${image.selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'}`}>
-                              {image.selected ? (
-                                <div className="bg-white text-blue-600 rounded-full p-1">
-                                  <CheckCircle className="h-5 w-5" />
-                                </div>
-                              ) : (
-                                <div className="bg-white text-blue-600 rounded-full p-1 opacity-0 group-hover:opacity-100">
-                                  <Plus className="h-5 w-5" />
-                                </div>
-                              )}
-                            </div>
                           </div>
                           
-                          {/* Image actions */}
-                          <div className="flex p-1 bg-gradient-to-b from-gray-50 to-gray-100" style={{ position: 'relative', zIndex: 47 }}>
-                            <Button 
-                              className="flex-1 text-xs h-7 rounded-sm"
-                              variant={featuredImageId === image.id ? "default" : "secondary"}
-                              size="sm"
-                              style={{ position: 'relative', zIndex: 48 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setAsFeaturedImage(image.id);
-                              }}
-                            >
-                              {featuredImageId === image.id ? (
-                                <span className="flex items-center justify-center">
-                                  <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
-                                  Featured
-                                </span>
-                              ) : "Set Featured"}
-                            </Button>
-                            <Button
-                              variant={contentImageIds.includes(image.id) ? "default" : "secondary"}
-                              className={`ml-1 flex-1 text-xs h-7 rounded-sm ${contentImageIds.includes(image.id) ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
-                              size="sm"
-                              onClick={() => setAsContentImage(image.id)}
-                            >
-                              {contentImageIds.includes(image.id) ? (
-                                <span className="flex items-center justify-center">
-                                  <span className="inline-block w-2 h-2 bg-white rounded-full mr-1"></span>
-                                  Content
-                                </span>
-                              ) : "Set Content"}
-                            </Button>
+                          {/* Source badge */}
+                          <div className="absolute top-2 left-2 z-10">
+                            {image.source === 'pexels' && (
+                              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-md">
+                                Pexels
+                              </span>
+                            )}
+                            {image.source === 'pixabay' && (
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md">
+                                Pixabay
+                              </span>
+                            )}
+                            {image.isProductImage && (
+                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md">
+                                Product
+                              </span>
+                            )}
                           </div>
+                          
+                          {/* Featured badge */}
+                          {featuredImageId === image.id && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                                Featured
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Selection indicator */}
+                          {image.selected && (
+                            <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                              <div className="bg-blue-500 text-white p-2 rounded-full">
+                                <CheckCircle size={20} />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Featured button */}
+                          {image.selected && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-center">
+                              <Button
+                                variant={featuredImageId === image.id ? "default" : "secondary"}
+                                size="sm"
+                                className="h-7 text-xs w-full"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAsFeaturedImage(image.id);
+                                }}
+                              >
+                                {featuredImageId === image.id ? "Featured" : "Set as Featured"}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))}
-                    </div>
-                  ) : (
-                    isSearchingImages ? (
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    {isSearchingImages ? (
                       <div className="text-center">
                         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
                         <p>Searching for images...</p>
@@ -827,41 +544,25 @@ export default function ImageSearchDialog({
                         <Search className="h-12 w-12 mx-auto mb-2 opacity-20" />
                         <p>Enter keywords above and click Search to find images</p>
                       </div>
-                    )
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
             
             {/* Selected Images Tab */}
             <TabsContent value="selected" className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 space-y-4">
-                <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-                  <h3 className="text-sm font-medium text-blue-800 mb-2">Image Types</h3>
-                  <div className="flex flex-col space-y-3 text-xs text-blue-700">
-                    <div className="flex items-start">
-                      <div className="mt-0.5 mr-2">
-                        <Badge className="bg-yellow-500 border-yellow-600">Featured</Badge>
-                      </div>
-                      <div>
-                        <p className="font-medium">Featured Image</p>
-                        <p>The main image used at the top of your article. This should be eye-catching and relevant to your topic.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <div className="mt-0.5 mr-2">
-                        <Badge className="bg-blue-500 border-blue-600">Content</Badge>
-                      </div>
-                      <div>
-                        <p className="font-medium">Content Image</p>
-                        <p>Additional images that will be placed throughout your article content. These should support your text and showcase products.</p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <h3 className="text-sm font-medium text-blue-800 mb-1">Selected Images</h3>
+                  <p className="text-xs text-blue-700">
+                    The first image will be used as the featured image for your content.
+                    Click "Set as Featured" to choose which image appears first.
+                  </p>
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: "calc(70vh - 150px)" }}>
                 {selectedImages.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {selectedImages.map((image, index) => (
@@ -874,72 +575,67 @@ export default function ImageSearchDialog({
                       >
                         <div className="aspect-[4/3] bg-slate-100">
                           <img 
-                            src={`/api/proxy/image/${image.id}`} 
-                            alt={image.alt || 'Selected image'} 
+                            src={image.src?.medium || image.url} 
+                            alt={image.alt || 'Image'} 
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Fallback to placeholder if direct proxy fails
-                              const target = e.target as HTMLImageElement;
-                              target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2'%3E%3Crect width='20' height='20' x='2' y='2' rx='2'/%3E%3Cpath d='m4 14 4-4 6 6'/%3E%3Cpath d='m14 10 2-2 4 4'/%3E%3Ccircle cx='8' cy='8' r='2'/%3E%3C/svg%3E";
-                            }}
+                            loading="lazy"
                           />
                         </div>
                         
-                        {/* Remove badge */}
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-7 w-7 bg-white bg-opacity-90 hover:bg-opacity-100 text-red-500 hover:text-red-600 border border-red-200"
-                          onClick={() => toggleImageSelection(image.id)}
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                        
-                        {/* Image type badge */}
-                        <div className="absolute top-2 left-2">
-                          {featuredImageId === image.id ? (
-                            <Badge className="bg-yellow-500 hover:bg-yellow-600 border-yellow-600">Featured</Badge>
-                          ) : contentImageIds.includes(image.id) ? (
-                            <Badge className="bg-blue-500 hover:bg-blue-600 border-blue-600">Content</Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-white/90">Regular</Badge>
-                          )}
+                        {/* Order badge */}
+                        <div className="absolute top-2 left-2 z-10">
+                          <span className={`text-white text-xs px-2 py-1 rounded-md font-medium ${index === 0 ? 'bg-yellow-500' : 'bg-blue-500'}`}>
+                            {index === 0 ? 'Featured' : `Image ${index + 1}`}
+                          </span>
                         </div>
                         
+                        {/* Featured badge */}
+                        {featuredImageId === image.id && index !== 0 && (
+                          <div className="absolute top-2 right-2 z-10">
+                            <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                              Featured
+                            </span>
+                          </div>
+                        )}
+                        
                         {/* Action buttons */}
-                        <div className="flex p-1 bg-gradient-to-b from-gray-50 to-gray-100">
-                          <Button 
-                            className="flex-1 text-xs h-7 rounded-sm"
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1 flex justify-between gap-1">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-7 text-xs flex-1"
+                            onClick={() => toggleImageSelection(image.id)}
+                          >
+                            Remove
+                          </Button>
+                          
+                          <Button
                             variant={featuredImageId === image.id ? "default" : "secondary"}
                             size="sm"
+                            className="h-7 text-xs flex-1"
                             onClick={() => setAsFeaturedImage(image.id)}
+                            disabled={featuredImageId === image.id}
                           >
-                            {featuredImageId === image.id ? "Featured ✓" : "Set Featured"}
-                          </Button>
-                          <Button
-                            variant={contentImageIds.includes(image.id) ? "default" : "secondary"}
-                            className={`ml-1 flex-1 text-xs h-7 rounded-sm ${contentImageIds.includes(image.id) ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
-                            size="sm"
-                            onClick={() => setAsContentImage(image.id)}
-                          >
-                            {contentImageIds.includes(image.id) ? "Content ✓" : "Set Content"}
+                            {featuredImageId === image.id ? "Featured" : "Set as Featured"}
                           </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-10 text-gray-500">
-                    <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p className="text-lg mb-2">No images selected yet</p>
-                    <p className="text-sm mb-4">Go to the search tab to find and select images for your content</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setActiveTab('search')}
-                    >
-                      Go to Search
-                    </Button>
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-500">
+                      <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                      <p>No images selected yet</p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-3" 
+                        size="sm"
+                        onClick={() => setActiveTab('search')}
+                      >
+                        Go to Search
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -947,29 +643,22 @@ export default function ImageSearchDialog({
           </Tabs>
         </div>
         
-        <DialogFooter className="p-4 border-t">
-          <div className="flex flex-col sm:flex-row gap-2 justify-between items-center w-full">
-            <div className="text-sm text-muted-foreground">
-              {selectedImages.length > 0 ? 
-                `${selectedImages.length} image${selectedImages.length !== 1 ? 's' : ''} selected` : 
-                "No images selected"
-              }
-              {featuredImageId && " (including 1 featured)"}
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={confirmImageSelection}
-                disabled={selectedImages.length === 0}
-              >
-                Confirm Selection
-              </Button>
-            </div>
+        <DialogFooter>
+          <div className="flex gap-2 ml-auto">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button"
+              onClick={confirmImageSelection}
+              disabled={selectedImages.length === 0}
+            >
+              Use {selectedImages.length} Selected Image{selectedImages.length !== 1 ? 's' : ''}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

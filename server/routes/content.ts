@@ -9,41 +9,35 @@ const contentRouter = Router();
 // Generate content for a single topic with optional custom prompt
 contentRouter.post("/generate-content", async (req: Request, res: Response) => {
   try {
-    // Validate request body with enhanced options
+    // Validate request body with custom prompt support
     const reqSchema = z.object({
       topic: z.string().min(1),
-      customPrompt: z.string().optional(),
-      tone: z.string().optional().default("Professional"),
-      length: z.string().optional().default("Medium (500-800 words)"),
-      model: z.string().optional().default("claude")
+      customPrompt: z.string().optional()
     });
     
-    const { topic, customPrompt, tone, length, model } = reqSchema.parse(req.body);
+    const { topic, customPrompt } = reqSchema.parse(req.body);
     
-    console.log(`Generating content for topic: "${topic}" using ${model === "claude" ? "Claude AI" : "AI"} with tone: ${tone}, length: ${length}`);
+    console.log(`Generating content for topic: "${topic}" ${customPrompt ? 'with custom prompt' : ''}`);
     
     // Create a record of the content generation request
     const contentRequest = await storage.createContentGenRequest({
       topic,
-      tone: customPrompt ? "custom" : tone, // Use specified tone or mark as custom if using custom prompt
-      length: length.split(' ')[0].toLowerCase(), // Extract just the size portion (short, medium, long)
+      tone: customPrompt ? "custom" : "professional", // Using tone field to track if custom prompt was used
+      length: "medium", // Default length
       status: "pending",
       generatedContent: null
     });
     
     try {
       // Generate content with Claude as the primary service
-      console.log(`Generating content with Claude for topic: "${topic}" with tone: ${tone}, length: ${length}`);
+      console.log(`Generating content with Claude for topic: "${topic}"`);
       
-      const generatedContent = await generateBlogContentWithClaude(
+      const generatedContent = await generateBlogContentWithClaude({
         topic,
-        [], // keywords
-        customPrompt || "",
-        "", // productName
-        "", // productDescription
-        tone, // pass tone parameter
-        length // pass length parameter
-      );
+        tone: "professional",
+        length: "medium",
+        customPrompt
+      });
       
       // Log the returned content (truncated for readability)
       console.log(`Claude content generated successfully. Title: "${generatedContent.title}", Content length: ${generatedContent.content ? generatedContent.content.length : 0} characters`);
@@ -146,13 +140,12 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
           console.log(`Generating content with Claude for topic "${topic}"`);
           
           // Generate content with Claude API
-          const generatedContent = await generateBlogContentWithClaude(
+          const generatedContent = await generateBlogContentWithClaude({
             topic,
-            [], // keywords
-            topicPrompt, // customPrompt
-            "", // productName
-            "" // productDescription 
-          );
+            tone: "professional",
+            length: "medium",
+            customPrompt: topicPrompt
+          });
           
           console.log(`Claude content generated successfully for "${topic}". Title: "${generatedContent.title}"`);
           
@@ -313,13 +306,12 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         console.log(`Generating content with Claude for topic: "${topic}"`);
         
         try {
-          const generatedContent = await generateBlogContentWithClaude(
+          const generatedContent = await generateBlogContentWithClaude({
             topic,
-            [], // keywords
-            topicPrompt || "",
-            "", // productName
-            "" // productDescription
-          );
+            tone: "professional",
+            length: "medium",
+            customPrompt: topicPrompt
+          });
           
           console.log(`Claude content generated successfully for "${topic}". Title: "${generatedContent.title}"`);
           
@@ -414,14 +406,14 @@ contentRouter.get("/test-claude", async (req: Request, res: Response) => {
     console.log(`Claude API Key status: Present (first 3 chars: ${process.env.ANTHROPIC_API_KEY.substring(0, 3)}...)`);
     
     // Test connection to Claude API
-    const isConnected = await testClaudeConnection();
+    const testResult = await testClaudeConnection();
     
     return res.json({ 
-      success: isConnected, 
-      message: isConnected ? "Claude API connection successful" : "Claude API connection failed",
+      success: testResult.success, 
+      message: testResult.message,
       data: { 
         model: "claude-3-7-sonnet-20250219",
-        status: isConnected ? "success" : "error"
+        status: testResult.success ? "success" : "error"
       }
     });
   } catch (error) {
