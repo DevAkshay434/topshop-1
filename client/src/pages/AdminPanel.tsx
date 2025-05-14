@@ -2322,7 +2322,7 @@ export default function AdminPanel() {
                             // Enhanced processing for all content with images
                             let enhancedContent = content;
                             
-                            // Process all <a> tags with embedded images to ensure they display properly
+                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
                             enhancedContent = enhancedContent.replace(
                               /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
                               (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
@@ -2334,9 +2334,45 @@ export default function AdminPanel() {
                                   fixedSrc = 'https:' + src;
                                 }
                                 
-                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px;">${postspace}</a>`;
+                                // Make sure the image is inside an <a> tag and properly styled
+                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
                               }
                             );
+                            
+                            // Convert standalone images to be wrapped in product links when possible
+                            // First find images without surrounding <a> tags
+                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+                            const matches = Array.from(enhancedContent.matchAll(imgRegex));
+                            
+                            // Get products if available 
+                            const products = selectedProducts || [];
+                            
+                            // Process each standalone image
+                            matches.forEach(match => {
+                              // Skip if the image is already inside an <a> tag
+                              const fullMatch = match[0];
+                              const beforeMatch = enhancedContent.substring(0, match.index);
+                              const afterMatch = enhancedContent.substring(match.index + fullMatch.length);
+                              
+                              // Check if this image is already in an <a> tag
+                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
+                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
+                              
+                              if (!isInLink) {
+                                // This is a standalone image, try to wrap it in a product link
+                                const imgElement = fullMatch;
+                                const imgSrc = match[2];
+                                
+                                // Find a matching product if possible
+                                const matchingProduct = products.find(p => p.image && p.image.includes(imgSrc));
+                                
+                                if (matchingProduct) {
+                                  // Replace the image with a linked version
+                                  const linkedImg = `<a href="${matchingProduct.admin_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${imgElement.replace(/<img/, '<img style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;"')}</a>`;
+                                  enhancedContent = enhancedContent.replace(imgElement, linkedImg);
+                                }
+                              }
+                            });
                             
                             // Then process any remaining standalone images
                             enhancedContent = enhancedContent
@@ -2353,7 +2389,7 @@ export default function AdminPanel() {
                               // Add styling to all remaining images for proper display
                               .replace(
                                 /<img([^>]*?)>/gi, 
-                                '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
                               );
                             
                             // Return the enhanced content with proper image styling
@@ -2403,15 +2439,32 @@ export default function AdminPanel() {
                               // And do it after every 2-3 paragraphs for optimal spacing
                               if (!hasImageInParagraph && (i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
                                 const image = secondaryImages[imageIndex];
+                                
+                                // Try to find a matching product for this image
+                                let productUrl = image.productUrl || "#";
+                                
+                                // Check if this image belongs to a selected product
+                                const products = selectedProducts || [];
+                                if (products.length > 0 && image.url) {
+                                  const matchingProduct = products.find(p => 
+                                    p.image && (p.image === image.url || image.url?.includes(p.id))
+                                  );
+                                  
+                                  if (matchingProduct) {
+                                    productUrl = matchingProduct.admin_url || productUrl;
+                                  }
+                                }
+                                
                                 result.push(
                                   <div key={`img-${i}`} className="my-6 flex justify-center">
-                                    <a href={image.productUrl || "#"} target="_blank" rel="noopener noreferrer">
+                                    <a href={productUrl} target="_blank" rel="noopener noreferrer" className="product-link">
                                       <img 
                                         src={image.url || (image.src?.medium ?? '')} 
                                         alt={image.alt || `Product image ${imageIndex + 1}`} 
                                         style={{
                                           maxWidth: '100%',
-                                          maxHeight: '400px', 
+                                          maxHeight: '400px',
+                                          cursor: 'pointer', 
                                           objectFit: 'contain',
                                           margin: '1rem auto',
                                           display: 'block',
