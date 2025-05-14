@@ -1587,6 +1587,33 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Mount OAuth routes without /api prefix
   app.use(oauthRouter);
   
+  // Custom scheduler check endpoint for publishing scheduled content
+  apiRouter.get("/scheduler/check", async (req: Request, res: Response) => {
+    try {
+      console.log("Running custom scheduler check");
+      
+      // Import custom scheduler service
+      const { checkScheduledPosts } = await import("./services/custom-scheduler");
+      
+      // Run the scheduler check
+      await checkScheduledPosts();
+      
+      res.json({
+        status: "success",
+        message: "Scheduler check completed",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Scheduler check failed:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Scheduler check failed",
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   // Mount API routes with /api prefix
   app.use('/api', apiRouter);
 }

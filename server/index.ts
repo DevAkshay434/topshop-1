@@ -215,6 +215,18 @@ app.use((req, res, next) => {
       }
     }, 5 * 60 * 1000); // 5 minutes
     
+    // Set up custom scheduler to check for posts to publish
+    setInterval(async () => {
+      try {
+        log("Running custom scheduler check for scheduled posts");
+        const { checkScheduledPosts } = await import("./services/custom-scheduler");
+        await checkScheduledPosts();
+        log("Scheduled post check completed");
+      } catch (error) {
+        console.error("Scheduled post check error:", error);
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+    
     // Handle graceful shutdown
     const handleShutdown = () => {
       setMaintenanceMode(true);
