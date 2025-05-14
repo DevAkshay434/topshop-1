@@ -101,8 +101,7 @@ const contentFormSchema = z.object({
   introType: z.enum(["none", "standard", "search_intent"]),
   faqType: z.enum(["none", "short", "long"]),
   enableCitations: z.boolean().default(true),
-  mainImageIds: z.array(z.string()).optional(),
-  internalImageIds: z.array(z.string()).optional(),
+  // Removed non-functional image fields
   toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]),
   postStatus: z.enum(["publish", "draft"]),
   generateImages: z.boolean().default(true),
