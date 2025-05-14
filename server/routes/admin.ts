@@ -764,8 +764,9 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       publicationType: z.enum(["publish", "draft", "schedule"]).optional(),
       scheduleDate: z.string().optional(),
       scheduleTime: z.string().optional(),
-      scheduledPublishDate: z.string().optional(),
-      scheduledPublishTime: z.string().optional(),
+      // Allow null for scheduled dates, as they might not be set in all cases
+      scheduledPublishDate: z.string().nullable().optional(),
+      scheduledPublishTime: z.string().nullable().optional(),
       generateImages: z.boolean().default(true),
       // New fields for content generation options
       buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
