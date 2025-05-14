@@ -52,12 +52,29 @@ export function createDateInTimezone(
     // Check if the date is truly in the future
     const now = new Date();
     if (futureDate <= now) {
+      // For scheduling that is supposed to happen today but passed, 
+      // don't adjust the time. This allows the scheduler to recognize it
+      // should be published immediately.
       console.warn(`Created date is not in the future. Now: ${now.toISOString()}, Created: ${futureDate.toISOString()}`);
-      // Force it to be at least 1 hour in the future
-      const safeDate = new Date();
-      safeDate.setHours(safeDate.getHours() + 1);
-      console.log(`Adjusting to safe future date: ${safeDate.toISOString()}`);
-      return safeDate;
+      
+      // Check if the date is for today (same day)
+      const today = new Date();
+      const scheduleDay = new Date(dateString);
+      const isToday = today.getFullYear() === scheduleDay.getFullYear() &&
+                      today.getMonth() === scheduleDay.getMonth() &&
+                      today.getDate() === scheduleDay.getDate();
+      
+      if (isToday) {
+        console.log(`Scheduled time is for today but already passed. Will publish immediately.`);
+        // Return the created date as is, allowing it to be recognized as ready to publish
+        return futureDate;
+      } else {
+        // For dates not today, push to the future to avoid problems
+        const safeDate = new Date();
+        safeDate.setHours(safeDate.getHours() + 1);
+        console.log(`Adjusting to safe future date: ${safeDate.toISOString()}`);
+        return safeDate;
+      }
     }
     
     return futureDate;

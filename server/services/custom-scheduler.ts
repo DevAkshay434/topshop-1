@@ -467,8 +467,31 @@ export async function checkScheduledPosts(): Promise<void> {
         console.log(`Current time in store timezone (${storeTimezone}): ${now.toISOString()}`);
         console.log(`Post ${post.id} scheduled time: ${scheduledDate.toISOString()}`);
         
-        // If it's time to publish (current time is after or equal to scheduled time)
-        if (scheduledDate <= now) {
+        // Check if the original date/time (before any adjustments) has passed
+        let originalScheduledDate: Date | null = null;
+        if (post.scheduledPublishDate && post.scheduledPublishTime) {
+          // Recreate the original date without safety adjustments
+          const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
+          const [hour, minute] = post.scheduledPublishTime.split(':').map(Number);
+          
+          if (!isNaN(year) && !isNaN(month) && !isNaN(day) && !isNaN(hour) && !isNaN(minute)) {
+            originalScheduledDate = new Date(Date.UTC(
+              year,
+              month - 1,  // JS months are 0-indexed
+              day,
+              hour,
+              minute,
+              0
+            ));
+            console.log(`Original scheduled date (before adjustments): ${originalScheduledDate.toISOString()}`);
+          }
+        }
+        
+        // If the original scheduled time has passed OR the adjusted time is now or in the past, publish
+        const shouldPublish = (originalScheduledDate && originalScheduledDate <= now) || scheduledDate <= now;
+        
+        // If it's time to publish
+        if (shouldPublish) {
           console.log(`Time to publish post ${post.id} - "${post.title}"`);
           console.log(`Scheduled time: ${scheduledDate.toISOString()}, Current time: ${now.toISOString()}`);
           
