@@ -31,6 +31,26 @@ export async function schedulePost(
   try {
     console.log(`Scheduling post for future publishing at ${scheduledDate.toISOString()}`);
     
+    // Get shop information to get the timezone
+    let shopInfo: any;
+    try {
+      const shopClient = axios.create({
+        baseURL: `https://${store.shopName}/admin/api/2023-10`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': store.accessToken
+        }
+      });
+      
+      console.log(`Fetching shop information for ${store.shopName}`);
+      const shopResponse = await shopClient.get('/shop.json');
+      shopInfo = shopResponse.data.shop;
+      console.log(`Shop timezone for ${store.shopName}: ${shopInfo.iana_timezone}`);
+    } catch (shopError: any) {
+      console.error(`Failed to get shop timezone, using UTC: ${shopError.message}`);
+      shopInfo = { iana_timezone: 'UTC' };
+    }
+    
     // Create a client for the Shopify API
     const client = axios.create({
       baseURL: `https://${store.shopName}/admin/api/2023-10`,
@@ -72,6 +92,25 @@ export async function schedulePost(
       published_at: createdArticle.published_at
     });
 
+    // Format dates in the store's timezone for accurate scheduling
+    const storeTimezone = shopInfo.iana_timezone || 'UTC';
+    
+    // Get the formatted date and time strings using the timezone
+    let scheduledPublishDate: string;
+    let scheduledPublishTime: string;
+    
+    if (post.scheduledPublishDate && post.scheduledPublishTime) {
+      // If the post already has date and time strings, use those
+      scheduledPublishDate = post.scheduledPublishDate;
+      scheduledPublishTime = post.scheduledPublishTime;
+    } else {
+      // Otherwise format the date using the store's timezone
+      scheduledPublishDate = formatDate(scheduledDate);
+      scheduledPublishTime = formatTime(scheduledDate);
+    }
+    
+    console.log(`Using store timezone ${storeTimezone} for scheduled publish date: ${scheduledPublishDate} at ${scheduledPublishTime}`);
+
     // Update our database with scheduling information
     if (post.id) {
       const updateData = {
@@ -79,8 +118,9 @@ export async function schedulePost(
         shopifyBlogId: blogId,
         status: 'scheduled',
         scheduledDate: scheduledDate,
-        scheduledPublishDate: formatDate(scheduledDate),
-        scheduledPublishTime: formatTime(scheduledDate)
+        scheduledPublishDate: scheduledPublishDate,
+        scheduledPublishTime: scheduledPublishTime,
+        storeId: store.id
       };
       
       console.log(`Updating local database with scheduling info:`, updateData);
@@ -93,6 +133,8 @@ export async function schedulePost(
     return {
       ...createdArticle,
       scheduledDate: scheduledDate.toISOString(),
+      scheduledPublishDate,
+      scheduledPublishTime,
       customScheduled: true
     };
   } catch (error: any) {
@@ -317,15 +359,31 @@ export async function checkScheduledPosts(): Promise<void> {
           shopInfo = { iana_timezone: 'UTC' };
         }
 
-        // Create a proper Date object from the scheduled date
+        // Create a proper Date object from the scheduled date using store's timezone
         let scheduledDate: Date;
+        
+        // Get the store's timezone
+        const storeTimezone = shopInfo.iana_timezone || 'UTC';
+        console.log(`Using store timezone: ${storeTimezone} for post ${post.id}`);
         
         // Handle different date formats
         if (typeof post.scheduledDate === 'string') {
           if (post.scheduledPublishDate && post.scheduledPublishTime) {
             // If we have specific date and time fields, use those in the store's timezone
-            const dateStr = `${post.scheduledPublishDate}T${post.scheduledPublishTime}:00`;
-            scheduledDate = new Date(dateStr);
+            try {
+              // Use the timezone utility to create a date in the store's timezone
+              scheduledDate = createDateInTimezone(
+                post.scheduledPublishDate,
+                post.scheduledPublishTime,
+                storeTimezone
+              );
+              console.log(`Created scheduled date in store timezone: ${scheduledDate.toISOString()}`);
+            } catch (dateError) {
+              console.error(`Error creating date in timezone: ${dateError}`);
+              // Fallback to simple date parsing
+              const dateStr = `${post.scheduledPublishDate}T${post.scheduledPublishTime}:00`;
+              scheduledDate = new Date(dateStr);
+            }
           } else {
             // Otherwise parse the string directly
             scheduledDate = new Date(post.scheduledDate);
@@ -341,9 +399,9 @@ export async function checkScheduledPosts(): Promise<void> {
           continue;
         }
         
-        // Get current time in store's timezone
-        const now = new Date();
-        console.log(`Current UTC time: ${now.toISOString()}`);
+        // Get current time, also considering the store's timezone
+        const now = getCurrentDateInTimezone(storeTimezone);
+        console.log(`Current time in store timezone (${storeTimezone}): ${now.toISOString()}`);
         console.log(`Post ${post.id} scheduled time: ${scheduledDate.toISOString()}`);
         
         // If it's time to publish (current time is after or equal to scheduled time)
