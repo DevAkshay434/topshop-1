@@ -1421,13 +1421,33 @@ Place this at a logical position in the content, typically after introducing a c
               }
             }
             
-            // Pass the post and scheduled date to Shopify API
-            const shopifyArticle = await shopifyService.createArticle(
-              store, 
-              blogId, 
-              post,
-              scheduledPublishDate  // This triggers the scheduling logic in Shopify
-            );
+            // For scheduled posts, use the special scheduling implementation
+            let shopifyArticle;
+            if (isScheduled && scheduledPublishDate) {
+              console.log('Using specialized scheduling implementation for future-dated content');
+              
+              // Import the specialized scheduling implementation
+              const { createScheduledArticle } = await import('../services/shopify-scheduling-fix');
+              
+              // Call the specialized implementation with explicit API version
+              shopifyArticle = await createScheduledArticle(
+                store,
+                blogId,
+                post.title,
+                post.content || '',
+                scheduledPublishDate,
+                post.tags || '',
+                post.featuredImage
+              );
+            } else {
+              // For non-scheduled posts, use the regular implementation
+              shopifyArticle = await shopifyService.createArticle(
+                store, 
+                blogId, 
+                post,
+                isScheduled ? scheduledPublishDate : undefined  // Only pass date if scheduled
+              );
+            }
             
             // Update the local post with Shopify IDs
             await storage.updateBlogPost(post.id, {
@@ -1512,13 +1532,31 @@ Place this at a logical position in the content, typically after introducing a c
           
           console.log(`Creating page with publish setting: ${shouldPublishNow ? 'PUBLISH NOW' : isScheduled ? 'SCHEDULED' : 'DRAFT'}`);
           
-          const page = await shopifyService.createPage(
-            store,
-            generatedContent.title || requestData.title,
-            finalContent,
-            shouldPublishNow, // Only publish now if explicitly set and not scheduled
-            scheduledAt
-          );
+          // For scheduled pages, use the special scheduling implementation
+          let page;
+          if (isScheduled && scheduledAt) {
+            console.log('Using specialized scheduling implementation for future-dated page');
+            
+            // Import the specialized scheduling implementation
+            const { createScheduledPage } = await import('../services/shopify-scheduling-fix');
+            
+            // Call the specialized implementation with explicit API version
+            page = await createScheduledPage(
+              store,
+              generatedContent.title || requestData.title,
+              finalContent,
+              scheduledAt
+            );
+          } else {
+            // For non-scheduled pages, use the regular implementation
+            page = await shopifyService.createPage(
+              store,
+              generatedContent.title || requestData.title,
+              finalContent,
+              shouldPublishNow, // Only publish now if explicitly set and not scheduled
+              isScheduled ? scheduledAt : undefined // Only pass date if scheduled
+            );
+          }
           
           contentId = page.id;
           contentUrl = `https://${store.shopName}/pages/${page.handle}`;
