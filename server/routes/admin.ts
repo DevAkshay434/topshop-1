@@ -1639,7 +1639,7 @@ adminRouter.get("/test-connections", async (_req: Request, res: Response) => {
       };
       
       const testResult = await shopifyService.testConnection(store);
-      results.shopify = testResult;
+      results.shopify = testResult.success;
     }
   } catch (error) {
     console.error("Shopify connection test failed:", error);
