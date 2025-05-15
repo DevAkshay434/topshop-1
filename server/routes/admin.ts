@@ -776,7 +776,10 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       // Category support
       categories: z.array(z.string()).optional(),
       // Additional fields from client
-      selectedKeywordData: z.array(z.any()).optional()
+      selectedKeywordData: z.array(z.any()).optional(),
+      // Content style fields
+      contentStyleToneId: z.string().optional(),
+      contentStyleDisplayName: z.string().optional()
     });
     
     // Parse the request data to verify it matches the schema

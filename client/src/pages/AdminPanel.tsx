@@ -2873,6 +2873,15 @@ export default function AdminPanel() {
                                   setSelectedCollections(Array.isArray(template.data.selectedCollections) ? template.data.selectedCollections : []);
                                 }
                                 
+                                // Set content style if available in the template
+                                if (template.data.contentStyleToneId) {
+                                  setSelectedContentToneId(template.data.contentStyleToneId);
+                                }
+                                
+                                if (template.data.contentStyleDisplayName) {
+                                  setSelectedContentDisplayName(template.data.contentStyleDisplayName);
+                                }
+                                
                                 setShowLoadTemplateDialog(false);
                                 
                                 toast({
