@@ -1035,34 +1035,36 @@ export default function AdminPanel() {
                                     setForceUpdate(prev => prev + 1);
                                   }, 100);
                                 }} 
+                                key={`blog-select-${field.value || "default"}-${forceUpdate}`}
                                 value={field.value || ""} // Use controlled component pattern with fallback
                                 defaultValue=""
                               >
                                 <FormControl>
                                   <SelectTrigger className="w-full border border-gray-300">
-                                    <SelectValue>
-                                      {(() => {
-                                        // Get blog title from the current value
-                                        const currentBlogId = field.value;
-                                        
-                                        if (blogsQuery.isLoading) {
-                                          return "Loading blogs...";
-                                        }
-                                        
-                                        // If no blogs are loaded, use a default value
-                                        if (!blogsQuery.data?.blogs || blogsQuery.data.blogs.length === 0) {
-                                          return "Default Blog";
-                                        }
-                                        
-                                        // Find the selected blog by ID
-                                        const selectedBlog = blogsQuery.data.blogs.find(
-                                          blog => blog.id === currentBlogId
-                                        );
-                                        
-                                        // Return the blog title - always show the selected blog name
-                                        return selectedBlog?.title || blogsQuery.data.blogs[0]?.title || "News";
-                                      })()}
-                                    </SelectValue>
+                                    {/* We use a direct component to ensure it re-renders on selection change */}
+                                    {(() => {
+                                      // Get blog title from the current value
+                                      const currentBlogId = field.value;
+                                      
+                                      if (blogsQuery.isLoading) {
+                                        return <SelectValue placeholder="Loading blogs..." />;
+                                      }
+                                      
+                                      // If no blogs are loaded, use a default value
+                                      if (!blogsQuery.data?.blogs || blogsQuery.data.blogs.length === 0) {
+                                        return <SelectValue placeholder="Default Blog" />;
+                                      }
+                                      
+                                      // Find the selected blog by ID
+                                      const selectedBlog = blogsQuery.data.blogs.find(
+                                        blog => blog.id === currentBlogId
+                                      );
+                                      
+                                      // Get blog title to display
+                                      const displayTitle = selectedBlog?.title || blogsQuery.data.blogs[0]?.title || "News";
+                                      
+                                      return <SelectValue placeholder={displayTitle}>{displayTitle}</SelectValue>;
+                                    })()}
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
