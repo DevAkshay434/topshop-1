@@ -795,7 +795,10 @@ export default function AdminPanel() {
         ...processedData,
         selectedImageIds: selectedImages.map(img => String(img.id)),
         // Include full keyword data (not just strings) for analysis on the server
-        selectedKeywordData: processedKeywords
+        selectedKeywordData: processedKeywords,
+        // Add content style selection if available
+        contentStyleToneId: selectedContentToneId || "",
+        contentStyleDisplayName: selectedContentDisplayName || ""
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
@@ -2792,7 +2795,9 @@ export default function AdminPanel() {
                       ...form.getValues(),
                       selectedKeywords,
                       selectedProducts,
-                      selectedCollections
+                      selectedCollections,
+                      contentStyleToneId: selectedContentToneId,
+                      contentStyleDisplayName: selectedContentDisplayName
                     };
                     
                     const updatedTemplates = [...templates, {
