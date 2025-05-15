@@ -98,7 +98,7 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       model: CLAUDE_MODEL,
       max_tokens: 8000,
       system: request.contentStyleToneId 
-        ? `You are a professional content writer who specializes in writing in the ${request.contentStyleDisplayName || toneStyle} style.` 
+        ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
         : undefined,
       messages: [
         {
