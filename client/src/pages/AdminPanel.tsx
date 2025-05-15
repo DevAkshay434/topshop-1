@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
-import { ContentStyleManager } from '../components/ContentStyleManager';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import { 
   Card, 
@@ -885,17 +884,11 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-md">
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
           <TabsTrigger value="generate">Content Generator</TabsTrigger>
-          <TabsTrigger value="styles">Styles</TabsTrigger>
           <TabsTrigger value="connections">Services</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
-
-        {/* Content Styles Tab */}
-        <TabsContent value="styles" className="space-y-6">
-          <ContentStyleManager />
-        </TabsContent>
 
         {/* Content Generation Tab */}
         <TabsContent value="generate" className="space-y-6">
