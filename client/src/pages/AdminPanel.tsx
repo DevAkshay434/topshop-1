@@ -1094,20 +1094,8 @@ export default function AdminPanel() {
                             <div className="space-y-2">
                               {selectedProducts.map(product => (
                                 <div key={product.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
-                                  {product.image ? (
-                                    <img 
-                                      src={product.image} 
-                                      alt={product.title} 
-                                      className="w-10 h-10 object-contain rounded border border-gray-200" 
-                                    />
-                                  ) : (
-                                    <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                                      <Package className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                  )}
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{product.title}</p>
-                                    <p className="text-xs text-gray-500 truncate">Product</p>
+                                    <p className="text-sm font-medium text-gray-800">{product.title}</p>
                                   </div>
                                 </div>
                               ))}
