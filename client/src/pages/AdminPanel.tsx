@@ -340,6 +340,19 @@ export default function AdminPanel() {
         form.getValues('articleType') === "blog" && 
         !form.getValues('blogId')) {
       form.setValue('blogId', blogsQuery.data.blogs[0].id);
+    } else if (form.getValues('articleType') === "blog" && !form.getValues('blogId')) {
+      // If no blogs are loaded but we're in blog mode, set a default value
+      form.setValue('blogId', "default");
+    }
+    
+    // If we've had a blogId set but the blogs data shows it's invalid, reset to first available or default
+    if (form.getValues('blogId') && blogsQuery.data?.blogs) {
+      const currentBlogId = form.getValues('blogId');
+      const validBlog = blogsQuery.data.blogs.find(blog => blog.id === currentBlogId);
+      
+      if (!validBlog && blogsQuery.data.blogs.length > 0) {
+        form.setValue('blogId', blogsQuery.data.blogs[0].id);
+      }
     }
   }, [blogsQuery.data, form]);
   
@@ -1032,23 +1045,38 @@ export default function AdminPanel() {
                                         // Get blog title from the current value
                                         const currentBlogId = field.value;
                                         
+                                        if (blogsQuery.isLoading) {
+                                          return "Loading blogs...";
+                                        }
+                                        
+                                        // If no blogs are loaded, use a default value
+                                        if (!blogsQuery.data?.blogs || blogsQuery.data.blogs.length === 0) {
+                                          return "Default Blog";
+                                        }
+                                        
                                         // Find the selected blog by ID
-                                        const selectedBlog = blogsQuery.data?.blogs?.find(
+                                        const selectedBlog = blogsQuery.data.blogs.find(
                                           blog => blog.id === currentBlogId
                                         );
                                         
                                         // Return the blog title - always show the selected blog name
-                                        return selectedBlog?.title || "News";
+                                        return selectedBlog?.title || blogsQuery.data.blogs[0]?.title || "News";
                                       })()}
                                     </SelectValue>
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {blogsQuery.data?.blogs.map((blog: Blog) => (
-                                    <SelectItem key={blog.id} value={blog.id}>
-                                      {blog.title}
-                                    </SelectItem>
-                                  ))}
+                                  {blogsQuery.isLoading ? (
+                                    <SelectItem value="loading" disabled>Loading blogs...</SelectItem>
+                                  ) : blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 ? (
+                                    blogsQuery.data.blogs.map((blog: Blog) => (
+                                      <SelectItem key={blog.id} value={blog.id}>
+                                        {blog.title}
+                                      </SelectItem>
+                                    ))
+                                  ) : (
+                                    <SelectItem value="default">Default Blog</SelectItem>
+                                  )}
                                 </SelectContent>
                               </Select>
                               <FormDescription className="sr-only">
