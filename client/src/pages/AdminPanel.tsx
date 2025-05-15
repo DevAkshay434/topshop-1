@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
+import { ContentStyleManager } from '../components/ContentStyleManager';
+import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import { 
   Card, 
   CardContent, 
@@ -191,6 +193,8 @@ const predefinedCategories = [
 
 export default function AdminPanel() {
   const [selectedTab, setSelectedTab] = useState("generate");
+  const [selectedContentToneId, setSelectedContentToneId] = useState<string>("");
+  const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
@@ -878,8 +882,9 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
+        <TabsList className="grid grid-cols-4 w-full max-w-md">
           <TabsTrigger value="generate">Content Generator</TabsTrigger>
+          <TabsTrigger value="styles">Styles</TabsTrigger>
           <TabsTrigger value="connections">Services</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
