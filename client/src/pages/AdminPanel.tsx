@@ -1001,7 +1001,7 @@ export default function AdminPanel() {
                           name="blogId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Blog</FormLabel>
+                              <FormLabel>Selected Blog</FormLabel>
                               <Select 
                                 onValueChange={(value) => {
                                   console.log("Blog changed to:", value);
@@ -1027,19 +1027,18 @@ export default function AdminPanel() {
                               >
                                 <FormControl>
                                   <SelectTrigger className="w-full border border-gray-300">
-                                    <SelectValue placeholder="Select blog">
+                                    <SelectValue>
                                       {(() => {
                                         // Get blog title from the current value
                                         const currentBlogId = field.value;
-                                        if (!currentBlogId || !blogsQuery.data?.blogs) return "Select Blog";
                                         
                                         // Find the selected blog by ID
-                                        const selectedBlog = blogsQuery.data.blogs.find(
+                                        const selectedBlog = blogsQuery.data?.blogs?.find(
                                           blog => blog.id === currentBlogId
                                         );
                                         
-                                        // Return the blog title or placeholder
-                                        return selectedBlog?.title || "Select Blog";
+                                        // Return the blog title - always show the selected blog name
+                                        return selectedBlog?.title || "News";
                                       })()}
                                     </SelectValue>
                                   </SelectTrigger>
