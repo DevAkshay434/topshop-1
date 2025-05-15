@@ -1,7 +1,7 @@
 // This file contains the copywriting styles and tones based on the Google Sheet
 // Data sourced from: https://docs.google.com/spreadsheets/d/1a1oxm7MDF_PXY74u6bBmrhEvcrnt5XaOlLD6mV77o1c/
 
-export interface CopywritingGender {
+export interface CopywritingCategory {
   id: string;
   name: string;
   description?: string;
@@ -11,7 +11,7 @@ export interface CopywritingStyle {
   id: string;
   name: string;
   description?: string;
-  genderId: string;
+  genderId: string; // Keeping as genderId for backward compatibility
 }
 
 export interface CopywritingTone {
@@ -23,7 +23,7 @@ export interface CopywritingTone {
 }
 
 // Available style categories
-export const genders: CopywritingGender[] = [
+export const categories: CopywritingCategory[] = [
   {
     id: 'direct-response',
     name: 'Direct-Response',
@@ -373,8 +373,8 @@ export const tones: CopywritingTone[] = [
 ];
 
 // Helper functions to filter the data
-export const getStylesByGender = (genderId: string): CopywritingStyle[] => {
-  return styles.filter(style => style.genderId === genderId);
+export const getStylesByGender = (categoryId: string): CopywritingStyle[] => {
+  return styles.filter(style => style.genderId === categoryId);
 };
 
 export const getTonesByStyle = (styleId: string): CopywritingTone[] => {

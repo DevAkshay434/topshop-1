@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { genders, styles, tones, getStylesByGender, getTonesByStyle, findToneById } from '@/lib/data/copywritingStyles';
+import { categories, styles, tones, getStylesByGender, getTonesByStyle, findToneById } from '@/lib/data/copywritingStyles';
 
 interface ContentStyleSelectorProps {
   onSelectionChange: (selectedToneId: string, displayName: string) => void;
@@ -30,17 +30,17 @@ export function ContentStyleSelector({
   initialToneId = '',
   className = ''
 }: ContentStyleSelectorProps) {
-  const [selectedGender, setSelectedGender] = useState<string>(initialGenderId);
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialGenderId);
   const [selectedStyle, setSelectedStyle] = useState<string>(initialStyleId);
   const [selectedTone, setSelectedTone] = useState<string>(initialToneId);
   
-  const [availableStyles, setAvailableStyles] = useState(selectedGender ? getStylesByGender(selectedGender) : []);
+  const [availableStyles, setAvailableStyles] = useState(selectedCategory ? getStylesByGender(selectedCategory) : []);
   const [availableTones, setAvailableTones] = useState(selectedStyle ? getTonesByStyle(selectedStyle) : []);
 
   // Initialize based on initial values
   useEffect(() => {
     if (initialGenderId) {
-      setSelectedGender(initialGenderId);
+      setSelectedCategory(initialGenderId);
       setAvailableStyles(getStylesByGender(initialGenderId));
       
       if (initialStyleId) {
@@ -58,13 +58,13 @@ export function ContentStyleSelector({
     }
   }, [initialGenderId, initialStyleId, initialToneId, onSelectionChange]);
 
-  // When gender changes, update styles and reset tone
-  const handleGenderChange = (value: string) => {
-    setSelectedGender(value);
+  // When category changes, update styles and reset tone
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
     const filteredStyles = getStylesByGender(value);
     setAvailableStyles(filteredStyles);
     
-    // Reset style and tone when gender changes
+    // Reset style and tone when category changes
     setSelectedStyle('');
     setSelectedTone('');
     setAvailableTones([]);
@@ -103,23 +103,23 @@ export function ContentStyleSelector({
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <FormItem>
-            <FormLabel>Select Gender</FormLabel>
-            <Select value={selectedGender} onValueChange={handleGenderChange}>
+            <FormLabel>Select Category</FormLabel>
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
+                  <SelectValue placeholder="Select category" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {genders.map((gender) => (
-                  <SelectItem key={gender.id} value={gender.id}>
-                    {gender.name}
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <FormDescription>
-              Choose the gender orientation for your content
+              Choose the content category type
             </FormDescription>
           </FormItem>
         </div>
@@ -130,7 +130,7 @@ export function ContentStyleSelector({
             <Select 
               value={selectedStyle} 
               onValueChange={handleStyleChange}
-              disabled={!selectedGender}
+              disabled={!selectedCategory}
             >
               <FormControl>
                 <SelectTrigger>
