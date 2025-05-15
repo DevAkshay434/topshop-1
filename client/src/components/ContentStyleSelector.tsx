@@ -4,7 +4,6 @@ import {
   FormLabel,
   FormControl,
   FormDescription,
-  FormMessage,
 } from "@/components/ui/form";
 import {
   Select,
@@ -102,79 +101,82 @@ export function ContentStyleSelector({
         <CardTitle>Content Style</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <FormItem>
-          <FormLabel>Select Gender</FormLabel>
-          <Select value={selectedGender} onValueChange={handleGenderChange}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select gender" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {genders.map((gender) => (
-                <SelectItem key={gender.id} value={gender.id}>
-                  {gender.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormDescription>
-            Choose the gender orientation for your content
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
+        <div className="space-y-2">
+          <FormItem>
+            <FormLabel>Select Gender</FormLabel>
+            <Select value={selectedGender} onValueChange={handleGenderChange}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {genders.map((gender) => (
+                  <SelectItem key={gender.id} value={gender.id}>
+                    {gender.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              Choose the gender orientation for your content
+            </FormDescription>
+          </FormItem>
+        </div>
 
-        <FormItem>
-          <FormLabel>Select Style</FormLabel>
-          <Select 
-            value={selectedStyle} 
-            onValueChange={handleStyleChange}
-            disabled={!selectedGender}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select style" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {availableStyles.map((style) => (
-                <SelectItem key={style.id} value={style.id}>
-                  {style.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormDescription>
-            Choose the writing style for your content
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
+        <div className="space-y-2">
+          <FormItem>
+            <FormLabel>Select Style</FormLabel>
+            <Select 
+              value={selectedStyle} 
+              onValueChange={handleStyleChange}
+              disabled={!selectedGender}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select style" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {availableStyles.map((style) => (
+                  <SelectItem key={style.id} value={style.id}>
+                    {style.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              Choose the writing style for your content
+            </FormDescription>
+          </FormItem>
+        </div>
 
-        <FormItem>
-          <FormLabel>Select Tone</FormLabel>
-          <Select 
-            value={selectedTone} 
-            onValueChange={handleToneChange}
-            disabled={!selectedStyle}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select tone" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {availableTones.map((tone) => (
-                <SelectItem key={tone.id} value={tone.id}>
-                  {tone.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormDescription>
-            Choose the tone of voice for your content
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
+        <div className="space-y-2">
+          <FormItem>
+            <FormLabel>Select Tone</FormLabel>
+            <Select 
+              value={selectedTone} 
+              onValueChange={handleToneChange}
+              disabled={!selectedStyle}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select tone" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {availableTones.map((tone) => (
+                  <SelectItem key={tone.id} value={tone.id}>
+                    {tone.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              Choose the tone of voice for your content
+            </FormDescription>
+          </FormItem>
+        </div>
 
         {selectedTone && (
           <div className="pt-2 text-sm">
