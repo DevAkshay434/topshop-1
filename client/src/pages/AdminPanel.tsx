@@ -889,6 +889,11 @@ export default function AdminPanel() {
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
+        {/* Content Styles Tab */}
+        <TabsContent value="styles" className="space-y-6">
+          <ContentStyleManager />
+        </TabsContent>
+
         {/* Content Generation Tab */}
         <TabsContent value="generate" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
@@ -1697,6 +1702,23 @@ export default function AdminPanel() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Content Style Selector - New Feature */}
+                      <div className="mb-6">
+                        <FormLabel className="mb-2 block">Content Style</FormLabel>
+                        <ContentStyleSelector 
+                          onSelectionChange={(toneId, displayName) => {
+                            setSelectedContentToneId(toneId);
+                            setSelectedContentDisplayName(displayName);
+                          }}
+                          className="mt-2"
+                        />
+                        {selectedContentDisplayName && (
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Selected copywriter: <span className="font-medium">{selectedContentDisplayName}</span>
+                          </p>
+                        )}
+                      </div>
                       
                       <FormField
                         control={form.control}
