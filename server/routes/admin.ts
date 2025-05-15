@@ -998,6 +998,9 @@ Place this at a logical position in the content, typically after introducing a c
         systemPrompt: claudeSystemPrompt,
         includeProducts: productsInfo.length > 0,
         includeCollections: collectionsInfo.length > 0,
+        // Add content style information if available
+        contentStyleToneId: requestData.contentStyleToneId,
+        contentStyleDisplayName: requestData.contentStyleDisplayName,
         includeKeywords: requestData.keywords && requestData.keywords.length > 0
       });
       

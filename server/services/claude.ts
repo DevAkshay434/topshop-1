@@ -10,6 +10,8 @@ interface BlogContentRequest {
   includeProducts?: boolean;
   includeCollections?: boolean;
   includeKeywords?: boolean;
+  contentStyleToneId?: string;
+  contentStyleDisplayName?: string;
 }
 
 interface BlogContent {
@@ -41,7 +43,14 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     }
     
     // Enhanced base prompt for Claude with proper structure
-    let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${request.tone} tone, ${contentLength}.
+    let toneStyle = request.tone;
+    // If content style display name is provided, use it instead of the default tone
+    if (request.contentStyleDisplayName) {
+      toneStyle = request.contentStyleDisplayName;
+      console.log(`Using custom content style: ${request.contentStyleDisplayName} (ID: ${request.contentStyleToneId || 'none'})`);
+    }
+    
+    let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}.
     
     The blog post MUST follow this exact structure:
     1. A compelling title that includes the main topic and primary keywords
@@ -81,13 +90,16 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       IMPORTANT: Follow these specific instructions for the content:
       ${customPromptFormatted}
       
-      The content must directly address these instructions while maintaining a ${request.tone} tone and proper blog structure.`;
+      The content must directly address these instructions while maintaining a ${toneStyle} tone and proper blog structure.`;
     }
     
     // Make API call to Claude with increased token limit for longer content
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 8000,
+      system: request.contentStyleToneId 
+        ? `You are a professional content writer who specializes in writing in the ${request.contentStyleDisplayName || toneStyle} style.` 
+        : undefined,
       messages: [
         {
           role: 'user',
