@@ -249,3 +249,83 @@ export const contentGenRequestsRelations = relations(contentGenRequests, ({ one 
 }));
 
 // Relations can be added later if needed
+
+// Gender schema for copywriting style
+export const genders = pgTable("genders", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertGenderSchema = createInsertSchema(genders).pick({
+  name: true,
+  description: true,
+  isActive: true,
+});
+
+export type InsertGender = z.infer<typeof insertGenderSchema>;
+export type Gender = typeof genders.$inferSelect;
+
+// Style schema for copywriting style combinations
+export const styles = pgTable("styles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  genderId: integer("gender_id").notNull().references(() => genders.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertStyleSchema = createInsertSchema(styles).pick({
+  name: true,
+  description: true,
+  genderId: true,
+  isActive: true,
+});
+
+export type InsertStyle = z.infer<typeof insertStyleSchema>;
+export type Style = typeof styles.$inferSelect;
+
+// Tone schema for copywriting style combinations
+export const tones = pgTable("tones", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  styleId: integer("style_id").notNull().references(() => styles.id),
+  displayName: text("display_name").notNull(), // The name to add to the final prompt
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertToneSchema = createInsertSchema(tones).pick({
+  name: true,
+  description: true,
+  styleId: true,
+  displayName: true,
+  isActive: true,
+});
+
+export type InsertTone = z.infer<typeof insertToneSchema>;
+export type Tone = typeof tones.$inferSelect;
+
+// Define relations
+export const gendersRelations = relations(genders, ({ many }) => ({
+  styles: many(styles),
+}));
+
+export const stylesRelations = relations(styles, ({ one, many }) => ({
+  gender: one(genders, {
+    fields: [styles.genderId],
+    references: [genders.id],
+  }),
+  tones: many(tones),
+}));
+
+export const tonesRelations = relations(tones, ({ one }) => ({
+  style: one(styles, {
+    fields: [tones.styleId],
+    references: [styles.id],
+  }),
+}));
