@@ -339,7 +339,7 @@ export default function AdminPanel() {
         blogsQuery.data.blogs.length > 0 && 
         form.getValues('articleType') === "blog" && 
         !form.getValues('blogId')) {
-      form.setValue('blogId', blogsQuery.data.blogs[0].id);
+      form.setValue('blogId', String(blogsQuery.data.blogs[0].id));
     } else if (form.getValues('articleType') === "blog" && !form.getValues('blogId')) {
       // If no blogs are loaded but we're in blog mode, set a default value
       form.setValue('blogId', "default");
@@ -348,10 +348,10 @@ export default function AdminPanel() {
     // If we've had a blogId set but the blogs data shows it's invalid, reset to first available or default
     if (form.getValues('blogId') && blogsQuery.data?.blogs) {
       const currentBlogId = form.getValues('blogId');
-      const validBlog = blogsQuery.data.blogs.find(blog => blog.id === currentBlogId);
+      const validBlog = blogsQuery.data.blogs.find(blog => String(blog.id) === String(currentBlogId));
       
       if (!validBlog && blogsQuery.data.blogs.length > 0) {
-        form.setValue('blogId', blogsQuery.data.blogs[0].id);
+        form.setValue('blogId', String(blogsQuery.data.blogs[0].id));
       }
     }
   }, [blogsQuery.data, form]);
@@ -1035,8 +1035,8 @@ export default function AdminPanel() {
                                     setForceUpdate(prev => prev + 1);
                                   }, 100);
                                 }} 
-                                key={`blog-select-${field.value || "default"}-${forceUpdate}`}
-                                value={field.value || ""} // Use controlled component pattern with fallback
+                                key={`blog-select-${field.value ? String(field.value) : "default"}-${forceUpdate}`}
+                                value={field.value ? String(field.value) : ""} // Convert to string to fix type issues
                                 defaultValue=""
                               >
                                 <FormControl>
@@ -1055,9 +1055,9 @@ export default function AdminPanel() {
                                         return <SelectValue placeholder="Default Blog" />;
                                       }
                                       
-                                      // Find the selected blog by ID
+                                      // Find the selected blog by ID (convert to string for comparison)
                                       const selectedBlog = blogsQuery.data.blogs.find(
-                                        blog => blog.id === currentBlogId
+                                        blog => String(blog.id) === String(currentBlogId)
                                       );
                                       
                                       // Get blog title to display
@@ -1072,7 +1072,7 @@ export default function AdminPanel() {
                                     <SelectItem value="loading" disabled>Loading blogs...</SelectItem>
                                   ) : blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 ? (
                                     blogsQuery.data.blogs.map((blog: Blog) => (
-                                      <SelectItem key={blog.id} value={blog.id}>
+                                      <SelectItem key={blog.id} value={String(blog.id)}>
                                         {blog.title}
                                       </SelectItem>
                                     ))
