@@ -25,356 +25,349 @@ export interface CopywritingTone {
 // Available style genders
 export const genders: CopywritingGender[] = [
   {
-    id: 'direct-response',
-    name: 'Direct-Response',
-    description: 'Persuasive copywriting focused on generating immediate action'
+    id: 'male',
+    name: 'Male',
+    description: 'Male gender orientation'
   },
   {
-    id: 'brand-storytelling',
-    name: 'Brand & Ethical Storytelling',
-    description: 'Narrative-based copywriting that builds brand identity and values'
+    id: 'female',
+    name: 'Female',
+    description: 'Female gender orientation'
   },
   {
-    id: 'digital-modern',
-    name: 'Digital & Modern-Day',
-    description: 'Contemporary digital-first copywriting for online platforms'
-  },
-  {
-    id: 'scientific',
-    name: 'Scientific and Data-Driven',
-    description: 'Evidence-based copywriting using research and data'
+    id: 'neutral',
+    name: 'Neutral',
+    description: 'Gender-neutral orientation'
   }
 ];
 
 // Specific writing styles within each category
 export const styles: CopywritingStyle[] = [
-  // Direct-Response styles
+  // Male styles
   {
-    id: 'direct-response-sales',
-    name: 'Sales Copy',
-    genderId: 'direct-response',
-    description: 'Persuasive copy focused on driving conversions and sales'
+    id: 'direct-response',
+    name: 'Direct-Response',
+    genderId: 'male',
+    description: 'Persuasive copywriting focused on generating immediate action'
   },
   {
-    id: 'direct-response-email',
-    name: 'Email Marketing',
-    genderId: 'direct-response',
-    description: 'Personalized email copy designed to build relationships and drive action'
+    id: 'brand-storytelling',
+    name: 'Brand & Ethical Storytelling',
+    genderId: 'male',
+    description: 'Narrative-based copywriting that builds brand identity and values'
   },
   {
-    id: 'direct-response-ads',
-    name: 'Ad Copy',
-    genderId: 'direct-response',
-    description: 'Concise, compelling copy for advertisements across platforms'
-  },
-  
-  // Brand & Ethical Storytelling styles
-  {
-    id: 'brand-values',
-    name: 'Values-Driven',
-    genderId: 'brand-storytelling',
-    description: 'Copy that emphasizes brand ethics, purpose and social responsibility'
+    id: 'digital-modern',
+    name: 'Digital & Modern-Day',
+    genderId: 'male',
+    description: 'Contemporary digital-first copywriting for online platforms'
   },
   {
-    id: 'brand-narrative',
-    name: 'Narrative Marketing',
-    genderId: 'brand-storytelling',
-    description: 'Story-based copy that builds emotional connections with audiences'
-  },
-  {
-    id: 'brand-thought-leadership',
-    name: 'Thought Leadership',
-    genderId: 'brand-storytelling',
-    description: 'Authoritative content that establishes industry expertise'
+    id: 'scientific',
+    name: 'Scientific and Data-Driven',
+    genderId: 'male',
+    description: 'Evidence-based copywriting using research and data'
   },
   
-  // Digital & Modern-Day styles
+  // Female styles
   {
-    id: 'digital-seo',
-    name: 'SEO Content',
-    genderId: 'digital-modern',
-    description: 'Search-optimized content designed for discovery and engagement'
+    id: 'direct-response-female',
+    name: 'Direct-Response',
+    genderId: 'female',
+    description: 'Persuasive copywriting focused on generating immediate action'
   },
   {
-    id: 'digital-social',
-    name: 'Social Media',
-    genderId: 'digital-modern',
-    description: 'Platform-specific copy optimized for social media engagement'
+    id: 'brand-storytelling-female',
+    name: 'Brand & Ethical Storytelling',
+    genderId: 'female',
+    description: 'Narrative-based copywriting that builds brand identity and values'
   },
   {
-    id: 'digital-ux',
-    name: 'UX Writing',
-    genderId: 'digital-modern',
-    description: 'Functional copy that guides users through digital experiences'
-  },
-  
-  // Scientific and Data-Driven styles
-  {
-    id: 'scientific-educational',
-    name: 'Educational Content',
-    genderId: 'scientific',
-    description: 'Informative content that explains complex topics in accessible ways'
+    id: 'digital-modern-female',
+    name: 'Digital & Modern-Day',
+    genderId: 'female',
+    description: 'Contemporary digital-first copywriting for online platforms'
   },
   {
-    id: 'scientific-technical',
-    name: 'Technical Documentation',
-    genderId: 'scientific',
-    description: 'Precise documentation for technical products and services'
+    id: 'scientific-female',
+    name: 'Scientific and Data-Driven',
+    genderId: 'female',
+    description: 'Evidence-based copywriting using research and data'
+  },
+
+  // Neutral styles
+  {
+    id: 'direct-response-neutral',
+    name: 'Direct-Response',
+    genderId: 'neutral',
+    description: 'Persuasive copywriting focused on generating immediate action'
   },
   {
-    id: 'scientific-case-studies',
-    name: 'Case Studies',
-    genderId: 'scientific',
-    description: 'Evidence-based success stories that demonstrate value and results'
+    id: 'brand-storytelling-neutral',
+    name: 'Brand & Ethical Storytelling',
+    genderId: 'neutral',
+    description: 'Narrative-based copywriting that builds brand identity and values'
+  },
+  {
+    id: 'digital-modern-neutral',
+    name: 'Digital & Modern-Day',
+    genderId: 'neutral',
+    description: 'Contemporary digital-first copywriting for online platforms'
+  },
+  {
+    id: 'scientific-neutral',
+    name: 'Scientific and Data-Driven',
+    genderId: 'neutral',
+    description: 'Evidence-based copywriting using research and data'
   }
 ];
 
 // Tones associated with each style
 export const tones: CopywritingTone[] = [
-  // Direct Response - Sales Copy tones
+  // Male - Direct Response tones
   {
-    id: 'direct-response-sales-persuasive',
-    name: 'Persuasive',
-    styleId: 'direct-response-sales',
-    displayName: 'Alex Morgan (Persuasive Sales Copywriter)'
+    id: 'direct-response-direct-punchy',
+    name: 'Direct, Punchy',
+    styleId: 'direct-response',
+    displayName: 'Alex Morgan (Direct, Punchy Copywriter)'
   },
   {
-    id: 'direct-response-sales-urgent',
-    name: 'Urgent',
-    styleId: 'direct-response-sales',
-    displayName: 'Ryan Cooper (Urgency-Focused Copywriter)'
+    id: 'direct-response-serious-persuasive',
+    name: 'Serious, Persuasive',
+    styleId: 'direct-response',
+    displayName: 'Ryan Cooper (Serious, Persuasive Copywriter)'
   },
   {
-    id: 'direct-response-sales-conversional',
-    name: 'Conversion-Focused',
-    styleId: 'direct-response-sales',
-    displayName: 'Jessica Lang (Conversion Specialist)'
-  },
-  
-  // Direct Response - Email Marketing tones
-  {
-    id: 'direct-response-email-personal',
-    name: 'Personal',
-    styleId: 'direct-response-email',
-    displayName: 'David Chen (Personal Email Copywriter)'
-  },
-  {
-    id: 'direct-response-email-engaging',
-    name: 'Engaging',
-    styleId: 'direct-response-email',
-    displayName: 'Emma Wilson (Engagement Email Expert)'
-  },
-  {
-    id: 'direct-response-email-results',
-    name: 'Results-Driven',
-    styleId: 'direct-response-email',
-    displayName: 'Michael Brown (Results-Driven Email Specialist)'
+    id: 'direct-response-engaging-persuasive',
+    name: 'Engaging, Persuasive',
+    styleId: 'direct-response',
+    displayName: 'Jason Lang (Engaging, Persuasive Specialist)'
   },
   
-  // Direct Response - Ad Copy tones
+  // Male - Brand Storytelling tones
   {
-    id: 'direct-response-ads-catchy',
-    name: 'Catchy',
-    styleId: 'direct-response-ads',
-    displayName: 'Sarah Davis (Catchy Ad Copywriter)'
+    id: 'brand-storytelling-ethical-storytelling',
+    name: 'Ethical, Storytelling',
+    styleId: 'brand-storytelling',
+    displayName: 'Jordan Riley (Ethical Storyteller)'
   },
   {
-    id: 'direct-response-ads-concise',
-    name: 'Concise',
-    styleId: 'direct-response-ads',
-    displayName: 'James Wilson (Concise Ad Specialist)'
+    id: 'brand-storytelling-authentic-heart',
+    name: 'Authentic, Heart-Centered',
+    styleId: 'brand-storytelling',
+    displayName: 'Ethan Lee (Authentic, Heart-Centered Expert)'
   },
   {
-    id: 'direct-response-ads-compelling',
-    name: 'Compelling',
-    styleId: 'direct-response-ads',
-    displayName: 'Olivia Martinez (Compelling Ad Expert)'
-  },
-  
-  // Brand Values-Driven tones
-  {
-    id: 'brand-values-authentic',
-    name: 'Authentic',
-    styleId: 'brand-values',
-    displayName: 'Jordan Riley (Authentic Brand Storyteller)'
-  },
-  {
-    id: 'brand-values-purposeful',
-    name: 'Purposeful',
-    styleId: 'brand-values',
-    displayName: 'Taylor Green (Purposeful Brand Writer)'
-  },
-  {
-    id: 'brand-values-inspiring',
-    name: 'Inspiring',
-    styleId: 'brand-values',
-    displayName: 'Cameron Patel (Inspiring Ethical Copywriter)'
+    id: 'brand-storytelling-heartfelt-authentic',
+    name: 'Heartfelt, Authentic',
+    styleId: 'brand-storytelling',
+    displayName: 'Sam Richards (Heartfelt, Authentic Leader)'
   },
   
-  // Brand Narrative Marketing tones
+  // Male - Digital & Modern-Day tones
   {
-    id: 'brand-narrative-emotional',
-    name: 'Emotional',
-    styleId: 'brand-narrative',
-    displayName: 'Alexis Lee (Emotional Narrative Expert)'
+    id: 'digital-modern-punchy-direct',
+    name: 'Punchy, Direct',
+    styleId: 'digital-modern',
+    displayName: 'Zack Thompson (Punchy, Direct Digital Writer)'
   },
   {
-    id: 'brand-narrative-relatable',
-    name: 'Relatable',
-    styleId: 'brand-narrative',
-    displayName: 'Jamie Foster (Relatable Storyteller)'
+    id: 'digital-modern-refined-persuasive',
+    name: 'Refined, Persuasive',
+    styleId: 'digital-modern',
+    displayName: 'Daniel Kim (Refined, Persuasive Content Writer)'
   },
   {
-    id: 'brand-narrative-immersive',
-    name: 'Immersive',
-    styleId: 'brand-narrative',
-    displayName: 'Riley Johnson (Immersive Story Copywriter)'
-  },
-  
-  // Brand Thought Leadership tones
-  {
-    id: 'brand-thought-leadership-authoritative',
-    name: 'Authoritative',
-    styleId: 'brand-thought-leadership',
-    displayName: 'Dr. Morgan Hayes (Authoritative Industry Expert)'
-  },
-  {
-    id: 'brand-thought-leadership-visionary',
-    name: 'Visionary',
-    styleId: 'brand-thought-leadership',
-    displayName: 'Sam Richards (Visionary Thought Leader)'
-  },
-  {
-    id: 'brand-thought-leadership-insightful',
-    name: 'Insightful',
-    styleId: 'brand-thought-leadership',
-    displayName: 'Professor Casey Zhang (Insightful Industry Analyst)'
+    id: 'digital-modern-engaging-digital',
+    name: 'Engaging, Digital',
+    styleId: 'digital-modern',
+    displayName: 'Tyler Morgan (Engaging Digital Content Creator)'
   },
   
-  // Digital SEO Content tones
+  // Male - Scientific tones
   {
-    id: 'digital-seo-informative',
-    name: 'Informative',
-    styleId: 'digital-seo',
-    displayName: 'Daniel Kim (Informative SEO Writer)'
+    id: 'scientific-professional-data',
+    name: 'Professional, Data-Driven',
+    styleId: 'scientific',
+    displayName: 'Dr. Morgan Cooper (Professional, Data-Driven Writer)'
   },
   {
-    id: 'digital-seo-helpful',
-    name: 'Helpful',
-    styleId: 'digital-seo',
-    displayName: 'Sophia Garcia (Helpful SEO Content Specialist)'
+    id: 'scientific-scientific-analytical',
+    name: 'Scientific, Analytical',
+    styleId: 'scientific',
+    displayName: 'Dr. Jamie Roberts (Scientific, Analytical Writer)'
   },
   {
-    id: 'digital-seo-authoritative',
-    name: 'Authoritative',
-    styleId: 'digital-seo',
-    displayName: 'Nathan Brooks (Authoritative SEO Expert)'
-  },
-  
-  // Digital Social Media tones
-  {
-    id: 'digital-social-conversational',
-    name: 'Conversational',
-    styleId: 'digital-social',
-    displayName: 'Zoe Thompson (Conversational Social Media Writer)'
-  },
-  {
-    id: 'digital-social-trendy',
-    name: 'Trendy',
-    styleId: 'digital-social',
-    displayName: 'Tyler Morgan (Trendy Social Content Creator)'
-  },
-  {
-    id: 'digital-social-entertaining',
-    name: 'Entertaining',
-    styleId: 'digital-social',
-    displayName: 'Quinn Parker (Entertaining Social Copywriter)'
+    id: 'scientific-data-technical',
+    name: 'Data-Driven, Technical',
+    styleId: 'scientific',
+    displayName: 'Professor Jordan Miller (Data-Driven, Technical Expert)'
   },
   
-  // Digital UX Writing tones
+  // Female - Direct Response tones
   {
-    id: 'digital-ux-clear',
-    name: 'Clear',
-    styleId: 'digital-ux',
-    displayName: 'Harper Lee (Clear UX Writer)'
+    id: 'direct-response-results-persuasive-female',
+    name: 'Results-Driven, Persuasive',
+    styleId: 'direct-response-female',
+    displayName: 'Alexandra Morgan (Results-Driven, Persuasive Copywriter)'
   },
   {
-    id: 'digital-ux-concise',
-    name: 'Concise',
-    styleId: 'digital-ux',
-    displayName: 'Robin Singh (Concise UX Content Expert)'
+    id: 'direct-response-optimized-direct-female',
+    name: 'Optimized, Direct',
+    styleId: 'direct-response-female',
+    displayName: 'Rachel Cooper (Optimized, Direct Copywriter)'
   },
   {
-    id: 'digital-ux-helpful',
-    name: 'Helpful',
-    styleId: 'digital-ux',
-    displayName: 'Avery Chen (Helpful UX Content Designer)'
-  },
-  
-  // Scientific Educational Content tones
-  {
-    id: 'scientific-educational-accessible',
-    name: 'Accessible',
-    styleId: 'scientific-educational',
-    displayName: 'Dr. Leslie Park (Accessible Educational Writer)'
-  },
-  {
-    id: 'scientific-educational-engaging',
-    name: 'Engaging',
-    styleId: 'scientific-educational',
-    displayName: 'Professor Jordan Smith (Engaging Educational Content Expert)'
-  },
-  {
-    id: 'scientific-educational-thorough',
-    name: 'Thorough',
-    styleId: 'scientific-educational',
-    displayName: 'Dr. Alex Williams (Thorough Educational Content Specialist)'
+    id: 'direct-response-conversion-persuasive-female',
+    name: 'Conversion-Focused, Persuasive',
+    styleId: 'direct-response-female',
+    displayName: 'Jessica Lang (Conversion-Focused, Persuasive Specialist)'
   },
   
-  // Scientific Technical Documentation tones
+  // Female - Brand Storytelling tones
   {
-    id: 'scientific-technical-precise',
-    name: 'Precise',
-    styleId: 'scientific-technical',
-    displayName: 'Morgan Cooper (Precise Technical Writer)'
+    id: 'brand-storytelling-creative-persuasive-female',
+    name: 'Creative, Persuasive',
+    styleId: 'brand-storytelling-female',
+    displayName: 'Julie Riley (Creative, Persuasive Storyteller)'
   },
   {
-    id: 'scientific-technical-structured',
-    name: 'Structured',
-    styleId: 'scientific-technical',
-    displayName: 'Dr. Taylor Singh (Structured Documentation Specialist)'
+    id: 'brand-storytelling-optimized-conversion-female',
+    name: 'Optimized, High-Conversion',
+    styleId: 'brand-storytelling-female',
+    displayName: 'Emma Lee (Optimized, High-Conversion Expert)'
   },
   {
-    id: 'scientific-technical-comprehensive',
-    name: 'Comprehensive',
-    styleId: 'scientific-technical',
-    displayName: 'Casey Fletcher (Comprehensive Technical Documentation Expert)'
+    id: 'brand-storytelling-heartfelt-persuasive-female',
+    name: 'Heartfelt, Persuasive',
+    styleId: 'brand-storytelling-female',
+    displayName: 'Samantha Richards (Heartfelt, Persuasive Leader)'
   },
   
-  // Scientific Case Studies tones
+  // Female - Digital & Modern-Day tones
   {
-    id: 'scientific-case-studies-data-driven',
-    name: 'Data-Driven',
-    styleId: 'scientific-case-studies',
-    displayName: 'Dr. Jamie Roberts (Data-Driven Case Study Writer)'
+    id: 'digital-modern-persuasive-longform-female',
+    name: 'Persuasive, Long-Form',
+    styleId: 'digital-modern-female',
+    displayName: 'Zoe Thompson (Persuasive, Long-Form Writer)'
   },
   {
-    id: 'scientific-case-studies-objective',
-    name: 'Objective',
-    styleId: 'scientific-case-studies',
-    displayName: 'Riley Anderson (Objective Case Study Specialist)'
+    id: 'digital-modern-data-conversion-female',
+    name: 'Data-Driven, Conversion-Oriented',
+    styleId: 'digital-modern-female',
+    displayName: 'Diana Kim (Data-Driven, Conversion-Oriented Writer)'
   },
   {
-    id: 'scientific-case-studies-compelling',
-    name: 'Compelling',
-    styleId: 'scientific-case-studies',
-    displayName: 'Professor Jordan Miller (Compelling Evidence-Based Writer)'
+    id: 'digital-modern-seo-technical-female',
+    name: 'SEO-Focused, Technical',
+    styleId: 'digital-modern-female',
+    displayName: 'Taylor Morgan (SEO-Focused, Technical Creator)'
+  },
+  
+  // Female - Scientific tones
+  {
+    id: 'scientific-indepth-intellectual-female',
+    name: 'In-depth, Intellectual',
+    styleId: 'scientific-female',
+    displayName: 'Dr. Michelle Cooper (In-depth, Intellectual Writer)'
+  },
+  {
+    id: 'scientific-creative-engaging-female',
+    name: 'Creative, Engaging',
+    styleId: 'scientific-female',
+    displayName: 'Dr. Jamie Roberts (Creative, Engaging Scientific Writer)'
+  },
+  {
+    id: 'scientific-engaging-persuasive-female',
+    name: 'Engaging, Persuasive',
+    styleId: 'scientific-female',
+    displayName: 'Professor Jordan Miller (Engaging, Persuasive Scientific Expert)'
+  },
+  
+  // Neutral - Direct Response tones
+  {
+    id: 'direct-response-conversion-persuasive-neutral',
+    name: 'Conversion-Focused, Persuasive',
+    styleId: 'direct-response-neutral',
+    displayName: 'A. Morgan (Conversion-Focused, Persuasive Copywriter)'
+  },
+  {
+    id: 'direct-response-high-authentic-neutral',
+    name: 'High-Converting, Authentic',
+    styleId: 'direct-response-neutral',
+    displayName: 'R. Cooper (High-Converting, Authentic Copywriter)'
+  },
+  {
+    id: 'direct-response-engaging-customer-neutral',
+    name: 'Engaging, Customer-Centered',
+    styleId: 'direct-response-neutral',
+    displayName: 'J. Lang (Engaging, Customer-Centered Specialist)'
+  },
+  
+  // Neutral - Brand Storytelling tones
+  {
+    id: 'brand-storytelling-heart-persuasive-neutral',
+    name: 'Heart-Centered, Persuasive',
+    styleId: 'brand-storytelling-neutral',
+    displayName: 'J. Riley (Heart-Centered, Persuasive Storyteller)'
+  },
+  {
+    id: 'brand-storytelling-authentic-story-neutral',
+    name: 'Authentic, Storytelling',
+    styleId: 'brand-storytelling-neutral',
+    displayName: 'E. Lee (Authentic Storytelling Expert)'
+  },
+  {
+    id: 'brand-storytelling-ethical-nurturing-neutral',
+    name: 'Ethical, Nurturing',
+    styleId: 'brand-storytelling-neutral',
+    displayName: 'S. Richards (Ethical, Nurturing Leader)'
+  },
+  
+  // Neutral - Digital & Modern-Day tones
+  {
+    id: 'digital-modern-innovative-persuasive-neutral',
+    name: 'Innovative, Persuasive',
+    styleId: 'digital-modern-neutral',
+    displayName: 'Z. Thompson (Innovative, Persuasive Digital Writer)'
+  },
+  {
+    id: 'digital-modern-iconic-persuasive-neutral',
+    name: 'Iconic, Persuasive',
+    styleId: 'digital-modern-neutral',
+    displayName: 'D. Kim (Iconic, Persuasive Content Writer)'
+  },
+  {
+    id: 'digital-modern-creative-persuasive-neutral',
+    name: 'Creative, Persuasive',
+    styleId: 'digital-modern-neutral',
+    displayName: 'T. Morgan (Creative, Persuasive Content Creator)'
+  },
+  
+  // Neutral - Scientific tones
+  {
+    id: 'scientific-authentic-relationship-neutral',
+    name: 'Authentic, Relationship-Building',
+    styleId: 'scientific-neutral',
+    displayName: 'Dr. M. Cooper (Authentic, Relationship-Building Writer)'
+  },
+  {
+    id: 'scientific-creative-persuasive-neutral',
+    name: 'Creative, Persuasive',
+    styleId: 'scientific-neutral',
+    displayName: 'Dr. J. Roberts (Creative, Persuasive Scientific Writer)'
+  },
+  {
+    id: 'scientific-engaging-persuasive-neutral',
+    name: 'Engaging, Persuasive',
+    styleId: 'scientific-neutral',
+    displayName: 'Professor J. Miller (Engaging, Persuasive Scientific Expert)'
   }
 ];
 
 // Helper functions to filter the data
-export const getStylesByGender = (categoryId: string): CopywritingStyle[] => {
-  return styles.filter(style => style.genderId === categoryId);
+export const getStylesByGender = (genderId: string): CopywritingStyle[] => {
+  return styles.filter(style => style.genderId === genderId);
 };
 
 export const getTonesByStyle = (styleId: string): CopywritingTone[] => {
