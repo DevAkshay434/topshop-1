@@ -17,15 +17,7 @@ import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
 import connectRouter from './routes/connect';
 import { pexelsService } from './services/pexels';
-import { 
-  validateShopDomain, 
-  generateNonce, 
-  createAuthUrl, 
-  validateHmac, 
-  getAccessToken, 
-  getShopData,
-  verifyWebhook
-} from './services/oauth';
+// Remove oauth service import as we're going to use the connect router
 import { generateBlogContentWithHF } from './services/huggingface';
 import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
 

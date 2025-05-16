@@ -43,7 +43,7 @@ export default function ConnectPage() {
 
     try {
       // Call the API to initiate the OAuth process
-      const response = await apiRequest('/api/shopify/connection', {
+      const response = await apiRequest('/api/connect/initiate', {
         method: 'POST',
         data: { shop: shopUrl }
       });
