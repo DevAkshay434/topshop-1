@@ -723,14 +723,24 @@ export default function CreatePostModal({
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => {
-                    // Fill form values
+                    // Fill form values with explicit publish flags
                     form.setValue('title', generatedContent.title);
                     form.setValue('content', generatedContent.content);
                     form.setValue('tags', Array.isArray(generatedContent.tags) 
                       ? generatedContent.tags.join(", ") 
                       : "");
+                      
+                    // Set multiple publish status flags to ensure backend handles it properly
                     form.setValue('publicationType', 'publish');
-                    form.setValue('status', 'published'); // Explicit status
+                    form.setValue('status', 'published');
+                    form.setValue('postStatus', 'published');
+                    
+                    // Clear any scheduling data
+                    form.setValue('scheduledPublishDate', null);
+                    form.setValue('scheduledPublishTime', null);
+                    
+                    // Set published date to now
+                    form.setValue('publishedDate', new Date().toISOString());
                     
                     // Make sure we have the featured image
                     if (generatedContent.featuredImage) {
