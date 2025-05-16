@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import axios from 'axios';
 import { storage } from '../storage';
 import { validateShopDomain, createAuthUrl } from '../services/oauth';
 
