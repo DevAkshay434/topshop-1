@@ -1391,7 +1391,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         console.error('Database error:', dbError);
         res.status(500).send('An error occurred while saving store data');
       }
-      }
     } catch (error: any) {
       console.error('OAuth callback error:', error);
       res.status(500).send('An error occurred during the OAuth callback');
