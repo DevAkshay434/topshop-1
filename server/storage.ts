@@ -48,17 +48,17 @@ export interface IStorage {
   createUserStore(userStore: InsertUserStore): Promise<UserStore>;
   
   // Blog post operations
-  getBlogPosts(): Promise<BlogPost[]>;
+  getBlogPosts(storeId?: number): Promise<BlogPost[]>;
   getBlogPost(id: number): Promise<BlogPost | undefined>;
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
   updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined>;
   deleteBlogPost(id: number): Promise<boolean>;
-  getRecentPosts(limit: number): Promise<BlogPost[]>;
-  getScheduledPosts(): Promise<BlogPost[]>;
-  getPublishedPosts(): Promise<BlogPost[]>;
+  getRecentPosts(limit: number, storeId?: number): Promise<BlogPost[]>;
+  getScheduledPosts(storeId?: number): Promise<BlogPost[]>;
+  getPublishedPosts(storeId?: number): Promise<BlogPost[]>;
   
   // Sync activity operations
-  getSyncActivities(limit: number): Promise<SyncActivity[]>;
+  getSyncActivities(limit: number, storeId?: number): Promise<SyncActivity[]>;
   createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity>;
   
   // Content generation operations
@@ -293,8 +293,15 @@ export class MemStorage implements IStorage {
   }
   
   // Blog post operations
-  async getBlogPosts(): Promise<BlogPost[]> {
-    return Array.from(this.blogPosts.values());
+  async getBlogPosts(storeId?: number): Promise<BlogPost[]> {
+    const posts = Array.from(this.blogPosts.values());
+    
+    // Filter by storeId if provided
+    if (storeId !== undefined) {
+      return posts.filter(post => post.storeId === storeId);
+    }
+    
+    return posts;
   }
   
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
@@ -332,9 +339,17 @@ export class MemStorage implements IStorage {
     return this.blogPosts.delete(id);
   }
   
-  async getRecentPosts(limit: number): Promise<BlogPost[]> {
+  async getRecentPosts(limit: number, storeId?: number): Promise<BlogPost[]> {
+    // Get all posts
+    let posts = Array.from(this.blogPosts.values());
+    
+    // Filter by storeId if provided
+    if (storeId !== undefined) {
+      posts = posts.filter(post => post.storeId === storeId);
+    }
+    
     // Sort by published date or scheduled date in descending order
-    return Array.from(this.blogPosts.values())
+    return posts
       .sort((a, b) => {
         const dateA = a.publishedDate || a.scheduledDate || new Date(0);
         const dateB = b.publishedDate || b.scheduledDate || new Date(0);
@@ -343,29 +358,56 @@ export class MemStorage implements IStorage {
       .slice(0, limit);
   }
   
-  async getScheduledPosts(): Promise<BlogPost[]> {
-    return Array.from(this.blogPosts.values())
-      .filter(post => post.status === 'scheduled')
-      .sort((a, b) => {
-        const dateA = a.scheduledDate || new Date(0);
-        const dateB = b.scheduledDate || new Date(0);
-        return dateA.getTime() - dateB.getTime();
-      });
+  async getScheduledPosts(storeId?: number): Promise<BlogPost[]> {
+    // Get all posts
+    let posts = Array.from(this.blogPosts.values());
+    
+    // Apply filters
+    posts = posts.filter(post => post.status === 'scheduled');
+    
+    // Filter by storeId if provided
+    if (storeId !== undefined) {
+      posts = posts.filter(post => post.storeId === storeId);
+    }
+    
+    // Sort by scheduled date
+    return posts.sort((a, b) => {
+      const dateA = a.scheduledDate || new Date(0);
+      const dateB = b.scheduledDate || new Date(0);
+      return dateA.getTime() - dateB.getTime();
+    });
   }
   
-  async getPublishedPosts(): Promise<BlogPost[]> {
-    return Array.from(this.blogPosts.values())
-      .filter(post => post.status === 'published')
-      .sort((a, b) => {
-        const dateA = a.publishedDate || new Date(0);
-        const dateB = b.publishedDate || new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
+  async getPublishedPosts(storeId?: number): Promise<BlogPost[]> {
+    // Get all posts
+    let posts = Array.from(this.blogPosts.values());
+    
+    // Apply filters
+    posts = posts.filter(post => post.status === 'published');
+    
+    // Filter by storeId if provided
+    if (storeId !== undefined) {
+      posts = posts.filter(post => post.storeId === storeId);
+    }
+    
+    // Sort by published date
+    return posts.sort((a, b) => {
+      const dateA = a.publishedDate || new Date(0);
+      const dateB = b.publishedDate || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
   }
   
   // Sync activity operations
-  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
-    return this.syncActivities
+  async getSyncActivities(limit: number, storeId?: number): Promise<SyncActivity[]> {
+    let activities = [...this.syncActivities];
+    
+    // Filter by storeId if provided
+    if (storeId !== undefined) {
+      activities = activities.filter(activity => activity.storeId === storeId);
+    }
+    
+    return activities
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, limit);
   }
@@ -375,7 +417,8 @@ export class MemStorage implements IStorage {
     const newActivity: SyncActivity = {
       ...activity,
       id,
-      timestamp: new Date()
+      timestamp: new Date(),
+      storeId: activity.storeId || null
     };
     this.syncActivities.push(newActivity);
     return newActivity;
