@@ -555,8 +555,18 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Blog post operations
-  async getBlogPosts(): Promise<BlogPost[]> {
-    return db.select().from(blogPosts);
+  async getBlogPosts(storeId?: number): Promise<BlogPost[]> {
+    // If storeId is provided, get blog posts only for that store
+    if (storeId) {
+      return db.select()
+        .from(blogPosts)
+        .where(eq(blogPosts.storeId, storeId))
+        .orderBy(desc(blogPosts.createdAt));
+    }
+    // Otherwise, get all blog posts
+    return db.select()
+      .from(blogPosts)
+      .orderBy(desc(blogPosts.createdAt));
   }
   
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
@@ -566,6 +576,12 @@ export class DatabaseStorage implements IStorage {
   
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     console.log("DatabaseStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
+    
+    // Make sure storeId is provided for multi-store support
+    if (!post.storeId) {
+      throw new Error('storeId is required when creating a blog post in a multi-store environment');
+    }
+    
     // Ensure required fields are present and nulls are handled properly
     const [newPost] = await db.insert(blogPosts)
       .values({
@@ -582,7 +598,7 @@ export class DatabaseStorage implements IStorage {
         publishedDate: post.publishedDate || null,
         shopifyPostId: post.shopifyPostId || null,
         shopifyBlogId: post.shopifyBlogId || null,
-        storeId: post.storeId || 1,
+        storeId: post.storeId,
         views: post.views || 0,
         author: post.author || null,
         authorId: post.authorId || null
