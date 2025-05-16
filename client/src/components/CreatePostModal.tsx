@@ -144,6 +144,15 @@ export default function CreatePostModal({
   const formattedTags = useRef<string>("");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   
+  // Track published content information
+  const [publishedContentInfo, setPublishedContentInfo] = useState<{
+    shopifyId?: string | null;
+    shopifyHandle?: string | null;
+    shopifyUrl?: string;
+    contentType: 'blog' | 'page';
+    published: boolean;
+  } | null>(null);
+  
   // Check if the store has the scheduling permission
   const { data: permissionsData } = useQuery<{ 
     success: boolean; 
@@ -407,6 +416,58 @@ export default function CreatePostModal({
         // Create new post
         response = await apiRequest("POST", "/api/posts", postData);
         
+        // Get the response data to check for Shopify information
+        if (response?.success && response?.post) {
+          const createdPost = response.post;
+          
+          // Check if we have Shopify information to show links
+          if (createdPost.shopifyId || createdPost.handle) {
+            const shopUrl = storeInfo?.myshopifyDomain || storeInfo?.domain;
+            const isPage = (articleType === 'page' || values.articleType === 'page');
+            
+            // Construct the Shopify URL for viewing the content
+            let contentUrl = '';
+            if (shopUrl) {
+              if (isPage) {
+                // For pages, URL is shop.com/pages/handle
+                contentUrl = `https://${shopUrl}/pages/${createdPost.handle || ''}`;
+              } else {
+                // For blog posts, URL is shop.com/blogs/blog-handle/post-handle
+                // Get the blog handle from the selected blog
+                const blogHandle = blogsData?.blogs?.find(
+                  blog => blog.id === (selectedBlogId || values.blogId)
+                )?.handle || 'news';
+                
+                contentUrl = `https://${shopUrl}/blogs/${blogHandle}/${createdPost.handle || ''}`;
+              }
+            }
+            
+            // Store this info for displaying view buttons
+            setPublishedContentInfo({
+              shopifyId: createdPost.shopifyId,
+              shopifyHandle: createdPost.handle,
+              shopifyUrl: contentUrl,
+              contentType: isPage ? 'page' : 'blog',
+              published: createdPost.status === 'published' || 
+                values.publicationType === 'publish' ||
+                createdPost.status === 'scheduled' || 
+                values.publicationType === 'schedule'
+            });
+            
+            // Only show simple success toast since we'll display buttons
+            toast({
+              title: values.publicationType === 'publish' ? "Content Published" : 
+                    values.publicationType === 'schedule' ? "Content Scheduled" : 
+                    "Draft Created",
+              description: "Content has been saved to Shopify successfully",
+            });
+            
+            // Don't close the modal yet - we want to show the buttons
+            return;
+          }
+        }
+        
+        // Default toast if no Shopify info available
         toast({
           title: "Draft Created",
           description: "A new draft has been created successfully",
@@ -419,7 +480,10 @@ export default function CreatePostModal({
       queryClient.invalidateQueries({ queryKey: ["/api/posts/published"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       
-      onOpenChange(false);
+      // Only close if we don't have published content info to display
+      if (!publishedContentInfo) {
+        onOpenChange(false);
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -436,12 +500,74 @@ export default function CreatePostModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            Edit Content
+            {publishedContentInfo ? "Content Published to Shopify" : "Edit Content"}
           </DialogTitle>
         </DialogHeader>
         
+        {/* Show Shopify content links if available */}
+        {publishedContentInfo && (
+          <div className="my-6 bg-gray-50 border border-gray-200 rounded-md p-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="text-green-500 h-5 w-5" />
+                <span className="font-medium">
+                  Your content has been {publishedContentInfo.published ? "published" : "saved as a draft"} to Shopify
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Content type:</span>
+                <Badge variant="outline">
+                  {publishedContentInfo.contentType === 'page' ? 'Page' : 'Blog Post'}
+                </Badge>
+              </div>
+              
+              {publishedContentInfo.shopifyUrl && (
+                <div className="flex flex-col gap-2">
+                  <div className="text-sm font-medium">Content URL:</div>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      value={publishedContentInfo.shopifyUrl} 
+                      readOnly 
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(publishedContentInfo.shopifyUrl || '');
+                        toast({
+                          title: "URL Copied",
+                          description: "Content URL copied to clipboard"
+                        });
+                      }}
+                    >
+                      Copy URL
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-2 mt-4">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+                {publishedContentInfo.shopifyUrl && (
+                  <Button
+                    onClick={() => {
+                      window.open(publishedContentInfo.shopifyUrl, '_blank');
+                    }}
+                  >
+                    View in Shopify
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Show scheduling permission notice if needed */}
-        {permissionsData?.success && !permissionsData.hasPermission && (
+        {permissionsData?.success && !permissionsData.hasPermission && !publishedContentInfo && (
           <SchedulingPermissionNotice 
             storeName={permissionsData.store?.name || storeInfo?.name || 'your store'} 
           />
