@@ -50,7 +50,10 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       console.log(`Using custom content style: ${request.contentStyleDisplayName} (ID: ${request.contentStyleToneId || 'none'})`);
     }
     
-    let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}.
+    // Get copywriter persona if available
+const copywriterPersona = request.contentStyleDisplayName ? `Write this content in the style of ${request.contentStyleDisplayName}.` : '';
+
+let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}
     
     The blog post MUST follow this exact structure:
     1. A compelling title that includes the main topic and primary keywords

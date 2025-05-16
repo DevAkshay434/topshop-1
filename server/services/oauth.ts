@@ -1,87 +1,130 @@
 import axios from 'axios';
 import crypto from 'crypto';
 
-// Validate shop domain format
+// Constants for OAuth process (would come from environment variables in production)
+const SCOPES = 'read_products,write_products,read_content,write_content,read_themes,write_publications';
+
+/**
+ * Validate a Shopify myshopify.com domain
+ */
 export function validateShopDomain(shop: string): boolean {
-  // Validate shop domain format
-  const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/;
+  // Shopify domains are [name].myshopify.com
+  const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/;
   return shopRegex.test(shop);
 }
 
-// Create auth URL for OAuth flow
-export function createAuthUrl(
-  shop: string,
-  apiKey: string,
-  redirectUri: string,
-  nonce: string,
-  scopes: string
-): string {
-  return `https://${shop}/admin/oauth/authorize?` +
-    `client_id=${apiKey}&` +
-    `scope=${scopes}&` +
-    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-    `state=${nonce}`;
+/**
+ * Generate a random nonce for the OAuth flow
+ */
+export function generateNonce(): string {
+  return crypto.randomBytes(16).toString('hex');
 }
 
-// Verify the HMAC signature from Shopify
-export function verifyHmac(
-  query: Record<string, string>,
-  secret: string
-): boolean {
-  const hmac = query.hmac;
+/**
+ * Create the authorization URL for a shop
+ * @param shop The Shopify shop domain
+ * @param apiKey The Shopify API key
+ * @param redirectUri The redirect URI after authorization
+ * @param state The state parameter for CSRF protection
+ * @param host Optional host parameter for embedded app installs
+ */
+export function createAuthUrl(
+  shop: string, 
+  apiKey: string, 
+  redirectUri: string, 
+  state: string,
+  host?: string
+): string {
+  let url = `https://${shop}/admin/oauth/authorize?` +
+    `client_id=${apiKey}&` +
+    `scope=${SCOPES}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `state=${state}`;
   
-  if (!hmac) {
-    return false;
+  // If host is provided (Partner Dashboard installation), include it
+  if (host) {
+    url += `&host=${encodeURIComponent(host)}`;
   }
   
-  // Create a new object without the hmac parameter
-  const map = Object.assign({}, query);
-  delete map['hmac'];
-  
-  // Sort parameters alphabetically
-  const orderedMap = Object.keys(map)
-    .sort()
-    .reduce((obj: Record<string, string>, key) => {
-      obj[key] = map[key];
-      return obj;
-    }, {});
-  
-  // Create query string and compute HMAC
-  const message = Object.keys(orderedMap)
-    .map(key => `${key}=${orderedMap[key]}`)
-    .join('&');
-  
-  const computedHmac = crypto
-    .createHmac('sha256', secret)
-    .update(message)
-    .digest('hex');
-  
-  return crypto.timingSafeEqual(
-    Buffer.from(hmac),
-    Buffer.from(computedHmac)
-  );
+  return url;
 }
 
-// Exchange authorization code for permanent access token
-export async function getAccessToken(
-  shop: string,
-  code: string,
-  apiKey: string,
-  apiSecret: string
-): Promise<string> {
+/**
+ * Validate the HMAC signature from Shopify
+ */
+export function validateHmac(query: Record<string, string>, apiSecret: string): boolean {
+  const hmac = query.hmac;
+  const { hmac: _hmac, signature: _signature, ...rest } = query;
+
+  // Create array of key=value pairs, sorted by key
+  const message = Object.keys(rest)
+    .sort()
+    .map(key => `${key}=${rest[key]}`)
+    .join('&');
+
+  const generatedHash = crypto
+    .createHmac('sha256', apiSecret)
+    .update(message)
+    .digest('hex');
+
+  return hmac === generatedHash;
+}
+
+/**
+ * Exchange the authorization code for a permanent access token
+ */
+export async function getAccessToken(shop: string, code: string, apiKey: string, apiSecret: string): Promise<string> {
   try {
+    // Use the exact same redirect_uri that was used in the initial auth request
+    const redirectUri = `https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/shopify/callback`;
+    
     const response = await axios.post(
       `https://${shop}/admin/oauth/access_token`,
       {
         client_id: apiKey,
         client_secret: apiSecret,
-        code: code
+        code,
+        redirect_uri: redirectUri
+      }
+    );
+
+    return response.data.access_token;
+  } catch (error) {
+    console.error('Error getting access token:', error);
+    throw new Error('Failed to exchange code for access token');
+  }
+}
+
+/**
+ * Verify that a webhook request is legitimate
+ */
+export function verifyWebhook(headers: Record<string, string>, body: string, apiSecret: string): boolean {
+  const hmac = headers['x-shopify-hmac-sha256'];
+  const generatedHash = crypto
+    .createHmac('sha256', apiSecret)
+    .update(body)
+    .digest('base64');
+  
+  return hmac === generatedHash;
+}
+
+/**
+ * Get shop data from Shopify
+ */
+export async function getShopData(shop: string, accessToken: string): Promise<any> {
+  try {
+    const response = await axios.get(
+      `https://${shop}/admin/api/2023-07/shop.json`,
+      {
+        headers: {
+          'X-Shopify-Access-Token': accessToken
+        }
       }
     );
     
-    return response.data.access_token;
-  } catch (error: any) {
-    console.error('Error getting access token:', error.message);
-    throw new Error('Failed to get access token');
+    return response.data.shop;
+  } catch (error) {
+    console.error('Error fetching shop data:', error);
+    throw new Error('Failed to fetch shop data');
   }
 }

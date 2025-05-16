@@ -22,7 +22,7 @@ import {
   type InsertContentGenRequest
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, lte, gte, sql, and } from "drizzle-orm";
+import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
 
 // Define the storage interface with all CRUD operations
 export interface IStorage {
@@ -48,17 +48,17 @@ export interface IStorage {
   createUserStore(userStore: InsertUserStore): Promise<UserStore>;
   
   // Blog post operations
-  getBlogPosts(storeId?: number): Promise<BlogPost[]>;
+  getBlogPosts(): Promise<BlogPost[]>;
   getBlogPost(id: number): Promise<BlogPost | undefined>;
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
   updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined>;
   deleteBlogPost(id: number): Promise<boolean>;
-  getRecentPosts(limit: number, storeId?: number): Promise<BlogPost[]>;
-  getScheduledPosts(storeId?: number): Promise<BlogPost[]>;
-  getPublishedPosts(storeId?: number): Promise<BlogPost[]>;
+  getRecentPosts(limit: number): Promise<BlogPost[]>;
+  getScheduledPosts(): Promise<BlogPost[]>;
+  getPublishedPosts(): Promise<BlogPost[]>;
   
   // Sync activity operations
-  getSyncActivities(limit: number, storeId?: number): Promise<SyncActivity[]>;
+  getSyncActivities(limit: number): Promise<SyncActivity[]>;
   createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity>;
   
   // Content generation operations
@@ -273,10 +273,7 @@ export class MemStorage implements IStorage {
   async createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection> {
     this.shopifyConnection = { 
       id: 1,
-      storeName: connection.storeName,
-      accessToken: connection.accessToken,
-      defaultBlogId: connection.defaultBlogId || null,
-      isConnected: connection.isConnected !== undefined ? connection.isConnected : true,
+      ...connection,
       lastSynced: new Date()
     };
     return this.shopifyConnection;
@@ -296,15 +293,8 @@ export class MemStorage implements IStorage {
   }
   
   // Blog post operations
-  async getBlogPosts(storeId?: number): Promise<BlogPost[]> {
-    const posts = Array.from(this.blogPosts.values());
-    
-    // Filter by storeId if provided
-    if (storeId !== undefined) {
-      return posts.filter(post => post.storeId === storeId);
-    }
-    
-    return posts;
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return Array.from(this.blogPosts.values());
   }
   
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
@@ -314,27 +304,10 @@ export class MemStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     console.log("MemStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
     const id = this.currentBlogPostId++;
-    const now = new Date();
-    
     const newPost: BlogPost = { 
+      ...post, 
       id,
-      title: post.title,
-      content: post.content,
-      status: post.status || 'draft',
-      storeId: post.storeId || null,
-      createdAt: now,
-      updatedAt: now,
       views: post.views || 0,
-      featuredImage: post.featuredImage || null,
-      category: post.category || null,
-      categories: post.categories || null,
-      tags: post.tags || null,
-      scheduledDate: post.scheduledDate || null,
-      publishedDate: post.publishedDate || null,
-      shopifyPostId: post.shopifyPostId || null,
-      shopifyBlogId: post.shopifyBlogId || null,
-      author: post.author || null,
-      authorId: post.authorId || null,
       // Explicitly handle the scheduledPublishDate and scheduledPublishTime fields
       scheduledPublishDate: post.scheduledPublishDate || null,
       scheduledPublishTime: post.scheduledPublishTime || null
@@ -359,17 +332,9 @@ export class MemStorage implements IStorage {
     return this.blogPosts.delete(id);
   }
   
-  async getRecentPosts(limit: number, storeId?: number): Promise<BlogPost[]> {
-    // Get all posts
-    let posts = Array.from(this.blogPosts.values());
-    
-    // Filter by storeId if provided
-    if (storeId !== undefined) {
-      posts = posts.filter(post => post.storeId === storeId);
-    }
-    
+  async getRecentPosts(limit: number): Promise<BlogPost[]> {
     // Sort by published date or scheduled date in descending order
-    return posts
+    return Array.from(this.blogPosts.values())
       .sort((a, b) => {
         const dateA = a.publishedDate || a.scheduledDate || new Date(0);
         const dateB = b.publishedDate || b.scheduledDate || new Date(0);
@@ -378,56 +343,29 @@ export class MemStorage implements IStorage {
       .slice(0, limit);
   }
   
-  async getScheduledPosts(storeId?: number): Promise<BlogPost[]> {
-    // Get all posts
-    let posts = Array.from(this.blogPosts.values());
-    
-    // Apply filters
-    posts = posts.filter(post => post.status === 'scheduled');
-    
-    // Filter by storeId if provided
-    if (storeId !== undefined) {
-      posts = posts.filter(post => post.storeId === storeId);
-    }
-    
-    // Sort by scheduled date
-    return posts.sort((a, b) => {
-      const dateA = a.scheduledDate || new Date(0);
-      const dateB = b.scheduledDate || new Date(0);
-      return dateA.getTime() - dateB.getTime();
-    });
+  async getScheduledPosts(): Promise<BlogPost[]> {
+    return Array.from(this.blogPosts.values())
+      .filter(post => post.status === 'scheduled')
+      .sort((a, b) => {
+        const dateA = a.scheduledDate || new Date(0);
+        const dateB = b.scheduledDate || new Date(0);
+        return dateA.getTime() - dateB.getTime();
+      });
   }
   
-  async getPublishedPosts(storeId?: number): Promise<BlogPost[]> {
-    // Get all posts
-    let posts = Array.from(this.blogPosts.values());
-    
-    // Apply filters
-    posts = posts.filter(post => post.status === 'published');
-    
-    // Filter by storeId if provided
-    if (storeId !== undefined) {
-      posts = posts.filter(post => post.storeId === storeId);
-    }
-    
-    // Sort by published date
-    return posts.sort((a, b) => {
-      const dateA = a.publishedDate || new Date(0);
-      const dateB = b.publishedDate || new Date(0);
-      return dateB.getTime() - dateA.getTime();
-    });
+  async getPublishedPosts(): Promise<BlogPost[]> {
+    return Array.from(this.blogPosts.values())
+      .filter(post => post.status === 'published')
+      .sort((a, b) => {
+        const dateA = a.publishedDate || new Date(0);
+        const dateB = b.publishedDate || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
   }
   
   // Sync activity operations
-  async getSyncActivities(limit: number, storeId?: number): Promise<SyncActivity[]> {
-    let activities = [...this.syncActivities];
-    
-    // Filter by storeId if provided
-    if (storeId !== undefined) {
-      activities = activities.filter(activity => activity.storeId === storeId);
-    }
-    
-    return activities
+  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
+    return this.syncActivities
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, limit);
   }
@@ -435,12 +373,9 @@ export class MemStorage implements IStorage {
   async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
     const id = this.currentSyncActivityId++;
     const newActivity: SyncActivity = {
+      ...activity,
       id,
-      status: activity.status,
-      activity: activity.activity,
-      timestamp: new Date(),
-      storeId: activity.storeId || null,
-      details: activity.details || null
+      timestamp: new Date()
     };
     this.syncActivities.push(newActivity);
     return newActivity;
@@ -450,15 +385,9 @@ export class MemStorage implements IStorage {
   async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
     const id = this.currentContentGenRequestId++;
     const newRequest: ContentGenRequest = {
+      ...request,
       id,
-      topic: request.topic,
-      tone: request.tone,
-      length: request.length,
-      status: request.status,
-      timestamp: new Date(),
-      storeId: request.storeId || null,
-      userId: request.userId || null,
-      generatedContent: request.generatedContent || null
+      timestamp: new Date()
     };
     this.contentGenRequests.set(id, newRequest);
     return newRequest;
@@ -626,18 +555,8 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Blog post operations
-  async getBlogPosts(storeId?: number): Promise<BlogPost[]> {
-    // If storeId is provided, get blog posts only for that store
-    if (storeId) {
-      return db.select()
-        .from(blogPosts)
-        .where(eq(blogPosts.storeId, storeId))
-        .orderBy(desc(blogPosts.createdAt));
-    }
-    // Otherwise, get all blog posts
-    return db.select()
-      .from(blogPosts)
-      .orderBy(desc(blogPosts.createdAt));
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return db.select().from(blogPosts);
   }
   
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
@@ -647,12 +566,6 @@ export class DatabaseStorage implements IStorage {
   
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     console.log("DatabaseStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
-    
-    // Make sure storeId is provided for multi-store support
-    if (!post.storeId) {
-      throw new Error('storeId is required when creating a blog post in a multi-store environment');
-    }
-    
     // Ensure required fields are present and nulls are handled properly
     const [newPost] = await db.insert(blogPosts)
       .values({
@@ -669,7 +582,7 @@ export class DatabaseStorage implements IStorage {
         publishedDate: post.publishedDate || null,
         shopifyPostId: post.shopifyPostId || null,
         shopifyBlogId: post.shopifyBlogId || null,
-        storeId: post.storeId,
+        storeId: post.storeId || 1,
         views: post.views || 0,
         author: post.author || null,
         authorId: post.authorId || null
@@ -708,50 +621,22 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
   
-  async getRecentPosts(limit: number, storeId?: number): Promise<BlogPost[]> {
+  async getRecentPosts(limit: number): Promise<BlogPost[]> {
     // Get posts sorted by published date or scheduled date in descending order
-    if (storeId !== undefined) {
-      return db.select()
-        .from(blogPosts)
-        .where(eq(blogPosts.storeId, storeId))
-        .orderBy(desc(blogPosts.publishedDate))
-        .limit(limit);
-    }
-    
     return db.select()
       .from(blogPosts)
       .orderBy(desc(blogPosts.publishedDate))
       .limit(limit);
   }
   
-  async getScheduledPosts(storeId?: number): Promise<BlogPost[]> {
-    if (storeId !== undefined) {
-      return db.select()
-        .from(blogPosts)
-        .where(and(
-          eq(blogPosts.status, 'scheduled'),
-          eq(blogPosts.storeId, storeId)
-        ))
-        .orderBy(asc(blogPosts.scheduledDate));
-    }
-    
+  async getScheduledPosts(): Promise<BlogPost[]> {
     return db.select()
       .from(blogPosts)
       .where(eq(blogPosts.status, 'scheduled'))
       .orderBy(asc(blogPosts.scheduledDate));
   }
   
-  async getPublishedPosts(storeId?: number): Promise<BlogPost[]> {
-    if (storeId !== undefined) {
-      return db.select()
-        .from(blogPosts)
-        .where(and(
-          eq(blogPosts.status, 'published'),
-          eq(blogPosts.storeId, storeId)
-        ))
-        .orderBy(desc(blogPosts.publishedDate));
-    }
-    
+  async getPublishedPosts(): Promise<BlogPost[]> {
     return db.select()
       .from(blogPosts)
       .where(eq(blogPosts.status, 'published'))
@@ -759,15 +644,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Sync activity operations
-  async getSyncActivities(limit: number, storeId?: number): Promise<SyncActivity[]> {
-    if (storeId !== undefined) {
-      return db.select()
-        .from(syncActivities)
-        .where(eq(syncActivities.storeId, storeId))
-        .orderBy(desc(syncActivities.timestamp))
-        .limit(limit);
-    }
-    
+  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
     return db.select()
       .from(syncActivities)
       .orderBy(desc(syncActivities.timestamp))
@@ -775,16 +652,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
-    if (!activity.storeId) {
-      throw new Error('storeId is required when creating a sync activity in a multi-store environment');
-    }
-    
     const [newActivity] = await db.insert(syncActivities)
       .values({
         activity: activity.activity,
         status: activity.status,
         details: activity.details || null,
-        storeId: activity.storeId,
         timestamp: new Date()
       })
       .returning();
@@ -794,18 +666,12 @@ export class DatabaseStorage implements IStorage {
   
   // Content generation operations
   async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
-    if (!request.storeId) {
-      throw new Error('storeId is required when creating a content generation request in a multi-store environment');
-    }
-    
     const [newRequest] = await db.insert(contentGenRequests)
       .values({
         topic: request.topic,
         tone: request.tone,
         length: request.length,
         status: request.status,
-        storeId: request.storeId,
-        userId: request.userId || null,
         generatedContent: request.generatedContent || null,
         timestamp: new Date()
       })

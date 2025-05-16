@@ -10,7 +10,6 @@ import ScheduledPosts from "@/pages/ScheduledPosts";
 import ContentTemplates from "@/pages/ContentTemplates";
 import SimpleBulkGeneration from "@/pages/SimpleBulkGeneration";
 import ShopifyConnection from "@/pages/ShopifyConnection";
-import Connect from "@/pages/Connect";
 import BillingSettings from "@/pages/BillingSettings";
 import AppInstall from "@/pages/AppInstall";
 import PartnerInstall from "@/pages/PartnerInstall";
@@ -66,7 +65,6 @@ function Router() {
           <Route path="/content-templates" component={ContentTemplates} />
           <Route path="/simple-bulk-generation" component={SimpleBulkGeneration} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
-          <Route path="/connect" component={Connect} />
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/billing-callback" component={AdminPanel} />
           <Route path="/embedded" component={EmbeddedApp} />
