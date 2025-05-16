@@ -66,6 +66,7 @@ function Router() {
           <Route path="/content-templates" component={ContentTemplates} />
           <Route path="/simple-bulk-generation" component={SimpleBulkGeneration} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
+          <Route path="/connect" component={Connect} />
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/billing-callback" component={AdminPanel} />
           <Route path="/embedded" component={EmbeddedApp} />
