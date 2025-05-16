@@ -361,12 +361,16 @@ export class ShopifyService {
         
         // Add a custom property for tracking in the response
         article.isScheduledPost = true;
-      } else if (post.status === 'published') {
-        // For immediate publishing
+      } else if (post.status === 'published' || 
+                (post as any).publicationType === 'publish' || 
+                (post as any).postStatus === 'published') {
+        // For immediate publishing - check multiple flags
+        console.log("Publishing article immediately");
         article.published = true;
         article.published_at = new Date().toISOString();
       } else {
         // For drafts
+        console.log("Saving article as draft");
         article.published = false;
         // Remove published_at to prevent scheduling
         article.published_at = undefined;
