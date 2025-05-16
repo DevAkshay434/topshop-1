@@ -108,7 +108,10 @@ const formSchema = insertBlogPostSchema.extend({
   categories: z.array(z.string()).optional(),
   tags: z.string().optional(),
   // Status is preserved when editing existing content
-  publicationType: z.enum(["publish", "draft"]).default("draft").optional(),
+  publicationType: z.enum(["publish", "draft", "schedule"]).default("draft").optional(),
+  // Fields for scheduling
+  scheduledPublishDate: z.string().optional(),
+  scheduledPublishTime: z.string().optional(),
   // We still need these fields to handle existing values in the DB
   publishedDate: z.any().optional(),
   // Additional fields for blog selection and product association
@@ -162,6 +165,12 @@ export default function CreatePostModal({
   
   // Store reference for timezone info
   const currentDate = new Date();
+  
+  // Reference to content preview with images
+  const [isPreviewMode, setIsPreviewMode] = useState(!!generatedContent);
+  const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(
+    generatedContent?.featuredImage?.url || generatedContent?.featuredImage?.src?.medium || null
+  );
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -1035,10 +1044,52 @@ export default function CreatePostModal({
                 )}
               </div>
               
+              {/* Enhanced publishing options */}
               <div className="flex gap-2">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : "Save Changes"}
-                </Button>
+                {generatedContent && !initialData?.id ? (
+                  <>
+                    {/* For newly generated content, show comprehensive publishing options */}
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        form.setValue('publicationType', 'draft');
+                        form.handleSubmit(onSubmit)();
+                      }}
+                    >
+                      Save as Draft
+                    </Button>
+                    
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        form.setValue('publicationType', 'schedule');
+                        form.handleSubmit(onSubmit)();
+                      }}
+                    >
+                      Schedule
+                    </Button>
+                    
+                    <Button 
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        form.setValue('publicationType', 'publish');
+                        form.handleSubmit(onSubmit)();
+                      }}
+                    >
+                      Publish Now
+                    </Button>
+                  </>
+                ) : (
+                  // For existing content, use a single save button
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Save Changes"}
+                  </Button>
+                )}
               </div>
             </DialogFooter>
           </form>
