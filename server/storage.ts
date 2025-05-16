@@ -222,6 +222,7 @@ export class MemStorage implements IStorage {
       categories: "Accessories, Fashion",
       tags: "accessories, summer, fashion",
       status: "scheduled",
+      contentType: "post",
       publishedDate: null,
       scheduledDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
       scheduledPublishDate: "2025-05-13", // 3 days in future
@@ -237,9 +238,35 @@ export class MemStorage implements IStorage {
       authorId: 1
     };
     
+    // Add a sample scheduled page
+    const page1: BlogPost = {
+      id: this.currentBlogPostId++,
+      title: "About Our Store",
+      content: "<h1>Welcome to our store!</h1><p>We offer the finest products...</p>",
+      category: "Page",
+      categories: "Page, About",
+      tags: "about, info",
+      status: "scheduled",
+      contentType: "page",
+      publishedDate: null,
+      scheduledDate: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000), // 1 day in the future
+      scheduledPublishDate: "2025-05-11", // 1 day in future
+      scheduledPublishTime: "10:00",
+      views: 0,
+      featuredImage: "",
+      shopifyPostId: "98765",
+      shopifyBlogId: null,
+      storeId: 1,
+      createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      author: "Administrator",
+      authorId: 1
+    };
+    
     this.blogPosts.set(post1.id, post1);
     this.blogPosts.set(post2.id, post2);
     this.blogPosts.set(post3.id, post3);
+    this.blogPosts.set(page1.id, page1);
   }
 
   // User operations
