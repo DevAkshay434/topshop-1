@@ -720,9 +720,21 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       const post = await storage.createBlogPost(postData);
       
-      // If status is 'published' or 'scheduled' and we have a Shopify connection, send to Shopify
-      if (post.status === 'published' || post.status === 'scheduled') {
-        console.log(`Processing post with status: ${post.status} for Shopify API`);
+      // Check all possible publishing flags to ensure nothing is missed
+      const publicationType = (req.body.publicationType || '').toLowerCase();
+      const postStatus = (req.body.postStatus || '').toLowerCase();
+      
+      if (post.status === 'published' || post.status === 'scheduled' || 
+          publicationType === 'publish' || postStatus === 'published') {
+        
+        console.log(`Processing post with status: ${post.status}, publicationType: ${publicationType}, postStatus: ${postStatus} for Shopify API`);
+        
+        // Force status to published if any publishing flags are set
+        if (publicationType === 'publish' || postStatus === 'published') {
+          post.status = 'published';
+          await storage.updateBlogPost(post.id, { status: 'published' });
+          console.log("Post status updated to published based on frontend flags");
+        }
         const connection = await storage.getShopifyConnection();
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
