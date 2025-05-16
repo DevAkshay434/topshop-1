@@ -351,6 +351,14 @@ export async function publishScheduledPage(
     } catch (shopError: any) {
       console.error(`Failed to get shop timezone, using UTC: ${shopError.message}`);
       shopInfo = { iana_timezone: 'UTC' };
+      
+      // Log the error for tracking
+      await storage.createSyncActivity({
+        storeId: store.id,
+        activity: `Warning: Timezone fetch failed when publishing page`,
+        status: 'warning',
+        details: `Using UTC as fallback. Error: ${shopError.message}`
+      });
     }
     
     // Get the store's timezone
