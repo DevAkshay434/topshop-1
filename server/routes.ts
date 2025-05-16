@@ -1694,6 +1694,88 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     }
   });
+  
+  // Endpoint to reschedule content (both posts and pages)
+  apiRouter.post("/posts/:id/reschedule", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { scheduledDate } = req.body;
+      
+      if (!scheduledDate) {
+        return res.status(400).json({ 
+          status: "error", 
+          message: "Missing scheduled date" 
+        });
+      }
+      
+      // Convert the string date to a Date object
+      const newScheduledDate = new Date(scheduledDate);
+      
+      if (isNaN(newScheduledDate.getTime())) {
+        return res.status(400).json({ 
+          status: "error", 
+          message: "Invalid date format" 
+        });
+      }
+      
+      // Get the post to verify it exists and to get the store ID
+      const post = await storage.getBlogPost(id);
+      
+      if (!post) {
+        return res.status(404).json({ 
+          status: "error", 
+          message: "Post not found" 
+        });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(post.storeId);
+      
+      if (!store) {
+        return res.status(404).json({ 
+          status: "error", 
+          message: "Store not found" 
+        });
+      }
+      
+      // Use timezone-aware functions
+      const { formatDate, formatTime } = await import("./services/custom-scheduler");
+      
+      // Format the dates for database storage
+      const formattedPublishDate = formatDate(newScheduledDate);
+      const formattedPublishTime = formatTime(newScheduledDate);
+      
+      // Update our database with the new schedule
+      const updatedPost = await storage.updateBlogPost(id, {
+        scheduledDate: newScheduledDate,
+        scheduledPublishDate: formattedPublishDate,
+        scheduledPublishTime: formattedPublishTime,
+        status: 'scheduled' // Ensure it stays in scheduled status
+      });
+      
+      // Log the rescheduling
+      await storage.createSyncActivity({
+        storeId: store.id,
+        activity: `Rescheduled ${post.contentType === 'page' ? 'page' : 'blog post'} "${post.title}"`,
+        status: 'success',
+        details: `Rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`
+      });
+      
+      console.log(`Successfully rescheduled ${post.contentType || 'content'} ${id} to ${formattedPublishDate} at ${formattedPublishTime}`);
+      
+      return res.json({ 
+        status: "success", 
+        message: `Content successfully rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`,
+        post: updatedPost
+      });
+    } catch (error) {
+      console.error(`Error rescheduling content:`, error);
+      return res.status(500).json({ 
+        status: "error", 
+        message: error instanceof Error ? error.message : "Failed to reschedule content" 
+      });
+    }
+  });
 
   // Mount API routes with /api prefix
   app.use('/api', apiRouter);
