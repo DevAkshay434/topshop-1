@@ -22,7 +22,7 @@ export default function AppInstall() {
     if (!shopDomain) {
       toast({
         title: 'Shop domain required',
-        description: 'Please enter a valid Shopify shop domain',
+        description: 'Please enter your Shopify store domain',
         variant: 'destructive'
       });
       return;
@@ -34,6 +34,17 @@ export default function AppInstall() {
     // Add .myshopify.com if not present
     if (!formattedDomain.includes('.myshopify.com')) {
       formattedDomain = `${formattedDomain}.myshopify.com`;
+    }
+
+    // Validate domain format
+    const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/;
+    if (!shopRegex.test(formattedDomain)) {
+      toast({
+        title: 'Invalid shop domain',
+        description: 'Please enter a valid myshopify.com domain (e.g., your-store.myshopify.com)',
+        variant: 'destructive'
+      });
+      return;
     }
 
     // Redirect to OAuth flow
