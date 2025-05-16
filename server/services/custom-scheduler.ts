@@ -677,42 +677,69 @@ export async function checkScheduledPosts(): Promise<void> {
         
         // If it's time to publish
         if (shouldPublish) {
-          console.log(`Time to publish post ${post.id} - "${post.title}"`);
+          // Check if this is a page or a blog post
+          const isPage = post.contentType === 'page';
+          
+          console.log(`Time to publish ${isPage ? 'page' : 'post'} ${post.id} - "${post.title}"`);
           console.log(`Scheduled time: ${scheduledDate.toISOString()}, Current time: ${now.toISOString()}`);
           
-          // Get the store for this post - first try by store ID
+          // Get the store for this post/page - first try by store ID
           const stores = await storage.getShopifyStores();
           let store = post.storeId ? stores.find(s => s.id === post.storeId) : undefined;
           
-          // If store not found by ID, try by blog ID
-          if (!store) {
+          // If store not found by ID and this is a post, try by blog ID
+          if (!store && !isPage) {
             store = stores.find(s => s.defaultBlogId === post.shopifyBlogId);
           }
           
           if (!store) {
-            console.error(`Store not found for post ${post.id} (using blogId: ${post.shopifyBlogId})`);
+            console.error(`Store not found for ${isPage ? 'page' : 'post'} ${post.id}`);
             continue;
           }
           
           console.log(`Found store: ${store.shopName} (ID: ${store.id})`);
           
-          // Publish the post, passing the post object to use the original scheduled time
-          const publishedArticle = await publishScheduledArticle(
-            store, 
-            post.shopifyBlogId, 
-            post.shopifyPostId,
-            post
-          );
-          
-          // Update local post status
-          await storage.updateBlogPost(post.id, {
-            status: 'published',
-            publishedDate: new Date(),
-            updatedAt: new Date()
-          });
-          
-          console.log(`Successfully published scheduled post ${post.id} - "${post.title}"`);
-          console.log(`Published at ${publishedArticle.published_at}`);
+          try {
+            if (isPage) {
+              // Publish page
+              console.log(`Publishing page with ID ${post.shopifyPostId}`);
+              const publishedPage = await publishScheduledPage(
+                store,
+                post.shopifyPostId,
+                post
+              );
+              
+              // Update local post status
+              await storage.updateBlogPost(post.id, {
+                status: 'published',
+                publishedDate: new Date(),
+                updatedAt: new Date()
+              });
+              
+              console.log(`Successfully published scheduled page ${post.id} - "${post.title}"`);
+              console.log(`Published at ${publishedPage.published_at}`);
+            } else {
+              // Publish blog post
+              const publishedArticle = await publishScheduledArticle(
+                store, 
+                post.shopifyBlogId, 
+                post.shopifyPostId,
+                post
+              );
+              
+              // Update local post status
+              await storage.updateBlogPost(post.id, {
+                status: 'published',
+                publishedDate: new Date(),
+                updatedAt: new Date()
+              });
+              
+              console.log(`Successfully published scheduled post ${post.id} - "${post.title}"`);
+              console.log(`Published at ${publishedArticle.published_at}`);
+            }
+          } catch (publishError) {
+            console.error(`Error publishing ${isPage ? 'page' : 'post'} ${post.id}:`, publishError.message);
+          }
         } else {
           // Calculate minutes until publishing
           const timeUntilPublish = Math.round((scheduledDate.getTime() - now.getTime()) / (60 * 1000));

@@ -118,6 +118,7 @@ export const blogPosts = pgTable("blog_posts", {
   categories: text("categories"), // Comma-separated list of category IDs
   tags: text("tags"),
   status: text("status").notNull().default("draft"), // draft, published, scheduled
+  contentType: text("content_type").default("post"), // post or page
   scheduledDate: timestamp("scheduled_date"),
   scheduledPublishDate: text("scheduled_publish_date"), // Date in YYYY-MM-DD format
   scheduledPublishTime: text("scheduled_publish_time"), // Time in HH:MM format
@@ -154,6 +155,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts, {
   categories: true,
   tags: true,
   status: true,
+  contentType: true,
   scheduledDate: true,
   publishedDate: true,
   shopifyPostId: true,
