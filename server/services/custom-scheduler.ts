@@ -177,6 +177,26 @@ export async function schedulePage(
   scheduledDate: Date
 ): Promise<any> {
   try {
+    // Get shop information to get the timezone
+    let shopInfo: any;
+    try {
+      const shopClient = axios.create({
+        baseURL: `https://${store.shopName}/admin/api/2023-10`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': store.accessToken
+        }
+      });
+      
+      console.log(`Fetching shop information for ${store.shopName}`);
+      const shopResponse = await shopClient.get('/shop.json');
+      shopInfo = shopResponse.data.shop;
+      console.log(`Shop timezone for ${store.shopName}: ${shopInfo.iana_timezone}`);
+    } catch (shopError: any) {
+      console.error(`Failed to get shop timezone, using UTC: ${shopError.message}`);
+      shopInfo = { iana_timezone: 'UTC' };
+    }
+
     // Create a client for the Shopify API
     const client = axios.create({
       baseURL: `https://${store.shopName}/admin/api/2023-10`,
@@ -207,13 +227,41 @@ export async function schedulePage(
       published: response.data.page.published
     });
 
-    // Note: This implementation focuses on creating the draft page
-    // The scheduled publishing would be handled by a background job or cron task
-    // that checks for scheduled content and publishes it at the appropriate time
+    // Format dates in the store's timezone for accurate scheduling
+    const storeTimezone = shopInfo.iana_timezone || 'UTC';
+    
+    // Get the formatted date and time strings
+    const scheduledPublishDate = formatDate(scheduledDate);
+    const scheduledPublishTime = formatTime(scheduledDate);
+    
+    console.log(`Using store timezone ${storeTimezone} for scheduled publish date: ${scheduledPublishDate} at ${scheduledPublishTime}`);
+
+    // The page ID for later publishing
+    const pageId = response.data.page.id;
+
+    // Store the page in our database with scheduling information
+    // Note: Add to BlogPost database with contentType = 'page' to track it
+    const pageData = {
+      title: title,
+      content: content,
+      status: 'scheduled',
+      scheduledDate: scheduledDate,
+      scheduledPublishDate: scheduledPublishDate,
+      scheduledPublishTime: scheduledPublishTime,
+      storeId: store.id,
+      shopifyPostId: String(pageId),
+      contentType: 'page' // Add this field to identify as a page
+    };
+    
+    console.log(`Saving page to database with scheduling info:`, pageData);
+    // Create a new blog post entry for this page to track its scheduling
+    await storage.createBlogPost(pageData);
 
     return {
       ...response.data.page,
       scheduledDate: scheduledDate.toISOString(),
+      scheduledPublishDate,
+      scheduledPublishTime,
       customScheduled: true
     };
   } catch (error: any) {
@@ -225,6 +273,133 @@ export async function schedulePage(
       });
     }
     throw new Error(`Failed to schedule page: ${error?.message || 'Unknown error'}`);
+  }
+}
+
+/**
+ * Publish a scheduled page
+ * @param store Shopify store details
+ * @param pageId Page ID to publish
+ * @param post BlogPost data containing the page information
+ */
+export async function publishScheduledPage(
+  store: ShopifyStore,
+  pageId: string,
+  post?: BlogPost
+): Promise<any> {
+  try {
+    console.log(`Publishing scheduled page ${pageId} for store ${store.shopName}`);
+    
+    // Get shop information for accurate timezone handling
+    let shopInfo: any;
+    try {
+      const shopClient = axios.create({
+        baseURL: `https://${store.shopName}/admin/api/2023-10`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': store.accessToken
+        }
+      });
+      
+      console.log(`Fetching shop information for timezone`);
+      const shopResponse = await shopClient.get('/shop.json');
+      shopInfo = shopResponse.data.shop;
+      console.log(`Shop timezone: ${shopInfo.iana_timezone}`);
+    } catch (shopError: any) {
+      console.error(`Failed to get shop timezone, using UTC: ${shopError.message}`);
+      shopInfo = { iana_timezone: 'UTC' };
+    }
+    
+    // Get the store's timezone
+    const storeTimezone = shopInfo.iana_timezone || 'UTC';
+    
+    // Create a client for the Shopify API
+    const client = axios.create({
+      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': store.accessToken
+      }
+    });
+
+    // First, get the current page to ensure it exists and verify its state
+    let existingPage: any;
+    try {
+      const getResponse = await client.get(`/pages/${pageId}.json`);
+      existingPage = getResponse.data.page;
+      console.log(`Retrieved page for publishing:`, {
+        id: existingPage.id,
+        title: existingPage.title,
+        published: existingPage.published
+      });
+    } catch (getError: any) {
+      console.error(`Error retrieving page before publishing:`, getError);
+      throw new Error(`Page ${pageId} not found or inaccessible`);
+    }
+
+    console.log(`Sending publish request for page ${pageId}`);
+    
+    // Determine the correct publish time
+    let publishTime = new Date().toISOString();
+    
+    // If we have the post data with scheduled time, use it for more accurate publishing
+    if (post && post.scheduledPublishDate && post.scheduledPublishTime) {
+      try {
+        // Create a date from the scheduled time in the store's timezone
+        const scheduledDate = createDateInTimezone(
+          post.scheduledPublishDate,
+          post.scheduledPublishTime,
+          storeTimezone
+        );
+        
+        // Get the current time in the store's timezone
+        const now = getCurrentDateInTimezone(storeTimezone);
+        
+        // If the scheduled time is not too far in the past (within 30 minutes),
+        // use it as the publish time to maintain accuracy
+        const timeDiff = now.getTime() - scheduledDate.getTime();
+        const thirtyMinutesInMs = 30 * 60 * 1000;
+        
+        if (timeDiff < thirtyMinutesInMs) {
+          publishTime = scheduledDate.toISOString();
+          console.log(`Using original scheduled time for publishing: ${publishTime}`);
+        } else {
+          console.log(`Original schedule time too old, using current time: ${publishTime}`);
+        }
+      } catch (dateError) {
+        console.error(`Error creating publication date: ${dateError}`);
+      }
+    }
+
+    // Update the page to published status
+    const response = await client.put(
+      `/pages/${pageId}.json`, 
+      { 
+        page: {
+          id: pageId,
+          published: true,
+          published_at: publishTime
+        } 
+      }
+    );
+
+    console.log(`Page published successfully:`, {
+      id: response.data.page.id,
+      title: response.data.page.title,
+      published: response.data.page.published,
+      published_at: response.data.page.published_at
+    });
+
+    return response.data.page;
+  } catch (error: any) {
+    console.error(`Error publishing scheduled page:`, error);
+    if (error.response) {
+      console.error(`Shopify API error:`, {
+        status: error.response.status,
+        data: error.response.data
+      });
+    }
+    throw new Error(`Failed to publish scheduled page: ${error?.message || 'Unknown error'}`);
   }
 }
 
@@ -358,7 +533,7 @@ export async function publishScheduledArticle(
 }
 
 /**
- * Check for posts that need to be published
+ * Check for posts and pages that need to be published
  * This would be called by a cron job or background task
  */
 export async function checkScheduledPosts(): Promise<void> {
@@ -369,32 +544,42 @@ export async function checkScheduledPosts(): Promise<void> {
     // Get all stores for timezone information
     const stores = await storage.getShopifyStores();
     
-    console.log(`Checking ${scheduledPosts.length} scheduled posts`);
+    console.log(`Checking ${scheduledPosts.length} scheduled posts/pages`);
 
     for (const post of scheduledPosts) {
       try {
-        // Skip posts without Shopify IDs
-        if (!post.shopifyPostId || !post.shopifyBlogId) {
-          console.log(`Skipping post ${post.id} - missing Shopify IDs`);
+        // Check if this is a page or a blog post
+        const isPage = post.contentType === 'page';
+        
+        // For blog posts, we need both shopifyPostId and shopifyBlogId
+        // For pages, we only need shopifyPostId
+        if (!post.shopifyPostId) {
+          console.log(`Skipping ${isPage ? 'page' : 'post'} ${post.id} - missing Shopify ID`);
+          continue;
+        }
+        
+        // Blog posts need a blog ID
+        if (!isPage && !post.shopifyBlogId) {
+          console.log(`Skipping post ${post.id} - missing Shopify Blog ID`);
           continue;
         }
 
         // Skip posts without scheduled date
         if (!post.scheduledDate) {
-          console.log(`Skipping post ${post.id} - no scheduled date`);
+          console.log(`Skipping ${isPage ? 'page' : 'post'} ${post.id} - no scheduled date`);
           continue;
         }
         
-        // Find the store for this post - first try by store ID
+        // Find the store for this post/page - first try by store ID
         let store = post.storeId ? stores.find(s => s.id === post.storeId) : undefined;
         
-        // If store not found by ID, try by blog ID
-        if (!store) {
+        // If store not found by ID, try by blog ID (for posts only)
+        if (!store && !isPage) {
           store = stores.find(s => s.defaultBlogId === post.shopifyBlogId);
         }
         
         if (!store) {
-          console.log(`Skipping post ${post.id} - store not found for blog ID ${post.shopifyBlogId}`);
+          console.log(`Skipping ${isPage ? 'page' : 'post'} ${post.id} - store not found`);
           continue;
         }
         
