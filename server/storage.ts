@@ -273,7 +273,10 @@ export class MemStorage implements IStorage {
   async createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection> {
     this.shopifyConnection = { 
       id: 1,
-      ...connection,
+      storeName: connection.storeName,
+      accessToken: connection.accessToken,
+      defaultBlogId: connection.defaultBlogId || null,
+      isConnected: connection.isConnected !== undefined ? connection.isConnected : true,
       lastSynced: new Date()
     };
     return this.shopifyConnection;
@@ -311,10 +314,27 @@ export class MemStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     console.log("MemStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
     const id = this.currentBlogPostId++;
+    const now = new Date();
+    
     const newPost: BlogPost = { 
-      ...post, 
       id,
+      title: post.title,
+      content: post.content,
+      status: post.status || 'draft',
+      storeId: post.storeId || null,
+      createdAt: now,
+      updatedAt: now,
       views: post.views || 0,
+      featuredImage: post.featuredImage || null,
+      category: post.category || null,
+      categories: post.categories || null,
+      tags: post.tags || null,
+      scheduledDate: post.scheduledDate || null,
+      publishedDate: post.publishedDate || null,
+      shopifyPostId: post.shopifyPostId || null,
+      shopifyBlogId: post.shopifyBlogId || null,
+      author: post.author || null,
+      authorId: post.authorId || null,
       // Explicitly handle the scheduledPublishDate and scheduledPublishTime fields
       scheduledPublishDate: post.scheduledPublishDate || null,
       scheduledPublishTime: post.scheduledPublishTime || null
@@ -415,10 +435,12 @@ export class MemStorage implements IStorage {
   async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
     const id = this.currentSyncActivityId++;
     const newActivity: SyncActivity = {
-      ...activity,
       id,
+      status: activity.status,
+      activity: activity.activity,
       timestamp: new Date(),
-      storeId: activity.storeId || null
+      storeId: activity.storeId || null,
+      details: activity.details || null
     };
     this.syncActivities.push(newActivity);
     return newActivity;
@@ -428,9 +450,15 @@ export class MemStorage implements IStorage {
   async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
     const id = this.currentContentGenRequestId++;
     const newRequest: ContentGenRequest = {
-      ...request,
       id,
-      timestamp: new Date()
+      topic: request.topic,
+      tone: request.tone,
+      length: request.length,
+      status: request.status,
+      timestamp: new Date(),
+      storeId: request.storeId || null,
+      userId: request.userId || null,
+      generatedContent: request.generatedContent || null
     };
     this.contentGenRequests.set(id, newRequest);
     return newRequest;
