@@ -22,7 +22,7 @@ import {
   type InsertContentGenRequest
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
+import { eq, desc, asc, lte, gte, sql, and } from "drizzle-orm";
 
 // Define the storage interface with all CRUD operations
 export interface IStorage {
@@ -637,22 +637,50 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
   
-  async getRecentPosts(limit: number): Promise<BlogPost[]> {
+  async getRecentPosts(limit: number, storeId?: number): Promise<BlogPost[]> {
     // Get posts sorted by published date or scheduled date in descending order
+    if (storeId !== undefined) {
+      return db.select()
+        .from(blogPosts)
+        .where(eq(blogPosts.storeId, storeId))
+        .orderBy(desc(blogPosts.publishedDate))
+        .limit(limit);
+    }
+    
     return db.select()
       .from(blogPosts)
       .orderBy(desc(blogPosts.publishedDate))
       .limit(limit);
   }
   
-  async getScheduledPosts(): Promise<BlogPost[]> {
+  async getScheduledPosts(storeId?: number): Promise<BlogPost[]> {
+    if (storeId !== undefined) {
+      return db.select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.status, 'scheduled'),
+          eq(blogPosts.storeId, storeId)
+        ))
+        .orderBy(asc(blogPosts.scheduledDate));
+    }
+    
     return db.select()
       .from(blogPosts)
       .where(eq(blogPosts.status, 'scheduled'))
       .orderBy(asc(blogPosts.scheduledDate));
   }
   
-  async getPublishedPosts(): Promise<BlogPost[]> {
+  async getPublishedPosts(storeId?: number): Promise<BlogPost[]> {
+    if (storeId !== undefined) {
+      return db.select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.status, 'published'),
+          eq(blogPosts.storeId, storeId)
+        ))
+        .orderBy(desc(blogPosts.publishedDate));
+    }
+    
     return db.select()
       .from(blogPosts)
       .where(eq(blogPosts.status, 'published'))
@@ -660,7 +688,15 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Sync activity operations
-  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
+  async getSyncActivities(limit: number, storeId?: number): Promise<SyncActivity[]> {
+    if (storeId !== undefined) {
+      return db.select()
+        .from(syncActivities)
+        .where(eq(syncActivities.storeId, storeId))
+        .orderBy(desc(syncActivities.timestamp))
+        .limit(limit);
+    }
+    
     return db.select()
       .from(syncActivities)
       .orderBy(desc(syncActivities.timestamp))
@@ -668,11 +704,16 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
+    if (!activity.storeId) {
+      throw new Error('storeId is required when creating a sync activity in a multi-store environment');
+    }
+    
     const [newActivity] = await db.insert(syncActivities)
       .values({
         activity: activity.activity,
         status: activity.status,
         details: activity.details || null,
+        storeId: activity.storeId,
         timestamp: new Date()
       })
       .returning();
@@ -682,12 +723,18 @@ export class DatabaseStorage implements IStorage {
   
   // Content generation operations
   async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
+    if (!request.storeId) {
+      throw new Error('storeId is required when creating a content generation request in a multi-store environment');
+    }
+    
     const [newRequest] = await db.insert(contentGenRequests)
       .values({
         topic: request.topic,
         tone: request.tone,
         length: request.length,
         status: request.status,
+        storeId: request.storeId,
+        userId: request.userId || null,
         generatedContent: request.generatedContent || null,
         timestamp: new Date()
       })
