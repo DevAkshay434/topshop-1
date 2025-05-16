@@ -203,10 +203,16 @@ router.get("/callback", async (req: Request, res: Response) => {
     const apiSecret = process.env.SHOPIFY_API_SECRET;
     
     if (!apiKey || !apiSecret) {
-      return res.status(500).json({
-        success: false,
-        message: "Missing API credentials"
-      });
+      console.error('Missing API credentials for Shopify OAuth', { apiKey: !!apiKey, apiSecret: !!apiSecret });
+      return res.status(500).send(`
+        <html>
+          <body>
+            <h1>Connection Error</h1>
+            <p>Missing Shopify API credentials. Please ensure your environment variables are set correctly.</p>
+            <p><a href="/">Return to Dashboard</a></p>
+          </body>
+        </html>
+      `);
     }
     
     // Get the access token from Shopify
