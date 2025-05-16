@@ -1688,7 +1688,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Mount OAuth callback route separately
+  // Mount routes for shopify connections and callbacks
+  app.use('/shopify', connectRouter);
   app.use('/oauth/shopify', connectRouter);
   
   // Mount API routes with /api prefix

@@ -42,18 +42,10 @@ export default function ConnectPage() {
     setIsLoading(true);
 
     try {
-      // Call the API to initiate the OAuth process
-      const response = await apiRequest('/api/connect/initiate', {
-        method: 'POST',
-        data: { shop: shopUrl }
-      });
-
-      // If successful, redirect to the auth URL
-      if (response.success && response.authUrl) {
-        window.location.href = response.authUrl;
-      } else {
-        throw new Error(response.message || 'Failed to connect to Shopify');
-      }
+      // Directly redirect to the auth URL with the shop parameter
+      // This uses our new direct auth endpoint
+      window.location.href = `/shopify/auth?shop=${encodeURIComponent(shopUrl)}`;
+      return; // Early return since we're redirecting
     } catch (error: any) {
       console.error('Connection error:', error);
       toast({
