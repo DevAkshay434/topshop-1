@@ -586,15 +586,32 @@ export default function CreatePostModal({
               </Button>
             </div>
             
-            {/* Featured image preview */}
-            {(generatedContent.featuredImage?.url || generatedContent.featuredImage?.src?.medium) && (
+            {/* Featured image preview - more robust handling of different image formats */}
+            {(generatedContent.featuredImage?.url || 
+              generatedContent.featuredImage?.src?.medium || 
+              generatedContent.featuredImage?.src?.original || 
+              featuredImageUrl) && (
               <div className="mb-6">
                 <h4 className="text-sm text-gray-500 mb-2">Featured Image</h4>
                 <div className="relative aspect-video overflow-hidden rounded-md border border-gray-200">
                   <img 
-                    src={generatedContent.featuredImage?.url || generatedContent.featuredImage?.src?.medium} 
+                    src={generatedContent.featuredImage?.url || 
+                         generatedContent.featuredImage?.src?.medium || 
+                         generatedContent.featuredImage?.src?.original || 
+                         featuredImageUrl} 
                     alt="Featured" 
                     className="object-cover w-full h-full"
+                    onError={(e) => {
+                      // If image fails to load, check if we have other sources
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== generatedContent.featuredImage?.src?.large && 
+                          generatedContent.featuredImage?.src?.large) {
+                        target.src = generatedContent.featuredImage.src.large;
+                      } else if (target.src !== generatedContent.featuredImage?.src?.small && 
+                                generatedContent.featuredImage?.src?.small) {
+                        target.src = generatedContent.featuredImage.src.small;
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -713,6 +730,18 @@ export default function CreatePostModal({
                       ? generatedContent.tags.join(", ") 
                       : "");
                     form.setValue('publicationType', 'publish');
+                    form.setValue('status', 'published'); // Explicit status
+                    
+                    // Make sure we have the featured image
+                    if (generatedContent.featuredImage) {
+                      if (generatedContent.featuredImage.url) {
+                        form.setValue('featuredImage', generatedContent.featuredImage.url);
+                      } else if (generatedContent.featuredImage.src?.original) {
+                        form.setValue('featuredImage', generatedContent.featuredImage.src.original);
+                      } else if (generatedContent.featuredImage.src?.medium) {
+                        form.setValue('featuredImage', generatedContent.featuredImage.src.medium);
+                      }
+                    }
                     
                     // Submit the form
                     form.handleSubmit(onSubmit)();
