@@ -447,34 +447,185 @@ export default function CreatePostModal({
           />
         )}
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Post Title</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter a compelling title"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* Enhanced preview mode for newly generated content */}
+        {generatedContent && !initialData?.id && isPreviewMode ? (
+          <div className="content-preview mb-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold">Content Preview</h3>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPreviewMode(false)}
+              >
+                Edit Content
+              </Button>
+            </div>
             
-            <Tabs 
-              value={activeTab} 
-              onValueChange={(value) => setActiveTab(value as "edit" | "preview")} 
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-2 mb-4">
-                <TabsTrigger value="edit">Edit</TabsTrigger>
-                <TabsTrigger value="preview">Preview</TabsTrigger>
-              </TabsList>
+            {/* Featured image preview */}
+            {(generatedContent.featuredImage?.url || generatedContent.featuredImage?.src?.medium) && (
+              <div className="mb-6">
+                <h4 className="text-sm text-gray-500 mb-2">Featured Image</h4>
+                <div className="relative aspect-video overflow-hidden rounded-md border border-gray-200">
+                  <img 
+                    src={generatedContent.featuredImage?.url || generatedContent.featuredImage?.src?.medium} 
+                    alt="Featured" 
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* Title preview */}
+            <div className="mb-6">
+              <h4 className="text-sm text-gray-500 mb-2">Title</h4>
+              <h2 className="text-2xl font-bold">{generatedContent.title}</h2>
+            </div>
+            
+            {/* Tags preview */}
+            {generatedContent.tags && generatedContent.tags.length > 0 && (
+              <div className="mb-6">
+                <h4 className="text-sm text-gray-500 mb-2">Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {generatedContent.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Content preview */}
+            <div className="mb-6">
+              <h4 className="text-sm text-gray-500 mb-2">Content</h4>
+              <div 
+                className="prose max-w-none p-4 bg-gray-50 rounded-md border border-gray-200 overflow-auto max-h-[500px]" 
+                dangerouslySetInnerHTML={{ __html: generatedContent.content }}
+              />
+            </div>
+            
+            {/* Product information if any */}
+            {selectedProducts && selectedProducts.length > 0 && (
+              <div className="mb-6">
+                <h4 className="text-sm text-gray-500 mb-2">Associated Products</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProducts.map(product => (
+                    <Badge key={product.id} variant="outline" className="flex items-center gap-1">
+                      <ShoppingBag className="h-3 w-3" />
+                      {product.title}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Publishing decision buttons */}
+            <div className="border-t border-gray-200 pt-6 mt-6">
+              <h4 className="text-sm font-medium mb-4">Publish Options</h4>
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    // Set up form values behind the scenes
+                    form.setValue('title', generatedContent.title);
+                    form.setValue('content', generatedContent.content);
+                    form.setValue('tags', Array.isArray(generatedContent.tags) 
+                      ? generatedContent.tags.join(", ") 
+                      : "");
+                    form.setValue('publicationType', 'draft');
+                    
+                    // Submit the form
+                    form.handleSubmit(onSubmit)();
+                  }}
+                >
+                  Save as Draft
+                </Button>
+                
+                {permissionsData?.hasPermission && (
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      // Show date picker dialog or set up scheduling
+                      // Fill form values
+                      form.setValue('title', generatedContent.title);
+                      form.setValue('content', generatedContent.content);
+                      form.setValue('tags', Array.isArray(generatedContent.tags) 
+                        ? generatedContent.tags.join(", ") 
+                        : "");
+                      
+                      // Default to tomorrow
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      tomorrow.setHours(9, 0, 0, 0);
+                      
+                      // Format date as YYYY-MM-DD
+                      const formattedDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+                      // Format time as HH:MM
+                      const formattedTime = `${String(tomorrow.getHours()).padStart(2, '0')}:${String(tomorrow.getMinutes()).padStart(2, '0')}`;
+                      
+                      form.setValue('scheduledPublishDate', formattedDate);
+                      form.setValue('scheduledPublishTime', formattedTime);
+                      form.setValue('publicationType', 'schedule');
+                      
+                      // Submit the form
+                      form.handleSubmit(onSubmit)();
+                    }}
+                  >
+                    Schedule
+                  </Button>
+                )}
+                
+                <Button 
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    // Fill form values
+                    form.setValue('title', generatedContent.title);
+                    form.setValue('content', generatedContent.content);
+                    form.setValue('tags', Array.isArray(generatedContent.tags) 
+                      ? generatedContent.tags.join(", ") 
+                      : "");
+                    form.setValue('publicationType', 'publish');
+                    
+                    // Submit the form
+                    form.handleSubmit(onSubmit)();
+                  }}
+                >
+                  Publish Now
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Post Title</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter a compelling title"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Tabs 
+                value={activeTab} 
+                onValueChange={(value) => setActiveTab(value as "edit" | "preview")} 
+                className="w-full"
+              >
+                <TabsList className="grid grid-cols-2 mb-4">
+                  <TabsTrigger value="edit">Edit</TabsTrigger>
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                </TabsList>
               
               <TabsContent value="edit" className="space-y-4">
                 <FormField
@@ -1094,6 +1245,7 @@ export default function CreatePostModal({
             </DialogFooter>
           </form>
         </Form>
+        )}
       </DialogContent>
     </Dialog>
   );
