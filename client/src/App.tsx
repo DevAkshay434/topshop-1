@@ -10,6 +10,7 @@ import ScheduledPosts from "@/pages/ScheduledPosts";
 import ContentTemplates from "@/pages/ContentTemplates";
 import SimpleBulkGeneration from "@/pages/SimpleBulkGeneration";
 import ShopifyConnection from "@/pages/ShopifyConnection";
+import Connect from "@/pages/Connect";
 import BillingSettings from "@/pages/BillingSettings";
 import AppInstall from "@/pages/AppInstall";
 import PartnerInstall from "@/pages/PartnerInstall";
