@@ -239,6 +239,14 @@ export async function schedulePage(
     // The page ID for later publishing
     const pageId = response.data.page.id;
 
+    // Create activity record for tracking
+    await storage.createSyncActivity({
+      storeId: store.id,
+      activity: `Scheduled page "${title}" for ${scheduledPublishDate} at ${scheduledPublishTime}`,
+      status: 'success',
+      details: `Page ID: ${pageId}, Shopify store: ${store.shopName}`
+    });
+
     // Store the page in our database with scheduling information
     // Note: Add to BlogPost database with contentType = 'page' to track it
     const pageData = {
@@ -250,28 +258,63 @@ export async function schedulePage(
       scheduledPublishTime: scheduledPublishTime,
       storeId: store.id,
       shopifyPostId: String(pageId),
-      contentType: 'page' // Add this field to identify as a page
+      contentType: 'page', // Add this field to identify as a page
+      author: store.shopName, // Default author to store name if not provided
+      tags: 'page,scheduled' // Add default tags for tracking
     };
     
     console.log(`Saving page to database with scheduling info:`, pageData);
     // Create a new blog post entry for this page to track its scheduling
-    await storage.createBlogPost(pageData);
-
+    const savedPage = await storage.createBlogPost(pageData);
+    
+    // Log the successful scheduling
+    console.log(`Successfully scheduled page "${title}" with ID ${savedPage.id} for ${scheduledPublishDate} at ${scheduledPublishTime}`);
+    
+    // Return additional information for the client
     return {
       ...response.data.page,
       scheduledDate: scheduledDate.toISOString(),
       scheduledPublishDate,
       scheduledPublishTime,
-      customScheduled: true
+      customScheduled: true,
+      localId: savedPage.id // Include our local database ID for tracking
     };
   } catch (error: any) {
     console.error(`Error in custom page scheduling:`, error);
+    
+    // Log the error to our database for tracking
+    try {
+      await storage.createSyncActivity({
+        storeId: store.id,
+        activity: `Failed to schedule page "${title}"`,
+        status: 'failed',
+        details: error?.message || 'Unknown error'
+      });
+    } catch (logError) {
+      console.error('Failed to log scheduling error:', logError);
+    }
+    
+    // Handle different error types
     if (error.response) {
+      // Shopify API error
       console.error(`Shopify API error:`, {
         status: error.response.status,
         data: error.response.data
       });
+      
+      // Provide more specific error messages based on status code
+      if (error.response.status === 401) {
+        throw new Error(`Authentication failed. Please reconnect your Shopify store.`);
+      } else if (error.response.status === 403) {
+        throw new Error(`Permission denied. Your app may not have the required access scopes.`);
+      } else if (error.response.status === 422) {
+        throw new Error(`Invalid page data: ${JSON.stringify(error.response.data.errors || {})}`);
+      } else if (error.response.status === 429) {
+        throw new Error(`Rate limit exceeded. Please try again later.`);
+      }
     }
+    
+    // Default error message
     throw new Error(`Failed to schedule page: ${error?.message || 'Unknown error'}`);
   }
 }
