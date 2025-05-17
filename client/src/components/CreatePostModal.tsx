@@ -41,7 +41,11 @@ import {
   ShoppingBag,
   CheckCircle2,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Calendar as CalendarIcon,
+  Clock,
+  Info as InfoIcon,
+  Check as CheckIcon
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1435,43 +1439,61 @@ export default function CreatePostModal({
     <Dialog open={schedulingModalOpen} onOpenChange={setSchedulingModalOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Schedule Publication</DialogTitle>
+          <DialogTitle>Schedule for later</DialogTitle>
           <DialogDescription>
-            Select a date and time to publish this content to your Shopify store.
+            Set a future date and time when this post should be published automatically on your Shopify store
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
+          <div className="flex items-center">
+            <CalendarIcon className="mr-2 h-5 w-5 text-blue-500" />
+            <span className="font-medium">Publication Date</span>
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="scheduledDate">Publish Date</Label>
+            <div className="space-y-1">
               <Input
                 id="scheduledDate"
                 type="date"
+                className="border-input bg-background focus:ring-1 focus:ring-blue-500"
                 value={form.watch('scheduledPublishDate')}
                 onChange={(e) => form.setValue('scheduledPublishDate', e.target.value)}
+                min={new Date().toISOString().split('T')[0]} // Set min date to today
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="scheduledTime">Publish Time</Label>
-              <Input
-                id="scheduledTime"
-                type="time"
-                value={form.watch('scheduledPublishTime') || "09:30"}
-                onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
-              />
+            
+            <div className="space-y-1 flex items-end">
+              <div className="relative w-full">
+                <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500" />
+                <Input
+                  id="scheduledTime"
+                  type="time"
+                  className="pl-8 border-input bg-background focus:ring-1 focus:ring-blue-500"
+                  value={form.watch('scheduledPublishTime') || "09:30"}
+                  onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+                />
+              </div>
             </div>
+          </div>
+          
+          <div className="mt-2 text-sm text-gray-500">
+            <span className="flex items-center">
+              <InfoIcon className="mr-1 h-4 w-4" />
+              Scheduled content will be published automatically at the specified time
+            </span>
           </div>
         </div>
         
         <DialogFooter>
           <Button 
-            variant="secondary"
+            variant="outline"
             onClick={() => setSchedulingModalOpen(false)}
           >
             Cancel
           </Button>
           <Button
+            className="bg-green-600 hover:bg-green-700"
             onClick={() => {
               // Set multiple schedule flags to ensure backend schedules properly
               form.setValue('publicationType', 'schedule');
@@ -1484,7 +1506,8 @@ export default function CreatePostModal({
               setSchedulingModalOpen(false);
             }}
           >
-            Schedule Publication
+            <CheckIcon className="mr-2 h-4 w-4" />
+            Confirm Schedule
           </Button>
         </DialogFooter>
       </DialogContent>
