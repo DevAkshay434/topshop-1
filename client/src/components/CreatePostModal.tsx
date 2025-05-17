@@ -18,7 +18,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -38,7 +39,9 @@ import {
   ListOrdered, 
   Image, 
   ShoppingBag,
-  CheckCircle2
+  CheckCircle2,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +51,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreatePostModalProps {
@@ -696,37 +700,94 @@ export default function CreatePostModal({
                     variant="outline"
                     disabled={isSubmitting}
                     onClick={() => {
-                      // Show date picker dialog or set up scheduling
-                      // Fill form values
+                      // Fill form values with content
                       form.setValue('title', generatedContent.title);
                       form.setValue('content', generatedContent.content);
                       form.setValue('tags', Array.isArray(generatedContent.tags) 
                         ? generatedContent.tags.join(", ") 
                         : "");
                       
-                      // Default to tomorrow
+                      // Default to tomorrow at 9:30 AM
                       const tomorrow = new Date();
                       tomorrow.setDate(tomorrow.getDate() + 1);
-                      tomorrow.setHours(9, 0, 0, 0);
+                      tomorrow.setHours(9, 30, 0, 0);
                       
                       // Format date as YYYY-MM-DD
                       const formattedDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-                      // Format time as HH:MM
-                      const formattedTime = `${String(tomorrow.getHours()).padStart(2, '0')}:${String(tomorrow.getMinutes()).padStart(2, '0')}`;
+                      // Format time as HH:MM (default to 9:30)
+                      const formattedTime = `09:30`;
                       
+                      // Show scheduling dialog
+                      setSchedulingModalOpen(true);
+                      
+                      // Pre-populate the scheduling form
                       form.setValue('scheduledPublishDate', formattedDate);
                       form.setValue('scheduledPublishTime', formattedTime);
-                      
-                      // Set multiple schedule flags to ensure backend schedules properly
-                      form.setValue('publicationType', 'schedule');
-                      form.setValue('status', 'scheduled');
-                      
-                      // Submit the form
-                      form.handleSubmit(onSubmit)();
                     }}
                   >
-                    Schedule
+                    Schedule for Later
                   </Button>
+                )}
+                
+                {/* Scheduling Modal */}
+                {schedulingModalOpen && (
+                  <Dialog open={schedulingModalOpen} onOpenChange={setSchedulingModalOpen}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Schedule Publication</DialogTitle>
+                        <DialogDescription>
+                          Select a date and time to publish this content to your Shopify store.
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="scheduledDate">Publish Date</Label>
+                            <Input
+                              id="scheduledDate"
+                              type="date"
+                              value={form.watch('scheduledPublishDate')}
+                              onChange={(e) => form.setValue('scheduledPublishDate', e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="scheduledTime">Publish Time</Label>
+                            <Input
+                              id="scheduledTime"
+                              type="time"
+                              value={form.watch('scheduledPublishTime')}
+                              onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button 
+                          variant="secondary"
+                          onClick={() => setSchedulingModalOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            // Set multiple schedule flags to ensure backend schedules properly
+                            form.setValue('publicationType', 'schedule');
+                            form.setValue('status', 'scheduled');
+                            
+                            // Submit the form
+                            form.handleSubmit(onSubmit)();
+                            
+                            // Close the dialog
+                            setSchedulingModalOpen(false);
+                          }}
+                        >
+                          Schedule Publication
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 )}
                 
                 <Button 
