@@ -836,18 +836,36 @@ export async function registerRoutes(app: Express): Promise<void> {
               }
             }
             
-            // Pass the explicit Date object as the 4th parameter for scheduling
-            const shopifyArticle = await shopifyService.createArticle(
-              tempStore, 
-              connection.defaultBlogId, 
-              post,
-              scheduledPublishDate // This will trigger the scheduling logic in createArticle
-            );
+            // Determine if this is a page or a blog post
+            let shopifyArticle;
+            const isPage = post.articleType === 'page';
+            
+            if (isPage) {
+              console.log(`Creating a Shopify page for post with status: ${post.status}`);
+              // For pages, we need to pass the published flag and date
+              shopifyArticle = await shopifyService.createPage(
+                tempStore,
+                post.title,
+                post.content,
+                post.status === 'published', // true only if immediate publish
+                scheduledPublishDate // date for scheduled posts
+              );
+            } else {
+              // For blog posts, use the existing article creation logic
+              console.log(`Creating a Shopify article for post with status: ${post.status}`);
+              shopifyArticle = await shopifyService.createArticle(
+                tempStore, 
+                connection.defaultBlogId, 
+                post,
+                scheduledPublishDate // This will trigger the scheduling logic in createArticle
+              );
+            }
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
               shopifyPostId: shopifyArticle.id,
-              shopifyBlogId: connection.defaultBlogId
+              shopifyBlogId: isPage ? null : connection.defaultBlogId,
+              articleType: post.articleType || (isPage ? 'page' : 'blog')
             });
             
             // Create appropriate sync activity based on status
