@@ -729,9 +729,11 @@ export class ShopifyService {
     try {
       const client = this.getClient(store);
       
-      console.log(`Creating page in store ${store.shopName} with publish setting: ${published ? 'published' : publishDate ? 'scheduled' : 'draft'}`);
+      // Log the publishing request type
+      const publishType = published ? 'IMMEDIATE PUBLISH' : publishDate ? 'SCHEDULED' : 'DRAFT';
+      console.log(`Creating page in Shopify store ${store.shopName} with publish setting: ${publishType}`);
       
-      // CRITICAL FIX: Pages in Shopify API require specific handling
+      // Set up the basic page data
       const pageData: any = {
         page: {
           title,
@@ -739,55 +741,39 @@ export class ShopifyService {
         }
       };
 
-      // Case 1: Immediate publishing
+      // CRITICAL FIX: Shopify Pages API requires specific handling for each publishing type
+      
+      // Case 1: Immediate publishing - must set published=true AND published_at=current time
       if (published) {
+        const currentTime = new Date().toISOString();
         pageData.page.published = true;
-        pageData.page.published_at = new Date().toISOString();
-        console.log('Page: Immediate publishing with published=true and current timestamp');
+        pageData.page.published_at = currentTime;
+        console.log(`Page - IMMEDIATE PUBLISH: Setting published=true with current timestamp: ${currentTime}`);
       } 
-      // Case 2: Scheduled publishing
+      // Case 2: Scheduled publishing - must set published=false AND published_at=future date
       else if (publishDate) {
-        console.log(`Page: Scheduling for future date: ${publishDate.toISOString()}`);
+        const futureDate = publishDate.toISOString();
+        console.log(`Page - SCHEDULED: Setting future date: ${futureDate}`);
         pageData.page.published = false;
-        pageData.page.published_at = publishDate.toISOString();
+        pageData.page.published_at = futureDate;
       }
-      // Case 3: Draft (default)
+      // Case 3: Draft - must set published=false and NOT include published_at
       else {
         pageData.page.published = false;
-        console.log('Page: Saving as draft with published=false');
+        console.log('Page - DRAFT: Setting published=false with no publish date');
       }
       
-      // For scheduled publishing, we need both:
-      // 1. published=false (so it doesn't publish immediately)
-      // 2. published_at=future date (for when to publish)
-      if (publishDate) {
-        console.log(`Page scheduled for future date: ${publishDate.toISOString()}`);
-        
-        // CRITICAL FIX - UPDATED: Ensure it works with Shopify API v2023-07 and above
-        // Force published=false for scheduled content
-        pageData.page.published = false;
-        
-        // Make sure the date is in the future (at least tomorrow)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
-        // Use the future date (ensuring it's actually future)
-        const scheduledTime = publishDate.getTime();
-        const tomorrowTime = tomorrow.getTime();
-        if (scheduledTime <= tomorrowTime) {
-          console.log(`WARNING: Schedule date not far enough in future, adjusting to tomorrow`);
-          pageData.page.published_at = tomorrow.toISOString();
-        } else {
-          pageData.page.published_at = publishDate.toISOString();
-        }
-        
-        console.log(`CRITICAL SCHEDULING UPDATE: Page will publish at ${pageData.page.published_at}`);
-        console.log(`Final page data for scheduling:`, JSON.stringify(pageData, null, 2));
-      }
+      // Send the page creation request to Shopify
+      console.log(`Sending page data to Shopify:`, {
+        title: pageData.page.title,
+        published: pageData.page.published,
+        published_at: pageData.page.published_at
+      });
       
+      // Make the API request to create the page
       const response = await client.post('/pages.json', pageData);
       
-      // Log more detailed information about the created page
+      // Log the response details
       console.log(`Page created successfully with ID: ${response.data.page.id}`, {
         title: response.data.page.title,
         published: response.data.page.published,
@@ -799,29 +785,31 @@ export class ShopifyService {
         }
       });
       
-      // Verify the scheduling was successful by checking if the published_at date matches
-      // what we sent (or is very close to it)
+      // For scheduled pages, verify the response to ensure scheduling worked
       if (publishDate) {
         const responseDate = new Date(response.data.page.published_at);
         const sentDate = new Date(pageData.page.published_at);
         const timeDiff = Math.abs(responseDate.getTime() - sentDate.getTime());
         const oneHourInMs = 60 * 60 * 1000;
         
+        // If the dates are significantly different (more than 1 hour), the scheduling likely failed
         if (timeDiff > oneHourInMs) {
-          console.warn(`WARNING: Scheduled publish time for page doesn't match what was sent!`);
-          console.warn(`  Sent: ${sentDate.toISOString()}`);
-          console.warn(`  Received: ${responseDate.toISOString()}`);
-          console.warn(`  Difference: ${Math.round(timeDiff / (60 * 1000))} minutes`);
+          console.warn(`WARNING: Scheduling issue detected with page!`);
+          console.warn(`  Requested scheduled time: ${sentDate.toISOString()}`);
+          console.warn(`  Received time from Shopify: ${responseDate.toISOString()}`);
+          console.warn(`  Time difference: ${Math.round(timeDiff / (60 * 1000))} minutes`);
           
           // If today's date was returned instead of the future date,
-          // it means Shopify likely published immediately
+          // Shopify likely published immediately instead of scheduling
           const now = new Date();
           const nowDiff = Math.abs(responseDate.getTime() - now.getTime());
+          
           if (nowDiff < oneHourInMs) {
-            console.error(`CRITICAL ERROR: Shopify appears to have published page immediately instead of scheduling!`);
-            // Attempt to fix by making a second API call to update the page
+            console.error(`CRITICAL ERROR: Shopify published the page immediately instead of scheduling!`);
+            
+            // Attempt to fix by updating the page with the correct scheduled date
             try {
-              console.log(`Attempting to fix by updating the page with scheduled date...`);
+              console.log(`Attempting to fix scheduling by updating the page...`);
               const updateResponse = await client.put(
                 `/pages/${response.data.page.id}.json`, 
                 { 
@@ -832,16 +820,19 @@ export class ShopifyService {
                   } 
                 }
               );
-              console.log(`Update response:`, {
+              
+              console.log(`Scheduling fix attempt result:`, {
+                id: updateResponse.data.page.id,
                 published: updateResponse.data.page.published,
-                published_at: updateResponse.data.page.published_at
+                published_at: updateResponse.data.page.published_at,
+                requested_date: pageData.page.published_at
               });
             } catch (updateError) {
-              console.error(`Failed to update page with scheduling:`, updateError);
+              console.error(`Failed to fix page scheduling:`, updateError);
             }
           }
         } else {
-          console.log(`Page scheduling confirmed successful: ${responseDate.toISOString()}`);
+          console.log(`✓ Page scheduling confirmed successful for: ${responseDate.toISOString()}`);
         }
       }
       
