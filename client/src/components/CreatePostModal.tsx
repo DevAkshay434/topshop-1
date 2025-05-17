@@ -504,13 +504,15 @@ export default function CreatePostModal({
   };
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {publishedContentInfo ? "Content Published to Shopify" : "Edit Content"}
-          </DialogTitle>
-        </DialogHeader>
+    <div>
+      {/* Main Content Dialog */}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {publishedContentInfo ? "Content Published to Shopify" : "Edit Content"}
+            </DialogTitle>
+          </DialogHeader>
         
         {/* Show Shopify content links if available */}
         {publishedContentInfo && (
@@ -733,66 +735,7 @@ export default function CreatePostModal({
                   </Button>
                 )}
                 
-                {/* Scheduling Modal */}
-                {schedulingModalOpen && (
-                  <Dialog open={schedulingModalOpen} onOpenChange={setSchedulingModalOpen}>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Schedule Publication</DialogTitle>
-                        <DialogDescription>
-                          Select a date and time to publish this content to your Shopify store.
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="scheduledDate">Publish Date</Label>
-                            <Input
-                              id="scheduledDate"
-                              type="date"
-                              value={form.watch('scheduledPublishDate')}
-                              onChange={(e) => form.setValue('scheduledPublishDate', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="scheduledTime">Publish Time</Label>
-                            <Input
-                              id="scheduledTime"
-                              type="time"
-                              value={form.watch('scheduledPublishTime')}
-                              onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <DialogFooter>
-                        <Button 
-                          variant="secondary"
-                          onClick={() => setSchedulingModalOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            // Set multiple schedule flags to ensure backend schedules properly
-                            form.setValue('publicationType', 'schedule');
-                            form.setValue('status', 'scheduled');
-                            
-                            // Submit the form
-                            form.handleSubmit(onSubmit)();
-                            
-                            // Close the dialog
-                            setSchedulingModalOpen(false);
-                          }}
-                        >
-                          Schedule Publication
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                )}
+
                 
                 <Button 
                   type="button"
@@ -1487,5 +1430,65 @@ export default function CreatePostModal({
         )}
       </DialogContent>
     </Dialog>
+    
+    {/* Scheduling Modal */}
+    <Dialog open={schedulingModalOpen} onOpenChange={setSchedulingModalOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Schedule Publication</DialogTitle>
+          <DialogDescription>
+            Select a date and time to publish this content to your Shopify store.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="scheduledDate">Publish Date</Label>
+              <Input
+                id="scheduledDate"
+                type="date"
+                value={form.watch('scheduledPublishDate')}
+                onChange={(e) => form.setValue('scheduledPublishDate', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="scheduledTime">Publish Time</Label>
+              <Input
+                id="scheduledTime"
+                type="time"
+                value={form.watch('scheduledPublishTime') || "09:30"}
+                onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button 
+            variant="secondary"
+            onClick={() => setSchedulingModalOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              // Set multiple schedule flags to ensure backend schedules properly
+              form.setValue('publicationType', 'schedule');
+              form.setValue('status', 'scheduled');
+              
+              // Submit the form
+              form.handleSubmit(onSubmit)();
+              
+              // Close the dialog
+              setSchedulingModalOpen(false);
+            }}
+          >
+            Schedule Publication
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </div>
   );
 }
