@@ -148,6 +148,9 @@ export default function CreatePostModal({
   const formattedTags = useRef<string>("");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   
+  // State for scheduling modal
+  const [schedulingModalOpen, setSchedulingModalOpen] = useState(false);
+  
   // Track published content information
   const [publishedContentInfo, setPublishedContentInfo] = useState<{
     shopifyId?: string | null;
@@ -155,6 +158,7 @@ export default function CreatePostModal({
     shopifyUrl?: string;
     contentType: 'blog' | 'page';
     published: boolean;
+    title?: string;
   } | null>(null);
   
   // Check if the store has the scheduling permission
