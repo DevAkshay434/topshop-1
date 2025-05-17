@@ -731,6 +731,7 @@ export class ShopifyService {
       
       console.log(`Creating page in store ${store.shopName} with publish setting: ${published ? 'published' : publishDate ? 'scheduled' : 'draft'}`);
       
+      // CRITICAL FIX: Pages must use 'published_at' field to control publication status
       const pageData: any = {
         page: {
           title,
@@ -738,6 +739,12 @@ export class ShopifyService {
           published: published
         }
       };
+      
+      // When publishing immediately, we MUST include published_at with current timestamp
+      if (published) {
+        pageData.page.published_at = new Date().toISOString();
+        console.log('Setting immediate publish with published_at:', pageData.page.published_at);
+      }
       
       // For scheduled publishing, we need both:
       // 1. published=false (so it doesn't publish immediately)
