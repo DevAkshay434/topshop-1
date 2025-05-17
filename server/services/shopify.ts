@@ -384,12 +384,16 @@ export class ShopifyService {
         status: post.status
       });
       
-      // Log the request
+      // Log the request with detailed information to diagnose publishing issues
       console.log(`Sending to Shopify API:`, {
         title: article.title,
         published: article.published,
         published_at: article.published_at,
-        isScheduled
+        isScheduled,
+        publicationType: (post as any).publicationType,
+        postStatus: (post as any).postStatus,
+        status: post.status,
+        endpointUrl: `/blogs/${blogId}/articles.json`
       });
       
       // Make the API request
@@ -548,14 +552,19 @@ export class ShopifyService {
         publishedAt = new Date().toISOString();
       }
       
-      // Create the update article object
+      // Check for multiple publishing flags to ensure proper state
+      const isPublish = post.status === 'published' || 
+                       (post as any).publicationType === 'publish' || 
+                       (post as any).postStatus === 'published';
+      
+      // Create the update article object with enhanced publishing support
       const article = {
         id: articleId,
         title: post.title,
         author: post.author || store.shopName,
         body_html: processedContent,
         tags: post.tags || "",
-        published: post.status === 'published',
+        published: isPublish,
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
@@ -563,6 +572,11 @@ export class ShopifyService {
       // Critical for scheduling: published must be false
       if (isScheduled) {
         article.published = false;
+        console.log("Setting up scheduled article with published=false for future publication");
+      } else if (isPublish) {
+        console.log("Publishing article immediately with published=true");
+      } else {
+        console.log("Saving article as draft with published=false");
       }
       
       // Log the update request

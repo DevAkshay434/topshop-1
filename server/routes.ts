@@ -720,21 +720,43 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       const post = await storage.createBlogPost(postData);
       
-      // Check all possible publishing flags to ensure nothing is missed
+      // ENHANCED PUBLISHING LOGIC
+      // Check all possible publishing flags from the frontend form
       const publicationType = (req.body.publicationType || '').toLowerCase();
       const postStatus = (req.body.postStatus || '').toLowerCase();
       
-      if (post.status === 'published' || post.status === 'scheduled' || 
-          publicationType === 'publish' || postStatus === 'published') {
-        
-        console.log(`Processing post with status: ${post.status}, publicationType: ${publicationType}, postStatus: ${postStatus} for Shopify API`);
-        
-        // Force status to published if any publishing flags are set
-        if (publicationType === 'publish' || postStatus === 'published') {
-          post.status = 'published';
-          await storage.updateBlogPost(post.id, { status: 'published' });
-          console.log("Post status updated to published based on frontend flags");
-        }
+      console.log(`POST /api/posts - Processing with multiple flags:`, {
+        status: post.status,
+        publicationType,
+        postStatus,
+        hasScheduleInfo: !!(post.scheduledPublishDate && post.scheduledPublishTime)
+      });
+      
+      // Determine the correct publishing state based on multiple indicators
+      let correctedStatus = post.status;
+      
+      // Case 1: Published content
+      if (publicationType === 'publish' || postStatus === 'published') {
+        correctedStatus = 'published';
+        console.log("Publishing immediately based on explicit publish flags");
+      } 
+      // Case 2: Scheduled content
+      else if (publicationType === 'schedule' || 
+               post.scheduledPublishDate && post.scheduledPublishTime) {
+        correctedStatus = 'scheduled';
+        console.log("Scheduling content based on schedule flags and date/time values");
+      }
+      // Case 3: Draft (default if no other flags set)
+      
+      // Update post status if needed
+      if (correctedStatus !== post.status) {
+        post.status = correctedStatus;
+        await storage.updateBlogPost(post.id, { status: correctedStatus });
+        console.log(`Post status updated to '${correctedStatus}' based on form flags`);
+      }
+      
+      // Only send to Shopify if it's a published or scheduled post
+      if (post.status === 'published' || post.status === 'scheduled') {
         const connection = await storage.getShopifyConnection();
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
