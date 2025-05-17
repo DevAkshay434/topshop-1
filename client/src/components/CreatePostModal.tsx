@@ -668,13 +668,20 @@ export default function CreatePostModal({
                   variant="outline"
                   disabled={isSubmitting}
                   onClick={() => {
-                    // Set up form values behind the scenes
+                    // Set up form values with explicit DRAFT status flags
                     form.setValue('title', generatedContent.title);
                     form.setValue('content', generatedContent.content);
                     form.setValue('tags', Array.isArray(generatedContent.tags) 
                       ? generatedContent.tags.join(", ") 
                       : "");
+                      
+                    // Set multiple status flags to ensure backend saves as draft
                     form.setValue('publicationType', 'draft');
+                    form.setValue('status', 'draft');
+                    
+                    // Clear any scheduling data
+                    form.setValue('scheduledPublishDate', '');
+                    form.setValue('scheduledPublishTime', '');
                     
                     // Submit the form
                     form.handleSubmit(onSubmit)();
@@ -709,7 +716,10 @@ export default function CreatePostModal({
                       
                       form.setValue('scheduledPublishDate', formattedDate);
                       form.setValue('scheduledPublishTime', formattedTime);
+                      
+                      // Set multiple schedule flags to ensure backend schedules properly
                       form.setValue('publicationType', 'schedule');
+                      form.setValue('status', 'scheduled');
                       
                       // Submit the form
                       form.handleSubmit(onSubmit)();
@@ -733,11 +743,10 @@ export default function CreatePostModal({
                     // Set multiple publish status flags to ensure backend handles it properly
                     form.setValue('publicationType', 'publish');
                     form.setValue('status', 'published');
-                    form.setValue('postStatus', 'published');
                     
                     // Clear any scheduling data
-                    form.setValue('scheduledPublishDate', null);
-                    form.setValue('scheduledPublishTime', null);
+                    form.setValue('scheduledPublishDate', '');
+                    form.setValue('scheduledPublishTime', '');
                     
                     // Set published date to now
                     form.setValue('publishedDate', new Date().toISOString());
