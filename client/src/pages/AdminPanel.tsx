@@ -1296,19 +1296,22 @@ export default function AdminPanel() {
                           <Button
                             type="button"
                             onClick={() => {
-                              if (selectedProducts.length > 0 || selectedCollections.length > 0) {
-                                setWorkflowStep('keyword');
-                                setShowKeywordSelector(true);
+                              if (selectedProducts.length > 0) {
+                                setWorkflowStep('related-products');
+                                toast({
+                                  title: "Main product selected",
+                                  description: "Now select any related products you want to include in your content",
+                                });
                               } else {
                                 toast({
                                   title: "Selection Required",
-                                  description: "Please select at least one product or collection",
+                                  description: "Please select at least one product",
                                   variant: "destructive"
                                 });
                               }
                             }}
                           >
-                            Next: Select Keywords
+                            Next: Related Products
                           </Button>
                         </div>
                       </div>
