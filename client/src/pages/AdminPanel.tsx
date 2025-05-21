@@ -159,6 +159,13 @@ interface Blog {
   handle: string;
 }
 
+interface BuyerPersona {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 interface ServiceStatus {
   shopify: boolean;
   claude: boolean;
@@ -198,6 +205,64 @@ const predefinedCategories = [
   { id: "how-to", name: "How-To" },
 ];
 
+// Predefined buyer personas for content targeting
+const predefinedBuyerPersonas: BuyerPersona[] = [
+  { 
+    id: "budget_conscious", 
+    name: "Budget-Conscious Shopper", 
+    description: "Price-sensitive customers looking for the best deals and value", 
+    icon: "piggy-bank" 
+  },
+  { 
+    id: "luxury_seeker", 
+    name: "Luxury Seeker", 
+    description: "Premium shoppers willing to pay more for quality and exclusivity", 
+    icon: "gem" 
+  },
+  { 
+    id: "convenience_focused", 
+    name: "Convenience Focused", 
+    description: "Time-starved customers who value ease and simplicity over price", 
+    icon: "zap" 
+  },
+  { 
+    id: "eco_conscious", 
+    name: "Eco-Conscious Consumer", 
+    description: "Environmentally aware shoppers who prioritize sustainability", 
+    icon: "leaf" 
+  },
+  { 
+    id: "tech_savvy", 
+    name: "Tech-Savvy", 
+    description: "Early adopters who appreciate innovative features and technology",
+    icon: "cpu" 
+  },
+  { 
+    id: "research_driven", 
+    name: "Research-Driven Buyer", 
+    description: "Detail-oriented customers who thoroughly compare options before purchase", 
+    icon: "search" 
+  },
+  { 
+    id: "impulse_buyer", 
+    name: "Impulse Buyer", 
+    description: "Spontaneous shoppers who make quick decisions based on emotion", 
+    icon: "zap-fast" 
+  },
+  { 
+    id: "health_conscious", 
+    name: "Health & Wellness Focused", 
+    description: "Customers prioritizing products that contribute to wellbeing", 
+    icon: "heart" 
+  },
+  {
+    id: "parents",
+    name: "Parents & Families",
+    description: "Shopping for household needs with children's interests in mind",
+    icon: "users"
+  }
+];
+
 export default function AdminPanel() {
   const [selectedTab, setSelectedTab] = useState("generate");
   const [selectedContentToneId, setSelectedContentToneId] = useState<string>("");
@@ -215,10 +280,11 @@ export default function AdminPanel() {
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Collection[]>([]);
+  const [selectedBuyerPersonas, setSelectedBuyerPersonas] = useState<string[]>([]);
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  const [workflowStep, setWorkflowStep] = useState<'product' | 'related-products' | 'related-collections' | 'keyword' | 'title' | 'content'>('product');
+  const [workflowStep, setWorkflowStep] = useState<'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'content'>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
   // Project Creation Dialog state
