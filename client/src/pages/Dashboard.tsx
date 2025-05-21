@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
@@ -7,21 +7,40 @@ import PostList from "@/components/PostList";
 import ContentGenerator from "@/components/ContentGenerator";
 import ShopifyStoreCard from "@/components/ShopifyStoreCard";
 import CreatePostModal from "@/components/CreatePostModal";
+import CreateProjectDialog from "@/components/CreateProjectDialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Clock, Eye, Sparkles, Plus, Zap } from "lucide-react";
+import { FileText, Clock, Eye, Sparkles, Plus, Zap, FolderPlus } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentProject, setCurrentProject] = useState<string>(() => {
+    // Try to load from localStorage first
+    return localStorage.getItem('current-project') || '';
+  });
   const [generatedContent, setGeneratedContent] = useState<{
     title: string;
     content: string;
     tags: string[];
   } | undefined>(undefined);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  
+  // Check if this is a first-time user and show the project dialog
+  useEffect(() => {
+    const hasCreatedProject = localStorage.getItem('has-created-project') === 'true';
+    if (!hasCreatedProject) {
+      // Show the dialog after a short delay to let the page load first
+      setTimeout(() => {
+        setCreateProjectDialogOpen(true);
+      }, 800);
+    }
+  }, []);
   
   const { data: statsData, isLoading: isStatsLoading } = useQuery<{
     totalPosts: number;
@@ -63,17 +82,51 @@ export default function Dashboard() {
     setCreatePostModalOpen(true);
   };
   
+  // Handle project creation
+  const handleProjectCreated = (projectName: string) => {
+    setCurrentProject(projectName);
+    localStorage.setItem('current-project', projectName);
+    localStorage.setItem('has-created-project', 'true');
+    
+    toast({
+      title: "Project created successfully",
+      description: `"${projectName}" has been set as your current project.`,
+      variant: "default"
+    });
+  };
+  
   return (
     <Layout>
       {/* Dashboard Header */}
       <div className="md:flex md:items-center md:justify-between mb-6">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-semibold text-neutral-900">TopShop SEO Dashboard</h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            Manage your blog content and Shopify publication
-          </p>
+          {currentProject ? (
+            <div className="flex items-center mt-1">
+              <p className="text-sm text-neutral-500 mr-1">
+                Current project:
+              </p>
+              <span className="text-sm font-medium">{currentProject}</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 ml-2 text-xs" 
+                onClick={() => setCreateProjectDialogOpen(true)}
+              >
+                Change
+              </Button>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-neutral-500">
+              Manage your blog content and Shopify publication
+            </p>
+          )}
         </div>
         <div className="mt-4 md:mt-0 md:ml-4 flex space-x-2">
+          <Button variant="outline" onClick={() => setCreateProjectDialogOpen(true)}>
+            <FolderPlus className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
           <Button variant="outline" onClick={() => setLocation("/content-templates")}>
             <Zap className="mr-2 h-4 w-4" />
             Bulk Generate

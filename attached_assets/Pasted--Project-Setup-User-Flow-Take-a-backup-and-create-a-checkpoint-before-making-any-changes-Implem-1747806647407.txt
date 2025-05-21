@@ -1,0 +1,89 @@
+ Project Setup User Flow
+⚠️ Take a backup and create a checkpoint before making any changes.
+
+Implement a step-by-step onboarding flow for users to create a content project, structured as follows:
+
+🧩 Step-by-step Instructions (with examples):
+Step 1: Name Your Project
+
+Input: Project Name
+
+Tooltip: "Most Shopify users create a project for each of their top-selling products."
+
+Example: User enters “Winter Warmers - Top Jackets”
+
+Step 2: Add Related Products
+
+Allow multi-selection of Shopify products
+
+Show product image + title
+
+Example: User selects “Thermal Jacket”, “Wool Overcoat”
+
+Step 3: Add Related Collections
+
+Dropdown or checkboxes for Shopify collections
+
+Example: User selects “Winter Collection” and “Outerwear”
+
+Step 4: Select Buying Avatars
+
+Tag or card-based persona picker
+
+Example: “Urban commuters”, “Eco-conscious dads”
+
+Step 5: Choose Content Media
+
+Upload or select:
+  • Primary images
+  • Secondary images
+  • Videos
+
+Example: Primary: “Smiling man in jacket”, Video: “How our jackets are made”
+
+Step 6: Style Your Content
+
+Options for:
+  • Tone (e.g. Excited, Professional)
+  • Perspective (e.g. First-person “we”, Third-person)
+  • Structure (e.g. Narrative, Listicle)
+
+Example: “Professional”, “Third-person”, “Narrative”
+
+Step 7: Generate Content
+
+Add “Generate Content” button
+
+Triggers AI to generate:
+  • Written blog post
+  • Embedded media
+  • Testimonials
+
+Example Output: "Top 5 Winter Jackets to Keep You Warm in Style"
+
+Step 8: Preview & Edit
+
+Rich text inline editor
+
+Editable fields:
+  • Title (H1)
+  • Meta Title & Description (with word count)
+  • Tags (clearly labeled)
+  • Featured image (badge shown)
+
+Step 9: Publish or Save
+
+Three actions:
+  • Publish Now
+  • Schedule for Later
+  • Save as Draft
+
+For scheduling:
+  - Checkbox: “Email me when published”
+  - Email input field if checked
+
+For draft:
+  - Checkbox: “Email team member”
+  - Email input field
+
+Example: User checks “Email team member” and enters “editor@mybrand.com” → email sent after save.
