@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
+import NewProject from '../components/NewProject';
 import { 
   Card, 
   CardContent, 
@@ -212,6 +213,12 @@ export default function AdminPanel() {
   const [productDescription, setProductDescription] = useState<string>('');
   const [workflowStep, setWorkflowStep] = useState<'product' | 'keyword' | 'title' | 'content'>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
+  
+  // Project Creation Dialog state
+  const [projectDialogOpen, setProjectDialogOpen] = useState(true); // Set to true to show by default
+  const [currentProject, setCurrentProject] = useState<string>(() => {
+    return localStorage.getItem('current-project') || '';
+  });
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
     // Load custom categories from localStorage
     const savedCategories = localStorage.getItem('topshop-custom-categories');
@@ -3025,6 +3032,9 @@ export default function AdminPanel() {
           />
         );
       })()}
+      
+      {/* Add the standalone NewProject component that shows automatically */}
+      <NewProject />
     </div>
   );
 }
