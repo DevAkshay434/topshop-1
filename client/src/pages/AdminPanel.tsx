@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
-import NewProject from '../components/NewProject';
+import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { 
   Card, 
   CardContent, 
@@ -3033,8 +3033,8 @@ export default function AdminPanel() {
         );
       })()}
       
-      {/* Add the standalone NewProject component that shows automatically */}
-      <NewProject />
+      {/* Add the standalone project creation dialog that shows automatically */}
+      <ProjectCreationDialog />
     </div>
   );
 }
