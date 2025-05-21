@@ -1304,10 +1304,46 @@ export default function AdminPanel() {
                         </div>
                       </div>
                       
-                      {/* Step 2: Keyword Selection Section */}
+                      {/* Step 2: Related Products Selection Section */}
+                      <div className={workflowStep === 'related-products' ? 'block' : 'hidden'}>
+                        <div className="p-4 bg-blue-50 rounded-md mb-4">
+                          <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Related Products</h4>
+                          <p className="text-sm text-blue-600 mb-4">
+                            Select products related to your content to improve cross-selling opportunities
+                          </p>
+                        </div>
+
+                        <RelatedProductsSelector
+                          products={productsQuery.data?.products || []}
+                          selectedProducts={selectedProducts}
+                          onProductSelect={(product) => {
+                            // Add the product to the selected products if not already there
+                            if (!selectedProducts.some(p => p.id === product.id)) {
+                              const updatedProducts = [...selectedProducts, product];
+                              setSelectedProducts(updatedProducts);
+                              
+                              // Update form value with the IDs
+                              const productIds = updatedProducts.map(p => p.id);
+                              form.setValue('productIds', productIds);
+                            }
+                          }}
+                          onProductRemove={(productId) => {
+                            // Remove the product from the selected products
+                            const updatedProducts = selectedProducts.filter(p => p.id !== productId);
+                            setSelectedProducts(updatedProducts);
+                            
+                            // Update form value with the IDs
+                            const productIds = updatedProducts.map(p => p.id);
+                            form.setValue('productIds', productIds);
+                          }}
+                          onContinue={handleRelatedProductsContinue}
+                        />
+                      </div>
+                      
+                      {/* Step 3: Keyword Selection Section */}
                       <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Keywords</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Choose Keywords</h4>
                           <p className="text-sm text-blue-600 mb-4">
                             Click the button below to select keywords for your content. The selected product will be used to generate relevant keyword suggestions.
                           </p>
