@@ -4,6 +4,7 @@ import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNo
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
+import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import { 
   Card, 
@@ -213,7 +214,7 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  const [workflowStep, setWorkflowStep] = useState<'product' | 'related-products' | 'keyword' | 'title' | 'content'>('product');
+  const [workflowStep, setWorkflowStep] = useState<'product' | 'related-products' | 'related-collections' | 'keyword' | 'title' | 'content'>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
   // Project Creation Dialog state
@@ -656,13 +657,29 @@ export default function AdminPanel() {
   
   // Handle related products continue action
   const handleRelatedProductsContinue = () => {
-    // Move to keyword selection step after related products selection
-    setWorkflowStep('keyword');
+    // Move to related collections step after related products selection
+    setWorkflowStep('related-collections');
     
     toast({
       title: "Related products saved",
+      description: "Now select collections to include in your content",
+    });
+  };
+  
+  // Handle related collections continue action
+  const handleRelatedCollectionsContinue = () => {
+    // Move to keyword selection step after collections selection
+    setWorkflowStep('keyword');
+    
+    toast({
+      title: "Related collections saved",
       description: "Now let's select keywords for your content",
     });
+  };
+  
+  // Handle back button from collections to products
+  const handleBackToProducts = () => {
+    setWorkflowStep('related-products');
   };
   
   // Handle collection selection
@@ -951,29 +968,36 @@ export default function AdminPanel() {
                         </div>
                         
                         {/* Step 2: Related Products */}
-                        <Badge className={workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
+                        <Badge className={workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
+                        <div className="flex-1 h-1 bg-gray-200 rounded">
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
+                        </div>
+                        
+                        {/* Step 3: Related Collections */}
+                        <Badge className={workflowStep === 'related-collections' ? 'bg-blue-600' : (workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 3: Keywords */}
-                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
+                        {/* Step 4: Keywords */}
+                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 4: Title */}
-                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
+                        {/* Step 5: Title */}
+                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>5</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 5: Content */}
-                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>5</Badge>
+                        {/* Step 6: Content */}
+                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>6</Badge>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-gray-600">
                         <span>Main Product</span>
                         <span>Related Products</span>
+                        <span>Collections</span>
                         <span>Keywords</span>
                         <span>Title</span>
                         <span>Generate</span>
@@ -1325,10 +1349,47 @@ export default function AdminPanel() {
                         />
                       </div>
                       
-                      {/* Step 3: Keyword Selection Section */}
+                      {/* Step 3: Related Collections Selection Section */}
+                      <div className={workflowStep === 'related-collections' ? 'block' : 'hidden'}>
+                        <div className="p-4 bg-blue-50 rounded-md mb-4">
+                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Choose Related Collections</h4>
+                          <p className="text-sm text-blue-600 mb-4">
+                            Select collections that are related to your content to group products and categories
+                          </p>
+                        </div>
+
+                        <RelatedCollectionsSelector
+                          collections={collectionsQuery.data?.collections || []}
+                          selectedCollections={selectedCollections}
+                          onCollectionSelect={(collection) => {
+                            // Add the collection to the selected collections if not already there
+                            if (!selectedCollections.some(c => c.id === collection.id)) {
+                              const updatedCollections = [...selectedCollections, collection];
+                              setSelectedCollections(updatedCollections);
+                              
+                              // Update form value with the IDs
+                              const collectionIds = updatedCollections.map(c => c.id);
+                              form.setValue('collectionIds', collectionIds);
+                            }
+                          }}
+                          onCollectionRemove={(collectionId) => {
+                            // Remove the collection from the selected collections
+                            const updatedCollections = selectedCollections.filter(c => c.id !== collectionId);
+                            setSelectedCollections(updatedCollections);
+                            
+                            // Update form value with the IDs
+                            const collectionIds = updatedCollections.map(c => c.id);
+                            form.setValue('collectionIds', collectionIds);
+                          }}
+                          onContinue={handleRelatedCollectionsContinue}
+                          onBack={handleBackToProducts}
+                        />
+                      </div>
+                      
+                      {/* Step 4: Keyword Selection Section */}
                       <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Choose Keywords</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Keywords</h4>
                           <p className="text-sm text-blue-600 mb-4">
                             Click the button below to select keywords for your content. The selected product will be used to generate relevant keyword suggestions.
                           </p>
