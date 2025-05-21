@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Filter, Search, Activity } from "lucide-react";
+import { CheckCircle, Filter, Search, Activity, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -289,26 +289,76 @@ export default function KeywordSelector({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Search inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="productUrl">Product URL</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="productUrl"
-                  placeholder="Enter a product URL to find keywords"
-                  value={productUrl}
-                  onChange={(e) => setProductUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
+          {/* Display Selected Products and Collections */}
+          {(selectedProducts.length > 0 || selectedCollections.length > 0) && (
+            <div className="mb-4 p-3 bg-slate-50 rounded-md border">
+              <h3 className="text-sm font-medium mb-2">Generating keywords for:</h3>
+              
+              {selectedProducts.length > 0 && (
+                <div className="mb-2">
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1.5">Products:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProducts.map(product => {
+                      // Get image source from images array or direct image property
+                      const imageSrc = product.images && product.images.length > 0
+                        ? product.images[0].src
+                        : product.image || '';
+                      
+                      return (
+                        <div key={product.id} className="flex items-center gap-2 bg-white rounded p-1.5 border shadow-sm">
+                          {imageSrc ? (
+                            <img 
+                              src={imageSrc} 
+                              alt={product.title}
+                              className="w-8 h-8 rounded object-contain" 
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-slate-100 rounded flex items-center justify-center">
+                              <Search className="w-4 h-4 text-slate-400" />
+                            </div>
+                          )}
+                          <span className="text-xs font-medium max-w-[120px] truncate">{product.title}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {selectedCollections.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1.5">Collections:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCollections.map(collection => (
+                      <div key={collection.id} className="flex items-center gap-2 bg-white rounded p-1.5 border shadow-sm">
+                        {collection.image_url ? (
+                          <img 
+                            src={collection.image_url} 
+                            alt={collection.title}
+                            className="w-8 h-8 rounded object-contain" 
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-slate-100 rounded flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-slate-400" />
+                          </div>
+                        )}
+                        <span className="text-xs font-medium max-w-[120px] truncate">{collection.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Search inputs */}
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="directTopic">Direct Topic</Label>
+              <Label htmlFor="directTopic">Topic for Keyword Search</Label>
               <div className="flex space-x-2">
                 <Input
                   id="directTopic"
-                  placeholder="Or enter a topic directly"
+                  placeholder="Enter a topic to search for keywords"
                   value={directTopic}
                   onChange={(e) => setDirectTopic(e.target.value)}
                   disabled={isLoading}
@@ -316,12 +366,15 @@ export default function KeywordSelector({
                 <Button 
                   variant="secondary" 
                   onClick={fetchKeywords}
-                  disabled={isLoading || (!productUrl && !directTopic)}
+                  disabled={isLoading || !directTopic}
                 >
                   <Search className="h-4 w-4 mr-2" />
                   {isLoading ? "Searching..." : "Search"}
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Enter a topic related to your products to find relevant keywords.
+              </p>
             </div>
           </div>
 
@@ -452,7 +505,7 @@ export default function KeywordSelector({
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row justify-between gap-4">
+      <CardFooter className="flex flex-col sm:flex-row justify-between gap-4 border-t bg-white sticky bottom-0 z-10 shadow-md">
         <div className="text-sm w-full sm:w-auto">
           {selectedCount > 0 ? (
             <div className="flex flex-col gap-1">
