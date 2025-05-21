@@ -15,9 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
-  // Explicitly set the project dialog to open on initial render for demonstration
+  // Set up state variables
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
-  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(true);
+  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentProject, setCurrentProject] = useState<string>(() => {
@@ -31,6 +31,16 @@ export default function Dashboard() {
   } | undefined>(undefined);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Show the project dialog when the component mounts
+  useEffect(() => {
+    // Short delay to ensure everything is loaded
+    const timer = setTimeout(() => {
+      setCreateProjectDialogOpen(true);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   const { data: statsData, isLoading: isStatsLoading } = useQuery<{
     totalPosts: number;
