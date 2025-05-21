@@ -16,7 +16,7 @@ import {
   Search, 
   Tag, 
   CheckSquare, 
-  FolderOpen, 
+  FileText, 
   Image, 
   X,
   ArrowRight
@@ -61,7 +61,7 @@ export function RelatedCollectionsSelector({
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-xl flex items-center gap-2">
-          <FolderOpen className="h-5 w-5 text-primary" />
+          <FileText className="h-5 w-5 text-primary" />
           Select Related Collections
         </CardTitle>
         <CardDescription>
@@ -148,7 +148,7 @@ export function RelatedCollectionsSelector({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <FolderOpen className="h-6 w-6 text-muted-foreground" />
+                            <FileText className="h-6 w-6 text-muted-foreground" />
                           </div>
                         )}
                       </div>

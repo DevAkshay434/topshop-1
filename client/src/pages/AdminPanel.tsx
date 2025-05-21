@@ -65,6 +65,7 @@ import {
   Download, 
   ExternalLink, 
   FileText, 
+  FolderOpen,
   Loader2, 
   Package, 
   Plus, 
@@ -2012,6 +2013,38 @@ export default function AdminPanel() {
                           )}
                         />
                       </div>
+                    </div>
+                    
+                    {/* Collections section - only visible in final content step */}
+                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
+                      <h3 className="text-lg font-medium flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                        Selected Collections
+                      </h3>
+                        
+                      <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2">
+                        {selectedCollections.length > 0 ? (
+                          selectedCollections.map((collection) => (
+                            <Badge key={collection.id} variant="secondary" className="flex items-center gap-1">
+                              {collection.title}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No collections selected yet</span>
+                        )}
+                      </div>
+                        
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setWorkflowStep('related-collections');
+                        }}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Edit Collections
+                      </Button>
                     </div>
                     
                     {/* Keywords section - only visible in final content step */}
