@@ -211,7 +211,7 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  const [workflowStep, setWorkflowStep] = useState<'product' | 'keyword' | 'title' | 'content'>('product');
+  const [workflowStep, setWorkflowStep] = useState<'product' | 'related-products' | 'keyword' | 'title' | 'content'>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
   // Project Creation Dialog state
@@ -643,11 +643,13 @@ export default function AdminPanel() {
     // Update form value with the IDs
     form.setValue('productIds', productIds);
     
-    // Move to keyword selection step after product selection
-    setWorkflowStep('keyword');
+    // Move to related products selection step after product selection
+    setWorkflowStep('related-products');
     
-    // No longer auto-open keyword selector, let user click the button manually
-    // Just update the UI to show that we're in the keyword step now
+    toast({
+      title: "Product selected",
+      description: "Now select any related products you want to include in your content",
+    });
   };
   
   // Handle collection selection
