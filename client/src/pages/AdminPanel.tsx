@@ -4,6 +4,7 @@ import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNo
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
+import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import { 
   Card, 
   CardContent, 
@@ -1188,9 +1189,9 @@ export default function AdminPanel() {
                             <FormItem>
                               <FormLabel>Featured Products</FormLabel>
                               <FormControl>
-                                <MultiSelect
+                                <ProductMultiSelect
                                   options={productsQuery.data?.products.map(product => ({
-                                    label: product.title,
+                                    product: product,
                                     value: product.id
                                   })) || []}
                                   selected={Array.isArray(field.value) ? field.value : []}
@@ -1201,22 +1202,6 @@ export default function AdminPanel() {
                                   placeholder="Select products to feature in content..."
                                 />
                               </FormControl>
-                              
-                              {/* Display selected products more prominently */}
-                              {selectedProducts.length > 0 && (
-                                <div className="mt-3 p-3 bg-green-50 rounded-md border border-green-200">
-                                  <h4 className="font-medium text-sm text-green-700 mb-2">Selected Products:</h4>
-                                  <div className="space-y-2">
-                                    {selectedProducts.map(product => (
-                                      <div key={product.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-medium text-gray-800">{product.title}</p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
                               
                               <FormDescription>
                                 Products will be mentioned and linked in your content
