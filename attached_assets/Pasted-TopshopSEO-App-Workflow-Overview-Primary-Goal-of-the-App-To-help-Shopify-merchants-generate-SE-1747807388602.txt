@@ -1,0 +1,78 @@
+TopshopSEO App – Workflow Overview
+🎯 Primary Goal of the App:
+To help Shopify merchants generate SEO-optimized blog posts or pages by creating structured content projects around their products and collections, using AI.
+
+The app walks users through a guided project setup flow, generates tailored content, allows in-browser editing, and lets users publish, schedule, or save drafts.
+
+🧭 High-Level User Flow
+🟢 1. User Enters App → Guided Project Setup Begins
+When a user opens the app, they are taken through a step-by-step project setup flow to define the content they want to create.
+
+Steps:
+Project Name
+ - User names the project
+ - e.g., "Summer Promo – Eco Swimwear"
+
+Select Related Products
+ - Multi-select Shopify products
+ - Products show image + title
+
+Select Related Collections
+ - Group content under specific collections (e.g., "Bestsellers")
+
+Choose Buying Avatars
+ - Target audience personas (e.g., "Young Parents", "Eco-Conscious Shoppers")
+
+Select or Upload Media
+ - Primary/Secondary images
+ - Videos
+ - Image sources: Pexels, Pixabay, Shopify, Upload
+
+Style Content
+ - Choose tone (e.g., Excited)
+ - Perspective (e.g., We/Us, I/Me)
+ - Structure (e.g., Listicle, Narrative)
+
+🟢 2. AI-Powered Content Generation
+Once setup is complete, the user clicks “Generate Content”.
+
+The app uses Replit AI (or integrated backend AI) to produce a:
+
+Blog post or page
+
+With embedded images, video, testimonials
+
+Written in selected style/language
+
+Tailored to the product(s) and avatars
+
+🟢 3. Preview & Edit
+The content is displayed in an inline rich text editor, where the user can:
+
+Edit text directly (no popups)
+
+Update the H1 title, Meta title, Meta description
+
+See word counts
+
+Manage tags and featured image badge
+
+They can also:
+
+See “Written by [Author]” if enabled
+
+Preview how the page will appear
+
+Email the preview to a reviewer/team member
+
+🟢 4. Publication
+Once happy with the content, the user has 3 options:
+
+Publish Immediately
+
+Schedule for Later
+ → Optional: get an email alert when published
+
+Save as Draft
+ → Optional: send preview to a teammate via email
+
