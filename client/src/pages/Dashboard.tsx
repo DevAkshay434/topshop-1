@@ -206,6 +206,13 @@ export default function Dashboard() {
         initialData={selectedPost}
         generatedContent={generatedContent}
       />
+      
+      {/* Create Project Dialog */}
+      <CreateProjectDialog
+        open={createProjectDialogOpen}
+        onOpenChange={setCreateProjectDialogOpen}
+        onProjectCreated={handleProjectCreated}
+      />
     </Layout>
   );
 }
