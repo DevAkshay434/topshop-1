@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Info as InfoIcon } from "lucide-react";
+import { Info as InfoIcon, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -49,6 +49,11 @@ export default function CreateProjectDialog({
 }: CreateProjectDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Force the dialog to display
+  useEffect(() => {
+    console.log("CreateProjectDialog mounted, open state:", open);
+  }, [open]);
 
   // Form setup with default values
   const form = useForm<ProjectFormValues>({
@@ -95,10 +100,13 @@ export default function CreateProjectDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} defaultOpen={true}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Create New Project</DialogTitle>
+          <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+            <FolderPlus className="h-5 w-5 text-primary" />
+            Create New Project
+          </DialogTitle>
           <DialogDescription>
             Start by naming your content generation project.
           </DialogDescription>

@@ -7,7 +7,7 @@ import PostList from "@/components/PostList";
 import ContentGenerator from "@/components/ContentGenerator";
 import ShopifyStoreCard from "@/components/ShopifyStoreCard";
 import CreatePostModal from "@/components/CreatePostModal";
-import CreateProjectDialog from "@/components/CreateProjectDialog";
+import NewProjectDialog from "@/components/NewProjectDialog";
 import { Button } from "@/components/ui/button";
 import { FileText, Clock, Eye, Sparkles, Plus, Zap, FolderPlus } from "lucide-react";
 import { BlogPost } from "@shared/schema";
@@ -32,12 +32,19 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Show the project dialog when the component mounts
+  // Force the project dialog to show on initial load
   useEffect(() => {
-    // Short delay to ensure everything is loaded
+    // This will execute right after component mounts and make the dialog visible
+    setCreateProjectDialogOpen(true);
+    
+    console.log("Opening project creation dialog");
+    
+    // We can also force it to reopen after a short delay if needed
     const timer = setTimeout(() => {
-      setCreateProjectDialogOpen(true);
-    }, 300);
+      if (!createProjectDialogOpen) {
+        setCreateProjectDialogOpen(true);
+      }
+    }, 500);
     
     return () => clearTimeout(timer);
   }, []);
@@ -208,7 +215,7 @@ export default function Dashboard() {
       />
       
       {/* Create Project Dialog */}
-      <CreateProjectDialog
+      <NewProjectDialog
         open={createProjectDialogOpen}
         onOpenChange={setCreateProjectDialogOpen}
         onProjectCreated={handleProjectCreated}
