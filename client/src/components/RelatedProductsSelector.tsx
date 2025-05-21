@@ -29,6 +29,13 @@ interface Product {
   image?: string;
   body_html?: string;
   admin_url?: string;
+  images?: Array<{
+    id: number;
+    src: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+  }>;
 }
 
 interface RelatedProductsSelectorProps {
@@ -133,9 +140,9 @@ export function RelatedProductsSelector({
                     >
                       {/* Product Image */}
                       <div className="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-secondary">
-                        {product.image ? (
+                        {product.images && product.images.length > 0 ? (
                           <img 
-                            src={product.image} 
+                            src={product.images[0].src} 
                             alt={product.title} 
                             className="w-full h-full object-cover"
                           />
