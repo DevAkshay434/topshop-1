@@ -15,8 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
+  // Explicitly set the project dialog to open on initial render for demonstration
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
-  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
+  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(true);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentProject, setCurrentProject] = useState<string>(() => {
@@ -30,23 +31,6 @@ export default function Dashboard() {
   } | undefined>(undefined);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
-  // Check if this is a first-time user and show the project dialog
-  useEffect(() => {
-    // Always show the project dialog for demonstration purposes
-    // Remove the localStorage check to ensure it appears for everyone
-    setTimeout(() => {
-      setCreateProjectDialogOpen(true);
-    }, 800);
-    
-    // In a production environment, you would use this code instead:
-    // const hasCreatedProject = localStorage.getItem('has-created-project') === 'true';
-    // if (!hasCreatedProject) {
-    //   setTimeout(() => {
-    //     setCreateProjectDialogOpen(true);
-    //   }, 800);
-    // }
-  }, []);
   
   const { data: statsData, isLoading: isStatsLoading } = useQuery<{
     totalPosts: number;
