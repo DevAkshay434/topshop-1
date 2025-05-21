@@ -66,10 +66,13 @@ import {
   ExternalLink, 
   FileText, 
   FolderOpen,
+  Folders,
   Loader2, 
   Package, 
   Plus, 
   Save, 
+  Search,
+  ShoppingCart,
   Sparkles, 
   Trash, 
   X, 
@@ -2076,6 +2079,49 @@ export default function AdminPanel() {
                       </div>
                     </div>
                     
+                    {/* Products section - only visible in final content step */}
+                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
+                      <h3 className="text-lg font-medium flex items-center">
+                        <ShoppingCart className="h-5 w-5 mr-2 text-blue-500" />
+                        Selected Products
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-3">
+                        {selectedProducts.length > 0 ? (
+                          selectedProducts.map((product) => {
+                            // Get image source from images array or direct image property
+                            const imageSrc = product.images && product.images.length > 0
+                              ? product.images[0].src
+                              : product.image || '';
+                            
+                            return (
+                              <div key={product.id} className="flex items-center gap-3 bg-slate-50 rounded p-2 border">
+                                {imageSrc ? (
+                                  <img 
+                                    src={imageSrc} 
+                                    alt={product.title}
+                                    className="w-12 h-12 rounded object-contain bg-white" 
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center">
+                                    <Package className="w-5 h-5 text-slate-400" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{product.title}</p>
+                                  <p className="text-xs text-muted-foreground">Product ID: {product.id.toString().substring(0, 10)}...</p>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="col-span-2 text-center py-4">
+                            <span className="text-sm text-muted-foreground">No products selected yet</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
                     {/* Collections section - only visible in final content step */}
                     <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
                       <h3 className="text-lg font-medium flex items-center">
@@ -2083,15 +2129,36 @@ export default function AdminPanel() {
                         Selected Collections
                       </h3>
                         
-                      <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-3">
                         {selectedCollections.length > 0 ? (
-                          selectedCollections.map((collection) => (
-                            <Badge key={collection.id} variant="secondary" className="flex items-center gap-1">
-                              {collection.title}
-                            </Badge>
-                          ))
+                          selectedCollections.map((collection) => {
+                            // Get image source
+                            const imageSrc = collection.image_url || '';
+                            
+                            return (
+                              <div key={collection.id} className="flex items-center gap-3 bg-slate-50 rounded p-2 border">
+                                {imageSrc ? (
+                                  <img 
+                                    src={imageSrc} 
+                                    alt={collection.title}
+                                    className="w-12 h-12 rounded object-contain bg-white" 
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center">
+                                    <Folders className="w-5 h-5 text-slate-400" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{collection.title}</p>
+                                  <p className="text-xs text-muted-foreground">Collection ID: {collection.id.toString().substring(0, 10)}...</p>
+                                </div>
+                              </div>
+                            );
+                          })
                         ) : (
-                          <span className="text-sm text-muted-foreground">No collections selected yet</span>
+                          <div className="col-span-2 text-center py-4">
+                            <span className="text-sm text-muted-foreground">No collections selected yet</span>
+                          </div>
                         )}
                       </div>
                         
