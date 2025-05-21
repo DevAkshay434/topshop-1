@@ -59,19 +59,31 @@ import {
   BarChart, 
   Calendar, 
   CalendarCheck,
-  CheckCircle, 
+  CheckCircle,
+  Check,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
   Clock, 
-  Copy, 
-  Download, 
+  Copy,
+  Cpu,
+  Download,
   ExternalLink, 
   FileText, 
   FolderOpen,
   Folders,
-  Loader2, 
-  Package, 
+  Gem,
+  Heart,
+  Leaf,
+  Loader2,
+  Package,
+  PiggyBank,
   Plus, 
   Save, 
   Search,
+  User,
+  Users,
+  Zap,
   ShoppingCart,
   Sparkles, 
   Trash, 
@@ -284,7 +296,8 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  const [workflowStep, setWorkflowStep] = useState<'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'content'>('product');
+  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'content';
+  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
   // Project Creation Dialog state
@@ -738,11 +751,22 @@ export default function AdminPanel() {
   
   // Handle related collections continue action
   const handleRelatedCollectionsContinue = () => {
-    // Move to keyword selection step after collections selection
-    setWorkflowStep('keyword');
+    // Move to buying avatars step after collections selection
+    setWorkflowStep('buying-avatars');
     
     toast({
       title: "Related collections saved",
+      description: "Now let's select your target buyer personas",
+    });
+  };
+  
+  // Handle buying avatars continue action
+  const handleBuyerPersonasContinue = () => {
+    // Move to keyword selection step after buyer personas selection
+    setWorkflowStep('keyword');
+    
+    toast({
+      title: "Buyer personas saved",
       description: "Now let's select keywords for your content",
     });
   };
@@ -846,6 +870,8 @@ export default function AdminPanel() {
         keywords: Array.isArray(values.keywords) ? values.keywords : [],
         // Ensure categories are properly included
         categories: Array.isArray(values.categories) ? values.categories : [],
+        // Include selected buyer personas to target specific customer types
+        buyerPersonas: selectedBuyerPersonas || [],
         // Ensure we have these required fields
         articleType: values.articleType || "blog",
         title: values.title || "",
@@ -868,7 +894,7 @@ export default function AdminPanel() {
         postStatus: publicationType === "schedule" ? "scheduled" : values.postStatus,
         
         // Include content generation option fields
-        buyerProfile: values.buyerProfile || "auto",
+        buyerProfile: selectedBuyerPersonas.length > 0 ? "custom" : (values.buyerProfile || "auto"),
         articleLength: values.articleLength || "medium",
         headingsCount: values.headingsCount || "3",
         youtubeUrl: values.youtubeUrl || ""
@@ -1518,10 +1544,105 @@ export default function AdminPanel() {
                         />
                       </div>
                       
-                      {/* Step 4: Keyword Selection Section */}
+                      {/* Step 4: Buyer Personas Selection Section */}
+                      <div className={workflowStep === 'buying-avatars' ? 'block' : 'hidden'}>
+                        <div className="p-4 bg-blue-50 rounded-md mb-4">
+                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Select Target Buyer Personas</h4>
+                          <p className="text-sm text-blue-600 mb-2">
+                            Choose the types of customers you want to target with this content. This helps personalize the content to specific audience segments.
+                          </p>
+                        </div>
+                        
+                        {/* Buyer Personas Grid with Multi-Select */}
+                        <div className="mt-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-md font-medium">Buyer Personas</h3>
+                            {selectedBuyerPersonas.length > 0 && (
+                              <div className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium flex items-center">
+                                <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                                <span>{selectedBuyerPersonas.length} selected</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {predefinedBuyerPersonas.map(persona => {
+                              const isSelected = selectedBuyerPersonas.includes(persona.id);
+                              
+                              // Get the appropriate icon component
+                              let IconComponent = User;
+                              if (persona.icon === 'piggy-bank') IconComponent = PiggyBank;
+                              else if (persona.icon === 'gem') IconComponent = Gem;
+                              else if (persona.icon === 'zap') IconComponent = Zap;
+                              else if (persona.icon === 'leaf') IconComponent = Leaf;
+                              else if (persona.icon === 'cpu') IconComponent = Cpu;
+                              else if (persona.icon === 'search') IconComponent = Search;
+                              else if (persona.icon === 'heart') IconComponent = Heart;
+                              else if (persona.icon === 'users') IconComponent = Users;
+                              
+                              return (
+                                <div 
+                                  key={persona.id}
+                                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                                    isSelected 
+                                      ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                                      : 'bg-white hover:bg-gray-50 border-gray-200'
+                                  }`}
+                                  onClick={() => {
+                                    setSelectedBuyerPersonas(prev => {
+                                      if (prev.includes(persona.id)) {
+                                        return prev.filter(id => id !== persona.id);
+                                      } else {
+                                        return [...prev, persona.id];
+                                      }
+                                    });
+                                  }}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className={`w-10 h-10 rounded-md flex items-center justify-center ${
+                                      isSelected ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                      <IconComponent className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between">
+                                        <h4 className="font-medium text-gray-900 text-sm">{persona.name}</h4>
+                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                                          isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                                        }`}>
+                                          {isSelected && <Check className="w-3 h-3 text-white" />}
+                                        </div>
+                                      </div>
+                                      <p className="text-xs text-gray-500 mt-1">{persona.description}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-6 flex justify-between">
+                          <Button 
+                            variant="outline" 
+                            type="button"
+                            onClick={() => setWorkflowStep('related-collections')}
+                          >
+                            <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                          </Button>
+                          <Button 
+                            type="button"
+                            onClick={handleBuyerPersonasContinue}
+                          >
+                            Next <ChevronRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Step 5: Keyword Selection Section */}
                       <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Keywords</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Keywords</h4>
                           <p className="text-sm text-blue-600 mb-2">
                             Click the button below to select keywords for your content. The following selected items will be used for keyword generation:
                           </p>
