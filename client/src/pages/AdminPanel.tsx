@@ -4055,8 +4055,8 @@ export default function AdminPanel() {
                   <span className="ml-2">Searching for images...</span>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                  {searchedImages.map((image) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-2">
+                  {searchedImages && searchedImages.length > 0 ? searchedImages.map((image) => (
                     <div 
                       key={image.id} 
                       className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
@@ -4071,7 +4071,13 @@ export default function AdminPanel() {
                       <img 
                         src={image.src?.medium || image.url} 
                         alt={image.alt || "Stock image"} 
-                        className="w-full h-32 md:h-40 object-cover"
+                        className="w-full h-28 md:h-32 object-cover"
+                        onError={(e) => {
+                          // Fallback if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = image.src?.small || image.src?.thumbnail || '';
+                        }}
                       />
                       {image.selected && (
                         <div className="absolute top-1 right-1 bg-blue-500 text-white p-1 rounded-full">
@@ -4079,12 +4085,18 @@ export default function AdminPanel() {
                         </div>
                       )}
                       {image.photographer && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1 text-white text-xs">
-                          By: {image.photographer}
+                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1 text-white text-xs truncate">
+                          {image.photographer}
                         </div>
                       )}
                     </div>
-                  ))}
+                  )) : (
+                    !isSearchingImages && (
+                      <div className="col-span-full text-center py-6">
+                        <p className="text-slate-500">No images found. Try searching for something else.</p>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
               
@@ -4102,64 +4114,93 @@ export default function AdminPanel() {
               <h3 className="text-sm font-medium">Product Images</h3>
               
               {selectedProducts.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {selectedProducts.map((product) => {
-                    if (!product.image) return null;
-                    
-                    return (
-                      <div 
-                        key={product.id} 
-                        className="relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all border-transparent"
-                        onClick={() => {
-                          // Create a Pexels-compatible image object for the product image
-                          const productImage: PexelsImage = {
-                            id: `product-${product.id}`,
-                            url: product.image || '',
-                            width: 500,
-                            height: 500,
-                            alt: product.title,
-                            src: {
-                              original: product.image || '',
-                              large: product.image || '',
-                              medium: product.image || '',
-                              small: product.image || '',
-                              thumbnail: product.image || '',
+                <div className="max-h-[400px] overflow-y-auto p-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {selectedProducts.map((product) => {
+                      if (!product.image) return null;
+                      
+                      // Check if this product image has already been added
+                      const isAlreadySelected = primaryImages.some(img => 
+                        img.id === `product-${product.id}` || img.url === product.image
+                      );
+                      
+                      return (
+                        <div 
+                          key={product.id} 
+                          className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
+                          onClick={() => {
+                            // Skip if already selected
+                            if (isAlreadySelected) {
+                              toast({
+                                title: "Already selected",
+                                description: "This product image is already in your primary images"
+                              });
+                              return;
                             }
-                          };
-                          
-                          // Add to primary or secondary images based on context
-                          if (workflowStep === 'media') {
-                            setPrimaryImages(prev => [...prev, productImage]);
-                          } else {
-                            setSecondaryImages(prev => [...prev, productImage]);
-                          }
-                          
-                          toast({
-                            title: "Image added",
-                            description: "Product image added successfully",
-                          });
-                        }}
-                      >
-                        <img 
-                          src={product.image} 
-                          alt={product.title} 
-                          className="w-full h-32 object-cover"
-                        />
-                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1">
-                          <p className="text-white text-xs truncate">{product.title}</p>
+                            
+                            // Create a Pexels-compatible image object for the product image
+                            const productImage: PexelsImage = {
+                              id: `product-${product.id}`,
+                              url: product.image || '',
+                              width: 500,
+                              height: 500,
+                              alt: product.title,
+                              src: {
+                                original: product.image || '',
+                                large: product.image || '',
+                                medium: product.image || '',
+                                small: product.image || '',
+                                thumbnail: product.image || '',
+                              }
+                            };
+                            
+                            // Add to primary or secondary images based on context
+                            if (workflowStep === 'media') {
+                              setPrimaryImages(prev => [...prev, productImage]);
+                            } else {
+                              setSecondaryImages(prev => [...prev, productImage]);
+                            }
+                            
+                            toast({
+                              title: "Image added",
+                              description: "Product image added successfully",
+                            });
+                          }}
+                        >
+                          <div className="relative aspect-square">
+                            <img 
+                              src={product.image} 
+                              alt={product.title} 
+                              className="w-full h-full object-contain bg-white"
+                              onError={(e) => {
+                                // Fallback for broken images
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                              }}
+                            />
+                            {isAlreadySelected && (
+                              <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
+                                <Check className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="bg-black bg-opacity-70 p-2">
+                            <p className="text-white text-xs truncate">{product.title}</p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-slate-500">No products selected</p>
+                  <Package className="h-12 w-12 mx-auto text-slate-300 mb-2" />
+                  <p className="text-slate-500 mb-2">No products selected yet</p>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="mt-2"
                     onClick={() => {
                       setShowImageDialog(false);
                       setWorkflowStep('product');
@@ -4170,29 +4211,43 @@ export default function AdminPanel() {
                   </Button>
                 </div>
               )}
+              
+              {selectedProducts.length > 0 && (
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                  <div className="flex">
+                    <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-blue-700 mb-1 font-medium">Tip: Add compelling human imagery</p>
+                      <p className="text-xs text-blue-600">
+                        For best results, try adding emotionally compelling images with people using your products.
+                        You can search Pexels for these images.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
           {imageSource === 'upload' && (
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-slate-300 rounded-md p-8 text-center">
-                <Upload className="h-10 w-10 mx-auto text-slate-400 mb-2" />
-                <p className="text-sm text-slate-600 mb-4">
-                  Drag and drop files here, or click to select files
-                </p>
-                <Input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  id="image-upload"
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) {
-                      // Handle file upload - for now we'll simulate this
-                      const file = files[0];
-                      
-                      // In a real implementation, you would upload the file to a server
-                      // and get back a URL. For now, we'll create a local URL.
+              <div className="border-2 border-dashed border-slate-300 rounded-md p-8 text-center cursor-pointer"
+                onClick={() => {
+                  document.getElementById('image-upload')?.click();
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  const files = e.dataTransfer.files;
+                  if (files && files.length > 0) {
+                    const file = files[0];
+                    if (file.type.startsWith('image/')) {
+                      // Create a URL for the image file
                       const localUrl = URL.createObjectURL(file);
                       
                       // Create a Pexels-compatible image object
@@ -4225,12 +4280,70 @@ export default function AdminPanel() {
                       
                       // Close dialog
                       setShowImageDialog(false);
+                    } else {
+                      toast({
+                        title: "Invalid file type",
+                        description: "Please upload an image file",
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                }}
+              >
+                <Upload className="h-10 w-10 mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-600 mb-4">
+                  Drag and drop image files here, or click to select files
+                </p>
+                <Input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  id="image-upload"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      const file = files[0];
+                      
+                      // Create a URL for the image file
+                      const localUrl = URL.createObjectURL(file);
+                      
+                      // Create a Pexels-compatible image object
+                      const uploadedImage: PexelsImage = {
+                        id: `upload-${new Date().getTime()}`,
+                        url: localUrl,
+                        width: 600,
+                        height: 400,
+                        alt: file.name,
+                        src: {
+                          original: localUrl,
+                          large: localUrl,
+                          medium: localUrl,
+                          small: localUrl,
+                          thumbnail: localUrl,
+                        }
+                      };
+                      
+                      // Add to appropriate images array
+                      if (workflowStep === 'media') {
+                        setPrimaryImages(prev => [...prev, uploadedImage]);
+                      } else {
+                        setSecondaryImages(prev => [...prev, uploadedImage]);
+                      }
+                      
+                      toast({
+                        title: "Image uploaded successfully",
+                        description: "Your image has been added to the selected images",
+                      });
+                      
+                      // Close dialog
+                      setShowImageDialog(false);
                     }
                   }}
                 />
                 <Button 
                   variant="outline"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     document.getElementById('image-upload')?.click();
                   }}
                 >
