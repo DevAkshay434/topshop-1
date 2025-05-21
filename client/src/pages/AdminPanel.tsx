@@ -1837,6 +1837,91 @@ export default function AdminPanel() {
                       <h3 className="text-lg font-medium">Style & Formatting</h3>
                       
                       {/* Content Generation Options */}
+                      {/* Buyer Personas Display */}
+                      <div className="col-span-full mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium flex items-center">
+                            <Users className="h-4 w-4 mr-2 text-blue-500" />
+                            Selected Buyer Personas
+                          </h4>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setWorkflowStep('buying-avatars')}
+                            className="h-8"
+                          >
+                            <User className="mr-2 h-4 w-4" />
+                            Edit Personas
+                          </Button>
+                        </div>
+                        
+                        <div className="border rounded-md p-3 bg-slate-50">
+                          {selectedBuyerPersonas.length > 0 ? (
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap gap-2">
+                                {selectedBuyerPersonas.map((personaId) => {
+                                  const persona = predefinedBuyerPersonas.find(p => p.id === personaId);
+                                  if (!persona) return null;
+                                  
+                                  // Get the appropriate icon component
+                                  let IconComponent = User;
+                                  if (persona.icon === 'piggy-bank') IconComponent = PiggyBank;
+                                  else if (persona.icon === 'gem') IconComponent = Gem;
+                                  else if (persona.icon === 'zap') IconComponent = Zap;
+                                  else if (persona.icon === 'leaf') IconComponent = Leaf;
+                                  else if (persona.icon === 'cpu') IconComponent = Cpu;
+                                  else if (persona.icon === 'search') IconComponent = Search;
+                                  else if (persona.icon === 'heart') IconComponent = Heart;
+                                  else if (persona.icon === 'users') IconComponent = Users;
+                                  
+                                  return (
+                                    <div 
+                                      key={persona.id} 
+                                      className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border"
+                                    >
+                                      <div className="h-6 w-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center">
+                                        <IconComponent className="h-3.5 w-3.5" />
+                                      </div>
+                                      <span className="text-sm font-medium">{persona.name}</span>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
+                                        onClick={() => {
+                                          setSelectedBuyerPersonas(prev => 
+                                            prev.filter(id => id !== persona.id)
+                                          );
+                                        }}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Content will be tailored to these target audience segments
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-muted-foreground mb-2">No buyer personas selected</p>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setWorkflowStep('buying-avatars')}
+                              >
+                                <Users className="mr-2 h-4 w-4" />
+                                Select Target Audience
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <FormField
                           control={form.control}
@@ -1846,7 +1931,8 @@ export default function AdminPanel() {
                               <FormLabel>Buyer Profile</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
-                                defaultValue={field.value}
+                                defaultValue={selectedBuyerPersonas.length > 0 ? "custom" : field.value}
+                                disabled={selectedBuyerPersonas.length > 0}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -1858,10 +1944,15 @@ export default function AdminPanel() {
                                   <SelectItem value="beginner">Beginner</SelectItem>
                                   <SelectItem value="intermediate">Intermediate</SelectItem>
                                   <SelectItem value="advanced">Advanced</SelectItem>
+                                  {selectedBuyerPersonas.length > 0 && (
+                                    <SelectItem value="custom">Custom Personas</SelectItem>
+                                  )}
                                 </SelectContent>
                               </Select>
                               <FormDescription className="text-xs">
-                                Tailors content to the buyer's knowledge level
+                                {selectedBuyerPersonas.length > 0 
+                                  ? "Using selected buyer personas for targeting" 
+                                  : "Tailors content to the buyer's knowledge level"}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
