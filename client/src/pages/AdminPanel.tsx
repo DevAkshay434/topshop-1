@@ -1394,9 +1394,70 @@ export default function AdminPanel() {
                       <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Keywords</h4>
-                          <p className="text-sm text-blue-600 mb-4">
-                            Click the button below to select keywords for your content. The selected product will be used to generate relevant keyword suggestions.
+                          <p className="text-sm text-blue-600 mb-2">
+                            Click the button below to select keywords for your content. The following selected items will be used for keyword generation:
                           </p>
+                          
+                          {/* Display selected products and collections in the keyword step */}
+                          {(selectedProducts.length > 0 || selectedCollections.length > 0) && (
+                            <div className="mb-4 p-3 bg-white rounded-md border">
+                              {selectedProducts.length > 0 && (
+                                <div className="mb-2">
+                                  <h5 className="text-xs font-medium text-slate-600 mb-1.5">Selected Products:</h5>
+                                  <div className="flex flex-wrap gap-2">
+                                    {selectedProducts.map(product => {
+                                      // Get image source from images array or direct image property
+                                      const imageSrc = product.images && product.images.length > 0
+                                        ? product.images[0].src
+                                        : product.image || '';
+                                      
+                                      return (
+                                        <div key={product.id} className="flex items-center gap-2 bg-slate-50 rounded p-1.5 border shadow-sm">
+                                          {imageSrc ? (
+                                            <img 
+                                              src={imageSrc} 
+                                              alt={product.title}
+                                              className="w-8 h-8 rounded object-contain" 
+                                            />
+                                          ) : (
+                                            <div className="w-8 h-8 bg-slate-100 rounded flex items-center justify-center">
+                                              <Search className="w-4 h-4 text-slate-400" />
+                                            </div>
+                                          )}
+                                          <span className="text-xs font-medium max-w-[120px] truncate">{product.title}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {selectedCollections.length > 0 && (
+                                <div>
+                                  <h5 className="text-xs font-medium text-slate-600 mb-1.5">Selected Collections:</h5>
+                                  <div className="flex flex-wrap gap-2">
+                                    {selectedCollections.map(collection => (
+                                      <div key={collection.id} className="flex items-center gap-2 bg-slate-50 rounded p-1.5 border shadow-sm">
+                                        {collection.image_url ? (
+                                          <img 
+                                            src={collection.image_url} 
+                                            alt={collection.title}
+                                            className="w-8 h-8 rounded object-contain" 
+                                          />
+                                        ) : (
+                                          <div className="w-8 h-8 bg-slate-100 rounded flex items-center justify-center">
+                                            <FileText className="w-4 h-4 text-slate-400" />
+                                          </div>
+                                        )}
+                                        <span className="text-xs font-medium max-w-[120px] truncate">{collection.title}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           <Button 
                             onClick={() => setShowKeywordSelector(true)}
                             size="lg"
