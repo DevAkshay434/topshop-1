@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
+import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { 
   Card, 
   CardContent, 
@@ -652,6 +653,17 @@ export default function AdminPanel() {
     });
   };
   
+  // Handle related products continue action
+  const handleRelatedProductsContinue = () => {
+    // Move to keyword selection step after related products selection
+    setWorkflowStep('keyword');
+    
+    toast({
+      title: "Related products saved",
+      description: "Now let's select keywords for your content",
+    });
+  };
+  
   // Handle collection selection
   const handleCollectionsSelected = (collectionIds: string[]) => {
     // Save the actual collection objects instead of just IDs
@@ -931,24 +943,38 @@ export default function AdminPanel() {
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                       <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
                       <div className="flex items-center space-x-3">
+                        {/* Step 1: Product Selection */}
                         <Badge className={workflowStep === 'product' ? 'bg-blue-600' : 'bg-gray-300'}>1</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep !== 'product' ? 'w-full' : 'w-0'}`}></div>
                         </div>
-                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
+                        
+                        {/* Step 2: Related Products */}
+                        <Badge className={workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
+                        <div className="flex-1 h-1 bg-gray-200 rounded">
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
+                        </div>
+                        
+                        {/* Step 3: Keywords */}
+                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
-                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
+                        
+                        {/* Step 4: Title */}
+                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
-                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>4</Badge>
+                        
+                        {/* Step 5: Content */}
+                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>5</Badge>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-gray-600">
-                        <span>Select Products</span>
-                        <span>Choose Keywords</span>
-                        <span>Pick Title</span>
+                        <span>Main Product</span>
+                        <span>Related Products</span>
+                        <span>Keywords</span>
+                        <span>Title</span>
                         <span>Generate</span>
                       </div>
                     </div>
