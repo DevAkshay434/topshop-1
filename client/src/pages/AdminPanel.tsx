@@ -56,6 +56,7 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { 
+  ArrowLeft,
   BarChart, 
   Calendar, 
   CalendarCheck,
@@ -69,11 +70,14 @@ import {
   Cpu,
   Download,
   ExternalLink, 
+  FileImage,
   FileText, 
   FolderOpen,
   Folders,
   Gem,
   Heart,
+  Image as ImageIcon,
+  Info,
   Leaf,
   Loader2,
   Package,
@@ -81,6 +85,8 @@ import {
   Plus, 
   Save, 
   Search,
+  Store,
+  Upload,
   User,
   Users,
   Zap,
@@ -286,7 +292,12 @@ export default function AdminPanel() {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>([]);
+  const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
+  const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageSource, setImageSource] = useState<'pexels' | 'shopify' | 'upload'>('pexels');
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [showTitleSelector, setShowTitleSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
@@ -296,7 +307,7 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'content';
+  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
@@ -1814,7 +1825,7 @@ export default function AdminPanel() {
                               type="button"
                               onClick={() => {
                                 if (form.watch('title')) {
-                                  setWorkflowStep('content');
+                                  setWorkflowStep('media');
                                 } else {
                                   toast({
                                     title: "Title Required",
@@ -1825,7 +1836,7 @@ export default function AdminPanel() {
                               }}
                               disabled={!form.watch('title')}
                             >
-                              Next: Generate Content
+                              Next: Choose Media
                             </Button>
                           </div>
                         </div>
