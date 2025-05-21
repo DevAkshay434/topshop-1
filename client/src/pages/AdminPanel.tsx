@@ -3956,9 +3956,18 @@ export default function AdminPanel() {
       })()}
       
       {/* Image Search Dialog */}
-      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+      <Dialog open={showImageDialog} onOpenChange={(open) => {
+        // When dialog closes, always reset the UI to a clean state
+        if (!open) {
+          // Reset loading state if dialog is closed during a search
+          if (isSearchingImages) {
+            setIsSearchingImages(false);
+          }
+        }
+        setShowImageDialog(open);
+      }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b mb-4">
             <DialogTitle>
               {imageSource === 'pexels' && 'Search Pexels Images'}
               {imageSource === 'shopify' && 'Browse Shopify Store Images'}
@@ -3975,7 +3984,13 @@ export default function AdminPanel() {
               <Button 
                 size="sm"
                 variant={imageSource === 'pexels' ? 'default' : 'outline'} 
-                onClick={() => setImageSource('pexels')}
+                onClick={() => {
+                  setImageSource('pexels');
+                  if (searchedImages.length === 0 && !imageSearchQuery) {
+                    // Set a default search query to help users
+                    setImageSearchQuery("happy customer");
+                  }
+                }}
                 className="flex-1"
               >
                 <Search className="mr-2 h-4 w-4" />
