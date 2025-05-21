@@ -3979,10 +3979,34 @@ export default function AdminPanel() {
                   onClick={async () => {
                     setIsSearchingImages(true);
                     try {
-                      const response = await fetch(`/api/admin/search-images?query=${encodeURIComponent(imageSearchQuery)}`);
+                      // Using the correct generate-images endpoint with POST method
+                      const response = await fetch('/api/admin/generate-images', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          query: imageSearchQuery,
+                          count: 20
+                        })
+                      });
+                      
                       const data = await response.json();
                       if (data.success) {
-                        setSearchedImages(data.images || []);
+                        // Convert the response data to PexelsImage format
+                        const formattedImages = data.images.map((img: any) => ({
+                          id: img.id,
+                          url: img.src.original,
+                          width: img.width,
+                          height: img.height,
+                          alt: img.alt || imageSearchQuery,
+                          src: img.src,
+                          photographer: img.photographer,
+                          photographer_url: img.photographer_url,
+                          selected: false
+                        }));
+                        
+                        setSearchedImages(formattedImages || []);
                       } else {
                         toast({
                           title: "Search Failed",
