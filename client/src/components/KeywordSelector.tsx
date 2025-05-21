@@ -44,6 +44,20 @@ interface KeywordSelectorProps {
   title?: string;
   onClose?: () => void;
   productTitle?: string; // Add this to use selected product title
+  selectedProducts?: Array<{
+    id: string;
+    title: string;
+    image?: string;
+    images?: Array<{
+      id: number;
+      src: string;
+    }>;
+  }>;
+  selectedCollections?: Array<{
+    id: string;
+    title: string;
+    image_url?: string;
+  }>;
 }
 
 export default function KeywordSelector({
@@ -51,7 +65,9 @@ export default function KeywordSelector({
   onKeywordsSelected,
   title = "Select Keywords for Your Content",
   onClose,
-  productTitle
+  productTitle,
+  selectedProducts = [],
+  selectedCollections = []
 }: KeywordSelectorProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [keywords, setKeywords] = useState<KeywordData[]>(initialKeywords);
@@ -64,12 +80,20 @@ export default function KeywordSelector({
   const selectedCount = keywords.filter(kw => kw.selected).length;
   const mainKeyword = keywords.find(kw => kw.isMainKeyword);
 
-  // Filter keywords based on search and intent filter
-  const filteredKeywords = keywords.filter(keyword => {
-    const matchesSearch = keyword.keyword.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesIntent = filterIntent ? keyword.intent === filterIntent : true;
-    return matchesSearch && matchesIntent;
-  });
+  // Filter keywords based on search and intent filter, hide 0 search volume, and sort by search volume
+  const filteredKeywords = keywords
+    .filter(keyword => {
+      const matchesSearch = keyword.keyword.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesIntent = filterIntent ? keyword.intent === filterIntent : true;
+      const hasSearchVolume = keyword.searchVolume !== 0 && keyword.searchVolume !== undefined;
+      return matchesSearch && matchesIntent && hasSearchVolume;
+    })
+    .sort((a, b) => {
+      // Sort by search volume in descending order
+      const volumeA = a.searchVolume || 0;
+      const volumeB = b.searchVolume || 0;
+      return volumeB - volumeA;
+    });
 
   // Set a keyword as the main keyword
   const setAsMainKeyword = (index: number) => {
