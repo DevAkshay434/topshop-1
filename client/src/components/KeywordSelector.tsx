@@ -176,10 +176,28 @@ export default function KeywordSelector({
       console.log(`Fetching keywords for ${directTopic ? 'topic' : 'URL'}: ${directTopic || productUrl}`);
       
       const requestData: any = {};
+      
+      // Add the direct topic or product URL
       if (directTopic) {
         requestData.topic = directTopic;
       } else if (productUrl) {
         requestData.productUrl = productUrl;
+      }
+      
+      // Include selected products information for more relevant keywords
+      if (selectedProducts && selectedProducts.length > 0) {
+        requestData.selectedProducts = selectedProducts.map(product => ({
+          id: product.id,
+          title: product.title
+        }));
+      }
+      
+      // Include selected collections information
+      if (selectedCollections && selectedCollections.length > 0) {
+        requestData.selectedCollections = selectedCollections.map(collection => ({
+          id: collection.id,
+          title: collection.title
+        }));
       }
 
       const response = await apiRequest<{ success: boolean; keywords: KeywordData[] }>({
