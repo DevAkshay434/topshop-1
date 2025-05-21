@@ -773,12 +773,18 @@ export default function AdminPanel() {
   
   // Handle buying avatars continue action
   const handleBuyerPersonasContinue = () => {
+    // Store the selected buyer personas for later use in form submission
+    // We'll include them in the API request when generating content
+    // This avoids TypeScript errors with the form field that doesn't expect this property
+    
     // Move to keyword selection step after buyer personas selection
     setWorkflowStep('keyword');
     
     toast({
-      title: "Buyer personas saved",
-      description: "Now let's select keywords for your content",
+      title: `${selectedBuyerPersonas.length} buyer personas saved`,
+      description: selectedBuyerPersonas.length > 0 
+        ? "Content will be tailored to your selected audience segments" 
+        : "Using automatic audience detection",
     });
   };
   
@@ -3952,7 +3958,7 @@ export default function AdminPanel() {
       {/* Image Search Dialog */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">
             <DialogTitle>
               {imageSource === 'pexels' && 'Search Pexels Images'}
               {imageSource === 'shopify' && 'Browse Shopify Store Images'}
@@ -3963,6 +3969,37 @@ export default function AdminPanel() {
               {imageSource === 'shopify' && 'Select product images from your store'}
               {imageSource === 'upload' && 'Upload your own custom images'}
             </DialogDescription>
+            
+            {/* Image source tabs */}
+            <div className="flex gap-2 mt-4">
+              <Button 
+                size="sm"
+                variant={imageSource === 'pexels' ? 'default' : 'outline'} 
+                onClick={() => setImageSource('pexels')}
+                className="flex-1"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Search Pexels
+              </Button>
+              <Button 
+                size="sm"
+                variant={imageSource === 'shopify' ? 'default' : 'outline'} 
+                onClick={() => setImageSource('shopify')}
+                className="flex-1"
+              >
+                <Store className="mr-2 h-4 w-4" />
+                Shopify Products
+              </Button>
+              <Button 
+                size="sm"
+                variant={imageSource === 'upload' ? 'default' : 'outline'} 
+                onClick={() => setImageSource('upload')}
+                className="flex-1"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Image
+              </Button>
+            </div>
           </DialogHeader>
           
           {imageSource === 'pexels' && (
