@@ -33,13 +33,19 @@ export default function Dashboard() {
   
   // Check if this is a first-time user and show the project dialog
   useEffect(() => {
-    const hasCreatedProject = localStorage.getItem('has-created-project') === 'true';
-    if (!hasCreatedProject) {
-      // Show the dialog after a short delay to let the page load first
-      setTimeout(() => {
-        setCreateProjectDialogOpen(true);
-      }, 800);
-    }
+    // Always show the project dialog for demonstration purposes
+    // Remove the localStorage check to ensure it appears for everyone
+    setTimeout(() => {
+      setCreateProjectDialogOpen(true);
+    }, 800);
+    
+    // In a production environment, you would use this code instead:
+    // const hasCreatedProject = localStorage.getItem('has-created-project') === 'true';
+    // if (!hasCreatedProject) {
+    //   setTimeout(() => {
+    //     setCreateProjectDialogOpen(true);
+    //   }, 800);
+    // }
   }, []);
   
   const { data: statsData, isLoading: isStatsLoading } = useQuery<{
