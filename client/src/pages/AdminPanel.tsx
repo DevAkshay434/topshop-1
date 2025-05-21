@@ -1841,6 +1841,298 @@ export default function AdminPanel() {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Step 4: Media Selection Section */}
+                      <div className={workflowStep === 'media' ? 'block' : 'hidden'}>
+                        <div className="p-4 bg-blue-50 rounded-md mb-4">
+                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Media</h4>
+                          <p className="text-sm text-blue-600">Select compelling visuals to enhance your content and boost engagement</p>
+                        </div>
+                        
+                        <Tabs defaultValue="primary" className="mb-6">
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="primary">Primary Images</TabsTrigger>
+                            <TabsTrigger value="secondary">Secondary Images</TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="primary" className="p-4 bg-slate-50 rounded-md mt-2">
+                            <div className="mb-4">
+                              <h4 className="text-sm font-medium mb-1">Featured Image</h4>
+                              <p className="text-xs text-slate-500 mb-3">
+                                Use emotionally compelling images with people or animals. Try search terms like "happy woman", "confused customer", "smiling family", etc.
+                              </p>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                                <Card className="overflow-hidden">
+                                  <CardHeader className="p-3 bg-slate-100">
+                                    <CardTitle className="text-sm">Pexels Images</CardTitle>
+                                    <CardDescription className="text-xs">
+                                      Search free stock photos
+                                    </CardDescription>
+                                  </CardHeader>
+                                  <CardContent className="p-3">
+                                    <Button 
+                                      variant="outline" 
+                                      className="w-full" 
+                                      size="sm"
+                                      onClick={() => {
+                                        setImageSource('pexels');
+                                        // Suggested emotional search terms based on products
+                                        setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
+                                        setShowImageDialog(true);
+                                      }}
+                                    >
+                                      <Search className="mr-2 h-4 w-4" />
+                                      Search Pexels
+                                    </Button>
+                                  </CardContent>
+                                </Card>
+                                
+                                <Card className="overflow-hidden">
+                                  <CardHeader className="p-3 bg-slate-100">
+                                    <CardTitle className="text-sm">Shopify Images</CardTitle>
+                                    <CardDescription className="text-xs">
+                                      Use images from your store
+                                    </CardDescription>
+                                  </CardHeader>
+                                  <CardContent className="p-3">
+                                    <Button 
+                                      variant="outline" 
+                                      className="w-full" 
+                                      size="sm"
+                                      onClick={() => {
+                                        setImageSource('shopify');
+                                        // Load product images from selected products
+                                        const images = selectedProducts
+                                          .filter(p => p.image)
+                                          .map(p => p.image);
+                                        setProductImages(images as string[]);
+                                        setShowImageDialog(true);
+                                      }}
+                                    >
+                                      <Store className="mr-2 h-4 w-4" />
+                                      Browse Store Images
+                                    </Button>
+                                  </CardContent>
+                                </Card>
+                                
+                                <Card className="overflow-hidden">
+                                  <CardHeader className="p-3 bg-slate-100">
+                                    <CardTitle className="text-sm">Upload Image</CardTitle>
+                                    <CardDescription className="text-xs">
+                                      Upload your own images
+                                    </CardDescription>
+                                  </CardHeader>
+                                  <CardContent className="p-3">
+                                    <Button 
+                                      variant="outline" 
+                                      className="w-full" 
+                                      size="sm"
+                                      onClick={() => {
+                                        setImageSource('upload');
+                                        setShowImageDialog(true);
+                                      }}
+                                    >
+                                      <Upload className="mr-2 h-4 w-4" />
+                                      Upload Image
+                                    </Button>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                              
+                              {/* Display selected primary images */}
+                              {primaryImages.length > 0 ? (
+                                <div className="space-y-3">
+                                  <h4 className="text-sm font-medium">Selected Primary Images:</h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {primaryImages.map((image) => (
+                                      <div key={image.id} className="relative group">
+                                        <img 
+                                          src={image.src?.medium || image.url} 
+                                          alt={image.alt || "Primary image"} 
+                                          className="w-full h-32 object-cover rounded-md border"
+                                        />
+                                        <div className="absolute top-2 right-2">
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="h-6 w-6 rounded-full opacity-80 hover:opacity-100"
+                                            onClick={() => setPrimaryImages(prev => prev.filter(img => img.id !== image.id))}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center py-4 bg-white rounded-md border border-dashed">
+                                  <ImageIcon className="h-10 w-10 mx-auto text-slate-300 mb-2" />
+                                  <p className="text-sm text-slate-500">No primary images selected</p>
+                                  <p className="text-xs text-slate-400 mt-1">
+                                    Select emotionally compelling images featuring people or subjects relevant to your content
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </TabsContent>
+                          
+                          <TabsContent value="secondary" className="p-4 bg-slate-50 rounded-md mt-2">
+                            <div className="mb-4">
+                              <h4 className="text-sm font-medium mb-1">Secondary Images</h4>
+                              <p className="text-xs text-slate-500 mb-3">
+                                These images will appear throughout your content to showcase product details or supporting visuals.
+                              </p>
+                              
+                              {/* Product Images Section */}
+                              <div className="mb-4">
+                                <h4 className="text-sm font-medium mb-2">Product Images</h4>
+                                {selectedProducts.length > 0 ? (
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {selectedProducts.map((product) => {
+                                      if (!product.image) return null;
+                                      return (
+                                        <div key={product.id} className="relative group">
+                                          <div className="aspect-square overflow-hidden rounded-md border">
+                                            <img 
+                                              src={product.image} 
+                                              alt={product.title} 
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                                            <Button
+                                              type="button"
+                                              variant="secondary"
+                                              size="sm"
+                                              className="opacity-0 group-hover:opacity-100 transition-all"
+                                              onClick={() => {
+                                                // Add product image to secondary images
+                                                const productImage: PexelsImage = {
+                                                  id: `product-${product.id}`,
+                                                  url: product.image || '',
+                                                  width: 500,
+                                                  height: 500,
+                                                  alt: product.title,
+                                                  src: {
+                                                    original: product.image || '',
+                                                    large: product.image || '',
+                                                    medium: product.image || '',
+                                                    small: product.image || '',
+                                                    thumbnail: product.image || '',
+                                                  }
+                                                };
+                                                setSecondaryImages(prev => [...prev, productImage]);
+                                                toast({
+                                                  title: "Image added",
+                                                  description: "Product image added to secondary images",
+                                                });
+                                              }}
+                                            >
+                                              <Plus className="mr-2 h-3 w-3" />
+                                              Add Image
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 bg-white rounded-md border border-dashed">
+                                    <Package className="h-8 w-8 mx-auto text-slate-300 mb-1" />
+                                    <p className="text-sm text-slate-500">No products selected</p>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="mt-2"
+                                      onClick={() => setWorkflowStep('product')}
+                                    >
+                                      <ArrowLeft className="mr-2 h-3 w-3" />
+                                      Select Products
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Custom Secondary Images */}
+                              <div className="mt-6">
+                                <div className="flex justify-between items-center mb-2">
+                                  <h4 className="text-sm font-medium">Additional Secondary Images</h4>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setImageSearchQuery('product lifestyle');
+                                      setShowImageDialog(true);
+                                    }}
+                                  >
+                                    <Search className="mr-2 h-3 w-3" />
+                                    Search More Images
+                                  </Button>
+                                </div>
+                                
+                                {/* Display selected secondary images */}
+                                {secondaryImages.length > 0 ? (
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {secondaryImages.map((image) => (
+                                      <div key={image.id} className="relative group">
+                                        <img 
+                                          src={image.src?.medium || image.url} 
+                                          alt={image.alt || "Secondary image"} 
+                                          className="w-full h-32 object-cover rounded-md border"
+                                        />
+                                        <div className="absolute top-2 right-2">
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="h-6 w-6 rounded-full opacity-80 hover:opacity-100"
+                                            onClick={() => setSecondaryImages(prev => prev.filter(img => img.id !== image.id))}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-6 bg-white rounded-md border border-dashed">
+                                    <FileImage className="h-10 w-10 mx-auto text-slate-300 mb-2" />
+                                    <p className="text-sm text-slate-500">No additional secondary images</p>
+                                    <p className="text-xs text-slate-400 mt-1">
+                                      Add supporting images to enhance your content
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                        
+                        <div className="flex justify-between mt-6">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setWorkflowStep('title')}
+                          >
+                            Back to Title
+                          </Button>
+                          
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              // Continue to content generation step
+                              setWorkflowStep('content');
+                            }}
+                          >
+                            Next: Generate Content
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                     
                     {/* Style and formatting section - Only shown in content step */}
@@ -3656,6 +3948,335 @@ export default function AdminPanel() {
           />
         );
       })()}
+      
+      {/* Image Search Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {imageSource === 'pexels' && 'Search Pexels Images'}
+              {imageSource === 'shopify' && 'Browse Shopify Store Images'}
+              {imageSource === 'upload' && 'Upload Custom Images'}
+            </DialogTitle>
+            <DialogDescription>
+              {imageSource === 'pexels' && 'Find emotionally compelling images for your content'}
+              {imageSource === 'shopify' && 'Select product images from your store'}
+              {imageSource === 'upload' && 'Upload your own custom images'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {imageSource === 'pexels' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Input 
+                  placeholder="Search for images (e.g., happy woman, smiling family, confused customer)" 
+                  value={imageSearchQuery}
+                  onChange={(e) => setImageSearchQuery(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  disabled={isSearchingImages || !imageSearchQuery.trim()} 
+                  onClick={async () => {
+                    setIsSearchingImages(true);
+                    try {
+                      const response = await fetch(`/api/admin/search-images?query=${encodeURIComponent(imageSearchQuery)}`);
+                      const data = await response.json();
+                      if (data.success) {
+                        setSearchedImages(data.images || []);
+                      } else {
+                        toast({
+                          title: "Search Failed",
+                          description: data.message || "Failed to search for images",
+                          variant: "destructive"
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Image search error:", error);
+                      toast({
+                        title: "Search Error",
+                        description: "An error occurred while searching for images",
+                        variant: "destructive"
+                      });
+                    } finally {
+                      setIsSearchingImages(false);
+                    }
+                  }}
+                >
+                  {isSearchingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                  {isSearchingImages ? 'Searching...' : 'Search'}
+                </Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-1 mb-2">
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("happy woman using product")}>
+                  Happy woman
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("satisfied customer")}>
+                  Satisfied customer
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("family using product")}>
+                  Family
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("professional man")}>
+                  Professional
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("person enjoying " + (selectedProducts.length > 0 ? selectedProducts[0].title : "product"))}>
+                  Enjoying product
+                </Button>
+              </div>
+              
+              {isSearchingImages ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  <span className="ml-2">Searching for images...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                  {searchedImages.map((image) => (
+                    <div 
+                      key={image.id} 
+                      className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
+                      onClick={() => {
+                        // Toggle selection
+                        const updatedImages = searchedImages.map(img =>
+                          img.id === image.id ? { ...img, selected: !img.selected } : img
+                        );
+                        setSearchedImages(updatedImages);
+                      }}
+                    >
+                      <img 
+                        src={image.src?.medium || image.url} 
+                        alt={image.alt || "Stock image"} 
+                        className="w-full h-32 md:h-40 object-cover"
+                      />
+                      {image.selected && (
+                        <div className="absolute top-1 right-1 bg-blue-500 text-white p-1 rounded-full">
+                          <Check className="h-4 w-4" />
+                        </div>
+                      )}
+                      {image.photographer && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1 text-white text-xs">
+                          By: {image.photographer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {!isSearchingImages && searchedImages.length === 0 && imageSearchQuery && (
+                <div className="text-center py-8">
+                  <p className="text-slate-500">No images found for "{imageSearchQuery}"</p>
+                  <p className="text-sm text-slate-400 mt-1">Try different keywords or phrases</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {imageSource === 'shopify' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Product Images</h3>
+              
+              {selectedProducts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {selectedProducts.map((product) => {
+                    if (!product.image) return null;
+                    
+                    return (
+                      <div 
+                        key={product.id} 
+                        className="relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all border-transparent"
+                        onClick={() => {
+                          // Create a Pexels-compatible image object for the product image
+                          const productImage: PexelsImage = {
+                            id: `product-${product.id}`,
+                            url: product.image || '',
+                            width: 500,
+                            height: 500,
+                            alt: product.title,
+                            src: {
+                              original: product.image || '',
+                              large: product.image || '',
+                              medium: product.image || '',
+                              small: product.image || '',
+                              thumbnail: product.image || '',
+                            }
+                          };
+                          
+                          // Add to primary or secondary images based on context
+                          if (workflowStep === 'media') {
+                            setPrimaryImages(prev => [...prev, productImage]);
+                          } else {
+                            setSecondaryImages(prev => [...prev, productImage]);
+                          }
+                          
+                          toast({
+                            title: "Image added",
+                            description: "Product image added successfully",
+                          });
+                        }}
+                      >
+                        <img 
+                          src={product.image} 
+                          alt={product.title} 
+                          className="w-full h-32 object-cover"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1">
+                          <p className="text-white text-xs truncate">{product.title}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-slate-500">No products selected</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      setShowImageDialog(false);
+                      setWorkflowStep('product');
+                    }}
+                  >
+                    <ArrowLeft className="mr-2 h-3 w-3" />
+                    Select Products First
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {imageSource === 'upload' && (
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-slate-300 rounded-md p-8 text-center">
+                <Upload className="h-10 w-10 mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-600 mb-4">
+                  Drag and drop files here, or click to select files
+                </p>
+                <Input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  id="image-upload"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      // Handle file upload - for now we'll simulate this
+                      const file = files[0];
+                      
+                      // In a real implementation, you would upload the file to a server
+                      // and get back a URL. For now, we'll create a local URL.
+                      const localUrl = URL.createObjectURL(file);
+                      
+                      // Create a Pexels-compatible image object
+                      const uploadedImage: PexelsImage = {
+                        id: `upload-${new Date().getTime()}`,
+                        url: localUrl,
+                        width: 600,
+                        height: 400,
+                        alt: file.name,
+                        src: {
+                          original: localUrl,
+                          large: localUrl,
+                          medium: localUrl,
+                          small: localUrl,
+                          thumbnail: localUrl,
+                        }
+                      };
+                      
+                      // Add to appropriate images array
+                      if (workflowStep === 'media') {
+                        setPrimaryImages(prev => [...prev, uploadedImage]);
+                      } else {
+                        setSecondaryImages(prev => [...prev, uploadedImage]);
+                      }
+                      
+                      toast({
+                        title: "Image uploaded",
+                        description: "Your image has been added to the selected images",
+                      });
+                      
+                      // Close dialog
+                      setShowImageDialog(false);
+                    }
+                  }}
+                />
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    document.getElementById('image-upload')?.click();
+                  }}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Select Image
+                </Button>
+              </div>
+              
+              <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                <div className="flex">
+                  <Info className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-yellow-700 mb-1 font-medium">About Image Uploads</p>
+                    <p className="text-xs text-yellow-600">
+                      Make sure you have the rights to use any images you upload. For best results,
+                      use high-quality images at least 1200×800 pixels in size.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowImageDialog(false)}>
+              Cancel
+            </Button>
+            
+            {imageSource === 'pexels' && (
+              <Button
+                type="button"
+                onClick={() => {
+                  // Add selected images to the appropriate collection
+                  const selectedPexelsImages = searchedImages.filter(img => img.selected);
+                  
+                  if (selectedPexelsImages.length === 0) {
+                    toast({
+                      title: "No Images Selected",
+                      description: "Please select at least one image",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  // Determine where to add the images based on context
+                  if (workflowStep === 'media') {
+                    setPrimaryImages(prev => [...prev, ...selectedPexelsImages]);
+                  } else {
+                    setSecondaryImages(prev => [...prev, ...selectedPexelsImages]);
+                  }
+                  
+                  // Clear selections and close dialog
+                  setSearchedImages(searchedImages.map(img => ({ ...img, selected: false })));
+                  setShowImageDialog(false);
+                  
+                  toast({
+                    title: "Images Added",
+                    description: `Added ${selectedPexelsImages.length} image${selectedPexelsImages.length === 1 ? '' : 's'} to your content`,
+                  });
+                }}
+                disabled={searchedImages.filter(img => img.selected).length === 0}
+              >
+                Add Selected Images
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       {/* Add the standalone project creation dialog that shows automatically */}
       <ProjectCreationDialog />
