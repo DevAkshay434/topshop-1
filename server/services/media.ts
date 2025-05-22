@@ -1,5 +1,16 @@
 import { ShopifyService } from './shopify';
-import type { ShopifyStore } from '@shared/types';
+import type { ShopifyStore } from '../../shared/schema';
+import axios from 'axios';
+
+interface MediaFile {
+  id: string;
+  url: string;
+  filename: string;
+  content_type: string;
+  alt: string;
+  source: string;
+  position?: number;
+}
 
 export class MediaService {
   private shopifyService: ShopifyService;
@@ -9,21 +20,26 @@ export class MediaService {
   }
   
   /**
-   * Get all files from the Shopify Media Library
+   * Get all files from the Shopify Media Library (not product-specific)
    */
-  async getShopifyMediaFiles(store: ShopifyStore): Promise<any[]> {
+  async getShopifyMediaFiles(store: ShopifyStore): Promise<MediaFile[]> {
     try {
-      console.log(`MediaService: Fetching all media files from ${store.shopName}`);
-      const client = this.shopifyService.getClient(store.shopName, store.accessToken);
-      const allMediaFiles: any[] = [];
+      console.log(`MediaService: Fetching all media library files from ${store.shopName}`);
       
-      // First try the files API
+      // We'll use shopifyService to make the API calls
+      const allMediaFiles: MediaFile[] = [];
+      
+      // First try the files API to get the official Media Library
       try {
-        const filesResponse = await client.get('/files.json');
+        const filesResponse = await this.shopifyService.makeApiRequest(
+          store, 
+          'GET', 
+          '/files.json'
+        );
         
-        if (filesResponse.data && filesResponse.data.files) {
+        if (filesResponse && filesResponse.files) {
           // Filter to only include image files
-          const imageFiles = filesResponse.data.files
+          const imageFiles = filesResponse.files
             .filter((file: any) => 
               file.content_type && file.content_type.startsWith('image/')
             )
@@ -40,16 +56,19 @@ export class MediaService {
           allMediaFiles.push(...imageFiles);
         }
       } catch (error) {
-        console.error("Error fetching Shopify files:", error instanceof Error ? error.message : String(error));
+        console.log("Files API not available or no permissions, trying alternatives");
       }
       
       // Try to fetch article images
       try {
-        // Get images from blog posts
-        const articlesResponse = await client.get('/articles.json?limit=20&fields=id,title,image');
+        const articlesResponse = await this.shopifyService.makeApiRequest(
+          store,
+          'GET',
+          '/articles.json?limit=20&fields=id,title,image'
+        );
         
-        if (articlesResponse.data && articlesResponse.data.articles) {
-          const articleImages = articlesResponse.data.articles
+        if (articlesResponse && articlesResponse.articles) {
+          const articleImages = articlesResponse.articles
             .filter((article: any) => article.image && article.image.src)
             .map((article: any) => ({
               id: `article-image-${article.id}`,
@@ -64,107 +83,52 @@ export class MediaService {
           allMediaFiles.push(...articleImages);
         }
       } catch (error) {
-        console.error("Error fetching article images:", error instanceof Error ? error.message : String(error));
+        console.log("Could not fetch article images");
       }
       
-      // Try to fetch page images
+      // Try to fetch metafield images
       try {
-        const pagesResponse = await client.get('/pages.json?limit=20&fields=id,title,body_html');
+        const metafieldsResponse = await this.shopifyService.makeApiRequest(
+          store,
+          'GET',
+          '/metafields.json?limit=50'
+        );
         
-        if (pagesResponse.data && pagesResponse.data.pages) {
-          // Extract image URLs from HTML content
-          const pageImages = [];
-          for (const page of pagesResponse.data.pages) {
-            if (page.body_html) {
-              // Try to extract image URLs using regex
-              const imgRegex = /<img[^>]+src="([^">]+)"/g;
-              let match;
-              while ((match = imgRegex.exec(page.body_html)) !== null) {
-                if (match[1] && match[1].startsWith('http')) {
-                  pageImages.push({
-                    id: `page-image-${page.id}-${pageImages.length}`,
-                    url: match[1],
-                    filename: `Page: ${page.title.substring(0, 30)}...`,
-                    content_type: 'image/jpeg',
-                    alt: page.title,
-                    source: 'shopify_media'
-                  });
-                }
+        if (metafieldsResponse && metafieldsResponse.metafields) {
+          const metafieldImages = [];
+          
+          for (const metafield of metafieldsResponse.metafields) {
+            if (
+              metafield.value_type === 'string' && 
+              typeof metafield.value === 'string' &&
+              (metafield.value.endsWith('.jpg') || 
+               metafield.value.endsWith('.jpeg') || 
+               metafield.value.endsWith('.png') || 
+               metafield.value.endsWith('.gif'))
+            ) {
+              try {
+                // Check if it's a valid URL
+                new URL(metafield.value);
+                
+                metafieldImages.push({
+                  id: `metafield-${metafield.id}`,
+                  url: metafield.value,
+                  filename: `Metafield: ${metafield.key}`,
+                  content_type: 'image/jpeg',
+                  alt: metafield.key,
+                  source: 'shopify_media'
+                });
+              } catch (e) {
+                // Not a valid URL, ignore
               }
             }
           }
           
-          console.log(`Found ${pageImages.length} images in pages`);
-          allMediaFiles.push(...pageImages);
+          console.log(`Found ${metafieldImages.length} images in metafields`);
+          allMediaFiles.push(...metafieldImages);
         }
       } catch (error) {
-        console.error("Error extracting page images:", error instanceof Error ? error.message : String(error));
-      }
-      
-      // Try theme assets if we still don't have many images
-      if (allMediaFiles.length < 20) {
-        try {
-          // Get the active theme ID first
-          const themesResponse = await client.get('/themes.json');
-          
-          if (themesResponse.data && themesResponse.data.themes) {
-            const activeTheme = themesResponse.data.themes.find((theme: any) => theme.role === 'main');
-            
-            if (activeTheme && activeTheme.id) {
-              console.log(`Found active theme ${activeTheme.id} for store ${store.shopName}`);
-              
-              // Get all assets for the active theme
-              const assetsResponse = await client.get(`/themes/${activeTheme.id}/assets.json`);
-              
-              if (assetsResponse.data && assetsResponse.data.assets) {
-                const imageAssets = assetsResponse.data.assets
-                  .filter((asset: any) => {
-                    // Only include image assets that aren't theme files
-                    const isImage = asset.content_type && 
-                      (asset.content_type.startsWith('image/') || 
-                      (asset.key && (
-                        asset.key.endsWith('.jpg') || 
-                        asset.key.endsWith('.jpeg') || 
-                        asset.key.endsWith('.png') || 
-                        asset.key.endsWith('.gif')
-                      ))
-                      );
-                    
-                    const isNotThemeFile = asset.key && 
-                      !asset.key.startsWith('config/') && 
-                      !asset.key.startsWith('layout/') && 
-                      !asset.key.startsWith('templates/');
-                    
-                    return isImage && isNotThemeFile;
-                  })
-                  .map((asset: any) => {
-                    // Convert to our file format
-                    let assetUrl = asset.public_url;
-                    
-                    // For keys that don't have a set public_url
-                    if (!assetUrl && asset.key) {
-                      // Create CDN URL from the key
-                      assetUrl = `https://cdn.shopify.com/s/files/1/0/0/1/products/${asset.key}`;
-                    }
-                    
-                    return {
-                      id: `theme-asset-${asset.key.replace(/[^a-zA-Z0-9]/g, '-')}`,
-                      url: assetUrl,
-                      filename: asset.key.split('/').pop() || 'Theme Asset',
-                      content_type: asset.content_type || 'image/jpeg',
-                      alt: asset.key.split('/').pop() || 'Theme Asset',
-                      source: 'shopify_media'
-                    };
-                  });
-                
-                console.log(`Found ${imageAssets.length} image assets in theme`);
-                allMediaFiles.push(...imageAssets);
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching theme assets:", error instanceof Error ? error.message : String(error));
-        }
+        console.log("Could not fetch metafield images");
       }
       
       // Deduplicate files by URL
@@ -183,21 +147,24 @@ export class MediaService {
   /**
    * Get product-specific images for a selected product
    */
-  async getProductImages(store: ShopifyStore, productId: string): Promise<any[]> {
+  async getProductImages(store: ShopifyStore, productId: string): Promise<MediaFile[]> {
     try {
       console.log(`MediaService: Fetching images for product ${productId}`);
-      const client = this.shopifyService.getClient(store.shopName, store.accessToken);
-      const productImages: any[] = [];
+      const productImages: MediaFile[] = [];
       
       // Get detailed product information
-      const productResponse = await client.get(`/products/${productId}.json`);
+      const productResponse = await this.shopifyService.makeApiRequest(
+        store,
+        'GET',
+        `/products/${productId}.json`
+      );
       
-      if (!productResponse.data || !productResponse.data.product) {
+      if (!productResponse || !productResponse.product) {
         console.log(`No product found with ID ${productId}`);
         return [];
       }
       
-      const product = productResponse.data.product;
+      const product = productResponse.product;
       
       // Add main product image
       if (product.image && product.image.src) {
@@ -235,40 +202,37 @@ export class MediaService {
       // Add variant images (only if different from product images)
       if (product.variants && Array.isArray(product.variants)) {
         for (const variant of product.variants) {
+          // Only process variants with image IDs
           if (variant.image_id) {
-            // Check if this variant image is already included
+            // Check if this variant image is already included in product images
             const variantImageExists = productImages.some(img => 
               img.id === `product-${product.id}-image-${variant.image_id}`
             );
             
             if (!variantImageExists) {
               try {
-                // Get variant image directly
-                const variantImageResponse = await client.get(`/variants/${variant.id}.json`);
+                // Get variant image through product images endpoint
+                const imagesResponse = await this.shopifyService.makeApiRequest(
+                  store,
+                  'GET',
+                  `/products/${productId}/images/${variant.image_id}.json`
+                );
                 
-                if (variantImageResponse.data && 
-                    variantImageResponse.data.variant && 
-                    variantImageResponse.data.variant.image_id) {
+                if (imagesResponse && imagesResponse.image && imagesResponse.image.src) {
+                  const variantImage = imagesResponse.image;
                   
-                  // Fetch the image details
-                  const imageResponse = await client.get(`/products/${productId}/images/${variant.image_id}.json`);
-                  
-                  if (imageResponse.data && imageResponse.data.image && imageResponse.data.image.src) {
-                    const variantImage = imageResponse.data.image;
-                    
-                    productImages.push({
-                      id: `variant-${variant.id}-image-${variantImage.id}`,
-                      url: variantImage.src,
-                      filename: `${product.title} - ${variant.title || 'Variant'}`,
-                      content_type: 'image/jpeg',
-                      alt: `${product.title} - ${variant.title || 'Variant'}`,
-                      source: 'variant_image',
-                      position: 1000 + (variantImage.position || 0) // Put variants at the end
-                    });
-                  }
+                  productImages.push({
+                    id: `variant-${variant.id}-image-${variantImage.id}`,
+                    url: variantImage.src,
+                    filename: `${product.title} - ${variant.title || 'Variant'}`,
+                    content_type: 'image/jpeg', 
+                    alt: `${product.title} - ${variant.title || 'Variant'}`,
+                    source: 'variant_image',
+                    position: 1000 + (variantImage.position || 0) // Put variants at the end
+                  });
                 }
               } catch (error) {
-                console.error(`Error fetching variant image: ${error instanceof Error ? error.message : String(error)}`);
+                console.log(`Could not get image for variant ${variant.id}`);
               }
             }
           }
@@ -289,7 +253,7 @@ export class MediaService {
   /**
    * Legacy compatibility method - get all content files
    */
-  async getAllContentFiles(store: ShopifyStore): Promise<any[]> {
+  async getAllContentFiles(store: ShopifyStore): Promise<MediaFile[]> {
     // For backward compatibility with the old implementation
     return this.getShopifyMediaFiles(store);
   }

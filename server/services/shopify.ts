@@ -899,8 +899,49 @@ export class ShopifyService {
    * @param limit The maximum number of products to return
    */
   /**
+   * Make an API request to Shopify and return the response data
+   * (This is used by MediaService to access Shopify API)
+   */
+  public async makeApiRequest(store: ShopifyStore, method: string, endpoint: string, data?: any): Promise<any> {
+    try {
+      const client = this.getClient(store.shopName, store.accessToken);
+      
+      // Log what we're doing
+      console.log(`Shopify API request for ${store.shopName}: ${method} ${endpoint}`);
+      
+      // Make the request
+      let response;
+      if (method.toUpperCase() === 'GET') {
+        response = await client.get(endpoint);
+      } else if (method.toUpperCase() === 'POST') {
+        response = await client.post(endpoint, data);
+      } else if (method.toUpperCase() === 'PUT') {
+        response = await client.put(endpoint, data);
+      } else if (method.toUpperCase() === 'DELETE') {
+        response = await client.delete(endpoint);
+      } else {
+        throw new Error(`Unsupported HTTP method: ${method}`);
+      }
+      
+      // Log success
+      console.log(`Shopify API response for ${store.shopName}: ${response.status} for ${endpoint}`);
+      
+      // Return the data
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.error(`Shopify API error for ${store.shopName}: ${error.response.status} ${JSON.stringify(error.response.data)}`);
+      } else {
+        console.error(`Error making Shopify API request: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      throw error;
+    }
+  }
+  
+  /**
    * Get content files from Shopify (assets API)
    * This method fetches files from Shopify's Assets API since Files API may not be available
+   * @deprecated Use MediaService instead for better separation of concerns
    */
   public async getContentFiles(store: ShopifyStore): Promise<any[]> {
     try {

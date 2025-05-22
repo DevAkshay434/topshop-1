@@ -8,6 +8,7 @@ import { pixabayService, type PixabayImage } from "../services/pixabay";
 import { generateBlogContentWithClaude } from "../services/claude";
 import OpenAI from "openai";
 import { ShopifyStore } from "../../shared/schema";
+import { MediaService } from "../services/media";
 
 const adminRouter = Router();
 
@@ -699,6 +700,9 @@ adminRouter.get("/files", async (_req: Request, res: Response) => {
   }
 });
 
+// Create an instance of MediaService
+const mediaService = new MediaService(shopifyService);
+
 // Get files from the Shopify media library (not product-specific)
 adminRouter.get("/files", async (_req: Request, res: Response) => {
   try {
@@ -729,8 +733,8 @@ adminRouter.get("/files", async (_req: Request, res: Response) => {
       trialEndsAt: null
     };
     
-    // Try to fetch files from Shopify Media Library
-    const files = await shopifyService.getShopifyMediaFiles(store);
+    // Try to fetch files from Shopify Media Library using the MediaService
+    const files = await mediaService.getShopifyMediaFiles(store);
     console.log(`Fetched ${files.length} files from Shopify Media Library`);
     
     return res.json({
@@ -738,10 +742,11 @@ adminRouter.get("/files", async (_req: Request, res: Response) => {
       files
     });
   } catch (error) {
-    console.error("Error in media files endpoint:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error in media files endpoint:", errorMessage);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch media files",
+      message: errorMessage || "Failed to fetch media files",
       files: []
     });
   }
@@ -787,8 +792,8 @@ adminRouter.get("/product-images/:productId", async (req: Request, res: Response
       trialEndsAt: null
     };
     
-    // Fetch product-specific images
-    const productImages = await shopifyService.getProductImages(store, productId);
+    // Fetch product-specific images using the MediaService
+    const productImages = await mediaService.getProductImages(store, productId);
     console.log(`Fetched ${productImages.length} images for product ${productId}`);
     
     return res.json({
@@ -796,10 +801,11 @@ adminRouter.get("/product-images/:productId", async (req: Request, res: Response
       files: productImages
     });
   } catch (error) {
-    console.error("Error fetching product images:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching product images:", errorMessage);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch product images",
+      message: errorMessage || "Failed to fetch product images",
       files: []
     });
   }
@@ -836,8 +842,8 @@ adminRouter.get("/content-files", async (_req: Request, res: Response) => {
       trialEndsAt: null
     };
     
-    // For backward compatibility, get files from media library
-    const files = await shopifyService.getShopifyMediaFiles(store);
+    // For backward compatibility, get files from media library using MediaService
+    const files = await mediaService.getAllContentFiles(store);
     console.log(`Fetched ${files.length} files for backward compatibility`);
     
     return res.json({
@@ -845,10 +851,11 @@ adminRouter.get("/content-files", async (_req: Request, res: Response) => {
       files
     });
   } catch (error) {
-    console.error("Error in content-files endpoint:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error in content-files endpoint:", errorMessage);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch content files",
+      message: errorMessage || "Failed to fetch content files",
       files: []
     });
   }
