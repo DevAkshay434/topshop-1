@@ -5592,7 +5592,7 @@ export default function AdminPanel() {
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={() => setImageType('products')}
+                              onClick={() => setShopifyMediaType('products')}
                             >
                               <ArrowLeft className="mr-2 h-3 w-3" />
                               Switch to Product Images
