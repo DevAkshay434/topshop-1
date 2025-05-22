@@ -321,6 +321,8 @@ export default function AdminPanel() {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify' | 'shopify-files' | 'upload' | 'youtube'>('pexels');
   const [imageType, setImageType] = useState<'products' | 'variants' | 'media'>('products');
+  const [contentFiles, setContentFiles] = useState<any[]>([]);
+  const [isLoadingContentFiles, setIsLoadingContentFiles] = useState(false);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [currentImageEdit, setCurrentImageEdit] = useState<{id: string, alt: string}>({id: '', alt: ''});
   const [imageTab, setImageTab] = useState<'primary' | 'secondary'>('primary');
@@ -4845,18 +4847,18 @@ export default function AdminPanel() {
                                         }
                                         
                                         // Create a Pexels-compatible image object for the product image
-                                        const productImage: PexelsImage = {
+                                        const imageForSelection: PexelsImage = {
                                           id: `product-${product.id}`,
-                                          url: product.image || '',
+                                          url: productImage || '',
                                           width: 500,
                                           height: 500,
                                           alt: product.title,
                                           src: {
-                                            original: product.image || '',
-                                            large: product.image || '',
-                                            medium: product.image || '',
-                                            small: product.image || '',
-                                            thumbnail: product.image || '',
+                                            original: productImage || '',
+                                            large: productImage || '',
+                                            medium: productImage || '',
+                                            small: productImage || '',
+                                            thumbnail: productImage || '',
                                           }
                                         };
                                         
