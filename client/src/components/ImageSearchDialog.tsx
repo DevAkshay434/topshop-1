@@ -105,6 +105,77 @@ export default function ImageSearchDialog({
     }
   }, [open, imageSearchHistory.length, searchedImages.length, selectedKeywords]);
 
+  // Load Shopify Media Library images
+  const loadShopifyMediaLibrary = async () => {
+    setIsSearchingImages(true);
+    
+    try {
+      // This endpoint fetches all media from Shopify Media Library
+      const response = await apiRequest({
+        url: '/api/admin/files',
+        method: 'GET'
+      });
+      
+      if (response.success && response.files && response.files.length > 0) {
+        console.log(`Loaded ${response.files.length} images from Shopify Media Library`);
+        
+        // Format the files to match our image structure
+        const formattedImages = response.files.map((file: any) => ({
+          id: file.id,
+          url: file.url,
+          src: {
+            original: file.url,
+            large: file.url,
+            medium: file.url,
+            small: file.url,
+            thumbnail: file.url
+          },
+          alt: file.alt || file.filename || 'Shopify media',
+          width: 800, // Default width
+          height: 600, // Default height
+          source: file.source || 'shopify_media',
+          selected: selectedImages.some(selected => selected.id === file.id)
+        }));
+        
+        // Add to available sources
+        setAvailableSources(prev => {
+          const sources = new Set([...prev, 'shopify_media']);
+          if (formattedImages.some(img => img.source === 'product_image')) {
+            sources.add('product_image');
+          }
+          if (formattedImages.some(img => img.source === 'variant_image')) {
+            sources.add('variant_image');
+          }
+          return Array.from(sources);
+        });
+        
+        // Set the images and add to search history
+        setSearchedImages(formattedImages);
+        setImageSearchQuery('Shopify Media');
+        setImageSearchHistory(prev => [
+          { query: 'Shopify Media', images: formattedImages },
+          ...prev.filter(h => h.query !== 'Shopify Media')
+        ]);
+      } else {
+        toast({
+          title: "No media found",
+          description: "Your Shopify Media Library appears to be empty",
+          variant: "destructive"
+        });
+        setSearchedImages([]);
+      }
+    } catch (error) {
+      console.error('Error loading Shopify Media Library:', error);
+      toast({
+        title: "Failed to load media",
+        description: "There was an error loading your Shopify Media Library",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearchingImages(false);
+    }
+  };
+
   // Handle image search using API
   const handleImageSearch = async (query: string) => {
     const trimmedQuery = query.trim();
