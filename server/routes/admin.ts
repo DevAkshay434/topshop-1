@@ -684,13 +684,85 @@ adminRouter.get("/product-images-all", async (_req: Request, res: Response) => {
       trialEndsAt: null
     };
     
-    // Get all product images
-    const images = await mediaService.getProductImagesFromAllProducts(store);
-    console.log(`Fetched ${images.length} product images`);
+    // Get products directly (which is more reliable than other APIs)
+    const productsResponse = await shopifyService.makeApiRequest(
+      store, 
+      'GET', 
+      '/products.json?limit=50&fields=id,title,image,images,variants'
+    );
+    
+    if (!productsResponse || !productsResponse.products || !Array.isArray(productsResponse.products)) {
+      return res.json({
+        success: false,
+        message: "Failed to fetch products from Shopify",
+        images: []
+      });
+    }
+    
+    const allImages: any[] = [];
+    
+    // Process each product and collect images
+    productsResponse.products.forEach((product: any) => {
+      // Handle product's main image
+      if (product.image && product.image.src) {
+        allImages.push({
+          id: `product-${product.id}-main`,
+          url: product.image.src,
+          filename: `${product.title} - Main Image`,
+          content_type: 'image/jpeg',
+          alt: product.title || 'Product image',
+          source: 'product_image'
+        });
+      }
+      
+      // Handle product's additional images
+      if (product.images && Array.isArray(product.images)) {
+        product.images.forEach((image: any, index: number) => {
+          if (image && image.src) {
+            // Check if we already added this image (to avoid duplicates)
+            const isDuplicate = allImages.some(img => img.url === image.src);
+            
+            if (!isDuplicate) {
+              allImages.push({
+                id: `product-${product.id}-image-${index}`,
+                url: image.src,
+                filename: `${product.title} - Image ${index + 1}`,
+                content_type: 'image/jpeg',
+                alt: image.alt || `${product.title} - Image ${index + 1}`,
+                source: 'product_image'
+              });
+            }
+          }
+        });
+      }
+      
+      // Handle variant images
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach((variant: any, index: number) => {
+          if (variant.image && variant.image.src) {
+            // Check if this variant image is already included
+            const isDuplicate = allImages.some(img => img.url === variant.image.src);
+            
+            if (!isDuplicate) {
+              allImages.push({
+                id: `variant-${variant.id}`,
+                url: variant.image.src,
+                filename: `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
+                content_type: 'image/jpeg',
+                alt: `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
+                source: 'variant_image'
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    console.log(`Directly fetched ${allImages.length} product and variant images`);
     
     return res.json({
       success: true,
-      images
+      images: allImages
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

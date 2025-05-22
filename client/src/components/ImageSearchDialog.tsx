@@ -608,22 +608,20 @@ export default function ImageSearchDialog({
                           `}
                         >
                           <div className="aspect-[4/3] bg-slate-100" onClick={() => toggleImageSelection(image.id)}>
-                            {image.url ? (
-                              <img 
+                            <img 
                                 src={image.src?.medium || image.url} 
                                 alt={image.alt || 'Image'} 
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                                 onError={(e) => {
                                   console.log(`Image failed to load: ${image.url}`);
-                                  e.currentTarget.src = `https://placehold.co/600x400?text=${encodeURIComponent(image.alt || 'Image')}`;
+                                  // Use transparent placeholder image with product name
+                                  const placeholderText = image.alt || 'Product image';
+                                  e.currentTarget.src = `https://placehold.co/600x400?text=${encodeURIComponent(placeholderText)}`;
+                                  // Add a class to show it's a placeholder
+                                  e.currentTarget.classList.add('placeholder-image');
                                 }}
                               />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                <span className="text-gray-500">Image not available</span>
-                              </div>
-                            )}
                           </div>
                           
                           {/* Source badge */}
