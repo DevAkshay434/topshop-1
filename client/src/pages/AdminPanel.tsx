@@ -68,6 +68,7 @@ import {
   Check,
   CheckSquare,
   ChevronLeft,
+  ImagePlus,
   ChevronRight,
   Clock, 
   Copy,
