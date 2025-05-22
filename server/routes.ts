@@ -15,6 +15,7 @@ import { shopifyService } from './services/shopify';
 import contentRouter from './routes/content';
 import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
+import { mediaRouter } from './routes/media';
 import { pexelsService } from './services/pexels';
 import { 
   validateShopDomain, 
