@@ -38,7 +38,7 @@ export class MediaService {
         '/files.json?limit=250'
       );
       
-      if (filesResponse && filesResponse.files) {
+      if (filesResponse && filesResponse.files && filesResponse.files.length > 0) {
         console.log(`Successfully fetched ${filesResponse.files.length} files from Shopify Files API`);
         
         // Convert to our standard format
@@ -52,16 +52,98 @@ export class MediaService {
         }));
       }
       
-      // If Files API fails or returns empty, fall back to Assets API
-      console.log('Files API returned empty or failed, falling back to Assets API');
+      // If Files API fails or returns empty, get product images directly
+      console.log('Files API returned empty or failed, fetching product images directly');
+      
+      // Get product images directly from products as a fallback
+      const productImages = await this.getProductImagesFromAllProducts(store);
+      if (productImages.length > 0) {
+        console.log(`Found ${productImages.length} product images to use as media files`);
+        return productImages;
+      }
+      
+      // If both methods failed, try the Assets API as a last resort
+      console.log('Product images search returned empty, falling back to Assets API');
       return this.getAllContentFiles(store);
       
     } catch (error) {
       console.error('Error fetching Shopify media files:', error);
       
-      // If Files API fails, fall back to Assets API
+      try {
+        // Try to get product images if Files API fails
+        console.log('Trying to fetch product images as fallback after error');
+        const productImages = await this.getProductImagesFromAllProducts(store);
+        if (productImages.length > 0) {
+          console.log(`Found ${productImages.length} product images to use as media files`);
+          return productImages;
+        }
+      } catch (productError) {
+        console.error('Error fetching product images as fallback:', productError);
+      }
+      
+      // If all else fails, try Assets API
       console.log('Falling back to Assets API due to error');
       return this.getAllContentFiles(store);
+    }
+  }
+  
+  /**
+   * Get images from all products as a fallback method
+   */
+  async getProductImagesFromAllProducts(store: ShopifyStore): Promise<MediaFile[]> {
+    console.log('Fetching product images as content files - more reliable method');
+    
+    try {
+      // Get a list of products with their images
+      const productsResponse = await this.shopifyService.makeApiRequest(
+        store,
+        'GET',
+        '/products.json?limit=20&fields=id,title,image,images,variants'
+      );
+      
+      if (!productsResponse || !productsResponse.products || !Array.isArray(productsResponse.products)) {
+        return [];
+      }
+      
+      const allImages: MediaFile[] = [];
+      
+      // Process each product and its images
+      productsResponse.products.forEach((product: any) => {
+        // Handle main product images
+        if (product.images && Array.isArray(product.images)) {
+          product.images.forEach((image: any, index: number) => {
+            if (image && image.src) {
+              allImages.push({
+                id: `product-${product.id}-image-${image.id || index}`,
+                url: image.src,
+                filename: `${product.title} - Image ${index + 1}`,
+                content_type: 'image/jpeg',
+                alt: image.alt || `${product.title} - Image ${index + 1}`,
+                source: 'product_image'
+              });
+            }
+          });
+        }
+        
+        // Handle single product image if images array isn't available
+        if (product.image && product.image.src && !product.images) {
+          allImages.push({
+            id: `product-${product.id}-image-single`,
+            url: product.image.src,
+            filename: `${product.title} - Main Image`,
+            content_type: 'image/jpeg',
+            alt: product.image.alt || `${product.title} - Main Image`,
+            source: 'product_image'
+          });
+        }
+      });
+      
+      console.log(`Found ${allImages.length} product images to use as content files`);
+      return allImages;
+      
+    } catch (error) {
+      console.error('Error fetching product images as content files:', error);
+      return [];
     }
   }
 
