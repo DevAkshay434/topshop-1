@@ -116,25 +116,25 @@ export default function ImageSearchDialog({
         description: "Fetching images from your Shopify store..."
       });
       
-      // This endpoint fetches all media from Shopify Media Library
+      // Try directly loading product images (which we know works)
       const response = await apiRequest({
-        url: '/api/admin/files',
+        url: '/api/admin/product-images-all',
         method: 'GET'
       });
       
-      console.log('Shopify media response:', response);
+      console.log('Shopify product images response:', response);
       
-      if (response.success && response.files && response.files.length > 0) {
-        console.log(`Loaded ${response.files.length} images from Shopify Media Library`);
+      if (response.success && response.images && response.images.length > 0) {
+        console.log(`Loaded ${response.images.length} product images from Shopify`);
         
         // Format the files to match our image structure, with careful handling of properties
-        const formattedImages = response.files.map((file: any) => {
+        const formattedImages = response.images.map((image: any) => {
           // Ensure we have a valid URL - critical for image display
-          const imageUrl = file.url || '';
+          const imageUrl = image.url || '';
           
           // Create a properly structured image object with all required fields
           return {
-            id: file.id || `file-${Math.random().toString(36).substring(7)}`,
+            id: image.id || `image-${Math.random().toString(36).substring(7)}`,
             url: imageUrl,
             src: {
               original: imageUrl,
@@ -143,11 +143,11 @@ export default function ImageSearchDialog({
               small: imageUrl,
               thumbnail: imageUrl
             },
-            alt: file.alt || file.filename || 'Shopify media',
-            width: file.width || 800, // Default width
-            height: file.height || 600, // Default height
-            source: file.source || 'shopify_media',
-            selected: selectedImages.some(selected => selected.id === file.id)
+            alt: image.alt || image.filename || 'Product image',
+            width: image.width || 800, // Default width
+            height: image.height || 600, // Default height
+            source: image.source || 'product_image',
+            selected: selectedImages.some(selected => selected.id === image.id)
           };
         });
         
@@ -157,7 +157,7 @@ export default function ImageSearchDialog({
         if (validImages.length === 0) {
           toast({
             title: "No valid images found",
-            description: "Your Shopify Media Library returned images but none had valid URLs",
+            description: "Could not find any usable product images in your store",
             variant: "destructive"
           });
           setSearchedImages([]);
@@ -165,46 +165,46 @@ export default function ImageSearchDialog({
           return;
         }
         
-        console.log(`${validImages.length} valid images after filtering`);
+        console.log(`${validImages.length} valid product images after filtering`);
         console.log('Sample image:', validImages[0]);
         
         // Add to available sources
         setAvailableSources(prev => {
-          const sources = new Set([...prev, 'shopify_media']);
-          if (validImages.some((img: PexelsImage) => img.source === 'product_image')) {
-            sources.add('product_image');
-          }
+          const sources = new Set([...prev, 'product_image']);
           if (validImages.some((img: PexelsImage) => img.source === 'variant_image')) {
             sources.add('variant_image');
+          }
+          if (validImages.some((img: PexelsImage) => img.source === 'shopify_media')) {
+            sources.add('shopify_media');
           }
           return Array.from(sources);
         });
         
         // Set the images and add to search history
         setSearchedImages(validImages);
-        setImageSearchQuery('Shopify Media');
+        setImageSearchQuery('Shopify Products');
         setImageSearchHistory(prev => [
-          { query: 'Shopify Media', images: validImages },
-          ...prev.filter(h => h.query !== 'Shopify Media')
+          { query: 'Shopify Products', images: validImages },
+          ...prev.filter(h => h.query !== 'Shopify Products')
         ]);
         
         toast({
-          title: "Media loaded successfully",
-          description: `Loaded ${validImages.length} images from your Shopify store`
+          title: "Product images loaded",
+          description: `Loaded ${validImages.length} product images from your Shopify store`
         });
       } else {
         toast({
-          title: "No media found",
-          description: "Your Shopify Media Library appears to be empty",
+          title: "No product images found",
+          description: "Could not find any product images in your Shopify store",
           variant: "destructive"
         });
         setSearchedImages([]);
       }
     } catch (error) {
-      console.error('Error loading Shopify Media Library:', error);
+      console.error('Error loading Shopify product images:', error);
       toast({
-        title: "Failed to load media",
-        description: "There was an error loading your Shopify Media Library. Please try again.",
+        title: "Failed to load images",
+        description: "There was an error loading your Shopify product images. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -473,7 +473,7 @@ export default function ImageSearchDialog({
                     onClick={loadShopifyMediaLibrary}
                     className="flex items-center"
                   >
-                    <span className="mr-2">Shopify Media Library</span>
+                    <span className="mr-2">Shopify Product Images</span>
                   </Button>
                   
                   <Button 

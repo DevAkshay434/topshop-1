@@ -654,6 +654,55 @@ adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) 
 // Create an instance of MediaService
 const mediaService = new MediaService(shopifyService);
 
+// Get all product images directly (more reliable)
+adminRouter.get("/product-images-all", async (_req: Request, res: Response) => {
+  try {
+    // Get Shopify connection
+    const connection = await storage.getShopifyConnection();
+    
+    if (!connection || !connection.isConnected) {
+      return res.json({
+        success: false,
+        message: "No active Shopify connection",
+        images: []
+      });
+    }
+    
+    // Create store object for API calls
+    const store = {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || null,
+      isConnected: connection.isConnected || true,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
+    
+    // Get all product images
+    const images = await mediaService.getProductImagesFromAllProducts(store);
+    console.log(`Fetched ${images.length} product images`);
+    
+    return res.json({
+      success: true,
+      images
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error in product images endpoint:", errorMessage);
+    res.status(500).json({
+      success: false,
+      message: errorMessage || "Failed to fetch product images",
+      images: []
+    });
+  }
+});
+
 // Get files from the Shopify media library (not product-specific)
 adminRouter.get("/files", async (_req: Request, res: Response) => {
   try {
