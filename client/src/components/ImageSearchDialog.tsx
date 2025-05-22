@@ -140,10 +140,10 @@ export default function ImageSearchDialog({
         // Add to available sources
         setAvailableSources(prev => {
           const sources = new Set([...prev, 'shopify_media']);
-          if (formattedImages.some(img => img.source === 'product_image')) {
+          if (formattedImages.some((img: PexelsImage) => img.source === 'product_image')) {
             sources.add('product_image');
           }
-          if (formattedImages.some(img => img.source === 'variant_image')) {
+          if (formattedImages.some((img: PexelsImage) => img.source === 'variant_image')) {
             sources.add('variant_image');
           }
           return Array.from(sources);
@@ -417,6 +417,37 @@ export default function ImageSearchDialog({
                         Searching...
                       </>
                     ) : "Search"}
+                  </Button>
+                </div>
+                
+                {/* Image Source Buttons */}
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleImageSearch('lifestyle')}
+                    className="flex items-center"
+                  >
+                    <span className="mr-2">Pexels Images</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={loadShopifyMediaLibrary}
+                    className="flex items-center"
+                  >
+                    <span className="mr-2">Shopify Media Library</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center"
+                    disabled={true}
+                  >
+                    <span className="mr-2">Upload Image</span>
+                    <Badge variant="outline" className="ml-1">Soon</Badge>
                   </Button>
                 </div>
                 
