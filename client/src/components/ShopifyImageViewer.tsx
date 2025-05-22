@@ -20,11 +20,15 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
   width, 
   height 
 }) => {
-  const [imageSrc, setImageSrc] = useState<string>(src);
-  const [hasError, setHasError] = useState<boolean>(false);
+  const [imageSrc, setImageSrc] = useState<string>(src || '');
+  const [hasError, setHasError] = useState<boolean>(!src || typeof src !== 'string');
 
   // Attempts to normalize Shopify URL to ensure it works across environments
   const normalizeShopifyUrl = (url: string): string => {
+    if (!url || typeof url !== 'string') {
+      return url || '';
+    }
+    
     // If already a CDN URL or doesn't contain shopify.com, return as is
     if (url.includes('cdn.shopify.com') || !url.includes('shopify.com')) {
       return url;
@@ -44,8 +48,13 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
   const handleImageError = () => {
     if (imageSrc === src) {
       // First try normalized URL
+      if (!src || typeof src !== 'string') {
+        setHasError(true);
+        return;
+      }
+      
       const normalizedUrl = normalizeShopifyUrl(src);
-      if (normalizedUrl !== src) {
+      if (normalizedUrl && normalizedUrl !== src) {
         setImageSrc(normalizedUrl);
         return;
       }
