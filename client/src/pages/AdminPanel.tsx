@@ -56,7 +56,9 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { 
+  AlertCircle,
   ArrowLeft,
+  ArrowRight,
   BarChart, 
   Calendar, 
   CalendarCheck,
@@ -78,6 +80,8 @@ import {
   Heart,
   Image as ImageIcon,
   Info,
+  Pencil,
+  ShoppingBag,
   Leaf,
   Loader2,
   Package,
@@ -312,8 +316,11 @@ export default function AdminPanel() {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imageSource, setImageSource] = useState<'pexels' | 'shopify' | 'upload'>('pexels');
+  const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify' | 'upload'>('pexels');
   const [imageType, setImageType] = useState<'products' | 'variants' | 'media'>('products');
+  const [isEditingImage, setIsEditingImage] = useState(false);
+  const [currentImageEdit, setCurrentImageEdit] = useState<{id: string, alt: string}>({id: '', alt: ''});
+  const [imageTab, setImageTab] = useState<'primary' | 'secondary'>('primary');
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [showTitleSelector, setShowTitleSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
@@ -3983,35 +3990,93 @@ export default function AdminPanel() {
         setShowImageDialog(open);
       }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b mb-4">
-            <DialogTitle>
-              {imageSource === 'pexels' && 'Search Pexels Images'}
-              {imageSource === 'shopify' && 'Browse Shopify Store Images'}
-              {imageSource === 'upload' && 'Upload Custom Images'}
-            </DialogTitle>
-            <DialogDescription>
-              {imageSource === 'pexels' && 'Find emotionally compelling images for your content'}
-              {imageSource === 'shopify' && 'Select product images from your store'}
-              {imageSource === 'upload' && 'Upload your own custom images'}
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <DialogTitle className="text-xl">Choose Media</DialogTitle>
+              
+              <Tabs 
+                value={imageTab} 
+                onValueChange={(v) => setImageTab(v as 'primary' | 'secondary')}
+                className="w-[400px]"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="primary" className="flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Primary Images
+                    {primaryImages.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{primaryImages.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="secondary" className="flex items-center">
+                    <FileImage className="h-4 w-4 mr-2" />
+                    Secondary Images
+                    {secondaryImages.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{secondaryImages.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            
+            <DialogDescription className="mt-1">
+              {imageTab === 'primary' ? (
+                <div className="flex items-center mb-2">
+                  <AlertCircle className="h-4 w-4 text-blue-500 mr-2" />
+                  <span className="text-blue-700 text-sm">
+                    Choose emotionally compelling images with human subjects to feature at the top of your content
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center mb-2">
+                  <Info className="h-4 w-4 text-green-500 mr-2" />
+                  <span className="text-green-700 text-sm">
+                    Select additional product images to appear throughout your article body
+                  </span>
+                </div>
+              )}
             </DialogDescription>
             
             {/* Image source tabs */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2 mt-3">
               <Button 
                 size="sm"
                 variant={imageSource === 'pexels' ? 'default' : 'outline'} 
                 onClick={() => {
                   setImageSource('pexels');
                   if (searchedImages.length === 0 && !imageSearchQuery) {
-                    // Set a default search query to help users
-                    setImageSearchQuery("happy customer");
+                    // Set a default search query based on selected tab
+                    if (imageTab === 'primary') {
+                      setImageSearchQuery("happy woman using product");
+                    } else {
+                      setImageSearchQuery(selectedProducts.length > 0 ? 
+                        `${selectedProducts[0].title} in use` : "product in use"
+                      );
+                    }
                   }
                 }}
                 className="flex-1"
               >
                 <Search className="mr-2 h-4 w-4" />
-                Search Pexels
+                Pexels Images
               </Button>
+              
+              <Button 
+                size="sm"
+                variant={imageSource === 'pixabay' ? 'default' : 'outline'} 
+                onClick={() => {
+                  setImageSource('pixabay');
+                  toast({
+                    title: "Coming Soon",
+                    description: "Pixabay integration will be available in a future update."
+                  });
+                }}
+                className="flex-1"
+              >
+                <Image className="mr-2 h-4 w-4" />
+                Pixabay 
+                <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
+              </Button>
+              
               <Button 
                 size="sm"
                 variant={imageSource === 'shopify' ? 'default' : 'outline'} 
@@ -4019,8 +4084,9 @@ export default function AdminPanel() {
                 className="flex-1"
               >
                 <Store className="mr-2 h-4 w-4" />
-                Shopify Products
+                Shopify Store
               </Button>
+              
               <Button 
                 size="sm"
                 variant={imageSource === 'upload' ? 'default' : 'outline'} 
@@ -4031,7 +4097,173 @@ export default function AdminPanel() {
                 Upload Image
               </Button>
             </div>
+            
+            {/* Selected images preview */}
+            {((imageTab === 'primary' && primaryImages.length > 0) || 
+              (imageTab === 'secondary' && secondaryImages.length > 0)) && (
+              <div className="mt-4 bg-slate-50 p-2 rounded-md border">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-medium">
+                    Your Selected {imageTab === 'primary' ? 'Primary' : 'Secondary'} Images
+                  </h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      if (imageTab === 'primary') {
+                        setPrimaryImages([]);
+                      } else {
+                        setSecondaryImages([]);
+                      }
+                      toast({
+                        title: "Images cleared",
+                        description: `All ${imageTab} images have been removed`
+                      });
+                    }}
+                    className="h-7 text-xs"
+                  >
+                    <Trash className="mr-1 h-3 w-3" />
+                    Clear All
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                  {(imageTab === 'primary' ? primaryImages : secondaryImages).map((img, index) => (
+                    <div key={img.id} className="relative group">
+                      <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
+                        <img 
+                          src={img.src?.medium || img.url} 
+                          alt={img.alt || "Selected image"} 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-0 left-0 bg-blue-500 text-white px-1 py-0.5 text-xs">
+                          {imageTab === 'primary' ? 
+                            (index === 0 ? 'Featured' : `Image ${index + 1}`) : 
+                            `Content ${index + 1}`}
+                        </div>
+                      </div>
+                      
+                      <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button 
+                          variant="secondary" 
+                          size="icon" 
+                          className="h-6 w-6 bg-white"
+                          onClick={() => {
+                            setCurrentImageEdit({
+                              id: img.id,
+                              alt: img.alt || ""
+                            });
+                            setIsEditingImage(true);
+                          }}
+                        >
+                          <PencilIcon className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (imageTab === 'primary') {
+                              setPrimaryImages(prev => prev.filter(i => i.id !== img.id));
+                            } else {
+                              setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
+                            }
+                            toast({
+                              title: "Image removed",
+                              description: "Image has been removed from your selection",
+                            });
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </DialogHeader>
+          
+          {/* Image edit dialog */}
+          <Dialog open={isEditingImage} onOpenChange={setIsEditingImage}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Edit Image Details</DialogTitle>
+                <DialogDescription>
+                  Add alt text and keywords to optimize your image for SEO
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="image-alt">Alt Text</Label>
+                  <Input
+                    id="image-alt"
+                    placeholder="Describe what's in the image"
+                    value={currentImageEdit.alt}
+                    onChange={(e) => setCurrentImageEdit(prev => ({...prev, alt: e.target.value}))}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Good alt text improves accessibility and SEO
+                  </p>
+                </div>
+                
+                <div className="flex justify-between">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => {
+                      // Generate alt text based on selected keywords
+                      const keywordText = selectedKeywords.length > 0 
+                        ? selectedKeywords.map(k => k.keyword).join(", ") 
+                        : "product";
+                      
+                      setCurrentImageEdit(prev => ({
+                        ...prev, 
+                        alt: `Image showing ${keywordText}`
+                      }));
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate from Keywords
+                  </Button>
+                  
+                  <Button 
+                    type="submit"
+                    onClick={() => {
+                      // Update the image alt text
+                      if (imageTab === 'primary') {
+                        setPrimaryImages(prev => 
+                          prev.map(img => 
+                            img.id === currentImageEdit.id 
+                              ? {...img, alt: currentImageEdit.alt} 
+                              : img
+                          )
+                        );
+                      } else {
+                        setSecondaryImages(prev => 
+                          prev.map(img => 
+                            img.id === currentImageEdit.id 
+                              ? {...img, alt: currentImageEdit.alt} 
+                              : img
+                          )
+                        );
+                      }
+                      
+                      setIsEditingImage(false);
+                      toast({
+                        title: "Image updated",
+                        description: "Image details have been saved",
+                      });
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           
           {imageSource === 'pexels' && (
             <div className="space-y-4">
