@@ -155,6 +155,14 @@ interface Region {
   name: string;
 }
 
+interface ProductVariant {
+  id: string;
+  title: string;
+  price: string;
+  image?: string;
+  inventory_quantity?: number;
+}
+
 interface Product {
   id: string;
   title: string;
@@ -162,6 +170,13 @@ interface Product {
   image?: string;
   body_html?: string;
   admin_url?: string;
+  images?: {
+    id: string;
+    src: string;
+    alt?: string;
+    position?: number;
+  }[];
+  variants?: ProductVariant[];
 }
 
 interface Collection {
@@ -298,6 +313,7 @@ export default function AdminPanel() {
   const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageSource, setImageSource] = useState<'pexels' | 'shopify' | 'upload'>('pexels');
+  const [imageType, setImageType] = useState<'products' | 'variants' | 'media'>('products');
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [showTitleSelector, setShowTitleSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
@@ -4163,88 +4179,448 @@ export default function AdminPanel() {
           
           {imageSource === 'shopify' && (
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">Product Images</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Shopify Images</h3>
+                <div className="flex gap-2">
+                  <Select 
+                    defaultValue="products" 
+                    onValueChange={(value) => {
+                      if (value === 'variants') {
+                        toast({
+                          title: "Showing variant images",
+                          description: "Browse and select from all product variants"
+                        });
+                      } else if (value === 'products') {
+                        toast({
+                          title: "Showing product images",
+                          description: "Browse and select from main product images"
+                        });
+                      }
+                      setImageType(value as 'products' | 'variants' | 'media');
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px] h-8">
+                      <SelectValue placeholder="Image source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="products">Product Images</SelectItem>
+                      <SelectItem value="variants">Variant Images</SelectItem>
+                      <SelectItem value="media">Media Library</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               
               {selectedProducts.length > 0 ? (
-                <div className="max-h-[400px] overflow-y-auto p-2">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {selectedProducts.map((product) => {
-                      if (!product.image) return null;
-                      
-                      // Check if this product image has already been added
-                      const isAlreadySelected = primaryImages.some(img => 
-                        img.id === `product-${product.id}` || img.url === product.image
-                      );
-                      
-                      return (
-                        <div 
-                          key={product.id} 
-                          className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
+                <>
+                  {/* Selected images preview */}
+                  {(primaryImages.length > 0 || secondaryImages.length > 0) && (
+                    <div className="mb-4 bg-slate-50 p-3 rounded-md border">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium">Your Selected Images</h4>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
                           onClick={() => {
-                            // Skip if already selected
-                            if (isAlreadySelected) {
-                              toast({
-                                title: "Already selected",
-                                description: "This product image is already in your primary images"
-                              });
-                              return;
-                            }
-                            
-                            // Create a Pexels-compatible image object for the product image
-                            const productImage: PexelsImage = {
-                              id: `product-${product.id}`,
-                              url: product.image || '',
-                              width: 500,
-                              height: 500,
-                              alt: product.title,
-                              src: {
-                                original: product.image || '',
-                                large: product.image || '',
-                                medium: product.image || '',
-                                small: product.image || '',
-                                thumbnail: product.image || '',
-                              }
-                            };
-                            
-                            // Add to primary or secondary images based on context
-                            if (workflowStep === 'media') {
-                              setPrimaryImages(prev => [...prev, productImage]);
-                            } else {
-                              setSecondaryImages(prev => [...prev, productImage]);
-                            }
-                            
+                            setPrimaryImages([]);
+                            setSecondaryImages([]);
                             toast({
-                              title: "Image added",
-                              description: "Product image added successfully",
+                              title: "Images cleared",
+                              description: "All selected images have been removed"
                             });
                           }}
+                          className="h-7 text-xs"
                         >
-                          <div className="relative aspect-square">
-                            <img 
-                              src={product.image} 
-                              alt={product.title} 
-                              className="w-full h-full object-contain bg-white"
-                              onError={(e) => {
-                                // Fallback for broken images
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null;
-                                target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
-                              }}
-                            />
-                            {isAlreadySelected && (
-                              <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
-                                <Check className="h-4 w-4" />
+                          <Trash className="mr-1 h-3 w-3" />
+                          Clear All
+                        </Button>
+                      </div>
+                      
+                      {primaryImages.length > 0 && (
+                        <>
+                          <h5 className="text-xs font-medium text-gray-500 mb-1">Featured/Primary Images:</h5>
+                          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-3">
+                            {primaryImages.map((img, index) => (
+                              <div key={img.id} className="relative group">
+                                <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
+                                  <img 
+                                    src={img.src?.medium || img.url} 
+                                    alt={img.alt || "Selected image"} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute top-1 left-1 bg-blue-500 text-white px-1 py-0.5 rounded text-xs">
+                                    {index === 0 ? 'Featured' : `Image ${index + 1}`}
+                                  </div>
+                                </div>
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button 
+                                    variant="destructive" 
+                                    size="icon" 
+                                    className="h-6 w-6" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPrimaryImages(prev => prev.filter(i => i.id !== img.id));
+                                      toast({
+                                        title: "Image removed",
+                                        description: "Primary image has been removed",
+                                      });
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
-                            )}
+                            ))}
                           </div>
-                          <div className="bg-black bg-opacity-70 p-2">
-                            <p className="text-white text-xs truncate">{product.title}</p>
+                        </>
+                      )}
+                      
+                      {secondaryImages.length > 0 && (
+                        <>
+                          <h5 className="text-xs font-medium text-gray-500 mb-1">Secondary Content Images:</h5>
+                          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                            {secondaryImages.map((img, index) => (
+                              <div key={img.id} className="relative group">
+                                <div className="relative aspect-square rounded-md overflow-hidden border-2 border-green-500">
+                                  <img 
+                                    src={img.src?.medium || img.url} 
+                                    alt={img.alt || "Content image"} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute top-1 left-1 bg-green-500 text-white px-1 py-0.5 rounded text-xs">
+                                    Content {index + 1}
+                                  </div>
+                                </div>
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button 
+                                    variant="destructive" 
+                                    size="icon" 
+                                    className="h-6 w-6" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
+                                      toast({
+                                        title: "Image removed",
+                                        description: "Content image has been removed",
+                                      });
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </div>
-                      );
-                    })}
+                        </>
+                      )}
+                    </div>
+                  )}
+                
+                  <div className="max-h-[400px] overflow-y-auto p-2">
+                    {imageType === 'products' && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {selectedProducts.map((product) => {
+                          if (!product.image) return null;
+                          
+                          // Check if this product image has already been added
+                          const isAlreadySelected = primaryImages.some(img => 
+                            img.id === `product-${product.id}` || img.url === product.image
+                          );
+                          
+                          return (
+                            <div 
+                              key={product.id} 
+                              className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
+                            >
+                              <div className="relative aspect-square">
+                                <img 
+                                  src={product.image} 
+                                  alt={product.title} 
+                                  className="w-full h-full object-contain bg-white"
+                                  onError={(e) => {
+                                    // Fallback for broken images
+                                    const target = e.target as HTMLImageElement;
+                                    target.onerror = null;
+                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                                  }}
+                                />
+                                {isAlreadySelected && (
+                                  <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
+                                    <Check className="h-4 w-4" />
+                                  </div>
+                                )}
+                                
+                                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all flex items-center justify-center">
+                                  <div className="opacity-0 hover:opacity-100 transition-all flex gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => {
+                                        // Skip if already selected
+                                        if (isAlreadySelected) {
+                                          toast({
+                                            title: "Already selected",
+                                            description: "This image is already in your selection"
+                                          });
+                                          return;
+                                        }
+                                        
+                                        // Create a Pexels-compatible image object for the product image
+                                        const productImage: PexelsImage = {
+                                          id: `product-${product.id}`,
+                                          url: product.image || '',
+                                          width: 500,
+                                          height: 500,
+                                          alt: product.title,
+                                          src: {
+                                            original: product.image || '',
+                                            large: product.image || '',
+                                            medium: product.image || '',
+                                            small: product.image || '',
+                                            thumbnail: product.image || '',
+                                          }
+                                        };
+                                        
+                                        // Add as featured image (first in array)
+                                        setPrimaryImages(prev => [productImage, ...prev]);
+                                        
+                                        toast({
+                                          title: "Featured image added",
+                                          description: "Product image added as featured image",
+                                        });
+                                      }}
+                                      className="bg-white text-black hover:bg-gray-100"
+                                    >
+                                      <ImageIcon className="mr-1 h-3 w-3" />
+                                      Set as Featured
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="bg-black bg-opacity-70 p-2">
+                                <p className="text-white text-xs truncate">{product.title}</p>
+                                <div className="flex justify-between items-center mt-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Create a Pexels-compatible image object for the product image
+                                      const productImage: PexelsImage = {
+                                        id: `product-${product.id}-secondary`,
+                                        url: product.image || '',
+                                        width: 500,
+                                        height: 500,
+                                        alt: product.title,
+                                        src: {
+                                          original: product.image || '',
+                                          large: product.image || '',
+                                          medium: product.image || '',
+                                          small: product.image || '',
+                                          thumbnail: product.image || '',
+                                        }
+                                      };
+                                      
+                                      // Add to secondary images
+                                      setSecondaryImages(prev => [...prev, productImage]);
+                                      
+                                      toast({
+                                        title: "Secondary image added",
+                                        description: "Image added for use in content body",
+                                      });
+                                    }}
+                                    className="h-6 px-2 text-white hover:bg-white hover:bg-opacity-20"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    <span className="text-xs">Add to Content</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {imageType === 'variants' && (
+                      <div className="space-y-6">
+                        {selectedProducts.map(product => {
+                          // Skip products with no variants or images
+                          if (!product.variants || product.variants.length === 0) {
+                            return null;
+                          }
+                          
+                          return (
+                            <div key={`variants-${product.id}`} className="space-y-2">
+                              <h4 className="text-sm font-medium">{product.title} Variants</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                {product.variants.map(variant => {
+                                  // Skip variants without images
+                                  if (!variant.image) return null;
+                                  
+                                  // Check if this variant image has already been added
+                                  const isAlreadySelected = primaryImages.some(img => 
+                                    img.id === `variant-${variant.id}` || img.url === variant.image
+                                  );
+                                  
+                                  return (
+                                    <div 
+                                      key={variant.id} 
+                                      className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
+                                    >
+                                      <div className="relative aspect-square">
+                                        <img 
+                                          src={variant.image} 
+                                          alt={variant.title} 
+                                          className="w-full h-full object-contain bg-white"
+                                          onError={(e) => {
+                                            // Fallback for broken images
+                                            const target = e.target as HTMLImageElement;
+                                            target.onerror = null;
+                                            target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                                          }}
+                                        />
+                                        {isAlreadySelected && (
+                                          <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
+                                            <Check className="h-4 w-4" />
+                                          </div>
+                                        )}
+                                        
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all flex items-center justify-center">
+                                          <div className="opacity-0 hover:opacity-100 transition-all flex gap-2">
+                                            <Button
+                                              type="button"
+                                              variant="secondary"
+                                              size="sm"
+                                              onClick={() => {
+                                                // Skip if already selected
+                                                if (isAlreadySelected) {
+                                                  toast({
+                                                    title: "Already selected",
+                                                    description: "This image is already in your selection"
+                                                  });
+                                                  return;
+                                                }
+                                                
+                                                // Create a Pexels-compatible image object for the variant image
+                                                const variantImage: PexelsImage = {
+                                                  id: `variant-${variant.id}`,
+                                                  url: variant.image || '',
+                                                  width: 500,
+                                                  height: 500,
+                                                  alt: `${product.title} - ${variant.title}`,
+                                                  src: {
+                                                    original: variant.image || '',
+                                                    large: variant.image || '',
+                                                    medium: variant.image || '',
+                                                    small: variant.image || '',
+                                                    thumbnail: variant.image || '',
+                                                  }
+                                                };
+                                                
+                                                // Add as featured image (first in array)
+                                                setPrimaryImages(prev => [variantImage, ...prev]);
+                                                
+                                                toast({
+                                                  title: "Featured image added",
+                                                  description: "Variant image added as featured image",
+                                                });
+                                              }}
+                                              className="bg-white text-black hover:bg-gray-100"
+                                            >
+                                              <ImageIcon className="mr-1 h-3 w-3" />
+                                              Set as Featured
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="bg-black bg-opacity-70 p-2">
+                                        <p className="text-white text-xs truncate">{variant.title}</p>
+                                        <div className="flex justify-between items-center mt-1">
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                              // Create a Pexels-compatible image object for the variant image
+                                              const variantImage: PexelsImage = {
+                                                id: `variant-${variant.id}-secondary`,
+                                                url: variant.image || '',
+                                                width: 500,
+                                                height: 500,
+                                                alt: `${product.title} - ${variant.title}`,
+                                                src: {
+                                                  original: variant.image || '',
+                                                  large: variant.image || '',
+                                                  medium: variant.image || '',
+                                                  small: variant.image || '',
+                                                  thumbnail: variant.image || '',
+                                                }
+                                              };
+                                              
+                                              // Add to secondary images
+                                              setSecondaryImages(prev => [...prev, variantImage]);
+                                              
+                                              toast({
+                                                title: "Secondary image added",
+                                                description: "Image added for use in content body",
+                                              });
+                                            }}
+                                            className="h-6 px-2 text-white hover:bg-white hover:bg-opacity-20"
+                                          >
+                                            <Plus className="h-3 w-3 mr-1" />
+                                            <span className="text-xs">Add to Content</span>
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {selectedProducts.every(p => !p.variants || p.variants.length === 0) && (
+                          <div className="text-center py-8">
+                            <ShoppingBag className="h-12 w-12 mx-auto text-slate-300 mb-2" />
+                            <p className="text-slate-500 mb-2">No product variants with images found</p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setImageType('products')}
+                            >
+                              <ArrowLeft className="mr-2 h-3 w-3" />
+                              Switch to Product Images
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {imageType === 'media' && (
+                      <div className="text-center py-8">
+                        <ImageIcon className="h-12 w-12 mx-auto text-slate-300 mb-2" />
+                        <p className="text-slate-500 mb-2">Media library access coming soon</p>
+                        <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
+                          In a future update, you'll be able to browse your store's media library.
+                          For now, you can use product images or upload your own.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setImageType('products')}
+                        >
+                          <ArrowLeft className="mr-2 h-3 w-3" />
+                          Switch to Product Images
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
+                </>
               ) : (
                 <div className="text-center py-8">
                   <Package className="h-12 w-12 mx-auto text-slate-300 mb-2" />
@@ -4269,10 +4645,11 @@ export default function AdminPanel() {
                   <div className="flex">
                     <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-blue-700 mb-1 font-medium">Tip: Add compelling human imagery</p>
+                      <p className="text-sm text-blue-700 mb-1 font-medium">Image Selection Tips</p>
                       <p className="text-xs text-blue-600">
-                        For best results, try adding emotionally compelling images with people using your products.
-                        You can search Pexels for these images.
+                        • Use "Set as Featured" for your main product image<br />
+                        • Add additional images to the content body with "Add to Content"<br />
+                        • For best results, include emotionally compelling images with people using your products
                       </p>
                     </div>
                   </div>
