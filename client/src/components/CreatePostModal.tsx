@@ -299,15 +299,75 @@ export default function CreatePostModal({
     setIsSubmitting(true);
     
     try {
-      // Process YouTube embed if available
+      // Process YouTube embeds
       let finalContent = values.content;
       
-      // If YouTube URL is provided, embed it at the end of the content
+      // Process YouTube videos from the image selection interface
+      // These are embedded as PexelsImage objects with type='youtube'
+      const youtubeVideos = [];
+      
+      // Check if media images are available and find YouTube videos
+      if (mediaImages && Array.isArray(mediaImages)) {
+        const youtubeMediaVideos = mediaImages.filter(img => 
+          img.type === 'youtube' && img.videoId
+        );
+        youtubeVideos.push(...youtubeMediaVideos);
+      }
+      
+      // Also check if there's a single YouTube URL from the form field
       if (values.youtubeUrl) {
         const videoId = values.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
         
         if (videoId) {
-          // Add a section break and video embed HTML
+          youtubeVideos.push({
+            videoId,
+            type: 'youtube'
+          });
+        }
+      }
+      
+      // If we have YouTube videos, embed them into the content
+      if (youtubeVideos.length > 0) {
+        // For multiple videos, we'll distribute them throughout the content
+        if (youtubeVideos.length > 1) {
+          // Split content into paragraphs for proper distribution
+          const paragraphs = finalContent.split('</p>');
+          
+          youtubeVideos.forEach((video, index) => {
+            if (!video.videoId) return;
+            
+            // Create responsive embed code
+            const videoEmbed = `
+<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/${video.videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>`;
+            
+            // Distribute videos throughout content
+            if (paragraphs.length > 3) {
+              // For first video, place after intro (25% through)
+              // For second video, place in middle (50% through)
+              // For additional videos, distribute in latter half
+              const position = Math.min(
+                Math.floor(paragraphs.length * (0.25 + (index * 0.25))),
+                paragraphs.length - 1
+              );
+              paragraphs[position] = paragraphs[position] + videoEmbed;
+            } else if (paragraphs.length > 0) {
+              // For shorter content, place after first paragraph
+              paragraphs[0] = paragraphs[0] + videoEmbed;
+            } else {
+              // If no paragraphs, append at end
+              finalContent += videoEmbed;
+            }
+          });
+          
+          // Recombine content if we modified paragraphs
+          if (paragraphs.length > 0) {
+            finalContent = paragraphs.join('</p>');
+          }
+        } else {
+          // If just one video, add it at the end as before
+          const videoId = youtubeVideos[0].videoId;
           finalContent = `${finalContent}\n\n<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">\n  <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n</div>`;
         }
       }
