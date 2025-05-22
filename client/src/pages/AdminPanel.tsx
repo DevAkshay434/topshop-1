@@ -4072,7 +4072,7 @@ export default function AdminPanel() {
                 }}
                 className="flex-1"
               >
-                <Image className="mr-2 h-4 w-4" />
+                <ImageIcon className="mr-2 h-4 w-4" />
                 Pixabay 
                 <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
               </Button>
@@ -4156,7 +4156,7 @@ export default function AdminPanel() {
                             setIsEditingImage(true);
                           }}
                         >
-                          <PencilIcon className="h-3 w-3" />
+                          <Pencil className="h-3 w-3" />
                         </Button>
                         <Button 
                           variant="destructive" 
