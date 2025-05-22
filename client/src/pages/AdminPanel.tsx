@@ -332,18 +332,18 @@ export default function AdminPanel() {
       const productsResponse = await fetch('/api/admin/products');
       const productsData = await productsResponse.json();
       
-      // Try to fetch files from Shopify content files API
-      let shopifyFiles = [];
+      // Try to fetch files from Shopify Media Library (separate from product images)
+      let shopifyMediaFiles = [];
       try {
-        // Correct API endpoint for content files
+        // Use dedicated endpoint for Shopify Media Library files
         const filesResponse = await fetch('/api/admin/files');
         const filesData = await filesResponse.json();
         
         if (filesData && filesData.success && filesData.files && filesData.files.length > 0) {
-          console.log("Successfully fetched content files:", filesData.files.length);
-          shopifyFiles = filesData.files
+          console.log("Successfully fetched Shopify Media Library files:", filesData.files.length);
+          shopifyMediaFiles = filesData.files
             .filter(file => {
-              // Check if file and url exist and are valid
+              // Check if file and url exist and are valid image types
               if (!file || typeof file.url !== 'string') return false;
               const url = file.url.toLowerCase();
               return url.endsWith('.jpg') || url.endsWith('.jpeg') || 
@@ -358,13 +358,13 @@ export default function AdminPanel() {
               source: 'media_library'
             }));
         } else {
-          console.log("No content files found or response invalid:", filesData);
+          console.log("No Shopify Media Library files found or response invalid:", filesData);
         }
       } catch (error) {
-        console.error('Error fetching Shopify content files:', error);
+        console.error('Error fetching Shopify Media Library files:', error);
         toast({
-          title: "Content files issue",
-          description: "Could not load media library files, using product images instead",
+          title: "Media Library issue",
+          description: "Could not load Shopify Media Library files",
           variant: "destructive"
         });
       }
