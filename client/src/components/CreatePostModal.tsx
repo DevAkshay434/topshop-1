@@ -73,6 +73,13 @@ interface CreatePostModalProps {
   selectedBlogId?: string;
   articleType?: "blog" | "page";
   categories?: string[]; // Categories for the post
+  mediaImages?: Array<{
+    id: string;
+    url: string;
+    alt?: string;
+    type?: 'image' | 'youtube';
+    videoId?: string;
+  }>; // Selected media including YouTube videos
   generatedContent?: {
     title: string;
     content: string;
@@ -144,7 +151,8 @@ export default function CreatePostModal({
   selectedProducts,
   selectedBlogId,
   articleType = "blog",
-  categories
+  categories,
+  mediaImages = []
 }: CreatePostModalProps) {
   const { toast } = useToast();
   const { storeInfo } = useStore();

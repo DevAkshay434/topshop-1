@@ -3979,6 +3979,7 @@ export default function AdminPanel() {
             selectedBlogId={blogId}
             articleType={articleType}
             categories={categories}
+            mediaImages={[...primaryImages, ...secondaryImages]} // Pass selected media including YouTube videos
           />
         );
       })()}
