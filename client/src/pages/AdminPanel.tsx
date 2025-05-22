@@ -5200,7 +5200,7 @@ export default function AdminPanel() {
                               <div key={img.id} className="relative group">
                                 <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
                                   <ShopifyImageViewer 
-                                    imageUrl={img.src?.medium || img.url || ''} 
+                                    src={img.src?.medium || img.url || ''} 
                                     alt={img.alt || "Selected image"} 
                                     className="w-full h-full"
                                   />
@@ -5239,7 +5239,7 @@ export default function AdminPanel() {
                               <div key={img.id} className="relative group">
                                 <div className="relative aspect-square rounded-md overflow-hidden border-2 border-green-500">
                                   <ShopifyImageViewer 
-                                    imageUrl={img.src?.medium || img.url || ''} 
+                                    src={img.src?.medium || img.url || ''} 
                                     alt={img.alt || "Content image"} 
                                     className="w-full h-full"
                                   />
@@ -5294,7 +5294,7 @@ export default function AdminPanel() {
                             >
                               <div className="relative aspect-square">
                                 <ShopifyImageViewer 
-                                  imageUrl={productImage} 
+                                  src={productImage} 
                                   alt={product.title || 'Product image'} 
                                   className="w-full h-full bg-white"
                                 />
@@ -5457,31 +5457,10 @@ export default function AdminPanel() {
                                       className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
                                     >
                                       <div className="relative aspect-square">
-                                        <img 
-                                          src={variant.image} 
-                                          alt={variant.title} 
+                                        <ShopifyImageViewer 
+                                          src={variant.image || ''} 
+                                          alt={variant.title || 'Product variant'} 
                                           className="w-full h-full object-contain bg-white"
-                                          onError={(e) => {
-                                            // Try CDN proxied URL if direct URL fails
-                                            const target = e.target as HTMLImageElement;
-                                            target.onerror = null;
-                                            
-                                            // Try to convert Shopify URL to CDN format if not already
-                                            if (variant.image && variant.image.includes('shopify.com') && !variant.image.includes('cdn.shopify.com')) {
-                                              try {
-                                                const url = new URL(variant.image as string);
-                                                // Attempt to create CDN version of URL
-                                                const cdnUrl = `https://cdn.shopify.com${url.pathname}${url.search}`;
-                                                target.src = cdnUrl;
-                                                return;
-                                              } catch (error) {
-                                                console.log("Failed to create CDN URL for variant");
-                                              }
-                                            }
-                                            
-                                            // If still fails, show a more friendly placeholder
-                                            target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYyZjUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzY0NzQ4YiI+VmFyaWFudCBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                                          }}
                                         />
                                         {isAlreadySelected && (
                                           <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
