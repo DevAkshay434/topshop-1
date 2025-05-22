@@ -1,126 +1,82 @@
 import React, { useState } from 'react';
+import { ImageOff } from 'lucide-react';
 
 interface ShopifyImageViewerProps {
-  imageUrl: string;
+  src: string;
   alt?: string;
   className?: string;
-  width?: string | number;
-  height?: string | number;
-  onClick?: () => void;
-  showPlaceholder?: boolean;
+  width?: number;
+  height?: number;
 }
 
 /**
- * A reliable image component for displaying Shopify images
- * Handles CDN conversions and fallbacks automatically
+ * A specialized component for displaying Shopify images that handles various URL formats
+ * and provides fallbacks for failed image loads
  */
-export function ShopifyImageViewer({
-  imageUrl,
-  alt = 'Product image',
-  className = '',
-  width = 'auto',
-  height = 'auto',
-  onClick,
-  showPlaceholder = false
-}: ShopifyImageViewerProps) {
-  const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Extract the product title from the alt text if available
-  const productTitle = alt?.split(' - ')[0] || 'Product';
-  
-  // Function to convert a Shopify URL to CDN format
-  const convertToCdnUrl = (url: string): string => {
+const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({ 
+  src, 
+  alt = "Shopify image", 
+  className = "", 
+  width, 
+  height 
+}) => {
+  const [imageSrc, setImageSrc] = useState<string>(src);
+  const [hasError, setHasError] = useState<boolean>(false);
+
+  // Attempts to normalize Shopify URL to ensure it works across environments
+  const normalizeShopifyUrl = (url: string): string => {
+    // If already a CDN URL or doesn't contain shopify.com, return as is
+    if (url.includes('cdn.shopify.com') || !url.includes('shopify.com')) {
+      return url;
+    }
+
     try {
-      if (url.includes('shopify.com') && !url.includes('cdn.shopify.com')) {
-        const parsedUrl = new URL(url);
-        return `https://cdn.shopify.com${parsedUrl.pathname}${parsedUrl.search}`;
-      }
-      return url;
+      // Try to convert to CDN format
+      const urlObj = new URL(url);
+      // Create CDN version (this format is more reliable)
+      return `https://cdn.shopify.com${urlObj.pathname}${urlObj.search}`;
     } catch (error) {
-      console.error('Failed to convert to CDN URL:', error);
+      console.error("Failed to normalize Shopify URL:", url);
       return url;
     }
   };
-  
-  // Start with the original URL, convert if needed
-  const [currentSrc, setCurrentSrc] = useState(imageUrl || '');
 
-  // Handle image load failure
   const handleImageError = () => {
-    if (currentSrc === imageUrl && typeof currentSrc === 'string' && 
-        currentSrc.includes && currentSrc.includes('shopify.com') && 
-        !currentSrc.includes('cdn.shopify.com')) {
-      // Try CDN version
-      const cdnUrl = convertToCdnUrl(imageUrl);
-      console.log(`Retrying with CDN URL: ${cdnUrl}`);
-      setCurrentSrc(cdnUrl);
-    } else {
-      // If we've already tried the CDN version or it's not a Shopify URL, show placeholder
-      setHasError(true);
+    if (imageSrc === src) {
+      // First try normalized URL
+      const normalizedUrl = normalizeShopifyUrl(src);
+      if (normalizedUrl !== src) {
+        setImageSrc(normalizedUrl);
+        return;
+      }
     }
-    setIsLoading(false);
+
+    // If we already tried the normalized URL or normalization failed, show error state
+    setHasError(true);
   };
 
-  // Handle successful image loading
-  const handleImageLoad = () => {
-    setIsLoading(false);
-    setHasError(false);
-  };
-
-  // Show placeholder if error or if placeholder is forced
-  const shouldShowPlaceholder = hasError || showPlaceholder;
+  if (hasError) {
+    return (
+      <div className={`flex items-center justify-center bg-gray-100 ${className}`} style={{ width, height }}>
+        <div className="text-center p-4">
+          <ImageOff className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+          <p className="text-gray-500 text-xs">Image not available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div 
-      className={`relative ${className}`} 
-      style={{ width, height }}
-      onClick={onClick}
-    >
-      {isLoading && !shouldShowPlaceholder && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 animate-pulse">
-          <span className="sr-only">Loading...</span>
-        </div>
-      )}
-      
-      {shouldShowPlaceholder ? (
-        <div className="w-full h-full flex items-center justify-center bg-gray-50 border rounded">
-          <div className="text-center p-2">
-            <svg 
-              className="mx-auto h-12 w-12 text-gray-400" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor" 
-              aria-hidden="true"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={1} 
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
-              />
-            </svg>
-            <p className="mt-1 text-sm text-gray-500 truncate">
-              {productTitle || alt}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <img
-          src={currentSrc}
-          alt={alt}
-          className={`w-full h-full object-contain ${hasError ? 'hidden' : ''}`}
-          style={{ 
-            objectFit: 'contain',
-            opacity: isLoading ? 0 : 1,
-            transition: 'opacity 0.2s ease-in-out'
-          }}
-          onError={handleImageError}
-          onLoad={handleImageLoad}
-        />
-      )}
-    </div>
+    <img
+      src={imageSrc}
+      alt={alt}
+      className={className}
+      width={width}
+      height={height}
+      onError={handleImageError}
+      loading="lazy"
+    />
   );
-}
+};
 
 export default ShopifyImageViewer;

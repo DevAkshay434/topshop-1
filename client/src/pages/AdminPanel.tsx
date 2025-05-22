@@ -5655,31 +5655,10 @@ export default function AdminPanel() {
                                     )}
                                     
                                     <div className="relative aspect-square">
-                                      <img 
+                                      <ShopifyImageViewer 
                                         src={file.url} 
-                                        alt={file.alt || file.name} 
+                                        alt={file.alt || file.name || "Shopify image"} 
                                         className="w-full h-full object-contain bg-white"
-                                        onError={(e) => {
-                                          // Try CDN proxied URL if direct URL fails
-                                          const target = e.target as HTMLImageElement;
-                                          target.onerror = null;
-                                          
-                                          // Try to convert Shopify URL to CDN format if not already
-                                          if (typeof file.url === 'string' && file.url.includes('shopify.com') && !file.url.includes('cdn.shopify.com')) {
-                                            try {
-                                              const url = new URL(file.url);
-                                              // Attempt to create CDN version of URL
-                                              const cdnUrl = `https://cdn.shopify.com${url.pathname}${url.search}`;
-                                              target.src = cdnUrl;
-                                              return;
-                                            } catch (error) {
-                                              console.log("Failed to create CDN URL for content file");
-                                            }
-                                          }
-                                          
-                                          // If still fails, show a more friendly placeholder
-                                          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYyZjUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzY0NzQ4YiI+U2hvcGlmeSBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                                        }}
                                       />
                                       
                                       {/* Action buttons overlay */}
