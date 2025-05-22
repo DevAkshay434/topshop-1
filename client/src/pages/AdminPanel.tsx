@@ -4224,6 +4224,9 @@ export default function AdminPanel() {
                         allowFullScreen
                       ></iframe>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      This video will be embedded in your content. You can add multiple videos.
+                    </p>
                   </div>
                 )}
               </div>
@@ -4271,7 +4274,9 @@ export default function AdminPanel() {
                             />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="bg-red-600 text-white rounded-full p-2 shadow-lg opacity-90">
-                                <Play className="h-6 w-6" />
+                                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
+                                </svg>
                               </div>
                             </div>
                           </div>
