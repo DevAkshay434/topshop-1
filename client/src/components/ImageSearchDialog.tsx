@@ -57,7 +57,7 @@ export default function ImageSearchDialog({
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>(initialSelectedImages || []);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<SearchHistory[]>([]);
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'product'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'shopify_media' | 'product_image' | 'variant_image'>('all');
   const [availableSources, setAvailableSources] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'selected'>('search');
   const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
@@ -454,7 +454,9 @@ export default function ImageSearchDialog({
                         if (sourceFilter === 'all') return true;
                         if (sourceFilter === 'pexels') return image.source === 'pexels';
                         if (sourceFilter === 'pixabay') return image.source === 'pixabay';
-                        if (sourceFilter === 'product') return image.isProductImage;
+                        if (sourceFilter === 'shopify_media') return image.source === 'shopify_media' || image.source === 'theme_asset';
+                        if (sourceFilter === 'product_image') return image.source === 'product_image';
+                        if (sourceFilter === 'variant_image') return image.source === 'variant_image';
                         return true;
                       })
                       .map(image => (
