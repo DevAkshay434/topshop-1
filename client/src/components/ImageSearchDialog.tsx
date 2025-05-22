@@ -105,101 +105,160 @@ export default function ImageSearchDialog({
     }
   }, [open, imageSearchHistory.length, searchedImages.length, selectedKeywords]);
 
-  // Load Shopify Media Library images
+  // Load Shopify Product Images 
   const loadShopifyMediaLibrary = async () => {
     setIsSearchingImages(true);
     
     try {
       // Display a loading message
       toast({
-        title: "Loading media files",
-        description: "Fetching images from your Shopify store..."
+        title: "Loading Shopify images",
+        description: "Fetching product images from your store..."
       });
       
-      // Try directly loading product images (which we know works)
-      const response = await apiRequest({
-        url: '/api/admin/product-images-all',
+      // Get products directly from Shopify API
+      const productsResponse = await apiRequest({
+        url: '/api/admin/products',
         method: 'GET'
       });
       
-      console.log('Shopify product images response:', response);
-      
-      if (response.success && response.images && response.images.length > 0) {
-        console.log(`Loaded ${response.images.length} product images from Shopify`);
-        
-        // Format the files to match our image structure, with careful handling of properties
-        const formattedImages = response.images.map((image: any) => {
-          // Ensure we have a valid URL - critical for image display
-          const imageUrl = image.url || '';
-          
-          // Create a properly structured image object with all required fields
-          return {
-            id: image.id || `image-${Math.random().toString(36).substring(7)}`,
-            url: imageUrl,
-            src: {
-              original: imageUrl,
-              large: imageUrl,
-              medium: imageUrl,
-              small: imageUrl,
-              thumbnail: imageUrl
-            },
-            alt: image.alt || image.filename || 'Product image',
-            width: image.width || 800, // Default width
-            height: image.height || 600, // Default height
-            source: image.source || 'product_image',
-            selected: selectedImages.some(selected => selected.id === image.id)
-          };
+      if (!productsResponse.success || !productsResponse.products || !productsResponse.products.length) {
+        toast({
+          title: "No products found",
+          description: "Could not find any products in your Shopify store.",
+          variant: "destructive"
         });
-        
-        // Filter out any images without valid URLs
-        const validImages = formattedImages.filter((img: PexelsImage) => img.url && img.url.trim() !== '');
-        
-        if (validImages.length === 0) {
-          toast({
-            title: "No valid images found",
-            description: "Could not find any usable product images in your store",
-            variant: "destructive"
+        setIsSearchingImages(false);
+        return;
+      }
+      
+      console.log(`Got ${productsResponse.products.length} products from Shopify`);
+      
+      // Extract all images directly from products
+      const allImages: PexelsImage[] = [];
+      
+      // Process all products and collect their images
+      productsResponse.products.forEach((product: any) => {
+        // Add main product image
+        if (product.image && product.image.src) {
+          allImages.push({
+            id: `product-${product.id}-main`,
+            url: product.image.src,
+            src: {
+              original: product.image.src,
+              large: product.image.src,
+              medium: product.image.src,
+              small: product.image.src,
+              thumbnail: product.image.src
+            },
+            alt: product.title || 'Product image',
+            width: 800,
+            height: 600,
+            source: 'product_image',
+            selected: false
           });
-          setSearchedImages([]);
-          setIsSearchingImages(false);
-          return;
         }
         
-        console.log(`${validImages.length} valid product images after filtering`);
-        console.log('Sample image:', validImages[0]);
+        // Add additional product images
+        if (product.images && Array.isArray(product.images)) {
+          product.images.forEach((image: any, index: number) => {
+            if (image && image.src) {
+              // Check for duplicates
+              const isDuplicate = allImages.some(img => img.url === image.src);
+              
+              if (!isDuplicate) {
+                allImages.push({
+                  id: `product-${product.id}-image-${index}`,
+                  url: image.src,
+                  src: {
+                    original: image.src,
+                    large: image.src,
+                    medium: image.src,
+                    small: image.src,
+                    thumbnail: image.src
+                  },
+                  alt: image.alt || `${product.title} - Image ${index + 1}`,
+                  width: 800,
+                  height: 600,
+                  source: 'product_image',
+                  selected: false
+                });
+              }
+            }
+          });
+        }
         
-        // Add to available sources
-        setAvailableSources(prev => {
-          const sources = new Set([...prev, 'product_image']);
-          if (validImages.some((img: PexelsImage) => img.source === 'variant_image')) {
-            sources.add('variant_image');
-          }
-          if (validImages.some((img: PexelsImage) => img.source === 'shopify_media')) {
-            sources.add('shopify_media');
-          }
-          return Array.from(sources);
-        });
-        
-        // Set the images and add to search history
-        setSearchedImages(validImages);
-        setImageSearchQuery('Shopify Products');
-        setImageSearchHistory(prev => [
-          { query: 'Shopify Products', images: validImages },
-          ...prev.filter(h => h.query !== 'Shopify Products')
-        ]);
-        
+        // Add variant images
+        if (product.variants && Array.isArray(product.variants)) {
+          product.variants.forEach((variant: any, variantIndex: number) => {
+            if (variant.image && variant.image.src) {
+              // Skip duplicates
+              const isDuplicate = allImages.some(img => img.url === variant.image.src);
+              
+              if (!isDuplicate) {
+                allImages.push({
+                  id: `variant-${variant.id}`,
+                  url: variant.image.src,
+                  src: {
+                    original: variant.image.src,
+                    large: variant.image.src,
+                    medium: variant.image.src,
+                    small: variant.image.src,
+                    thumbnail: variant.image.src
+                  },
+                  alt: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
+                  width: 800,
+                  height: 600,
+                  source: 'variant_image',
+                  selected: false
+                });
+              }
+            }
+          });
+        }
+      });
+      
+      // Mark selected images
+      const validImages = allImages.map(img => ({
+        ...img,
+        selected: selectedImages.some(selected => selected.url === img.url)
+      }));
+      
+      if (validImages.length === 0) {
         toast({
-          title: "Product images loaded",
-          description: `Loaded ${validImages.length} product images from your Shopify store`
-        });
-      } else {
-        toast({
-          title: "No product images found",
-          description: "Could not find any product images in your Shopify store",
+          title: "No images found",
+          description: "Your products don't have any images. Try adding images to your products in Shopify.",
           variant: "destructive"
         });
         setSearchedImages([]);
+        setIsSearchingImages(false);
+        return;
       }
+      
+      console.log(`Found ${validImages.length} product images`);
+      console.log('Sample image:', validImages[0]);
+      
+      // Add available sources
+      setAvailableSources(prev => {
+        const sources = new Set([...prev, 'product_image']);
+        if (validImages.some(img => img.source === 'variant_image')) {
+          sources.add('variant_image');
+        }
+        return Array.from(sources);
+      });
+      
+      // Set the images and add to search history
+      setSearchedImages(validImages);
+      setImageSearchQuery('Shopify Products');
+      setImageSearchHistory(prev => [
+        { query: 'Shopify Products', images: validImages },
+        ...prev.filter(h => h.query !== 'Shopify Products')
+      ]);
+      
+      toast({
+        title: "Images loaded successfully",
+        description: `Loaded ${validImages.length} images from your Shopify products`
+      });
     } catch (error) {
       console.error('Error loading Shopify product images:', error);
       toast({
