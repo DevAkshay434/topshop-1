@@ -322,37 +322,49 @@ export default function AdminPanel() {
   const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
   const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
+  const [isLoadingMedia, setIsLoadingMedia] = useState(false);
+  const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
   
   // Function to fetch Shopify Media Library files (store-wide)
   const fetchShopifyMediaFiles = async () => {
     try {
-      setIsLoadingContentFiles(true);
+      setIsLoadingMedia(true);
       toast({
         title: "Loading media library",
         description: "Fetching files from your Shopify Media Library..."
       });
       
       // Use the dedicated endpoint for Shopify Media Library
-      const mediaFilesResponse = await fetch('/api/admin/files');
-      const mediaFilesData = await mediaFilesResponse.json();
+      const response = await apiRequest({
+        url: '/api/admin/files',
+        method: 'GET'
+      });
       
-      if (mediaFilesData.success && mediaFilesData.files && mediaFilesData.files.length > 0) {
+      if (response.success && response.files && response.files.length > 0) {
         // Format the media files for our UI
-        const mediaLibraryFiles = mediaFilesData.files
-          .filter(file => {
+        const mediaLibraryFiles = response.files
+          .filter((file: any) => {
             // Filter to only include image files
             if (!file || !file.url) return false;
             const url = (file.url || '').toLowerCase();
             return url.endsWith('.jpg') || url.endsWith('.jpeg') || 
                   url.endsWith('.png') || url.endsWith('.gif');
           })
-          .map(file => ({
+          .map((file: any) => ({
             id: `media-${file.id || Math.random().toString(36).substring(7)}`,
             url: file.url,
-            name: file.filename || 'Shopify Media',
+            width: 500,
+            height: 500,
             alt: file.alt || file.filename || 'Shopify Media',
-            content_type: file.content_type || 'image/jpeg',
-            source: 'media_library'
+            src: {
+              original: file.url,
+              large: file.url,
+              medium: file.url,
+              small: file.url,
+              thumbnail: file.url
+            },
+            selected: false,
+            source: 'shopify'
           }));
         
         setContentFiles(mediaLibraryFiles);
@@ -4831,17 +4843,58 @@ export default function AdminPanel() {
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium">Shopify Media Library</h3>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Set state to show our enhanced dialog
-                      setShowChooseMediaDialog(true);
+                  <Select 
+                    defaultValue="products" 
+                    onValueChange={(value) => {
+                      if (value === 'variants') {
+                        toast({
+                          title: "Showing variant images",
+                          description: "Browse and select from all product variants"
+                        });
+                        // Fetch variant images for selected products
+                        if (selectedProducts.length > 0) {
+                          fetchProductImages(true); // true = include variants
+                        } else {
+                          toast({
+                            title: "No products selected",
+                            description: "Please select products first to view their variants",
+                            variant: "destructive"
+                          });
+                        }
+                      } else if (value === 'products') {
+                        toast({
+                          title: "Showing product images",
+                          description: "Browse and select from main product images"
+                        });
+                        if (selectedProducts.length > 0) {
+                          fetchProductImages(false); // false = main product images only
+                        } else {
+                          toast({
+                            title: "No products selected",
+                            description: "Please select products first to view their images",
+                            variant: "destructive"
+                          });
+                        }
+                      } else if (value === 'media') {
+                        toast({
+                          title: "Loading media library",
+                          description: "Fetching files from your Shopify store"
+                        });
+                        // Fetch all media files
+                        fetchShopifyMediaFiles();
+                      }
+                      setImageType(value as 'products' | 'variants' | 'media');
                     }}
                   >
-                    <ImagePlus className="mr-2 h-4 w-4" />
-                    Choose Media
-                  </Button>
+                    <SelectTrigger className="w-[180px] h-8">
+                      <SelectValue placeholder="Image source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="products">Selected Product Images</SelectItem>
+                      <SelectItem value="variants">Product Variant Images</SelectItem>
+                      <SelectItem value="media">All Shopify Media</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
