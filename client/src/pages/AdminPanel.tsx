@@ -4186,7 +4186,11 @@ export default function AdminPanel() {
                 <Button 
                   size="sm"
                   variant={imageSource === 'shopify-files' ? 'default' : 'outline'} 
-                  onClick={() => setImageSource('shopify-files')}
+                  onClick={() => {
+                    setImageSource('shopify-files');
+                    // Fetch content files when this source is selected
+                    fetchShopifyFiles();
+                  }}
                   className="w-full"
                 >
                   <FolderOpen className="mr-2 h-4 w-4" />
@@ -4863,7 +4867,7 @@ export default function AdminPanel() {
                                         };
                                         
                                         // Add as featured image (first in array)
-                                        setPrimaryImages(prev => [productImage, ...prev]);
+                                        setPrimaryImages(prev => [imageForSelection, ...prev]);
                                         
                                         toast({
                                           title: "Featured image added",
