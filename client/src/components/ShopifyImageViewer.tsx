@@ -44,11 +44,13 @@ export function ShopifyImageViewer({
   };
   
   // Start with the original URL, convert if needed
-  const [currentSrc, setCurrentSrc] = useState(imageUrl);
+  const [currentSrc, setCurrentSrc] = useState(imageUrl || '');
 
   // Handle image load failure
   const handleImageError = () => {
-    if (currentSrc === imageUrl && currentSrc.includes('shopify.com') && !currentSrc.includes('cdn.shopify.com')) {
+    if (currentSrc === imageUrl && typeof currentSrc === 'string' && 
+        currentSrc.includes && currentSrc.includes('shopify.com') && 
+        !currentSrc.includes('cdn.shopify.com')) {
       // Try CDN version
       const cdnUrl = convertToCdnUrl(imageUrl);
       console.log(`Retrying with CDN URL: ${cdnUrl}`);
