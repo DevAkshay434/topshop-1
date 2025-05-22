@@ -322,49 +322,76 @@ export default function AdminPanel() {
     try {
       setIsLoadingContentFiles(true);
       
-      // Use product images as content files (temporary solution)
+      // Use product images as content files 
       const productsResponse = await fetch('/api/admin/products');
       const productsData = await productsResponse.json();
       
       if (productsData.success && productsData.products) {
-        // Convert product images to content files format
-        const contentImageFiles = productsData.products
-          .filter(p => p.image || (p.images && p.images.length > 0))
-          .flatMap((product) => {
-            const files = [];
-            
-            // Add main product image
-            if (product.image) {
-              files.push({
-                id: `file-product-${product.id}`,
-                url: product.image,
-                name: `${product.title} main image`,
-                alt: product.title,
-                content_type: 'image/jpeg'
-              });
-            }
-            
-            // Add all product images if available
-            if (product.images && product.images.length > 0) {
-              product.images.forEach((image, idx) => {
-                if (!image.src) return;
-                files.push({
-                  id: `file-product-${product.id}-image-${idx}`,
-                  url: image.src,
-                  name: `${product.title} image ${idx + 1}`,
-                  alt: image.alt || product.title,
-                  content_type: 'image/jpeg'
+        // Convert product images to content files format with better organization
+        let contentImageFiles = [];
+        
+        // Process main product images
+        const mainProductImages = productsData.products
+          .filter(p => p.image)
+          .map(product => ({
+            id: `file-product-${product.id}`,
+            url: product.image,
+            name: `${product.title} (Main)`,
+            alt: product.title,
+            content_type: 'image/jpeg',
+            product_title: product.title,
+            source: 'product'
+          }));
+        contentImageFiles = [...contentImageFiles, ...mainProductImages];
+        
+        // Process all additional product images
+        const additionalImages = [];
+        productsData.products.forEach(product => {
+          if (product.images && product.images.length > 1) {
+            // Skip first image if it's same as main image
+            const additionalProductImages = product.images
+              .slice(1)
+              .map((image, idx) => ({
+                id: `file-product-${product.id}-image-${idx+1}`,
+                url: image.src,
+                name: `${product.title} (Image ${idx+2})`,
+                alt: image.alt || `${product.title} additional image`,
+                content_type: 'image/jpeg',
+                product_title: product.title,
+                source: 'product-image'
+              }));
+            additionalImages.push(...additionalProductImages);
+          }
+        });
+        contentImageFiles = [...contentImageFiles, ...additionalImages];
+        
+        // Process variant images that differ from main product images
+        const variantImages = [];
+        productsData.products.forEach(product => {
+          const mainImage = product.image;
+          if (product.variants && product.variants.length > 0) {
+            product.variants.forEach(variant => {
+              if (variant.image && variant.image !== mainImage) {
+                variantImages.push({
+                  id: `file-variant-${variant.id}`,
+                  url: variant.image,
+                  name: `${product.title} - ${variant.title}`,
+                  alt: `${product.title} ${variant.title} variant`,
+                  content_type: 'image/jpeg',
+                  product_title: product.title,
+                  variant_title: variant.title,
+                  source: 'variant'
                 });
-              });
-            }
-            
-            return files;
-          });
+              }
+            });
+          }
+        });
+        contentImageFiles = [...contentImageFiles, ...variantImages];
           
         setContentFiles(contentImageFiles);
         toast({
-          title: "Content files loaded",
-          description: `${contentImageFiles.length} images found from your products`,
+          title: "Shopify images loaded",
+          description: `${contentImageFiles.length} images found in your store`,
         });
       } else {
         toast({
@@ -4258,8 +4285,13 @@ export default function AdminPanel() {
                   variant={imageSource === 'shopify-files' ? 'default' : 'outline'} 
                   onClick={() => {
                     setImageSource('shopify-files');
+                    setImageType('media');
                     // Fetch content files when this source is selected
                     fetchShopifyFiles();
+                    toast({
+                      title: "Loading Content Files",
+                      description: "Fetching images from your Shopify store's media library"
+                    });
                   }}
                   className="w-full"
                 >
