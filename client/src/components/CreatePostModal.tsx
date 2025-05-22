@@ -312,11 +312,11 @@ export default function CreatePostModal({
       
       // Process YouTube videos from the image selection interface
       // These are embedded as PexelsImage objects with type='youtube'
-      const youtubeVideos = [];
+      const youtubeVideos: Array<{videoId?: string, type?: 'youtube' | 'image'}> = [];
       
       // Check if media images are available and find YouTube videos
       if (mediaImages && Array.isArray(mediaImages)) {
-        const youtubeMediaVideos = mediaImages.filter(img => 
+        const youtubeMediaVideos = mediaImages.filter((img: {type?: 'youtube' | 'image', videoId?: string}) => 
           img.type === 'youtube' && img.videoId
         );
         youtubeVideos.push(...youtubeMediaVideos);

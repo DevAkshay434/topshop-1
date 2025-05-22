@@ -3057,6 +3057,94 @@ export default function AdminPanel() {
                         )}
                       />
                       
+                      {/* YouTube Video Embedding */}
+                      <FormField
+                        control={form.control}
+                        name="youtubeUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>YouTube Video (Optional)</FormLabel>
+                            <FormControl>
+                              <div className="flex space-x-2">
+                                <Input
+                                  placeholder="Enter YouTube video URL"
+                                  {...field}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    
+                                    // Extract video ID from URL for preview
+                                    const videoId = e.target.value.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                                    
+                                    if (videoId) {
+                                      // Create a YouTube video entry in the primary images array
+                                      const youtubeVideo = {
+                                        id: `youtube-${videoId}`,
+                                        url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                                        alt: "YouTube video thumbnail",
+                                        type: 'youtube' as const,
+                                        videoId: videoId
+                                      };
+                                      
+                                      // Check if we already have this video
+                                      const exists = primaryImages.some(img => 
+                                        img.type === 'youtube' && img.videoId === videoId
+                                      );
+                                      
+                                      // Add to primary images if not already there
+                                      if (!exists) {
+                                        setPrimaryImages(prev => [youtubeVideo, ...prev]);
+                                      }
+                                    }
+                                  }}
+                                />
+                                {field.value && field.value.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/) && (
+                                  <Button 
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                      const videoId = field.value.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                                      if (videoId) {
+                                        window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+                                      }
+                                    }}
+                                  >
+                                    Preview
+                                  </Button>
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormDescription>
+                              Add a YouTube video to embed in your content. Enter the full URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)
+                            </FormDescription>
+                            <FormMessage />
+                            
+                            {field.value && field.value.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/) && (
+                              <div className="mt-2 relative rounded-lg overflow-hidden" style={{ paddingTop: '56.25%' }}>
+                                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                                  {(() => {
+                                    const videoId = field.value.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                                    return (
+                                      <>
+                                        <img 
+                                          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`} 
+                                          alt="YouTube video thumbnail"
+                                          className="absolute inset-0 w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                          <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center">
+                                            <div className="w-0 h-0 border-y-8 border-y-transparent border-l-12 border-l-white ml-1"></div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            )}
+                          </FormItem>
+                        )}
+                      />
+                      
                       {/* Scheduled publishing option - Step 4 content */}
                       {workflowStep === 'content' && (
                         <FormField
