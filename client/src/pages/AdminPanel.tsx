@@ -4125,6 +4125,110 @@ export default function AdminPanel() {
               </div>
             </div>
             
+            {/* YouTube video embedding section */}
+            {imageSource === 'youtube' && (
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-700">Add YouTube videos to embed in your content</p>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="youtube-url">YouTube Video URL</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      id="youtube-url"
+                      placeholder="https://www.youtube.com/watch?v=..." 
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      variant="default"
+                      disabled={!youtubeUrl.trim()}
+                      onClick={() => {
+                        // Extract video ID from YouTube URL
+                        try {
+                          const url = new URL(youtubeUrl);
+                          let videoId = '';
+                          
+                          if (url.hostname === 'youtu.be') {
+                            videoId = url.pathname.substring(1);
+                          } else if (url.hostname.includes('youtube.com')) {
+                            videoId = url.searchParams.get('v') || '';
+                          }
+                          
+                          if (videoId) {
+                            setYoutubeVideoId(videoId);
+                            // Create a PexelsImage-like object to store the YouTube video info
+                            const youtubeImage: PexelsImage = {
+                              id: `youtube-${videoId}`,
+                              url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                              width: 1280,
+                              height: 720,
+                              alt: `YouTube video ${videoId}`,
+                              type: 'youtube',
+                              videoId: videoId
+                            };
+                            
+                            if (imageTab === 'primary') {
+                              setPrimaryImages([...primaryImages, youtubeImage]);
+                            } else {
+                              setSecondaryImages([...secondaryImages, youtubeImage]);
+                            }
+                            
+                            toast({
+                              title: "YouTube Video Added",
+                              description: "YouTube video has been added to your content.",
+                              variant: "default"
+                            });
+                            
+                            // Clear the input after adding
+                            setYoutubeUrl('');
+                          } else {
+                            toast({
+                              title: "Invalid YouTube URL",
+                              description: "Couldn't extract video ID from the URL",
+                              variant: "destructive"
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Invalid URL",
+                            description: "Please enter a valid YouTube URL",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Video
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Paste a YouTube video URL (like https://www.youtube.com/watch?v=abcXYZ) to embed it in your content.
+                  </p>
+                </div>
+                
+                {youtubeVideoId && (
+                  <div className="mt-4 border rounded-md p-4">
+                    <h4 className="text-sm font-medium mb-2">Video Preview</h4>
+                    <div className="aspect-video bg-muted rounded-md overflow-hidden">
+                      <iframe 
+                        width="100%" 
+                        height="100%" 
+                        src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Selected images preview */}
             {((imageTab === 'primary' && primaryImages.length > 0) || 
               (imageTab === 'secondary' && secondaryImages.length > 0)) && (
