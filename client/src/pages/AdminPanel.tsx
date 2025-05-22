@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ShopifyImageViewer from '../components/ShopifyImageViewer';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
@@ -4989,31 +4990,10 @@ export default function AdminPanel() {
                               className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
                             >
                               <div className="relative aspect-square">
-                                <img 
-                                  src={productImage} 
-                                  alt={product.title} 
-                                  className="w-full h-full object-contain bg-white"
-                                  onError={(e) => {
-                                    // Try CDN proxied URL if direct URL fails
-                                    const target = e.target as HTMLImageElement;
-                                    target.onerror = null;
-                                    
-                                    // Try to convert Shopify URL to CDN format if not already
-                                    if (typeof productImage === 'string' && productImage.includes('shopify.com') && !productImage.includes('cdn.shopify.com')) {
-                                      try {
-                                        const url = new URL(productImage);
-                                        // Attempt to create CDN version of URL
-                                        const cdnUrl = `https://cdn.shopify.com${url.pathname}${url.search}`;
-                                        target.src = cdnUrl;
-                                        return;
-                                      } catch (error) {
-                                        console.log("Failed to create CDN URL");
-                                      }
-                                    }
-                                    
-                                    // If still fails, show a more friendly placeholder
-                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYyZjUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzY0NzQ4YiI+UHJvZHVjdCBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                                  }}
+                                <ShopifyImageViewer 
+                                  imageUrl={productImage} 
+                                  alt={product.title || 'Product image'} 
+                                  className="w-full h-full bg-white"
                                 />
                                 {isAlreadySelected && (
                                   <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
