@@ -4119,7 +4119,7 @@ export default function AdminPanel() {
                   onClick={() => setImageSource('youtube')}
                   className="w-full"
                 >
-                  <ImageIcon className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   YouTube Video
                 </Button>
               </div>
@@ -4158,15 +4158,32 @@ export default function AdminPanel() {
                   {(imageTab === 'primary' ? primaryImages : secondaryImages).map((img, index) => (
                     <div key={img.id} className="relative group">
                       <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
-                        <img 
-                          src={img.src?.medium || img.url} 
-                          alt={img.alt || "Selected image"} 
-                          className="w-full h-full object-cover"
-                        />
+                        {img.type === 'youtube' ? (
+                          <div className="w-full h-full relative">
+                            <img 
+                              src={img.url} 
+                              alt={img.alt || "YouTube video thumbnail"} 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-red-600 text-white rounded-full p-2 shadow-lg opacity-90">
+                                <Play className="h-6 w-6" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <img 
+                            src={img.src?.medium || img.url} 
+                            alt={img.alt || "Selected image"} 
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                         <div className="absolute top-0 left-0 bg-blue-500 text-white px-1 py-0.5 text-xs">
-                          {imageTab === 'primary' ? 
-                            (index === 0 ? 'Featured' : `Image ${index + 1}`) : 
-                            `Content ${index + 1}`}
+                          {img.type === 'youtube' ? 
+                            'YouTube Video' : 
+                            (imageTab === 'primary' ? 
+                              (index === 0 ? 'Featured' : `Image ${index + 1}`) : 
+                              `Content ${index + 1}`)}
                         </div>
                       </div>
                       
