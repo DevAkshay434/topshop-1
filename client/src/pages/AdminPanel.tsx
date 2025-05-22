@@ -5227,23 +5227,170 @@ export default function AdminPanel() {
                     )}
                     
                     {imageType === 'media' && (
-                      <div className="text-center py-8">
-                        <ImageIcon className="h-12 w-12 mx-auto text-slate-300 mb-2" />
-                        <p className="text-slate-500 mb-2">Media library access coming soon</p>
-                        <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
-                          In a future update, you'll be able to browse your store's media library.
-                          For now, you can use product images or upload your own.
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setImageType('products')}
-                        >
-                          <ArrowLeft className="mr-2 h-3 w-3" />
-                          Switch to Product Images
-                        </Button>
-                      </div>
+                      <>
+                        {isLoadingContentFiles ? (
+                          <div className="flex justify-center items-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                            <span className="ml-2">Loading content files...</span>
+                          </div>
+                        ) : contentFiles.length > 0 ? (
+                          <div>
+                            <div className="pb-3 mb-3 border-b border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <h4 className="text-sm font-medium flex items-center">
+                                  <Store className="h-4 w-4 mr-2 text-blue-500" />
+                                  Shopify Content Files
+                                </h4>
+                                <Badge variant="outline">{contentFiles.length} images</Badge>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Choose images from your store to use in your content
+                              </p>
+                            </div>
+                          
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                              {contentFiles.map((file) => {
+                                // Check if already selected
+                                const isPrimarySelected = primaryImages.some(img => 
+                                  img.id === file.id || img.url === file.url
+                                );
+                                const isSecondarySelected = secondaryImages.some(img => 
+                                  img.id === `${file.id}-secondary` || img.url === file.url
+                                );
+                                
+                                let borderClass = 'border-gray-200';
+                                if (isPrimarySelected) borderClass = 'border-blue-500';
+                                if (isSecondarySelected) borderClass = 'border-green-500';
+                                
+                                return (
+                                  <div 
+                                    key={file.id} 
+                                    className={`relative rounded-md overflow-hidden border-2 ${borderClass} hover:shadow-md transition-all`}
+                                  >
+                                    {isPrimarySelected && (
+                                      <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs z-10">
+                                        Featured
+                                      </div>
+                                    )}
+                                    {isSecondarySelected && (
+                                      <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs z-10">
+                                        Content
+                                      </div>
+                                    )}
+                                    
+                                    <div className="relative aspect-square">
+                                      <img 
+                                        src={file.url} 
+                                        alt={file.alt || file.name} 
+                                        className="w-full h-full object-contain bg-white"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.onerror = null;
+                                          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                                        }}
+                                      />
+                                      
+                                      {/* Action buttons overlay */}
+                                      <div className="absolute inset-0 bg-black bg-opacity-70 opacity-0 hover:opacity-100 transition-all flex flex-col items-center justify-center gap-3 p-3">
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          onClick={() => {
+                                            // Create a Pexels-compatible image object
+                                            const imageForSelection: PexelsImage = {
+                                              id: file.id,
+                                              url: file.url,
+                                              width: 800,
+                                              height: 800,
+                                              alt: file.alt || file.name,
+                                              src: {
+                                                original: file.url,
+                                                large: file.url,
+                                                medium: file.url,
+                                                small: file.url,
+                                                thumbnail: file.url,
+                                              }
+                                            };
+                                            
+                                            // Add to primary images (featured)
+                                            setPrimaryImages(prev => [imageForSelection, ...prev.filter(img => img.id !== file.id)]);
+                                            
+                                            toast({
+                                              title: "Featured image set",
+                                              description: "Image will appear at the top of your content"
+                                            });
+                                          }}
+                                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                                          disabled={isPrimarySelected}
+                                        >
+                                          <ImageIcon className="mr-2 h-4 w-4" />
+                                          Set as Featured
+                                        </Button>
+                                        
+                                        <Button
+                                          variant="default" 
+                                          size="sm"
+                                          onClick={() => {
+                                            // Create a Pexels-compatible image object
+                                            const imageForSelection: PexelsImage = {
+                                              id: `${file.id}-secondary`,
+                                              url: file.url,
+                                              width: 800,
+                                              height: 800,
+                                              alt: file.alt || file.name,
+                                              src: {
+                                                original: file.url,
+                                                large: file.url,
+                                                medium: file.url,
+                                                small: file.url,
+                                                thumbnail: file.url,
+                                              }
+                                            };
+                                            
+                                            // Add to secondary images (content)
+                                            setSecondaryImages(prev => [...prev, imageForSelection]);
+                                            
+                                            toast({
+                                              title: "Content image added",
+                                              description: "Image will appear in your content body"
+                                            });
+                                          }}
+                                          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium"
+                                          disabled={isSecondarySelected}
+                                        >
+                                          <FileImage className="mr-2 h-4 w-4" />
+                                          Add to Content
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Image name/label */}
+                                    <div className="p-2 bg-black bg-opacity-75">
+                                      <p className="text-white text-xs truncate">{file.name}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <FileImage className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                            <p className="text-gray-500 mb-2">No content files found</p>
+                            <p className="text-xs text-gray-400 max-w-md mx-auto mb-4">
+                              Try refreshing to load images from your Shopify store
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={fetchShopifyFiles}
+                            >
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Refresh Content Files
+                            </Button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </>
