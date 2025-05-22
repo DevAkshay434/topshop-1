@@ -319,141 +319,57 @@ export default function AdminPanel() {
   const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
   const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
   
-  // Function to fetch Shopify content files
-  const fetchShopifyFiles = async () => {
+  // Function to fetch Shopify Media Library files (store-wide)
+  const fetchShopifyMediaFiles = async () => {
     try {
       setIsLoadingContentFiles(true);
       toast({
-        title: "Loading media files",
-        description: "Fetching your Shopify content files..."
+        title: "Loading media library",
+        description: "Fetching files from your Shopify Media Library..."
       });
       
-      // Use product images as content files 
-      const productsResponse = await fetch('/api/admin/products');
-      const productsData = await productsResponse.json();
+      // Use the dedicated endpoint for Shopify Media Library
+      const mediaFilesResponse = await fetch('/api/admin/files');
+      const mediaFilesData = await mediaFilesResponse.json();
       
-      // Try to fetch files from Shopify Media Library (separate from product images)
-      let shopifyMediaFiles = [];
-      try {
-        // Use dedicated endpoint for Shopify Media Library files
-        const filesResponse = await fetch('/api/admin/files');
-        const filesData = await filesResponse.json();
-        
-        if (filesData && filesData.success && filesData.files && filesData.files.length > 0) {
-          console.log("Successfully fetched Shopify Media Library files:", filesData.files.length);
-          shopifyMediaFiles = filesData.files
-            .filter(file => {
-              // Check if file and url exist and are valid image types
-              if (!file || typeof file.url !== 'string') return false;
-              const url = file.url.toLowerCase();
-              return url.endsWith('.jpg') || url.endsWith('.jpeg') || 
-                     url.endsWith('.png') || url.endsWith('.gif');
-            })
-            .map(file => ({
-              id: `file-media-${file.id || Math.random().toString(36).substring(7)}`,
-              url: file.url,
-              name: file.filename || 'Shopify Media',
-              alt: file.alt || file.filename || 'Shopify Media',
-              content_type: file.content_type || 'image/jpeg',
-              source: 'media_library'
-            }));
-        } else {
-          console.log("No Shopify Media Library files found or response invalid:", filesData);
-        }
-      } catch (error) {
-        console.error('Error fetching Shopify Media Library files:', error);
-        toast({
-          title: "Media Library issue",
-          description: "Could not load Shopify Media Library files",
-          variant: "destructive"
-        });
-      }
-      
-      if (productsData.success && productsData.products) {
-        // Convert product images to content files format with better organization
-        let contentImageFiles = [];
-        
-        // Process main product images
-        const mainProductImages = productsData.products
-          .filter(p => p.image)
-          .map(product => ({
-            id: `file-product-${product.id}`,
-            url: product.image,
-            name: `${product.title} (Main)`,
-            alt: product.title,
-            content_type: 'image/jpeg',
-            product_title: product.title,
-            source: 'product'
+      if (mediaFilesData.success && mediaFilesData.files && mediaFilesData.files.length > 0) {
+        // Format the media files for our UI
+        const mediaLibraryFiles = mediaFilesData.files
+          .filter(file => {
+            // Filter to only include image files
+            if (!file || !file.url) return false;
+            const url = (file.url || '').toLowerCase();
+            return url.endsWith('.jpg') || url.endsWith('.jpeg') || 
+                  url.endsWith('.png') || url.endsWith('.gif');
+          })
+          .map(file => ({
+            id: `media-${file.id || Math.random().toString(36).substring(7)}`,
+            url: file.url,
+            name: file.filename || 'Shopify Media',
+            alt: file.alt || file.filename || 'Shopify Media',
+            content_type: file.content_type || 'image/jpeg',
+            source: 'media_library'
           }));
-        contentImageFiles = [...contentImageFiles, ...mainProductImages];
         
-        // Process all additional product images
-        const additionalImages = [];
-        productsData.products.forEach(product => {
-          if (product.images && product.images.length > 1) {
-            // Skip first image if it's same as main image
-            const additionalProductImages = product.images
-              .slice(1)
-              .map((image, idx) => ({
-                id: `file-product-${product.id}-image-${idx+1}`,
-                url: image.src,
-                name: `${product.title} (Image ${idx+2})`,
-                alt: image.alt || `${product.title} additional image`,
-                content_type: 'image/jpeg',
-                product_title: product.title,
-                source: 'product-image'
-              }));
-            additionalImages.push(...additionalProductImages);
-          }
-        });
-        contentImageFiles = [...contentImageFiles, ...additionalImages];
+        setContentFiles(mediaLibraryFiles);
         
-        // Process variant images that differ from main product images
-        const variantImages = [];
-        productsData.products.forEach(product => {
-          const mainImage = product.image;
-          if (product.variants && product.variants.length > 0) {
-            product.variants.forEach(variant => {
-              if (variant.image && variant.image !== mainImage) {
-                variantImages.push({
-                  id: `file-variant-${variant.id}`,
-                  url: variant.image,
-                  name: `${product.title} - ${variant.title}`,
-                  alt: `${product.title} ${variant.title} variant`,
-                  content_type: 'image/jpeg',
-                  product_title: product.title,
-                  variant_title: variant.title,
-                  source: 'variant'
-                });
-              }
-            });
-          }
-        });
-        contentImageFiles = [...contentImageFiles, ...variantImages];
-        
-        // Add any media files from Shopify library if available
-        if (shopifyFiles && shopifyFiles.length > 0) {
-          contentImageFiles = [...shopifyFiles, ...contentImageFiles];
-        }
-          
-        setContentFiles(contentImageFiles);
         toast({
-          title: "Shopify images loaded",
-          description: `${contentImageFiles.length} images found in your store`,
+          title: "Media library loaded",
+          description: `${mediaLibraryFiles.length} media files loaded from your store`,
         });
       } else {
         toast({
-          title: "No content files found",
-          description: "Couldn't find any images in your products",
+          title: "No media files found",
+          description: "No images found in your Shopify Media Library",
           variant: "destructive"
         });
         setContentFiles([]);
       }
     } catch (error) {
-      console.error("Error fetching content files:", error);
+      console.error('Error fetching Shopify Media Library:', error);
       toast({
-        title: "Failed to load content files",
-        description: "There was an error loading your images",
+        title: "Error loading media files",
+        description: "There was a problem fetching your Shopify Media Library",
         variant: "destructive"
       });
       setContentFiles([]);
@@ -461,10 +377,70 @@ export default function AdminPanel() {
       setIsLoadingContentFiles(false);
     }
   };
+  
+  // Function to fetch product-specific images
+  const fetchProductImages = async (productId: string) => {
+    try {
+      setIsLoadingContentFiles(true);
+      toast({
+        title: "Loading product images",
+        description: "Fetching images for the selected product..."
+      });
+      
+      // Use the dedicated endpoint for product-specific images
+      const productImagesResponse = await fetch(`/api/admin/product-images/${productId}`);
+      const productImagesData = await productImagesResponse.json();
+      
+      if (productImagesData.success && productImagesData.files && productImagesData.files.length > 0) {
+        // Format the product images for our UI
+        const productImages = productImagesData.files.map(file => ({
+          id: `product-${file.id || Math.random().toString(36).substring(7)}`,
+          url: file.url,
+          name: file.filename || 'Product Image',
+          alt: file.alt || file.filename || 'Product Image',
+          content_type: file.content_type || 'image/jpeg',
+          source: file.source || 'product_image',
+          position: file.position || 0
+        }));
+        
+        // Sort by position to show main product image first
+        productImages.sort((a, b) => (a.position || 0) - (b.position || 0));
+        
+        setContentFiles(productImages);
+        toast({
+          title: "Product images loaded",
+          description: `${productImages.length} images loaded for this product`,
+        });
+      } else {
+        toast({
+          title: "No product images found",
+          description: "This product doesn't have any images",
+          variant: "destructive"
+        });
+        setContentFiles([]);
+      }
+    } catch (error) {
+      console.error('Error fetching product images:', error);
+      toast({
+        title: "Error loading product images",
+        description: "There was a problem fetching images for this product",
+        variant: "destructive"
+      });
+      setContentFiles([]);
+    } finally {
+      setIsLoadingContentFiles(false);
+    }
+  };
+  
+  // Legacy function for backward compatibility
+  const fetchShopifyFiles = async () => {
+    // By default, fetch from media library only
+    await fetchShopifyMediaFiles();
+  };
   const [productImages, setProductImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify' | 'shopify-files' | 'upload' | 'youtube'>('pexels');
+  const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify_media' | 'product_images' | 'upload' | 'youtube'>('pexels');
   const [imageType, setImageType] = useState<'products' | 'variants' | 'media'>('products');
   const [contentFiles, setContentFiles] = useState<any[]>([]);
   const [isLoadingContentFiles, setIsLoadingContentFiles] = useState(false);
@@ -2107,23 +2083,48 @@ export default function AdminPanel() {
                                     </CardDescription>
                                   </CardHeader>
                                   <CardContent className="p-3">
-                                    <Button 
-                                      variant="outline" 
-                                      className="w-full" 
-                                      size="sm"
-                                      onClick={() => {
-                                        setImageSource('shopify');
-                                        // Load product images from selected products
-                                        const images = selectedProducts
-                                          .filter(p => p.image)
-                                          .map(p => p.image);
-                                        setProductImages(images as string[]);
-                                        setShowImageDialog(true);
-                                      }}
-                                    >
-                                      <Store className="mr-2 h-4 w-4" />
-                                      Browse Store Images
-                                    </Button>
+                                    <div className="flex flex-col space-y-2">
+                                      <Button 
+                                        variant="outline" 
+                                        className="w-full" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setImageSource('shopify_media');
+                                          // Load all Shopify Media Library files
+                                          fetchShopifyMediaFiles();
+                                          setShowImageDialog(true);
+                                        }}
+                                      >
+                                        <Store className="mr-2 h-4 w-4" />
+                                        Shopify Media Library
+                                      </Button>
+                                      
+                                      {/* Only show product images button when a product is selected */}
+                                      {selectedProducts.length > 0 && (
+                                        <Button 
+                                          variant="outline" 
+                                          className="w-full" 
+                                          size="sm"
+                                          onClick={() => {
+                                            setImageSource('product_images');
+                                            // Use the first selected product for product-specific images
+                                            if (selectedProducts[0]?.id) {
+                                              fetchProductImages(selectedProducts[0].id);
+                                            } else {
+                                              toast({
+                                                title: "No product selected",
+                                                description: "Please select a product first",
+                                                variant: "destructive"
+                                              });
+                                            }
+                                            setShowImageDialog(true);
+                                          }}
+                                        >
+                                          <ImageIcon className="mr-2 h-4 w-4" />
+                                          Product Images
+                                        </Button>
+                                      )}
+                                    </div>
                                   </CardContent>
                                 </Card>
                                 

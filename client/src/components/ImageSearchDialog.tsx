@@ -26,7 +26,7 @@ interface PexelsImage {
   selected?: boolean;
   isProductImage?: boolean;
   productId?: string;
-  source?: 'pexels' | 'pixabay' | 'product';
+  source?: 'pexels' | 'pixabay' | 'product_image' | 'variant_image' | 'shopify_media' | 'theme_asset';
 }
 
 interface SearchHistory {
