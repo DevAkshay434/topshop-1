@@ -206,38 +206,73 @@ export class MediaService {
       
       // Process the main product images
       if (product.images && Array.isArray(product.images)) {
+        console.log(`Processing ${product.images.length} images for product ${product.title}`);
+        
         product.images.forEach((image: any, index: number) => {
-          result.push({
-            id: image.id.toString(),
-            url: image.src,
-            filename: `${product.title} - Image ${index + 1}`,
-            content_type: 'image/jpeg',
-            alt: image.alt || `${product.title} - Image ${index + 1}`,
-            source: 'product_image',
-            position: image.position || index + 1
-          });
+          if (!image || !image.src) {
+            console.log(`Skipping invalid image at index ${index} for product ${product.id}`);
+            return; // Skip this iteration
+          }
+          
+          try {
+            // Ensure ID is a string
+            const imageId = image.id ? image.id.toString() : `product-${product.id}-image-${index}`;
+            
+            // Create a properly structured image object
+            const imageObject: MediaFile = {
+              id: imageId,
+              url: image.src,
+              filename: `${product.title} - Image ${index + 1}`,
+              content_type: 'image/jpeg',
+              alt: image.alt || `${product.title} - Image ${index + 1}`,
+              source: 'product_image',
+              position: image.position || index + 1
+            };
+            
+            result.push(imageObject);
+          } catch (err) {
+            console.error(`Error processing image at index ${index} for product ${product.id}:`, err);
+          }
         });
+        
+        console.log(`Successfully processed ${result.length} product images`);
       }
       
       // Process variant images if they exist and aren't duplicates
       if (product.variants && Array.isArray(product.variants)) {
+        console.log(`Processing ${product.variants.length} variants for product ${product.title}`);
         const existingUrls = new Set(result.map(img => img.url));
         
         product.variants.forEach((variant: any, index: number) => {
           if (variant.image && variant.image.src && !existingUrls.has(variant.image.src)) {
-            result.push({
-              id: variant.image.id.toString(),
-              url: variant.image.src,
-              filename: `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
-              content_type: 'image/jpeg',
-              alt: variant.image.alt || `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
-              source: 'variant_image',
-              position: 1000 + index // Put variants at the end
-            });
-            
-            existingUrls.add(variant.image.src);
+            try {
+              // Ensure ID is a string
+              const variantImageId = variant.image.id 
+                ? variant.image.id.toString() 
+                : `variant-${variant.id || product.id}-image-${index}`;
+              
+              // Create a properly structured variant image object
+              const variantImage: MediaFile = {
+                id: variantImageId,
+                url: variant.image.src,
+                filename: `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
+                content_type: 'image/jpeg',
+                alt: variant.image.alt || `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
+                source: 'variant_image',
+                position: 1000 + index // Put variants at the end
+              };
+              
+              result.push(variantImage);
+              existingUrls.add(variant.image.src);
+              
+              console.log(`Added variant image for ${variant.title || `Variant ${index + 1}`}`);
+            } catch (err) {
+              console.error(`Error processing variant image at index ${index}:`, err);
+            }
           }
         });
+        
+        console.log(`Added ${result.length - product.images.length} variant images`);
       }
       
       // Sort by position
@@ -292,20 +327,60 @@ export class MediaService {
         );
       });
       
-      // Generate URLs for all assets and convert to our format
-      return imageAssets.map((asset: any, index: number) => {
-        // Extract filename from key
-        const filename = asset.key.split('/').pop() || `Asset ${index + 1}`;
-        
-        return {
-          id: `asset-${index}`,
-          url: asset.public_url || `https://${store.shopName}/assets/${asset.key}`,
-          filename,
-          content_type: this.getContentTypeFromFilename(filename),
-          alt: filename,
-          source: 'theme_asset'
-        };
+      console.log(`Found ${imageAssets.length} image assets in theme files`);
+      
+      // Generate URLs for all assets and convert to our format with validation
+      const mediaFiles = imageAssets.map((asset: any, index: number) => {
+        try {
+          // Extract filename from key
+          const filename = asset.key && typeof asset.key === 'string' 
+            ? asset.key.split('/').pop() 
+            : `Asset ${index + 1}`;
+          
+          // Generate a consistent ID
+          const assetId = `theme-asset-${index}-${Date.now().toString().substring(8)}`;
+          
+          // Ensure we have a valid URL - critical for image display
+          let imageUrl = '';
+          if (asset.public_url && asset.public_url.trim() !== '') {
+            imageUrl = asset.public_url;
+          } else if (asset.key) {
+            imageUrl = `https://${store.shopName}/assets/${asset.key}`;
+          } else {
+            console.log(`Missing URL for asset ${index}, using placeholder`);
+            imageUrl = `https://placehold.co/600x400?text=${encodeURIComponent(filename)}`;
+          }
+          
+          // Create a valid media file object
+          return {
+            id: assetId,
+            url: imageUrl,
+            filename,
+            content_type: this.getContentTypeFromFilename(filename),
+            alt: filename,
+            source: 'theme_asset'
+          };
+        } catch (err) {
+          console.error(`Error processing theme asset at index ${index}:`, err);
+          
+          // Return a fallback asset with placeholder
+          return {
+            id: `asset-error-${index}`,
+            url: `https://placehold.co/600x400?text=Error+Loading+Image`,
+            filename: `Error Loading Asset ${index}`,
+            content_type: 'image/jpeg',
+            alt: `Error Loading Asset ${index}`,
+            source: 'theme_asset'
+          };
+        }
       });
+      
+      // Log a sample for debugging
+      if (mediaFiles.length > 0) {
+        console.log('Sample theme asset:', JSON.stringify(mediaFiles[0]));
+      }
+      
+      return mediaFiles;
     } catch (error) {
       console.error('Error fetching content files:', error);
       return [];
