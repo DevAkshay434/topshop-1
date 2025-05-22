@@ -126,20 +126,60 @@ export class ShopifyService {
   /**
    * Get the Shopify client for a specific store
    * @param store The store to get the client for
+   * @param accessToken Optional access token to override store token
    * @returns An Axios instance configured for the store
    */
-  private getClient(store: ShopifyStore): AxiosInstance {
-    // Check if client exists
-    const client = this.clients.get(store.shopName);
-    
-    // If client exists, return it
-    if (client) {
-      return client;
+  private getClient(store: ShopifyStore | string, accessToken?: string): AxiosInstance {
+    if (typeof store === 'string') {
+      // If store is a string (just the store name)
+      const storeName = store;
+      
+      // We need an access token in this case
+      if (!accessToken) {
+        throw new Error(`No access token provided for store ${storeName}`);
+      }
+      
+      // Check if client exists for this store
+      const client = this.clients.get(storeName);
+      if (client) {
+        return client;
+      }
+      
+      // Create a temporary store object to initialize client
+      const tempStore: ShopifyStore = {
+        id: 0,
+        shopName: storeName,
+        accessToken: accessToken,
+        scope: '',
+        defaultBlogId: null,
+        isConnected: true,
+        lastSynced: null,
+        installedAt: new Date(),
+        uninstalledAt: null, 
+        planName: null,
+        chargeId: null,
+        trialEndsAt: null
+      };
+      
+      // Initialize and return a new client
+      this.initializeClient(tempStore);
+      return this.clients.get(storeName)!;
+    } else {
+      // Normal case - store is a ShopifyStore object
+      const storeName = store.shopName;
+      
+      // Check if client exists
+      const client = this.clients.get(storeName);
+      
+      // If client exists, return it
+      if (client) {
+        return client;
+      }
+      
+      // Otherwise, initialize and return a new client
+      this.initializeClient(store);
+      return this.clients.get(storeName)!;
     }
-    
-    // Otherwise, initialize and return a new client
-    this.initializeClient(store);
-    return this.clients.get(store.shopName)!;
   }
   
   /**
