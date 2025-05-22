@@ -4990,9 +4990,9 @@ export default function AdminPanel() {
                             // Include variant images
                             if (product.variants && Array.isArray(product.variants)) {
                               product.variants.forEach((variant, variantIndex) => {
-                                if (variant.image && variant.image.src) {
-                                  const imageUrl = variant.image.src;
-                                  if (!uniqueImageUrls.has(imageUrl)) {
+                                if (variant.image) {
+                                  const imageUrl = typeof variant.image === 'string' ? variant.image : variant.image.src;
+                                  if (imageUrl && !uniqueImageUrls.has(imageUrl)) {
                                     uniqueImageUrls.add(imageUrl);
                                     productImages.push({
                                       id: `variant-${variant.id}`,
@@ -5039,17 +5039,25 @@ export default function AdminPanel() {
                           
                           selectedProducts.forEach(product => {
                             // Add main product image
-                            if (product.image && product.image.src) {
-                              const imageUrl = product.image.src;
-                              if (!uniqueImageUrls.has(imageUrl)) {
+                            if (product.image) {
+                              const imageUrl = typeof product.image === 'string' ? product.image : (product.image.src || '');
+                              if (imageUrl && !uniqueImageUrls.has(imageUrl)) {
                                 uniqueImageUrls.add(imageUrl);
                                 productImages.push({
                                   id: `product-${product.id}-main`,
                                   url: imageUrl,
-                                  name: product.title,
+                                  width: 500,
+                                  height: 500,
                                   alt: product.title || 'Product image',
-                                  content_type: 'image/jpeg',
-                                  source: 'shopify'
+                                  src: {
+                                    original: imageUrl,
+                                    large: imageUrl,
+                                    medium: imageUrl,
+                                    small: imageUrl,
+                                    thumbnail: imageUrl
+                                  },
+                                  selected: false,
+                                  type: 'image'
                                 });
                               }
                             }
@@ -5057,18 +5065,32 @@ export default function AdminPanel() {
                             // Add additional product images
                             if (product.images && Array.isArray(product.images)) {
                               product.images.forEach((image, index) => {
-                                if (image.src && image.id !== (product.image?.id || '')) {
-                                  // Skip the main image (already added above)
-                                  const imageUrl = image.src;
-                                  if (!uniqueImageUrls.has(imageUrl)) {
-                                    uniqueImageUrls.add(imageUrl);
+                                // Handle different image object structures
+                                const imageSrc = typeof image === 'string' ? image : 
+                                  (image.src ? image.src : '');
+                                const imageId = typeof image === 'string' ? `img-${index}` : 
+                                  (image.id ? image.id : `img-${index}`);
+                                
+                                // Skip the main image (already added above) and empty URLs
+                                if (imageSrc && (typeof product.image === 'string' || imageId !== (product.image?.id || ''))) {
+                                  if (!uniqueImageUrls.has(imageSrc)) {
+                                    uniqueImageUrls.add(imageSrc);
                                     productImages.push({
                                       id: `product-${product.id}-image-${index}`,
-                                      url: imageUrl,
-                                      name: `${product.title} - Image ${index + 1}`,
-                                      alt: image.alt || `${product.title} - Image ${index + 1}`,
-                                      content_type: 'image/jpeg',
-                                      source: 'shopify'
+                                      url: imageSrc,
+                                      width: 500,
+                                      height: 500,
+                                      alt: (typeof image === 'string' ? `${product.title} - Image ${index + 1}` : 
+                                        (image.alt || `${product.title} - Image ${index + 1}`)),
+                                      src: {
+                                        original: imageSrc,
+                                        large: imageSrc,
+                                        medium: imageSrc,
+                                        small: imageSrc,
+                                        thumbnail: imageSrc
+                                      },
+                                      selected: false,
+                                      type: 'image'
                                     });
                                   }
                                 }
@@ -5251,7 +5273,7 @@ export default function AdminPanel() {
                   )}
                 
                   <div className="max-h-[400px] overflow-y-auto p-2">
-                    {imageType === 'products' && (
+                    {shopifyMediaType === 'products' && (
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {selectedProducts.map((product) => {
                           // Get image from product - try multiple sources
@@ -5408,7 +5430,7 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    {imageType === 'variants' && (
+                    {shopifyMediaType === 'variants' && (
                       <div className="space-y-6">
                         {selectedProducts.map(product => {
                           // Skip products with no variants or images
@@ -5580,7 +5602,7 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    {imageType === 'media' && (
+                    {shopifyMediaType === 'media' && (
                       <>
                         {isLoadingContentFiles ? (
                           <div className="flex justify-center items-center py-12">
