@@ -4794,11 +4794,15 @@ export default function AdminPanel() {
                     {imageType === 'products' && (
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {selectedProducts.map((product) => {
-                          if (!product.image) return null;
+                          // Get image from product - try multiple sources
+                          const productImage = product.image || 
+                            (product.images && product.images.length > 0 ? product.images[0].src : null);
+                            
+                          if (!productImage) return null;
                           
                           // Check if this product image has already been added
                           const isAlreadySelected = primaryImages.some(img => 
-                            img.id === `product-${product.id}` || img.url === product.image
+                            img.id === `product-${product.id}` || img.url === productImage
                           );
                           
                           return (
@@ -4808,7 +4812,7 @@ export default function AdminPanel() {
                             >
                               <div className="relative aspect-square">
                                 <img 
-                                  src={product.image} 
+                                  src={productImage} 
                                   alt={product.title} 
                                   className="w-full h-full object-contain bg-white"
                                   onError={(e) => {
