@@ -332,13 +332,14 @@ export default function AdminPanel() {
       const productsResponse = await fetch('/api/admin/products');
       const productsData = await productsResponse.json();
       
-      // Try to fetch files from content API (additional files from Shopify)
+      // Try to fetch files from Shopify content files API
       let shopifyFiles = [];
       try {
         const filesResponse = await fetch('/api/admin/content-files');
         const filesData = await filesResponse.json();
         
         if (filesData && filesData.success && filesData.files && filesData.files.length > 0) {
+          console.log("Successfully fetched content files:", filesData.files.length);
           shopifyFiles = filesData.files
             .filter(file => file.url && (
               file.url.toLowerCase().endsWith('.jpg') || 
@@ -354,9 +355,16 @@ export default function AdminPanel() {
               content_type: file.content_type || 'image/jpeg',
               source: 'media_library'
             }));
+        } else {
+          console.log("No content files found or response invalid:", filesData);
         }
       } catch (error) {
         console.error('Error fetching Shopify content files:', error);
+        toast({
+          title: "Content files issue",
+          description: "Could not load media library files, using product images instead",
+          variant: "destructive"
+        });
       }
       
       if (productsData.success && productsData.products) {
@@ -688,6 +696,16 @@ export default function AdminPanel() {
     const existingSearch = imageSearchHistory.find(hist => hist.query === trimmedQuery);
     if (existingSearch) {
       setSearchedImages(existingSearch.images);
+      
+      // If no primary images are set, automatically use the first image from history as featured
+      if (primaryImages.length === 0 && existingSearch.images.length > 0) {
+        setPrimaryImages([existingSearch.images[0]]);
+        toast({
+          title: "Featured image set",
+          description: "A search result has been automatically set as your featured image",
+        });
+      }
+      
       setImageSearchQuery(trimmedQuery);
       return;
     }
@@ -713,12 +731,23 @@ export default function AdminPanel() {
         
         setSearchedImages(newImages);
         
-        // If no primary images are set, automatically use the first image as featured
+        // Set Pexels images as default for primary images
         if (primaryImages.length === 0 && newImages.length > 0) {
-          setPrimaryImages([newImages[0]]);
+          // Find an image with people if possible (better for featured images)
+          const humanImage = newImages.find(img => 
+            img.alt?.toLowerCase().includes('person') || 
+            img.alt?.toLowerCase().includes('people') || 
+            img.alt?.toLowerCase().includes('woman') || 
+            img.alt?.toLowerCase().includes('man')
+          );
+          
+          // Use human image if found, otherwise first image
+          const featuredImage = humanImage || newImages[0];
+          
+          setPrimaryImages([featuredImage]);
           toast({
             title: "Featured image set",
-            description: "The first search result has been automatically set as your featured image",
+            description: "A Pexels image has been automatically set as your featured image",
           });
         }
         

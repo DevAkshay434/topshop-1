@@ -865,7 +865,7 @@ export class ShopifyService {
   public async getContentFiles(store: ShopifyStore): Promise<any[]> {
     try {
       console.log(`Fetching content files from ${store.shopName}`);
-      const client = this.getClient(store.shopName, store.accessToken);
+      const client = this.getClient(store.shopName);
       
       // Query files from Shopify
       const response = await client.get('/files.json');
@@ -883,7 +883,7 @@ export class ShopifyService {
       }
       
       return [];
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching content files:", error.message);
       return [];
     }
