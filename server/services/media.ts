@@ -102,8 +102,11 @@ export class MediaService {
       );
       
       if (!productsResponse || !productsResponse.products || !Array.isArray(productsResponse.products)) {
+        console.log('No products found in the store, or invalid response format');
         return [];
       }
+      
+      console.log(`Processing images from ${productsResponse.products.length} products`);
       
       const allImages: MediaFile[] = [];
       
@@ -111,34 +114,52 @@ export class MediaService {
       productsResponse.products.forEach((product: any) => {
         // Handle main product images
         if (product.images && Array.isArray(product.images)) {
+          console.log(`Product ${product.id} (${product.title}) has ${product.images.length} images`);
+          
           product.images.forEach((image: any, index: number) => {
             if (image && image.src) {
-              allImages.push({
+              // Create a proper image object with all required fields
+              const imageObject: MediaFile = {
                 id: `product-${product.id}-image-${image.id || index}`,
                 url: image.src,
                 filename: `${product.title} - Image ${index + 1}`,
                 content_type: 'image/jpeg',
                 alt: image.alt || `${product.title} - Image ${index + 1}`,
                 source: 'product_image'
-              });
+              };
+              
+              allImages.push(imageObject);
             }
           });
+        } else {
+          console.log(`Product ${product.id} (${product.title}) has no images array`);
         }
         
         // Handle single product image if images array isn't available
-        if (product.image && product.image.src && !product.images) {
-          allImages.push({
+        if (product.image && product.image.src && (!product.images || !Array.isArray(product.images))) {
+          console.log(`Adding single image for product ${product.id} (${product.title})`);
+          
+          // Create a proper image object with all required fields
+          const imageObject: MediaFile = {
             id: `product-${product.id}-image-single`,
             url: product.image.src,
             filename: `${product.title} - Main Image`,
             content_type: 'image/jpeg',
             alt: product.image.alt || `${product.title} - Main Image`,
             source: 'product_image'
-          });
+          };
+          
+          allImages.push(imageObject);
         }
       });
       
       console.log(`Found ${allImages.length} product images to use as content files`);
+      
+      // Log sample image to verify format
+      if (allImages.length > 0) {
+        console.log('Sample image object:', JSON.stringify(allImages[0]));
+      }
+      
       return allImages;
       
     } catch (error) {

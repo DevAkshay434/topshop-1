@@ -650,55 +650,6 @@ adminRouter.post("/save-selected-keywords", async (req: Request, res: Response) 
 });
 
 // Generate images from Pexels
-// Get content files from Shopify (duplicate endpoint for compatibility)
-adminRouter.get("/files", async (_req: Request, res: Response) => {
-  try {
-    // Get Shopify connection
-    const connection = await storage.getShopifyConnection();
-    
-    if (!connection || !connection.isConnected) {
-      return res.json({
-        success: false,
-        message: "No active Shopify connection",
-        files: []
-      });
-    }
-    
-    // Create store object for API calls
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || null,
-      isConnected: connection.isConnected || true,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
-    
-    console.log(`Fetching content files from Shopify store ${connection.storeName} using themes/assets API...`);
-    
-    // Try to fetch files from Shopify using the improved method
-    const files = await shopifyService.getContentFiles(store);
-    console.log(`Fetched ${files.length} files from Shopify Media Library`);
-    
-    return res.json({
-      success: true,
-      files
-    });
-  } catch (error: any) {
-    console.error("Error in files endpoint:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message || "Failed to fetch content files",
-      files: []
-    });
-  }
-});
 
 // Create an instance of MediaService
 const mediaService = new MediaService(shopifyService);
