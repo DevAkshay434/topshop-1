@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
+import { ChooseMediaDialog } from '../components/ChooseMediaDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
@@ -5687,6 +5688,69 @@ export default function AdminPanel() {
       
       {/* Add the standalone project creation dialog that shows automatically */}
       <ProjectCreationDialog />
+      {/* Choose Media Dialog - New improved component */}
+      <ChooseMediaDialog
+        open={showChooseMediaDialog}
+        onOpenChange={setShowChooseMediaDialog}
+        onImagesSelected={(images) => {
+          // When user confirms selected images
+          if (images.length > 0) {
+            // Process selected images based on which tab is active
+            if (imageTab === 'primary') {
+              // Add as primary/featured images
+              const pexelsCompatibleImages = images.map(img => ({
+                id: img.id,
+                url: img.url,
+                width: 500,
+                height: 500,
+                alt: img.alt || img.title || 'Product image',
+                src: {
+                  original: img.url,
+                  large: img.url,
+                  medium: img.url,
+                  small: img.url,
+                },
+                source: 'shopify',
+              }));
+              
+              setPrimaryImages([...primaryImages, ...pexelsCompatibleImages]);
+              toast({
+                title: "Images added",
+                description: `${images.length} featured images have been added`
+              });
+            } else {
+              // Add as secondary/content images
+              const pexelsCompatibleImages = images.map(img => ({
+                id: img.id,
+                url: img.url,
+                width: 500,
+                height: 500,
+                alt: img.alt || img.title || 'Product image',
+                src: {
+                  original: img.url,
+                  large: img.url,
+                  medium: img.url,
+                  small: img.url,
+                },
+                source: 'shopify',
+              }));
+              
+              setSecondaryImages([...secondaryImages, ...pexelsCompatibleImages]);
+              toast({
+                title: "Images added",
+                description: `${images.length} content images have been added`
+              });
+            }
+          }
+        }}
+        initialSelectedImages={[]}
+        maxImages={10}
+        allowMultiple={true}
+        title={imageTab === 'primary' ? "Choose Featured Images" : "Choose Content Images"}
+        description={imageTab === 'primary' 
+          ? "Select emotionally compelling images for the top of your content" 
+          : "Select product images to appear throughout your article body"}
+      />
     </div>
   );
 }
