@@ -608,12 +608,22 @@ export default function ImageSearchDialog({
                           `}
                         >
                           <div className="aspect-[4/3] bg-slate-100" onClick={() => toggleImageSelection(image.id)}>
-                            <img 
-                              src={image.src?.medium || image.url} 
-                              alt={image.alt || 'Image'} 
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
+                            {image.url ? (
+                              <img 
+                                src={image.src?.medium || image.url} 
+                                alt={image.alt || 'Image'} 
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                  console.log(`Image failed to load: ${image.url}`);
+                                  e.currentTarget.src = `https://placehold.co/600x400?text=${encodeURIComponent(image.alt || 'Image')}`;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                <span className="text-gray-500">Image not available</span>
+                              </div>
+                            )}
                           </div>
                           
                           {/* Source badge */}
@@ -628,9 +638,24 @@ export default function ImageSearchDialog({
                                 Pixabay
                               </span>
                             )}
-                            {image.isProductImage && (
+                            {image.source === 'shopify_media' && (
+                              <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-md">
+                                Shopify
+                              </span>
+                            )}
+                            {image.source === 'product_image' && (
                               <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-md">
                                 Product
+                              </span>
+                            )}
+                            {image.source === 'variant_image' && (
+                              <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-md">
+                                Variant
+                              </span>
+                            )}
+                            {image.source === 'theme_asset' && (
+                              <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-md">
+                                Theme
                               </span>
                             )}
                           </div>
