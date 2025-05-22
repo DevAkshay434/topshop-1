@@ -679,9 +679,11 @@ adminRouter.get("/files", async (_req: Request, res: Response) => {
       trialEndsAt: null
     };
     
-    // Try to fetch files from Shopify
+    console.log(`Fetching content files from Shopify store ${connection.storeName} using themes/assets API...`);
+    
+    // Try to fetch files from Shopify using the improved method
     const files = await shopifyService.getContentFiles(store);
-    console.log(`Fetched ${files.length} files from Shopify Content Library`);
+    console.log(`Fetched ${files.length} files from Shopify Media Library`);
     
     return res.json({
       success: true,

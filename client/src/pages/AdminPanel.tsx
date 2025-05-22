@@ -342,12 +342,13 @@ export default function AdminPanel() {
         if (filesData && filesData.success && filesData.files && filesData.files.length > 0) {
           console.log("Successfully fetched content files:", filesData.files.length);
           shopifyFiles = filesData.files
-            .filter(file => file.url && (
-              file.url.toLowerCase().endsWith('.jpg') || 
-              file.url.toLowerCase().endsWith('.jpeg') || 
-              file.url.toLowerCase().endsWith('.png') || 
-              file.url.toLowerCase().endsWith('.gif')
-            ))
+            .filter(file => {
+              // Check if file and url exist and are valid
+              if (!file || typeof file.url !== 'string') return false;
+              const url = file.url.toLowerCase();
+              return url.endsWith('.jpg') || url.endsWith('.jpeg') || 
+                     url.endsWith('.png') || url.endsWith('.gif');
+            })
             .map(file => ({
               id: `file-media-${file.id || Math.random().toString(36).substring(7)}`,
               url: file.url,
@@ -4997,7 +4998,7 @@ export default function AdminPanel() {
                                     target.onerror = null;
                                     
                                     // Try to convert Shopify URL to CDN format if not already
-                                    if (productImage.includes('shopify.com') && !productImage.includes('cdn.shopify.com')) {
+                                    if (typeof productImage === 'string' && productImage.includes('shopify.com') && !productImage.includes('cdn.shopify.com')) {
                                       try {
                                         const url = new URL(productImage);
                                         // Attempt to create CDN version of URL

@@ -899,27 +899,101 @@ export class ShopifyService {
    * @param limit The maximum number of products to return
    */
   /**
-   * Get content files from Shopify (files API)
-   * This method fetches files from Shopify's Files API
+   * Get content files from Shopify (assets API)
+   * This method fetches files from Shopify's Assets API since Files API may not be available
    */
   public async getContentFiles(store: ShopifyStore): Promise<any[]> {
     try {
-      console.log(`Fetching content files from ${store.shopName}`);
+      console.log(`Fetching content files from ${store.shopName} using assets API`);
       const client = this.getClient(store.shopName, store.accessToken);
       
-      // Query files from Shopify
-      const response = await client.get('/files.json');
+      // First try themes/assets API which is more reliable
+      try {
+        // Get the active theme ID first
+        const themesResponse = await client.get('/themes.json');
+        const activeTheme = themesResponse.data?.themes?.find((theme: any) => theme.role === 'main');
+        
+        if (activeTheme) {
+          // Get assets from the active theme
+          const assetsResponse = await client.get(`/themes/${activeTheme.id}/assets.json`);
+          
+          if (assetsResponse.data && assetsResponse.data.assets) {
+            // Filter for image assets only
+            const imageAssets = assetsResponse.data.assets.filter((asset: any) => {
+              const key = asset.key.toLowerCase();
+              return key.endsWith('.jpg') || key.endsWith('.jpeg') || 
+                     key.endsWith('.png') || key.endsWith('.gif') || 
+                     key.endsWith('.webp');
+            });
+            
+            // Format the response
+            return imageAssets.map((asset: any) => ({
+              id: `asset-${asset.key.replace(/[^a-zA-Z0-9]/g, '-')}`,
+              url: asset.public_url || `https://${store.shopName}/assets/${asset.key}`,
+              filename: asset.key.split('/').pop() || 'Theme Asset',
+              content_type: asset.content_type || 'image/jpeg',
+              created_at: asset.created_at || new Date().toISOString(),
+              alt: asset.key.split('/').pop().split('.')[0] || ''
+            }));
+          }
+        }
+      } catch (themeError) {
+        console.log('Could not get theme assets, trying product images instead:', themeError.message);
+      }
       
-      if (response.data && response.data.files) {
-        // Return all files from Shopify
-        return response.data.files.map((file: any) => ({
-          id: file.id,
-          url: file.src || file.url,
-          filename: file.filename || file.name || 'Shopify File',
-          content_type: file.content_type || 'image/jpeg',
-          created_at: file.created_at,
-          alt: file.alt || ''
-        }));
+      // Fallback: If theme assets fail, use product images
+      // Get products and extract their images
+      const productsResponse = await client.get('/products.json?limit=50');
+      
+      if (productsResponse.data && productsResponse.data.products) {
+        const products = productsResponse.data.products;
+        const productImages: any[] = [];
+        
+        products.forEach((product: any) => {
+          // Add main product image
+          if (product.image) {
+            productImages.push({
+              id: `product-${product.id}-main`,
+              url: product.image.src,
+              filename: `${product.title.replace(/[^a-zA-Z0-9]/g, '-')}.jpg`,
+              content_type: 'image/jpeg',
+              created_at: product.created_at,
+              alt: product.title
+            });
+          }
+          
+          // Add additional product images
+          if (product.images && product.images.length > 0) {
+            product.images.forEach((image: any, index: number) => {
+              productImages.push({
+                id: `product-${product.id}-image-${index}`,
+                url: image.src,
+                filename: `${product.title.replace(/[^a-zA-Z0-9]/g, '-')}-${index+1}.jpg`,
+                content_type: 'image/jpeg',
+                created_at: product.created_at,
+                alt: image.alt || product.title
+              });
+            });
+          }
+          
+          // Add variant images
+          if (product.variants && product.variants.length > 0) {
+            product.variants.forEach((variant: any) => {
+              if (variant.image && variant.image.src) {
+                productImages.push({
+                  id: `variant-${variant.id}`,
+                  url: variant.image.src,
+                  filename: `${product.title.replace(/[^a-zA-Z0-9]/g, '-')}-${variant.title.replace(/[^a-zA-Z0-9]/g, '-')}.jpg`,
+                  content_type: 'image/jpeg',
+                  created_at: product.created_at,
+                  alt: `${product.title} - ${variant.title}`
+                });
+              }
+            });
+          }
+        });
+        
+        return productImages;
       }
       
       return [];
