@@ -4351,16 +4351,16 @@ export default function AdminPanel() {
               
               <Button 
                   size="sm"
-                  variant={imageSource === 'shopify' ? 'default' : 'outline'} 
+                  variant={imageSource === 'shopify_media' ? 'default' : 'outline'} 
                   onClick={() => {
-                    setImageSource('shopify');
+                    setImageSource('shopify_media');
                     // Load media library files when selecting Shopify Images
-                    fetchShopifyFiles();
+                    fetchShopifyMediaFiles();
                   }}
                   className="flex-1"
                 >
                   <Store className="mr-2 h-4 w-4" />
-                  Shopify Images
+                  Shopify Media Library
                 </Button>
               
               <div className="flex-1 flex flex-col gap-1">
@@ -4822,10 +4822,10 @@ export default function AdminPanel() {
             </div>
           )}
           
-          {imageSource === 'shopify' && (
+          {imageSource === 'shopify_media' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-medium">Shopify Images</h3>
+                <h3 className="text-sm font-medium">Shopify Media Library</h3>
                 <div className="flex gap-2">
                   <Select 
                     defaultValue="products" 
