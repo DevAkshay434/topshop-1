@@ -73,7 +73,8 @@ import {
   Download,
   ExternalLink, 
   FileImage,
-  FileText, 
+  FileText,
+  FileVideo,
   FolderOpen,
   Folders,
   Gem,
@@ -316,7 +317,7 @@ export default function AdminPanel() {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify' | 'upload'>('pexels');
+  const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify' | 'shopify-files' | 'upload' | 'youtube'>('pexels');
   const [imageType, setImageType] = useState<'products' | 'variants' | 'media'>('products');
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [currentImageEdit, setCurrentImageEdit] = useState<{id: string, alt: string}>({id: '', alt: ''});
@@ -4077,25 +4078,47 @@ export default function AdminPanel() {
                 <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
               </Button>
               
-              <Button 
-                size="sm"
-                variant={imageSource === 'shopify' ? 'default' : 'outline'} 
-                onClick={() => setImageSource('shopify')}
-                className="flex-1"
-              >
-                <Store className="mr-2 h-4 w-4" />
-                Shopify Store
-              </Button>
+              <div className="flex-1 flex flex-col gap-1">
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'shopify' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('shopify')}
+                  className="w-full"
+                >
+                  <Store className="mr-2 h-4 w-4" />
+                  Product Images
+                </Button>
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'shopify-files' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('shopify-files')}
+                  className="w-full"
+                >
+                  <FolderOpen className="mr-2 h-4 w-4" />
+                  Content Files
+                </Button>
+              </div>
               
-              <Button 
-                size="sm"
-                variant={imageSource === 'upload' ? 'default' : 'outline'} 
-                onClick={() => setImageSource('upload')}
-                className="flex-1"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Image
-              </Button>
+              <div className="flex-1 flex flex-col gap-1">
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'upload' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('upload')}
+                  className="w-full"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Image
+                </Button>
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'youtube' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('youtube')}
+                  className="w-full"
+                >
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  YouTube Video
+                </Button>
+              </div>
             </div>
             
             {/* Selected images preview */}
