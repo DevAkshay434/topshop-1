@@ -713,6 +713,15 @@ export default function AdminPanel() {
         
         setSearchedImages(newImages);
         
+        // If no primary images are set, automatically use the first image as featured
+        if (primaryImages.length === 0 && newImages.length > 0) {
+          setPrimaryImages([newImages[0]]);
+          toast({
+            title: "Featured image set",
+            description: "The first search result has been automatically set as your featured image",
+          });
+        }
+        
         // Add to search history
         setImageSearchHistory(prev => [
           ...prev,

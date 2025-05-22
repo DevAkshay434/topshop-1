@@ -858,6 +858,37 @@ export class ShopifyService {
    * @param store The store to get products from
    * @param limit The maximum number of products to return
    */
+  /**
+   * Get content files from Shopify (files API)
+   * This method fetches files from Shopify's Files API
+   */
+  public async getContentFiles(store: ShopifyStore): Promise<any[]> {
+    try {
+      console.log(`Fetching content files from ${store.shopName}`);
+      const client = this.getClient(store.shopName, store.accessToken);
+      
+      // Query files from Shopify
+      const response = await client.get('/files.json');
+      
+      if (response.data && response.data.files) {
+        // Return all files from Shopify
+        return response.data.files.map((file: any) => ({
+          id: file.id,
+          url: file.src || file.url,
+          filename: file.filename || file.name || 'Shopify File',
+          content_type: file.content_type || 'image/jpeg',
+          created_at: file.created_at,
+          alt: file.alt || ''
+        }));
+      }
+      
+      return [];
+    } catch (error) {
+      console.error("Error fetching content files:", error.message);
+      return [];
+    }
+  }
+  
   public async getProducts(store: ShopifyStore, limit: number = 50): Promise<any[]> {
     try {
       // Get store client
