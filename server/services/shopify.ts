@@ -865,7 +865,7 @@ export class ShopifyService {
   public async getContentFiles(store: ShopifyStore): Promise<any[]> {
     try {
       console.log(`Fetching content files from ${store.shopName}`);
-      const client = this.getClient(store.shopName);
+      const client = this.getClient(store.shopName, store.accessToken);
       
       // Query files from Shopify
       const response = await client.get('/files.json');

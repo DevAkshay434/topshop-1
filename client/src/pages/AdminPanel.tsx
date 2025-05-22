@@ -335,7 +335,8 @@ export default function AdminPanel() {
       // Try to fetch files from Shopify content files API
       let shopifyFiles = [];
       try {
-        const filesResponse = await fetch('/api/admin/content-files');
+        // Correct API endpoint for content files
+        const filesResponse = await fetch('/api/admin/files');
         const filesData = await filesResponse.json();
         
         if (filesData && filesData.success && filesData.files && filesData.files.length > 0) {
