@@ -228,6 +228,8 @@ interface PexelsImage {
   photographer?: string;
   photographer_url?: string;
   selected?: boolean;
+  type?: 'image' | 'youtube';
+  videoId?: string;
 }
 
 // Predefined categories for content
@@ -322,6 +324,8 @@ export default function AdminPanel() {
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [currentImageEdit, setCurrentImageEdit] = useState<{id: string, alt: string}>({id: '', alt: ''});
   const [imageTab, setImageTab] = useState<'primary' | 'secondary'>('primary');
+  const [youtubeUrl, setYoutubeUrl] = useState<string>('');
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string>('');
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [showTitleSelector, setShowTitleSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
