@@ -699,9 +699,8 @@ adminRouter.get("/files", async (_req: Request, res: Response) => {
   }
 });
 
-// Original endpoint for backward compatibility
-// Get content files from Shopify
-adminRouter.get("/content-files", async (_req: Request, res: Response) => {
+// Get files from the Shopify media library (not product-specific)
+adminRouter.get("/files", async (_req: Request, res: Response) => {
   try {
     // Get Shopify connection
     const connection = await storage.getShopifyConnection();
@@ -730,9 +729,116 @@ adminRouter.get("/content-files", async (_req: Request, res: Response) => {
       trialEndsAt: null
     };
     
-    // Try to fetch files from Shopify
-    const files = await shopifyService.getContentFiles(store);
-    console.log(`Fetched ${files.length} files from Shopify Content Library`);
+    // Try to fetch files from Shopify Media Library
+    const files = await shopifyService.getShopifyMediaFiles(store);
+    console.log(`Fetched ${files.length} files from Shopify Media Library`);
+    
+    return res.json({
+      success: true,
+      files
+    });
+  } catch (error) {
+    console.error("Error in media files endpoint:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch media files",
+      files: []
+    });
+  }
+});
+
+// Get product-specific images for a selected product
+adminRouter.get("/product-images/:productId", async (req: Request, res: Response) => {
+  try {
+    const productId = req.params.productId;
+    
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required",
+        files: []
+      });
+    }
+    
+    // Get Shopify connection
+    const connection = await storage.getShopifyConnection();
+    
+    if (!connection || !connection.isConnected) {
+      return res.json({
+        success: false,
+        message: "No active Shopify connection",
+        files: []
+      });
+    }
+    
+    // Create store object for API calls
+    const store = {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || null,
+      isConnected: connection.isConnected || true,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
+    
+    // Fetch product-specific images
+    const productImages = await shopifyService.getProductImages(store, productId);
+    console.log(`Fetched ${productImages.length} images for product ${productId}`);
+    
+    return res.json({
+      success: true,
+      files: productImages
+    });
+  } catch (error) {
+    console.error("Error fetching product images:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch product images",
+      files: []
+    });
+  }
+});
+
+// Original endpoint for backward compatibility
+// Get content files from Shopify
+adminRouter.get("/content-files", async (_req: Request, res: Response) => {
+  try {
+    // Redirect to the new endpoint
+    const connection = await storage.getShopifyConnection();
+    
+    if (!connection || !connection.isConnected) {
+      return res.json({
+        success: false,
+        message: "No active Shopify connection",
+        files: []
+      });
+    }
+    
+    // Create store object for API calls
+    const store = {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || null,
+      isConnected: connection.isConnected || true,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
+    
+    // For backward compatibility, get files from media library
+    const files = await shopifyService.getShopifyMediaFiles(store);
+    console.log(`Fetched ${files.length} files for backward compatibility`);
     
     return res.json({
       success: true,
