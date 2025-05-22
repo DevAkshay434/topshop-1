@@ -906,6 +906,66 @@ export class ShopifyService {
     try {
       console.log(`Fetching content files from ${store.shopName} using assets API`);
       const client = this.getClient(store.shopName, store.accessToken);
+
+      // Try a new approach that's more reliable - get product images directly
+      try {
+        console.log("Fetching product images as content files - more reliable method");
+        const productsResponse = await client.get('/products.json?limit=20&fields=id,title,image,images,variants');
+      
+        if (productsResponse.data && productsResponse.data.products) {
+          const products = productsResponse.data.products;
+          const productImages = [];
+          
+          // Process all product images
+          products.forEach(product => {
+            if (product.image && product.image.src) {
+              productImages.push({
+                id: `product-${product.id}-main`,
+                url: product.image.src,
+                filename: `${product.title} (main)`,
+                content_type: 'image/jpeg',
+                alt: product.title
+              });
+            }
+            
+            if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+              product.images.forEach((image, index) => {
+                if (image && image.src) {
+                  productImages.push({
+                    id: `product-${product.id}-image-${image.id || index}`,
+                    url: image.src,
+                    filename: `${product.title} (${index + 1})`,
+                    content_type: 'image/jpeg',
+                    alt: image.alt || `${product.title} image ${index + 1}`
+                  });
+                }
+              });
+            }
+            
+            // Add variant images
+            if (product.variants && Array.isArray(product.variants)) {
+              product.variants.forEach((variant, index) => {
+                if (variant.image && variant.image.src) {
+                  productImages.push({
+                    id: `variant-${variant.id}`,
+                    url: variant.image.src,
+                    filename: `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
+                    content_type: 'image/jpeg',
+                    alt: `${product.title} - ${variant.title || `Variant ${index + 1}`}`
+                  });
+                }
+              });
+            }
+          });
+          
+          console.log(`Found ${productImages.length} product images to use as content files`);
+          if (productImages.length > 0) {
+            return productImages;
+          }
+        }
+      } catch (productsError) {
+        console.error("Error fetching product images:", productsError.message);
+      }
       
       // First try themes/assets API which is more reliable
       try {

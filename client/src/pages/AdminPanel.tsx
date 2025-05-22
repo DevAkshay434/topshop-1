@@ -5381,7 +5381,7 @@ export default function AdminPanel() {
                                           target.onerror = null;
                                           
                                           // Try to convert Shopify URL to CDN format if not already
-                                          if (file.url.includes('shopify.com') && !file.url.includes('cdn.shopify.com')) {
+                                          if (typeof file.url === 'string' && file.url.includes('shopify.com') && !file.url.includes('cdn.shopify.com')) {
                                             try {
                                               const url = new URL(file.url);
                                               // Attempt to create CDN version of URL
