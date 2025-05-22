@@ -4911,52 +4911,85 @@ export default function AdminPanel() {
                                   </div>
                                 )}
                                 
-                                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all flex items-center justify-center">
-                                  <div className="opacity-0 hover:opacity-100 transition-all flex gap-2">
-                                    <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="sm"
-                                      onClick={() => {
-                                        // Skip if already selected
-                                        if (isAlreadySelected) {
-                                          toast({
-                                            title: "Already selected",
-                                            description: "This image is already in your selection"
-                                          });
-                                          return;
-                                        }
-                                        
-                                        // Create a Pexels-compatible image object for the product image
-                                        const imageForSelection: PexelsImage = {
-                                          id: `product-${product.id}`,
-                                          url: productImage || '',
-                                          width: 500,
-                                          height: 500,
-                                          alt: product.title,
-                                          src: {
-                                            original: productImage || '',
-                                            large: productImage || '',
-                                            medium: productImage || '',
-                                            small: productImage || '',
-                                            thumbnail: productImage || '',
-                                          }
-                                        };
-                                        
-                                        // Add as featured image (first in array)
-                                        setPrimaryImages(prev => [imageForSelection, ...prev]);
-                                        
+                                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Skip if already selected
+                                      if (isAlreadySelected) {
                                         toast({
-                                          title: "Featured image added",
-                                          description: "Product image added as featured image",
+                                          title: "Already selected",
+                                          description: "This image is already in your selection"
                                         });
-                                      }}
-                                      className="bg-white text-black hover:bg-gray-100"
-                                    >
-                                      <ImageIcon className="mr-1 h-3 w-3" />
-                                      Set as Featured
-                                    </Button>
-                                  </div>
+                                        return;
+                                      }
+                                      
+                                      // Create a Pexels-compatible image object for the product image
+                                      const imageForSelection: PexelsImage = {
+                                        id: `product-${product.id}`,
+                                        url: productImage || '',
+                                        width: 500,
+                                        height: 500,
+                                        alt: product.title,
+                                        src: {
+                                          original: productImage || '',
+                                          large: productImage || '',
+                                          medium: productImage || '',
+                                          small: productImage || '',
+                                          thumbnail: productImage || '',
+                                        }
+                                      };
+                                      
+                                      // Add as featured image (first in array)
+                                      setPrimaryImages(prev => [imageForSelection, ...prev]);
+                                      
+                                      toast({
+                                        title: "Featured image added",
+                                        description: "Product image added as featured image",
+                                      });
+                                    }}
+                                    className="w-4/5 bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    <ImageIcon className="mr-2 h-4 w-4" />
+                                    Set as Featured
+                                  </Button>
+                                  
+                                  <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Create a Pexels-compatible image object for the product image
+                                      const imageForSelection: PexelsImage = {
+                                        id: `product-${product.id}-secondary`,
+                                        url: productImage || '',
+                                        width: 500,
+                                        height: 500,
+                                        alt: product.title,
+                                        src: {
+                                          original: productImage || '',
+                                          large: productImage || '',
+                                          medium: productImage || '',
+                                          small: productImage || '',
+                                          thumbnail: productImage || '',
+                                        }
+                                      };
+                                      
+                                      // Add to secondary images
+                                      setSecondaryImages(prev => [...prev, imageForSelection]);
+                                      
+                                      toast({
+                                        title: "Secondary image added",
+                                        description: "Image added for use in content body",
+                                      });
+                                    }}
+                                    className="w-4/5 bg-green-600 hover:bg-green-700 text-white"
+                                  >
+                                    <LayoutGrid className="mr-2 h-4 w-4" />
+                                    Add to Content
+                                  </Button>
                                 </div>
                               </div>
                               <div className="bg-black bg-opacity-70 p-2">
