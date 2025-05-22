@@ -4347,35 +4347,19 @@ export default function AdminPanel() {
                 <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
               </Button>
               
-              <div className="flex-1 flex flex-col gap-1">
-                <Button 
+              <Button 
                   size="sm"
                   variant={imageSource === 'shopify' ? 'default' : 'outline'} 
-                  onClick={() => setImageSource('shopify')}
-                  className="w-full"
+                  onClick={() => {
+                    setImageSource('shopify');
+                    // Load media library files when selecting Shopify Images
+                    fetchShopifyFiles();
+                  }}
+                  className="flex-1"
                 >
                   <Store className="mr-2 h-4 w-4" />
-                  Product Images
+                  Shopify Images
                 </Button>
-                <Button 
-                  size="sm"
-                  variant={imageSource === 'shopify-files' ? 'default' : 'outline'} 
-                  onClick={() => {
-                    setImageSource('shopify-files');
-                    setImageType('media');
-                    // Fetch content files when this source is selected
-                    fetchShopifyFiles();
-                    toast({
-                      title: "Loading Content Files",
-                      description: "Fetching images from your Shopify store's media library"
-                    });
-                  }}
-                  className="w-full"
-                >
-                  <FolderOpen className="mr-2 h-4 w-4" />
-                  Content Files
-                </Button>
-              </div>
               
               <div className="flex-1 flex flex-col gap-1">
                 <Button 
@@ -4871,7 +4855,7 @@ export default function AdminPanel() {
                     <SelectContent>
                       <SelectItem value="products">Product Images</SelectItem>
                       <SelectItem value="variants">Variant Images</SelectItem>
-                      <SelectItem value="media">Media Library</SelectItem>
+                      <SelectItem value="media">Shopify Media</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
