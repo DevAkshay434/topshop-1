@@ -4992,10 +4992,25 @@ export default function AdminPanel() {
                                   alt={product.title} 
                                   className="w-full h-full object-contain bg-white"
                                   onError={(e) => {
-                                    // Fallback for broken images
+                                    // Try CDN proxied URL if direct URL fails
                                     const target = e.target as HTMLImageElement;
                                     target.onerror = null;
-                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                                    
+                                    // Try to convert Shopify URL to CDN format if not already
+                                    if (productImage.includes('shopify.com') && !productImage.includes('cdn.shopify.com')) {
+                                      try {
+                                        const url = new URL(productImage);
+                                        // Attempt to create CDN version of URL
+                                        const cdnUrl = `https://cdn.shopify.com${url.pathname}${url.search}`;
+                                        target.src = cdnUrl;
+                                        return;
+                                      } catch (error) {
+                                        console.log("Failed to create CDN URL");
+                                      }
+                                    }
+                                    
+                                    // If still fails, show a more friendly placeholder
+                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYyZjUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzY0NzQ4YiI+UHJvZHVjdCBJbWFnZTwvdGV4dD48L3N2Zz4=';
                                   }}
                                 />
                                 {isAlreadySelected && (
@@ -5162,10 +5177,25 @@ export default function AdminPanel() {
                                           alt={variant.title} 
                                           className="w-full h-full object-contain bg-white"
                                           onError={(e) => {
-                                            // Fallback for broken images
+                                            // Try CDN proxied URL if direct URL fails
                                             const target = e.target as HTMLImageElement;
                                             target.onerror = null;
-                                            target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                                            
+                                            // Try to convert Shopify URL to CDN format if not already
+                                            if (variant.image && variant.image.includes('shopify.com') && !variant.image.includes('cdn.shopify.com')) {
+                                              try {
+                                                const url = new URL(variant.image as string);
+                                                // Attempt to create CDN version of URL
+                                                const cdnUrl = `https://cdn.shopify.com${url.pathname}${url.search}`;
+                                                target.src = cdnUrl;
+                                                return;
+                                              } catch (error) {
+                                                console.log("Failed to create CDN URL for variant");
+                                              }
+                                            }
+                                            
+                                            // If still fails, show a more friendly placeholder
+                                            target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYyZjUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzY0NzQ4YiI+VmFyaWFudCBJbWFnZTwvdGV4dD48L3N2Zz4=';
                                           }}
                                         />
                                         {isAlreadySelected && (
@@ -5345,9 +5375,25 @@ export default function AdminPanel() {
                                         alt={file.alt || file.name} 
                                         className="w-full h-full object-contain bg-white"
                                         onError={(e) => {
+                                          // Try CDN proxied URL if direct URL fails
                                           const target = e.target as HTMLImageElement;
                                           target.onerror = null;
-                                          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzk5OSI+SW1hZ2Ugbm90IGF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                                          
+                                          // Try to convert Shopify URL to CDN format if not already
+                                          if (file.url.includes('shopify.com') && !file.url.includes('cdn.shopify.com')) {
+                                            try {
+                                              const url = new URL(file.url);
+                                              // Attempt to create CDN version of URL
+                                              const cdnUrl = `https://cdn.shopify.com${url.pathname}${url.search}`;
+                                              target.src = cdnUrl;
+                                              return;
+                                            } catch (error) {
+                                              console.log("Failed to create CDN URL for content file");
+                                            }
+                                          }
+                                          
+                                          // If still fails, show a more friendly placeholder
+                                          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMGYyZjUiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGFsaWdubWVudC1iYXNlbGluZT0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iIzY0NzQ4YiI+U2hvcGlmeSBJbWFnZTwvdGV4dD48L3N2Zz4=';
                                         }}
                                       />
                                       
