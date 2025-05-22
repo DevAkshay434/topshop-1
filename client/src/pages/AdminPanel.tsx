@@ -323,10 +323,41 @@ export default function AdminPanel() {
   const fetchShopifyFiles = async () => {
     try {
       setIsLoadingContentFiles(true);
+      toast({
+        title: "Loading media files",
+        description: "Fetching your Shopify content files..."
+      });
       
       // Use product images as content files 
       const productsResponse = await fetch('/api/admin/products');
       const productsData = await productsResponse.json();
+      
+      // Try to fetch files from content API (additional files from Shopify)
+      let shopifyFiles = [];
+      try {
+        const filesResponse = await fetch('/api/admin/content-files');
+        const filesData = await filesResponse.json();
+        
+        if (filesData && filesData.success && filesData.files && filesData.files.length > 0) {
+          shopifyFiles = filesData.files
+            .filter(file => file.url && (
+              file.url.toLowerCase().endsWith('.jpg') || 
+              file.url.toLowerCase().endsWith('.jpeg') || 
+              file.url.toLowerCase().endsWith('.png') || 
+              file.url.toLowerCase().endsWith('.gif')
+            ))
+            .map(file => ({
+              id: `file-media-${file.id || Math.random().toString(36).substring(7)}`,
+              url: file.url,
+              name: file.filename || 'Shopify Media',
+              alt: file.alt || file.filename || 'Shopify Media',
+              content_type: file.content_type || 'image/jpeg',
+              source: 'media_library'
+            }));
+        }
+      } catch (error) {
+        console.error('Error fetching Shopify content files:', error);
+      }
       
       if (productsData.success && productsData.products) {
         // Convert product images to content files format with better organization
@@ -389,6 +420,11 @@ export default function AdminPanel() {
           }
         });
         contentImageFiles = [...contentImageFiles, ...variantImages];
+        
+        // Add any media files from Shopify library if available
+        if (shopifyFiles && shopifyFiles.length > 0) {
+          contentImageFiles = [...shopifyFiles, ...contentImageFiles];
+        }
           
         setContentFiles(contentImageFiles);
         toast({
