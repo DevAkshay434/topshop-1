@@ -41,15 +41,29 @@ export class MediaService {
       if (filesResponse && filesResponse.files && filesResponse.files.length > 0) {
         console.log(`Successfully fetched ${filesResponse.files.length} files from Shopify Files API`);
         
-        // Convert to our standard format
-        return filesResponse.files.map((file: any) => ({
-          id: file.id.toString(),
-          url: file.url,
-          filename: file.filename || '',
-          content_type: file.content_type || 'image/jpeg',
-          alt: file.alt || file.filename || 'Shopify Media',
-          source: 'shopify_media'
-        }));
+        // Convert to our standard format with careful validation
+        const mediaFiles = filesResponse.files.map((file: any) => {
+          // Ensure the file has a valid URL - essential for image display
+          const url = file.url && file.url.trim() !== '' 
+            ? file.url 
+            : `https://placehold.co/600x400?text=${encodeURIComponent(file.filename || 'Image')}`;
+            
+          return {
+            id: file.id ? file.id.toString() : `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            url: url,
+            filename: file.filename || 'Unnamed file',
+            content_type: file.content_type || this.getContentTypeFromFilename(file.filename || 'image.jpg'),
+            alt: file.alt || file.filename || 'Shopify Media',
+            source: 'shopify_media'
+          };
+        });
+        
+        // Log a sample for debugging
+        if (mediaFiles.length > 0) {
+          console.log('Sample media file:', JSON.stringify(mediaFiles[0]));
+        }
+        
+        return mediaFiles;
       }
       
       // If Files API fails or returns empty, get product images directly

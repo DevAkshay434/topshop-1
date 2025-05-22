@@ -110,52 +110,88 @@ export default function ImageSearchDialog({
     setIsSearchingImages(true);
     
     try {
+      // Display a loading message
+      toast({
+        title: "Loading media files",
+        description: "Fetching images from your Shopify store..."
+      });
+      
       // This endpoint fetches all media from Shopify Media Library
       const response = await apiRequest({
         url: '/api/admin/files',
         method: 'GET'
       });
       
+      console.log('Shopify media response:', response);
+      
       if (response.success && response.files && response.files.length > 0) {
         console.log(`Loaded ${response.files.length} images from Shopify Media Library`);
         
-        // Format the files to match our image structure
-        const formattedImages = response.files.map((file: any) => ({
-          id: file.id,
-          url: file.url,
-          src: {
-            original: file.url,
-            large: file.url,
-            medium: file.url,
-            small: file.url,
-            thumbnail: file.url
-          },
-          alt: file.alt || file.filename || 'Shopify media',
-          width: 800, // Default width
-          height: 600, // Default height
-          source: file.source || 'shopify_media',
-          selected: selectedImages.some(selected => selected.id === file.id)
-        }));
+        // Format the files to match our image structure, with careful handling of properties
+        const formattedImages = response.files.map((file: any) => {
+          // Ensure we have a valid URL - critical for image display
+          const imageUrl = file.url || '';
+          
+          // Create a properly structured image object with all required fields
+          return {
+            id: file.id || `file-${Math.random().toString(36).substring(7)}`,
+            url: imageUrl,
+            src: {
+              original: imageUrl,
+              large: imageUrl,
+              medium: imageUrl,
+              small: imageUrl,
+              thumbnail: imageUrl
+            },
+            alt: file.alt || file.filename || 'Shopify media',
+            width: file.width || 800, // Default width
+            height: file.height || 600, // Default height
+            source: file.source || 'shopify_media',
+            selected: selectedImages.some(selected => selected.id === file.id)
+          };
+        });
+        
+        // Filter out any images without valid URLs
+        const validImages = formattedImages.filter((img: PexelsImage) => img.url && img.url.trim() !== '');
+        
+        if (validImages.length === 0) {
+          toast({
+            title: "No valid images found",
+            description: "Your Shopify Media Library returned images but none had valid URLs",
+            variant: "destructive"
+          });
+          setSearchedImages([]);
+          setIsSearchingImages(false);
+          return;
+        }
+        
+        console.log(`${validImages.length} valid images after filtering`);
+        console.log('Sample image:', validImages[0]);
         
         // Add to available sources
         setAvailableSources(prev => {
           const sources = new Set([...prev, 'shopify_media']);
-          if (formattedImages.some((img: PexelsImage) => img.source === 'product_image')) {
+          if (validImages.some((img: PexelsImage) => img.source === 'product_image')) {
             sources.add('product_image');
           }
-          if (formattedImages.some((img: PexelsImage) => img.source === 'variant_image')) {
+          if (validImages.some((img: PexelsImage) => img.source === 'variant_image')) {
             sources.add('variant_image');
           }
           return Array.from(sources);
         });
         
         // Set the images and add to search history
-        setSearchedImages(formattedImages);
+        setSearchedImages(validImages);
         setImageSearchQuery('Shopify Media');
         setImageSearchHistory(prev => [
-          { query: 'Shopify Media', images: formattedImages },
+          { query: 'Shopify Media', images: validImages },
           ...prev.filter(h => h.query !== 'Shopify Media')
         ]);
+        
+        toast({
+          title: "Media loaded successfully",
+          description: `Loaded ${validImages.length} images from your Shopify store`
+        });
       } else {
         toast({
           title: "No media found",
@@ -168,7 +204,7 @@ export default function ImageSearchDialog({
       console.error('Error loading Shopify Media Library:', error);
       toast({
         title: "Failed to load media",
-        description: "There was an error loading your Shopify Media Library",
+        description: "There was an error loading your Shopify Media Library. Please try again.",
         variant: "destructive"
       });
     } finally {
