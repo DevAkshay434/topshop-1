@@ -319,6 +319,7 @@ export default function AdminPanel() {
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>([]);
   const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
   const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
+  const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
   
   // Function to fetch Shopify Media Library files (store-wide)
   const fetchShopifyMediaFiles = async () => {
@@ -4828,39 +4829,17 @@ export default function AdminPanel() {
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-medium">Shopify Media Library</h3>
                 <div className="flex gap-2">
-                  <Select 
-                    defaultValue="products" 
-                    onValueChange={(value) => {
-                      if (value === 'variants') {
-                        toast({
-                          title: "Showing variant images",
-                          description: "Browse and select from all product variants"
-                        });
-                      } else if (value === 'products') {
-                        toast({
-                          title: "Showing product images",
-                          description: "Browse and select from main product images"
-                        });
-                      } else if (value === 'media') {
-                        toast({
-                          title: "Loading media library",
-                          description: "Fetching content files from your Shopify store"
-                        });
-                        // Fetch content files when this type is selected
-                        fetchShopifyFiles();
-                      }
-                      setImageType(value as 'products' | 'variants' | 'media');
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Set state to show our enhanced dialog
+                      setShowChooseMediaDialog(true);
                     }}
                   >
-                    <SelectTrigger className="w-[180px] h-8">
-                      <SelectValue placeholder="Image source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="products">Product Images</SelectItem>
-                      <SelectItem value="variants">Variant Images</SelectItem>
-                      <SelectItem value="media">Shopify Media</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <ImagePlus className="mr-2 h-4 w-4" />
+                    Choose Media
+                  </Button>
                 </div>
               </div>
               
@@ -4896,10 +4875,10 @@ export default function AdminPanel() {
                             {primaryImages.map((img, index) => (
                               <div key={img.id} className="relative group">
                                 <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
-                                  <img 
-                                    src={img.src?.medium || img.url} 
+                                  <ShopifyImageViewer 
+                                    imageUrl={img.src?.medium || img.url || ''} 
                                     alt={img.alt || "Selected image"} 
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full"
                                   />
                                   <div className="absolute top-1 left-1 bg-blue-500 text-white px-1 py-0.5 rounded text-xs">
                                     {index === 0 ? 'Featured' : `Image ${index + 1}`}
@@ -4935,10 +4914,10 @@ export default function AdminPanel() {
                             {secondaryImages.map((img, index) => (
                               <div key={img.id} className="relative group">
                                 <div className="relative aspect-square rounded-md overflow-hidden border-2 border-green-500">
-                                  <img 
-                                    src={img.src?.medium || img.url} 
+                                  <ShopifyImageViewer 
+                                    imageUrl={img.src?.medium || img.url || ''} 
                                     alt={img.alt || "Content image"} 
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full"
                                   />
                                   <div className="absolute top-1 left-1 bg-green-500 text-white px-1 py-0.5 rounded text-xs">
                                     Content {index + 1}
