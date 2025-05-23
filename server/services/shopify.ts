@@ -1,6 +1,9 @@
 import axios, { AxiosInstance } from 'axios';
 import { ShopifyConnection, ShopifyStore, BlogPost } from '@shared/schema';
 import { createDateInTimezone } from '@shared/timezone';
+import * as fs from 'fs';
+import * as path from 'path';
+import FormData from 'form-data';
 
 // Define a separate interface for the Shopify service
 interface ShopifyBlogPost {
