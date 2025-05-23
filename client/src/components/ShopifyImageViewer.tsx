@@ -124,23 +124,71 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
     const originalUrl = src;
     const currentUrl = imageSrc;
     
-    // If we're currently using the original or a first transform, try cdn.shopify.com format
+    console.log("Image failed to load, attempting fallbacks:", currentUrl);
+    
+    // Try CDN format for Shopify URLs if we haven't already
     if (currentUrl === originalUrl || !currentUrl.includes('cdn.shopify.com')) {
       try {
-        // Try force-converting to CDN format
+        // Try different patterns of Shopify URLs
+        
+        // Pattern 1: Extract product/variant IDs from URL paths
         const matches = originalUrl.match(/\/([0-9]+)\/([0-9]+)\/([^?]+)/);
         if (matches) {
           const [, shopId, productId, imagePath] = matches;
           const cdnUrl = `https://cdn.shopify.com/s/files/${shopId}/${productId}/${imagePath}`;
+          console.log("Trying CDN URL format 1:", cdnUrl);
           setImageSrc(cdnUrl);
           return; // Wait for the next error cycle if this fails
+        }
+        
+        // Pattern 2: Try a more generic approach for product images
+        if (originalUrl.includes('products')) {
+          const productMatch = originalUrl.match(/\/products\/([^\/\?]+)/);
+          if (productMatch) {
+            const cdnUrl = `https://cdn.shopify.com/s/files/1/0938/4158/8538/products/${productMatch[1]}.jpg`;
+            console.log("Trying CDN URL format 2:", cdnUrl);
+            setImageSrc(cdnUrl);
+            return;
+          }
+        }
+        
+        // Pattern 3: For admin URLs, try to extract the image ID
+        const adminImageMatch = originalUrl.match(/\/admin\/products\/\d+\/images\/(\d+)/);
+        if (adminImageMatch) {
+          const imageId = adminImageMatch[1];
+          const cdnUrl = `https://cdn.shopify.com/s/files/1/0938/4158/8538/products/image_${imageId}.jpg`;
+          console.log("Trying admin image URL format:", cdnUrl);
+          setImageSrc(cdnUrl);
+          return;
+        }
+        
+        // Pattern 4: Try direct file access with more permissive pattern
+        if (originalUrl.includes('files')) {
+          const filesMatch = originalUrl.match(/files\/(.+?)($|\?)/);
+          if (filesMatch) {
+            const filePath = filesMatch[1];
+            const cdnUrl = `https://cdn.shopify.com/s/files/${filePath}`;
+            console.log("Trying files URL format:", cdnUrl);
+            setImageSrc(cdnUrl);
+            return;
+          }
         }
       } catch (error) {
         console.error("Advanced URL transform failed", error);
       }
     }
     
+    // Last resort - try a completely different approach with direct image
+    if (!currentUrl.includes('.jpg') && !currentUrl.includes('.png') && !currentUrl.includes('.jpeg')) {
+      // Try adding extension
+      const withExtension = `${currentUrl}.jpg`;
+      console.log("Trying with extension:", withExtension);
+      setImageSrc(withExtension);
+      return;
+    }
+    
     // If nothing worked, show the error UI
+    console.log("All image fallbacks failed, showing error UI");
     setHasError(true);
   };
 

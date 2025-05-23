@@ -6003,7 +6003,14 @@ export default function AdminPanel() {
                 const safeImages = standardizedImages.map(img => ({
                   ...img,
                   selected: false,
-                  type: 'image'
+                  type: 'image',
+                  src: {
+                    original: img.url,
+                    large: img.url,
+                    medium: img.url,
+                    small: img.url,
+                    thumbnail: img.url
+                  }
                 }));
                 setPrimaryImages(prev => [...prev, ...safeImages]);
                 toast({
@@ -6015,7 +6022,14 @@ export default function AdminPanel() {
                 const safeImages = standardizedImages.map(img => ({
                   ...img,
                   selected: false,
-                  type: 'image'
+                  type: 'image',
+                  src: {
+                    original: img.url,
+                    large: img.url,
+                    medium: img.url,
+                    small: img.url,
+                    thumbnail: img.url
+                  }
                 }));
                 setSecondaryImages(prev => [...prev, ...safeImages]);
                 toast({
