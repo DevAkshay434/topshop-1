@@ -352,9 +352,67 @@ export function ChooseMediaDialog({
           
           {/* Stock Images Tab */}
           <TabsContent value="pexels" className="flex-1 overflow-auto">
-            <div className="flex flex-col items-center justify-center h-64">
-              <p>Pexels image search is coming soon.</p>
-              <p className="text-sm text-gray-500 mt-2">Please use product images for now.</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+              {/* Placeholder images - these would normally come from Pexels API */}
+              {Array.from({ length: 12 }).map((_, index) => {
+                const id = `pexels-sample-${index + 1}`;
+                const image: MediaImage = {
+                  id,
+                  url: `https://images.pexels.com/photos/${3000000 + index}/pexels-photo-${3000000 + index}.jpeg?auto=compress&cs=tinysrgb&w=800`,
+                  alt: `Stock image ${index + 1}`,
+                  title: `Sample stock image ${index + 1}`,
+                  source: 'pexels',
+                  selected: selectedImages.some(img => img.id === id)
+                };
+                
+                const isSelected = selectedImages.some(img => img.id === image.id);
+                
+                return (
+                  <div 
+                    key={image.id} 
+                    className={`
+                      relative cursor-pointer border-2 rounded-md overflow-hidden
+                      ${isSelected ? 'border-blue-500' : 'border-gray-100 hover:border-gray-300'}
+                      ${image.source === 'pexels' ? 'ring-1 ring-green-300' : ''}
+                    `}
+                    onClick={() => toggleImageSelection(image)}
+                  >
+                    <div className="aspect-square bg-gray-50 overflow-hidden relative">
+                      {/* Use our ShopifyImageViewer instead since it has better error handling */}
+                      <img
+                        src={image.url}
+                        alt={image.alt || 'Stock image'}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          // Fallback to placeholder
+                          const target = e.currentTarget;
+                          target.src = `https://placehold.co/600x600?text=${encodeURIComponent('Stock Image')}`;
+                          target.classList.add('placeholder-image');
+                        }}
+                      />
+                      
+                      {/* Source badge */}
+                      <div className="absolute top-2 left-2">
+                        <span className="text-xs px-2 py-1 rounded text-white bg-green-500">
+                          Pexels
+                        </span>
+                      </div>
+                      
+                      {/* Selection indicator */}
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
+                          <Check className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-2">
+                      <p className="text-xs truncate">{image.title || image.alt || 'Stock image'}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>

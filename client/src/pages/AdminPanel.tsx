@@ -6018,7 +6018,7 @@ export default function AdminPanel() {
             }
           }
         }}
-        initialSelectedImages={[]}
+        initialSelectedImages={imageTab === 'primary' ? primaryImages : secondaryImages}
         maxImages={10}
         allowMultiple={true}
         title={imageTab === 'primary' ? "Choose Featured Images" : "Choose Content Images"}
