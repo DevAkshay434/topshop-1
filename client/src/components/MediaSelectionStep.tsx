@@ -309,7 +309,7 @@ export default function MediaSelectionStep({
       <div key={image.id} className="relative group border rounded-md overflow-hidden">
         <div className="relative aspect-video bg-slate-100">
           <ShopifyImageViewer
-            imageUrl={image.url}
+            src={image.url}
             alt={image.alt || ''}
             className="w-full h-full object-cover"
           />
@@ -400,7 +400,7 @@ export default function MediaSelectionStep({
                 <h3 className="text-sm font-medium text-blue-700 mb-2">Selected Primary Image</h3>
                 <div className="aspect-video relative w-full max-w-md mx-auto">
                   <ShopifyImageViewer
-                    imageUrl={primaryImage.url}
+                    src={primaryImage.url}
                     alt={primaryImage.alt || ''}
                     className="w-full h-full object-cover rounded-md"
                   />
@@ -516,7 +516,7 @@ export default function MediaSelectionStep({
                   {secondaryImages.map(image => (
                     <div key={image.id} className="relative aspect-video">
                       <ShopifyImageViewer
-                        imageUrl={image.url}
+                        src={image.url}
                         alt={image.alt || ''}
                         className="w-full h-full object-cover rounded-md"
                       />
