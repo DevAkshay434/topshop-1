@@ -148,7 +148,11 @@ export function ChooseMediaDialog({
   };
 
   // Load product images directly from the products API
-  const loadProductImages = async (selectedProductId?: string) => {
+  const loadProductImages = async (selectedProductId?: string | React.MouseEvent) => {
+    // Handle being called from a button click
+    if (selectedProductId && typeof selectedProductId !== 'string') {
+      selectedProductId = undefined; // It's a MouseEvent, not a product ID
+    }
     setIsLoading(true);
     
     try {
@@ -357,7 +361,7 @@ export function ChooseMediaDialog({
                 <p>No product images found in your store.</p>
                 <Button 
                   variant="outline" 
-                  onClick={loadProductImages} 
+                  onClick={() => loadProductImages()} 
                   className="mt-4"
                 >
                   Refresh Images
@@ -426,7 +430,7 @@ export function ChooseMediaDialog({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={loadProductImages}
+                    onClick={() => loadProductImages()}
                   >
                     <Loader2 className="h-4 w-4 mr-2" />
                     Refresh Images
@@ -448,7 +452,7 @@ export function ChooseMediaDialog({
                 <p>No images found in your Shopify Media Library.</p>
                 <Button 
                   variant="outline" 
-                  onClick={loadShopifyMediaLibrary} 
+                  onClick={() => loadShopifyMediaLibrary()} 
                   className="mt-4"
                 >
                   Refresh Media Library
