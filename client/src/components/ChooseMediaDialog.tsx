@@ -553,18 +553,20 @@ export function ChooseMediaDialog({
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
                           {/* Image wrapper with fallback placeholder */}
                           <div className="relative w-full h-full">
-                            {/* Use our robust ShopifyImageViewer for better image display */}
-                            <ShopifyImageViewer
+                            {/* Use direct img tag with error handling for better compatibility */}
+                            <img 
                               src={image.url}
-                              alt={image.alt || image.title || "Shopify image"}
+                              alt={image.alt || image.title || "Media image"}
                               className="w-full h-full object-cover"
-                              key={`${image.id}-${image.url}`} // Force re-render when URL changes
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                // Set placeholder for failed images
+                                target.onerror = null; // Prevent infinite error loop
+                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%23f0f0f0'/%3E%3Cpath d='M8.5,7.5a2,2,0,1,1-2-2A2,2,0,0,1,8.5,7.5Zm11,10v-1l-3-3-2,2-6-6-4,4v4Z' fill='%23cccccc'/%3E%3C/svg%3E";
+                              }}
                             />
                             
-                            {/* Show image title overlay */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate">
-                              {image.title || image.alt || 'Image'}
-                            </div>
+                            {/* Image title overlay - only show if needed */}
                           </div>
                           
                           {/* Source badge */}

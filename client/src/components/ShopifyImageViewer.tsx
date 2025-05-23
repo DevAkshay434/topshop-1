@@ -37,13 +37,20 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
     setHasError(false);
   }, [src]);
 
-  // Comprehensive URL processing for Shopify images
+  // Enhanced URL processing for all image types (Shopify, Pexels, etc.)
   const processShopifyUrl = (url: string): string => {
     if (!url || typeof url !== 'string') {
       return '';
     }
 
     try {
+      // Pexels and other external image services shouldn't be modified
+      if (url.includes('pexels.com') || 
+          url.includes('pixabay.com') || 
+          url.includes('unsplash.com')) {
+        return url;
+      }
+      
       // Simple case - already a CDN URL with proper format
       if (url.includes('cdn.shopify.com') && url.startsWith('https://')) {
         return url;
@@ -62,6 +69,11 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
       // If it's using http, upgrade to https
       if (url.startsWith('http://')) {
         return 'https://' + url.substring(7);
+      }
+      
+      // For any external service URLs, leave as-is if they have https
+      if (url.startsWith('https://')) {
+        return url;
       }
       
       // Check if it's a direct file URL pattern like files/image.jpg
