@@ -1639,7 +1639,7 @@ export default function AdminPanel() {
                                       return (
                                         <div key={product.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
                                           {imageSrc ? (
-                                            <img 
+                                            <ShopifyImageViewer 
                                               src={imageSrc} 
                                               alt={product.title}
                                               className="w-10 h-10 rounded object-contain border border-gray-100" 
@@ -1671,7 +1671,7 @@ export default function AdminPanel() {
                                       return (
                                         <div key={collection.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
                                           {imageSrc ? (
-                                            <img 
+                                            <ShopifyImageViewer 
                                               src={imageSrc} 
                                               alt={collection.title}
                                               className="w-10 h-10 rounded object-contain border border-gray-100" 
