@@ -275,7 +275,8 @@ export function ChooseMediaDialog({
                         onClick={() => toggleImageSelection(image)}
                       >
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                          <img 
+                          {/* Replace img with our ShopifyImageViewer component to use our robust URL handling */}
+                          <img
                             src={image.url}
                             alt={image.alt || 'Product image'}
                             className="w-full h-full object-cover"
@@ -285,15 +286,46 @@ export function ChooseMediaDialog({
                               const target = e.currentTarget;
                               const src = target.src;
                               
-                              // If a Shopify URL, try converting to CDN URL
-                              if (src.includes('shopify.com') && !src.includes('cdn.shopify.com')) {
+                              // Handle protocol-relative URLs (starting with //)
+                              if (src.startsWith('//')) {
+                                target.src = 'https:' + src;
+                                return;
+                              }
+                              
+                              // Fix missing protocol
+                              if (src.startsWith('cdn.shopify.com')) {
+                                target.src = 'https://' + src;
+                                return;
+                              }
+                              
+                              // If a Shopify URL, try multiple forms of CDN URL
+                              if (src.includes('shopify.com')) {
                                 try {
+                                  // Try standard CDN conversion
                                   const url = new URL(src);
-                                  const cdnUrl = `https://cdn.shopify.com${url.pathname}${url.search}`;
-                                  target.src = cdnUrl;
+                                  // Check for /files/ or /products/ part in the path
+                                  const filesMatch = url.pathname.match(/\/(files|products)\/(.+)/);
+                                  if (filesMatch) {
+                                    target.src = `https://cdn.shopify.com/s${filesMatch[0]}${url.search}`;
+                                    return;
+                                  }
+                                  // Otherwise just use the pathname 
+                                  target.src = `https://cdn.shopify.com${url.pathname}${url.search}`;
                                   return;
                                 } catch (error) {
                                   console.log("Failed to create CDN URL");
+                                }
+                                
+                                // Try secondary pattern if first one failed
+                                try {
+                                  const matches = src.match(/\/([0-9]+)\/([0-9]+)\/([^?]+)/);
+                                  if (matches) {
+                                    const [, shopId, productId, imagePath] = matches;
+                                    target.src = `https://cdn.shopify.com/s/files/${shopId}/${productId}/${imagePath}`;
+                                    return;
+                                  }
+                                } catch (error) {
+                                  console.log("Failed secondary URL pattern");
                                 }
                               }
                               
