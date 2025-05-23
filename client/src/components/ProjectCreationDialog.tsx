@@ -16,7 +16,8 @@ import {
   FileDown, 
   SaveAll, 
   FileText, 
-  Clock 
+  Clock, 
+  Palette
 } from "lucide-react";
 import { 
   Tooltip, 
@@ -33,7 +34,14 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { ContentStyleSettings } from "./ContentStyleSettings";
 
 // Sample template projects - in a real app, these might come from an API
 const TEMPLATE_PROJECTS = [
