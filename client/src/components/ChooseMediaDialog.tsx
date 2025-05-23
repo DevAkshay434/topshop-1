@@ -52,8 +52,8 @@ export function ChooseMediaDialog({
         loadProductImages();
       } else if (activeTab === 'pexels') {
         // Pexels tab is handled separately
-      } else {
-        // This is for any other tabs like Shopify Media Library
+      } else if (activeTab === 'media_library') {
+        // This is specifically for the Shopify Media Library tab
         loadShopifyMediaLibrary();
       }
     }
@@ -65,6 +65,55 @@ export function ChooseMediaDialog({
       setSelectedImages(initialSelectedImages);
     }
   }, [initialSelectedImages]);
+  
+  // Load Shopify Media Library images
+  const loadShopifyMediaLibrary = async () => {
+    setIsLoading(true);
+    try {
+      console.log("Loading images from Shopify Media Library...");
+      
+      const response = await fetch('/api/media/shopify-media-library');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch media library: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      if (!data.success || !data.images) {
+        throw new Error('Invalid response format for media library');
+      }
+      
+      // Format received images into a standard format
+      const formattedImages: MediaImage[] = [];
+      
+      // Process all media library images
+      data.images.forEach((image: any) => {
+        if (image && image.url) {
+          formattedImages.push({
+            id: image.id || `media-${formattedImages.length}`,
+            url: image.url,
+            alt: image.alt || 'Media image',
+            title: image.title || 'Media image',
+            source: 'shopify',
+            selected: false
+          });
+        }
+      });
+      
+      // Update the product images state with media library images
+      setProductImages(formattedImages);
+      console.log(`Loaded ${formattedImages.length} files from Shopify Media Library`);
+      
+    } catch (error) {
+      console.error('Error loading Shopify Media Library:', error);
+      toast({
+        title: "Error loading media library",
+        description: "There was a problem loading images from your Shopify Media Library.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load product images directly from the products API
   const loadProductImages = async () => {
@@ -235,10 +284,14 @@ export function ChooseMediaDialog({
           value={activeTab}
           onValueChange={setActiveTab}
         >
-          <TabsList className="grid grid-cols-2 mb-4">
+          <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="products">
               <ImageIcon className="h-4 w-4 mr-2" />
               Product Images
+            </TabsTrigger>
+            <TabsTrigger value="media_library">
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Shopify Media Library
             </TabsTrigger>
             <TabsTrigger value="pexels">
               <ImagePlus className="h-4 w-4 mr-2" />
@@ -331,6 +384,87 @@ export function ChooseMediaDialog({
                   >
                     <Loader2 className="h-4 w-4 mr-2" />
                     Refresh Images
+                  </Button>
+                </div>
+              </>
+            )}
+          </TabsContent>
+          
+          {/* Shopify Media Library Tab */}
+          <TabsContent value="media_library" className="flex-1 overflow-auto">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                <p>Loading media library...</p>
+              </div>
+            ) : productImages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64">
+                <p>No images found in your Shopify Media Library.</p>
+                <Button 
+                  variant="outline" 
+                  onClick={loadShopifyMediaLibrary} 
+                  className="mt-4"
+                >
+                  Refresh Media Library
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+                  {productImages.map((image) => {
+                    const isSelected = selectedImages.some(
+                      img => img.id === image.id || img.url === image.url
+                    );
+                    
+                    return (
+                      <div 
+                        key={image.id} 
+                        className={`
+                          relative cursor-pointer border-2 rounded-md overflow-hidden
+                          ${isSelected ? 'border-blue-500' : 'border-gray-100 hover:border-gray-300'}
+                        `}
+                        onClick={() => toggleImageSelection(image)}
+                      >
+                        <div className="aspect-square bg-gray-50 overflow-hidden relative">
+                          {/* Use our robust ShopifyImageViewer component instead of basic img tag */}
+                          <ShopifyImageViewer
+                            src={image.url}
+                            alt={image.alt || 'Media image'}
+                            className="w-full h-full object-cover"
+                          />
+                          
+                          {/* Source badge */}
+                          <div className="absolute top-2 left-2">
+                            <span className="text-xs px-2 py-1 rounded text-white bg-blue-500">
+                              Media Library
+                            </span>
+                          </div>
+                          
+                          {/* Selection indicator */}
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
+                              <Check className="h-4 w-4" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="p-2">
+                          <p className="text-xs truncate">{image.title || image.alt || 'Media image'}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Refresh button */}
+                <div className="flex justify-center mb-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={loadShopifyMediaLibrary}
+                  >
+                    <Loader2 className="h-4 w-4 mr-2" />
+                    Refresh Media Library
                   </Button>
                 </div>
               </>
