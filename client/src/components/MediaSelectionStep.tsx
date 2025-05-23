@@ -213,13 +213,17 @@ export default function MediaSelectionStep({
     }
     
     setIsSearching(true);
+    setPexelsImages([]); // Clear previous results first
+    
     try {
       console.log(`Searching Pexels for: "${searchQuery}"`);
+      
+      // First try the direct API endpoint
       const response = await axios.get('/api/media/pexels-search', {
         params: { query: searchQuery }
       });
       
-      if (response.data.success && response.data.images) {
+      if (response.data.success && response.data.images && response.data.images.length > 0) {
         console.log(`Found ${response.data.images.length} Pexels images`);
         
         // Process the images to match our MediaImage format
@@ -247,11 +251,56 @@ export default function MediaSelectionStep({
           description: `Found ${formattedImages.length} images matching "${searchQuery}"`,
         });
       } else {
-        toast({
-          title: 'No images found',
-          description: 'Try different keywords or browse the Shopify Media Library',
-          variant: 'destructive'
-        });
+        // Try fallback search with modified terms
+        console.log("No results from primary search, trying alternative query");
+        const fallbackQuery = `people ${searchQuery}`;
+        
+        try {
+          const fallbackResponse = await axios.get('/api/media/pexels-search', {
+            params: { query: fallbackQuery }
+          });
+          
+          if (fallbackResponse.data.success && fallbackResponse.data.images && fallbackResponse.data.images.length > 0) {
+            console.log(`Found ${fallbackResponse.data.images.length} Pexels images with fallback query`);
+            
+            // Process the images to match our MediaImage format
+            const formattedImages: MediaImage[] = fallbackResponse.data.images.map((img: any) => ({
+              id: `pexels-${img.id}`,
+              url: img.src.large || img.src.original,
+              width: img.width,
+              height: img.height,
+              alt: img.alt || `${fallbackQuery} image`,
+              src: {
+                original: img.src.original,
+                large: img.src.large,
+                medium: img.src.medium,
+                small: img.src.small,
+                thumbnail: img.src.thumbnail
+              },
+              source: 'pexels'
+            }));
+            
+            setPexelsImages(formattedImages);
+            
+            toast({
+              title: 'Alternative images found',
+              description: `Found ${formattedImages.length} images for "${fallbackQuery}"`,
+            });
+          } else {
+            toast({
+              title: 'No images found',
+              description: 'Try different keywords or browse the Shopify Media Library',
+              variant: 'destructive'
+            });
+          }
+        } catch (fallbackError) {
+          console.error('Error with fallback search:', fallbackError);
+          toast({
+            title: 'No images found',
+            description: 'Try different keywords or browse your Shopify Media Library',
+            variant: 'destructive'
+          });
+        }
       }
     } catch (error) {
       console.error('Error searching Pexels:', error);
