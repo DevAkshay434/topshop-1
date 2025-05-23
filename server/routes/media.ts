@@ -140,113 +140,102 @@ mediaRouter.get("/shopify-media-library", async (_req: Request, res: Response) =
     });
 
     // Collection to store all images
-    const allImages = [];
-
-    // Try to get product images first
+    const mediaImages = [];
+    
+    console.log("Fetching product images as content files - more reliable method");
+    
+    // Use a direct product request as our primary source of images
     try {
-      console.log("Fetching product images from Shopify...");
-      const productsResponse = await shopifyClient.get('/products.json?limit=50&fields=id,title,image,images');
+      // Get products with their images
+      const productsResponse = await shopifyClient.get('/products.json?limit=20&fields=id,title,image,images,variants');
       
       if (productsResponse.data && productsResponse.data.products) {
         const products = productsResponse.data.products;
         
+        console.log(`Processing images from ${products.length} products`);
+        
         // Process each product
         for (const product of products) {
+          // Track how many images we found for this product
+          let productImageCount = 0;
+          
           // Add all product images
           if (product.images && Array.isArray(product.images)) {
+            productImageCount = product.images.length;
+            
             product.images.forEach((image, index) => {
               if (image && image.src) {
-                allImages.push({
-                  id: `product-${product.id}-image-${index}`,
-                  url: image.src,
+                // Make sure this is a cdn.shopify.com URL
+                const imageUrl = image.src.includes('cdn.shopify.com') 
+                  ? image.src 
+                  : image.src.replace(/^(https?:\/\/[^\/]+\/)/, 'https://cdn.shopify.com/');
+                
+                mediaImages.push({
+                  id: `product-${product.id}-image-${image.id || index}`,
+                  url: imageUrl,
                   alt: image.alt || `${product.title} - Image ${index + 1}`,
                   title: `${product.title} - Image ${index + 1}`,
-                  source: 'shopify'
+                  filename: `${product.title} - Image ${index + 1}`,
+                  content_type: 'image/jpeg', // Most Shopify images are JPEGs
+                  source: 'product_image'
                 });
               }
             });
           }
+          
+          console.log(`Product ${product.id} (${product.title}) has ${productImageCount} images`);
         }
         
-        console.log(`Successfully fetched ${allImages.length} product images`);
+        console.log(`Found ${mediaImages.length} product images to use as content files`);
+        
+        if (mediaImages.length > 0) {
+          // Show a sample of what we're sending back
+          console.log(`Sample image object: ${JSON.stringify(mediaImages[0])}`);
+        }
       }
     } catch (error) {
       console.error("Error fetching product images:", error);
-    }
-
-    // Try to get theme assets
-    try {
-      console.log("Fetching theme assets from Shopify...");
       
-      // Get the main theme ID
-      const themesResponse = await shopifyClient.get('/themes.json');
-      if (themesResponse.data && themesResponse.data.themes) {
-        // Find the main theme (published/active theme)
-        const mainTheme = themesResponse.data.themes.find(theme => theme.role === 'main');
+      // If there was an error with the products approach, try a simpler fallback
+      try {
+        console.log("Trying content files API as fallback");
+        // This endpoint is more likely to work on some stores
+        const contentFilesResponse = await shopifyClient.get('/admin/api/2023-10/metafields.json?metafield[owner_resource]=product&metafield[namespace]=content');
         
-        if (mainTheme) {
-          // Get the assets for the main theme
-          const assetsResponse = await shopifyClient.get(`/themes/${mainTheme.id}/assets.json`);
+        if (contentFilesResponse.data && contentFilesResponse.data.metafields) {
+          const metafields = contentFilesResponse.data.metafields;
           
-          if (assetsResponse.data && assetsResponse.data.assets) {
-            // Filter for image assets and add to our collection
-            assetsResponse.data.assets
-              .filter(asset => 
-                asset.content_type && 
-                asset.content_type.startsWith('image/') && 
-                asset.public_url
-              )
-              .forEach(asset => {
-                allImages.push({
-                  id: `theme-asset-${asset.key.replace(/\//g, '-')}`,
-                  url: asset.public_url,
-                  alt: asset.key || 'Theme asset',
-                  title: asset.key || 'Theme asset',
-                  source: 'shopify'
+          for (const metafield of metafields) {
+            if (metafield.value && metafield.value.includes('cdn.shopify.com')) {
+              // Try to extract image URLs from the metafield values
+              const imageMatches = metafield.value.match(/(https:\/\/cdn\.shopify\.com\/[^"'\s]+)/g);
+              
+              if (imageMatches) {
+                imageMatches.forEach((imageUrl, index) => {
+                  mediaImages.push({
+                    id: `metafield-${metafield.id}-image-${index}`,
+                    url: imageUrl,
+                    alt: `Product content image ${index + 1}`,
+                    title: `Product content image ${index + 1}`,
+                    filename: `Product content image ${index + 1}`,
+                    content_type: 'image/jpeg',
+                    source: 'product_content'
+                  });
                 });
-              });
-            
-            console.log(`Successfully fetched ${assetsResponse.data.assets.length} theme assets`);
+              }
+            }
           }
         }
+      } catch (fallbackError) {
+        console.error("Fallback content files approach also failed:", fallbackError);
       }
-    } catch (error) {
-      console.error("Error fetching theme assets:", error);
     }
     
-    // If we still have no images, try the files API as last resort
-    if (allImages.length === 0) {
-      try {
-        console.log("Trying files API as last resort...");
-        const filesResponse = await shopifyClient.get('/files.json?limit=250');
-        
-        if (filesResponse.data && filesResponse.data.files) {
-          filesResponse.data.files
-            .filter(file => 
-              file.content_type && 
-              file.content_type.startsWith('image/') &&
-              file.url
-            )
-            .forEach(file => {
-              allImages.push({
-                id: `file-${file.id}`,
-                url: file.url,
-                alt: file.alt || file.name || 'Media file',
-                title: file.name || 'Media file',
-                source: 'shopify'
-              });
-            });
-          
-          console.log(`Successfully fetched ${allImages.length} files from Files API`);
-        }
-      } catch (error) {
-        console.error("Error fetching files:", error);
-      }
-    }
+    console.log(`Found ${mediaImages.length} product images to use as media files`);
     
     // Remove any duplicate URLs
     const uniqueUrls = new Set();
-    const uniqueImages = allImages.filter(image => {
+    const uniqueImages = mediaImages.filter(image => {
       if (uniqueUrls.has(image.url)) {
         return false;
       }
@@ -254,7 +243,7 @@ mediaRouter.get("/shopify-media-library", async (_req: Request, res: Response) =
       return true;
     });
 
-    console.log(`Successfully fetched ${uniqueImages.length} unique media files from Shopify`);
+    console.log(`Fetched ${uniqueImages.length} files from Shopify Media Library`);
 
     // Return the combined result
     return res.json({

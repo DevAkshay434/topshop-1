@@ -32,6 +32,7 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
     
     // Try to fix the URL immediately
     const processedUrl = processShopifyUrl(src);
+    console.log(`Processing Shopify image URL: ${src} → ${processedUrl}`);
     setImageSrc(processedUrl);
     setHasError(false);
   }, [src]);

@@ -73,21 +73,22 @@ export function ChooseMediaDialog({
     try {
       console.log("Loading images from Shopify Media Library...");
       
-      const response = await fetch('/api/media/shopify-media-library');
+      // Use Admin product images as they're more reliable
+      const response = await fetch('/api/admin/files');
       if (!response.ok) {
         throw new Error(`Failed to fetch media library: ${response.statusText}`);
       }
       
       const data = await response.json();
-      if (!data.success || !data.images) {
+      if (!data.success || !data.files) {
         throw new Error('Invalid response format for media library');
       }
       
-      // Format received images into a standard format
+      // Format received images into our standard format
       const formattedImages: MediaImage[] = [];
       
-      // Process all media library images
-      data.images.forEach((image: any) => {
+      // Process all media library images from the files endpoint
+      data.files.forEach((image: any) => {
         if (image && image.url) {
           // Check if this image is already selected (for when refreshing the list)
           const isAlreadySelected = initialSelectedImages.some(
@@ -97,8 +98,8 @@ export function ChooseMediaDialog({
           formattedImages.push({
             id: image.id || `media-${formattedImages.length}`,
             url: image.url,
-            alt: image.alt || 'Media image',
-            title: image.title || 'Media image',
+            alt: image.alt || image.filename || 'Media image',
+            title: image.title || image.filename || 'Media image',
             source: 'shopify',
             selected: isAlreadySelected
           });
