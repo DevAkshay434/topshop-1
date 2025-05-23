@@ -5970,50 +5970,43 @@ export default function AdminPanel() {
         onImagesSelected={(images) => {
           // When user confirms selected images
           if (images.length > 0) {
-            // Process selected images based on which tab is active
-            if (imageTab === 'primary') {
-              // Add as primary/featured images
-              const pexelsCompatibleImages = images.map(img => ({
+            // Create a standardized image format that works for both Shopify and Pexels images
+            const standardizedImages = images.map(img => {
+              // Create a common format that has all necessary properties
+              const standardImage = {
                 id: img.id,
                 url: img.url,
-                width: 500,
+                width: 500, // default size if not available
                 height: 500,
-                alt: img.alt || img.title || 'Product image',
+                alt: img.alt || img.title || 'Image',
+                // Ensure src is properly formatted for our components
                 src: {
                   original: img.url,
                   large: img.url,
                   medium: img.url,
                   small: img.url,
+                  thumbnail: img.url,
                 },
-                source: 'shopify',
-              }));
-              
-              setPrimaryImages([...primaryImages, ...pexelsCompatibleImages]);
+                // Keep track of the original source
+                source: img.source || 'shopify',
+              };
+              return standardImage;
+            });
+            
+            // Add to the appropriate collection based on which tab is active
+            if (imageTab === 'primary') {
+              // Add as primary/featured images
+              setPrimaryImages(prev => [...prev, ...standardizedImages]);
               toast({
-                title: "Images added",
-                description: `${images.length} featured images have been added`
+                title: "Featured images added",
+                description: `${images.length} featured image${images.length === 1 ? '' : 's'} added successfully`
               });
             } else {
               // Add as secondary/content images
-              const pexelsCompatibleImages = images.map(img => ({
-                id: img.id,
-                url: img.url,
-                width: 500,
-                height: 500,
-                alt: img.alt || img.title || 'Product image',
-                src: {
-                  original: img.url,
-                  large: img.url,
-                  medium: img.url,
-                  small: img.url,
-                },
-                source: 'shopify',
-              }));
-              
-              setSecondaryImages([...secondaryImages, ...pexelsCompatibleImages]);
+              setSecondaryImages(prev => [...prev, ...standardizedImages]);
               toast({
-                title: "Images added",
-                description: `${images.length} content images have been added`
+                title: "Content images added",
+                description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
               });
             }
           }

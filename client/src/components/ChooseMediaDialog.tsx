@@ -358,18 +358,11 @@ export function ChooseMediaDialog({
                     onClick={() => toggleImageSelection(image)}
                   >
                     <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                      {/* Use our ShopifyImageViewer instead since it has better error handling */}
-                      <img
+                      {/* Use our ShopifyImageViewer for better image handling */}
+                      <ShopifyImageViewer
                         src={image.url}
                         alt={image.alt || 'Stock image'}
                         className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          // Fallback to placeholder
-                          const target = e.currentTarget;
-                          target.src = `https://placehold.co/600x600?text=${encodeURIComponent('Stock Image')}`;
-                          target.classList.add('placeholder-image');
-                        }}
                       />
                       
                       {/* Source badge */}
