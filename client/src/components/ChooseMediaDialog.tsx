@@ -49,27 +49,31 @@ export function ChooseMediaDialog({
   const [productImages, setProductImages] = useState<MediaImage[]>([]);
   const [mediaLibraryImages, setMediaLibraryImages] = useState<MediaImage[]>([]);
   
-  // Get selected product ID from any available source
+  // Enhanced method to get selected product ID from any available source
   const getSelectedProductId = () => {
     try {
-      // Try to get the product ID from the URL parameters
+      // Try to get the product ID from the URL parameters first (highest priority)
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('productId');
       if (productId) {
+        console.log("Found product ID in URL:", productId);
         return productId;
       }
       
-      // Try to get from the global form context
-      const formContext = (window as any).TopshopSEO?.formContext;
-      if (formContext && formContext.productIds && formContext.productIds.length > 0) {
-        return formContext.productIds[0];
-      }
-      
-      // Try to get from global productId variable
+      // Try to get from global productId variable next
       if ((window as any).productId) {
+        console.log("Found product ID in global variable:", (window as any).productId);
         return (window as any).productId;
       }
       
+      // Try to get from the global form context last
+      const formContext = (window as any).TopshopSEO?.formContext;
+      if (formContext && formContext.productIds && formContext.productIds.length > 0) {
+        console.log("Found product ID in form context:", formContext.productIds[0]);
+        return formContext.productIds[0];
+      }
+      
+      console.log("No product ID found in any source");
       return undefined;
     } catch (error) {
       console.error("Error getting selected product ID:", error);
@@ -83,17 +87,22 @@ export function ChooseMediaDialog({
       if (activeTab === 'products') {
         // Get product ID from URL or other means if available
         const selectedProductId = getSelectedProductId();
+        
         if (selectedProductId) {
           console.log("Loading images for selected product ID:", selectedProductId);
+          // Pass the selected product ID to filter images for that product only
           loadProductImages(selectedProductId);
         } else {
-          // No product selected, load generic product images
+          // No product selected, load all product images
+          console.log("No specific product selected, loading all product images");
           loadProductImages();
         }
       } else if (activeTab === 'pexels') {
         // Pexels tab is handled separately
+        console.log("Pexels tab selected");
       } else if (activeTab === 'media_library') {
         // This is specifically for the Shopify Media Library tab - load all media
+        console.log("Loading all media from Shopify Media Library");
         loadShopifyMediaLibrary();
       }
     }
@@ -210,10 +219,24 @@ export function ChooseMediaDialog({
       const formattedImages: MediaImage[] = [];
       let imageCount = 0;
       
+      // Debug information
+      console.log(`Selected product ID: ${selectedProductId}`);
+      console.log(`Total products available: ${productsResponse.products.length}`);
+      
       // If a specific product ID is provided, only show images from that product
       const productsToProcess = selectedProductId 
-        ? productsResponse.products.filter((product: any) => 
-            String(product.id) === String(selectedProductId))
+        ? productsResponse.products.filter((product: any) => {
+            // Ensure consistent string comparison for product IDs
+            const productIdString = String(product.id);
+            const selectedIdString = String(selectedProductId);
+            const isMatch = productIdString === selectedIdString;
+            
+            if (isMatch) {
+              console.log(`✅ Found matching product: ${product.title} (ID: ${productIdString})`);
+            }
+            
+            return isMatch;
+          })
         : productsResponse.products;
       
       console.log(`Processing images from ${productsToProcess.length} products`);
@@ -515,20 +538,24 @@ export function ChooseMediaDialog({
                           {/* Image wrapper with fallback placeholder */}
                           <div className="relative w-full h-full">
                             {/* Use this simple method for displaying images with fallback */}
-                            <div 
-                              className="w-full h-full bg-gray-100 flex items-center justify-center" 
-                              style={{ 
-                                backgroundImage: `url("${image.url}")`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                backgroundRepeat: 'no-repeat'
+                            {/* Display actual image with proper error handling */}
+                            <img 
+                              src={image.url}
+                              alt={image.alt || image.title || "Product image"}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                console.log(`Failed to load image: ${image.url}`);
+                                
+                                // Set placeholder for failed images
+                                target.onerror = null; // Prevent recursive error handling
+                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%23f0f0f0'/%3E%3Cpath d='M8.5,7.5a2,2,0,1,1-2-2A2,2,0,0,1,8.5,7.5Zm11,10v-1l-3-3-2,2-6-6-4,4v4Z' fill='%23cccccc'/%3E%3C/svg%3E";
                               }}
-                            >
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="p-1 bg-white bg-opacity-70 text-xs rounded shadow">
-                                  {image.title || image.alt || 'Product Image'}
-                                </div>
-                              </div>
+                            />
+                            
+                            {/* Show image title overlay */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate">
+                              {image.title || image.alt || 'Image'}
                             </div>
                           </div>
                           
