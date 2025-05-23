@@ -446,28 +446,35 @@ export function ChooseMediaDialog({
                         onClick={() => toggleImageSelection(image)}
                       >
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                          {/* Direct image tag for more reliable rendering */}
-                          <img
-                            src={image.url}
-                            alt={image.alt || 'Media image'}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              console.log(`Image failed to load: ${target.src}`);
-                              target.onerror = null; // Prevent infinite error loop
-                              
-                              // Try CDN URL transformation
-                              if (!target.src.includes('cdn.shopify.com')) {
-                                const storeMatch = target.src.match(/https:\/\/([^\/]+)\.myshopify\.com/);
-                                if (storeMatch) {
-                                  const storeName = storeMatch[1];
-                                  const pathPart = target.src.split('.com/')[1];
-                                  target.src = `https://cdn.shopify.com/s/files/1/${storeName}/${pathPart}`;
+                          {/* Image wrapper with fallback placeholder */}
+                          <div className="relative w-full h-full">
+                            <img
+                              src={image.url}
+                              alt={image.alt || 'Media image'}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                console.log(`Image failed to load: ${target.src}`);
+                                
+                                // Try direct image loading from original URL first
+                                if (image.source === 'product_image' || image.source === 'theme_asset') {
+                                  // Set a placeholder for failed images
+                                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                  target.classList.add("opacity-50");
+                                  
+                                  // Add a badge to show it's missing
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    const badge = document.createElement('div');
+                                    badge.className = "absolute inset-0 flex items-center justify-center";
+                                    badge.innerHTML = `<div class="text-xs bg-red-500 text-white px-2 py-1 rounded">Image unavailable</div>`;
+                                    parent.appendChild(badge);
+                                  }
                                 }
-                              }
-                            }}
-                          />
+                              }}
+                            />
+                          </div>
                           
                           {/* Source badge */}
                           <div className="absolute top-2 left-2">
