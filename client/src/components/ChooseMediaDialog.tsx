@@ -478,42 +478,22 @@ export function ChooseMediaDialog({
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
                           {/* Image wrapper with fallback placeholder */}
                           <div className="relative w-full h-full">
-                            {/* Use direct image rendering for all image types */}
-                            <img
-                              key={image.id}
-                              src={image.url}
-                              alt={image.alt || (image.filename as string) || 'Media image'}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                              crossOrigin="anonymous"
-                              style={{ maxWidth: '100%', maxHeight: '100%' }}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                console.log(`Image failed to load: ${target.src}`);
-                                target.onerror = null; // Prevent infinite loops
-                                
-                                // Try a different URL format if the image failed to load
-                                if (image.source === 'product_image' && !target.src.includes('v=')) {
-                                  // Try appending a version parameter
-                                  target.src = `${image.url}${image.url.includes('?') ? '&' : '?'}v=${Date.now()}`;
-                                  return;
-                                }
-                                
-                                // Set placeholder for failed images
-                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
-                                target.classList.add("opacity-50");
-                                
-                                // Show the product title as text
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  const badge = document.createElement('div');
-                                  badge.className = "absolute inset-0 flex flex-col items-center justify-center text-center p-2";
-                                  const name = image.product_title || image.title || image.filename || 'Product Image';
-                                  badge.innerHTML = `<div class="text-xs bg-white text-gray-800 px-2 py-1 rounded shadow">${name}</div>`;
-                                  parent.appendChild(badge);
-                                }
+                            {/* Use this simple method for displaying images with fallback */}
+                            <div 
+                              className="w-full h-full bg-gray-100 flex items-center justify-center" 
+                              style={{ 
+                                backgroundImage: `url("${image.url}")`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                backgroundRepeat: 'no-repeat'
                               }}
-                            />
+                            >
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="p-1 bg-white bg-opacity-70 text-xs rounded shadow">
+                                  {image.title || image.alt || 'Product Image'}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           
                           {/* Source badge */}
