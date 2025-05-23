@@ -95,9 +95,22 @@ export function ChooseMediaDialog({
             img => img.url === image.url || img.id === image.id
           );
           
+          // Make sure the URL is properly formatted (CDN URL)
+          let imageUrl = image.url;
+          
+          // Ensure it's a CDN URL
+          if (!imageUrl.includes('cdn.shopify.com') && imageUrl.includes('shopify.com')) {
+            imageUrl = imageUrl.replace(/https:\/\/[^\/]+\//, 'https://cdn.shopify.com/s/');
+          }
+          
+          // If it doesn't start with https, add it
+          if (!imageUrl.startsWith('http')) {
+            imageUrl = `https://${imageUrl}`;
+          }
+          
           formattedImages.push({
             id: image.id || `media-${formattedImages.length}`,
-            url: image.url,
+            url: imageUrl,
             alt: image.alt || image.filename || 'Media image',
             title: image.title || image.filename || 'Media image',
             source: 'shopify',
@@ -433,11 +446,27 @@ export function ChooseMediaDialog({
                         onClick={() => toggleImageSelection(image)}
                       >
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                          {/* Use our robust ShopifyImageViewer component instead of basic img tag */}
-                          <ShopifyImageViewer
+                          {/* Direct image tag for more reliable rendering */}
+                          <img
                             src={image.url}
                             alt={image.alt || 'Media image'}
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              console.log(`Image failed to load: ${target.src}`);
+                              target.onerror = null; // Prevent infinite error loop
+                              
+                              // Try CDN URL transformation
+                              if (!target.src.includes('cdn.shopify.com')) {
+                                const storeMatch = target.src.match(/https:\/\/([^\/]+)\.myshopify\.com/);
+                                if (storeMatch) {
+                                  const storeName = storeMatch[1];
+                                  const pathPart = target.src.split('.com/')[1];
+                                  target.src = `https://cdn.shopify.com/s/files/1/${storeName}/${pathPart}`;
+                                }
+                              }
+                            }}
                           />
                           
                           {/* Source badge */}
