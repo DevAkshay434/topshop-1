@@ -7,6 +7,10 @@ interface ShopifyImageViewerProps {
   className?: string;
   width?: number;
   height?: number;
+  objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+  onLoad?: () => void;
+  selected?: boolean;
+  selectionType?: 'primary' | 'secondary' | 'none';
 }
 
 /**
@@ -18,10 +22,15 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
   alt = "Shopify image", 
   className = "", 
   width, 
-  height 
+  height,
+  objectFit = 'cover',
+  onLoad,
+  selected = false,
+  selectionType = 'none'
 }) => {
   const [imageSrc, setImageSrc] = useState<string>('');
   const [hasError, setHasError] = useState<boolean>(false);
+  const [loadAttempts, setLoadAttempts] = useState(0);
   
   // Reset state when src changes
   useEffect(() => {
@@ -31,23 +40,33 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
     }
     
     // Try to fix the URL immediately
-    const processedUrl = processShopifyUrl(src);
-    console.log(`Processing Shopify image URL: ${src} → ${processedUrl}`);
+    const processedUrl = processImageUrl(src);
+    console.log(`Processing image URL: ${src} → ${processedUrl}`);
     setImageSrc(processedUrl);
     setHasError(false);
+    setLoadAttempts(0);
   }, [src]);
 
   // Enhanced URL processing for all image types (Shopify, Pexels, etc.)
-  const processShopifyUrl = (url: string): string => {
+  const processImageUrl = (url: string): string => {
     if (!url || typeof url !== 'string') {
       return '';
     }
 
     try {
-      // Pexels and other external image services shouldn't be modified
-      if (url.includes('pexels.com') || 
-          url.includes('pixabay.com') || 
-          url.includes('unsplash.com')) {
+      // Handle Pexels special case for better reliability
+      if (url.includes('pexels.com')) {
+        // Make sure we're using the right size for better loading
+        if (url.includes('?')) {
+          // Extract base URL without query params
+          const baseUrl = url.split('?')[0];
+          return `${baseUrl}?auto=compress&cs=tinysrgb&h=350`;
+        }
+        return `${url}?auto=compress&cs=tinysrgb&h=350`;
+      }
+      
+      // Handle other stock image services
+      if (url.includes('pixabay.com') || url.includes('unsplash.com')) {
         return url;
       }
       
@@ -124,89 +143,130 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
     }
   };
 
-  // Attempt multiple fallback strategies
+  // Advanced fallback strategy with multiple attempts for different image sources
   const handleImageError = () => {
-    // Already in error state or no source to work with
-    if (hasError || !src || typeof src !== 'string') {
+    // Limit retry attempts
+    if (loadAttempts >= 3 || hasError) {
       setHasError(true);
       return;
     }
     
-    // Try several fallback approaches
-    const originalUrl = src;
-    const currentUrl = imageSrc;
+    setLoadAttempts(prev => prev + 1);
+    console.log(`Image failed to load (attempt ${loadAttempts + 1}):`, imageSrc);
     
-    console.log("Image failed to load, attempting fallbacks:", currentUrl);
-    
-    // Try CDN format for Shopify URLs if we haven't already
-    if (currentUrl === originalUrl || !currentUrl.includes('cdn.shopify.com')) {
-      try {
-        // Try different patterns of Shopify URLs
-        
-        // Pattern 1: Extract product/variant IDs from URL paths
-        const matches = originalUrl.match(/\/([0-9]+)\/([0-9]+)\/([^?]+)/);
-        if (matches) {
-          const [, shopId, productId, imagePath] = matches;
-          const cdnUrl = `https://cdn.shopify.com/s/files/${shopId}/${productId}/${imagePath}`;
-          console.log("Trying CDN URL format 1:", cdnUrl);
-          setImageSrc(cdnUrl);
-          return; // Wait for the next error cycle if this fails
-        }
-        
-        // Pattern 2: Try a more generic approach for product images
-        if (originalUrl.includes('products')) {
-          const productMatch = originalUrl.match(/\/products\/([^\/\?]+)/);
-          if (productMatch) {
-            const cdnUrl = `https://cdn.shopify.com/s/files/1/0938/4158/8538/products/${productMatch[1]}.jpg`;
-            console.log("Trying CDN URL format 2:", cdnUrl);
-            setImageSrc(cdnUrl);
-            return;
-          }
-        }
-        
-        // Pattern 3: For admin URLs, try to extract the image ID
-        const adminImageMatch = originalUrl.match(/\/admin\/products\/\d+\/images\/(\d+)/);
-        if (adminImageMatch) {
-          const imageId = adminImageMatch[1];
-          const cdnUrl = `https://cdn.shopify.com/s/files/1/0938/4158/8538/products/image_${imageId}.jpg`;
-          console.log("Trying admin image URL format:", cdnUrl);
-          setImageSrc(cdnUrl);
-          return;
-        }
-        
-        // Pattern 4: Try direct file access with more permissive pattern
-        if (originalUrl.includes('files')) {
-          const filesMatch = originalUrl.match(/files\/(.+?)($|\?)/);
-          if (filesMatch) {
-            const filePath = filesMatch[1];
-            const cdnUrl = `https://cdn.shopify.com/s/files/${filePath}`;
-            console.log("Trying files URL format:", cdnUrl);
-            setImageSrc(cdnUrl);
-            return;
-          }
-        }
-      } catch (error) {
-        console.error("Advanced URL transform failed", error);
+    // Different fallback strategies based on image source
+    if (src.includes('pexels.com')) {
+      // For Pexels, try different size formats
+      const sizes = ['large', 'medium', 'small'];
+      const formats = ['?auto=compress&cs=tinysrgb&h=650&w=940', '?auto=compress&cs=tinysrgb&h=350', ''];
+      
+      // Extract base URL without any params
+      let baseUrl = src;
+      if (baseUrl.includes('?')) {
+        baseUrl = baseUrl.split('?')[0];
       }
+      
+      // Try a different size
+      const newFormat = formats[loadAttempts % formats.length];
+      const fallbackUrl = `${baseUrl}${newFormat}`;
+      
+      console.log(`Trying Pexels fallback format ${loadAttempts}:`, fallbackUrl);
+      setImageSrc(fallbackUrl);
+    } 
+    else if (src.includes('cdn.shopify.com')) {
+      // For Shopify CDN, try different formats
+      const formats = ['.jpg', '.png', '.webp'];
+      
+      // Remove existing extension if any
+      let baseUrl = src;
+      if (/\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(baseUrl)) {
+        baseUrl = baseUrl.replace(/\.(jpg|jpeg|png|webp|gif)($|\?)/i, '$2');
+      }
+      
+      // If we have a query string, keep it separated
+      let queryPart = '';
+      if (baseUrl.includes('?')) {
+        const parts = baseUrl.split('?');
+        baseUrl = parts[0];
+        queryPart = '?' + parts[1];
+      }
+      
+      // Try a different format
+      const newFormat = formats[loadAttempts % formats.length];
+      const fallbackUrl = `${baseUrl}${newFormat}${queryPart}`;
+      
+      console.log(`Trying Shopify fallback format ${loadAttempts}:`, fallbackUrl);
+      setImageSrc(fallbackUrl);
+    }
+    else {
+      // Generic approach for other image sources
+      // Try adding different extensions
+      const extensions = ['.jpg', '.png', '.jpeg'];
+      
+      // Clean the URL
+      let baseUrl = src;
+      if (/\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(baseUrl)) {
+        baseUrl = baseUrl.replace(/\.(jpg|jpeg|png|webp|gif)($|\?)/i, '$2');
+      }
+      
+      // Try a different extension
+      const newExt = extensions[loadAttempts % extensions.length];
+      const fallbackUrl = `${baseUrl}${newExt}`;
+      
+      console.log(`Trying generic fallback format ${loadAttempts}:`, fallbackUrl);
+      setImageSrc(fallbackUrl);
+    }
+  };
+
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Handle successful load
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    // Call the parent onLoad callback if provided
+    if (onLoad) {
+      onLoad();
+    }
+  };
+
+  // Get selection border color
+  const getSelectionBorderClass = () => {
+    if (!selected) return '';
+    
+    if (selectionType === 'primary') {
+      return 'ring-4 ring-blue-500';
+    } else if (selectionType === 'secondary') {
+      return 'ring-4 ring-green-500';
     }
     
-    // Last resort - try a completely different approach with direct image
-    if (!currentUrl.includes('.jpg') && !currentUrl.includes('.png') && !currentUrl.includes('.jpeg')) {
-      // Try adding extension
-      const withExtension = `${currentUrl}.jpg`;
-      console.log("Trying with extension:", withExtension);
-      setImageSrc(withExtension);
-      return;
-    }
+    return '';
+  };
+
+  // Determine selection indicator badge
+  const getSelectionBadge = () => {
+    if (!selected) return null;
     
-    // If nothing worked, show the error UI
-    console.log("All image fallbacks failed, showing error UI");
-    setHasError(true);
+    const badgeClass = selectionType === 'primary' 
+      ? 'bg-blue-500 text-white' 
+      : 'bg-green-500 text-white';
+    
+    const label = selectionType === 'primary' ? 'Primary' : 'Secondary';
+    
+    return (
+      <div className={`absolute top-2 right-2 z-10 rounded-full px-2 py-1 text-xs font-semibold ${badgeClass}`}>
+        {label}
+      </div>
+    );
   };
 
   if (hasError) {
     return (
-      <div className={`flex items-center justify-center bg-gray-100 ${className}`} style={{ width, height }}>
+      <div 
+        className={`flex items-center justify-center bg-gray-100 ${className} ${getSelectionBorderClass()}`} 
+        style={{ width, height }}
+      >
+        {getSelectionBadge()}
         <div className="text-center p-4">
           <ImageOff className="w-8 h-8 mx-auto text-gray-400 mb-2" />
           <p className="text-gray-500 text-xs">Image not available</p>
@@ -216,15 +276,28 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
   }
 
   return (
-    <img
-      src={imageSrc}
-      alt={alt}
-      className={className}
-      width={width}
-      height={height}
-      onError={handleImageError}
-      loading="lazy"
-    />
+    <div className={`relative ${getSelectionBorderClass()}`}>
+      {getSelectionBadge()}
+      
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+          <div className="w-8 h-8 border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+      <img
+        src={imageSrc}
+        alt={alt}
+        className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        style={{ 
+          width: width || '100%', 
+          height: height || 'auto', 
+          objectFit
+        }}
+        onError={handleImageError}
+        onLoad={handleImageLoad}
+        loading="lazy"
+      />
+    </div>
   );
 };
 

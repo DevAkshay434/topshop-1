@@ -154,11 +154,75 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
     
     const store = stores[0]; // Use first store for now
     
-    // Try to fetch media files from Shopify
-    let mediaFiles = [];
+    // Create array to hold all image sources
+    let allMediaImages: any[] = [];
+    
+    // APPROACH 1: Try to fetch theme assets first
+    try {
+      console.log('Trying to fetch Shopify theme assets');
+      const themesResponse = await axios.get(`https://${store.shopName}/admin/api/2023-10/themes.json`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': store.accessToken
+        }
+      });
+      
+      if (themesResponse.data && themesResponse.data.themes) {
+        const mainTheme = themesResponse.data.themes.find((theme: any) => 
+          theme.role === 'main' || theme.role === 'published');
+        
+        if (mainTheme && mainTheme.id) {
+          console.log(`Found main theme with ID ${mainTheme.id}`);
+          
+          const assetsResponse = await axios.get(
+            `https://${store.shopName}/admin/api/2023-10/themes/${mainTheme.id}/assets.json`,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Shopify-Access-Token': store.accessToken
+              }
+            }
+          );
+          
+          if (assetsResponse.data && assetsResponse.data.assets) {
+            const imageAssets = assetsResponse.data.assets
+              .filter((asset: any) => {
+                if (!asset.key) return false;
+                const key = asset.key.toLowerCase();
+                return key.endsWith('.jpg') || key.endsWith('.jpeg') || 
+                       key.endsWith('.png') || key.endsWith('.gif') || 
+                       key.endsWith('.webp');
+              })
+              .map((asset: any, index: number) => {
+                const filename = asset.key.split('/').pop();
+                const storefrontUrl = `https://cdn.shopify.com/s/files/1/0938/4158/8538/files/${filename}`;
+                return {
+                  id: `theme-asset-${index}-${asset.key.replace(/[^\w]/g, '-')}`,
+                  url: storefrontUrl,
+                  src: storefrontUrl,
+                  width: 800,
+                  height: 600,
+                  filename: asset.key,
+                  content_type: asset.content_type || 'image/jpeg',
+                  alt: `Theme asset - ${asset.key}`,
+                  source: 'shopify_media',
+                  assetType: 'theme'
+                };
+              });
+            
+            console.log(`Found ${imageAssets.length} theme image assets`);
+            allMediaImages = allMediaImages.concat(imageAssets);
+          }
+        }
+      }
+    } catch (themeError: any) {
+      console.error('Error fetching theme assets:', themeError.message);
+    }
+    
+    // APPROACH 2: Try the Files API
     try {
       console.log('Trying to fetch Shopify media files using Files API');
-      // First attempt using the Files API
+      // Note: Files API might not be available in all Shopify plans
       const filesResponse = await axios.get(`https://${store.shopName}/admin/api/2023-10/files.json?limit=250`, {
         headers: {
           'Content-Type': 'application/json',
@@ -167,81 +231,122 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
       });
       
       if (filesResponse.data && filesResponse.data.files) {
-        mediaFiles = filesResponse.data.files;
-        console.log(`Successfully fetched ${mediaFiles.length} files from Shopify Files API`);
-      }
-    } catch (filesError) {
-      console.error('Error fetching from Files API:', filesError.message);
-      console.log('Trying to fetch product images as fallback after error');
-      
-      // Fallback method - use product images if Files API fails
-      console.log('Fetching product images as content files - more reliable method');
-      try {
-        const productsResponse = await axios.get(
-          `https://${store.shopName}/admin/api/2023-10/products.json?limit=20&fields=id,title,image,images,variants`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Shopify-Access-Token': store.accessToken
-            }
-          }
-        );
+        const filesApiImages = filesResponse.data.files.map((file: any) => ({
+          id: `file-${file.id}`,
+          url: file.url,
+          src: file.url,
+          width: file.width || 800,
+          height: file.height || 600,
+          filename: file.filename || 'Shopify file',
+          content_type: file.content_type || 'image/jpeg',
+          alt: file.alt || `Shopify media - ${file.filename || 'Image'}`,
+          source: 'shopify_media',
+          assetType: 'file'
+        }));
         
-        if (productsResponse.data && productsResponse.data.products) {
-          const products = productsResponse.data.products;
-          console.log(`Processing images from ${products.length} products`);
-          
-          // Extract all product images
-          let productImages: any[] = [];
-          products.forEach((product: any) => {
-            console.log(`Product ${product.id} (${product.title}) has ${product.images?.length || 0} images`);
-            if (product.images && product.images.length) {
-              product.images.forEach((image: any, index: number) => {
+        console.log(`Found ${filesApiImages.length} files from Files API`);
+        allMediaImages = allMediaImages.concat(filesApiImages);
+      }
+    } catch (filesError: any) {
+      console.error('Error fetching from Files API:', filesError.message);
+    }
+    
+    // APPROACH 3: Always fetch product images as a reliable source
+    try {
+      console.log('Fetching product images for media library');
+      const productsResponse = await axios.get(
+        `https://${store.shopName}/admin/api/2023-10/products.json?limit=50&fields=id,title,image,images,variants`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Access-Token': store.accessToken
+          }
+        }
+      );
+      
+      if (productsResponse.data && productsResponse.data.products) {
+        const products = productsResponse.data.products;
+        console.log(`Processing images from ${products.length} products`);
+        
+        // Extract all product images (both main and variants)
+        const productImages: any[] = [];
+        
+        products.forEach((product: any) => {
+          if (product.images && Array.isArray(product.images)) {
+            product.images.forEach((image: any, index: number) => {
+              if (image && image.src) {
                 productImages.push({
                   id: `product-${product.id}-image-${image.id}`,
                   url: image.src,
                   src: image.src,
+                  width: image.width || 800,
+                  height: image.height || 600,
                   filename: `${product.title} - Image ${index + 1}`,
                   content_type: 'image/jpeg',
                   alt: image.alt || `${product.title} image`,
-                  source: 'product_image'
+                  source: 'shopify_media',
+                  assetType: 'product_image',
+                  productId: product.id,
+                  productTitle: product.title
                 });
-              });
-            }
-          });
+              }
+            });
+          }
           
-          console.log(`Found ${productImages.length} product images to use as media files`);
-          mediaFiles = productImages;
-        }
-      } catch (productsError: any) {
-        console.error('Error fetching product images as fallback:', productsError.message);
+          // Also add variant images if they're different from product images
+          if (product.variants && Array.isArray(product.variants)) {
+            product.variants.forEach((variant: any) => {
+              if (variant.image && variant.image.src) {
+                // Check if we already added this image from the product.images array
+                const isDuplicate = productImages.some(img => 
+                  img.url === variant.image.src || 
+                  (img.id.includes(product.id) && img.id.includes(variant.image.id))
+                );
+                
+                if (!isDuplicate) {
+                  productImages.push({
+                    id: `variant-${variant.id}-image-${variant.image.id}`,
+                    url: variant.image.src,
+                    src: variant.image.src,
+                    width: variant.image.width || 800,
+                    height: variant.image.height || 600,
+                    filename: `${product.title} - ${variant.title}`,
+                    content_type: 'image/jpeg',
+                    alt: variant.image.alt || `${product.title} - ${variant.title}`,
+                    source: 'shopify_media',
+                    assetType: 'variant_image',
+                    productId: product.id,
+                    productTitle: product.title,
+                    variantId: variant.id,
+                    variantTitle: variant.title
+                  });
+                }
+              }
+            });
+          }
+        });
+        
+        console.log(`Found ${productImages.length} product and variant images`);
+        allMediaImages = allMediaImages.concat(productImages);
       }
+    } catch (productsError: any) {
+      console.error('Error fetching product images:', productsError.message);
     }
     
-    // Process media files into consistent format
-    const mediaImages = [];
+    // Remove any potential duplicates based on URL
+    const uniqueUrls = new Set();
+    const uniqueMediaImages = allMediaImages.filter(img => {
+      if (!img.url || uniqueUrls.has(img.url)) return false;
+      uniqueUrls.add(img.url);
+      return true;
+    });
     
-    for (const file of mediaFiles) {
-      mediaImages.push({
-        id: file.id || `shopify-media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        src: file.url || file.src,
-        url: file.url || file.src,
-        width: file.width || 800,
-        height: file.height || 600,
-        alt: file.alt || file.filename || 'Shopify media image',
-        filename: file.filename,
-        created_at: file.created_at,
-        content_type: file.content_type || 'image/jpeg',
-        source: file.source || 'shopify_media'
-      });
-    }
-    
-    console.log(`Fetched ${mediaImages.length} files from Shopify Media Library`);
+    console.log(`Returning ${uniqueMediaImages.length} total unique media files`);
     
     return res.json({
       success: true,
-      images: mediaImages,
-      count: mediaImages.length
+      images: uniqueMediaImages,
+      count: uniqueMediaImages.length
     });
   } catch (error: any) {
     console.error('Error fetching Shopify media library:', error.message);
@@ -279,7 +384,7 @@ mediaRouter.get('/pexels-search', async (req: Request, res: Response) => {
     if (!PEXELS_API_KEY) {
       console.warn('Pexels API key not found - using demo API mode');
       
-      // Return mock data in development mode
+      // Return consistent demo data that will reliably display
       return res.json({
         success: true,
         message: 'Using demo mode without Pexels API key',
@@ -298,43 +403,173 @@ mediaRouter.get('/pexels-search', async (req: Request, res: Response) => {
               small: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&h=130',
               thumbnail: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=280'
             }
+          },
+          {
+            id: 'demo-2',
+            width: 800,
+            height: 600,
+            url: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg',
+            photographer: 'Demo Photographer',
+            alt: 'Happy woman using product',
+            src: {
+              original: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg',
+              large: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+              medium: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&h=350',
+              small: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&h=130',
+              thumbnail: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=280'
+            }
+          },
+          {
+            id: 'demo-3',
+            width: 800, 
+            height: 600,
+            url: 'https://images.pexels.com/photos/3760790/pexels-photo-3760790.jpeg',
+            photographer: 'Demo Photographer',
+            alt: 'Product showcase image',
+            src: {
+              original: 'https://images.pexels.com/photos/3760790/pexels-photo-3760790.jpeg',
+              large: 'https://images.pexels.com/photos/3760790/pexels-photo-3760790.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+              medium: 'https://images.pexels.com/photos/3760790/pexels-photo-3760790.jpeg?auto=compress&cs=tinysrgb&h=350',
+              small: 'https://images.pexels.com/photos/3760790/pexels-photo-3760790.jpeg?auto=compress&cs=tinysrgb&h=130',
+              thumbnail: 'https://images.pexels.com/photos/3760790/pexels-photo-3760790.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=280'
+            }
           }
         ]
       });
     }
     
-    // Build request to Pexels API with more results
-    const endpoint = useSearch 
-      ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(query as string)}&per_page=24&orientation=landscape`
-      : `https://api.pexels.com/v1/curated?per_page=24`;
-    
-    console.log(`Searching Pexels for: "${query}" (requesting 24 images)`);
-    
-    const pexelsResponse = await axios.get(endpoint, {
-      headers: {
-        'Authorization': PEXELS_API_KEY
-      },
-      timeout: 8000 // Increase timeout to 8 seconds
-    });
-    
-    if (pexelsResponse.status !== 200 || !pexelsResponse.data) {
-      throw new Error('Failed to fetch from Pexels API');
+    try {
+      // Build request to Pexels API with more results and landscape orientation
+      const endpoint = useSearch 
+        ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(query as string)}&per_page=24&orientation=landscape`
+        : `https://api.pexels.com/v1/curated?per_page=24`;
+      
+      console.log(`Searching Pexels for: "${query}" (requesting 24 images)`);
+      
+      const pexelsResponse = await axios.get(endpoint, {
+        headers: {
+          'Authorization': PEXELS_API_KEY
+        },
+        timeout: 12000 // Increase timeout to 12 seconds
+      });
+      
+      if (pexelsResponse.status !== 200 || !pexelsResponse.data) {
+        throw new Error('Failed to fetch from Pexels API');
+      }
+      
+      // Process photos to ensure they have all required fields
+      const processedPhotos = pexelsResponse.data.photos.map((photo: any) => {
+        // Ensure URL fields exist
+        if (!photo.src) {
+          photo.src = {
+            original: photo.url,
+            large: photo.url,
+            medium: photo.url,
+            small: photo.url,
+            thumbnail: photo.url
+          };
+        }
+        
+        // Ensure alt text exists
+        if (!photo.alt) {
+          photo.alt = photo.photographer ? 
+            `Image by ${photo.photographer}` : 
+            `${query} image`;
+        }
+        
+        return photo;
+      });
+      
+      // Log success
+      console.log(`Pexels ${useSearch ? 'search' : 'curated'} returned ${processedPhotos.length} results`);
+      
+      // Return processed images
+      return res.json({
+        success: true,
+        images: processedPhotos
+      });
+    } catch (pexelsError: any) {
+      console.error('Pexels API error:', pexelsError.message);
+      
+      // Try fallback query
+      try {
+        // If the original search failed, try with a more generic term
+        const fallbackQuery = useSearch ? `people ${query}` : 'happy people';
+        const fallbackEndpoint = `https://api.pexels.com/v1/search?query=${encodeURIComponent(fallbackQuery)}&per_page=24&orientation=landscape`;
+        
+        console.log(`Trying fallback Pexels search: "${fallbackQuery}"`);
+        
+        const fallbackResponse = await axios.get(fallbackEndpoint, {
+          headers: {
+            'Authorization': PEXELS_API_KEY
+          },
+          timeout: 12000
+        });
+        
+        if (fallbackResponse.status === 200 && fallbackResponse.data && fallbackResponse.data.photos) {
+          const processedPhotos = fallbackResponse.data.photos.map((photo: any) => {
+            // Ensure URL fields exist
+            if (!photo.src) {
+              photo.src = {
+                original: photo.url,
+                large: photo.url,
+                medium: photo.url,
+                small: photo.url,
+                thumbnail: photo.url
+              };
+            }
+            
+            // Ensure alt text exists
+            if (!photo.alt) {
+              photo.alt = photo.photographer ? 
+                `Image by ${photo.photographer}` : 
+                `${fallbackQuery} image`;
+            }
+            
+            return photo;
+          });
+          
+          console.log(`Fallback Pexels search returned ${processedPhotos.length} results`);
+          
+          return res.json({
+            success: true,
+            images: processedPhotos,
+            fallback: true
+          });
+        }
+      } catch (fallbackError: any) {
+        console.error('Fallback Pexels search failed:', fallbackError.message);
+      }
+      
+      // If both attempts failed, return demo data
+      return res.json({
+        success: true,
+        message: 'Using demo mode due to API failure',
+        images: [
+          {
+            id: 'demo-1',
+            width: 800,
+            height: 600,
+            url: 'https://images.pexels.com/photos/3807770/pexels-photo-3807770.jpeg',
+            photographer: 'Demo Photographer',
+            alt: 'Demo image',
+            src: {
+              original: 'https://images.pexels.com/photos/3807770/pexels-photo-3807770.jpeg',
+              large: 'https://images.pexels.com/photos/3807770/pexels-photo-3807770.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+              medium: 'https://images.pexels.com/photos/3807770/pexels-photo-3807770.jpeg?auto=compress&cs=tinysrgb&h=350',
+              small: 'https://images.pexels.com/photos/3807770/pexels-photo-3807770.jpeg?auto=compress&cs=tinysrgb&h=130',
+              thumbnail: 'https://images.pexels.com/photos/3807770/pexels-photo-3807770.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=280'
+            }
+          }
+        ]
+      });
     }
-    
-    // Log success
-    console.log(`Pexels ${useSearch ? 'search' : 'curated'} returned ${pexelsResponse.data.photos.length} results`);
-    
-    // Return processed images
-    return res.json({
-      success: true,
-      images: pexelsResponse.data.photos
-    });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error searching Pexels:', error);
     return res.status(500).json({
       success: false,
       message: 'Error searching Pexels',
-      error: (error as Error).message
+      error: error.message
     });
   }
 });
