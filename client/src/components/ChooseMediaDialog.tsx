@@ -403,7 +403,7 @@ export function ChooseMediaDialog({
                 <Loader2 className="h-8 w-8 animate-spin mb-2" />
                 <p>Loading media library...</p>
               </div>
-            ) : productImages.length === 0 ? (
+            ) : mediaLibraryImages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64">
                 <p>No images found in your Shopify Media Library.</p>
                 <Button 
@@ -417,7 +417,7 @@ export function ChooseMediaDialog({
             ) : (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
-                  {productImages.map((image) => {
+                  {mediaLibraryImages.map((image) => {
                     const isSelected = selectedImages.some(
                       img => img.id === image.id || img.url === image.url
                     );
