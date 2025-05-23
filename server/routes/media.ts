@@ -303,15 +303,18 @@ mediaRouter.get('/pexels-search', async (req: Request, res: Response) => {
       });
     }
     
-    // Build request to Pexels API
+    // Build request to Pexels API with more results
     const endpoint = useSearch 
-      ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(query as string)}&per_page=15`
-      : `https://api.pexels.com/v1/curated?per_page=1`;
+      ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(query as string)}&per_page=24&orientation=landscape`
+      : `https://api.pexels.com/v1/curated?per_page=24`;
+    
+    console.log(`Searching Pexels for: "${query}" (requesting 24 images)`);
     
     const pexelsResponse = await axios.get(endpoint, {
       headers: {
         'Authorization': PEXELS_API_KEY
-      }
+      },
+      timeout: 8000 // Increase timeout to 8 seconds
     });
     
     if (pexelsResponse.status !== 200 || !pexelsResponse.data) {

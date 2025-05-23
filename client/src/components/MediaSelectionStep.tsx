@@ -218,34 +218,65 @@ export default function MediaSelectionStep({
     try {
       console.log(`Searching Pexels for: "${searchQuery}"`);
       
-      // First try the direct API endpoint
-      const response = await axios.get('/api/media/pexels-search', {
-        params: { query: searchQuery }
-      });
+      // Add a retry mechanism with a longer timeout
+      const fetchWithRetry = async (query: string, retries = 2) => {
+        try {
+          const response = await axios.get('/api/media/pexels-search', {
+            params: { query },
+            timeout: 15000 // 15 second timeout
+          });
+          return response;
+        } catch (error) {
+          if (retries > 0) {
+            console.log(`Retrying Pexels search for "${query}" (${retries} retries left)...`);
+            return fetchWithRetry(query, retries - 1);
+          }
+          throw error;
+        }
+      };
       
-      if (response.data.success && response.data.images && response.data.images.length > 0) {
-        console.log(`Found ${response.data.images.length} Pexels images`);
+      // First attempt with user's search query
+      const response = await fetchWithRetry(searchQuery);
+      
+      // Process the response data and safely format images
+      const processImages = (data: any, queryUsed: string): MediaImage[] => {
+        if (!data || !data.success || !data.images || !Array.isArray(data.images) || data.images.length === 0) {
+          return [];
+        }
         
-        // Process the images to match our MediaImage format
-        const formattedImages: MediaImage[] = response.data.images.map((img: any) => ({
-          id: `pexels-${img.id}`,
-          url: img.src.large || img.src.original,
-          width: img.width,
-          height: img.height,
-          alt: img.alt || `${searchQuery} image`,
-          src: {
-            original: img.src.original,
-            large: img.src.large,
-            medium: img.src.medium,
-            small: img.src.small,
-            thumbnail: img.src.thumbnail
-          },
-          source: 'pexels'
-        }));
-        
+        return data.images
+          .filter((img: any) => img && img.src && (img.src.large || img.src.medium || img.src.original))
+          .map((img: any) => {
+            // Ensure we have a working image URL with fallbacks
+            const imageUrl = img.src.large || img.src.medium || img.src.original || '';
+            
+            return {
+              id: `pexels-${img.id || Date.now() + Math.random().toString(36).substr(2, 9)}`,
+              url: imageUrl,
+              alt: img.alt || `${queryUsed} image`,
+              source: 'pexels' as const,
+              // Include these properties for our interface
+              width: img.width || 800,
+              height: img.height || 600,
+              // Store all image sizes for potential fallback
+              src: {
+                original: img.src.original || imageUrl,
+                large: img.src.large || imageUrl,
+                medium: img.src.medium || imageUrl,
+                small: img.src.small || imageUrl,
+                thumbnail: img.src.thumbnail || imageUrl
+              }
+            };
+          });
+      };
+      
+      // Process the main search results
+      const formattedImages = processImages(response.data, searchQuery);
+      
+      if (formattedImages.length > 0) {
+        console.log(`Found ${formattedImages.length} Pexels images for "${searchQuery}"`);
         setPexelsImages(formattedImages);
         
-        // Show a success message
         toast({
           title: 'Images found',
           description: `Found ${formattedImages.length} images matching "${searchQuery}"`,
@@ -256,45 +287,44 @@ export default function MediaSelectionStep({
         const fallbackQuery = `people ${searchQuery}`;
         
         try {
-          const fallbackResponse = await axios.get('/api/media/pexels-search', {
-            params: { query: fallbackQuery }
-          });
+          const fallbackResponse = await fetchWithRetry(fallbackQuery);
+          const fallbackImages = processImages(fallbackResponse.data, fallbackQuery);
           
-          if (fallbackResponse.data.success && fallbackResponse.data.images && fallbackResponse.data.images.length > 0) {
-            console.log(`Found ${fallbackResponse.data.images.length} Pexels images with fallback query`);
-            
-            // Process the images to match our MediaImage format
-            const formattedImages: MediaImage[] = fallbackResponse.data.images.map((img: any) => ({
-              id: `pexels-${img.id}`,
-              url: img.src.large || img.src.original,
-              width: img.width,
-              height: img.height,
-              alt: img.alt || `${fallbackQuery} image`,
-              src: {
-                original: img.src.original,
-                large: img.src.large,
-                medium: img.src.medium,
-                small: img.src.small,
-                thumbnail: img.src.thumbnail
-              },
-              source: 'pexels'
-            }));
-            
-            setPexelsImages(formattedImages);
+          if (fallbackImages.length > 0) {
+            console.log(`Found ${fallbackImages.length} Pexels images with fallback query "${fallbackQuery}"`);
+            setPexelsImages(fallbackImages);
             
             toast({
               title: 'Alternative images found',
-              description: `Found ${formattedImages.length} images for "${fallbackQuery}"`,
+              description: `Found ${fallbackImages.length} images for "${fallbackQuery}"`,
             });
           } else {
-            toast({
-              title: 'No images found',
-              description: 'Try different keywords or browse the Shopify Media Library',
-              variant: 'destructive'
-            });
+            // Try one last generic fallback
+            const genericQuery = "happy customer product";
+            console.log(`Trying generic fallback query: "${genericQuery}"`);
+            
+            const genericResponse = await fetchWithRetry(genericQuery);
+            const genericImages = processImages(genericResponse.data, genericQuery);
+            
+            if (genericImages.length > 0) {
+              console.log(`Found ${genericImages.length} images with generic query "${genericQuery}"`);
+              setPexelsImages(genericImages);
+              
+              toast({
+                title: 'Generic images found',
+                description: `Found ${genericImages.length} general images you can use`,
+              });
+            } else {
+              // Nothing worked, show error
+              toast({
+                title: 'No images found',
+                description: 'Try different keywords or browse the Shopify Media Library',
+                variant: 'destructive'
+              });
+            }
           }
         } catch (fallbackError) {
-          console.error('Error with fallback search:', fallbackError);
+          console.error('Error with fallback searches:', fallbackError);
           toast({
             title: 'No images found',
             description: 'Try different keywords or browse your Shopify Media Library',
