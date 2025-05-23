@@ -8,7 +8,7 @@ import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
-import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus } from 'lucide-react';
+import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
 // Define the MediaImage type
@@ -332,6 +332,45 @@ export default function MediaSelectionStep({
       title: 'Primary image set',
       description: 'This image will be used as the featured image for your content.',
     });
+  };
+  
+  // Function to toggle between primary and secondary
+  const toggleImageStatus = (image: MediaImage) => {
+    // Check current status
+    const isPrimary = primaryImage?.id === image.id;
+    const isSecondary = secondaryImages.some(img => img.id === image.id);
+    
+    if (isPrimary) {
+      // If it's the primary image, change to secondary
+      setPrimaryImage(null);
+      
+      // Add to secondary images if not already there
+      if (!isSecondary) {
+        setSecondaryImages(prev => [...prev, image]);
+      }
+      
+      toast({
+        title: 'Image changed to secondary',
+        description: 'Image has been moved from primary to secondary status.',
+      });
+    } else if (isSecondary) {
+      // If it's a secondary image, make it primary
+      setSecondaryImages(prev => prev.filter(img => img.id !== image.id));
+      setPrimaryImage(image);
+      
+      toast({
+        title: 'Image promoted to primary',
+        description: 'Image has been set as the primary (featured) image.',
+      });
+    } else {
+      // If neither, set as primary by default
+      setPrimaryImage(image);
+      
+      toast({
+        title: 'Image set as primary',
+        description: 'Image has been set as the primary (featured) image.',
+      });
+    }
   };
   
   const toggleSecondaryImage = (image: MediaImage) => {
