@@ -139,44 +139,127 @@ mediaRouter.get("/shopify-media-library", async (_req: Request, res: Response) =
       }
     });
 
-    // First, fetch all files from the Files API
-    const filesResponse = await shopifyClient.get('/files.json?limit=250');
-    
-    if (!filesResponse.data || !filesResponse.data.files) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch files from Shopify"
-      });
+    // Collection to store all images
+    const allImages = [];
+
+    // Try to get product images first
+    try {
+      console.log("Fetching product images from Shopify...");
+      const productsResponse = await shopifyClient.get('/products.json?limit=50&fields=id,title,image,images');
+      
+      if (productsResponse.data && productsResponse.data.products) {
+        const products = productsResponse.data.products;
+        
+        // Process each product
+        for (const product of products) {
+          // Add all product images
+          if (product.images && Array.isArray(product.images)) {
+            product.images.forEach((image, index) => {
+              if (image && image.src) {
+                allImages.push({
+                  id: `product-${product.id}-image-${index}`,
+                  url: image.src,
+                  alt: image.alt || `${product.title} - Image ${index + 1}`,
+                  title: `${product.title} - Image ${index + 1}`,
+                  source: 'shopify'
+                });
+              }
+            });
+          }
+        }
+        
+        console.log(`Successfully fetched ${allImages.length} product images`);
+      }
+    } catch (error) {
+      console.error("Error fetching product images:", error);
     }
 
-    // Process the files 
-    const allMediaFiles = filesResponse.data.files.map(file => {
-      // Make sure we have valid URL
-      const url = file.url || "";
+    // Try to get theme assets
+    try {
+      console.log("Fetching theme assets from Shopify...");
       
-      return {
-        id: `file-${file.id}`,
-        url: url,
-        alt: file.alt || file.name || 'Media file',
-        title: file.name || 'Media file',
-        width: file.width || 400,
-        height: file.height || 400,
-        source: 'media_library',
-        created_at: file.created_at,
-        content_type: file.content_type || 'image/jpeg'
-      };
+      // Get the main theme ID
+      const themesResponse = await shopifyClient.get('/themes.json');
+      if (themesResponse.data && themesResponse.data.themes) {
+        // Find the main theme (published/active theme)
+        const mainTheme = themesResponse.data.themes.find(theme => theme.role === 'main');
+        
+        if (mainTheme) {
+          // Get the assets for the main theme
+          const assetsResponse = await shopifyClient.get(`/themes/${mainTheme.id}/assets.json`);
+          
+          if (assetsResponse.data && assetsResponse.data.assets) {
+            // Filter for image assets and add to our collection
+            assetsResponse.data.assets
+              .filter(asset => 
+                asset.content_type && 
+                asset.content_type.startsWith('image/') && 
+                asset.public_url
+              )
+              .forEach(asset => {
+                allImages.push({
+                  id: `theme-asset-${asset.key.replace(/\//g, '-')}`,
+                  url: asset.public_url,
+                  alt: asset.key || 'Theme asset',
+                  title: asset.key || 'Theme asset',
+                  source: 'shopify'
+                });
+              });
+            
+            console.log(`Successfully fetched ${assetsResponse.data.assets.length} theme assets`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching theme assets:", error);
+    }
+    
+    // If we still have no images, try the files API as last resort
+    if (allImages.length === 0) {
+      try {
+        console.log("Trying files API as last resort...");
+        const filesResponse = await shopifyClient.get('/files.json?limit=250');
+        
+        if (filesResponse.data && filesResponse.data.files) {
+          filesResponse.data.files
+            .filter(file => 
+              file.content_type && 
+              file.content_type.startsWith('image/') &&
+              file.url
+            )
+            .forEach(file => {
+              allImages.push({
+                id: `file-${file.id}`,
+                url: file.url,
+                alt: file.alt || file.name || 'Media file',
+                title: file.name || 'Media file',
+                source: 'shopify'
+              });
+            });
+          
+          console.log(`Successfully fetched ${allImages.length} files from Files API`);
+        }
+      } catch (error) {
+        console.error("Error fetching files:", error);
+      }
+    }
+    
+    // Remove any duplicate URLs
+    const uniqueUrls = new Set();
+    const uniqueImages = allImages.filter(image => {
+      if (uniqueUrls.has(image.url)) {
+        return false;
+      }
+      uniqueUrls.add(image.url);
+      return true;
     });
 
-    // Filter out non-image files and fix URLs
-    const mediaImages = allMediaFiles
-      .filter(file => file.content_type && file.content_type.startsWith('image/'))
-      .filter(file => file.url && file.url.length > 0);
+    console.log(`Successfully fetched ${uniqueImages.length} unique media files from Shopify`);
 
-    console.log(`Successfully fetched ${mediaImages.length} media files from Shopify Media Library`);
-
+    // Return the combined result
     return res.json({
       success: true,
-      images: mediaImages
+      images: uniqueImages
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
