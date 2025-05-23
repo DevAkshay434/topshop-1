@@ -5070,7 +5070,7 @@ export default function AdminPanel() {
                                   if (!uniqueImageUrls.has(imageSrc)) {
                                     uniqueImageUrls.add(imageSrc);
                                     productImages.push({
-                                      id: `product-${product.id}-image-${index}`,
+                                      id: `product-${product.id}-image-${imageId}-${index}`,
                                       url: imageSrc,
                                       width: 500,
                                       height: 500,
