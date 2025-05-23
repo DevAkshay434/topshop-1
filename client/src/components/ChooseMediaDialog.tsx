@@ -6,6 +6,7 @@ import { Check, Image as ImageIcon, ImagePlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Separator } from '@/components/ui/separator';
+import ShopifyImageViewer from './ShopifyImageViewer';
 
 // Define the shape of image objects
 export interface MediaImage {
@@ -275,64 +276,11 @@ export function ChooseMediaDialog({
                         onClick={() => toggleImageSelection(image)}
                       >
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                          {/* Replace img with our ShopifyImageViewer component to use our robust URL handling */}
-                          <img
+                          {/* Use our robust ShopifyImageViewer component instead of basic img tag */}
+                          <ShopifyImageViewer
                             src={image.url}
                             alt={image.alt || 'Product image'}
                             className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              // Try to fix Shopify URLs if they fail
-                              const target = e.currentTarget;
-                              const src = target.src;
-                              
-                              // Handle protocol-relative URLs (starting with //)
-                              if (src.startsWith('//')) {
-                                target.src = 'https:' + src;
-                                return;
-                              }
-                              
-                              // Fix missing protocol
-                              if (src.startsWith('cdn.shopify.com')) {
-                                target.src = 'https://' + src;
-                                return;
-                              }
-                              
-                              // If a Shopify URL, try multiple forms of CDN URL
-                              if (src.includes('shopify.com')) {
-                                try {
-                                  // Try standard CDN conversion
-                                  const url = new URL(src);
-                                  // Check for /files/ or /products/ part in the path
-                                  const filesMatch = url.pathname.match(/\/(files|products)\/(.+)/);
-                                  if (filesMatch) {
-                                    target.src = `https://cdn.shopify.com/s${filesMatch[0]}${url.search}`;
-                                    return;
-                                  }
-                                  // Otherwise just use the pathname 
-                                  target.src = `https://cdn.shopify.com${url.pathname}${url.search}`;
-                                  return;
-                                } catch (error) {
-                                  console.log("Failed to create CDN URL");
-                                }
-                                
-                                // Try secondary pattern if first one failed
-                                try {
-                                  const matches = src.match(/\/([0-9]+)\/([0-9]+)\/([^?]+)/);
-                                  if (matches) {
-                                    const [, shopId, productId, imagePath] = matches;
-                                    target.src = `https://cdn.shopify.com/s/files/${shopId}/${productId}/${imagePath}`;
-                                    return;
-                                  }
-                                } catch (error) {
-                                  console.log("Failed secondary URL pattern");
-                                }
-                              }
-                              
-                              // Fallback to placeholder
-                              target.src = `https://placehold.co/600x600?text=${encodeURIComponent(image.alt || 'Product Image')}`;
-                              target.classList.add('placeholder-image');
-                            }}
                           />
                           
                           {/* Source badge */}
