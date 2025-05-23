@@ -1,207 +1,358 @@
+// Integration with Anthropic's Claude API
 import Anthropic from '@anthropic-ai/sdk';
+
+interface BlogContentRequest {
+  topic: string;
+  tone: string;
+  length: string;
+  customPrompt?: string;
+  systemPrompt?: string;
+  includeProducts?: boolean;
+  includeCollections?: boolean;
+  includeKeywords?: boolean;
+  contentStyleToneId?: string;
+  contentStyleDisplayName?: string;
+}
+
+interface BlogContent {
+  title: string;
+  content: string;
+  tags: string[];
+  metaDescription: string;
+}
 
 // Initialize the Anthropic client
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// The newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
-export interface ContentGenerationRequest {
-  title: string;
-  productDescription?: string;
-  keywords: string[];
-  toneOfVoice: string;
-  writingPerspective: string;
-  articleLength: string;
-  enableTables: boolean;
-  enableLists: boolean;
-  enableH3s: boolean;
-  headingsCount: string;
-  introType: string;
-  enableCitations: boolean;
-  faqType: string;
-  region: string;
-  buyerProfile: string;
-}
-
-export interface GeneratedContent {
-  title: string;
-  content: string;
-  excerpt: string;
-  suggestedKeywords: string[];
-  suggestedTags: string[];
-  metaDescription: string;
-}
-
-/**
- * Generates blog content using Claude AI
- */
-export async function generateBlogContent(request: ContentGenerationRequest): Promise<GeneratedContent> {
+// Function to generate blog content using Claude
+export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
   try {
-    console.log('Generating content with Claude AI...');
+    console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
     
-    // Build the prompt for Claude
-    const prompt = buildContentPrompt(request);
+    // Determine content length based on request
+    let contentLength = "approximately 800-1000 words";
+    if (request.length.toLowerCase().includes("short")) {
+      contentLength = "approximately 500-700 words";
+    } else if (request.length.toLowerCase().includes("long")) {
+      contentLength = "approximately 1500-2000 words";
+    }
     
-    // Call Claude with the generated prompt
+    // Enhanced base prompt for Claude with proper structure
+    let toneStyle = request.tone;
+    // If content style display name is provided, use it instead of the default tone
+    if (request.contentStyleDisplayName) {
+      toneStyle = request.contentStyleDisplayName;
+      console.log(`Using custom content style: ${request.contentStyleDisplayName} (ID: ${request.contentStyleToneId || 'none'})`);
+    }
+    
+    // Get copywriter persona if available
+const copywriterPersona = request.contentStyleDisplayName ? `Write this content in the style of ${request.contentStyleDisplayName}.` : '';
+
+let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}
+    
+    The blog post MUST follow this exact structure:
+    1. A compelling title that includes the main topic and primary keywords
+    2. Multiple clearly defined sections with H2 headings that incorporate important keywords
+    3. Appropriate H3 subheadings within each section where needed
+    4. Well-organized paragraphs (2-4 paragraphs per section)
+    5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
+    6. Lists and tables where appropriate to improve readability
+    7. A conclusion with a clear call to action
+    
+    IMPORTANT FORMATTING REQUIREMENTS:
+    - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
+    - DO NOT use <h1> tags, as this will be the post title
+    - Make sure sections flow logically and coherently
+    - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
+    - Include a meta description of 155-160 characters that includes at least 2 primary keywords
+    - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
+    - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
+    
+    IMPORTANT IMAGE AND LINK GUIDELINES:
+    - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
+    - NEVER reference competitor websites or external commercial domains in any links or image sources
+    - DO NOT include ANY external links except to trusted reference sites like .gov, .edu, or wikipedia.org
+    - DO NOT include external images from third-party domains - the system will automatically insert optimized images
+    - All images will be center-aligned and properly linked to product pages
+    - Do not include any image placeholders or special markup - the system will handle image insertion automatically
+    - Images will be distributed evenly throughout the content at logical section breaks
+    - Each image will include a caption with a link back to the relevant product to enhance SEO value
+    
+    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
+    
+    // Add custom prompt if provided
+    if (request.customPrompt) {
+      const customPromptFormatted = request.customPrompt.replace(/\[TOPIC\]/g, request.topic);
+      promptText = `${promptText}
+      
+      IMPORTANT: Follow these specific instructions for the content:
+      ${customPromptFormatted}
+      
+      The content must directly address these instructions while maintaining a ${toneStyle} tone and proper blog structure.`;
+    }
+    
+    // Make API call to Claude with increased token limit for longer content
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-      system: getSystemPrompt(request),
+      max_tokens: 8000,
+      system: request.contentStyleToneId 
+        ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
+        : undefined,
+      messages: [
+        {
+          role: 'user',
+          content: `${promptText}
+          
+          IMPORTANT: Return the response in JSON format with the following structure:
+          {
+            "title": "The title of the blog post",
+            "content": "The complete HTML content of the blog post",
+            "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+            "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
+          }
+          
+          Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
+        }
+      ],
     });
     
-    // Extract the response content
-    const responseContent = response.content[0].text;
+    // Extract and parse the JSON response
+    const responseText = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : JSON.stringify(response.content[0]);
     
-    // Parse the response to extract structured content
-    const parsedContent = parseClaudeResponse(responseContent);
+    console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
+    
+    // Try different strategies to extract valid JSON from Claude's response
+    let jsonContent;
+    
+    try {
+      // Strategy 1: Find the most complete JSON object in the response
+      const jsonObjectRegex = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}/g;
+      const jsonMatches = responseText.match(jsonObjectRegex);
+      
+      if (jsonMatches && jsonMatches.length > 0) {
+        // Find the longest match, which is likely the complete JSON
+        const longestMatch = jsonMatches.reduce((longest, current) => 
+          current.length > longest.length ? current : longest, "");
+        
+        if (longestMatch) {
+          console.log("Found JSON object match:", longestMatch.substring(0, 100) + "...");
+          jsonContent = JSON.parse(longestMatch);
+        }
+      }
+    } catch (jsonError: any) {
+      console.log("Error parsing complete JSON object:", jsonError?.message || "Unknown error");
+    }
+    
+    // Strategy 2: If strategy 1 fails, try to extract JSON by matching braces
+    if (!jsonContent) {
+      try {
+        let braceCount = 0;
+        let startIndex = -1;
+        let jsonCandidate = "";
+        
+        // Find the opening brace
+        startIndex = responseText.indexOf('{');
+        
+        if (startIndex >= 0) {
+          for (let i = startIndex; i < responseText.length; i++) {
+            jsonCandidate += responseText[i];
+            
+            if (responseText[i] === '{') braceCount++;
+            if (responseText[i] === '}') braceCount--;
+            
+            // When braces are balanced, we've found a complete JSON object
+            if (braceCount === 0 && jsonCandidate.length > 2) {
+              console.log("Found balanced JSON via brace counting:", jsonCandidate.substring(0, 100) + "...");
+              jsonContent = JSON.parse(jsonCandidate);
+              break;
+            }
+          }
+        }
+      } catch (balancedError: any) {
+        console.log("Error parsing balanced braces JSON:", balancedError?.message || "Unknown error");
+      }
+    }
+    
+    // Strategy 3: Manual extraction of key fields if JSON parsing fails
+    if (!jsonContent) {
+      console.log("Attempting manual extraction of content components...");
+      
+      // Extract title
+      const titleMatch = responseText.match(/"title"\s*:\s*"([^"]+)"/);
+      const title = titleMatch ? titleMatch[1] : "Blog Post";
+      
+      // Extract content - look for content field followed by a large HTML block
+      const contentMatch = responseText.match(/"content"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*})/);
+      let content = contentMatch ? contentMatch[1] : "";
+      
+      // Unescape content string
+      content = content.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+      
+      // Extract tags
+      const tagsMatch = responseText.match(/"tags"\s*:\s*\[([\s\S]+?)\]/);
+      const tagsString = tagsMatch ? tagsMatch[1] : "";
+      const tags = tagsString.split(',').map(tag => 
+        tag.trim().replace(/^"|"$/g, '')
+      ).filter(Boolean);
+      
+      // Extract meta description
+      const metaMatch = responseText.match(/"metaDescription"\s*:\s*"([^"]+)"/);
+      const metaDescription = metaMatch ? metaMatch[1] : "";
+      
+      jsonContent = {
+        title,
+        content,
+        tags,
+        metaDescription
+      };
+    }
+    
+    if (!jsonContent) {
+      throw new Error("Failed to extract content from Claude response using all available methods");
+    }
     
     return {
-      title: request.title,
-      content: parsedContent.content,
-      excerpt: parsedContent.excerpt,
-      suggestedKeywords: parsedContent.suggestedKeywords,
-      suggestedTags: parsedContent.suggestedTags,
-      metaDescription: parsedContent.metaDescription,
+      title: jsonContent.title,
+      content: jsonContent.content,
+      tags: jsonContent.tags,
+      metaDescription: jsonContent.metaDescription || ''
     };
-  } catch (error) {
-    console.error('Error generating content with Claude:', error);
-    throw new Error('Failed to generate content with Claude AI');
+  } catch (error: any) {
+    console.error("Error generating content with Claude:", error);
+    const errorMessage = error && typeof error === 'object' && 'message' in error 
+      ? error.message 
+      : 'Unknown error during Claude content generation';
+    throw new Error(`Failed to generate content with Claude: ${errorMessage}`);
   }
 }
 
-/**
- * Builds the system prompt for Claude
- */
-function getSystemPrompt(request: ContentGenerationRequest): string {
-  return `You are an expert SEO content writer specializing in e-commerce product blogs.
-Your task is to write high-quality, SEO-optimized content for Shopify stores.
-Always aim to be helpful, accurate, and engaging to readers while incorporating relevant keywords naturally.
-Structure your response with clear HTML formatting that's ready to publish on a Shopify blog.`;
-}
-
-/**
- * Builds the content generation prompt based on user parameters
- */
-function buildContentPrompt(request: ContentGenerationRequest): string {
-  // Map perspective to actual pronouns for instructions
-  const perspectiveMap: Record<string, string> = {
-    first_person_plural: 'We/Us/Our',
-    first_person_singular: 'I/Me/My',
-    second_person: 'You/Your',
-    third_person: 'They/Them/Their'
-  };
-  
-  // Map article length to word count
-  const lengthMap: Record<string, string> = {
-    short: '600-800',
-    medium: '1000-1500',
-    long: '2000-2500'
-  };
-  
-  // Start building the prompt
-  let prompt = `Write a comprehensive, SEO-optimized blog post about "${request.title}" for a Shopify store.
-
-PRODUCT CONTEXT:
-${request.productDescription || 'No specific product provided'}
-
-WRITING SPECIFICATIONS:
-- Use a ${request.toneOfVoice} tone of voice
-- Write from the ${perspectiveMap[request.writingPerspective]} perspective
-- Target word count: ${lengthMap[request.articleLength]} words
-- Use ${request.headingsCount} subheadings (H2 tags)
-${request.enableH3s ? '- Include H3 subheadings under main sections' : ''}
-${request.enableLists ? '- Include bulleted or numbered lists where appropriate' : ''}
-${request.enableTables ? '- Include a comparison table if relevant' : ''}
-${request.enableCitations ? '- Include citations and references' : ''}
-
-PRIMARY KEYWORDS TO INCLUDE:
-${request.keywords.join(', ')}
-
-ARTICLE STRUCTURE:
-1. Engaging introduction ${request.introType === 'search_intent' ? 'addressing search intent' : 'with a hook'} 
-2. Clear subheadings for scannable content
-3. Relevant product recommendations
-4. Benefits and features
-5. Practical advice for readers
-6. ${request.faqType === 'short' ? 'Short FAQ section (3-4 questions)' : 'Comprehensive FAQ section (5-7 questions)'}
-7. Strong conclusion with call-to-action
-
-FORMAT YOUR RESPONSE AS:
-1. The complete HTML blog post content with proper formatting
-2. A short excerpt (150 characters max)
-3. 5-7 suggested additional SEO keywords 
-4. 3-5 suggested tags for the blog post
-5. Meta description (150-160 characters)
-
-Use proper HTML formatting with <h2>, <h3>, <p>, <ul>, <li>, <table>, <strong> tags etc.
-Make sure all HTML is correctly formatted.`;
-
-  return prompt;
-}
-
-/**
- * Parses Claude's response to extract structured content
- */
-function parseClaudeResponse(responseText: string): {
-  content: string;
-  excerpt: string;
-  suggestedKeywords: string[];
-  suggestedTags: string[];
-  metaDescription: string;
-} {
-  // Default values in case parsing fails
-  let content = responseText;
-  let excerpt = '';
-  let suggestedKeywords: string[] = [];
-  let suggestedTags: string[] = [];
-  let metaDescription = '';
-  
+// Function to generate title suggestions using Claude
+export async function generateTitles(request: { prompt: string, responseFormat: string }): Promise<{ titles: string[] }> {
   try {
-    // Split the response by numbered sections
-    const sections = responseText.split(/\d+\.\s/).filter(Boolean);
+    console.log("Generating title suggestions with Claude model:", CLAUDE_MODEL);
     
-    if (sections.length >= 5) {
-      // HTML content is usually the first section
-      content = sections[0].trim();
-      
-      // Excerpt is usually the second section
-      excerpt = sections[1].trim();
-      
-      // Keywords are usually the third section
-      const keywordsText = sections[2].trim();
-      suggestedKeywords = keywordsText
-        .split(/,|\n/)
-        .map(k => k.trim())
-        .filter(k => k.length > 0 && !k.includes(':'));
-      
-      // Tags are usually the fourth section
-      const tagsText = sections[3].trim();
-      suggestedTags = tagsText
-        .split(/,|\n/)
-        .map(t => t.trim())
-        .filter(t => t.length > 0 && !t.includes(':'));
-      
-      // Meta description is usually the fifth section
-      metaDescription = sections[4].trim();
+    // Make API call to Claude
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: request.prompt
+        }
+      ],
+    });
+    
+    // Extract response text
+    const responseText = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : JSON.stringify(response.content[0]);
+    
+    console.log("Claude raw response:", responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+    
+    // Parse the response based on format
+    if (request.responseFormat === 'json') {
+      try {
+        // Find JSON content - handle any wrapping text Claude might add
+        const jsonRegex = /\[[\s\S]*\]/;
+        const match = responseText.match(jsonRegex);
+        
+        if (match) {
+          console.log("Found JSON array in Claude response:", match[0]);
+          const titles = JSON.parse(match[0]);
+          return { titles };
+        } else {
+          console.log("No JSON array found, trying to parse entire response as JSON");
+          // If no JSON array found, try to parse the entire response as JSON
+          const jsonResponse = JSON.parse(responseText);
+          if (Array.isArray(jsonResponse)) {
+            console.log("Response is an array:", jsonResponse);
+            return { titles: jsonResponse };
+          } else if (jsonResponse.titles && Array.isArray(jsonResponse.titles)) {
+            console.log("Response has titles property:", jsonResponse.titles);
+            return { titles: jsonResponse.titles };
+          } else {
+            console.error("Unable to find titles array in JSON response:", jsonResponse);
+          }
+        }
+      } catch (parseError) {
+        console.error("Error parsing JSON from Claude response:", parseError);
+        // Fall back to extracting titles from text
+      }
     }
-  } catch (error) {
-    console.error('Error parsing Claude response:', error);
-    // Return the full response as content if parsing fails
+    
+    // If parsing fails or format is not JSON, extract titles from text
+    // Look for numbered lines, bullet points, or line breaks
+    const lines = responseText.split(/[\n\r]+/);
+    const titleCandidates = lines.filter(line => 
+      line.trim().length > 10 && // Minimum reasonable title length
+      !line.includes("Here are") && // Skip intro lines
+      !line.includes("suggestions") &&
+      !line.includes("titles") &&
+      (
+        /^\d+[\.\)]\s+/.test(line.trim()) || // numbered items
+        /^[-*•]\s+/.test(line.trim()) || // bullet points
+        /^["'].*["']$/.test(line.trim()) // quoted text
+      )
+    );
+    
+    // Clean up the titles
+    const titles = titleCandidates.map(title => 
+      title.replace(/^\d+[\.\)]\s+|^[-*•]\s+|^["']|["']$/g, '').trim()
+    ).filter(title => title.length > 0);
+    
+    // Return at least some titles
+    if (titles.length === 0) {
+      // If we couldn't extract any titles, just return 5 lines that look like titles
+      return { 
+        titles: lines
+          .filter(line => line.trim().length > 15 && line.trim().length < 100)
+          .slice(0, 5)
+          .map(line => line.trim())
+      };
+    }
+    
+    return { titles };
+  } catch (error: any) {
+    console.error("Error generating titles with Claude:", error);
+    throw new Error(`Failed to generate titles with Claude: ${error.message || 'Unknown error'}`);
   }
-  
-  return {
-    content,
-    excerpt,
-    suggestedKeywords,
-    suggestedTags,
-    metaDescription
-  };
 }
 
-export default {
-  generateBlogContent
-};
+// Test function to check if Claude API is working
+export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
+  try {
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 50,
+      messages: [
+        {
+          role: 'user',
+          content: 'Hello, please respond with "Claude API is connected successfully!" if you receive this message.'
+        }
+      ],
+    });
+    
+    const responseText = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : JSON.stringify(response.content[0]);
+      
+    return {
+      success: true,
+      message: responseText.trim()
+    };
+  } catch (error: any) {
+    console.error("Claude connection test failed:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to connect to Claude API"
+    };
+  }
+}

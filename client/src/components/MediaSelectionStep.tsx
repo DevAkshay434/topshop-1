@@ -28,25 +28,20 @@ export interface MediaImage {
   source: 'product' | 'variant' | 'pexels' | 'uploaded' | 'shopify_media' | 'product_image' | 'collection_image';
 }
 
-export interface MediaSelectionStepProps {
-  productId?: string | null;
-  selectedProductId?: string | null;
-  title?: string;
-  onPrimaryImageSelected?: (image: MediaImage) => void;
-  onSecondaryImagesSelected?: (images: MediaImage[]) => void;
-  initialPrimaryImage?: MediaImage | null;
-  initialSecondaryImages?: MediaImage[];
-  onComplete?: (media: {
+interface MediaSelectionStepProps {
+  onComplete: (media: {
     primaryImage: MediaImage | null;
     secondaryImages: MediaImage[];
     youtubeEmbed: string | null;
   }) => void;
-  onBack?: () => void;
+  onBack: () => void;
   initialValues?: {
     primaryImage: MediaImage | null;
     secondaryImages: MediaImage[];
     youtubeEmbed: string | null;
   };
+  selectedProductId?: string | null;
+  title?: string | null; // The selected content title for context
 }
 
 export default function MediaSelectionStep({

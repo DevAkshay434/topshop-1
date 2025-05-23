@@ -13,6 +13,7 @@ import {
 import { storage } from './storage';
 import { shopifyService } from './services/shopify';
 import contentRouter from './routes/content';
+import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
 import { mediaRouter } from './routes/media';
 import { pexelsService } from './services/pexels';
@@ -1835,7 +1836,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Register feature-specific routers
   app.use('/api/content', contentRouter);
-  // Claude API functionality is now part of contentRouter
+  app.use('/api/claude', claudeRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/media', mediaRouter);
 
