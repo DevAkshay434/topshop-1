@@ -14,8 +14,11 @@ export interface MediaImage {
   url: string; 
   alt?: string;
   title?: string;
-  source: 'product' | 'variant' | 'shopify' | 'pexels';
+  filename?: string;
+  source: 'product' | 'variant' | 'shopify' | 'pexels' | 'product_image' | 'theme_asset' | 'article_image' | 'collection_image';
   selected?: boolean;
+  product_id?: string | number;
+  product_title?: string;
 }
 
 interface ChooseMediaDialogProps {
@@ -73,7 +76,7 @@ export function ChooseMediaDialog({
     try {
       console.log("Loading images from Shopify Media Library...");
       
-      // Use Admin product images as they're more reliable
+      // Use Admin files endpoint to get media library images
       const response = await fetch('/api/admin/files');
       if (!response.ok) {
         throw new Error(`Failed to fetch media library: ${response.statusText}`);
@@ -84,35 +87,44 @@ export function ChooseMediaDialog({
         throw new Error('Invalid response format for media library');
       }
       
+      console.log(`Got ${data.files.length} files from API. Sample:`, data.files[0]);
+      
       // Format received images into our standard format
       const formattedImages: MediaImage[] = [];
       
       // Process all media library images from the files endpoint
       data.files.forEach((image: any) => {
         if (image && image.url) {
-          // Check if this image is already selected (for when refreshing the list)
+          // Check if this image is already selected
           const isAlreadySelected = initialSelectedImages.some(
             img => img.url === image.url || img.id === image.id
           );
           
-          // Make sure the URL is properly formatted (CDN URL)
+          // Ensure the URL starts with https://
           let imageUrl = image.url;
+          if (imageUrl.startsWith('//')) {
+            imageUrl = 'https:' + imageUrl;
+          } else if (!imageUrl.startsWith('http')) {
+            imageUrl = 'https://' + imageUrl;
+          }
           
-          // Ensure it's a CDN URL
+          // Make sure we use CDN URLs for proper image loading
           if (!imageUrl.includes('cdn.shopify.com') && imageUrl.includes('shopify.com')) {
-            imageUrl = imageUrl.replace(/https:\/\/[^\/]+\//, 'https://cdn.shopify.com/s/');
+            const urlParts = imageUrl.split('/');
+            const domainParts = urlParts[2].split('.');
+            if (domainParts.length > 0) {
+              const storeName = domainParts[0];
+              const pathPart = urlParts.slice(3).join('/');
+              imageUrl = `https://cdn.shopify.com/s/files/1/${storeName}/${pathPart}`;
+            }
           }
           
-          // If it doesn't start with https, add it
-          if (!imageUrl.startsWith('http')) {
-            imageUrl = `https://${imageUrl}`;
-          }
-          
+          // Create a properly formatted media item
           formattedImages.push({
             id: image.id || `media-${formattedImages.length}`,
             url: imageUrl,
-            alt: image.alt || image.filename || 'Media image',
-            title: image.title || image.filename || 'Media image',
+            alt: image.alt || image.filename || 'Shopify image',
+            title: image.filename || image.title || 'Shopify image',
             source: 'shopify',
             selected: isAlreadySelected
           });
@@ -448,30 +460,20 @@ export function ChooseMediaDialog({
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
                           {/* Image wrapper with fallback placeholder */}
                           <div className="relative w-full h-full">
+                            {/* Use direct image rendering for all image types */}
                             <img
                               src={image.url}
-                              alt={image.alt || 'Media image'}
+                              alt={image.alt || (image.filename as string) || 'Media image'}
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 console.log(`Image failed to load: ${target.src}`);
+                                target.onerror = null; // Prevent infinite loops
                                 
-                                // Try direct image loading from original URL first
-                                if (image.source === 'product_image' || image.source === 'theme_asset') {
-                                  // Set a placeholder for failed images
-                                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
-                                  target.classList.add("opacity-50");
-                                  
-                                  // Add a badge to show it's missing
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    const badge = document.createElement('div');
-                                    badge.className = "absolute inset-0 flex items-center justify-center";
-                                    badge.innerHTML = `<div class="text-xs bg-red-500 text-white px-2 py-1 rounded">Image unavailable</div>`;
-                                    parent.appendChild(badge);
-                                  }
-                                }
+                                // Set placeholder for failed images
+                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
+                                target.classList.add("opacity-50");
                               }}
                             />
                           </div>
