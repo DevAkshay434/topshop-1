@@ -49,15 +49,51 @@ export function ChooseMediaDialog({
   const [productImages, setProductImages] = useState<MediaImage[]>([]);
   const [mediaLibraryImages, setMediaLibraryImages] = useState<MediaImage[]>([]);
   
+  // Get selected product ID from any available source
+  const getSelectedProductId = () => {
+    try {
+      // Try to get the product ID from the URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('productId');
+      if (productId) {
+        return productId;
+      }
+      
+      // Try to get from the global form context
+      const formContext = (window as any).TopshopSEO?.formContext;
+      if (formContext && formContext.productIds && formContext.productIds.length > 0) {
+        return formContext.productIds[0];
+      }
+      
+      // Try to get from global productId variable
+      if ((window as any).productId) {
+        return (window as any).productId;
+      }
+      
+      return undefined;
+    } catch (error) {
+      console.error("Error getting selected product ID:", error);
+      return undefined;
+    }
+  };
+  
   // Fetch media based on the active tab when dialog opens
   useEffect(() => {
     if (open) {
-      if (activeTab === 'products' && productImages.length === 0) {
-        loadProductImages();
+      if (activeTab === 'products') {
+        // Get product ID from URL or other means if available
+        const selectedProductId = getSelectedProductId();
+        if (selectedProductId) {
+          console.log("Loading images for selected product ID:", selectedProductId);
+          loadProductImages(selectedProductId);
+        } else {
+          // No product selected, load generic product images
+          loadProductImages();
+        }
       } else if (activeTab === 'pexels') {
         // Pexels tab is handled separately
-      } else if (activeTab === 'media_library' && mediaLibraryImages.length === 0) {
-        // This is specifically for the Shopify Media Library tab
+      } else if (activeTab === 'media_library') {
+        // This is specifically for the Shopify Media Library tab - load all media
         loadShopifyMediaLibrary();
       }
     }
