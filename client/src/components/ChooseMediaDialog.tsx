@@ -45,10 +45,17 @@ export function ChooseMediaDialog({
   const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
   const [productImages, setProductImages] = useState<MediaImage[]>([]);
   
-  // Fetch product images when dialog opens
+  // Fetch media based on the active tab when dialog opens
   useEffect(() => {
-    if (open && activeTab === 'products' && productImages.length === 0) {
-      loadProductImages();
+    if (open) {
+      if (activeTab === 'products' && productImages.length === 0) {
+        loadProductImages();
+      } else if (activeTab === 'pexels') {
+        // Pexels tab is handled separately
+      } else {
+        // This is for any other tabs like Shopify Media Library
+        loadShopifyMediaLibrary();
+      }
     }
   }, [open, activeTab]);
 

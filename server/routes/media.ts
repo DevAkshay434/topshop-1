@@ -110,6 +110,85 @@ mediaRouter.get("/shopify-product-images", async (_req: Request, res: Response) 
 });
 
 /**
+ * Fetch all media files from Shopify Media Library
+ * This provides access to all uploaded files, not just product images
+ */
+mediaRouter.get("/shopify-media-library", async (_req: Request, res: Response) => {
+  try {
+    // Get the Shopify connection
+    const connection = await storage.getShopifyConnection();
+    if (!connection || !connection.isConnected) {
+      return res.status(404).json({
+        success: false,
+        message: "No active Shopify connection found"
+      });
+    }
+
+    // Create store client for API calls
+    const store = {
+      shopName: connection.storeName,
+      accessToken: connection.accessToken
+    };
+
+    // Set up Shopify API client
+    const shopifyClient = axios.create({
+      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': store.accessToken
+      }
+    });
+
+    // First, fetch all files from the Files API
+    const filesResponse = await shopifyClient.get('/files.json?limit=250');
+    
+    if (!filesResponse.data || !filesResponse.data.files) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch files from Shopify"
+      });
+    }
+
+    // Process the files 
+    const allMediaFiles = filesResponse.data.files.map(file => {
+      // Make sure we have valid URL
+      const url = file.url || "";
+      
+      return {
+        id: `file-${file.id}`,
+        url: url,
+        alt: file.alt || file.name || 'Media file',
+        title: file.name || 'Media file',
+        width: file.width || 400,
+        height: file.height || 400,
+        source: 'media_library',
+        created_at: file.created_at,
+        content_type: file.content_type || 'image/jpeg'
+      };
+    });
+
+    // Filter out non-image files and fix URLs
+    const mediaImages = allMediaFiles
+      .filter(file => file.content_type && file.content_type.startsWith('image/'))
+      .filter(file => file.url && file.url.length > 0);
+
+    console.log(`Successfully fetched ${mediaImages.length} media files from Shopify Media Library`);
+
+    return res.json({
+      success: true,
+      images: mediaImages
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error fetching Shopify media library:", errorMessage);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch media library: " + errorMessage
+    });
+  }
+});
+
+/**
  * Proxy image URLs through our server to fix CORS issues
  * and ensure proper content-type headers
  */
