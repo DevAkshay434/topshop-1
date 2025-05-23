@@ -8,7 +8,7 @@ import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
-import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus } from 'lucide-react';
 import axios from 'axios';
 
 // Define the MediaImage type

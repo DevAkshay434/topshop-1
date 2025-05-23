@@ -159,7 +159,7 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
     try {
       console.log('Trying to fetch Shopify media files using Files API');
       // First attempt using the Files API
-      const filesResponse = await axios.get(`${store.shopifyUrl}/admin/api/2023-10/files.json?limit=250`, {
+      const filesResponse = await axios.get(`https://${store.shopName}/admin/api/2023-10/files.json?limit=250`, {
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': store.accessToken
@@ -178,7 +178,7 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
       console.log('Fetching product images as content files - more reliable method');
       try {
         const productsResponse = await axios.get(
-          `${store.shopifyUrl}/admin/api/2023-10/products.json?limit=20&fields=id,title,image,images,variants`,
+          `https://${store.shopName}/admin/api/2023-10/products.json?limit=20&fields=id,title,image,images,variants`,
           {
             headers: {
               'Content-Type': 'application/json',
