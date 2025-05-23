@@ -121,24 +121,28 @@ export function ChooseMediaDialog({
     try {
       console.log("Loading images from Shopify Media Library...");
       
-      // Use Admin files endpoint to get media library images
-      const response = await fetch('/api/admin/files');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch media library: ${response.statusText}`);
+      // Use the media-specific endpoint to get all Shopify media
+      const response = await apiRequest({
+        url: '/api/media/shopify-media-library',
+        method: 'GET'
+      });
+      
+      if (!response.success || !response.images) {
+        toast({
+          title: "Failed to load media",
+          description: "Could not load images from your Shopify Media Library."
+        });
+        setIsLoading(false);
+        return;
       }
       
-      const data = await response.json();
-      if (!data.success || !data.files) {
-        throw new Error('Invalid response format for media library');
-      }
-      
-      console.log(`Got ${data.files.length} files from API. Sample:`, data.files[0]);
+      console.log(`Got ${response.images.length} files from Media Library API`);
       
       // Format received images into our standard format
       const formattedImages: MediaImage[] = [];
       
-      // Process all media library images from the files endpoint
-      data.files.forEach((image: any) => {
+      // Process all media library images 
+      response.images.forEach((image: any) => {
         if (image && image.url) {
           // Check if this image is already selected
           const isAlreadySelected = initialSelectedImages.some(
@@ -155,12 +159,16 @@ export function ChooseMediaDialog({
           
           // Make sure we use CDN URLs for proper image loading
           if (!imageUrl.includes('cdn.shopify.com') && imageUrl.includes('shopify.com')) {
-            const urlParts = imageUrl.split('/');
-            const domainParts = urlParts[2].split('.');
-            if (domainParts.length > 0) {
-              const storeName = domainParts[0];
-              const pathPart = urlParts.slice(3).join('/');
-              imageUrl = `https://cdn.shopify.com/s/files/1/${storeName}/${pathPart}`;
+            try {
+              const urlParts = imageUrl.split('/');
+              const domainParts = urlParts[2].split('.');
+              if (domainParts.length > 0) {
+                const storeName = domainParts[0];
+                const pathPart = urlParts.slice(3).join('/');
+                imageUrl = `https://cdn.shopify.com/s/files/1/${storeName}/${pathPart}`;
+              }
+            } catch (err) {
+              console.warn("Failed to convert URL to CDN format:", imageUrl);
             }
           }
           
@@ -170,7 +178,9 @@ export function ChooseMediaDialog({
             url: imageUrl,
             alt: image.alt || image.filename || 'Shopify image',
             title: image.filename || image.title || 'Shopify image',
-            source: 'shopify',
+            source: image.source || 'shopify',
+            product_id: image.product_id,
+            product_title: image.product_title,
             selected: isAlreadySelected
           });
         }
@@ -178,7 +188,12 @@ export function ChooseMediaDialog({
       
       // Store media library images in their own state
       setMediaLibraryImages(formattedImages);
-      console.log(`Loaded ${formattedImages.length} files from Shopify Media Library`);
+      console.log(`Processed ${formattedImages.length} media files from Shopify`);
+      
+      // Log a sample for debugging
+      if (formattedImages.length > 0) {
+        console.log("Sample media image:", formattedImages[0]);
+      }
       
     } catch (error) {
       console.error('Error loading Shopify Media Library:', error);
@@ -445,11 +460,12 @@ export function ChooseMediaDialog({
                         onClick={() => toggleImageSelection(image)}
                       >
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                          {/* Use our robust ShopifyImageViewer component instead of basic img tag */}
+                          {/* Use our robust ShopifyImageViewer component with improved error handling */}
                           <ShopifyImageViewer
                             src={image.url}
                             alt={image.alt || 'Product image'}
                             className="w-full h-full object-cover"
+                            key={`${image.id}-${image.url}`} // Force re-render when URL changes
                           />
                           
                           {/* Source badge */}
@@ -537,20 +553,12 @@ export function ChooseMediaDialog({
                         <div className="aspect-square bg-gray-50 overflow-hidden relative">
                           {/* Image wrapper with fallback placeholder */}
                           <div className="relative w-full h-full">
-                            {/* Use this simple method for displaying images with fallback */}
-                            {/* Display actual image with proper error handling */}
-                            <img 
+                            {/* Use our robust ShopifyImageViewer for better image display */}
+                            <ShopifyImageViewer
                               src={image.url}
-                              alt={image.alt || image.title || "Product image"}
+                              alt={image.alt || image.title || "Shopify image"}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                console.log(`Failed to load image: ${image.url}`);
-                                
-                                // Set placeholder for failed images
-                                target.onerror = null; // Prevent recursive error handling
-                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%23f0f0f0'/%3E%3Cpath d='M8.5,7.5a2,2,0,1,1-2-2A2,2,0,0,1,8.5,7.5Zm11,10v-1l-3-3-2,2-6-6-4,4v4Z' fill='%23cccccc'/%3E%3C/svg%3E";
-                              }}
+                              key={`${image.id}-${image.url}`} // Force re-render when URL changes
                             />
                             
                             {/* Show image title overlay */}
