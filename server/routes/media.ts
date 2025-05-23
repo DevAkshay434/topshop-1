@@ -54,13 +54,39 @@ mediaRouter.get('/product-images', async (req: Request, res: Response) => {
     const store = stores[0]; // Use first store for now
     
     // Fetch product details to get images
-    const product = await shopifyService.getProductById(store, productId as string);
-    
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+    let product;
+    try {
+      product = await shopifyService.getProductById(store, productId as string);
+      
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+    } catch (productError) {
+      console.error(`Error fetching product directly: ${productError.message}`);
+      
+      // Try using the products endpoint as fallback
+      try {
+        console.log(`Trying to fetch product ${productId} using products endpoint`);
+        const productsResponse = await shopifyService.getProducts(store);
+        product = productsResponse.find((p: any) => p.id === productId);
+        
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            message: 'Product not found in products list'
+          });
+        }
+      } catch (fallbackError) {
+        console.error(`Error with fallback product fetch: ${fallbackError.message}`);
+        return res.status(500).json({
+          success: false, 
+          message: 'Failed to fetch product details',
+          error: fallbackError.message
+        });
+      }
     }
     
     // Prepare images array with main product images
@@ -128,40 +154,101 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
     
     const store = stores[0]; // Use first store for now
     
-    // Fetch media files from Shopify
-    const mediaFiles = await shopifyService.getMediaFiles(store);
+    // Try to fetch media files from Shopify
+    let mediaFiles = [];
+    try {
+      console.log('Trying to fetch Shopify media files using Files API');
+      // First attempt using the Files API
+      const filesResponse = await axios.get(`${store.shopifyUrl}/admin/api/2023-10/files.json?limit=250`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': store.accessToken
+        }
+      });
+      
+      if (filesResponse.data && filesResponse.data.files) {
+        mediaFiles = filesResponse.data.files;
+        console.log(`Successfully fetched ${mediaFiles.length} files from Shopify Files API`);
+      }
+    } catch (filesError) {
+      console.error('Error fetching from Files API:', filesError.message);
+      console.log('Trying to fetch product images as fallback after error');
+      
+      // Fallback method - use product images if Files API fails
+      console.log('Fetching product images as content files - more reliable method');
+      try {
+        const productsResponse = await axios.get(
+          `${store.shopifyUrl}/admin/api/2023-10/products.json?limit=20&fields=id,title,image,images,variants`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Access-Token': store.accessToken
+            }
+          }
+        );
+        
+        if (productsResponse.data && productsResponse.data.products) {
+          const products = productsResponse.data.products;
+          console.log(`Processing images from ${products.length} products`);
+          
+          // Extract all product images
+          let productImages: any[] = [];
+          products.forEach((product: any) => {
+            console.log(`Product ${product.id} (${product.title}) has ${product.images?.length || 0} images`);
+            if (product.images && product.images.length) {
+              product.images.forEach((image: any, index: number) => {
+                productImages.push({
+                  id: `product-${product.id}-image-${image.id}`,
+                  url: image.src,
+                  src: image.src,
+                  filename: `${product.title} - Image ${index + 1}`,
+                  content_type: 'image/jpeg',
+                  alt: image.alt || `${product.title} image`,
+                  source: 'product_image'
+                });
+              });
+            }
+          });
+          
+          console.log(`Found ${productImages.length} product images to use as media files`);
+          mediaFiles = productImages;
+        }
+      } catch (productsError: any) {
+        console.error('Error fetching product images as fallback:', productsError.message);
+      }
+    }
     
     // Process media files into consistent format
     const mediaImages = [];
     
     for (const file of mediaFiles) {
-      if (file.type && ['IMAGE', 'image'].includes(file.type.toUpperCase())) {
-        mediaImages.push({
-          id: file.id,
-          src: file.url || file.preview?.image?.url,
-          url: file.url || file.preview?.image?.url,
-          width: file.width || file.preview?.image?.width,
-          height: file.height || file.preview?.image?.height,
-          alt: file.alt || file.filename || 'Shopify media image',
-          filename: file.filename,
-          created_at: file.created_at,
-          updated_at: file.updated_at,
-          mimetype: file.mimetype || 'image/jpeg'
-        });
-      }
+      mediaImages.push({
+        id: file.id || `shopify-media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        src: file.url || file.src,
+        url: file.url || file.src,
+        width: file.width || 800,
+        height: file.height || 600,
+        alt: file.alt || file.filename || 'Shopify media image',
+        filename: file.filename,
+        created_at: file.created_at,
+        content_type: file.content_type || 'image/jpeg',
+        source: file.source || 'shopify_media'
+      });
     }
+    
+    console.log(`Fetched ${mediaImages.length} files from Shopify Media Library`);
     
     return res.json({
       success: true,
       images: mediaImages,
       count: mediaImages.length
     });
-  } catch (error) {
-    console.error('Error fetching Shopify media library:', error);
+  } catch (error: any) {
+    console.error('Error fetching Shopify media library:', error.message);
     return res.status(500).json({
       success: false,
       message: 'Error fetching Shopify media library',
-      error: (error as Error).message
+      error: error.message
     });
   }
 });

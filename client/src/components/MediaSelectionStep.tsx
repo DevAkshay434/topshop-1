@@ -141,13 +141,15 @@ export default function MediaSelectionStep({
       const response = await axios.get('/api/media/shopify-media-library');
       
       if (response.data.success && response.data.images) {
+        console.log(`Successfully loaded ${response.data.images.length} Shopify media files`);
+        
         // Process the images to match our MediaImage format
         const formattedImages: MediaImage[] = response.data.images.map((img: any) => ({
-          id: img.id,
+          id: img.id || `shopify-media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           url: img.src || img.url,
           width: img.width || 800,
           height: img.height || 600,
-          alt: img.alt || 'Shopify media',
+          alt: img.alt || img.filename || 'Shopify media',
           src: {
             original: img.src || img.url,
             large: img.src || img.url,
@@ -159,6 +161,16 @@ export default function MediaSelectionStep({
         }));
         
         setShopifyMediaImages(formattedImages);
+        
+        // Auto-search on Pexels with a sensible default if we have a title
+        if (title && searchQuery === '' && pexelsImages.length === 0) {
+          const words = title.split(' ');
+          const keywords = words.filter(word => word.length > 3).slice(0, 2);
+          if (keywords.length > 0) {
+            setSearchQuery("people using " + keywords.join(' '));
+            setTimeout(() => searchPexelsImages(), 500);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading Shopify media library:', error);
@@ -316,19 +328,19 @@ export default function MediaSelectionStep({
           
           {/* Selection indicators */}
           {isPrimary && (
-            <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full p-1">
-              <Check className="h-4 w-4" />
+            <div className="absolute top-2 left-2 bg-blue-500 text-white rounded-full p-1 z-10">
+              <Star className="h-4 w-4" />
             </div>
           )}
           
-          {isSecondary && (
-            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
+          {isSecondary && !isPrimary && (
+            <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full p-1 z-10">
               <Check className="h-4 w-4" />
             </div>
           )}
           
           {/* Source badge */}
-          <div className="absolute bottom-2 left-2">
+          <div className="absolute bottom-2 left-2 z-10">
             <Badge variant="secondary" className="text-xs">
               {image.source === 'pexels' ? 'Pexels' : 
                image.source === 'uploaded' ? 'Uploaded' : 
@@ -337,24 +349,47 @@ export default function MediaSelectionStep({
             </Badge>
           </div>
           
-          {/* Hover actions */}
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          {/* Always visible selection options for better discoverability */}
+          <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+            <Button 
+              size="sm" 
+              variant="secondary"
+              className={`p-1 h-7 w-7 rounded-full ${isPrimary ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-white/80 hover:bg-white'}`}
+              onClick={() => setPrimaryImageHandler(image)}
+              title="Set as primary image"
+            >
+              <Star className="h-4 w-4" />
+            </Button>
+            
+            <Button 
+              size="sm" 
+              variant="secondary"
+              className={`p-1 h-7 w-7 rounded-full ${isSecondary ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-white/80 hover:bg-white'}`}
+              onClick={() => toggleSecondaryImage(image)}
+              title={isSecondary ? "Remove from secondary images" : "Add as secondary image"}
+            >
+              {isSecondary ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            </Button>
+          </div>
+          
+          {/* Hover overlay with more detailed actions */}
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
             <Button 
               size="sm" 
               variant={isPrimary ? "default" : "outline"} 
-              className="bg-blue-600 hover:bg-blue-700"
+              className={isPrimary ? "bg-blue-600 hover:bg-blue-700 w-full" : "bg-white text-blue-700 hover:bg-blue-50 w-full"}
               onClick={() => setPrimaryImageHandler(image)}
             >
-              Set as Primary
+              {isPrimary ? 'Primary Image ✓' : 'Set as Primary'}
             </Button>
             
             <Button 
               size="sm" 
               variant={isSecondary ? "default" : "outline"} 
-              className={isSecondary ? "bg-green-600 hover:bg-green-700" : ""}
+              className={isSecondary ? "bg-green-600 hover:bg-green-700 w-full" : "bg-white text-green-700 hover:bg-green-50 w-full"}
               onClick={() => toggleSecondaryImage(image)}
             >
-              {isSecondary ? 'Remove' : 'Add as Secondary'}
+              {isSecondary ? 'Remove from Secondary' : 'Add as Secondary'}
             </Button>
           </div>
         </div>
