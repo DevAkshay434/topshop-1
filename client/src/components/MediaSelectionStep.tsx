@@ -144,23 +144,41 @@ export default function MediaSelectionStep({
         console.log(`Successfully loaded ${response.data.images.length} Shopify media files`);
         
         // Process the images to match our MediaImage format
-        const formattedImages: MediaImage[] = response.data.images.map((img: any) => ({
-          id: img.id || `shopify-media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          url: img.src || img.url,
-          width: img.width || 800,
-          height: img.height || 600,
-          alt: img.alt || img.filename || 'Shopify media',
-          src: {
-            original: img.src || img.url,
-            large: img.src || img.url,
-            medium: img.src || img.url,
-            small: img.src || img.url,
-            thumbnail: img.src || img.url
-          },
-          source: 'shopify_media'
-        }));
+        const formattedImages: MediaImage[] = response.data.images.map((img: any) => {
+          // Generate a unique ID if one doesn't exist
+          const imgId = img.id || `shopify-media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Ensure we have a valid URL
+          const imgUrl = img.src || img.url;
+          
+          // Create the media image object
+          return {
+            id: imgId,
+            url: imgUrl,
+            width: img.width || 800,
+            height: img.height || 600,
+            alt: img.alt || img.filename || 'Shopify media',
+            src: {
+              original: imgUrl,
+              large: imgUrl,
+              medium: imgUrl,
+              small: imgUrl,
+              thumbnail: imgUrl
+            },
+            source: 'shopify_media'
+          };
+        });
         
+        console.log(`Processed ${formattedImages.length} Shopify media images for display`);
         setShopifyMediaImages(formattedImages);
+        
+        // Show a success toast if we have images
+        if (formattedImages.length > 0) {
+          toast({
+            title: 'Media loaded',
+            description: `Loaded ${formattedImages.length} images from your Shopify store`
+          });
+        }
         
         // Auto-search on Pexels with a sensible default if we have a title
         if (title && searchQuery === '' && pexelsImages.length === 0) {
@@ -196,23 +214,44 @@ export default function MediaSelectionStep({
     
     setIsSearching(true);
     try {
+      console.log(`Searching Pexels for: "${searchQuery}"`);
       const response = await axios.get('/api/media/pexels-search', {
         params: { query: searchQuery }
       });
       
       if (response.data.success && response.data.images) {
+        console.log(`Found ${response.data.images.length} Pexels images`);
+        
         // Process the images to match our MediaImage format
         const formattedImages: MediaImage[] = response.data.images.map((img: any) => ({
-          id: img.id.toString(),
+          id: `pexels-${img.id}`,
           url: img.src.large || img.src.original,
           width: img.width,
           height: img.height,
-          alt: img.alt || searchQuery,
-          src: img.src,
+          alt: img.alt || `${searchQuery} image`,
+          src: {
+            original: img.src.original,
+            large: img.src.large,
+            medium: img.src.medium,
+            small: img.src.small,
+            thumbnail: img.src.thumbnail
+          },
           source: 'pexels'
         }));
         
         setPexelsImages(formattedImages);
+        
+        // Show a success message
+        toast({
+          title: 'Images found',
+          description: `Found ${formattedImages.length} images matching "${searchQuery}"`,
+        });
+      } else {
+        toast({
+          title: 'No images found',
+          description: 'Try different keywords or browse the Shopify Media Library',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       console.error('Error searching Pexels:', error);
