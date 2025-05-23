@@ -429,6 +429,18 @@ export default function MediaSelectionStep({
           
           {/* Always visible selection options for better discoverability */}
           <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+            {/* Toggle button */}
+            <Button 
+              size="sm" 
+              variant="secondary"
+              className={`p-1 h-7 w-7 rounded-full bg-white/90 hover:bg-white text-purple-600 hover:text-purple-700`}
+              onClick={() => toggleImageStatus(image)}
+              title="Toggle between primary and secondary"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            
+            {/* Primary button */}
             <Button 
               size="sm" 
               variant="secondary"
@@ -439,6 +451,7 @@ export default function MediaSelectionStep({
               <Star className="h-4 w-4" />
             </Button>
             
+            {/* Secondary button */}
             <Button 
               size="sm" 
               variant="secondary"
