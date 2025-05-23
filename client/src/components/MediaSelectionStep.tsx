@@ -475,26 +475,18 @@ export default function MediaSelectionStep({
   
   const renderImageCard = (image: MediaImage, isPrimary: boolean = false, isSecondary: boolean = false) => {
     return (
-      <div key={image.id} className="relative group border rounded-md overflow-hidden">
+      <div key={image.id} className="relative group overflow-hidden rounded-md">
         <div className="relative aspect-video bg-slate-100">
           <ShopifyImageViewer
             src={image.url}
             alt={image.alt || ''}
-            className="w-full h-full object-cover"
+            className="w-full h-full"
+            objectFit="cover"
+            selected={isPrimary || isSecondary}
+            selectionType={isPrimary ? 'primary' : isSecondary ? 'secondary' : 'none'}
           />
           
-          {/* Selection indicators */}
-          {isPrimary && (
-            <div className="absolute top-2 left-2 bg-blue-500 text-white rounded-full p-1 z-10">
-              <Star className="h-4 w-4" />
-            </div>
-          )}
-          
-          {isSecondary && !isPrimary && (
-            <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full p-1 z-10">
-              <Check className="h-4 w-4" />
-            </div>
-          )}
+          {/* Selection indicators - now handled by ShopifyImageViewer */}
           
           {/* Source badge */}
           <div className="absolute bottom-2 left-2 z-10">
@@ -607,7 +599,10 @@ export default function MediaSelectionStep({
                   <ShopifyImageViewer
                     src={primaryImage.url}
                     alt={primaryImage.alt || ''}
-                    className="w-full h-full object-cover rounded-md"
+                    className="w-full h-full rounded-md"
+                    objectFit="cover"
+                    selected={true}
+                    selectionType="primary"
                   />
                   <Button
                     variant="destructive"
