@@ -2303,7 +2303,7 @@ export default function AdminPanel() {
                                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {primaryImages.map((image) => (
                                       <div key={image.id} className="relative group">
-                                        <img 
+                                        <ShopifyImageViewer 
                                           src={image.src?.medium || image.url} 
                                           alt={image.alt || "Primary image"} 
                                           className="w-full h-32 object-cover rounded-md border"
@@ -2436,7 +2436,7 @@ export default function AdminPanel() {
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {secondaryImages.map((image) => (
                                       <div key={image.id} className="relative group">
-                                        <img 
+                                        <ShopifyImageViewer 
                                           src={image.src?.medium || image.url} 
                                           alt={image.alt || "Secondary image"} 
                                           className="w-full h-32 object-cover rounded-md border"
@@ -4925,16 +4925,10 @@ export default function AdminPanel() {
                         setSearchedImages(updatedImages);
                       }}
                     >
-                      <img 
+                      <ShopifyImageViewer 
                         src={image.src?.medium || image.url} 
                         alt={image.alt || "Stock image"} 
                         className="w-full h-28 md:h-32 object-cover"
-                        onError={(e) => {
-                          // Fallback if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null;
-                          target.src = image.src?.small || image.src?.thumbnail || '';
-                        }}
                       />
                       {image.selected && (
                         <div className="absolute top-1 right-1 bg-blue-500 text-white p-1 rounded-full">
