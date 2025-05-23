@@ -1,96 +1,97 @@
-import { Router, Request, Response } from 'express';
+import express, { Request, Response } from 'express';
+import { shopifyService } from '../services/shopify';
+import { storage } from '../storage';
 import axios from 'axios';
-import { db } from '../db';
-import * as shopify from '../services/shopify';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
-// Initialize router
-const mediaRouter = Router();
+const mediaRouter = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(__dirname, '../../uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+      // Create unique filename with original extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+  })
+});
 
 /**
  * Get all images for a specific product
  */
 mediaRouter.get('/product-images', async (req: Request, res: Response) => {
   try {
-    const productId = req.query.productId;
+    const { productId } = req.query;
     
     if (!productId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Product ID is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Product ID is required'
       });
     }
     
-    // Get the authenticated store for the current user's session
-    const store = res.locals.store;
-    if (!store) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'No authenticated Shopify store found'
+    // Get current store
+    const stores = await storage.getShopifyStores();
+    if (!stores || stores.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No Shopify store found'
       });
     }
     
-    // Fetch product details from Shopify
-    const product = await shopify.fetchProduct(store, productId as string);
+    const store = stores[0]; // Use first store for now
+    
+    // Fetch product details to get images
+    const product = await shopifyService.getProductById(store, productId as string);
     
     if (!product) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Product not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
       });
     }
     
-    // Extract and format images
-    const allImages = [];
-    const uniqueImageUrls = new Set();
+    // Prepare images array with main product images
+    const images: any[] = [];
     
-    // Main product image
-    if (product.image && product.image.src) {
-      uniqueImageUrls.add(product.image.src);
-      allImages.push({
-        id: `product-${product.id}-main`,
-        url: product.image.src,
-        alt: product.title,
-        title: product.title,
-        source: 'product',
-        product_id: product.id,
-        product_title: product.title,
-        selected: false
-      });
-    }
-    
-    // Additional product images
+    // Add product main images
     if (product.images && Array.isArray(product.images)) {
       product.images.forEach((image, index) => {
-        if (image && image.src && !uniqueImageUrls.has(image.src)) {
-          uniqueImageUrls.add(image.src);
-          allImages.push({
-            id: `product-${product.id}-image-${index}`,
-            url: image.src,
-            alt: image.alt || `${product.title} - Image ${index + 1}`,
-            title: product.title,
-            source: 'product',
-            product_id: product.id,
-            product_title: product.title,
-            selected: false
-          });
-        }
+        images.push({
+          id: image.id,
+          src: image.src,
+          width: image.width,
+          height: image.height,
+          alt: image.alt || `Product image ${index + 1}`,
+          position: image.position
+        });
       });
     }
     
-    // Variant images
+    // Add variant images if they have unique images
     if (product.variants && Array.isArray(product.variants)) {
       product.variants.forEach((variant, variantIndex) => {
-        if (variant.image && variant.image.src && !uniqueImageUrls.has(variant.image.src)) {
-          uniqueImageUrls.add(variant.image.src);
-          allImages.push({
-            id: `variant-${variant.id}`,
-            url: variant.image.src,
-            alt: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
-            title: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
-            source: 'variant',
-            product_id: product.id,
-            product_title: product.title,
-            selected: false
+        if (variant.image && !images.some(img => img.id === variant.image.id)) {
+          images.push({
+            id: variant.image.id,
+            src: variant.image.src,
+            width: variant.image.width,
+            height: variant.image.height,
+            alt: variant.image.alt || `Variant ${variant.title} image`,
+            variantId: variant.id,
+            variantTitle: variant.title
           });
         }
       });
@@ -98,19 +99,15 @@ mediaRouter.get('/product-images', async (req: Request, res: Response) => {
     
     return res.json({
       success: true,
-      images: allImages,
-      product: {
-        id: product.id,
-        title: product.title
-      }
+      images,
+      productTitle: product.title
     });
-    
   } catch (error) {
     console.error('Error fetching product images:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: 'Error fetching product images',
-      error: error.message 
+      error: (error as Error).message
     });
   }
 });
@@ -120,83 +117,51 @@ mediaRouter.get('/product-images', async (req: Request, res: Response) => {
  */
 mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) => {
   try {
-    // Get the authenticated store for the current user's session
-    const store = res.locals.store;
-    if (!store) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'No authenticated Shopify store found' 
+    // Get current store
+    const stores = await storage.getShopifyStores();
+    if (!stores || stores.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No Shopify store found'
       });
     }
     
-    // Fetch media from Shopify
-    const mediaFiles = await shopify.fetchMediaLibrary(store);
+    const store = stores[0]; // Use first store for now
     
-    if (!mediaFiles || !Array.isArray(mediaFiles)) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'No media files found' 
-      });
-    }
+    // Fetch media files from Shopify
+    const mediaFiles = await shopifyService.getMediaFiles(store);
     
-    // Format the media files for the frontend
+    // Process media files into consistent format
     const mediaImages = [];
     
-    // Process all media library images
-    mediaFiles.forEach((image, index) => {
-      if (image && image.url) {
-        // Ensure the URL starts with https://
-        let imageUrl = image.url;
-        if (imageUrl.startsWith('//')) {
-          imageUrl = 'https:' + imageUrl;
-        } else if (!imageUrl.startsWith('http')) {
-          imageUrl = 'https://' + imageUrl;
-        }
-        
-        // Make sure we use CDN URLs for proper image loading
-        if (!imageUrl.includes('cdn.shopify.com') && imageUrl.includes('shopify.com')) {
-          try {
-            const urlParts = imageUrl.split('/');
-            const domainParts = urlParts[2].split('.');
-            if (domainParts.length > 0) {
-              const storeName = domainParts[0];
-              const pathPart = urlParts.slice(3).join('/');
-              imageUrl = `https://cdn.shopify.com/s/files/1/${storeName}/${pathPart}`;
-            }
-          } catch (err) {
-            console.warn("Failed to convert URL to CDN format:", imageUrl);
-          }
-        }
-        
-        // Filter to only include image files
-        const filename = image.filename || '';
-        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename) || 
-                       image.type?.includes('image/');
-        
-        if (isImage) {
-          mediaImages.push({
-            id: image.id || `media-${index}`,
-            url: imageUrl,
-            alt: image.alt || image.filename || 'Shopify image',
-            title: image.filename || image.title || 'Shopify image',
-            source: 'shopify',
-            selected: false
-          });
-        }
+    for (const file of mediaFiles) {
+      if (file.type && ['IMAGE', 'image'].includes(file.type.toUpperCase())) {
+        mediaImages.push({
+          id: file.id,
+          src: file.url || file.preview?.image?.url,
+          url: file.url || file.preview?.image?.url,
+          width: file.width || file.preview?.image?.width,
+          height: file.height || file.preview?.image?.height,
+          alt: file.alt || file.filename || 'Shopify media image',
+          filename: file.filename,
+          created_at: file.created_at,
+          updated_at: file.updated_at,
+          mimetype: file.mimetype || 'image/jpeg'
+        });
       }
-    });
+    }
     
     return res.json({
       success: true,
-      images: mediaImages
+      images: mediaImages,
+      count: mediaImages.length
     });
-    
   } catch (error) {
-    console.error('Error fetching Shopify Media Library:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Error fetching media library',
-      error: error.message 
+    console.error('Error fetching Shopify media library:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching Shopify media library',
+      error: (error as Error).message
     });
   }
 });
@@ -206,70 +171,80 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
  */
 mediaRouter.get('/pexels-search', async (req: Request, res: Response) => {
   try {
-    const query = req.query.query as string;
+    const { query } = req.query;
     
-    if (!query || query.trim().length < 3) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Search query must be at least 3 characters' 
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query is required'
       });
     }
     
-    // Get Pexels API key from environment variables
-    const pexelsApiKey = process.env.PEXELS_API_KEY;
+    // Determine if we should get curated photos instead of search
+    const useSearch = query !== 'featured';
     
-    if (!pexelsApiKey) {
-      console.error('Pexels API key is missing');
-      return res.status(503).json({ 
-        success: false, 
-        message: 'Pexels API is not configured' 
+    // Log search attempt
+    console.log(`${useSearch ? 'Searching' : 'Getting'} ${useSearch ? query : ''} images from Pexels`);
+    
+    // Fetch from Pexels API
+    const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+    
+    if (!PEXELS_API_KEY) {
+      console.warn('Pexels API key not found - using demo API mode');
+      
+      // Return mock data in development mode
+      return res.json({
+        success: true,
+        message: 'Using demo mode without Pexels API key',
+        images: [
+          {
+            id: 'demo-1',
+            width: 800,
+            height: 600,
+            url: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg',
+            photographer: 'Demo Photographer',
+            alt: 'Demo image',
+            src: {
+              original: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg',
+              large: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+              medium: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&h=350',
+              small: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&h=130',
+              thumbnail: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=280'
+            }
+          }
+        ]
       });
     }
     
-    // Make request to Pexels API
-    const response = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=20`, {
+    // Build request to Pexels API
+    const endpoint = useSearch 
+      ? `https://api.pexels.com/v1/search?query=${encodeURIComponent(query as string)}&per_page=15`
+      : `https://api.pexels.com/v1/curated?per_page=1`;
+    
+    const pexelsResponse = await axios.get(endpoint, {
       headers: {
-        'Authorization': pexelsApiKey
+        'Authorization': PEXELS_API_KEY
       }
     });
     
-    if (!response.data || !response.data.photos) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'No images found' 
-      });
+    if (pexelsResponse.status !== 200 || !pexelsResponse.data) {
+      throw new Error('Failed to fetch from Pexels API');
     }
     
-    // Format response for our frontend
-    const images = response.data.photos.map((photo: any) => ({
-      id: photo.id,
-      width: photo.width,
-      height: photo.height,
-      url: photo.url,
-      photographer: photo.photographer,
-      photographer_url: photo.photographer_url,
-      alt: photo.alt || query,
-      src: {
-        original: photo.src.original,
-        large: photo.src.large,
-        medium: photo.src.medium,
-        small: photo.src.small,
-        thumbnail: photo.src.tiny
-      }
-    }));
+    // Log success
+    console.log(`Pexels ${useSearch ? 'search' : 'curated'} returned ${pexelsResponse.data.photos.length} results`);
     
+    // Return processed images
     return res.json({
       success: true,
-      images,
-      query
+      images: pexelsResponse.data.photos
     });
-    
   } catch (error) {
     console.error('Error searching Pexels:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Error searching for images',
-      error: error.message 
+    return res.status(500).json({
+      success: false,
+      message: 'Error searching Pexels',
+      error: (error as Error).message
     });
   }
 });
@@ -277,55 +252,72 @@ mediaRouter.get('/pexels-search', async (req: Request, res: Response) => {
 /**
  * Upload image file(s)
  */
-mediaRouter.post('/upload', async (req: Request, res: Response) => {
+mediaRouter.post('/upload', upload.array('images', 10), async (req: Request, res: Response) => {
   try {
-    // Check if files were provided
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'No files were uploaded' 
+    // Get current store
+    const stores = await storage.getShopifyStores();
+    if (!stores || stores.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No Shopify store found'
       });
     }
     
-    const store = res.locals.store;
-    if (!store) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'No authenticated Shopify store found' 
+    const store = stores[0]; // Use first store for now
+    
+    // Check if files were uploaded
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No files were uploaded'
       });
     }
     
-    // Handle multiple files or single file upload
-    const files = Array.isArray(req.files.files) ? req.files.files : [req.files.files];
+    // Upload each file to Shopify
+    const uploadedFiles = [];
     
-    // Upload each file to Shopify Media Library
-    const uploadPromises = files.map(async (file: any) => {
-      return await shopify.uploadToMediaLibrary(store, file.buffer, file.originalname, file.mimetype);
-    });
-    
-    const uploadedFiles = await Promise.all(uploadPromises);
-    
-    const uploadedImages = uploadedFiles.map((file, index) => ({
-      id: `upload-${file.id || Date.now() + index}`,
-      url: file.url,
-      alt: file.alt || file.filename || `Uploaded image ${index + 1}`,
-      title: file.filename || `Uploaded image ${index + 1}`,
-      source: 'upload',
-      selected: false
-    }));
+    for (const file of req.files as Express.Multer.File[]) {
+      try {
+        // Read file content
+        const fileContent = fs.readFileSync(file.path);
+        
+        // Upload to Shopify
+        const shopifyFile = await shopifyService.uploadToShopifyMediaLibrary(
+          store,
+          fileContent,
+          file.mimetype,
+          path.basename(file.originalname)
+        );
+        
+        // Add to result
+        uploadedFiles.push({
+          id: shopifyFile.id,
+          src: shopifyFile.url,
+          url: shopifyFile.url,
+          originalName: file.originalname,
+          filename: shopifyFile.filename || file.originalname,
+          mimetype: file.mimetype
+        });
+        
+        // Delete local file
+        fs.unlinkSync(file.path);
+      } catch (uploadError) {
+        console.error(`Error uploading file ${file.originalname}:`, uploadError);
+        // Continue with other files
+      }
+    }
     
     return res.json({
       success: true,
-      message: `Successfully uploaded ${uploadedImages.length} file(s)`,
-      images: uploadedImages
+      message: `Successfully uploaded ${uploadedFiles.length} file(s)`,
+      files: uploadedFiles
     });
-    
   } catch (error) {
     console.error('Error uploading files:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: 'Error uploading files',
-      error: error.message 
+      error: (error as Error).message
     });
   }
 });

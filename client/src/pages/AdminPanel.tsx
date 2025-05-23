@@ -4,10 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
-import { ChooseMediaDialog } from '../components/ChooseMediaDialog';
+import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
+import MediaSelectionStep from '../components/MediaSelectionStep';
 import { 
   Card, 
   CardContent, 
@@ -1037,8 +1038,55 @@ export default function AdminPanel() {
       variant: "default"
     });
     
+    // Move to media selection step
+    setWorkflowStep('media');
+  };
+  
+  // Handle media selection step completion
+  const handleMediaSelectionComplete = (mediaContent: {
+    primaryImage: MediaImage | null;
+    secondaryImages: MediaImage[];
+    youtubeEmbed: string | null;
+  }) => {
+    setSelectedMediaContent(mediaContent);
+    
+    // Add the selected media to the form data
+    if (mediaContent.primaryImage) {
+      form.setValue('featuredImage', mediaContent.primaryImage.url);
+    }
+    
+    // Store secondary images for content generation
+    setSecondaryImages(mediaContent.secondaryImages.map(img => ({
+      id: img.id,
+      url: img.url,
+      width: img.width || 0,
+      height: img.height || 0,
+      alt: img.alt || '',
+      src: img.src || {
+        original: img.url,
+        large: img.url,
+        medium: img.url,
+        small: img.url,
+        thumbnail: img.url
+      },
+      selected: true,
+      type: 'image'
+    })));
+    
     // Move to content generation step
     setWorkflowStep('content');
+    
+    toast({
+      title: "Media Selection Complete",
+      description: `Selected ${mediaContent.primaryImage ? "a primary image" : "no primary image"} and ${mediaContent.secondaryImages.length} secondary images.`
+    });
+  };
+  
+  // Handle media selection back button
+  const handleMediaSelectionBack = () => {
+    // Go back to title selection
+    setWorkflowStep('title');
+    setShowTitleSelector(true);
   };
   
   // Handle product selection
