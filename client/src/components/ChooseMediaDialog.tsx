@@ -44,6 +44,7 @@ export function ChooseMediaDialog({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
   const [productImages, setProductImages] = useState<MediaImage[]>([]);
+  const [mediaLibraryImages, setMediaLibraryImages] = useState<MediaImage[]>([]);
   
   // Fetch media based on the active tab when dialog opens
   useEffect(() => {
@@ -52,7 +53,7 @@ export function ChooseMediaDialog({
         loadProductImages();
       } else if (activeTab === 'pexels') {
         // Pexels tab is handled separately
-      } else if (activeTab === 'media_library') {
+      } else if (activeTab === 'media_library' && mediaLibraryImages.length === 0) {
         // This is specifically for the Shopify Media Library tab
         loadShopifyMediaLibrary();
       }
@@ -88,19 +89,24 @@ export function ChooseMediaDialog({
       // Process all media library images
       data.images.forEach((image: any) => {
         if (image && image.url) {
+          // Check if this image is already selected (for when refreshing the list)
+          const isAlreadySelected = initialSelectedImages.some(
+            img => img.url === image.url || img.id === image.id
+          );
+          
           formattedImages.push({
             id: image.id || `media-${formattedImages.length}`,
             url: image.url,
             alt: image.alt || 'Media image',
             title: image.title || 'Media image',
             source: 'shopify',
-            selected: false
+            selected: isAlreadySelected
           });
         }
       });
       
-      // Update the product images state with media library images
-      setProductImages(formattedImages);
+      // Store media library images in their own state
+      setMediaLibraryImages(formattedImages);
       console.log(`Loaded ${formattedImages.length} files from Shopify Media Library`);
       
     } catch (error) {
