@@ -394,10 +394,10 @@ export function ChooseMediaDialog({
         
         {/* Selected image count and controls */}
         <div className="flex justify-between items-center my-2">
-          <p className="text-sm">
+          <span className="text-sm">
             {selectedImages.length} {selectedImages.length === 1 ? 'image' : 'images'} selected
             {maxImages > 0 && ` (max: ${maxImages})`}
-          </p>
+          </span>
           
           <div className="flex gap-2">
             <Button 

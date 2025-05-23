@@ -62,21 +62,46 @@ const ShopifyImageViewer: React.FC<ShopifyImageViewerProps> = ({
         return url;
       }
       
+      // Handle URLs with /static/ path which are commonly used in Shopify admin
+      if (url.includes('/static/')) {
+        try {
+          const urlObj = new URL(url);
+          return `https://cdn.shopify.com${urlObj.pathname}${urlObj.search}`;
+        } catch (error) {
+          console.error("Failed to parse static URL:", url);
+        }
+      }
+      
       // For Shopify URLs that aren't in CDN format, convert them
       if (url.includes('shopify.com')) {
         try {
           // Try to convert admin or other Shopify URLs to CDN format
           const urlObj = new URL(url);
+          
           // Find the /files/ or /products/ part in the path
-          const filesMatch = urlObj.pathname.match(/\/(files|products)\/(.+)/);
+          const filesMatch = urlObj.pathname.match(/\/(files|products|assets|shops)\/(.+)/);
           if (filesMatch) {
             return `https://cdn.shopify.com/s${filesMatch[0]}${urlObj.search}`;
           }
+          
+          // Check for product image pattern /admin/products/{product_id}/images/{image_id}
+          const productImageMatch = urlObj.pathname.match(/\/admin\/products\/(\d+)\/images\/(\d+)/);
+          if (productImageMatch) {
+            // Try to convert to CDN URL format
+            return `https://cdn.shopify.com/s/files/1/0000/0000/${productImageMatch[1]}/products/${productImageMatch[2]}.jpg`;
+          }
+          
           // Otherwise just use the pathname as is
           return `https://cdn.shopify.com${urlObj.pathname}${urlObj.search}`;
         } catch (error) {
           console.error("Failed to parse Shopify URL:", url);
         }
+      }
+      
+      // Handle direct image URLs that might not have shopify.com in them
+      if (url.match(/\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i)) {
+        // It's an image URL but not recognized as Shopify, return as is
+        return url;
       }
       
       // If nothing else applies, return the original
