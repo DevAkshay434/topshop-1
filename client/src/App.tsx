@@ -18,6 +18,7 @@ import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import Help from "@/pages/Help";
 import AdminPanel from "@/pages/AdminPanel";
+import TestImageDisplay from "@/pages/TestImageDisplay";
 import { useEffect, useState } from "react";
 
 function Router() {
@@ -78,6 +79,7 @@ function Router() {
           <Route path="/help" component={Help} />
           <Route path="/admin" component={AdminPanel} />
           <Route path="/legacy-dashboard" component={Dashboard} />
+          <Route path="/test-images" component={TestImageDisplay} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />
