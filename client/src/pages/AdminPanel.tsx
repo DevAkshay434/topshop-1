@@ -2352,7 +2352,7 @@ export default function AdminPanel() {
                                       return (
                                         <div key={product.id} className="relative group">
                                           <div className="aspect-square overflow-hidden rounded-md border">
-                                            <img 
+                                            <ShopifyImageViewer 
                                               src={product.image} 
                                               alt={product.title} 
                                               className="w-full h-full object-cover"
@@ -3134,7 +3134,7 @@ export default function AdminPanel() {
                             return (
                               <div key={collection.id} className="flex items-center gap-3 bg-slate-50 rounded p-2 border">
                                 {imageSrc ? (
-                                  <img 
+                                  <ShopifyImageViewer 
                                     src={imageSrc} 
                                     alt={collection.title}
                                     className="w-12 h-12 rounded object-contain bg-white" 
@@ -3647,7 +3647,7 @@ export default function AdminPanel() {
                     {/* Display featured image if available */}
                     {generatedContent.featuredImage && (
                       <div className="mb-6">
-                        <img 
+                        <ShopifyImageViewer 
                           src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
                           alt={generatedContent.featuredImage.alt || generatedContent.title} 
                           className="w-full h-auto rounded-md shadow-md"
@@ -4671,7 +4671,7 @@ export default function AdminPanel() {
                       <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
                         {img.type === 'youtube' ? (
                           <div className="w-full h-full relative">
-                            <img 
+                            <ShopifyImageViewer 
                               src={img.url} 
                               alt={img.alt || "YouTube video thumbnail"} 
                               className="w-full h-full object-cover"
@@ -4685,7 +4685,7 @@ export default function AdminPanel() {
                             </div>
                           </div>
                         ) : (
-                          <img 
+                          <ShopifyImageViewer 
                             src={img.src?.medium || img.url} 
                             alt={img.alt || "Selected image"} 
                             className="w-full h-full object-cover"
