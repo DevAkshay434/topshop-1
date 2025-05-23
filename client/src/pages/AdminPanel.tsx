@@ -5989,24 +5989,46 @@ export default function AdminPanel() {
                 },
                 // Keep track of the original source
                 source: img.source || 'shopify',
+                // For type safety - let's add these fields to make it compatible with PexelsImage
+                selected: false,
+                type: 'image'
               };
               return standardImage;
             });
             
-            // Add to the appropriate collection based on which tab is active
-            if (imageTab === 'primary') {
-              // Add as primary/featured images
-              setPrimaryImages(prev => [...prev, ...standardizedImages]);
+            try {
+              // Add to the appropriate collection based on which tab is active
+              if (imageTab === 'primary') {
+                // Add as primary/featured images - ensure proper type casting
+                const safeImages = standardizedImages.map(img => ({
+                  ...img,
+                  selected: false,
+                  type: 'image'
+                }));
+                setPrimaryImages(prev => [...prev, ...safeImages]);
+                toast({
+                  title: "Featured images added",
+                  description: `${images.length} featured image${images.length === 1 ? '' : 's'} added successfully`
+                });
+              } else {
+                // Add as secondary/content images - ensure proper type casting
+                const safeImages = standardizedImages.map(img => ({
+                  ...img,
+                  selected: false,
+                  type: 'image'
+                }));
+                setSecondaryImages(prev => [...prev, ...safeImages]);
+                toast({
+                  title: "Content images added",
+                  description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
+                });
+              }
+            } catch (error) {
+              console.error("Error adding images:", error);
               toast({
-                title: "Featured images added",
-                description: `${images.length} featured image${images.length === 1 ? '' : 's'} added successfully`
-              });
-            } else {
-              // Add as secondary/content images
-              setSecondaryImages(prev => [...prev, ...standardizedImages]);
-              toast({
-                title: "Content images added",
-                description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
+                title: "Error adding images",
+                description: "There was a problem adding the selected images. Please try again.",
+                variant: "destructive"
               });
             }
           }
