@@ -1834,6 +1834,12 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Register feature-specific routers
+  app.use('/api/content', contentRouter);
+  app.use('/api/claude', claudeRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api/media', mediaRouter);
+
   // Mount API routes with /api prefix
   app.use('/api', apiRouter);
 }
