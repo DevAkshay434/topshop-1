@@ -5,6 +5,68 @@ import * as fs from 'fs';
 import * as path from 'path';
 import FormData from 'form-data';
 
+// Interface for Shopify Product
+export interface ShopifyProduct {
+  id: string;
+  title: string;
+  handle: string;
+  body_html?: string;
+  vendor?: string;
+  product_type?: string;
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string;
+  image?: {
+    id: string;
+    src: string;
+    width?: number;
+    height?: number;
+    alt?: string;
+    created_at?: string;
+    updated_at?: string;
+  };
+  images?: Array<{
+    id: string;
+    src: string;
+    width?: number;
+    height?: number;
+    alt?: string;
+    created_at?: string;
+    updated_at?: string;
+  }>;
+  variants?: Array<{
+    id: string;
+    title: string;
+    price?: string;
+    sku?: string;
+    position?: number;
+    inventory_quantity?: number;
+    image?: {
+      id: string;
+      src: string;
+      width?: number;
+      height?: number;
+      alt?: string;
+    };
+  }>;
+}
+
+// Interface for Shopify Media File
+export interface ShopifyMediaFile {
+  id: string;
+  url: string;
+  filename?: string;
+  mimetype?: string;
+  filesize?: number;
+  alt?: string;
+  title?: string;
+  width?: number;
+  height?: number;
+  type?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Define a separate interface for the Shopify service
 interface ShopifyBlogPost {
   id: number;

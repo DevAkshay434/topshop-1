@@ -324,6 +324,21 @@ export default function AdminPanel() {
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
+  
+  // Media selection state
+  const [selectedMediaContent, setSelectedMediaContent] = useState<{
+    primaryImage: MediaImage | null;
+    secondaryImages: MediaImage[];
+    youtubeEmbed: string | null;
+  }>({
+    primaryImage: null,
+    secondaryImages: [],
+    youtubeEmbed: null
+  });
+  
+  // Workflow step state
+  const [currentStep, setCurrentStep] = useState<string>("product");
+  
   const [shopifyMediaType, setShopifyMediaType] = useState<'products' | 'variants' | 'media'>('products');
   
   // Function to fetch product images for selected products

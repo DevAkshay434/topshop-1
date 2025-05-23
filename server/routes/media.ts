@@ -330,4 +330,4 @@ mediaRouter.post('/upload', async (req: Request, res: Response) => {
   }
 });
 
-export default mediaRouter;
+export { mediaRouter };
