@@ -611,75 +611,7 @@ export default function AdminPanel() {
     }
   };
 
-  // Function to fetch Shopify Media Library files (store-wide)
-  const fetchShopifyMediaFiles = async () => {
-    try {
-      setIsLoadingMedia(true);
-      setShopifyFiles([]);
-      toast({
-        title: "Loading media library",
-        description: "Fetching files from your Shopify Media Library..."
-      });
-      
-      // Use the dedicated endpoint for Shopify Media Library
-      const response = await apiRequest({
-        url: '/api/admin/files',
-        method: 'GET'
-      });
-      
-      if (response.success && response.files && response.files.length > 0) {
-        // Format the media files for our UI
-        const mediaLibraryFiles = response.files
-          .filter((file: any) => {
-            // Filter to only include image files
-            if (!file || !file.url) return false;
-            const url = (file.url || '').toLowerCase();
-            return url.endsWith('.jpg') || url.endsWith('.jpeg') || 
-                  url.endsWith('.png') || url.endsWith('.gif');
-          })
-          .map((file: any) => ({
-            id: `media-${file.id || Math.random().toString(36).substring(7)}`,
-            url: file.url,
-            width: 500,
-            height: 500,
-            alt: file.alt || file.filename || 'Shopify Media',
-            src: {
-              original: file.url,
-              large: file.url,
-              medium: file.url,
-              small: file.url,
-              thumbnail: file.url
-            },
-            selected: false,
-            source: 'shopify'
-          }));
-        
-        setContentFiles(mediaLibraryFiles);
-        
-        toast({
-          title: "Media library loaded",
-          description: `${mediaLibraryFiles.length} media files loaded from your store`,
-        });
-      } else {
-        toast({
-          title: "No media files found",
-          description: "No images found in your Shopify Media Library",
-          variant: "destructive"
-        });
-        setContentFiles([]);
-      }
-    } catch (error) {
-      console.error('Error fetching Shopify Media Library:', error);
-      toast({
-        title: "Error loading media files",
-        description: "There was a problem fetching your Shopify Media Library",
-        variant: "destructive"
-      });
-      setContentFiles([]);
-    } finally {
-      setIsLoadingContentFiles(false);
-    }
-  };
+  
   
   // Function to fetch images for a specific product by ID
   const fetchProductImagesById = async (productId: string) => {
@@ -4728,19 +4660,7 @@ export default function AdminPanel() {
                   Product Images
                 </Button>
                 
-              <Button 
-                  size="sm"
-                  variant={imageSource === 'shopify_media' ? 'default' : 'outline'} 
-                  onClick={() => {
-                    setImageSource('shopify_media');
-                    // Load media library files when selecting Shopify Images
-                    fetchShopifyMediaFiles();
-                  }}
-                  className="flex-1"
-                >
-                  <Store className="mr-2 h-4 w-4" />
-                  Shopify Media Library
-                </Button>
+              
               
               <div className="flex-1 flex flex-col gap-1">
                 <Button 
@@ -5360,7 +5280,15 @@ export default function AdminPanel() {
                                   isPrimary ? "opacity-100" : "opacity-90 hover:opacity-100"
                                 )}
                                 onClick={() => {
-                                  handleImageSelection(image, 'primary');
+                                  // Select this image as primary
+                                  setPrimaryImages(prev => {
+                                    // Create a new array with this image as the primary
+                                    return [{ ...image, isPrimary: true }];
+                                  });
+                                  toast({
+                                    title: "Primary image selected",
+                                    description: "Image has been set as the primary featured image"
+                                  });
                                 }}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
@@ -5374,7 +5302,20 @@ export default function AdminPanel() {
                                   isSecondary ? "opacity-100" : "opacity-90 hover:opacity-100"
                                 )}
                                 onClick={() => {
-                                  handleImageSelection(image, 'secondary');
+                                  // Add this image to secondary images
+                                  setSecondaryImages(prev => {
+                                    // Check if image is already in the list
+                                    const exists = prev.some(img => img.id === image.id);
+                                    if (exists) {
+                                      return prev; // Already added
+                                    }
+                                    // Add it to the list
+                                    return [...prev, { ...image, isPrimary: false }];
+                                  });
+                                  toast({
+                                    title: "Secondary image added",
+                                    description: "Image has been added to your content images"
+                                  });
                                 }}
                               >
                                 <PlusCircle className="h-4 w-4 mr-1" />

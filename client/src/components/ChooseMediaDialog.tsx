@@ -607,7 +607,7 @@ export function ChooseMediaDialog({
         <Tabs defaultValue="primary_images" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="primary_images">
-              Primary Images test
+              Primary Images
             </TabsTrigger>
             <TabsTrigger value="secondary_images">
               Secondary Images
