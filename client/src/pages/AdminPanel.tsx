@@ -3479,13 +3479,18 @@ export default function AdminPanel() {
                                       };
                                       
                                       // Check if we already have this video
-                                      const exists = primaryImages.some(img => 
+                                      const exists = secondaryImages.some(img => 
                                         img.type === 'youtube' && img.videoId === videoId
                                       );
                                       
-                                      // Add to primary images if not already there
+                                      // Always add YouTube videos as secondary content
                                       if (!exists) {
-                                        setPrimaryImages(prev => [youtubeVideo, ...prev]);
+                                        setSecondaryImages(prev => [youtubeVideo, ...prev]);
+                                        
+                                        toast({
+                                          title: "YouTube video added",
+                                          description: "The video has been added as secondary content",
+                                        });
                                       }
                                     }
                                   }}
