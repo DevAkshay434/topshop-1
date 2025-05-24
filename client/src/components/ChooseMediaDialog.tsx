@@ -640,13 +640,10 @@ export function ChooseMediaDialog({
             <Tabs defaultValue="pexels" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
                 <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
-                  Pexels Imagess
+                  Pexels Images
                 </TabsTrigger>
                 <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
                   Product Images
-                </TabsTrigger>
-                <TabsTrigger value="media_library" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
-                  Shopify Media Library
                 </TabsTrigger>
               </TabsList>
               
