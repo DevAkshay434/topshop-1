@@ -18,6 +18,7 @@ export interface MediaImage {
   filename?: string;
   source: 'product' | 'variant' | 'shopify' | 'pexels' | 'product_image' | 'theme_asset' | 'article_image' | 'collection_image' | 'shopify_media' | 'variant_image' | 'uploaded';
   selected?: boolean;
+  isPrimary?: boolean;
   product_id?: string | number;
   product_title?: string;
   width?: number;
@@ -604,27 +605,80 @@ export function ChooseMediaDialog({
 
         {/* Selected Images Preview */}
         <div className="mb-4">
-          <h3 className="text-sm font-medium mb-2">Selected Images ({selectedImages.length})</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium">Selected Images ({selectedImages.length})</h3>
+            {selectedImages.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSelectedImages([])}
+                className="h-7 text-xs"
+              >
+                <X className="h-3 w-3 mr-1" /> Clear All
+              </Button>
+            )}
+          </div>
           {selectedImages.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
               {selectedImages.map((image) => (
-                <div key={image.id} className="relative w-16 h-16 border rounded-md overflow-hidden group">
+                <div 
+                  key={image.id} 
+                  className={`relative border-2 rounded-md overflow-hidden group aspect-square ${
+                    image.isPrimary ? 'border-blue-500' : 'border-green-500'
+                  }`}
+                >
                   <ShopifyImageViewer
-                    src={image.url}
+                    src={image.src?.medium || image.url}
                     alt={image.alt || "Selected image"}
                     className="w-full h-full object-cover"
                   />
-                  <button
-                    className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 flex items-center justify-center"
-                    onClick={() => setSelectedImages(prev => prev.filter(i => i.id !== image.id))}
-                  >
-                    <X className="h-4 w-4 text-white" />
-                  </button>
-                  {image.isPrimary && (
-                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1">
-                      Primary
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 p-1">
+                    <div className="flex gap-1">
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-6 w-6"
+                        onClick={() => setSelectedImages(prev => prev.filter(i => i.id !== image.id))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      {!image.isPrimary && (
+                        <Button
+                          size="icon"
+                          variant="default"
+                          className="h-6 w-6 bg-blue-500 hover:bg-blue-600"
+                          onClick={() => {
+                            setSelectedImages(prev => {
+                              // Make all images secondary
+                              const updatedImages = prev.map(img => ({
+                                ...img,
+                                isPrimary: false
+                              }));
+                              // Find this image and make it primary
+                              const thisImageIndex = updatedImages.findIndex(img => img.id === image.id);
+                              if (thisImageIndex >= 0) {
+                                updatedImages[thisImageIndex].isPrimary = true;
+                              }
+                              return updatedImages;
+                            });
+                            toast({
+                              title: "Primary image changed",
+                              description: "Image set as the primary featured image"
+                            });
+                          }}
+                        >
+                          <Check className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  <div 
+                    className={`absolute top-0 left-0 text-white text-xs px-1 py-0.5 ${
+                      image.isPrimary ? 'bg-blue-500' : 'bg-green-500'
+                    }`}
+                  >
+                    {image.isPrimary ? 'Primary' : 'Secondary'}
+                  </div>
                 </div>
               ))}
             </div>
