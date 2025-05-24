@@ -6433,11 +6433,26 @@ export default function AdminPanel() {
                     return;
                   }
                   
-                  // Determine where to add the images based on context
-                  if (workflowStep === 'media') {
-                    setPrimaryImages(prev => [...prev, ...selectedPexelsImages]);
-                  } else {
-                    setSecondaryImages(prev => [...prev, ...selectedPexelsImages]);
+                  // Process the selected images, maintaining their primary/secondary status
+                  const primarySelected = selectedPexelsImages.filter(img => img.isPrimary);
+                  const secondarySelected = selectedPexelsImages.filter(img => !img.isPrimary);
+                  
+                  // Add to appropriate collections based on their selected status
+                  if (primarySelected.length > 0) {
+                    setPrimaryImages(prev => [...prev, ...primarySelected]);
+                  }
+                  
+                  if (secondarySelected.length > 0) {
+                    setSecondaryImages(prev => [...prev, ...secondarySelected]);
+                  }
+                  
+                  // If no isPrimary flag is set but we're in media step, treat all as primary
+                  if (primarySelected.length === 0 && secondarySelected.length === 0) {
+                    if (workflowStep === 'media') {
+                      setPrimaryImages(prev => [...prev, ...selectedPexelsImages]);
+                    } else {
+                      setSecondaryImages(prev => [...prev, ...selectedPexelsImages]);
+                    }
                   }
                   
                   // Clear selections and close dialog
