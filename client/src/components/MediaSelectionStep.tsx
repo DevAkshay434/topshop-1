@@ -11,7 +11,8 @@ import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
 import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye, Trash2 } from 'lucide-react';
 import ImagePreviewDialog from './ImagePreviewDialog';
-import { CompactSelectedImagesPanel } from './CompactSelectedImagesPanel';
+import ImageSelectionControls from './ImageSelectionControls';
+import HorizontalSelectedImagesBar from './HorizontalSelectedImagesBar';
 import axios from 'axios';
 
 // Define the MediaImage type
@@ -649,8 +650,8 @@ export default function MediaSelectionStep({
         </div>
       </div>
       
-      {/* Display compact selected images panel */}
-      <CompactSelectedImagesPanel
+      {/* Display horizontal selected images bar */}
+      <HorizontalSelectedImagesBar
         primaryImage={primaryImage}
         secondaryImages={secondaryImages}
         setPrimaryImage={setPrimaryImage}
@@ -744,22 +745,6 @@ export default function MediaSelectionStep({
                             selectionType={isPrimary ? 'primary' : isSecondary ? 'secondary' : 'none'}
                           />
                           
-                          {/* Selection indicator badges - always visible */}
-                          <div className="absolute top-2 left-2 z-10 flex gap-1">
-                            {isPrimary && (
-                              <Badge variant="default" className="bg-blue-600 text-xs">
-                                <Star className="h-3 w-3 mr-1" />
-                                Primary
-                              </Badge>
-                            )}
-                            {isSecondary && (
-                              <Badge variant="default" className="bg-green-600 text-xs">
-                                <Plus className="h-3 w-3 mr-1" />
-                                Secondary
-                              </Badge>
-                            )}
-                          </div>
-                          
                           {/* Source badge */}
                           <div className="absolute bottom-2 left-2 z-10">
                             <Badge variant="secondary" className="text-xs">
@@ -767,58 +752,18 @@ export default function MediaSelectionStep({
                             </Badge>
                           </div>
                           
-                          {/* Quick actions - always visible */}
-                          <div className="absolute top-2 right-2 flex gap-1 z-10">
-                            {/* Preview button */}
-                            <Button 
-                              size="sm" 
-                              variant="secondary"
-                              className="p-1 h-7 w-7 rounded-full bg-white/90 hover:bg-white text-slate-600 hover:text-slate-700"
-                              onClick={() => {
-                                setPreviewImage(image);
-                                setIsPreviewOpen(true);
-                              }}
-                              title="Preview full image"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          
-                          {/* Hover overlay with selection options */}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="flex flex-col gap-3 p-3 text-center">
-                              <div className="text-white text-xs font-medium mb-1">Select image as:</div>
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant={isPrimary ? "default" : "outline"} 
-                                  className={isPrimary ? "bg-blue-600 hover:bg-blue-700" : "bg-white/90 text-blue-700 hover:bg-blue-50"}
-                                  onClick={() => setPrimaryImageHandler(image)}
-                                >
-                                  {isPrimary ? (
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Check className="h-3 w-3" />
-                                      <span>Primary</span>
-                                    </div>
-                                  ) : 'Primary'}
-                                </Button>
-                                
-                                <Button 
-                                  size="sm" 
-                                  variant={isSecondary ? "default" : "outline"} 
-                                  className={isSecondary ? "bg-green-600 hover:bg-green-700" : "bg-white/90 text-green-700 hover:bg-green-50"}
-                                  onClick={() => toggleSecondaryImage(image)}
-                                >
-                                  {isSecondary ? (
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Check className="h-3 w-3" />
-                                      <span>Secondary</span>
-                                    </div>
-                                  ) : 'Secondary'}
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
+                          {/* Use the ImageSelectionControls component */}
+                          <ImageSelectionControls
+                            image={image}
+                            isPrimary={isPrimary}
+                            isSecondary={isSecondary}
+                            onSetPrimary={setPrimaryImageHandler}
+                            onToggleSecondary={toggleSecondaryImage}
+                            onPreview={(img) => {
+                              setPreviewImage(img);
+                              setIsPreviewOpen(true);
+                            }}
+                          />
                         </div>
                       </div>
                     );
