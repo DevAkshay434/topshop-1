@@ -6428,10 +6428,9 @@ export default function AdminPanel() {
               Cancel
             </Button>
             
-            {imageSource === 'pexels' && (
-              <Button
-                type="button"
-                onClick={() => {
+            <Button
+              type="button"
+              onClick={() => {
                   // Add selected images to the appropriate collection
                   const selectedPexelsImages = searchedImages.filter(img => img.selected);
                   
@@ -6477,10 +6476,9 @@ export default function AdminPanel() {
                 }}
                 disabled={searchedImages.filter(img => img.selected).length === 0}
               >
-                Add Selected Images
+                Add Selected Items
               </Button>
-            )}
-          </DialogFooter>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
       
