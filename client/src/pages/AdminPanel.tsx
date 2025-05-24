@@ -5089,11 +5089,17 @@ export default function AdminPanel() {
                         <Button 
                           size="sm" 
                           className="w-3/4 bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             // Mark as primary image
-                            const updatedImages = searchedImages.map(img =>
-                              img.id === image.id ? { ...img, selected: true, isPrimary: true } : { ...img, isPrimary: false }
-                            );
+                            const updatedImages = searchedImages.map(img => {
+                              if (img.id === image.id) {
+                                return { ...img, selected: true, isPrimary: true };
+                              } else {
+                                // Keep other images selected but not primary
+                                return { ...img, isPrimary: false };
+                              }
+                            });
                             setSearchedImages(updatedImages);
                             toast({
                               title: "Primary image selected",
