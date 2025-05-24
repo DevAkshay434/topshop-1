@@ -92,16 +92,19 @@ function Router() {
 // Import Providers
 import { ShopifyProvider } from './components/ShopifyProvider';
 import { StoreProvider } from './contexts/StoreContext';
+import { DialogProvider } from './components/DialogManager';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ShopifyProvider>
         <StoreProvider>
-          <div className="min-h-screen flex flex-col">
-            <Router />
-            <Toaster />
-          </div>
+          <DialogProvider>
+            <div className="min-h-screen flex flex-col">
+              <Router />
+              <Toaster />
+            </div>
+          </DialogProvider>
         </StoreProvider>
       </ShopifyProvider>
     </QueryClientProvider>
