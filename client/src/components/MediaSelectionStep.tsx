@@ -6,9 +6,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
-import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
+import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye } from 'lucide-react';
 import axios from 'axios';
 
 // Define the MediaImage type
@@ -57,6 +58,10 @@ export default function MediaSelectionStep({
   const [secondaryImages, setSecondaryImages] = useState<MediaImage[]>(initialValues?.secondaryImages || []);
   const [youtubeUrl, setYoutubeUrl] = useState<string>(initialValues?.youtubeEmbed || '');
   const [youtubePreviewUrl, setYoutubePreviewUrl] = useState<string>('');
+  
+  // State for image preview modal
+  const [previewImage, setPreviewImage] = useState<MediaImage | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
   
   // Image search and loading states
   const [searchQuery, setSearchQuery] = useState<string>('');
