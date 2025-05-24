@@ -468,6 +468,146 @@ export default function AdminPanel() {
     }
   };
 
+  // Function to fetch product and variant images from selected products
+  const fetchProductAndVariantImages = async () => {
+    try {
+      setIsLoadingMedia(true);
+      setShopifyFiles([]);
+      
+      if (selectedProducts.length === 0) {
+        toast({
+          title: "No products selected",
+          description: "Please select at least one product in Step 2 first.",
+          variant: "destructive"
+        });
+        setIsLoadingMedia(false);
+        return;
+      }
+      
+      toast({
+        title: "Loading product images",
+        description: `Loading images from ${selectedProducts.length} selected product(s)...`
+      });
+      
+      // Collect all images from selected products and their variants
+      const productImages: any[] = [];
+      
+      for (const product of selectedProducts) {
+        // Add main product images
+        if (product.images && Array.isArray(product.images)) {
+          product.images.forEach((image: any, index: number) => {
+            const imageUrl = typeof image === 'string' ? image : image.src;
+            if (imageUrl) {
+              productImages.push({
+                id: `product-${product.id}-image-${image.id || index}`,
+                url: imageUrl,
+                width: 500,
+                height: 500,
+                alt: `${product.title} - Image ${index + 1}`,
+                title: `${product.title} - Image ${index + 1}`,
+                source: 'product_image',
+                product_id: product.id,
+                product_title: product.title,
+                selected: false,
+                src: {
+                  original: imageUrl,
+                  large: imageUrl,
+                  medium: imageUrl,
+                  small: imageUrl,
+                  thumbnail: imageUrl
+                }
+              });
+            }
+          });
+        } else if (product.image) {
+          // Add single product image if no images array
+          const imageUrl = typeof product.image === 'string' ? product.image : (product.image.src || '');
+          if (imageUrl) {
+            productImages.push({
+              id: `product-${product.id}-main`,
+              url: imageUrl,
+              width: 500,
+              height: 500,
+              alt: product.title || 'Product image',
+              title: `${product.title} - Main Image`,
+              source: 'product_image',
+              product_id: product.id,
+              product_title: product.title,
+              selected: false,
+              src: {
+                original: imageUrl,
+                large: imageUrl,
+                medium: imageUrl,
+                small: imageUrl,
+                thumbnail: imageUrl
+              }
+            });
+          }
+        }
+        
+        // Add variant images
+        if (product.variants && Array.isArray(product.variants)) {
+          product.variants.forEach((variant: any, variantIndex: number) => {
+            if (variant.image) {
+              const variantImageUrl = typeof variant.image === 'string' ? variant.image : (variant.image.src || '');
+              if (variantImageUrl) {
+                productImages.push({
+                  id: `variant-${variant.id}-image`,
+                  url: variantImageUrl,
+                  width: 500,
+                  height: 500,
+                  alt: `${variant.title || 'Variant'} - ${product.title}`,
+                  title: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
+                  source: 'variant_image',
+                  product_id: product.id,
+                  product_title: product.title,
+                  variant_id: variant.id,
+                  variant_title: variant.title,
+                  selected: false,
+                  src: {
+                    original: variantImageUrl,
+                    large: variantImageUrl,
+                    medium: variantImageUrl,
+                    small: variantImageUrl,
+                    thumbnail: variantImageUrl
+                  }
+                });
+              }
+            }
+          });
+        }
+      }
+      
+      // If no images found, show a message
+      if (productImages.length === 0) {
+        toast({
+          title: "No product images found",
+          description: "The selected products don't have any images.",
+          variant: "destructive"
+        });
+        setIsLoadingMedia(false);
+        return;
+      }
+      
+      // Set the product images to display
+      setShopifyFiles(productImages);
+      toast({
+        title: "Product Images Loaded",
+        description: `Loaded ${productImages.length} images from your selected products and their variants.`
+      });
+      
+      setIsLoadingMedia(false);
+    } catch (error) {
+      console.error('Error fetching product images:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load product images",
+        variant: "destructive"
+      });
+      setIsLoadingMedia(false);
+    }
+  };
+
   // Function to fetch Shopify Media Library files (store-wide)
   const fetchShopifyMediaFiles = async () => {
     try {
@@ -4578,6 +4718,28 @@ export default function AdminPanel() {
               
               <Button 
                   size="sm"
+                  variant={imageSource === 'product_images' ? 'default' : 'outline'} 
+                  onClick={() => {
+                    if (selectedProducts.length === 0) {
+                      toast({
+                        title: "No products selected",
+                        description: "Please select at least one product in Step 2 first.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setImageSource('product_images');
+                    // Load selected product images
+                    fetchProductAndVariantImages();
+                  }}
+                  className="flex-1"
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Product Images
+                </Button>
+                
+              <Button 
+                  size="sm"
                   variant={imageSource === 'shopify_media' ? 'default' : 'outline'} 
                   onClick={() => {
                     setImageSource('shopify_media');
@@ -5076,6 +5238,165 @@ export default function AdminPanel() {
                   <p className="text-slate-500">No images found for "{imageSearchQuery}"</p>
                   <p className="text-sm text-slate-400 mt-1">Try different keywords or phrases</p>
                 </div>
+              )}
+            </div>
+          )}
+          
+          {imageSource === 'product_images' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Product & Variant Images</h3>
+                {isLoadingMedia ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-xs text-slate-500">Loading images...</span>
+                  </div>
+                ) : shopifyFiles.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-slate-500" />
+                    <span className="text-xs text-slate-500">{shopifyFiles.length} images found</span>
+                  </div>
+                )}
+              </div>
+              
+              {shopifyFiles.length === 0 && !isLoadingMedia && (
+                <div className="flex flex-col items-center justify-center py-8 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                  <div className="flex flex-col items-center gap-2 max-w-xs text-center">
+                    <Package className="h-8 w-8 text-slate-400" />
+                    <h3 className="text-sm font-medium">No product images found</h3>
+                    <p className="text-xs text-slate-500">
+                      {selectedProducts.length === 0 
+                        ? "Select a product in Step 2 first to view its images here." 
+                        : "The selected products don't have any associated images."}
+                    </p>
+                    {selectedProducts.length > 0 && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={fetchProductAndVariantImages}
+                        className="mt-2"
+                      >
+                        <RefreshCcw className="h-3 w-3 mr-1" />
+                        Refresh
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {shopifyFiles.length > 0 && !isLoadingMedia && (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {shopifyFiles.map((image) => {
+                      // Check if this image is selected (either as primary or secondary)
+                      const isPrimary = selectedImages.some(img => 
+                        img.id === image.id && img.selectionType === 'primary'
+                      );
+                      const isSecondary = selectedImages.some(img => 
+                        img.id === image.id && img.selectionType === 'secondary'
+                      );
+                      const isSelected = isPrimary || isSecondary;
+                      
+                      // Determine if this is a product or variant image
+                      const isVariant = image.source === 'variant_image';
+                      
+                      return (
+                        <div 
+                          key={image.id} 
+                          className={cn(
+                            "relative rounded-md overflow-hidden border group hover:shadow-md transition-all duration-200",
+                            isPrimary ? "border-blue-500 ring-2 ring-blue-200" : 
+                            isSecondary ? "border-green-500 ring-2 ring-green-200" : 
+                            "border-slate-200"
+                          )}
+                        >
+                          {/* Product/Variant Badge */}
+                          <div className="absolute top-2 left-2 z-10">
+                            <Badge variant="outline" className="text-xs bg-white/80 backdrop-blur-sm">
+                              {isVariant ? (
+                                <span className="flex items-center gap-1">
+                                  <CircleDot className="h-3 w-3 text-purple-500" />
+                                  Variant
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1">
+                                  <Package className="h-3 w-3 text-blue-500" />
+                                  Product
+                                </span>
+                              )}
+                            </Badge>
+                          </div>
+                          
+                          {/* Selection Badges */}
+                          {isPrimary && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <Badge className="bg-blue-500 text-white">Primary</Badge>
+                            </div>
+                          )}
+                          {isSecondary && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <Badge className="bg-green-500 text-white">Secondary</Badge>
+                            </div>
+                          )}
+                          
+                          {/* Image */}
+                          <div className="relative aspect-square bg-slate-100">
+                            <ShopifyImageViewer
+                              src={image.url}
+                              alt={image.alt || "Product image"}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          
+                          {/* Product/Variant Info */}
+                          <div className="p-2 bg-white">
+                            <p className="text-xs font-medium truncate">{image.title || image.alt || "Product image"}</p>
+                            {image.product_title && (
+                              <p className="text-xs text-slate-500 truncate">{image.product_title}</p>
+                            )}
+                            {image.variant_title && (
+                              <p className="text-xs text-purple-500 truncate">{image.variant_title}</p>
+                            )}
+                          </div>
+                          
+                          {/* Selection Controls */}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant={isPrimary ? "default" : "outline"}
+                                className={cn(
+                                  "bg-blue-500 hover:bg-blue-600 text-white",
+                                  isPrimary ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                )}
+                                onClick={() => {
+                                  handleImageSelection(image, 'primary');
+                                }}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Primary
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant={isSecondary ? "default" : "outline"}
+                                className={cn(
+                                  "bg-green-500 hover:bg-green-600 text-white",
+                                  isSecondary ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                )}
+                                onClick={() => {
+                                  handleImageSelection(image, 'secondary');
+                                }}
+                              >
+                                <PlusCircle className="h-4 w-4 mr-1" />
+                                Secondary
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </div>
           )}
