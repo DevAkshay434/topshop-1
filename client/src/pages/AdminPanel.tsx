@@ -5087,7 +5087,7 @@ export default function AdminPanel() {
                           onClick={() => {
                             // Mark as primary image
                             const updatedImages = searchedImages.map(img =>
-                              img.id === image.id ? { ...img, selected: true, isPrimary: true } : img
+                              img.id === image.id ? { ...img, selected: true, isPrimary: true } : { ...img, isPrimary: false }
                             );
                             setSearchedImages(updatedImages);
                             toast({
@@ -5120,11 +5120,16 @@ export default function AdminPanel() {
                         </Button>
                       </div>
                       
-                      {/* Selection indicator */}
+                      {/* Selection indicator with clear primary/secondary label */}
                       {image.selected && (
-                        <div className={`absolute top-1 right-1 ${image.isPrimary === true ? 'bg-blue-500' : image.isPrimary === false ? 'bg-green-500' : 'bg-blue-500'} text-white p-1 rounded-full`}>
-                          <Check className="h-4 w-4" />
-                        </div>
+                        <>
+                          <div className={`absolute top-1 right-1 ${image.isPrimary ? 'bg-blue-500' : 'bg-green-500'} text-white p-1 rounded-full`}>
+                            <Check className="h-4 w-4" />
+                          </div>
+                          <div className={`absolute top-1 left-1 text-white text-xs px-1.5 py-0.5 rounded-sm ${image.isPrimary ? 'bg-blue-500' : 'bg-green-500'}`}>
+                            {image.isPrimary ? 'Primary' : 'Secondary'}
+                          </div>
+                        </>
                       )}
                       
                       {image.photographer && (
