@@ -11,7 +11,7 @@ import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
 import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye, Trash2 } from 'lucide-react';
 import ImagePreviewDialog from './ImagePreviewDialog';
-import { SelectedImagesPanel } from './SelectedImagesPanel';
+import { CompactSelectedImagesPanel } from './CompactSelectedImagesPanel';
 import axios from 'axios';
 
 // Define the MediaImage type
@@ -612,7 +612,7 @@ export default function MediaSelectionStep({
     setPreviewImage(image);
     setIsPreviewOpen(true);
   };
-  
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -633,8 +633,24 @@ export default function MediaSelectionStep({
         isSecondary={previewImage ? secondaryImages.some(img => img.id === previewImage.id) : false}
       />
       
-      {/* Display selected images section */}
-      <SelectedImagesPanel
+      {/* Display selection instructions */}
+      <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4 flex items-start">
+        <div className="mr-2 mt-0.5">
+          <AlertCircle className="h-5 w-5 text-blue-500" />
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-blue-700">How to select images</h3>
+          <ul className="text-xs text-blue-600 list-disc ml-4 mt-1">
+            <li>Choose <strong>one primary (featured) image</strong> that will appear at the top of your content</li>
+            <li>Select <strong>multiple secondary images</strong> that will appear throughout the content</li>
+            <li>Hover over any image to see selection options</li>
+            <li>Use the <strong>eye icon</strong> to preview images at full size</li>
+          </ul>
+        </div>
+      </div>
+      
+      {/* Display compact selected images panel */}
+      <CompactSelectedImagesPanel
         primaryImage={primaryImage}
         secondaryImages={secondaryImages}
         setPrimaryImage={setPrimaryImage}
@@ -728,6 +744,22 @@ export default function MediaSelectionStep({
                             selectionType={isPrimary ? 'primary' : isSecondary ? 'secondary' : 'none'}
                           />
                           
+                          {/* Selection indicator badges - always visible */}
+                          <div className="absolute top-2 left-2 z-10 flex gap-1">
+                            {isPrimary && (
+                              <Badge variant="default" className="bg-blue-600 text-xs">
+                                <Star className="h-3 w-3 mr-1" />
+                                Primary
+                              </Badge>
+                            )}
+                            {isSecondary && (
+                              <Badge variant="default" className="bg-green-600 text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Secondary
+                              </Badge>
+                            )}
+                          </div>
+                          
                           {/* Source badge */}
                           <div className="absolute bottom-2 left-2 z-10">
                             <Badge variant="secondary" className="text-xs">
@@ -735,7 +767,7 @@ export default function MediaSelectionStep({
                             </Badge>
                           </div>
                           
-                          {/* Quick actions on hover */}
+                          {/* Quick actions - always visible */}
                           <div className="absolute top-2 right-2 flex gap-1 z-10">
                             {/* Preview button */}
                             <Button 
@@ -754,7 +786,7 @@ export default function MediaSelectionStep({
                           
                           {/* Hover overlay with selection options */}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="flex flex-col gap-3 p-2 text-center">
+                            <div className="flex flex-col gap-3 p-3 text-center">
                               <div className="text-white text-xs font-medium mb-1">Select image as:</div>
                               <div className="flex gap-2">
                                 <Button 

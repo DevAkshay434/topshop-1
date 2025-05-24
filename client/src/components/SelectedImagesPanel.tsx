@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { MediaImage } from './MediaSelectionStep';
@@ -22,6 +22,7 @@ export function SelectedImagesPanel({
   onPreviewImage
 }: SelectedImagesPanelProps) {
   const { toast } = useToast();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Promote a secondary image to primary
   const promoteToFeatured = (image: MediaImage) => {
@@ -39,9 +40,29 @@ export function SelectedImagesPanel({
     });
   };
 
+  // Count total selected images
+  const totalSelectedImages = (primaryImage ? 1 : 0) + secondaryImages.length;
+
   return (
-    <div className="border border-slate-200 rounded-md p-4 bg-slate-50 mb-6">
-      <h3 className="text-lg font-medium mb-4">Selected Images</h3>
+    <div className="border border-slate-200 rounded-md bg-slate-50 mb-6 overflow-hidden">
+      <div 
+        className="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-100"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <h3 className="text-lg font-medium flex items-center">
+          <Star className={`h-4 w-4 mr-2 ${primaryImage ? 'text-blue-600' : 'text-slate-400'}`} />
+          Selected Images ({totalSelectedImages})
+        </h3>
+        <Button variant="ghost" size="sm" onClick={(e) => {
+          e.stopPropagation();
+          setIsCollapsed(!isCollapsed);
+        }}>
+          {isCollapsed ? 'Show' : 'Hide'}
+        </Button>
+      </div>
+
+      {!isCollapsed && (
+        <div className="p-4 pt-0">
       
       {/* Primary Featured Image */}
       <div className="mb-4">
