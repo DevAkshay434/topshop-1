@@ -5645,10 +5645,18 @@ export default function AdminPanel() {
                                   productImages.push({
                                     id: `product-${product.id}-image-${index}`,
                                     url: imageUrl,
-                                    filename: `${product.title} - Image ${index + 1}`,
+                                    width: 500,
+                                    height: 500,
                                     alt: `${product.title} - Image ${index + 1}`,
-                                    content_type: 'image/jpeg',
-                                    source: 'product_image'
+                                    src: {
+                                      original: imageUrl,
+                                      large: imageUrl,
+                                      medium: imageUrl,
+                                      small: imageUrl,
+                                      thumbnail: imageUrl
+                                    },
+                                    selected: false,
+                                    type: 'image'
                                   });
                                 }
                               });
