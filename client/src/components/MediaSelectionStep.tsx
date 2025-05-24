@@ -752,83 +752,35 @@ export default function MediaSelectionStep({
                             </Badge>
                           </div>
                           
-                          {/* Selection controls directly on the image */}
-                          <div className="absolute inset-0">
-                            {/* Indicators at the top */}
-                            <div className="absolute top-2 left-2 z-20 flex gap-1">
-                              {isPrimary && (
-                                <Badge className="bg-blue-600 text-white text-xs">
-                                  <Star className="h-3 w-3 mr-1" />
-                                  Primary
-                                </Badge>
-                              )}
-                              {isSecondary && (
-                                <Badge className="bg-green-600 text-white text-xs">
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Secondary
-                                </Badge>
-                              )}
+                          {/* Simple selection controls that are directly below the image */}
+                          {isPrimary && (
+                            <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white py-1 px-2 text-center text-xs font-bold">
+                              Primary Image
                             </div>
-                            
-                            {/* Preview button */}
+                          )}
+                          
+                          {isSecondary && (
+                            <div className="absolute top-0 left-0 right-0 bg-green-600 text-white py-1 px-2 text-center text-xs font-bold">
+                              Secondary Image
+                            </div>
+                          )}
+                          
+                          <div className="absolute bottom-0 left-0 right-0 bg-black p-2 flex items-center justify-center gap-1">
                             <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="absolute top-2 right-2 z-20 h-7 w-7 p-0 rounded-full bg-white"
-                              onClick={() => {
-                                setPreviewImage(image);
-                                setIsPreviewOpen(true);
-                              }}
+                              variant="default"
+                              className="bg-blue-600 text-white text-xs w-full"
+                              onClick={() => setPrimaryImageHandler(image)}
                             >
-                              <Eye className="h-3 w-3" />
+                              Set Primary
                             </Button>
                             
-                            {/* Selection buttons at the bottom - ALWAYS VISIBLE */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2 flex justify-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant={isPrimary ? "default" : "secondary"}
-                                className={isPrimary 
-                                  ? "bg-blue-600 hover:bg-blue-700 text-white border-0 h-8" 
-                                  : "bg-white/90 text-blue-600 hover:bg-blue-50 border-blue-200 h-8"
-                                }
-                                onClick={() => setPrimaryImageHandler(image)}
-                              >
-                                {isPrimary ? (
-                                  <>
-                                    <Check className="h-3 w-3 mr-1" />
-                                    Primary
-                                  </>
-                                ) : (
-                                  <>
-                                    <Star className="h-3 w-3 mr-1" />
-                                    Set Primary
-                                  </>
-                                )}
-                              </Button>
-                              
-                              <Button 
-                                size="sm" 
-                                variant={isSecondary ? "default" : "secondary"}
-                                className={isSecondary 
-                                  ? "bg-green-600 hover:bg-green-700 text-white border-0 h-8" 
-                                  : "bg-white/90 text-green-600 hover:bg-green-50 border-green-200 h-8"
-                                }
-                                onClick={() => toggleSecondaryImage(image)}
-                              >
-                                {isSecondary ? (
-                                  <>
-                                    <Check className="h-3 w-3 mr-1" />
-                                    Secondary
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Add Secondary
-                                  </>
-                                )}
-                              </Button>
-                            </div>
+                            <Button 
+                              variant="default"
+                              className="bg-green-600 text-white text-xs w-full"
+                              onClick={() => toggleSecondaryImage(image)}
+                            >
+                              Add Secondary
+                            </Button>
                           </div>
                         </div>
                       </div>
