@@ -506,7 +506,7 @@ export function ChooseMediaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto pb-20">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         {/* Close button */}
         <button
           className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
@@ -687,7 +687,7 @@ export function ChooseMediaDialog({
           )}
         </div>
 
-        <DialogFooter className="sticky bottom-0 pt-4 pb-2 bg-white border-t mt-4 z-10">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
