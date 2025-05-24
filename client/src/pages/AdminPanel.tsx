@@ -5687,7 +5687,6 @@ export default function AdminPanel() {
                     <SelectContent>
                       <SelectItem value="products">Selected Product Images</SelectItem>
                       <SelectItem value="variants">Product Variant Images</SelectItem>
-                      <SelectItem value="media">All Shopify Media</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
