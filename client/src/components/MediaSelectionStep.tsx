@@ -783,13 +783,14 @@ export default function MediaSelectionStep({
                               <Eye className="h-3 w-3" />
                             </Button>
                             
-                            {/* Selection buttons at the bottom */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 flex justify-center gap-2">
+                            {/* Selection buttons at the bottom - ALWAYS VISIBLE */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2 flex justify-center gap-2">
                               <Button 
                                 size="sm" 
+                                variant={isPrimary ? "default" : "secondary"}
                                 className={isPrimary 
-                                  ? "bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs" 
-                                  : "bg-white text-blue-600 hover:bg-blue-50 h-7 text-xs"
+                                  ? "bg-blue-600 hover:bg-blue-700 text-white border-0 h-8" 
+                                  : "bg-white/90 text-blue-600 hover:bg-blue-50 border-blue-200 h-8"
                                 }
                                 onClick={() => setPrimaryImageHandler(image)}
                               >
@@ -808,9 +809,10 @@ export default function MediaSelectionStep({
                               
                               <Button 
                                 size="sm" 
+                                variant={isSecondary ? "default" : "secondary"}
                                 className={isSecondary 
-                                  ? "bg-green-600 hover:bg-green-700 text-white h-7 text-xs" 
-                                  : "bg-white text-green-600 hover:bg-green-50 h-7 text-xs"
+                                  ? "bg-green-600 hover:bg-green-700 text-white border-0 h-8" 
+                                  : "bg-white/90 text-green-600 hover:bg-green-50 border-green-200 h-8"
                                 }
                                 onClick={() => toggleSecondaryImage(image)}
                               >
