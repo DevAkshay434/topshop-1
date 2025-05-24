@@ -6077,16 +6077,21 @@ export default function AdminPanel() {
                 source: img.source || 'shopify',
                 // For type safety - let's add these fields to make it compatible with PexelsImage
                 selected: false,
-                type: 'image'
+                type: 'image',
+                // Store the primary/secondary designation from the ChooseMediaDialog
+                isPrimary: img.isPrimary
               };
               return standardImage;
             });
             
             try {
-              // Add to the appropriate collection based on which tab is active
-              if (imageTab === 'primary') {
-                // Add as primary/featured images - ensure proper type casting
-                const safeImages = standardizedImages.map(img => ({
+              // Sort images into primary and secondary based on the isPrimary flag
+              const primaryImgs = standardizedImages.filter(img => img.isPrimary === true);
+              const secondaryImgs = standardizedImages.filter(img => img.isPrimary === false);
+              
+              // Process primary images if any exist
+              if (primaryImgs.length > 0) {
+                const safePrimaryImages = primaryImgs.map(img => ({
                   ...img,
                   selected: false,
                   type: 'image',
@@ -6098,14 +6103,16 @@ export default function AdminPanel() {
                     thumbnail: img.url
                   }
                 }));
-                setPrimaryImages(prev => [...prev, ...safeImages]);
+                setPrimaryImages(prev => [...prev, ...safePrimaryImages]);
                 toast({
                   title: "Featured images added",
-                  description: `${images.length} featured image${images.length === 1 ? '' : 's'} added successfully`
+                  description: `${primaryImgs.length} featured image${primaryImgs.length === 1 ? '' : 's'} added successfully`
                 });
-              } else {
-                // Add as secondary/content images - ensure proper type casting
-                const safeImages = standardizedImages.map(img => ({
+              }
+              
+              // Process secondary images if any exist
+              if (secondaryImgs.length > 0) {
+                const safeSecondaryImages = secondaryImgs.map(img => ({
                   ...img,
                   selected: false,
                   type: 'image',
@@ -6117,11 +6124,53 @@ export default function AdminPanel() {
                     thumbnail: img.url
                   }
                 }));
-                setSecondaryImages(prev => [...prev, ...safeImages]);
+                setSecondaryImages(prev => [...prev, ...safeSecondaryImages]);
                 toast({
                   title: "Content images added",
-                  description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
+                  description: `${secondaryImgs.length} content image${secondaryImgs.length === 1 ? '' : 's'} added successfully`
                 });
+              }
+              
+              // If no isPrimary designation was made, use the active tab as before
+              if (primaryImgs.length === 0 && secondaryImgs.length === 0) {
+                // Fallback to the old method - add to the appropriate collection based on active tab
+                if (imageTab === 'primary') {
+                  const safeImages = standardizedImages.map(img => ({
+                    ...img,
+                    selected: false,
+                    type: 'image',
+                    src: {
+                      original: img.url,
+                      large: img.url,
+                      medium: img.url,
+                      small: img.url,
+                      thumbnail: img.url
+                    }
+                  }));
+                  setPrimaryImages(prev => [...prev, ...safeImages]);
+                  toast({
+                    title: "Featured images added",
+                    description: `${images.length} featured image${images.length === 1 ? '' : 's'} added successfully`
+                  });
+                } else {
+                  const safeImages = standardizedImages.map(img => ({
+                    ...img,
+                    selected: false,
+                    type: 'image',
+                    src: {
+                      original: img.url,
+                      large: img.url,
+                      medium: img.url,
+                      small: img.url,
+                      thumbnail: img.url
+                    }
+                  }));
+                  setSecondaryImages(prev => [...prev, ...safeImages]);
+                  toast({
+                    title: "Content images added",
+                    description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
+                  });
+                }
               }
             } catch (error) {
               console.error("Error adding images:", error);
