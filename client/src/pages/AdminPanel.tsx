@@ -68,6 +68,8 @@ import {
   CalendarCheck,
   CheckCircle,
   Check,
+  PlusCircle,
+  CircleDot,
   CheckSquare,
   ChevronLeft,
   ImagePlus,
