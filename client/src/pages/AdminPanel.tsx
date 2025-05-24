@@ -2434,20 +2434,7 @@ export default function AdminPanel() {
                                   </CardHeader>
                                   <CardContent className="p-3">
                                     <div className="flex flex-col space-y-2">
-                                      <Button 
-                                        variant="outline" 
-                                        className="w-full" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setImageSource('shopify_media');
-                                          // Load all Shopify Media Library files
-                                          fetchShopifyMediaFiles();
-                                          setShowImageDialog(true);
-                                        }}
-                                      >
-                                        <Store className="mr-2 h-4 w-4" />
-                                        Shopify Media Library
-                                      </Button>
+                                  
                                       
                                       {/* Only show product images button when a product is selected */}
                                       {selectedProducts.length > 0 && (
