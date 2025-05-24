@@ -112,10 +112,6 @@ export function ChooseMediaDialog({
       } else if (activeTab === 'pexels') {
         // Pexels tab is handled separately
         console.log("Pexels tab selected");
-      } else if (activeTab === 'media_library') {
-        // This is specifically for the Shopify Media Library tab - load all media
-        console.log("Loading all media from Shopify Media Library");
-        loadShopifyMediaLibrary();
       }
     }
   }, [open, activeTab]);
@@ -401,9 +397,7 @@ export function ChooseMediaDialog({
   // Function to get appropriate message when no images are available
   const getEmptyStateMessage = () => {
     if (activeTab === 'products') {
-      return "No product images found. Please select a different product or use the Shopify Media Library tab.";
-    } else if (activeTab === 'media_library') {
-      return "No media found in your Shopify Media Library. You can upload images in your Shopify admin.";
+      return "No product images found. Please select a different product.";
     } else if (activeTab === 'pexels') {
       return searchInProgress 
         ? "No images found. Try a different search term." 
@@ -417,8 +411,6 @@ export function ChooseMediaDialog({
     switch (activeTab) {
       case 'products':
         return productImages;
-      case 'media_library':
-        return mediaLibraryImages;
       case 'pexels':
         return pexelsImages;
       default:
