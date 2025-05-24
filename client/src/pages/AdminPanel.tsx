@@ -6032,12 +6032,12 @@ export default function AdminPanel() {
                               <div className="flex justify-between items-center">
                                 <h4 className="text-sm font-medium flex items-center">
                                   <Store className="h-4 w-4 mr-2 text-blue-500" />
-                                  Shopify Content Files
+                                  Shopify Media Library
                                 </h4>
                                 <Badge variant="outline">{contentFiles.length} images</Badge>
                               </div>
                               <p className="text-xs text-gray-500 mt-1">
-                                Choose images from your store to use in your content
+                                Choose media files from your Shopify store for your content
                               </p>
                             </div>
                           
@@ -6061,20 +6061,20 @@ export default function AdminPanel() {
                                     className={`relative rounded-md overflow-hidden border-2 ${borderClass} hover:shadow-md transition-all`}
                                   >
                                     {isPrimarySelected && (
-                                      <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs z-10">
-                                        Featured
+                                      <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs z-10 shadow-sm">
+                                        Primary
                                       </div>
                                     )}
                                     {isSecondarySelected && (
-                                      <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs z-10">
-                                        Content
+                                      <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs z-10 shadow-sm">
+                                        Secondary
                                       </div>
                                     )}
                                     
                                     <div className="relative aspect-square">
                                       <ShopifyImageViewer 
                                         src={file.url} 
-                                        alt={file.alt || file.name || "Shopify image"} 
+                                        alt={file.alt || file.filename || "Shopify image"} 
                                         className="w-full h-full object-contain bg-white"
                                       />
                                       
@@ -6138,7 +6138,7 @@ export default function AdminPanel() {
                                               url: file.url,
                                               width: 800,
                                               height: 800,
-                                              alt: file.alt || file.name,
+                                              alt: file.alt || file.filename || "Media image",
                                               src: {
                                                 original: file.url,
                                                 large: file.url,
@@ -6151,8 +6151,15 @@ export default function AdminPanel() {
                                             // Add to secondary images (content)
                                             setSecondaryImages(prev => [...prev, imageForSelection]);
                                             
+                                            // If it was in primary images, remove it from there
+                                            if (isPrimarySelected) {
+                                              setPrimaryImages(prev => prev.filter(img => 
+                                                img.id !== file.id && img.url !== file.url
+                                              ));
+                                            }
+                                            
                                             toast({
-                                              title: "Content image added",
+                                              title: "Secondary image added",
                                               description: "Image will appear in your content body"
                                             });
                                           }}
@@ -6166,7 +6173,12 @@ export default function AdminPanel() {
                                     
                                     {/* Image name/label */}
                                     <div className="p-2 bg-black bg-opacity-75">
-                                      <p className="text-white text-xs truncate">{file.name}</p>
+                                      <p className="text-white text-xs truncate">{file.filename || "Shopify Image"}</p>
+                                      {file.source && (
+                                        <p className="text-gray-400 text-xs truncate mt-0.5">
+                                          {file.source === 'product_image' ? 'Product Image' : 'Media Library'}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -6176,9 +6188,9 @@ export default function AdminPanel() {
                         ) : (
                           <div className="text-center py-8">
                             <FileImage className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                            <p className="text-gray-500 mb-2">No content files found</p>
+                            <p className="text-gray-500 mb-2">No media files found</p>
                             <p className="text-xs text-gray-400 max-w-md mx-auto mb-4">
-                              Try refreshing to load images from your Shopify store
+                              Your Shopify Media Library appears to be empty. You can upload images directly in Shopify or select from Product Images instead.
                             </p>
                             <Button 
                               variant="outline" 
