@@ -23,6 +23,8 @@ export interface MediaImage {
   product_title?: string;
   width?: number;
   height?: number;
+  type?: 'image' | 'youtube';
+  videoId?: string;
   src?: {
     original: string;
     large: string;
@@ -61,6 +63,8 @@ export function ChooseMediaDialog({
   const [productImages, setProductImages] = useState<MediaImage[]>([]);
   const [pexelsImages, setPexelsImages] = useState<MediaImage[]>([]);
   const [searchInProgress, setSearchInProgress] = useState<boolean>(false);
+  const [youtubeUrl, setYoutubeUrl] = useState<string>('');
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
 
   // Enhanced method to get selected product ID from any available source
   const getSelectedProductId = () => {
@@ -521,12 +525,15 @@ export function ChooseMediaDialog({
         </DialogHeader>
 
         <Tabs defaultValue="primary_images" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="primary_images">
               Primary Images
             </TabsTrigger>
             <TabsTrigger value="secondary_images">
               Secondary Images
+            </TabsTrigger>
+            <TabsTrigger value="youtube">
+              YouTube Video
             </TabsTrigger>
           </TabsList>
 
@@ -598,6 +605,102 @@ export function ChooseMediaDialog({
                 {renderTabContent()}
               </TabsContent>
             </Tabs>
+          </TabsContent>
+          <TabsContent value="youtube" className="space-y-4">
+            <div className="rounded-md bg-red-50 p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <ImageIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                </div>
+                <div className="ml-3 flex-1 md:flex md:justify-between">
+                  <p className="text-sm text-red-700">
+                    Add a YouTube video to embed in your content
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid w-full gap-2">
+                <Input
+                  type="url"
+                  placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+                  value={youtubeUrl}
+                  onChange={e => {
+                    const url = e.target.value;
+                    setYoutubeUrl(url);
+                    const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                    setYoutubeVideoId(videoId);
+                  }}
+                  className="w-full"
+                />
+                
+                <Button 
+                  type="button"
+                  onClick={() => {
+                    if (!youtubeVideoId) {
+                      toast({
+                        title: "Invalid YouTube URL",
+                        description: "Please enter a valid YouTube video URL",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    const youtubeImage: MediaImage = {
+                      id: `youtube-${youtubeVideoId}`,
+                      url: `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`,
+                      alt: `YouTube video ${youtubeVideoId}`,
+                      source: 'uploaded',
+                      selected: true,
+                      isPrimary: false,
+                      type: 'youtube',
+                      videoId: youtubeVideoId,
+                      width: 1280,
+                      height: 720
+                    };
+                    
+                    setSelectedImages(prev => {
+                      // Check if we already have this video
+                      const exists = prev.some(img => 
+                        img.type === 'youtube' && img.videoId === youtubeVideoId
+                      );
+                      
+                      if (!exists) {
+                        toast({
+                          title: "YouTube Video Added",
+                          description: "YouTube video has been added to your content",
+                        });
+                        return [...prev, youtubeImage];
+                      }
+                      return prev;
+                    });
+                  }}
+                  disabled={!youtubeVideoId}
+                >
+                  Add Video
+                </Button>
+              </div>
+              
+              {youtubeVideoId && (
+                <div className="mt-4 border rounded-md overflow-hidden">
+                  <div className="aspect-video relative">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="absolute inset-0 w-full h-full"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-sm text-gray-500 mt-2">
+                Paste a YouTube video URL to embed it in your content. The video will be added as a secondary content element.
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
 
