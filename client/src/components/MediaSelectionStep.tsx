@@ -9,7 +9,8 @@ import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
-import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye } from 'lucide-react';
+import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye, Trash2 } from 'lucide-react';
+import ImagePreviewDialog from './ImagePreviewDialog';
 import axios from 'axios';
 
 // Define the MediaImage type
@@ -677,11 +678,85 @@ export default function MediaSelectionStep({
               <>
                 <h3 className="text-sm font-medium">Pexels Stock Images</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {pexelsImages.map(image => renderImageCard(
-                    image,
-                    primaryImage?.id === image.id,
-                    secondaryImages.some(img => img.id === image.id)
-                  ))}
+                  {pexelsImages.map(image => {
+                    const isPrimary = primaryImage?.id === image.id;
+                    const isSecondary = secondaryImages.some(img => img.id === image.id);
+                    
+                    return (
+                      <div key={image.id} className="relative group overflow-hidden rounded-md">
+                        <div className="relative aspect-video bg-slate-100">
+                          <ShopifyImageViewer
+                            src={image.url}
+                            alt={image.alt || ''}
+                            className="w-full h-full"
+                            objectFit="cover"
+                            selected={isPrimary || isSecondary}
+                            selectionType={isPrimary ? 'primary' : isSecondary ? 'secondary' : 'none'}
+                          />
+                          
+                          {/* Source badge */}
+                          <div className="absolute bottom-2 left-2 z-10">
+                            <Badge variant="secondary" className="text-xs">
+                              Pexels
+                            </Badge>
+                          </div>
+                          
+                          {/* Quick actions on hover */}
+                          <div className="absolute top-2 right-2 flex gap-1 z-10">
+                            {/* Preview button */}
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              className="p-1 h-7 w-7 rounded-full bg-white/90 hover:bg-white text-slate-600 hover:text-slate-700"
+                              onClick={() => {
+                                setPreviewImage(image);
+                                setIsPreviewOpen(true);
+                              }}
+                              title="Preview full image"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Hover overlay with selection options */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="flex flex-col gap-3 p-2 text-center">
+                              <div className="text-white text-xs font-medium mb-1">Select image as:</div>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant={isPrimary ? "default" : "outline"} 
+                                  className={isPrimary ? "bg-blue-600 hover:bg-blue-700" : "bg-white/90 text-blue-700 hover:bg-blue-50"}
+                                  onClick={() => setPrimaryImageHandler(image)}
+                                >
+                                  {isPrimary ? (
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Check className="h-3 w-3" />
+                                      <span>Primary</span>
+                                    </div>
+                                  ) : 'Primary'}
+                                </Button>
+                                
+                                <Button 
+                                  size="sm" 
+                                  variant={isSecondary ? "default" : "outline"} 
+                                  className={isSecondary ? "bg-green-600 hover:bg-green-700" : "bg-white/90 text-green-700 hover:bg-green-50"}
+                                  onClick={() => toggleSecondaryImage(image)}
+                                >
+                                  {isSecondary ? (
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Check className="h-3 w-3" />
+                                      <span>Secondary</span>
+                                    </div>
+                                  ) : 'Secondary'}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
