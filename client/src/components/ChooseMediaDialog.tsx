@@ -61,7 +61,7 @@ export function ChooseMediaDialog({
   const [mediaLibraryImages, setMediaLibraryImages] = useState<MediaImage[]>([]);
   const [pexelsImages, setPexelsImages] = useState<MediaImage[]>([]);
   const [searchInProgress, setSearchInProgress] = useState<boolean>(false);
-  
+
   // Enhanced method to get selected product ID from any available source
   const getSelectedProductId = () => {
     try {
@@ -72,20 +72,20 @@ export function ChooseMediaDialog({
         console.log("Found product ID in URL:", productId);
         return productId;
       }
-      
+
       // Try to get from global productId variable next
       if ((window as any).productId) {
         console.log("Found product ID in global variable:", (window as any).productId);
         return (window as any).productId;
       }
-      
+
       // Try to get from the global form context last
       const formContext = (window as any).TopshopSEO?.formContext;
       if (formContext && formContext.productId) {
         console.log("Found product ID in form context:", formContext.productId);
         return formContext.productId;
       }
-      
+
       return null;
     } catch (error) {
       console.error("Error getting product ID:", error);
@@ -98,7 +98,7 @@ export function ChooseMediaDialog({
     if (open) {
       // Reset UI state for new dialog
       setIsLoading(false);
-      
+
       if (activeTab === 'products') {
         // For product tab, load product-specific images if we have a product ID
         const productId = getSelectedProductId();
@@ -122,19 +122,19 @@ export function ChooseMediaDialog({
       setSelectedImages(initialSelectedImages);
     }
   }, [initialSelectedImages]);
-  
+
   // Load Shopify Media Library images
   const loadShopifyMediaLibrary = async () => {
     setIsLoading(true);
     try {
       console.log("Loading images from Shopify Media Library...");
-      
+
       // Use the media-specific endpoint to get all Shopify media
       const response = await apiRequest({
         url: '/api/media/shopify-media-library',
         method: 'GET'
       });
-      
+
       if (!response.success || !response.images) {
         toast({
           title: "Failed to load media",
@@ -143,12 +143,12 @@ export function ChooseMediaDialog({
         setIsLoading(false);
         return;
       }
-      
+
       console.log(`Got ${response.images.length} files from Media Library API`);
-      
+
       // Format received images into our standard format
       const formattedImages: MediaImage[] = [];
-      
+
       // Process all media library images 
       response.images.forEach((image: any) => {
         if (image && image.url) {
@@ -156,7 +156,7 @@ export function ChooseMediaDialog({
           const isAlreadySelected = initialSelectedImages.some(
             img => img.url === image.url || img.id === image.id
           );
-          
+
           // Ensure the URL starts with https://
           let imageUrl = image.url;
           if (imageUrl.startsWith('//')) {
@@ -164,7 +164,7 @@ export function ChooseMediaDialog({
           } else if (!imageUrl.startsWith('http')) {
             imageUrl = 'https://' + imageUrl;
           }
-          
+
           // Make sure we use CDN URLs for proper image loading
           if (!imageUrl.includes('cdn.shopify.com') && imageUrl.includes('shopify.com')) {
             try {
@@ -179,7 +179,7 @@ export function ChooseMediaDialog({
               console.warn("Failed to convert URL to CDN format:", imageUrl);
             }
           }
-          
+
           // Create a properly formatted media item
           formattedImages.push({
             id: image.id || `media-${formattedImages.length}`,
@@ -193,16 +193,16 @@ export function ChooseMediaDialog({
           });
         }
       });
-      
+
       // Store media library images in their own state
       setMediaLibraryImages(formattedImages);
       console.log(`Processed ${formattedImages.length} media files from Shopify`);
-      
+
       // Log a sample for debugging
       if (formattedImages.length > 0) {
         console.log("Sample media image:", formattedImages[0]);
       }
-      
+
     } catch (error) {
       console.error('Error loading Shopify Media Library:', error);
       toast({
@@ -214,18 +214,18 @@ export function ChooseMediaDialog({
       setIsLoading(false);
     }
   };
-  
+
   // Load product-specific images
   const loadProductImages = async (productId: string) => {
     setIsLoading(true);
     try {
       console.log(`Loading images for product ID: ${productId}`);
-      
+
       const response = await apiRequest({
         url: `/api/media/product-images/${productId}`,
         method: 'GET'
       });
-      
+
       if (!response.success || !response.images) {
         toast({
           title: "Failed to load product images",
@@ -235,16 +235,16 @@ export function ChooseMediaDialog({
         setIsLoading(false);
         return;
       }
-      
+
       console.log(`Got ${response.images.length} images for product ID ${productId}`);
-      
+
       // Format received images into our standard format with proper selection handling
       const formattedImages = response.images.map((image: any) => {
         // Check if this image is already selected
         const isAlreadySelected = initialSelectedImages.some(
           img => img.url === image.url || img.id === image.id
         );
-        
+
         return {
           id: image.id,
           url: image.url,
@@ -255,10 +255,10 @@ export function ChooseMediaDialog({
           selected: isAlreadySelected
         };
       });
-      
+
       // Store product images in state
       setProductImages(formattedImages);
-      
+
     } catch (error) {
       console.error('Error loading product images:', error);
       toast({
@@ -270,7 +270,7 @@ export function ChooseMediaDialog({
       setIsLoading(false);
     }
   };
-  
+
   // Search for images on Pexels
   const searchPexelsImages = async () => {
     if (!searchQuery.trim()) {
@@ -281,18 +281,18 @@ export function ChooseMediaDialog({
       });
       return;
     }
-    
+
     setIsLoading(true);
     setSearchInProgress(true);
-    
+
     try {
       console.log(`Searching Pexels for: ${searchQuery}`);
-      
+
       const response = await apiRequest({
         url: `/api/media/search-pexels?query=${encodeURIComponent(searchQuery)}`,
         method: 'GET'
       });
-      
+
       if (!response.success || !response.images) {
         toast({
           title: "Search failed",
@@ -303,16 +303,16 @@ export function ChooseMediaDialog({
         setSearchInProgress(false);
         return;
       }
-      
+
       console.log(`Got ${response.images.length} images from Pexels search`);
-      
+
       // Format received images into our standard format with proper selection handling
       const formattedImages = response.images.map((image: any) => {
         // Check if this image is already selected
         const isAlreadySelected = initialSelectedImages.some(
           img => img.url === image.url || img.id === image.id
         );
-        
+
         return {
           id: image.id,
           url: image.src.large || image.src.medium || image.src.original,
@@ -323,10 +323,10 @@ export function ChooseMediaDialog({
           src: image.src
         };
       });
-      
+
       // Store pexels images in state
       setPexelsImages(formattedImages);
-      
+
     } catch (error) {
       console.error('Error searching Pexels:', error);
       toast({
@@ -339,13 +339,13 @@ export function ChooseMediaDialog({
       setSearchInProgress(false);
     }
   };
-  
+
   // Toggle image selection with limit enforcement
   const toggleImageSelection = (image: MediaImage) => {
     setSelectedImages(prevSelectedImages => {
       // Check if image is already selected
       const isSelected = prevSelectedImages.some(img => img.id === image.id);
-      
+
       // If not selected and we're at the limit, show warning and prevent selection
       if (!isSelected && prevSelectedImages.length >= maxImages && !allowMultiple) {
         toast({
@@ -355,18 +355,18 @@ export function ChooseMediaDialog({
         });
         return prevSelectedImages;
       }
-      
+
       // If not selected and we're at the limit with allowMultiple, remove oldest selection
       if (!isSelected && prevSelectedImages.length >= maxImages && allowMultiple) {
         toast({
           title: `Maximum images updated`,
           description: `Added new image. You can select up to ${maxImages} images.`,
         });
-        
+
         // Add new image and remove oldest one
         return [...prevSelectedImages.slice(1), { ...image, selected: true }];
       }
-      
+
       // Toggle selection normally
       if (isSelected) {
         return prevSelectedImages.filter(img => img.id !== image.id);
@@ -375,7 +375,7 @@ export function ChooseMediaDialog({
       }
     });
   };
-  
+
   // Confirm selection and pass to parent
   const confirmSelection = () => {
     if (selectedImages.length > 0) {
@@ -421,7 +421,7 @@ export function ChooseMediaDialog({
   // Function to render the content for the active tab
   const renderTabContent = () => {
     const images = getActiveImages();
-    
+
     return (
       <div className="relative">
         {/* Show search bar for Pexels tab */}
@@ -455,7 +455,7 @@ export function ChooseMediaDialog({
             </Button>
           </div>
         )}
-        
+
         {/* Loading state */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
@@ -463,7 +463,7 @@ export function ChooseMediaDialog({
             <span className="ml-2 text-gray-600">Loading images...</span>
           </div>
         )}
-        
+
         {/* Empty state */}
         {!isLoading && images.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -471,23 +471,23 @@ export function ChooseMediaDialog({
             <p className="text-gray-500">{getEmptyStateMessage()}</p>
           </div>
         )}
-        
+
         {/* Grid of images */}
         {!isLoading && images.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {images.map((image) => {
               // Check if this image is selected
               const isSelected = selectedImages.some(img => img.id === image.id);
-              
+
               // For Pexels images, we might want to show different sizes
               const imageUrl = image.source === 'pexels' && image.src?.medium
                 ? image.src.medium
                 : image.url;
-                
+
               // Determine if this is a product image, variant image, or media library image for styling
               const isPrimaryProduct = image.source === 'product';
               const isVariant = image.source === 'variant';
-              
+
               return (
                 <div 
                   key={image.id} 
@@ -506,7 +506,7 @@ export function ChooseMediaDialog({
                       className="w-full h-full object-cover"
                       key={`${image.id}-${image.url}`} // Force re-render when URL changes
                     />
-                    
+
                     {/* Source badge */}
                     <div className="absolute top-2 left-2">
                       <span 
@@ -521,7 +521,7 @@ export function ChooseMediaDialog({
                          'Shopify'}
                       </span>
                     </div>
-                    
+
                     {/* Selection indicator */}
                     {isSelected && (
                       <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
@@ -529,12 +529,12 @@ export function ChooseMediaDialog({
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Image title - truncated for space */}
                   <div className="p-2">
                     <p className="text-xs truncate">{image.title || image.alt || 'Product image'}</p>
                   </div>
-                  
+
                   {/* Primary/Secondary Selection Controls - only show on hover */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                     <Button 
@@ -603,7 +603,7 @@ export function ChooseMediaDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        
+
         <Tabs defaultValue="primary_images" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="primary_images">
@@ -613,7 +613,7 @@ export function ChooseMediaDialog({
               Secondary Images
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="primary_images" className="space-y-4">
             <div className="rounded-md bg-blue-50 p-4 mb-4">
               <div className="flex">
@@ -627,7 +627,7 @@ export function ChooseMediaDialog({
                 </div>
               </div>
             </div>
-            
+
             {/* Tab selection for image sources */}
             <Tabs defaultValue="pexels" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
@@ -638,21 +638,17 @@ export function ChooseMediaDialog({
                   Product Images
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="pexels">
                 {renderTabContent()}
               </TabsContent>
-              
+
               <TabsContent value="products">
-                {renderTabContent()}
-              </TabsContent>
-              
-              <TabsContent value="media_library">
                 {renderTabContent()}
               </TabsContent>
             </Tabs>
           </TabsContent>
-          
+
           <TabsContent value="secondary_images" className="space-y-4">
             <div className="rounded-md bg-green-50 p-4 mb-4">
               <div className="flex">
@@ -666,7 +662,7 @@ export function ChooseMediaDialog({
                 </div>
               </div>
             </div>
-            
+
             {/* Tab selection for image sources - secondary */}
             <Tabs defaultValue="products" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
@@ -678,24 +674,20 @@ export function ChooseMediaDialog({
                   Pexels Images
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="pexels">
                 {renderTabContent()}
               </TabsContent>
-              
+
               <TabsContent value="products">
-                {renderTabContent()}
-              </TabsContent>
-              
-              <TabsContent value="media_library">
                 {renderTabContent()}
               </TabsContent>
             </Tabs>
           </TabsContent>
         </Tabs>
-        
+
         <Separator className="my-4" />
-        
+
         {/* Selected Images Preview */}
         <div className="mb-4">
           <h3 className="text-sm font-medium mb-2">Selected Images ({selectedImages.length})</h3>
@@ -721,7 +713,7 @@ export function ChooseMediaDialog({
             <p className="text-sm text-gray-500">No images selected yet</p>
           )}
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
