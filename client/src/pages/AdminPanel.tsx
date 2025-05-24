@@ -4790,10 +4790,10 @@ export default function AdminPanel() {
               </div>
             )}
             
-            {/* Selected images preview */}
+            {/* Selected images preview - With fixed height to prevent overlapping buttons */}
             {((imageTab === 'primary' && primaryImages.length > 0) || 
               (imageTab === 'secondary' && secondaryImages.length > 0)) && (
-              <div className="mt-4 bg-slate-50 p-2 rounded-md border">
+              <div className="mt-4 mb-16 bg-slate-50 p-2 rounded-md border">
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="text-sm font-medium">
                     Your Selected {imageTab === 'primary' ? 'Primary' : 'Secondary'} Images
@@ -4819,7 +4819,7 @@ export default function AdminPanel() {
                   </Button>
                 </div>
                 
-                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-60 overflow-y-auto p-2">
                   {(imageTab === 'primary' ? primaryImages : secondaryImages).map((img, index) => (
                     <div key={img.id} className="relative group">
                       <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
