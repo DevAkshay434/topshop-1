@@ -6079,10 +6079,14 @@ export default function AdminPanel() {
                                       />
                                       
                                       {/* Action buttons overlay */}
-                                      <div className="absolute inset-0 bg-black bg-opacity-70 opacity-0 hover:opacity-100 transition-all flex flex-col items-center justify-center gap-3 p-3">
-                                        <Button
-                                          variant="default"
-                                          size="sm"
+                                      <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-all flex items-center justify-center gap-2 p-3">
+                                        <Button 
+                                          size="sm" 
+                                          variant={isPrimarySelected ? "default" : "outline"}
+                                          className={cn(
+                                            "bg-blue-500 hover:bg-blue-600 text-white",
+                                            isPrimarySelected ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                          )}
                                           onClick={() => {
                                             // Create a Pexels-compatible image object
                                             const imageForSelection: PexelsImage = {
@@ -6103,21 +6107,30 @@ export default function AdminPanel() {
                                             // Add to primary images (featured)
                                             setPrimaryImages(prev => [imageForSelection, ...prev.filter(img => img.id !== file.id)]);
                                             
+                                            // If it was in secondary images, remove it from there
+                                            if (isSecondarySelected) {
+                                              setSecondaryImages(prev => prev.filter(img => 
+                                                img.id !== `${file.id}-secondary` && img.url !== file.url
+                                              ));
+                                            }
+                                            
                                             toast({
-                                              title: "Featured image set",
-                                              description: "Image will appear at the top of your content"
+                                              title: "Primary image selected",
+                                              description: "Image will appear as the featured image"
                                             });
                                           }}
-                                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                                          disabled={isPrimarySelected}
                                         >
-                                          <ImageIcon className="mr-2 h-4 w-4" />
-                                          Set as Featured
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Primary
                                         </Button>
                                         
-                                        <Button
-                                          variant="default" 
-                                          size="sm"
+                                        <Button 
+                                          size="sm" 
+                                          variant={isSecondarySelected ? "default" : "outline"}
+                                          className={cn(
+                                            "bg-green-500 hover:bg-green-600 text-white",
+                                            isSecondarySelected ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                          )}
                                           onClick={() => {
                                             // Create a Pexels-compatible image object
                                             const imageForSelection: PexelsImage = {
@@ -6143,11 +6156,10 @@ export default function AdminPanel() {
                                               description: "Image will appear in your content body"
                                             });
                                           }}
-                                          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium"
                                           disabled={isSecondarySelected}
                                         >
-                                          <FileImage className="mr-2 h-4 w-4" />
-                                          Add to Content
+                                          <PlusCircle className="h-4 w-4 mr-1" />
+                                          Secondary
                                         </Button>
                                       </div>
                                     </div>
