@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -15,9 +15,7 @@ import {
   Info, 
   FileDown, 
   SaveAll, 
-  FileText, 
-  Clock, 
-  Palette
+  FileText
 } from "lucide-react";
 import { 
   Tooltip, 
@@ -34,14 +32,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ContentStyleSettings } from "./ContentStyleSettings";
 
 // Sample template projects - in a real app, these might come from an API
 const TEMPLATE_PROJECTS = [
@@ -71,18 +62,7 @@ export default function ProjectCreationDialog() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [savedProjects, setSavedProjects] = useState(getSavedProjects());
-  const [currentTab, setCurrentTab] = useState("basics");
-  const [contentStyleSettings, setContentStyleSettings] = useState({
-    tone: "friendly",
-    perspective: "first_person_plural",
-    structure: "informational"
-  });
   const { toast } = useToast();
-
-  // Handle content style changes
-  const handleContentStyleChange = (values: any) => {
-    setContentStyleSettings(values);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,9 +78,8 @@ export default function ProjectCreationDialog() {
     
     setIsSubmitting(true);
     
-    // Save project name and content style settings to localStorage
+    // Save project name to localStorage
     localStorage.setItem('current-project', projectName);
-    localStorage.setItem('content-style-settings', JSON.stringify(contentStyleSettings));
     
     // Add to saved projects if not already there
     const updatedProjects = [...savedProjects];
@@ -108,8 +87,7 @@ export default function ProjectCreationDialog() {
       updatedProjects.push({ 
         id: Date.now().toString(), 
         name: projectName,
-        createdAt: new Date().toISOString(),
-        contentStyle: contentStyleSettings
+        createdAt: new Date().toISOString()
       });
       localStorage.setItem('saved-projects', JSON.stringify(updatedProjects));
       setSavedProjects(updatedProjects);
@@ -167,150 +145,102 @@ export default function ProjectCreationDialog() {
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <Tabs 
-            defaultValue="basics" 
-            value={currentTab}
-            onValueChange={setCurrentTab}
-            className="w-full"
-          >
-            <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="basics" className="flex items-center gap-1.5">
-                <FileText className="h-4 w-4" />
-                Basic Info
-              </TabsTrigger>
-              <TabsTrigger value="style" className="flex items-center gap-1.5">
-                <Palette className="h-4 w-4" />
-                Content Style
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="projectName" className="text-base font-medium">Project Name</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[250px] p-3 text-sm bg-white">
+                    <p>Most Shopify users create a project for each of their top-selling products.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             
-            <TabsContent value="basics" className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="projectName" className="text-base font-medium">Project Name</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-[250px] p-3 text-sm bg-white">
-                        <p>Most Shopify users create a project for each of their top-selling products.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                
-                <Input
-                  id="projectName"
-                  placeholder="Valentine Campaign – Best Sellers"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  className="text-base"
-                  autoFocus
-                />
-                
-                <p className="text-sm text-muted-foreground">
-                  Name your project based on your campaign or content goal.
-                </p>
-                
-                {/* Template Selection */}
-                {showTemplates && (
-                  <div className="space-y-3 pt-2 border-t">
-                    <Label htmlFor="templateSelect" className="flex items-center gap-1.5">
-                      <FileText className="h-4 w-4 text-primary" />
-                      Template Projects
-                    </Label>
-                    
-                    <Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a template" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Template Projects</SelectLabel>
-                          {TEMPLATE_PROJECTS.map(template => (
-                            <SelectItem key={template.id} value={template.id}>
-                              {template.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    
-                    {selectedTemplate && (
-                      <p className="text-sm text-muted-foreground italic">
-                        {TEMPLATE_PROJECTS.find(t => t.id === selectedTemplate)?.description}
-                      </p>
-                    )}
-                  </div>
-                )}
-                
-                {/* Saved Projects - Only show if there are saved projects */}
-                {!showTemplates && savedProjects.length > 0 && (
-                  <div className="space-y-3 pt-2 border-t">
-                    <Label htmlFor="savedProjectSelect" className="flex items-center gap-1.5">
-                      <SaveAll className="h-4 w-4 text-primary" />
-                      Your Projects
-                    </Label>
-                    
-                    <Select onValueChange={handleSavedProjectSelect}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a saved project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Saved Projects</SelectLabel>
-                          {savedProjects.map(project => (
-                            <SelectItem key={project.id} value={project.id}>
-                              {project.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                
-                <div className="pt-4 flex justify-end">
-                  <Button 
-                    type="button" 
-                    onClick={() => setCurrentTab("style")}
-                    className="flex items-center gap-1.5"
-                  >
-                    Continue to Content Style
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
+            <Input
+              id="projectName"
+              placeholder="Valentine Campaign – Best Sellers"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="text-base"
+              autoFocus
+            />
             
-            <TabsContent value="style" className="space-y-4">
-              <ContentStyleSettings 
-                onSettingsChange={handleContentStyleChange}
-                defaultValues={contentStyleSettings}
-              />
-              
-              <div className="flex justify-between pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setCurrentTab("basics")}
-                  className="flex items-center gap-1.5"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                  Back to Basics
-                </Button>
+            <p className="text-sm text-muted-foreground">
+              Name your project based on your campaign or content goal.
+            </p>
+            
+            {/* Template Selection */}
+            {showTemplates && (
+              <div className="space-y-3 pt-2 border-t">
+                <Label htmlFor="templateSelect" className="flex items-center gap-1.5">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Template Projects
+                </Label>
                 
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting || !projectName || projectName.trim().length < 3}
-                  className="min-w-[100px]"
-                >
-                  {isSubmitting ? "Creating..." : "Create Project"}
-                </Button>
+                <Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Template Projects</SelectLabel>
+                      {TEMPLATE_PROJECTS.map(template => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                
+                {selectedTemplate && (
+                  <p className="text-sm text-muted-foreground italic">
+                    {TEMPLATE_PROJECTS.find(t => t.id === selectedTemplate)?.description}
+                  </p>
+                )}
               </div>
-            </TabsContent>
-          </Tabs>
+            )}
+            
+            {/* Saved Projects - Only show if there are saved projects */}
+            {!showTemplates && savedProjects.length > 0 && (
+              <div className="space-y-3 pt-2 border-t">
+                <Label htmlFor="savedProjectSelect" className="flex items-center gap-1.5">
+                  <SaveAll className="h-4 w-4 text-primary" />
+                  Your Projects
+                </Label>
+                
+                <Select onValueChange={handleSavedProjectSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a saved project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Saved Projects</SelectLabel>
+                      {savedProjects.map(project => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            <div className="pt-4 flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !projectName || projectName.trim().length < 3}
+                className="min-w-[100px]"
+              >
+                {isSubmitting ? "Creating..." : "Create Project"}
+              </Button>
+            </div>
+          </div>
           
           <div className="flex items-center justify-between pt-2 border-t">
             <Button 

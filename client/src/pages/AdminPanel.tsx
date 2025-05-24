@@ -695,7 +695,7 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'content';
+  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'content-style' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
