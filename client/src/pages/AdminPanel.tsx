@@ -237,8 +237,10 @@ interface PexelsImage {
   photographer?: string;
   photographer_url?: string;
   selected?: boolean;
+  isPrimary?: boolean;
   type?: 'image' | 'youtube';
   videoId?: string;
+  source?: 'product' | 'variant' | 'shopify' | 'pexels' | 'product_image' | 'theme_asset' | 'article_image' | 'collection_image' | 'shopify_media' | 'variant_image' | 'uploaded';
 }
 
 // Predefined categories for content
@@ -5015,7 +5017,10 @@ export default function AdminPanel() {
                           src: img.src,
                           photographer: img.photographer,
                           photographer_url: img.photographer_url,
-                          selected: false
+                          selected: false,
+                          isPrimary: false,
+                          source: 'pexels',
+                          type: 'image'
                         }));
                         
                         setSearchedImages(formattedImages || []);
