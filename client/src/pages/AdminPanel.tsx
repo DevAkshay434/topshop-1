@@ -5548,48 +5548,128 @@ export default function AdminPanel() {
                         }
                       } else if (value === 'media') {
                         toast({
-                          title: "Loading media library",
-                          description: "Fetching files from your Shopify store"
+                          title: "Loading media files",
+                          description: "Fetching images from your Shopify store"
                         });
                         
                         // Fetch all media files from Shopify Media Library
                         setIsLoadingContentFiles(true);
+                        
+                        // Try fetching media files from the API
                         apiRequest({
                           url: '/api/admin/files',
                           method: 'GET'
                         }).then(response => {
                           if (response.success && response.files && response.files.length > 0) {
-                            const shopifyMediaFiles = response.files
+                            // Convert to standard format
+                            const mediaFiles = response.files
                               .filter((file: any) => file && file.url)
                               .map((file: any) => ({
-                                id: file.id || Math.random().toString(36).substring(7),
+                                id: file.id || `media-${Math.random().toString(36).substring(7)}`,
                                 url: file.url,
-                                name: file.filename || 'Shopify Media',
-                                alt: file.alt || file.filename || 'Shopify Media',
-                                content_type: file.content_type || 'image/jpeg',
-                                source: 'shopify'
+                                width: 500, // Standard width for display
+                                height: 500, // Standard height for display
+                                alt: file.alt || file.filename || 'Media File',
+                                src: {
+                                  original: file.url,
+                                  large: file.url,
+                                  medium: file.url,
+                                  small: file.url,
+                                  thumbnail: file.url
+                                },
+                                selected: false,
+                                type: 'image'
                               }));
                             
-                            setContentFiles(shopifyMediaFiles);
-                            console.log(`Loaded ${shopifyMediaFiles.length} files from Shopify Media Library`);
+                            setContentFiles(mediaFiles);
+                            console.log(`Loaded ${mediaFiles.length} files from Shopify Media Library`);
                           } else {
-                            toast({
-                              title: "No media files found",
-                              description: "No files found in your Shopify Media Library",
-                              variant: "destructive"
-                            });
-                            setContentFiles([]);
+                            // If no files found, fallback to product images
+                            fallbackToProductImages();
                           }
                         }).catch(error => {
-                          console.error('Error fetching Shopify Media Library:', error);
-                          toast({
-                            title: "Error loading media",
-                            description: "Failed to load Shopify Media Library",
-                            variant: "destructive"
-                          });
+                          console.error('Error fetching media files:', error);
+                          fallbackToProductImages();
                         }).finally(() => {
                           setIsLoadingContentFiles(false);
                         });
+                        
+                        // Function to fallback to product images if media library fails
+                        function fallbackToProductImages() {
+                          console.log('Falling back to product images');
+                          
+                          if (selectedProducts.length === 0) {
+                            toast({
+                              title: "No products selected",
+                              description: "Please select products to view their images",
+                              variant: "destructive"
+                            });
+                            setContentFiles([]);
+                            return;
+                          }
+                          
+                          // Extract product images
+                          const productImages = [];
+                          const uniqueUrls = new Set();
+                          
+                          selectedProducts.forEach(product => {
+                            // Add main product image
+                            if (product.image && product.image.src) {
+                              if (!uniqueUrls.has(product.image.src)) {
+                                uniqueUrls.add(product.image.src);
+                                productImages.push({
+                                  id: `product-${product.id}-main`,
+                                  url: product.image.src,
+                                  width: 500,
+                                  height: 500,
+                                  alt: product.title || 'Product image',
+                                  src: {
+                                    original: product.image.src,
+                                    large: product.image.src,
+                                    medium: product.image.src,
+                                    small: product.image.src,
+                                    thumbnail: product.image.src
+                                  },
+                                  selected: false,
+                                  type: 'image'
+                                });
+                              }
+                            }
+                            
+                            // Add variant images
+                            if (product.images && Array.isArray(product.images)) {
+                              product.images.forEach((image, index) => {
+                                const imageUrl = typeof image === 'string' ? image : (image.src || '');
+                                if (imageUrl && !uniqueUrls.has(imageUrl)) {
+                                  uniqueUrls.add(imageUrl);
+                                  productImages.push({
+                                    id: `product-${product.id}-image-${index}`,
+                                    url: imageUrl,
+                                    filename: `${product.title} - Image ${index + 1}`,
+                                    alt: `${product.title} - Image ${index + 1}`,
+                                    content_type: 'image/jpeg',
+                                    source: 'product_image'
+                                  });
+                                }
+                              });
+                            }
+                          });
+                          
+                          if (productImages.length > 0) {
+                            setContentFiles(productImages);
+                            toast({
+                              title: "Product images loaded",
+                              description: `Showing ${productImages.length} images from your products`
+                            });
+                          } else {
+                            setContentFiles([]);
+                            toast({
+                              title: "No images found",
+                              description: "Selected products don't have any images",
+                              variant: "destructive"
+                            });
+                          }
+                        }
                       }
                     }}
                   >
@@ -6029,15 +6109,24 @@ export default function AdminPanel() {
                         ) : contentFiles.length > 0 ? (
                           <div>
                             <div className="pb-3 mb-3 border-b border-gray-200">
-                              <div className="flex justify-between items-center">
+                              <div className="flex items-center">
                                 <h4 className="text-sm font-medium flex items-center">
                                   <Store className="h-4 w-4 mr-2 text-blue-500" />
-                                  Shopify Media Library
+                                  Product & Media Images
                                 </h4>
-                                <Badge variant="outline">{contentFiles.length} images</Badge>
+                                <Badge variant="outline" className="ml-3">{contentFiles.length} images</Badge>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="ml-auto"
+                                  onClick={fetchShopifyFiles}
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Refresh
+                                </Button>
                               </div>
                               <p className="text-xs text-gray-500 mt-1">
-                                Choose media files from your Shopify store for your content
+                                Select product and media images from your Shopify store
                               </p>
                             </div>
                           
