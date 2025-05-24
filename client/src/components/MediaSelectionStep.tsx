@@ -617,7 +617,7 @@ export default function MediaSelectionStep({
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Choose Media</h2>
+        <h2 className="text-xl font-semibold">Select Images for Your Content</h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBack}>Back</Button>
           <Button onClick={handleComplete}>Continue</Button>
