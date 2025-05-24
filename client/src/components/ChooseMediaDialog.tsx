@@ -49,7 +49,7 @@ export function ChooseMediaDialog({
   initialSelectedImages = [],
   maxImages = 10,
   allowMultiple = true,
-  title = "Choose Medias",
+  title = "Choose Media",
   description = "Select images from your Shopify store or other sources."
 }: ChooseMediaDialogProps) {
   const { toast } = useToast();
@@ -58,7 +58,6 @@ export function ChooseMediaDialog({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
   const [productImages, setProductImages] = useState<MediaImage[]>([]);
-  const [mediaLibraryImages, setMediaLibraryImages] = useState<MediaImage[]>([]);
   const [pexelsImages, setPexelsImages] = useState<MediaImage[]>([]);
   const [searchInProgress, setSearchInProgress] = useState<boolean>(false);
 
@@ -123,97 +122,8 @@ export function ChooseMediaDialog({
     }
   }, [initialSelectedImages]);
 
-  // Load Shopify Media Library images
-  const loadShopifyMediaLibrary = async () => {
-    setIsLoading(true);
-    try {
-      console.log("Loading images from Shopify Media Library...");
-
-      // Use the media-specific endpoint to get all Shopify media
-      const response = await apiRequest({
-        url: '/api/media/shopify-media-library',
-        method: 'GET'
-      });
-
-      if (!response.success || !response.images) {
-        toast({
-          title: "Failed to load media",
-          description: "Could not load images from your Shopify Media Library."
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      console.log(`Got ${response.images.length} files from Media Library API`);
-
-      // Format received images into our standard format
-      const formattedImages: MediaImage[] = [];
-
-      // Process all media library images 
-      response.images.forEach((image: any) => {
-        if (image && image.url) {
-          // Check if this image is already selected
-          const isAlreadySelected = initialSelectedImages.some(
-            img => img.url === image.url || img.id === image.id
-          );
-
-          // Ensure the URL starts with https://
-          let imageUrl = image.url;
-          if (imageUrl.startsWith('//')) {
-            imageUrl = 'https:' + imageUrl;
-          } else if (!imageUrl.startsWith('http')) {
-            imageUrl = 'https://' + imageUrl;
-          }
-
-          // Make sure we use CDN URLs for proper image loading
-          if (!imageUrl.includes('cdn.shopify.com') && imageUrl.includes('shopify.com')) {
-            try {
-              const urlParts = imageUrl.split('/');
-              const domainParts = urlParts[2].split('.');
-              if (domainParts.length > 0) {
-                const storeName = domainParts[0];
-                const pathPart = urlParts.slice(3).join('/');
-                imageUrl = `https://cdn.shopify.com/s/files/1/${storeName}/${pathPart}`;
-              }
-            } catch (err) {
-              console.warn("Failed to convert URL to CDN format:", imageUrl);
-            }
-          }
-
-          // Create a properly formatted media item
-          formattedImages.push({
-            id: image.id || `media-${formattedImages.length}`,
-            url: imageUrl,
-            alt: image.alt || image.filename || 'Shopify image',
-            title: image.filename || image.title || 'Shopify image',
-            source: image.source || 'shopify',
-            product_id: image.product_id,
-            product_title: image.product_title,
-            selected: isAlreadySelected
-          });
-        }
-      });
-
-      // Store media library images in their own state
-      setMediaLibraryImages(formattedImages);
-      console.log(`Processed ${formattedImages.length} media files from Shopify`);
-
-      // Log a sample for debugging
-      if (formattedImages.length > 0) {
-        console.log("Sample media image:", formattedImages[0]);
-      }
-
-    } catch (error) {
-      console.error('Error loading Shopify Media Library:', error);
-      toast({
-        title: "Error",
-        description: "Could not load Shopify Media Library",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // We've removed the Shopify Media Library functionality
+  // as per the simplified UI requirements
 
   // Load product-specific images
   const loadProductImages = async (productId: string) => {
@@ -518,7 +428,7 @@ export function ChooseMediaDialog({
                       >
                         {image.source === 'product' ? 'Product' : 
                          image.source === 'variant' ? 'Variant' : 
-                         'Shopify'}
+                         'Pexels'}
                       </span>
                     </div>
 
@@ -550,34 +460,38 @@ export function ChooseMediaDialog({
                           return [...filtered, { ...image, selected: true, isPrimary: true }];
                         });
                         toast({
-                          title: "Primary image set",
-                          description: "This image will appear as the featured image in your content."
+                          title: "Primary image selected",
+                          description: "This image will be used as the featured image"
                         });
                       }}
                     >
+                      <Check className="h-4 w-4 mr-1" />
                       Select as Primary
                     </Button>
                     <Button 
-                      size="sm"
+                      size="sm" 
                       className="w-3/4 bg-green-600 hover:bg-green-700 text-white"
                       onClick={(e) => {
                         e.stopPropagation();
                         // Handle secondary selection logic
                         setSelectedImages(prev => {
-                          // If already in selection, do nothing
-                          if (prev.some(img => img.id === image.id)) {
+                          // Check if already in selection
+                          const exists = prev.some(img => img.id === image.id);
+                          if (exists) {
+                            // Already exists - no change
                             return prev;
                           }
                           // Add as secondary image
                           return [...prev, { ...image, selected: true, isPrimary: false }];
                         });
                         toast({
-                          title: "Added as secondary",
-                          description: "This image will appear in the body of your content."
+                          title: "Secondary image selected",
+                          description: "Image added to content images"
                         });
                       }}
                     >
-                      Select as Secondary
+                      <ImagePlus className="h-4 w-4 mr-1" />
+                      Add as Secondary
                     </Button>
                   </div>
                 </div>
@@ -590,9 +504,10 @@ export function ChooseMediaDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-      <DialogContent className="sm:max-w-[800px]">
-        <button 
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        {/* Close button */}
+        <button
           className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
           onClick={() => onOpenChange(false)}
         >
@@ -657,21 +572,20 @@ export function ChooseMediaDialog({
                 </div>
                 <div className="ml-3 flex-1 md:flex md:justify-between">
                   <p className="text-sm text-green-700">
-                    Select product images, detail shots, and supporting visuals to appear throughout your content
+                    Choose additional product-focused images to include throughout your content
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Tab selection for image sources - secondary */}
-            <Tabs defaultValue="products" className="w-full">
+            {/* Tab selection for image sources */}
+            <Tabs defaultValue="pexels" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
-                <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
-                  Product Images
-                </TabsTrigger>
-
                 <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
                   Pexels Images
+                </TabsTrigger>
+                <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
+                  Product Images
                 </TabsTrigger>
               </TabsList>
 
@@ -701,11 +615,16 @@ export function ChooseMediaDialog({
                     className="w-full h-full object-cover"
                   />
                   <button
-                    className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setSelectedImages(prev => prev.filter(img => img.id !== image.id))}
+                    className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                    onClick={() => setSelectedImages(prev => prev.filter(i => i.id !== image.id))}
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-4 w-4 text-white" />
                   </button>
+                  {image.isPrimary && (
+                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1">
+                      Primary
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -715,11 +634,17 @@ export function ChooseMediaDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={confirmSelection} disabled={selectedImages.length === 0}>
-            Add Selected Images
+          <Button 
+            onClick={confirmSelection}
+            disabled={selectedImages.length === 0}
+          >
+            Confirm Selection
           </Button>
         </DialogFooter>
       </DialogContent>
