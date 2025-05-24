@@ -4773,21 +4773,18 @@ export default function AdminPanel() {
                 
                 {youtubeVideoId && (
                   <div className="mt-4 border rounded-md p-4">
-                    <h4 className="text-sm font-medium mb-2">Video Preview</h4>
-                    <div className="aspect-video bg-muted rounded-md overflow-hidden">
-                      <iframe 
-                        width="100%" 
-                        height="100%" 
-                        src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                        title="YouTube video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
+                    <h4 className="text-sm font-medium mb-2">Video Ready to Add</h4>
+                    <div className="bg-muted rounded-md p-3 flex items-center gap-3">
+                      <div className="bg-red-100 text-red-600 p-2 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">YouTube Video ID: {youtubeVideoId}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This video will be embedded in your content when you click 'Add Video'
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      This video will be embedded in your content. You can add multiple videos.
-                    </p>
                   </div>
                 )}
               </div>
@@ -5101,6 +5098,9 @@ export default function AdminPanel() {
                               }
                             });
                             setSearchedImages(updatedImages);
+                            
+                            // Also set this as primary in the main images collection
+                            setPrimaryImages([{...image, selected: true, isPrimary: true}]);
                             toast({
                               title: "Primary image selected",
                               description: "This image will appear as a featured image at the top of your content"
@@ -5120,6 +5120,9 @@ export default function AdminPanel() {
                               img.id === image.id ? { ...img, selected: true, isPrimary: false } : img
                             );
                             setSearchedImages(updatedImages);
+                            
+                            // Also add to secondary images collection
+                            setSecondaryImages(prev => [...prev, {...image, selected: true, isPrimary: false}]);
                             toast({
                               title: "Secondary image selected",
                               description: "This image will appear throughout your content body"
