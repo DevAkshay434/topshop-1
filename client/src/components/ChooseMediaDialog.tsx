@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, Image as ImageIcon, ImagePlus, Loader2, X } from 'lucide-react';
+import { Check, Image as ImageIcon, ImagePlus, Loader2, X, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import ShopifyImageViewer from './ShopifyImageViewer';
 
 // Define the shape of image objects
@@ -15,10 +16,19 @@ export interface MediaImage {
   alt?: string;
   title?: string;
   filename?: string;
-  source: 'product' | 'variant' | 'shopify' | 'pexels' | 'product_image' | 'theme_asset' | 'article_image' | 'collection_image';
+  source: 'product' | 'variant' | 'shopify' | 'pexels' | 'product_image' | 'theme_asset' | 'article_image' | 'collection_image' | 'shopify_media' | 'variant_image' | 'uploaded';
   selected?: boolean;
   product_id?: string | number;
   product_title?: string;
+  width?: number;
+  height?: number;
+  src?: {
+    original: string;
+    large: string;
+    medium: string;
+    small: string;
+    thumbnail: string;
+  };
 }
 
 interface ChooseMediaDialogProps {
@@ -43,11 +53,14 @@ export function ChooseMediaDialog({
   description = "Select images from your Shopify store or other sources."
 }: ChooseMediaDialogProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>('products');
+  const [activeTab, setActiveTab] = useState<string>('primary_images');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
   const [productImages, setProductImages] = useState<MediaImage[]>([]);
   const [mediaLibraryImages, setMediaLibraryImages] = useState<MediaImage[]>([]);
+  const [pexelsImages, setPexelsImages] = useState<MediaImage[]>([]);
+  const [searchInProgress, setSearchInProgress] = useState<boolean>(false);
   
   // Enhanced method to get selected product ID from any available source
   const getSelectedProductId = () => {
@@ -68,34 +81,33 @@ export function ChooseMediaDialog({
       
       // Try to get from the global form context last
       const formContext = (window as any).TopshopSEO?.formContext;
-      if (formContext && formContext.productIds && formContext.productIds.length > 0) {
-        console.log("Found product ID in form context:", formContext.productIds[0]);
-        return formContext.productIds[0];
+      if (formContext && formContext.productId) {
+        console.log("Found product ID in form context:", formContext.productId);
+        return formContext.productId;
       }
       
-      console.log("No product ID found in any source");
-      return undefined;
+      return null;
     } catch (error) {
-      console.error("Error getting selected product ID:", error);
-      return undefined;
+      console.error("Error getting product ID:", error);
+      return null;
     }
   };
-  
-  // Fetch media based on the active tab when dialog opens
+
+  // Load appropriate images when dialog is opened
   useEffect(() => {
     if (open) {
+      // Reset UI state for new dialog
+      setIsLoading(false);
+      
       if (activeTab === 'products') {
-        // Get product ID from URL or other means if available
-        const selectedProductId = getSelectedProductId();
-        
-        if (selectedProductId) {
-          console.log("Loading images for selected product ID:", selectedProductId);
-          // Pass the selected product ID to filter images for that product only
-          loadProductImages(selectedProductId);
+        // For product tab, load product-specific images if we have a product ID
+        const productId = getSelectedProductId();
+        if (productId) {
+          console.log("Loading images for product:", productId);
+          loadProductImages(productId);
         } else {
-          // No product selected, load all product images
-          console.log("No specific product selected, loading all product images");
-          loadProductImages();
+          console.log("No product ID found, showing default product images");
+          // You could load featured products or recent products here
         }
       } else if (activeTab === 'pexels') {
         // Pexels tab is handled separately
@@ -198,502 +210,539 @@ export function ChooseMediaDialog({
     } catch (error) {
       console.error('Error loading Shopify Media Library:', error);
       toast({
-        title: "Error loading media library",
-        description: "There was a problem loading images from your Shopify Media Library.",
-        variant: "destructive"
+        title: "Error",
+        description: "Could not load Shopify Media Library",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Load product images directly from the products API
-  const loadProductImages = async (selectedProductId?: string | React.MouseEvent) => {
-    // Handle being called from a button click
-    if (selectedProductId && typeof selectedProductId !== 'string') {
-      selectedProductId = undefined; // It's a MouseEvent, not a product ID
-    }
+  
+  // Load product-specific images
+  const loadProductImages = async (productId: string) => {
     setIsLoading(true);
-    
     try {
-      // Get products first
-      const productsResponse = await apiRequest({
-        url: '/api/admin/products',
+      console.log(`Loading images for product ID: ${productId}`);
+      
+      const response = await apiRequest({
+        url: `/api/media/product-images/${productId}`,
         method: 'GET'
       });
       
-      if (!productsResponse.success || !productsResponse.products || !productsResponse.products.length) {
+      if (!response.success || !response.images) {
         toast({
-          title: "No products found",
-          description: "Could not find any products in your Shopify store."
+          title: "Failed to load product images",
+          description: "Could not load images for the selected product.",
+          variant: "destructive"
         });
         setIsLoading(false);
         return;
       }
       
-      const formattedImages: MediaImage[] = [];
-      let imageCount = 0;
+      console.log(`Got ${response.images.length} images for product ID ${productId}`);
       
-      // Debug information
-      console.log(`Selected product ID: ${selectedProductId}`);
-      console.log(`Total products available: ${productsResponse.products.length}`);
-      
-      // If a specific product ID is provided, only show images from that product
-      const productsToProcess = selectedProductId 
-        ? productsResponse.products.filter((product: any) => {
-            // Ensure consistent string comparison for product IDs
-            const productIdString = String(product.id);
-            const selectedIdString = String(selectedProductId);
-            const isMatch = productIdString === selectedIdString;
-            
-            if (isMatch) {
-              console.log(`✅ Found matching product: ${product.title} (ID: ${productIdString})`);
-            }
-            
-            return isMatch;
-          })
-        : productsResponse.products;
-      
-      console.log(`Processing images from ${productsToProcess.length} products`);
-      
-      // Process products and extract images
-      productsToProcess.forEach((product: any) => {
-        // Add main product image
-        if (product.image && product.image.src) {
-          imageCount++;
-          const isSelected = initialSelectedImages.some(img => 
-            img.url === product.image.src || img.id === `product-${product.id}-main`
-          );
-          
-          formattedImages.push({
-            id: `product-${product.id}-main`,
-            url: product.image.src,
-            alt: product.title,
-            title: product.title,
-            source: 'product',
-            product_id: product.id,
-            product_title: product.title,
-            selected: isSelected
-          });
-        }
+      // Format received images into our standard format with proper selection handling
+      const formattedImages = response.images.map((image: any) => {
+        // Check if this image is already selected
+        const isAlreadySelected = initialSelectedImages.some(
+          img => img.url === image.url || img.id === image.id
+        );
         
-        // Add additional product images
-        if (product.images && Array.isArray(product.images)) {
-          product.images.forEach((image: any, index: number) => {
-            if (image && image.src) {
-              // Skip duplicates
-              const isDuplicate = formattedImages.some(img => img.url === image.src);
-              
-              if (!isDuplicate) {
-                imageCount++;
-                const isSelected = initialSelectedImages.some(img => 
-                  img.url === image.src || img.id === `product-${product.id}-image-${index}`
-                );
-                
-                formattedImages.push({
-                  id: `product-${product.id}-image-${index}`,
-                  url: image.src,
-                  alt: image.alt || `${product.title} - Image ${index + 1}`,
-                  title: product.title,
-                  source: 'product',
-                  product_id: product.id,
-                  product_title: product.title,
-                  selected: isSelected
-                });
-              }
-            }
-          });
-        }
-        
-        // Add variant images
-        if (product.variants && Array.isArray(product.variants)) {
-          product.variants.forEach((variant: any, variantIndex: number) => {
-            if (variant.image && variant.image.src) {
-              // Skip duplicates
-              const isDuplicate = formattedImages.some(img => img.url === variant.image.src);
-              
-              if (!isDuplicate) {
-                imageCount++;
-                const isSelected = initialSelectedImages.some(img => 
-                  img.url === variant.image.src || img.id === `variant-${variant.id}`
-                );
-                
-                formattedImages.push({
-                  id: `variant-${variant.id}`,
-                  url: variant.image.src,
-                  alt: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
-                  title: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
-                  source: 'variant',
-                  product_id: product.id,
-                  product_title: product.title, 
-                  selected: isSelected
-                });
-              }
-            }
-          });
-        }
+        return {
+          id: image.id,
+          url: image.url,
+          alt: image.alt || `Product image`,
+          title: image.title || image.alt || `Product image`,
+          source: image.source || 'product',
+          product_id: productId,
+          selected: isAlreadySelected
+        };
       });
       
-      // Update the product images state
+      // Store product images in state
       setProductImages(formattedImages);
-      console.log(`Loaded ${imageCount} product images (${formattedImages.length} unique)`);
-      
-      // Initial selection
-      const newSelectedImages = formattedImages.filter(img => img.selected);
-      if (newSelectedImages.length > 0) {
-        setSelectedImages(prevSelected => {
-          // Combine with any existing selections, avoiding duplicates
-          const existingIds = prevSelected.map(img => img.id);
-          const newImgs = newSelectedImages.filter(img => !existingIds.includes(img.id));
-          return [...prevSelected, ...newImgs];
-        });
-      }
       
     } catch (error) {
       console.error('Error loading product images:', error);
       toast({
-        title: "Error loading images",
-        description: "There was a problem loading images from your store.",
-        variant: "destructive"
+        title: "Error",
+        description: "Could not load product images",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Toggle selection of an image
-  const toggleImageSelection = (image: MediaImage) => {
-    // Check if already selected
-    const isAlreadySelected = selectedImages.some(img => img.id === image.id || img.url === image.url);
+  
+  // Search for images on Pexels
+  const searchPexelsImages = async () => {
+    if (!searchQuery.trim()) {
+      toast({
+        title: "Please enter a search term",
+        description: "Enter keywords to search for images on Pexels",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    if (isAlreadySelected) {
-      // Remove from selection
-      setSelectedImages(selectedImages.filter(img => img.id !== image.id && img.url !== image.url));
-    } else {
-      // Check if we're at the maximum number of images
-      if (!allowMultiple) {
-        // If only allowing one image, replace current selection
-        setSelectedImages([image]);
-      } else if (selectedImages.length >= maxImages) {
-        // If at max, show an error
+    setIsLoading(true);
+    setSearchInProgress(true);
+    
+    try {
+      console.log(`Searching Pexels for: ${searchQuery}`);
+      
+      const response = await apiRequest({
+        url: `/api/media/search-pexels?query=${encodeURIComponent(searchQuery)}`,
+        method: 'GET'
+      });
+      
+      if (!response.success || !response.images) {
         toast({
-          title: "Maximum images reached",
-          description: `You can only select up to ${maxImages} images.`,
+          title: "Search failed",
+          description: "Could not search for images on Pexels",
           variant: "destructive"
         });
-      } else {
-        // Add to selection
-        setSelectedImages([...selectedImages, image]);
+        setIsLoading(false);
+        setSearchInProgress(false);
+        return;
       }
+      
+      console.log(`Got ${response.images.length} images from Pexels search`);
+      
+      // Format received images into our standard format with proper selection handling
+      const formattedImages = response.images.map((image: any) => {
+        // Check if this image is already selected
+        const isAlreadySelected = initialSelectedImages.some(
+          img => img.url === image.url || img.id === image.id
+        );
+        
+        return {
+          id: image.id,
+          url: image.src.large || image.src.medium || image.src.original,
+          alt: image.alt || `${searchQuery} image`,
+          title: image.photographer ? `Photo by ${image.photographer}` : `${searchQuery} image`,
+          source: 'pexels',
+          selected: isAlreadySelected,
+          src: image.src
+        };
+      });
+      
+      // Store pexels images in state
+      setPexelsImages(formattedImages);
+      
+    } catch (error) {
+      console.error('Error searching Pexels:', error);
+      toast({
+        title: "Error",
+        description: "Could not search for images on Pexels",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setSearchInProgress(false);
+    }
+  };
+  
+  // Toggle image selection with limit enforcement
+  const toggleImageSelection = (image: MediaImage) => {
+    setSelectedImages(prevSelectedImages => {
+      // Check if image is already selected
+      const isSelected = prevSelectedImages.some(img => img.id === image.id);
+      
+      // If not selected and we're at the limit, show warning and prevent selection
+      if (!isSelected && prevSelectedImages.length >= maxImages && !allowMultiple) {
+        toast({
+          title: `Selection limit reached`,
+          description: `You can only select ${maxImages} image${maxImages === 1 ? '' : 's'}. Please deselect an image first.`,
+          variant: "destructive"
+        });
+        return prevSelectedImages;
+      }
+      
+      // If not selected and we're at the limit with allowMultiple, remove oldest selection
+      if (!isSelected && prevSelectedImages.length >= maxImages && allowMultiple) {
+        toast({
+          title: `Maximum images updated`,
+          description: `Added new image. You can select up to ${maxImages} images.`,
+        });
+        
+        // Add new image and remove oldest one
+        return [...prevSelectedImages.slice(1), { ...image, selected: true }];
+      }
+      
+      // Toggle selection normally
+      if (isSelected) {
+        return prevSelectedImages.filter(img => img.id !== image.id);
+      } else {
+        return [...prevSelectedImages, { ...image, selected: true }];
+      }
+    });
+  };
+  
+  // Confirm selection and pass to parent
+  const confirmSelection = () => {
+    if (selectedImages.length > 0) {
+      onImagesSelected(selectedImages);
+      onOpenChange(false);
+      toast({
+        title: "Images selected",
+        description: `Selected ${selectedImages.length} image${selectedImages.length === 1 ? '' : 's'}`
+      });
+    } else {
+      toast({
+        title: "No images selected",
+        description: "Please select at least one image",
+        variant: "destructive"
+      });
     }
   };
 
-  // Handle confirm button
-  const handleConfirm = () => {
-    onImagesSelected(selectedImages);
-    onOpenChange(false);
+  // Function to get appropriate message when no images are available
+  const getEmptyStateMessage = () => {
+    if (activeTab === 'products') {
+      return "No product images found. Please select a different product or use the Shopify Media Library tab.";
+    } else if (activeTab === 'media_library') {
+      return "No media found in your Shopify Media Library. You can upload images in your Shopify admin.";
+    } else if (activeTab === 'pexels') {
+      return searchInProgress 
+        ? "No images found. Try a different search term." 
+        : "Enter search terms above to find images on Pexels.";
+    }
+    return "No images available. Try a different source.";
+  };
+
+  // Determine which images to display based on active tab
+  const getActiveImages = () => {
+    switch (activeTab) {
+      case 'products':
+        return productImages;
+      case 'media_library':
+        return mediaLibraryImages;
+      case 'pexels':
+        return pexelsImages;
+      default:
+        return [];
+    }
+  };
+
+  // Function to render the content for the active tab
+  const renderTabContent = () => {
+    const images = getActiveImages();
+    
+    return (
+      <div className="relative">
+        {/* Show search bar for Pexels tab */}
+        {activeTab === 'pexels' && (
+          <div className="mb-4 flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                type="text"
+                placeholder="Search for images (e.g., happy customer, product in use)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-10"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    searchPexelsImages();
+                  }
+                }}
+              />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
+            <Button 
+              onClick={searchPexelsImages} 
+              disabled={isLoading || !searchQuery.trim()}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Searching...
+                </>
+              ) : 'Search'}
+            </Button>
+          </div>
+        )}
+        
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-2 text-gray-600">Loading images...</span>
+          </div>
+        )}
+        
+        {/* Empty state */}
+        {!isLoading && images.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <ImageIcon className="h-12 w-12 text-gray-300 mb-2" />
+            <p className="text-gray-500">{getEmptyStateMessage()}</p>
+          </div>
+        )}
+        
+        {/* Grid of images */}
+        {!isLoading && images.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {images.map((image) => {
+              // Check if this image is selected
+              const isSelected = selectedImages.some(img => img.id === image.id);
+              
+              // For Pexels images, we might want to show different sizes
+              const imageUrl = image.source === 'pexels' && image.src?.medium
+                ? image.src.medium
+                : image.url;
+                
+              // Determine if this is a product image, variant image, or media library image for styling
+              const isPrimaryProduct = image.source === 'product';
+              const isVariant = image.source === 'variant';
+              
+              return (
+                <div 
+                  key={image.id} 
+                  className={`
+                    relative cursor-pointer border-2 rounded-md overflow-hidden
+                    ${isSelected ? 'border-blue-500' : 'border-gray-100 hover:border-gray-300'}
+                    ${image.source === 'variant' ? 'ring-1 ring-purple-300' : ''}
+                  `}
+                  onClick={() => toggleImageSelection(image)}
+                >
+                  <div className="aspect-square bg-gray-50 overflow-hidden relative">
+                    {/* Use our robust ShopifyImageViewer component with improved error handling */}
+                    <ShopifyImageViewer
+                      src={imageUrl}
+                      alt={image.alt || 'Product image'}
+                      className="w-full h-full object-cover"
+                      key={`${image.id}-${image.url}`} // Force re-render when URL changes
+                    />
+                    
+                    {/* Source badge */}
+                    <div className="absolute top-2 left-2">
+                      <span 
+                        className={`text-xs px-2 py-1 rounded text-white ${
+                          image.source === 'product' ? 'bg-green-500' : 
+                          image.source === 'variant' ? 'bg-purple-500' : 
+                          'bg-blue-500'
+                        }`}
+                      >
+                        {image.source === 'product' ? 'Product' : 
+                         image.source === 'variant' ? 'Variant' : 
+                         'Shopify'}
+                      </span>
+                    </div>
+                    
+                    {/* Selection indicator */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
+                        <Check className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Image title - truncated for space */}
+                  <div className="p-2">
+                    <p className="text-xs truncate">{image.title || image.alt || 'Product image'}</p>
+                  </div>
+                  
+                  {/* Primary/Secondary Selection Controls - only show on hover */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                    <Button 
+                      size="sm" 
+                      className="w-3/4 bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle primary selection logic
+                        setSelectedImages(prev => {
+                          // Remove this image from the current selection if it exists
+                          const filtered = prev.filter(img => img.id !== image.id);
+                          // Add it as the only primary image
+                          return [...filtered, { ...image, selected: true, isPrimary: true }];
+                        });
+                        toast({
+                          title: "Primary image set",
+                          description: "This image will appear as the featured image in your content."
+                        });
+                      }}
+                    >
+                      Select as Primary
+                    </Button>
+                    <Button 
+                      size="sm"
+                      className="w-3/4 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle secondary selection logic
+                        setSelectedImages(prev => {
+                          // If already in selection, do nothing
+                          if (prev.some(img => img.id === image.id)) {
+                            return prev;
+                          }
+                          // Add as secondary image
+                          return [...prev, { ...image, selected: true, isPrimary: false }];
+                        });
+                        toast({
+                          title: "Added as secondary",
+                          description: "This image will appear in the body of your content."
+                        });
+                      }}
+                    >
+                      Select as Secondary
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[825px] max-h-[90vh] overflow-hidden flex flex-col">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+      <DialogContent className="sm:max-w-[800px]">
+        <button 
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+          onClick={() => onOpenChange(false)}
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         
-        <Tabs 
-          defaultValue="products" 
-          className="w-full mt-2 flex-1 flex flex-col overflow-hidden"
-          value={activeTab}
-          onValueChange={setActiveTab}
-        >
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="products">
-              <ImageIcon className="h-4 w-4 mr-2" />
-              Product Images
+        <Tabs defaultValue="primary_images" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="primary_images">
+              Primary Images
             </TabsTrigger>
-            <TabsTrigger value="media_library">
-              <ImageIcon className="h-4 w-4 mr-2" />
-              Shopify Media Library
-            </TabsTrigger>
-            <TabsTrigger value="pexels">
-              <ImagePlus className="h-4 w-4 mr-2" />
-              Stock Images
+            <TabsTrigger value="secondary_images">
+              Secondary Images
             </TabsTrigger>
           </TabsList>
           
-          {/* Product Images Tab */}
-          <TabsContent value="products" className="flex-1 overflow-auto">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin mb-2" />
-                <p>Loading product images...</p>
-              </div>
-            ) : productImages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64">
-                <p>No product images found in your store.</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => loadProductImages()} 
-                  className="mt-4"
-                >
-                  Refresh Images
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
-                  {productImages.map((image) => {
-                    const isSelected = selectedImages.some(
-                      img => img.id === image.id || img.url === image.url
-                    );
-                    
-                    return (
-                      <div 
-                        key={image.id} 
-                        className={`
-                          relative cursor-pointer border-2 rounded-md overflow-hidden
-                          ${isSelected ? 'border-blue-500' : 'border-gray-100 hover:border-gray-300'}
-                          ${image.source === 'variant' ? 'ring-1 ring-purple-300' : ''}
-                        `}
-                        onClick={() => toggleImageSelection(image)}
-                      >
-                        <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                          {/* Use our robust ShopifyImageViewer component with improved error handling */}
-                          <ShopifyImageViewer
-                            src={image.url}
-                            alt={image.alt || 'Product image'}
-                            className="w-full h-full object-cover"
-                            key={`${image.id}-${image.url}`} // Force re-render when URL changes
-                          />
-                          
-                          {/* Source badge */}
-                          <div className="absolute top-2 left-2">
-                            <span 
-                              className={`text-xs px-2 py-1 rounded text-white ${
-                                image.source === 'product' ? 'bg-green-500' : 
-                                image.source === 'variant' ? 'bg-purple-500' : 
-                                'bg-blue-500'
-                              }`}
-                            >
-                              {image.source === 'product' ? 'Product' : 
-                               image.source === 'variant' ? 'Variant' : 
-                               'Shopify'}
-                            </span>
-                          </div>
-                          
-                          {/* Selection indicator */}
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
-                              <Check className="h-4 w-4" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Image title - truncated for space */}
-                        <div className="p-2">
-                          <p className="text-xs truncate">{image.title || image.alt || 'Product image'}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <TabsContent value="primary_images" className="space-y-4">
+            <div className="rounded-md bg-blue-50 p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <ImageIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
                 </div>
-                
-                {/* Refresh button */}
-                <div className="flex justify-center mb-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => loadProductImages()}
-                  >
-                    <Loader2 className="h-4 w-4 mr-2" />
-                    Refresh Images
-                  </Button>
+                <div className="ml-3 flex-1 md:flex md:justify-between">
+                  <p className="text-sm text-blue-700">
+                    Choose emotionally compelling images with human subjects to feature at the top of your content
+                  </p>
                 </div>
-              </>
-            )}
-          </TabsContent>
-          
-          {/* Shopify Media Library Tab */}
-          <TabsContent value="media_library" className="flex-1 overflow-auto">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin mb-2" />
-                <p>Loading media library...</p>
               </div>
-            ) : mediaLibraryImages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64">
-                <p>No images found in your Shopify Media Library.</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => loadShopifyMediaLibrary()} 
-                  className="mt-4"
-                >
-                  Refresh Media Library
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
-                  {mediaLibraryImages.map((image) => {
-                    const isSelected = selectedImages.some(
-                      img => img.id === image.id || img.url === image.url
-                    );
-                    
-                    return (
-                      <div 
-                        key={image.id} 
-                        className={`
-                          relative cursor-pointer border-2 rounded-md overflow-hidden
-                          ${isSelected ? 'border-blue-500' : 'border-gray-100 hover:border-gray-300'}
-                        `}
-                        onClick={() => toggleImageSelection(image)}
-                      >
-                        <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                          {/* Image wrapper with fallback placeholder */}
-                          <div className="relative w-full h-full">
-                            {/* Use direct img tag with error handling for better compatibility */}
-                            <img 
-                              src={image.url}
-                              alt={image.alt || image.title || "Media image"}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                // Set placeholder for failed images
-                                target.onerror = null; // Prevent infinite error loop
-                                target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%23f0f0f0'/%3E%3Cpath d='M8.5,7.5a2,2,0,1,1-2-2A2,2,0,0,1,8.5,7.5Zm11,10v-1l-3-3-2,2-6-6-4,4v4Z' fill='%23cccccc'/%3E%3C/svg%3E";
-                              }}
-                            />
-                            
-                            {/* Image title overlay - only show if needed */}
-                          </div>
-                          
-                          {/* Source badge */}
-                          <div className="absolute top-2 left-2">
-                            <span className="text-xs px-2 py-1 rounded text-white bg-blue-500">
-                              Media Library
-                            </span>
-                          </div>
-                          
-                          {/* Selection indicator */}
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
-                              <Check className="h-4 w-4" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="p-2">
-                          <p className="text-xs truncate">{image.title || image.alt || 'Media image'}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                {/* Refresh button */}
-                <div className="flex justify-center mb-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={loadShopifyMediaLibrary}
-                  >
-                    <Loader2 className="h-4 w-4 mr-2" />
-                    Refresh Media Library
-                  </Button>
-                </div>
-              </>
-            )}
-          </TabsContent>
-          
-          {/* Stock Images Tab */}
-          <TabsContent value="pexels" className="flex-1 overflow-auto">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
-              {/* Placeholder images - these would normally come from Pexels API */}
-              {Array.from({ length: 12 }).map((_, index) => {
-                const id = `pexels-sample-${index + 1}`;
-                const image: MediaImage = {
-                  id,
-                  url: `https://images.pexels.com/photos/${3000000 + index}/pexels-photo-${3000000 + index}.jpeg?auto=compress&cs=tinysrgb&w=800`,
-                  alt: `Stock image ${index + 1}`,
-                  title: `Sample stock image ${index + 1}`,
-                  source: 'pexels',
-                  selected: selectedImages.some(img => img.id === id)
-                };
-                
-                const isSelected = selectedImages.some(img => img.id === image.id);
-                
-                return (
-                  <div 
-                    key={image.id} 
-                    className={`
-                      relative cursor-pointer border-2 rounded-md overflow-hidden
-                      ${isSelected ? 'border-blue-500' : 'border-gray-100 hover:border-gray-300'}
-                      ${image.source === 'pexels' ? 'ring-1 ring-green-300' : ''}
-                    `}
-                    onClick={() => toggleImageSelection(image)}
-                  >
-                    <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                      {/* Use our ShopifyImageViewer for better image handling */}
-                      <ShopifyImageViewer
-                        src={image.url}
-                        alt={image.alt || 'Stock image'}
-                        className="w-full h-full object-cover"
-                      />
-                      
-                      {/* Source badge */}
-                      <div className="absolute top-2 left-2">
-                        <span className="text-xs px-2 py-1 rounded text-white bg-green-500">
-                          Pexels
-                        </span>
-                      </div>
-                      
-                      {/* Selection indicator */}
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
-                          <Check className="h-4 w-4" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="p-2">
-                      <p className="text-xs truncate">{image.title || image.alt || 'Stock image'}</p>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
+            
+            {/* Tab selection for image sources */}
+            <Tabs defaultValue="pexels" className="w-full">
+              <TabsList className="w-full flex justify-start border-b mb-4">
+                <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
+                  Pexels Images
+                </TabsTrigger>
+                <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
+                  Product Images
+                </TabsTrigger>
+                <TabsTrigger value="media_library" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
+                  Shopify Media Library
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="pexels">
+                {renderTabContent()}
+              </TabsContent>
+              
+              <TabsContent value="products">
+                {renderTabContent()}
+              </TabsContent>
+              
+              <TabsContent value="media_library">
+                {renderTabContent()}
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+          
+          <TabsContent value="secondary_images" className="space-y-4">
+            <div className="rounded-md bg-green-50 p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <ImageIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+                </div>
+                <div className="ml-3 flex-1 md:flex md:justify-between">
+                  <p className="text-sm text-green-700">
+                    Select product images, detail shots, and supporting visuals to appear throughout your content
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Tab selection for image sources - secondary */}
+            <Tabs defaultValue="products" className="w-full">
+              <TabsList className="w-full flex justify-start border-b mb-4">
+                <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
+                  Product Images
+                </TabsTrigger>
+                <TabsTrigger value="media_library" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
+                  Shopify Media Library
+                </TabsTrigger>
+                <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
+                  Pexels Images
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="pexels">
+                {renderTabContent()}
+              </TabsContent>
+              
+              <TabsContent value="products">
+                {renderTabContent()}
+              </TabsContent>
+              
+              <TabsContent value="media_library">
+                {renderTabContent()}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
         
-        <Separator className="my-2" />
+        <Separator className="my-4" />
         
-        {/* Selected image count and controls */}
-        <div className="flex justify-between items-center my-2">
-          <span className="text-sm">
-            {selectedImages.length} {selectedImages.length === 1 ? 'image' : 'images'} selected
-            {maxImages > 0 && ` (max: ${maxImages})`}
-          </span>
-          
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedImages([])}
-              disabled={selectedImages.length === 0}
-            >
-              Clear All
-            </Button>
-            
-            <Button 
-              variant="default" 
-              onClick={handleConfirm}
-              disabled={selectedImages.length === 0}
-            >
-              Confirm Selection
-            </Button>
-          </div>
+        {/* Selected Images Preview */}
+        <div className="mb-4">
+          <h3 className="text-sm font-medium mb-2">Selected Images ({selectedImages.length})</h3>
+          {selectedImages.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedImages.map((image) => (
+                <div key={image.id} className="relative w-16 h-16 border rounded-md overflow-hidden group">
+                  <ShopifyImageViewer
+                    src={image.url}
+                    alt={image.alt || "Selected image"}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setSelectedImages(prev => prev.filter(img => img.id !== image.id))}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No images selected yet</p>
+          )}
         </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={confirmSelection} disabled={selectedImages.length === 0}>
+            Add Selected Images
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
