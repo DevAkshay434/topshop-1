@@ -11,6 +11,7 @@ import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
 import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye, Trash2 } from 'lucide-react';
 import ImagePreviewDialog from './ImagePreviewDialog';
+import { SelectedImagesPanel } from './SelectedImagesPanel';
 import axios from 'axios';
 
 // Define the MediaImage type
@@ -54,7 +55,7 @@ export default function MediaSelectionStep({
   title
 }: MediaSelectionStepProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('primary');
+  const [activeTab, setActiveTab] = useState('pexels'); // Changed default to Pexels for better initial experience
   const [primaryImage, setPrimaryImage] = useState<MediaImage | null>(initialValues?.primaryImage || null);
   const [secondaryImages, setSecondaryImages] = useState<MediaImage[]>(initialValues?.secondaryImages || []);
   const [youtubeUrl, setYoutubeUrl] = useState<string>(initialValues?.youtubeEmbed || '');
@@ -606,8 +607,41 @@ export default function MediaSelectionStep({
     });
   };
   
+  // Function to open image preview
+  const openImagePreview = (image: MediaImage) => {
+    setPreviewImage(image);
+    setIsPreviewOpen(true);
+  };
+  
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Choose Media</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onBack}>Back</Button>
+          <Button onClick={handleComplete}>Continue</Button>
+        </div>
+      </div>
+      
+      {/* Image Preview Dialog */}
+      <ImagePreviewDialog
+        image={previewImage}
+        isOpen={isPreviewOpen}
+        setIsOpen={setIsPreviewOpen}
+        setPrimaryImage={setPrimaryImageHandler}
+        toggleSecondaryImage={toggleSecondaryImage}
+        isSecondary={previewImage ? secondaryImages.some(img => img.id === previewImage.id) : false}
+      />
+      
+      {/* Display selected images section */}
+      <SelectedImagesPanel
+        primaryImage={primaryImage}
+        secondaryImages={secondaryImages}
+        setPrimaryImage={setPrimaryImage}
+        setSecondaryImages={setSecondaryImages}
+        onPreviewImage={openImagePreview}
+      />
+      
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="primary">Primary Image</TabsTrigger>
