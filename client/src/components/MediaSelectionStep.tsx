@@ -12,7 +12,7 @@ import ShopifyImageViewer from './ShopifyImageViewer';
 import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye, Trash2 } from 'lucide-react';
 import ImagePreviewDialog from './ImagePreviewDialog';
 import ImageSelectionControls from './ImageSelectionControls';
-import HorizontalSelectedImagesBar from './HorizontalSelectedImagesBar';
+import SimpleSelectedImagesBar from './SimpleSelectedImagesBar';
 import axios from 'axios';
 
 // Define the MediaImage type
@@ -650,8 +650,8 @@ export default function MediaSelectionStep({
         </div>
       </div>
       
-      {/* Display horizontal selected images bar */}
-      <HorizontalSelectedImagesBar
+      {/* Display simple selected images bar */}
+      <SimpleSelectedImagesBar
         primaryImage={primaryImage}
         secondaryImages={secondaryImages}
         setPrimaryImage={setPrimaryImage}
@@ -752,18 +752,82 @@ export default function MediaSelectionStep({
                             </Badge>
                           </div>
                           
-                          {/* Use the ImageSelectionControls component */}
-                          <ImageSelectionControls
-                            image={image}
-                            isPrimary={isPrimary}
-                            isSecondary={isSecondary}
-                            onSetPrimary={setPrimaryImageHandler}
-                            onToggleSecondary={toggleSecondaryImage}
-                            onPreview={(img) => {
-                              setPreviewImage(img);
-                              setIsPreviewOpen(true);
-                            }}
-                          />
+                          {/* Selection controls directly on the image */}
+                          <div className="absolute inset-0">
+                            {/* Indicators at the top */}
+                            <div className="absolute top-2 left-2 z-20 flex gap-1">
+                              {isPrimary && (
+                                <Badge className="bg-blue-600 text-white text-xs">
+                                  <Star className="h-3 w-3 mr-1" />
+                                  Primary
+                                </Badge>
+                              )}
+                              {isSecondary && (
+                                <Badge className="bg-green-600 text-white text-xs">
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Secondary
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {/* Preview button */}
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="absolute top-2 right-2 z-20 h-7 w-7 p-0 rounded-full bg-white"
+                              onClick={() => {
+                                setPreviewImage(image);
+                                setIsPreviewOpen(true);
+                              }}
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            
+                            {/* Selection buttons at the bottom */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2 flex justify-center gap-2">
+                              <Button 
+                                size="sm" 
+                                className={isPrimary 
+                                  ? "bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs" 
+                                  : "bg-white text-blue-600 hover:bg-blue-50 h-7 text-xs"
+                                }
+                                onClick={() => setPrimaryImageHandler(image)}
+                              >
+                                {isPrimary ? (
+                                  <>
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Primary
+                                  </>
+                                ) : (
+                                  <>
+                                    <Star className="h-3 w-3 mr-1" />
+                                    Set Primary
+                                  </>
+                                )}
+                              </Button>
+                              
+                              <Button 
+                                size="sm" 
+                                className={isSecondary 
+                                  ? "bg-green-600 hover:bg-green-700 text-white h-7 text-xs" 
+                                  : "bg-white text-green-600 hover:bg-green-50 h-7 text-xs"
+                                }
+                                onClick={() => toggleSecondaryImage(image)}
+                              >
+                                {isSecondary ? (
+                                  <>
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Secondary
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add Secondary
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
