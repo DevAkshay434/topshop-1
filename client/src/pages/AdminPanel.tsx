@@ -4994,25 +4994,62 @@ export default function AdminPanel() {
                   {searchedImages && searchedImages.length > 0 ? searchedImages.map((image) => (
                     <div 
                       key={image.id} 
-                      className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
-                      onClick={() => {
-                        // Toggle selection
-                        const updatedImages = searchedImages.map(img =>
-                          img.id === image.id ? { ...img, selected: !img.selected } : img
-                        );
-                        setSearchedImages(updatedImages);
-                      }}
+                      className={`relative rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
                     >
                       <ShopifyImageViewer 
                         src={image.src?.medium || image.url} 
                         alt={image.alt || "Stock image"} 
                         className="w-full h-28 md:h-32 object-cover"
                       />
+                      
+                      {/* Primary/Secondary Selection buttons - always visible on hover */}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        <Button 
+                          size="sm" 
+                          className="w-3/4 bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => {
+                            // Mark as primary image
+                            const updatedImages = searchedImages.map(img =>
+                              img.id === image.id ? { ...img, selected: true, isPrimary: true } : img
+                            );
+                            setSearchedImages(updatedImages);
+                            toast({
+                              title: "Primary image selected",
+                              description: "This image will appear as a featured image at the top of your content"
+                            });
+                          }}
+                        >
+                          <ImageIcon className="h-3 w-3 mr-1" />
+                          Select as Primary
+                        </Button>
+                        
+                        <Button 
+                          size="sm"
+                          className="w-3/4 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => {
+                            // Mark as secondary image
+                            const updatedImages = searchedImages.map(img =>
+                              img.id === image.id ? { ...img, selected: true, isPrimary: false } : img
+                            );
+                            setSearchedImages(updatedImages);
+                            toast({
+                              title: "Secondary image selected",
+                              description: "This image will appear throughout your content body"
+                            });
+                          }}
+                        >
+                          <FileImage className="h-3 w-3 mr-1" />
+                          Select as Secondary
+                        </Button>
+                      </div>
+                      
+                      {/* Selection indicator */}
                       {image.selected && (
-                        <div className="absolute top-1 right-1 bg-blue-500 text-white p-1 rounded-full">
+                        <div className={`absolute top-1 right-1 ${image.isPrimary === true ? 'bg-blue-500' : image.isPrimary === false ? 'bg-green-500' : 'bg-blue-500'} text-white p-1 rounded-full`}>
                           <Check className="h-4 w-4" />
                         </div>
                       )}
+                      
                       {image.photographer && (
                         <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1 text-white text-xs truncate">
                           {image.photographer}
