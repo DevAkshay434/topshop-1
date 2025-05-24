@@ -629,8 +629,10 @@ export function ChooseMediaDialog({
                   onChange={e => {
                     const url = e.target.value;
                     setYoutubeUrl(url);
-                    const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
-                    setYoutubeVideoId(videoId);
+                    // Extract YouTube video ID from URL
+                    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+                    const extractedVideoId = match ? match[1] : null;
+                    setYoutubeVideoId(extractedVideoId);
                   }}
                   className="w-full"
                 />
@@ -657,7 +659,14 @@ export function ChooseMediaDialog({
                       type: 'youtube',
                       videoId: youtubeVideoId,
                       width: 1280,
-                      height: 720
+                      height: 720,
+                      src: {
+                        original: `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`,
+                        large: `https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`,
+                        medium: `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`,
+                        small: `https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`,
+                        thumbnail: `https://img.youtube.com/vi/${youtubeVideoId}/default.jpg`
+                      }
                     };
                     
                     setSelectedImages(prev => {
