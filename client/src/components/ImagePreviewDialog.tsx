@@ -25,7 +25,30 @@ const ImagePreviewDialog: React.FC<ImagePreviewDialogProps> = ({
   if (!image) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        // Controlled opening/closing with safety mechanism
+        if (!open) {
+          // Always allow closing
+          setIsOpen(false);
+        } else {
+          // When opening, ensure we don't conflict with other dialogs
+          setIsOpen(open);
+          
+          // Add event listener to handle ESC key for easier closing
+          const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+              setIsOpen(false);
+            }
+          };
+          window.addEventListener('keydown', handleEsc);
+          return () => {
+            window.removeEventListener('keydown', handleEsc);
+          };
+        }
+      }}
+    >
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Image Preview</DialogTitle>

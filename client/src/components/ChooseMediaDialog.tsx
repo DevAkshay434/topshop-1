@@ -49,7 +49,7 @@ export function ChooseMediaDialog({
   initialSelectedImages = [],
   maxImages = 10,
   allowMultiple = true,
-  title = "Choose Media",
+  title = "Choose Medias",
   description = "Select images from your Shopify store or other sources."
 }: ChooseMediaDialogProps) {
   const { toast } = useToast();
@@ -615,7 +615,7 @@ export function ChooseMediaDialog({
         <Tabs defaultValue="primary_images" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="primary_images">
-              Primary Images
+              Primary Images test
             </TabsTrigger>
             <TabsTrigger value="secondary_images">
               Secondary Images
@@ -640,7 +640,7 @@ export function ChooseMediaDialog({
             <Tabs defaultValue="pexels" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
                 <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
-                  Pexels Images
+                  Pexels Imagess
                 </TabsTrigger>
                 <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
                   Product Images

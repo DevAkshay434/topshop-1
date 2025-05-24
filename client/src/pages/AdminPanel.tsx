@@ -3430,7 +3430,15 @@ export default function AdminPanel() {
                                   type="button" 
                                   variant="outline" 
                                   className="mt-2" 
-                                  onClick={() => setShowImageDialog(true)}
+                                  onClick={() => {
+                                    // Close any existing dialogs first to prevent overlap
+                                    if (showChooseMediaDialog) {
+                                      setShowChooseMediaDialog(false);
+                                      setTimeout(() => setShowImageDialog(true), 300);
+                                    } else {
+                                      setShowImageDialog(true);
+                                    }
+                                  }}
                                 >
                                   {Array.isArray(selectedImages) && selectedImages.length > 0 
                                     ? `${selectedImages.length} Image(s) Selected` 
