@@ -5206,6 +5206,20 @@ export default function AdminPanel() {
                                     // Add it to the list
                                     return [...prev, { ...image, isPrimary: false }];
                                   });
+                                  
+                                  // Update selectedMediaContent state immediately
+                                  setSelectedMediaContent(prev => ({
+                                    ...prev,
+                                    secondaryImages: [...prev.secondaryImages, {
+                                      id: image.id,
+                                      url: image.url,
+                                      alt: image.alt || '',
+                                      width: image.width || 0,
+                                      height: image.height || 0,
+                                      source: image.source || 'pexels'
+                                    }]
+                                  }));
+                                  
                                   toast({
                                     title: "Secondary image added",
                                     description: "Image has been added to your content images"
@@ -6068,6 +6082,19 @@ export default function AdminPanel() {
                                             
                                             // Add to secondary images (content)
                                             setSecondaryImages(prev => [...prev, imageForSelection]);
+                                            
+                                            // Update selectedMediaContent state immediately
+                                            setSelectedMediaContent(prev => ({
+                                              ...prev,
+                                              secondaryImages: [...prev.secondaryImages, {
+                                                id: imageForSelection.id,
+                                                url: imageForSelection.url,
+                                                alt: imageForSelection.alt || '',
+                                                width: imageForSelection.width || 0,
+                                                height: imageForSelection.height || 0,
+                                                source: imageForSelection.source || 'uploaded'
+                                              }]
+                                            }));
                                             
                                             // If it was in primary images, remove it from there
                                             if (isPrimarySelected) {
