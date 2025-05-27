@@ -4942,6 +4942,20 @@ export default function AdminPanel() {
                             
                             // Also set this as primary in the main images collection
                             setPrimaryImages([{...image, selected: true, isPrimary: true}]);
+                            
+                            // Update selectedMediaContent state immediately
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              primaryImage: {
+                                id: image.id,
+                                url: image.url,
+                                alt: image.alt || '',
+                                width: image.width || 0,
+                                height: image.height || 0,
+                                source: image.source || 'pexels'
+                              }
+                            }));
+                            
                             toast({
                               title: "Primary image selected",
                               description: "This image will appear as a featured image at the top of your content"
@@ -4964,6 +4978,20 @@ export default function AdminPanel() {
                             
                             // Also add to secondary images collection
                             setSecondaryImages(prev => [...prev, {...image, selected: true, isPrimary: false}]);
+                            
+                            // Update selectedMediaContent state immediately
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              secondaryImages: [...prev.secondaryImages, {
+                                id: image.id,
+                                url: image.url,
+                                alt: image.alt || '',
+                                width: image.width || 0,
+                                height: image.height || 0,
+                                source: image.source || 'pexels'
+                              }]
+                            }));
+                            
                             toast({
                               title: "Secondary image selected",
                               description: "This image will appear throughout your content body"
