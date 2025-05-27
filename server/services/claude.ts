@@ -56,7 +56,7 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
 let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}
     
     The blog post MUST follow this exact structure:
-    1. A compelling title that includes the main topic and primary keywords
+    1. A compelling title that includes the main topic and primary keywords (this will be formatted as H1 automatically)
     2. Multiple clearly defined sections with H2 headings that incorporate important keywords
     3. Appropriate H3 subheadings within each section where needed
     4. Well-organized paragraphs (2-4 paragraphs per section)
@@ -64,14 +64,24 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     6. Lists and tables where appropriate to improve readability
     7. A conclusion with a clear call to action
     
-    IMPORTANT FORMATTING REQUIREMENTS:
+    IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
+    - The title will automatically be formatted as an H1 element
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
-    - DO NOT use <h1> tags, as this will be the post title
+    - DO NOT use <h1> tags in the content, as the title will be the H1
+    - Create at least 3-4 H2 sections for proper structure
+    - Under the SECOND H2 heading, include a placeholder comment: <!-- VIDEO_PLACEMENT_MARKER -->
+    - Under subsequent H2 headings after the video, include placeholder comments: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
+    
+    FAQ SECTION FORMATTING (if FAQ is enabled):
+    - Format all FAQ questions with "Q: " prefix
+    - Format all FAQ answers with "A: " prefix
+    - Use proper HTML structure: <h3>Q: Question here?</h3><p>A: Answer here.</p>
+    - Make FAQ section engaging and helpful for readers
     
     IMPORTANT IMAGE AND LINK GUIDELINES:
     - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
@@ -79,8 +89,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - DO NOT include ANY external links except to trusted reference sites like .gov, .edu, or wikipedia.org
     - DO NOT include external images from third-party domains - the system will automatically insert optimized images
     - All images will be center-aligned and properly linked to product pages
-    - Do not include any image placeholders or special markup - the system will handle image insertion automatically
-    - Images will be distributed evenly throughout the content at logical section breaks
+    - Do not include any image placeholders or special markup except for the placement markers mentioned above
+    - The system will handle image insertion automatically at the marked locations
     - Each image will include a caption with a link back to the relevant product to enhance SEO value
     
     Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
