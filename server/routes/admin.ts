@@ -1473,6 +1473,56 @@ Place this at a logical position in the content, typically after introducing a c
       // 6. Prepare content for blog post or page
       let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
       
+      // Replace media placement markers with actual content
+      // Handle YouTube video placement
+      if (requestData.youtubeEmbed && finalContent.includes('<!-- VIDEO_PLACEMENT_MARKER -->')) {
+        const videoHtml = `
+<div class="video-container" style="text-align: center; margin: 20px 0;">
+  <iframe width="100%" height="315" src="https://www.youtube.com/embed/${requestData.youtubeEmbed}" 
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen style="max-width: 560px;"></iframe>
+</div>`;
+        finalContent = finalContent.replace('<!-- VIDEO_PLACEMENT_MARKER -->', videoHtml);
+        console.log(`Inserted YouTube video embed for ID: ${requestData.youtubeEmbed}`);
+      }
+      
+      // Handle secondary image placement markers
+      if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
+        let imageIndex = 0;
+        while (finalContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->') && imageIndex < requestData.secondaryImages.length) {
+          const image = requestData.secondaryImages[imageIndex];
+          const imageUrl = image.url;
+          const imageAlt = image.alt || requestData.title;
+          
+          // Create image HTML with product link if applicable
+          let imageHtml;
+          if (productsInfo.length > 0) {
+            const productIndex = imageIndex % productsInfo.length;
+            const product = productsInfo[productIndex];
+            const productUrl = `https://${store.shopName}/products/${product.handle}`;
+            
+            imageHtml = `
+<div class="image-container" style="text-align: center; margin: 20px 0;">
+  <a href="${productUrl}" title="${product.title}">
+    <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;">
+  </a>
+  <p style="margin-top: 5px; font-size: 0.9em;">
+    <a href="${productUrl}">${product.title}</a>
+  </p>
+</div>`;
+          } else {
+            imageHtml = `
+<div class="image-container" style="text-align: center; margin: 20px 0;">
+  <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;">
+</div>`;
+          }
+          
+          finalContent = finalContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', imageHtml);
+          console.log(`Inserted secondary image ${imageIndex + 1}: ${imageUrl}`);
+          imageIndex++;
+        }
+      }
+      
       // Add YouTube video embed from Choose Media step or legacy youtubeUrl
       const youtubeEmbedUrl = requestData.youtubeEmbed || requestData.youtubeUrl;
       if (youtubeEmbedUrl) {
