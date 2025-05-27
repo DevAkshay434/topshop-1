@@ -107,6 +107,7 @@ import {
   ShoppingCart,
   Sparkles, 
   Trash, 
+  Type,
   X, 
   XCircle 
 } from 'lucide-react';
@@ -3186,7 +3187,7 @@ export default function AdminPanel() {
                     <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
                       <h3 className="text-lg font-medium flex items-center">
                         <FileText className="h-5 w-5 mr-2 text-blue-500" />
-                        Selected Collections
+                        Collections
                       </h3>
                         
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-3">
@@ -3235,6 +3236,46 @@ export default function AdminPanel() {
                       </Button>
                     </div>
                     
+                    {/* Buyer Personas section - only visible in final content step */}
+                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
+                      <h3 className="text-lg font-medium flex items-center">
+                        <Users className="h-5 w-5 mr-2 text-blue-500" />
+                        Selected Buyer Personas
+                      </h3>
+                        
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-3">
+                        {selectedBuyerPersonas.length > 0 ? (
+                          selectedBuyerPersonas.map((persona) => (
+                            <div key={persona.id} className="flex items-center gap-3 bg-slate-50 rounded p-2 border">
+                              <div className="w-12 h-12 bg-blue-100 rounded flex items-center justify-center">
+                                <span className="text-lg">{persona.icon}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{persona.name}</p>
+                                <p className="text-xs text-muted-foreground">{persona.description}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="col-span-2 text-center py-4">
+                            <span className="text-sm text-muted-foreground">No buyer personas selected yet</span>
+                          </div>
+                        )}
+                      </div>
+                        
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setWorkflowStep('buying-avatars');
+                        }}
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        Edit Buyer Personas
+                      </Button>
+                    </div>
+                    
                     {/* Keywords section - only visible in final content step */}
                     <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
                       <h3 className="text-lg font-medium flex items-center">
@@ -3270,6 +3311,38 @@ export default function AdminPanel() {
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
                         Change Keywords
+                      </Button>
+                    </div>
+                    
+                    {/* Title section - only visible in final content step */}
+                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
+                      <h3 className="text-lg font-medium flex items-center">
+                        <Type className="h-5 w-5 mr-2 text-blue-500" />
+                        Title
+                      </h3>
+                        
+                      <div className="border rounded-md p-3">
+                        {form.getValues('title') ? (
+                          <div className="bg-slate-50 rounded p-2 border">
+                            <p className="font-medium text-sm">{form.getValues('title')}</p>
+                          </div>
+                        ) : (
+                          <div className="text-center py-4">
+                            <span className="text-sm text-muted-foreground">No title generated yet</span>
+                          </div>
+                        )}
+                      </div>
+                        
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setWorkflowStep('title');
+                        }}
+                      >
+                        <Type className="mr-2 h-4 w-4" />
+                        Edit Title
                       </Button>
                     </div>
                     
