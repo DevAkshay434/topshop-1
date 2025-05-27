@@ -4579,6 +4579,12 @@ export default function AdminPanel() {
                               setSecondaryImages([...secondaryImages, youtubeImage]);
                             }
                             
+                            // Update selectedMediaContent state immediately
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              youtubeEmbed: videoId
+                            }));
+                            
                             toast({
                               title: "YouTube Video Added",
                               description: "YouTube video has been added to your content.",
@@ -6440,6 +6446,20 @@ export default function AdminPanel() {
                   }
                 }));
                 setSecondaryImages(prev => [...prev, ...safeSecondaryImages]);
+                
+                // Update selectedMediaContent state immediately
+                setSelectedMediaContent(prev => ({
+                  ...prev,
+                  secondaryImages: [...prev.secondaryImages, ...safeSecondaryImages.map(img => ({
+                    id: img.id,
+                    url: img.url,
+                    alt: img.alt || '',
+                    width: img.width || 0,
+                    height: img.height || 0,
+                    source: img.source || 'pexels'
+                  }))]
+                }));
+                
                 toast({
                   title: "Content images added",
                   description: `${secondaryImgs.length} content image${secondaryImgs.length === 1 ? '' : 's'} added successfully`
@@ -6481,6 +6501,20 @@ export default function AdminPanel() {
                     }
                   }));
                   setSecondaryImages(prev => [...prev, ...safeImages]);
+                  
+                  // Update selectedMediaContent state immediately
+                  setSelectedMediaContent(prev => ({
+                    ...prev,
+                    secondaryImages: [...prev.secondaryImages, ...safeImages.map(img => ({
+                      id: img.id,
+                      url: img.url,
+                      alt: img.alt || '',
+                      width: img.width || 0,
+                      height: img.height || 0,
+                      source: img.source || 'pexels'
+                    }))]
+                  }));
+                  
                   toast({
                     title: "Content images added",
                     description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
