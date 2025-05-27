@@ -1122,6 +1122,7 @@ export default function AdminPanel() {
     secondaryImages: MediaImage[];
     youtubeEmbed: string | null;
   }) => {
+    console.log('Media selection completed:', mediaContent);
     setSelectedMediaContent(mediaContent);
     
     // Add the selected media to the form data
@@ -1417,6 +1418,7 @@ export default function AdminPanel() {
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
+      console.log("Selected media content:", selectedMediaContent);
       
       // Specific try-catch for the API request
       try {
