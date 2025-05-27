@@ -1729,6 +1729,224 @@ export default function AdminPanel() {
                         />
                       )}
                       
+                      {/* Selected Items Display - appears after blog selection */}
+                      {(selectedProducts.length > 0 || selectedCollections.length > 0 || selectedBuyerPersonas.length > 0 || selectedKeywords.length > 0 || form.watch('title')) && (
+                        <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                          <h4 className="text-sm font-medium text-slate-700 mb-3">Current Selections</h4>
+                          
+                          {/* Selected Products */}
+                          {selectedProducts.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <Package className="h-4 w-4 mr-2 text-green-500" />
+                                  Selected Products ({selectedProducts.length})
+                                </h5>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setWorkflowStep('products')}
+                                  className="h-7 text-xs"
+                                >
+                                  <Pencil className="mr-1 h-3 w-3" />
+                                  Edit
+                                </Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {selectedProducts.map((product) => (
+                                  <div key={product.id} className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border">
+                                    {product.image && (
+                                      <ShopifyImageViewer 
+                                        src={product.image} 
+                                        alt={product.title} 
+                                        className="w-8 h-8 rounded object-cover"
+                                      />
+                                    )}
+                                    <span className="text-sm font-medium truncate max-w-32">{product.title}</span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
+                                      onClick={() => {
+                                        setSelectedProducts(prev => prev.filter(p => p.id !== product.id));
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Selected Collections */}
+                          {selectedCollections.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <Folders className="h-4 w-4 mr-2 text-purple-500" />
+                                  Selected Collections ({selectedCollections.length})
+                                </h5>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setWorkflowStep('collections')}
+                                  className="h-7 text-xs"
+                                >
+                                  <Pencil className="mr-1 h-3 w-3" />
+                                  Edit
+                                </Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {selectedCollections.map((collection) => (
+                                  <div key={collection.id} className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border">
+                                    <FolderOpen className="h-4 w-4 text-purple-500" />
+                                    <span className="text-sm font-medium truncate max-w-32">{collection.title}</span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
+                                      onClick={() => {
+                                        setSelectedCollections(prev => prev.filter(c => c.id !== collection.id));
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Selected Buyer Personas */}
+                          {selectedBuyerPersonas.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <Users className="h-4 w-4 mr-2 text-blue-500" />
+                                  Selected Buyer Personas ({selectedBuyerPersonas.length})
+                                </h5>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setWorkflowStep('buying-avatars')}
+                                  className="h-7 text-xs"
+                                >
+                                  <Pencil className="mr-1 h-3 w-3" />
+                                  Edit
+                                </Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {selectedBuyerPersonas.map((personaId) => {
+                                  const persona = predefinedBuyerPersonas.find(p => p.id === personaId);
+                                  if (!persona) return null;
+                                  
+                                  let IconComponent = User;
+                                  if (persona.icon === 'piggy-bank') IconComponent = PiggyBank;
+                                  else if (persona.icon === 'gem') IconComponent = Gem;
+                                  else if (persona.icon === 'zap') IconComponent = Zap;
+                                  else if (persona.icon === 'leaf') IconComponent = Leaf;
+                                  else if (persona.icon === 'cpu') IconComponent = Cpu;
+                                  else if (persona.icon === 'search') IconComponent = Search;
+                                  else if (persona.icon === 'heart') IconComponent = Heart;
+                                  else if (persona.icon === 'users') IconComponent = Users;
+                                  
+                                  return (
+                                    <div key={persona.id} className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border">
+                                      <div className="h-5 w-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center">
+                                        <IconComponent className="h-3 w-3" />
+                                      </div>
+                                      <span className="text-sm font-medium truncate max-w-32">{persona.name}</span>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
+                                        onClick={() => {
+                                          setSelectedBuyerPersonas(prev => prev.filter(id => id !== persona.id));
+                                        }}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Selected Keywords */}
+                          {selectedKeywords.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <Search className="h-4 w-4 mr-2 text-orange-500" />
+                                  Selected Keywords ({selectedKeywords.length})
+                                </h5>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setWorkflowStep('keywords')}
+                                  className="h-7 text-xs"
+                                >
+                                  <Pencil className="mr-1 h-3 w-3" />
+                                  Edit
+                                </Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {selectedKeywords.map((keyword, index) => (
+                                  <div key={index} className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border">
+                                    <span className="text-sm font-medium">{keyword}</span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
+                                      onClick={() => {
+                                        setSelectedKeywords(prev => prev.filter((_, i) => i !== index));
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Selected Title */}
+                          {form.watch('title') && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <Type className="h-4 w-4 mr-2 text-indigo-500" />
+                                  Selected Title
+                                </h5>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setWorkflowStep('title')}
+                                  className="h-7 text-xs"
+                                >
+                                  <Pencil className="mr-1 h-3 w-3" />
+                                  Edit
+                                </Button>
+                              </div>
+                              <div className="bg-white rounded-md p-3 shadow-sm border">
+                                <p className="text-sm font-medium">{form.watch('title')}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       {/* Title field (hidden initially, made visible and populated in title step) */}
                       <div className={workflowStep === 'content' ? 'block' : 'hidden'}>
                         <FormField
