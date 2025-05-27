@@ -1105,7 +1105,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
   try {
     // Validate request body with all required fields
     const requestSchema = z.object({
-      title: z.string().min(3),
+      title: z.string().min(1, "Title is required"),
       region: z.string().optional(),
       productIds: z.array(z.string()).optional(),
       collectionIds: z.array(z.string()).optional(),
