@@ -1173,7 +1173,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
           thumbnail: z.string()
         }).optional()
       })).optional(),
-      youtubeEmbed: z.string().optional()
+      youtubeEmbed: z.string().nullable().optional()
     });
     
     // Parse the request data to verify it matches the schema
