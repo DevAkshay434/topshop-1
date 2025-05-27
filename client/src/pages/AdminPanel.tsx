@@ -135,7 +135,7 @@ const contentFormSchema = z.object({
   articleType: z.enum(["blog", "page"]),
   blogId: z.string().optional(),
   keywords: z.array(z.string()).optional(),
-  writingPerspective: z.enum(["first_person_plural", "first_person_singular", "second_person", "third_person", "professional"]),
+  writingPerspective: z.enum(["first_person_singular", "first_person_plural", "second_person", "third_person", "copywriter_attribution"]),
   enableTables: z.boolean().default(true),
   enableLists: z.boolean().default(true),
   enableH3s: z.boolean().default(true),
@@ -153,10 +153,8 @@ const contentFormSchema = z.object({
   scheduleDate: z.string().optional(),
   scheduleTime: z.string().optional(),
   // New fields for content generation
-  buyerProfile: z.enum(["auto", "beginner", "intermediate", "advanced"]).default("auto"),
-  articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
+  articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("long"),
   headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
-  youtubeUrl: z.string().optional(),
   // Custom category fields
   categories: z.array(z.string()).optional(),
   customCategory: z.string().optional()
@@ -745,10 +743,8 @@ export default function AdminPanel() {
     scheduleDate: undefined,
     scheduleTime: "09:30",
     // New fields
-    buyerProfile: "auto",
-    articleLength: "medium",
+    articleLength: "long",
     headingsCount: "3",
-    youtubeUrl: "",
     // Category fields
     categories: [],
     customCategory: ""
@@ -1376,10 +1372,8 @@ export default function AdminPanel() {
         postStatus: publicationType === "schedule" ? "scheduled" : values.postStatus,
         
         // Include content generation option fields
-        buyerProfile: selectedBuyerPersonas.length > 0 ? "custom" : (values.buyerProfile || "auto"),
-        articleLength: values.articleLength || "medium",
-        headingsCount: values.headingsCount || "3",
-        youtubeUrl: values.youtubeUrl || ""
+        articleLength: values.articleLength || "long",
+        headingsCount: values.headingsCount || "3"
       };
       
       // Extra verification to ensure scheduling works correctly
@@ -2709,41 +2703,7 @@ export default function AdminPanel() {
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <FormField
-                          control={form.control}
-                          name="buyerProfile"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Buyer Profile</FormLabel>
-                              <Select 
-                                onValueChange={field.onChange} 
-                                defaultValue={selectedBuyerPersonas.length > 0 ? "custom" : field.value}
-                                disabled={selectedBuyerPersonas.length > 0}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select buyer profile" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="auto">Auto (Based on Products)</SelectItem>
-                                  <SelectItem value="beginner">Beginner</SelectItem>
-                                  <SelectItem value="intermediate">Intermediate</SelectItem>
-                                  <SelectItem value="advanced">Advanced</SelectItem>
-                                  {selectedBuyerPersonas.length > 0 && (
-                                    <SelectItem value="custom">Custom Personas</SelectItem>
-                                  )}
-                                </SelectContent>
-                              </Select>
-                              <FormDescription className="text-xs">
-                                {selectedBuyerPersonas.length > 0 
-                                  ? "Using selected buyer personas for targeting" 
-                                  : "Tailors content to the buyer's knowledge level"}
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+
                         
                         <FormField
                           control={form.control}
