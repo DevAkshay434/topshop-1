@@ -1737,21 +1737,11 @@ export default function AdminPanel() {
                           {/* Selected Products */}
                           {selectedProducts.length > 0 && (
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center">
                                 <h5 className="text-sm font-medium flex items-center">
                                   <Package className="h-4 w-4 mr-2 text-green-500" />
                                   Selected Products ({selectedProducts.length})
                                 </h5>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setWorkflowStep('products')}
-                                  className="h-7 text-xs"
-                                >
-                                  <Pencil className="mr-1 h-3 w-3" />
-                                  Edit
-                                </Button>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {selectedProducts.map((product) => (
@@ -1787,21 +1777,11 @@ export default function AdminPanel() {
                           {/* Selected Collections */}
                           {selectedCollections.length > 0 && (
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center">
                                 <h5 className="text-sm font-medium flex items-center">
                                   <Folders className="h-4 w-4 mr-2 text-purple-500" />
                                   Selected Collections ({selectedCollections.length})
                                 </h5>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setWorkflowStep('collections')}
-                                  className="h-7 text-xs"
-                                >
-                                  <Pencil className="mr-1 h-3 w-3" />
-                                  Edit
-                                </Button>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {selectedCollections.map((collection) => (
@@ -1828,21 +1808,11 @@ export default function AdminPanel() {
                           {/* Selected Buyer Personas */}
                           {selectedBuyerPersonas.length > 0 && (
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center">
                                 <h5 className="text-sm font-medium flex items-center">
                                   <Users className="h-4 w-4 mr-2 text-blue-500" />
                                   Selected Buyer Personas ({selectedBuyerPersonas.length})
                                 </h5>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setWorkflowStep('buying-avatars')}
-                                  className="h-7 text-xs"
-                                >
-                                  <Pencil className="mr-1 h-3 w-3" />
-                                  Edit
-                                </Button>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {selectedBuyerPersonas.map((personaId) => {
@@ -1886,21 +1856,11 @@ export default function AdminPanel() {
                           {/* Selected Keywords */}
                           {selectedKeywords.length > 0 && (
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center">
                                 <h5 className="text-sm font-medium flex items-center">
                                   <Search className="h-4 w-4 mr-2 text-orange-500" />
                                   Selected Keywords ({selectedKeywords.length})
                                 </h5>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setWorkflowStep('keywords')}
-                                  className="h-7 text-xs"
-                                >
-                                  <Pencil className="mr-1 h-3 w-3" />
-                                  Edit
-                                </Button>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {selectedKeywords.map((keyword, index) => (
@@ -1926,21 +1886,11 @@ export default function AdminPanel() {
                           {/* Selected Title */}
                           {form.watch('title') && (
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center">
                                 <h5 className="text-sm font-medium flex items-center">
                                   <Type className="h-4 w-4 mr-2 text-indigo-500" />
                                   Selected Title
                                 </h5>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setWorkflowStep('title')}
-                                  className="h-7 text-xs"
-                                >
-                                  <Pencil className="mr-1 h-3 w-3" />
-                                  Edit
-                                </Button>
                               </div>
                               <div className="bg-white rounded-md p-3 shadow-sm border">
                                 <p className="text-sm font-medium">{form.watch('title')}</p>
