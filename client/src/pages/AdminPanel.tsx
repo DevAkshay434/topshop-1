@@ -1437,6 +1437,10 @@ export default function AdminPanel() {
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
       console.log("Selected media content state:", selectedMediaContent);
+      console.log("PRIMARY IMAGES STATE:", primaryImages);
+      console.log("SECONDARY IMAGES STATE:", secondaryImages);
+      console.log("Primary images length:", primaryImages.length);
+      console.log("Secondary images length:", secondaryImages.length);
       console.log("Primary image in submit data:", submitData.primaryImage);
       console.log("Secondary images in submit data:", submitData.secondaryImages);
       console.log("YouTube embed in submit data:", submitData.youtubeEmbed);
