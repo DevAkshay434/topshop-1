@@ -12,6 +12,10 @@ interface BlogContentRequest {
   includeKeywords?: boolean;
   contentStyleToneId?: string;
   contentStyleDisplayName?: string;
+  // Media selection fields
+  primaryImage?: any;
+  secondaryImages?: any[];
+  youtubeEmbed?: string;
 }
 
 interface BlogContent {
@@ -53,7 +57,19 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     // Get copywriter persona if available
 const copywriterPersona = request.contentStyleDisplayName ? `Write this content in the style of ${request.contentStyleDisplayName}.` : '';
 
-let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}
+    // Build media context for the prompt
+    let mediaContext = '';
+    if (request.primaryImage) {
+      mediaContext += `\n    SELECTED PRIMARY IMAGE: A high-quality image has been selected as the featured image for this content. This will be automatically positioned as the main visual.`;
+    }
+    if (request.secondaryImages && request.secondaryImages.length > 0) {
+      mediaContext += `\n    SELECTED SECONDARY IMAGES: ${request.secondaryImages.length} additional images have been selected to support the content. These will be automatically placed under H2 headings after the video.`;
+    }
+    if (request.youtubeEmbed) {
+      mediaContext += `\n    SELECTED YOUTUBE VIDEO: A relevant YouTube video has been selected to enhance the content. This will be placed under the second H2 heading.`;
+    }
+
+let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}
     
     The blog post MUST follow this exact structure:
     1. A compelling title that includes the main topic and primary keywords (this will be formatted as H1 automatically)

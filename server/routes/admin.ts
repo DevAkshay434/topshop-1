@@ -1143,7 +1143,37 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       selectedKeywordData: z.array(z.any()).optional(),
       // Content style fields
       contentStyleToneId: z.string().optional(),
-      contentStyleDisplayName: z.string().optional()
+      contentStyleDisplayName: z.string().optional(),
+      // Media selection fields from Choose Media step
+      primaryImage: z.object({
+        id: z.string(),
+        url: z.string(),
+        alt: z.string().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+        src: z.object({
+          original: z.string(),
+          large: z.string(),
+          medium: z.string(),
+          small: z.string(),
+          thumbnail: z.string()
+        }).optional()
+      }).optional(),
+      secondaryImages: z.array(z.object({
+        id: z.string(),
+        url: z.string(),
+        alt: z.string().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+        src: z.object({
+          original: z.string(),
+          large: z.string(),
+          medium: z.string(),
+          small: z.string(),
+          thumbnail: z.string()
+        }).optional()
+      })).optional(),
+      youtubeEmbed: z.string().optional()
     });
     
     // Parse the request data to verify it matches the schema
@@ -1374,129 +1404,126 @@ Place this at a logical position in the content, typically after introducing a c
         generatedContent: JSON.stringify(generatedContent)
       });
       
-      // 5. Handle images from Pexels if needed
+      // 5. Handle media from Choose Media step
       let featuredImage = null;
-      let additionalImages: PexelsImage[] = [];
+      let additionalImages: any[] = [];
       
-      // If user has selected specific images, use ONLY those
-      if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
-        try {
-          console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
-          
-          // Directly fetch the selected images by ID
-          const selectedImages = await pexelsService.getImagesByIds(requestData.selectedImageIds);
-          
-          console.log(`Fetched ${selectedImages.length} images out of ${requestData.selectedImageIds.length} requested IDs`);
-          
-          if (selectedImages.length > 0) {
-            // Use the first image as featured image
-            featuredImage = selectedImages[0];
-            console.log(`Using user-selected featured image: ${featuredImage.url}`);
+      // Use primary image from Choose Media step
+      if (requestData.primaryImage) {
+        console.log(`Using selected primary image: ${requestData.primaryImage.url}`);
+        featuredImage = requestData.primaryImage;
+      }
+      
+      // Use secondary images from Choose Media step
+      if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
+        console.log(`Using ${requestData.secondaryImages.length} selected secondary images`);
+        additionalImages = requestData.secondaryImages;
+      }
+      
+      // Fallback: If no media selected from Choose Media, try the legacy approach
+      if (!featuredImage && !additionalImages.length) {
+        // If user has selected specific images, use ONLY those
+        if (requestData.selectedImageIds && requestData.selectedImageIds.length > 0) {
+          try {
+            console.log(`Using user-selected images with IDs: ${requestData.selectedImageIds.join(', ')}`);
             
-            // Save any additional images for insertion into content
-            if (selectedImages.length > 1) {
-              additionalImages = selectedImages.slice(1);
-              console.log(`Using ${additionalImages.length} additional images for content body`);
-            }
-          } else {
-            console.warn("Could not fetch any of the selected images by ID");
+            // Directly fetch the selected images by ID
+            const selectedImages = await pexelsService.getImagesByIds(requestData.selectedImageIds);
             
-            // Fallback to searching if direct fetching fails
-            console.log("Attempting fallback search for images");
-            const { images } = await pexelsService.safeSearchImages(requestData.title, 50);
+            console.log(`Fetched ${selectedImages.length} images out of ${requestData.selectedImageIds.length} requested IDs`);
             
-            // Filter to ONLY use the specifically selected images
-            const fallbackImages = images.filter((img: PexelsImage) => 
-              requestData.selectedImageIds && 
-              requestData.selectedImageIds.includes(String(img.id))
-            );
-            
-            if (fallbackImages.length > 0) {
-              featuredImage = fallbackImages[0];
-              if (fallbackImages.length > 1) {
-                additionalImages = fallbackImages.slice(1);
+            if (selectedImages.length > 0) {
+              // Use the first image as featured image
+              featuredImage = selectedImages[0];
+              console.log(`Using user-selected featured image: ${featuredImage.url}`);
+              
+              // Save any additional images for insertion into content
+              if (selectedImages.length > 1) {
+                additionalImages = selectedImages.slice(1);
+                console.log(`Using ${additionalImages.length} additional images for content body`);
               }
-              console.log(`Found ${fallbackImages.length} images through fallback search`);
             }
+          } catch (imageError) {
+            console.error('Error retrieving selected images:', imageError);
           }
-        } catch (imageError) {
-          console.error('Error retrieving selected images:', imageError);
-        }
-      } else if (requestData.generateImages) {
-        // ONLY if no specific images were selected AND generateImages is true, find some images
-        try {
-          console.log(`Generating images for: "${requestData.title}"`);
-          const { images } = await pexelsService.safeSearchImages(requestData.title, 3);
-          if (images && images.length > 0) {
-            featuredImage = images[0];
-            
-            // Save additional generated images if available
-            if (images.length > 1) {
-              additionalImages = images.slice(1);
+        } else if (requestData.generateImages) {
+          // ONLY if no specific images were selected AND generateImages is true, find some images
+          try {
+            console.log(`Generating images for: "${requestData.title}"`);
+            const { images } = await pexelsService.safeSearchImages(requestData.title, 3);
+            if (images && images.length > 0) {
+              featuredImage = images[0];
+              
+              // Save additional generated images if available
+              if (images.length > 1) {
+                additionalImages = images.slice(1);
+              }
             }
+          } catch (imageError) {
+            console.error('Error generating images:', imageError);
+            // Continue even if image generation fails
           }
-        } catch (imageError) {
-          console.error('Error generating images:', imageError);
-          // Continue even if image generation fails
         }
       }
       
       // 6. Prepare content for blog post or page
       let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
       
-      // Add YouTube video embed if provided
-      if (requestData.youtubeUrl) {
-        const videoId = requestData.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+      // Add YouTube video embed from Choose Media step or legacy youtubeUrl
+      const youtubeEmbedUrl = requestData.youtubeEmbed || requestData.youtubeUrl;
+      if (youtubeEmbedUrl) {
+        let videoId = '';
+        
+        // Extract video ID from various YouTube URL formats
+        if (youtubeEmbedUrl.includes('youtube.com/embed/')) {
+          videoId = youtubeEmbedUrl.split('youtube.com/embed/')[1]?.split('?')[0];
+        } else {
+          videoId = youtubeEmbedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || '';
+        }
         
         if (videoId) {
+          console.log(`Embedding YouTube video with ID: ${videoId}`);
+          
           // Create the YouTube embed HTML
           const youtubeEmbed = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </div>`;
           
-          // Check if Claude inserted a placeholder
-          if (finalContent.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
+          // Check if Claude inserted a placeholder for video placement under second H2
+          if (finalContent.includes('<!-- VIDEO_PLACEMENT_MARKER -->')) {
             // Replace the placeholder with the actual embed
-            finalContent = finalContent.replace('[YOUTUBE_EMBED_PLACEHOLDER]', youtubeEmbed);
-            console.log('Inserted YouTube video at placeholder position');
+            finalContent = finalContent.replace('<!-- VIDEO_PLACEMENT_MARKER -->', youtubeEmbed);
+            console.log('Inserted YouTube video at VIDEO_PLACEMENT_MARKER position');
           } else {
-            // If no placeholder, insert the video after the first H2 or paragraph
-            const h2Match = finalContent.match(/<\/h2>/i);
-            const pMatch = finalContent.match(/<\/p>/i);
-            
-            if (h2Match && pMatch) {
-              // Insert after whichever comes first
-              const h2Index = h2Match.index || 0;
-              const pIndex = pMatch.index || 0;
-              const insertIndex = Math.min(h2Index, pIndex) + (h2Index < pIndex ? 5 : 4); // Length of </h2> or </p>
-              
+            // Find the second H2 heading and insert video after it
+            const h2Matches = Array.from(finalContent.matchAll(/<\/h2>/gi));
+            if (h2Matches.length >= 2) {
+              // Insert after the second H2
+              const insertIndex = (h2Matches[1].index || 0) + 5; // Length of </h2>
               finalContent = finalContent.substring(0, insertIndex) + 
                              '\n\n' + youtubeEmbed + '\n\n' + 
                              finalContent.substring(insertIndex);
-              
-              console.log('Inserted YouTube video after first heading or paragraph');
-            } else if (h2Match) {
-              // Insert after the first H2
-              const insertIndex = (h2Match.index || 0) + 5; // Length of </h2>
-              
+              console.log('Inserted YouTube video after second H2 heading');
+            } else if (h2Matches.length === 1) {
+              // Insert after the first H2 if only one exists
+              const insertIndex = (h2Matches[0].index || 0) + 5;
               finalContent = finalContent.substring(0, insertIndex) + 
                              '\n\n' + youtubeEmbed + '\n\n' + 
                              finalContent.substring(insertIndex);
-              
-              console.log('Inserted YouTube video after first heading');
-            } else if (pMatch) {
-              // Insert after the first paragraph
-              const insertIndex = (pMatch.index || 0) + 4; // Length of </p>
-              
-              finalContent = finalContent.substring(0, insertIndex) + 
-                             '\n\n' + youtubeEmbed + '\n\n' + 
-                             finalContent.substring(insertIndex);
-              
-              console.log('Inserted YouTube video after first paragraph');
+              console.log('Inserted YouTube video after first H2 heading (only one H2 found)');
             } else {
-              // Fallback: Just prepend the video
-              finalContent = youtubeEmbed + '\n\n' + finalContent;
-              console.log('Inserted YouTube video at the beginning of content');
+              // Fallback: Insert after first paragraph
+              const pMatch = finalContent.match(/<\/p>/i);
+              if (pMatch) {
+                const insertIndex = (pMatch.index || 0) + 4;
+                finalContent = finalContent.substring(0, insertIndex) + 
+                               '\n\n' + youtubeEmbed + '\n\n' + 
+                               finalContent.substring(insertIndex);
+                console.log('Inserted YouTube video after first paragraph (fallback)');
+              } else {
+                finalContent = youtubeEmbed + '\n\n' + finalContent;
+                console.log('Inserted YouTube video at beginning (fallback)');
+              }
             }
           }
         }

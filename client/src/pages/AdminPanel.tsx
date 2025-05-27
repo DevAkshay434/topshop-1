@@ -1409,7 +1409,11 @@ export default function AdminPanel() {
         selectedKeywordData: processedKeywords,
         // Add content style selection if available
         contentStyleToneId: selectedContentToneId || "",
-        contentStyleDisplayName: selectedContentDisplayName || ""
+        contentStyleDisplayName: selectedContentDisplayName || "",
+        // Add selected media from Choose Media step
+        primaryImage: selectedMediaContent.primaryImage,
+        secondaryImages: selectedMediaContent.secondaryImages,
+        youtubeEmbed: selectedMediaContent.youtubeEmbed
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
