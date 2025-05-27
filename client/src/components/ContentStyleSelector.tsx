@@ -178,13 +178,7 @@ export function ContentStyleSelector({
           </FormItem>
         </div>
 
-        {selectedTone && (
-          <div className="pt-2 text-sm">
-            <p className="text-muted-foreground">
-              Selected copywriter: <span className="font-semibold text-foreground">{findToneById(selectedTone)?.displayName}</span>
-            </p>
-          </div>
-        )}
+
       </CardContent>
     </Card>
   );

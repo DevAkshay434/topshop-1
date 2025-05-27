@@ -2958,11 +2958,7 @@ export default function AdminPanel() {
                           }}
                           className="mt-2"
                         />
-                        {selectedContentDisplayName && (
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Selected copywriter: <span className="font-medium">{selectedContentDisplayName}</span>
-                          </p>
-                        )}
+
                       </div>
                       
                       <FormField
