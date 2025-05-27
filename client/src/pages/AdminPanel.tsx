@@ -3095,7 +3095,7 @@ export default function AdminPanel() {
                         name="introType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Search-Intent Optimized (Recommended)</FormLabel>
+                            <FormLabel>Introduction Style</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
                               value={field.value || "search_intent"}
@@ -3106,7 +3106,7 @@ export default function AdminPanel() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="search_intent">Search Intent Focused</SelectItem>
+                                <SelectItem value="search_intent">Search Intent Focused (Recommended)</SelectItem>
                                 <SelectItem value="standard">Standard Introduction</SelectItem>
                                 <SelectItem value="none">No Introduction</SelectItem>
                               </SelectContent>
