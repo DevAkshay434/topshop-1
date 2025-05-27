@@ -1395,7 +1395,11 @@ Place this at a logical position in the content, typically after introducing a c
         // Add content style information if available
         contentStyleToneId: requestData.contentStyleToneId,
         contentStyleDisplayName: requestData.contentStyleDisplayName,
-        includeKeywords: requestData.keywords && requestData.keywords.length > 0
+        includeKeywords: requestData.keywords && requestData.keywords.length > 0,
+        // Add selected media from Choose Media step
+        primaryImage: requestData.primaryImage,
+        secondaryImages: requestData.secondaryImages,
+        youtubeEmbed: requestData.youtubeEmbed
       });
       
       // 4. Update content generation request
