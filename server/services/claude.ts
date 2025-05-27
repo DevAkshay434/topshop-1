@@ -111,6 +111,46 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     
     Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
     
+    // Add media information if provided from Choose Media step
+    if (request.primaryImage || (request.secondaryImages && request.secondaryImages.length > 0) || request.youtubeEmbed) {
+      promptText += `
+      
+      SELECTED MEDIA CONTEXT (from Choose Media step):`;
+      
+      if (request.primaryImage) {
+        promptText += `
+      
+      PRIMARY/FEATURED IMAGE: "${request.primaryImage.alt}" (${request.primaryImage.url})
+      - This will be used as the featured image at the top of the content
+      - Reference this image context in your introduction to create cohesion`;
+      }
+      
+      if (request.secondaryImages && request.secondaryImages.length > 0) {
+        promptText += `
+      
+      SECONDARY IMAGES (${request.secondaryImages.length} selected):`;
+        request.secondaryImages.forEach((img, index) => {
+          promptText += `
+      ${index + 1}. "${img.alt}" (${img.url})`;
+        });
+        promptText += `
+      - These images will be placed under H2 headings after the video
+      - Reference these images in your content to create natural flow`;
+      }
+      
+      if (request.youtubeEmbed) {
+        promptText += `
+      
+      YOUTUBE VIDEO: ${request.youtubeEmbed}
+      - This video will be embedded under the SECOND H2 heading
+      - Reference this video content in your structure to create natural integration`;
+      }
+      
+      promptText += `
+      
+      IMPORTANT: Structure your content to naturally incorporate these selected media elements. Make sure the content flows logically with the media placements.`;
+    }
+    
     // Add custom prompt if provided
     if (request.customPrompt) {
       const customPromptFormatted = request.customPrompt.replace(/\[TOPIC\]/g, request.topic);

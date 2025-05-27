@@ -330,7 +330,7 @@ export default function AdminPanel() {
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
   
-  // Media selection state
+  // Media selection state - initialized with empty values
   const [selectedMediaContent, setSelectedMediaContent] = useState<{
     primaryImage: MediaImage | null;
     secondaryImages: MediaImage[];
@@ -340,6 +340,9 @@ export default function AdminPanel() {
     secondaryImages: [],
     youtubeEmbed: null
   });
+  
+  // Add logging to track state changes
+  console.log('Current selectedMediaContent state:', selectedMediaContent);
   
   // Workflow step state
   const [currentStep, setCurrentStep] = useState<string>("product");
@@ -1125,27 +1128,28 @@ export default function AdminPanel() {
     console.log('Media selection completed:', mediaContent);
     setSelectedMediaContent(mediaContent);
     
-    // Add the selected media to the form data
+    // Store the media content in form state for API submission
     if (mediaContent.primaryImage) {
       form.setValue('featuredImage', mediaContent.primaryImage.url);
     }
     
-    // Store secondary images for content generation
+    // Store secondary images for content generation - map to compatible format
     setSecondaryImages(mediaContent.secondaryImages.map(img => ({
       id: img.id,
       url: img.url,
       width: img.width || 0,
       height: img.height || 0,
       alt: img.alt || '',
-      src: img.src || {
+      source: img.source || 'pexels',
+      selected: true,
+      type: 'image' as const,
+      src: {
         original: img.url,
         large: img.url,
         medium: img.url,
         small: img.url,
         thumbnail: img.url
-      },
-      selected: true,
-      type: 'image'
+      }
     })));
     
     // Move to content generation step
@@ -1153,7 +1157,7 @@ export default function AdminPanel() {
     
     toast({
       title: "Media Selection Complete",
-      description: `Selected ${mediaContent.primaryImage ? "a primary image" : "no primary image"} and ${mediaContent.secondaryImages.length} secondary images.`
+      description: `Selected ${mediaContent.primaryImage ? "a primary image" : "no primary image"}, ${mediaContent.secondaryImages.length} secondary images${mediaContent.youtubeEmbed ? ", and 1 video" : ""}.`
     });
   };
   
@@ -1418,7 +1422,10 @@ export default function AdminPanel() {
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
-      console.log("Selected media content:", selectedMediaContent);
+      console.log("Selected media content state:", selectedMediaContent);
+      console.log("Primary image in submit data:", submitData.primaryImage);
+      console.log("Secondary images in submit data:", submitData.secondaryImages);
+      console.log("YouTube embed in submit data:", submitData.youtubeEmbed);
       
       // Specific try-catch for the API request
       try {
