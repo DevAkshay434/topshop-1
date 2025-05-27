@@ -2955,11 +2955,11 @@ export default function AdminPanel() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="first_person_plural">We (First Person Plural)</SelectItem>
-                                <SelectItem value="first_person_singular">I (First Person Singular)</SelectItem>
-                                <SelectItem value="second_person">You (Second Person)</SelectItem>
-                                <SelectItem value="third_person">They (Third Person)</SelectItem>
-                                <SelectItem value="professional">Professional (Neutral)</SelectItem>
+                                <SelectItem value="first_person_singular">First Person Singular (I, me, my, mine)</SelectItem>
+                                <SelectItem value="first_person_plural">First Person Plural (we, us, our, ours)</SelectItem>
+                                <SelectItem value="second_person">Second Person (you, your, yours)</SelectItem>
+                                <SelectItem value="third_person">Third Person (he, she, it, they)</SelectItem>
+                                <SelectItem value="copywriter_attribution">Copywriter Attribution</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -3020,7 +3020,7 @@ export default function AdminPanel() {
                         name="introType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Introduction Style</FormLabel>
+                            <FormLabel>Search-Intent Optimized (Recommended)</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
                               value={field.value || "search_intent"}
