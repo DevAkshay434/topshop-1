@@ -1474,30 +1474,18 @@ Place this at a logical position in the content, typically after introducing a c
       let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
       
       // Replace media placement markers with actual content
-      // Handle YouTube video placement
-      if (requestData.youtubeEmbed && finalContent.includes('<!-- VIDEO_PLACEMENT_MARKER -->')) {
-        const videoHtml = `
-<div class="video-container" style="text-align: center; margin: 20px 0;">
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/${requestData.youtubeEmbed}" 
-          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen style="max-width: 560px;"></iframe>
-</div>`;
-        finalContent = finalContent.replace('<!-- VIDEO_PLACEMENT_MARKER -->', videoHtml);
-        console.log(`Inserted YouTube video embed for ID: ${requestData.youtubeEmbed}`);
-      }
+      // Create array of all secondary content (images + video)
+      const secondaryContent = [];
       
-      // Handle secondary image placement markers
+      // Add secondary images to the array
       if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
-        let imageIndex = 0;
-        while (finalContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->') && imageIndex < requestData.secondaryImages.length) {
-          const image = requestData.secondaryImages[imageIndex];
+        requestData.secondaryImages.forEach((image, index) => {
           const imageUrl = image.url;
           const imageAlt = image.alt || requestData.title;
           
-          // Create image HTML with product link if applicable
           let imageHtml;
           if (productsInfo.length > 0) {
-            const productIndex = imageIndex % productsInfo.length;
+            const productIndex = index % productsInfo.length;
             const product = productsInfo[productIndex];
             const productUrl = `https://${store.shopName}/products/${product.handle}`;
             
@@ -1517,71 +1505,32 @@ Place this at a logical position in the content, typically after introducing a c
 </div>`;
           }
           
-          finalContent = finalContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', imageHtml);
-          console.log(`Inserted secondary image ${imageIndex + 1}: ${imageUrl}`);
-          imageIndex++;
-        }
+          secondaryContent.push({ type: 'image', html: imageHtml, description: `secondary image: ${imageUrl}` });
+        });
       }
       
-      // Add YouTube video embed from Choose Media step or legacy youtubeUrl
-      const youtubeEmbedUrl = requestData.youtubeEmbed || requestData.youtubeUrl;
-      if (youtubeEmbedUrl) {
-        let videoId = '';
-        
-        // Extract video ID from various YouTube URL formats
-        if (youtubeEmbedUrl.includes('youtube.com/embed/')) {
-          videoId = youtubeEmbedUrl.split('youtube.com/embed/')[1]?.split('?')[0];
-        } else {
-          videoId = youtubeEmbedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || '';
-        }
-        
-        if (videoId) {
-          console.log(`Embedding YouTube video with ID: ${videoId}`);
-          
-          // Create the YouTube embed HTML
-          const youtubeEmbed = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; margin: 30px 0;">
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      // Add YouTube video to secondary content array
+      if (requestData.youtubeEmbed) {
+        const videoHtml = `
+<div class="video-container" style="text-align: center; margin: 20px 0;">
+  <iframe width="100%" height="315" src="https://www.youtube.com/embed/${requestData.youtubeEmbed}" 
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen style="max-width: 560px;"></iframe>
 </div>`;
-          
-          // Check if Claude inserted a placeholder for video placement under second H2
-          if (finalContent.includes('<!-- VIDEO_PLACEMENT_MARKER -->')) {
-            // Replace the placeholder with the actual embed
-            finalContent = finalContent.replace('<!-- VIDEO_PLACEMENT_MARKER -->', youtubeEmbed);
-            console.log('Inserted YouTube video at VIDEO_PLACEMENT_MARKER position');
-          } else {
-            // Find the second H2 heading and insert video after it
-            const h2Matches = Array.from(finalContent.matchAll(/<\/h2>/gi));
-            if (h2Matches.length >= 2) {
-              // Insert after the second H2
-              const insertIndex = (h2Matches[1].index || 0) + 5; // Length of </h2>
-              finalContent = finalContent.substring(0, insertIndex) + 
-                             '\n\n' + youtubeEmbed + '\n\n' + 
-                             finalContent.substring(insertIndex);
-              console.log('Inserted YouTube video after second H2 heading');
-            } else if (h2Matches.length === 1) {
-              // Insert after the first H2 if only one exists
-              const insertIndex = (h2Matches[0].index || 0) + 5;
-              finalContent = finalContent.substring(0, insertIndex) + 
-                             '\n\n' + youtubeEmbed + '\n\n' + 
-                             finalContent.substring(insertIndex);
-              console.log('Inserted YouTube video after first H2 heading (only one H2 found)');
-            } else {
-              // Fallback: Insert after first paragraph
-              const pMatch = finalContent.match(/<\/p>/i);
-              if (pMatch) {
-                const insertIndex = (pMatch.index || 0) + 4;
-                finalContent = finalContent.substring(0, insertIndex) + 
-                               '\n\n' + youtubeEmbed + '\n\n' + 
-                               finalContent.substring(insertIndex);
-                console.log('Inserted YouTube video after first paragraph (fallback)');
-              } else {
-                finalContent = youtubeEmbed + '\n\n' + finalContent;
-                console.log('Inserted YouTube video at beginning (fallback)');
-              }
-            }
-          }
+        secondaryContent.push({ type: 'video', html: videoHtml, description: `YouTube video: ${requestData.youtubeEmbed}` });
+      }
+      
+      // Insert all secondary content into placement markers
+      if (secondaryContent.length > 0) {
+        let contentIndex = 0;
+        while (finalContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->') && contentIndex < secondaryContent.length) {
+          const content = secondaryContent[contentIndex];
+          finalContent = finalContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', content.html);
+          console.log(`Inserted ${content.description}`);
+          contentIndex++;
         }
       }
+
       
       // Add featured image at the beginning if available
       if (featuredImage) {

@@ -85,8 +85,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
     - DO NOT use <h1> tags in the content, as the title will be the H1
     - Create at least 3-4 H2 sections for proper structure
-    - Under the SECOND H2 heading, include a placeholder comment: <!-- VIDEO_PLACEMENT_MARKER -->
-    - Under subsequent H2 headings after the video, include placeholder comments: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+    - Under H2 headings, include placeholder comments for secondary content: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+    - If video content is selected, treat it as secondary content and include it in the secondary placement markers
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
