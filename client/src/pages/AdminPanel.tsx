@@ -1416,8 +1416,22 @@ export default function AdminPanel() {
         contentStyleToneId: selectedContentToneId || "",
         contentStyleDisplayName: selectedContentDisplayName || "",
         // Add selected media from Choose Media step
-        primaryImage: selectedMediaContent.primaryImage,
-        secondaryImages: selectedMediaContent.secondaryImages,
+        primaryImage: primaryImages.length > 0 ? {
+          id: primaryImages[0].id,
+          url: primaryImages[0].url,
+          alt: primaryImages[0].alt || '',
+          width: primaryImages[0].width || 0,
+          height: primaryImages[0].height || 0,
+          source: primaryImages[0].source || 'pexels'
+        } : null,
+        secondaryImages: secondaryImages.map(img => ({
+          id: img.id,
+          url: img.url,
+          alt: img.alt || '',
+          width: img.width || 0,
+          height: img.height || 0,
+          source: img.source || 'pexels'
+        })),
         youtubeEmbed: selectedMediaContent.youtubeEmbed
       };
       
