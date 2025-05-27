@@ -1757,10 +1757,13 @@ export default function AdminPanel() {
                                 {selectedProducts.map((product) => (
                                   <div key={product.id} className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border">
                                     {product.image && (
-                                      <ShopifyImageViewer 
+                                      <img 
                                         src={product.image} 
                                         alt={product.title} 
                                         className="w-8 h-8 rounded object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
                                       />
                                     )}
                                     <span className="text-sm font-medium truncate max-w-32">{product.title}</span>
@@ -1902,7 +1905,7 @@ export default function AdminPanel() {
                               <div className="flex flex-wrap gap-2">
                                 {selectedKeywords.map((keyword, index) => (
                                   <div key={index} className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border">
-                                    <span className="text-sm font-medium">{keyword}</span>
+                                    <span className="text-sm font-medium">{typeof keyword === 'string' ? keyword : keyword.keyword}</span>
                                     <Button
                                       type="button"
                                       variant="ghost"
