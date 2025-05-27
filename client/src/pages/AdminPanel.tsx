@@ -1415,35 +1415,18 @@ export default function AdminPanel() {
         // Add content style selection if available
         contentStyleToneId: selectedContentToneId || "",
         contentStyleDisplayName: selectedContentDisplayName || "",
-        // Add selected media from Choose Media step
-        primaryImage: primaryImages.length > 0 ? {
-          id: primaryImages[0].id,
-          url: primaryImages[0].url,
-          alt: primaryImages[0].alt || '',
-          width: primaryImages[0].width || 0,
-          height: primaryImages[0].height || 0,
-          source: primaryImages[0].source || 'pexels'
-        } : null,
-        secondaryImages: secondaryImages.map(img => ({
-          id: img.id,
-          url: img.url,
-          alt: img.alt || '',
-          width: img.width || 0,
-          height: img.height || 0,
-          source: img.source || 'pexels'
-        })),
+        // Add selected media from selectedMediaContent state (the correct source)
+        primaryImage: selectedMediaContent.primaryImage,
+        secondaryImages: selectedMediaContent.secondaryImages || [],
         youtubeEmbed: selectedMediaContent.youtubeEmbed
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
       console.log("Selected media content state:", selectedMediaContent);
-      console.log("PRIMARY IMAGES STATE:", primaryImages);
-      console.log("SECONDARY IMAGES STATE:", secondaryImages);
-      console.log("Primary images length:", primaryImages.length);
-      console.log("Secondary images length:", secondaryImages.length);
       console.log("Primary image in submit data:", submitData.primaryImage);
       console.log("Secondary images in submit data:", submitData.secondaryImages);
       console.log("YouTube embed in submit data:", submitData.youtubeEmbed);
+      console.log("Media data being sent to server - Primary:", !!submitData.primaryImage, "Secondary:", submitData.secondaryImages?.length || 0, "YouTube:", !!submitData.youtubeEmbed);
       
       // Specific try-catch for the API request
       try {
