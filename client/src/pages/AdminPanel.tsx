@@ -3840,157 +3840,66 @@ export default function AdminPanel() {
             // Store the function globally for the component to use
             (window as any).handlePublishContent = handlePublishContent;
             return null;
-          }, {})
-                              // Fix image URLs that might be missing domain (starting with //)
-                              .replace(
-                                /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                                '<img$1src="https://$3"$4>'
-                              );
-                              
-                            // Wrap standalone images (those not in an <a> tag) with clickable links
-                            const imgRegexStandalone = /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
-                            enhancedContent = enhancedContent.replace(
-                              imgRegexStandalone,
-                              (match, imgTag, imgSrc) => {
-                                return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
-                              }
-                            );
-                            
-                            // Log for debugging
-                            console.log("Content before final processing:", enhancedContent);
-                            
-                            // Add styling to all remaining images that don't already have style
-                            enhancedContent = enhancedContent.replace(
-                              /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi, 
-                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
-                            );
-                            
-                            // Ensure all images have cursor pointer
-                            enhancedContent = enhancedContent.replace(
-                              /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
-                              (match, before, style, after) => {
-                                // Add cursor: pointer if it's not already there
-                                const updatedStyle = style.includes('cursor:') ? style : style + '; cursor: pointer;';
-                                return `<img${before}style="${updatedStyle}"${after}>`;
-                              }
-                            );
-                            
-                            // Return the enhanced content with proper image styling
-                            return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
-                          } else {
-                            // Remove any img tags without proper src
-                            let cleanedContent = content;
-                            if (hasImageTags) {
-                              cleanedContent = content.replace(/<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi, '');
-                            }
-                            
-                            // Split into paragraphs
-                            const paragraphs = cleanedContent.split(/\n\n+/);
-                            const result: React.ReactNode[] = [];
-                            let imageIndex = 0;
-                            
-                            // Process each paragraph, inserting images occasionally
-                            paragraphs.forEach((para: string, i: number) => {
-                              // Check if paragraph already has image tags
-                              const hasImageInParagraph = para.includes('<img');
-                              
-                              if (para.trim()) {
-                                // Process paragraph to ensure proper image handling
-                                const processedPara = para
-                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                                  .replace(
-                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                                    '<img$1src="https://$2"$3>'
-                                  )
-                                  // Fix image URLs that might be missing domain (starting with //)
-                                  .replace(
-                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                                    '<img$1src="https://$3"$4>'
-                                  )
-                                  // Add styling to all images for proper display
-                                  .replace(
-                                    /<img([^>]*?)>/gi, 
-                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
-                                  );
-                                
-                                result.push(
-                                  <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: processedPara }} />
-                                );
-                              }
-                              
-                              // Only insert secondary images if the paragraph doesn't already have images
-                              // And do it after every 2-3 paragraphs for optimal spacing
-                              if (!hasImageInParagraph && (i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
-                                const image = secondaryImages[imageIndex];
-                                
-                                // Try to find a matching product for this image
-                                let productUrl = image.productUrl || "#";
-                                
-                                // Check if this image belongs to a selected product
-                                const products = selectedProducts || [];
-                                if (products.length > 0 && image.url) {
-                                  const matchingProduct = products.find(p => 
-                                    p.image && (p.image === image.url || image.url?.includes(p.id))
-                                  );
-                                  
-                                  if (matchingProduct) {
-                                    productUrl = matchingProduct.admin_url || productUrl;
-                                  }
-                                }
-                                
-                                result.push(
-                                  <div key={`img-${i}`} className="my-6 flex justify-center">
-                                    <a href={productUrl} target="_blank" rel="noopener noreferrer" className="product-link">
-                                      <img 
-                                        src={image.url || (image.src?.medium ?? '')} 
-                                        alt={image.alt || `Product image ${imageIndex + 1}`} 
-                                        style={{
-                                          maxWidth: '100%',
-                                          maxHeight: '400px',
-                                          cursor: 'pointer', 
-                                          objectFit: 'contain',
-                                          margin: '1rem auto',
-                                          display: 'block',
-                                          borderRadius: '0.375rem'
-                                        }}
-                                      />
-                                    </a>
-                                  </div>
-                                );
-                                imageIndex++;
-                              }
-                              
-                              // Insert YouTube after first or second paragraph if not already inserted via placeholder
-                              if (youtubeVideoId && !hasYoutubePlaceholder && (i === 0 || i === 1)) {
-                                result.push(<YouTubeEmbed key="youtube" />);
-                                // Prevent multiple inserts
-                                youtubeVideoId = null;
-                              }
-                            });
-                            
-                            return <div className="content-preview prose prose-blue max-w-none">{result}</div>;
-                          }
-                        }
-                        
-                        // If no secondary images or YouTube placeholder, handle YouTube separately
-                        if (youtubeVideoId && !hasYoutubePlaceholder) {
-                          return (
-                            <div className="content-preview prose prose-blue max-w-none">
-                              <div dangerouslySetInnerHTML={{ 
-                                __html: content.substring(0, content.length / 3)
-                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                                  .replace(
-                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                                    '<img$1src="https://$2"$3>'
-                                  )
-                                  // Fix image URLs that might be missing domain (starting with //)
-                                  .replace(
-                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                                    '<img$1src="https://$3"$4>'
-                                  )
-                                  // Add styling to all images for proper display
-                                  .replace(
-                                    /<img([^>]*?)>/gi, 
+          }, {})}
+
+          {/* Keyword Selector Dialog */}
+          <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Select Keywords</DialogTitle>
+                <DialogDescription>
+                  Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
+                </DialogDescription>
+              </DialogHeader>
+              <KeywordSelector
+                initialKeywords={selectedKeywords}
+                onKeywordsSelected={handleKeywordsSelected}
+                onClose={() => setShowKeywordSelector(false)}
+                title="Select Keywords for SEO Optimization"
+                productTitle={productTitle}
+                selectedProducts={selectedProducts}
+                selectedCollections={selectedCollections}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Title Selector Dialog */}
+          <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
+            <DialogContent className="sm:max-w-[700px]">
+              <DialogHeader>
+                <DialogTitle>Choose Your Title</DialogTitle>
+                <DialogDescription>
+                  Select from AI-generated title suggestions optimized for your keywords
+                </DialogDescription>
+              </DialogHeader>
+              <TitleSelector
+                initialTitle={form.watch('title')}
+                keywords={selectedKeywords}
+                onTitleSelected={handleTitleSelected}
+                onClose={() => setShowTitleSelector(false)}
+                selectedProducts={selectedProducts}
+                selectedCollections={selectedCollections}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Choose Media Dialog */}
+          <ChooseMediaDialog
+            isOpen={showChooseMediaDialog}
+            onClose={() => setShowChooseMediaDialog(false)}
+            onMediaSelected={(media) => {
+              console.log('Media selected:', media);
+              setSelectedMediaContent(media);
+              setShowChooseMediaDialog(false);
+            }}
+            selectedProducts={selectedProducts}
+            selectedCollections={selectedCollections}
+          />
+        </div>
+      );
+    }
+
+    export default AdminPanel; 
                                     '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
                                   )
                               }} />
