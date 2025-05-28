@@ -3801,149 +3801,46 @@ export default function AdminPanel() {
                         </Button>
                       </div>
                     )}
-                        
-                        // Create YouTube embed component
-                        const YouTubeEmbed = () => (
-                          <div className="my-8 flex justify-center">
-                            <iframe 
-                              width="560" 
-                              height="315" 
-                              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                              title="YouTube video" 
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                              allowFullScreen
-                              className="rounded-md border border-gray-200"
-                            />
-                          </div>
-                        );
-                        
-                        // Check if content has YouTube placeholder
-                        const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
-                        
-                        // If content has placeholder, split and insert YouTube
-                        if (youtubeVideoId && hasYoutubePlaceholder) {
-                          const parts = content.split('[YOUTUBE_EMBED_PLACEHOLDER]');
-                          return (
-                            <div className="content-preview prose prose-blue max-w-none">
-                              {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
-                              <YouTubeEmbed />
-                              {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
-                            </div>
-                          );
-                        } 
-                        
-                        // Get secondary images
-                        const secondaryImages = generatedContent.secondaryImages || [];
-                        
-                        // Check for image tags in content 
-                        const hasImageTags = content.includes('<img');
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <p className="text-muted-foreground">
+                      Content will appear here after generation.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Fill out the form and click "Generate Content" to create new content.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-                        // If content has no YouTube placeholder but has secondary images or image tags
-                        if (secondaryImages.length > 0 || hasImageTags) {
-                          // Always consider content as having proper images
-                          // This ensures embedded images are always preserved
-                          const hasProperImages = true;
-                          
-                          if (hasProperImages) {
-                            // Enhanced processing for all content with images
-                            let enhancedContent = content;
-                            
-                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
-                            enhancedContent = enhancedContent.replace(
-                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
-                              (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
-                                // Ensure src is absolute URL
-                                let fixedSrc = src;
-                                if (!src.startsWith('http')) {
-                                  fixedSrc = 'https://' + src;
-                                } else if (src.startsWith('//')) {
-                                  fixedSrc = 'https:' + src;
-                                }
-                                
-                                // Make sure the image is inside an <a> tag and properly styled
-                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
-                              }
-                            );
-                            
-                            // Convert standalone images to be wrapped in product links when possible
-                            // First find images without surrounding <a> tags
-                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
-                            const matches = Array.from(enhancedContent.matchAll(imgRegex));
-                            
-                            // Get products if available 
-                            const products = selectedProducts || [];
-                            
-                            // Process each standalone image
-                            matches.forEach(match => {
-                              // Skip if the image is already inside an <a> tag
-                              const fullMatch = match[0];
-                              const beforeMatch = enhancedContent.substring(0, match.index);
-                              const afterMatch = enhancedContent.substring(match.index + fullMatch.length);
-                              
-                              // Check if this image is already in an <a> tag
-                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
-                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
-                              
-                              if (!isInLink) {
-                                // This is a standalone image, try to wrap it in a product link
-                                const imgElement = fullMatch;
-                                const imgSrc = match[2];
-                                
-                                // Normalize the img source for comparison
-                                let normalizedImgSrc = imgSrc;
-                                // Remove http/https and domain for comparison
-                                if (normalizedImgSrc.startsWith('http')) {
-                                  try {
-                                    // Try to get just the path portion for more flexible matching
-                                    const url = new URL(normalizedImgSrc);
-                                    normalizedImgSrc = url.pathname;
-                                  } catch (e) {
-                                    // If URL parsing fails, continue with the original
-                                    console.log("Failed to parse URL:", imgSrc);
-                                  }
-                                }
-                                
-                                // Find a matching product if possible - with more flexible matching
-                                const matchingProduct = products.find(p => {
-                                  if (!p.image) return false;
-                                  
-                                  // Try to normalize product image as well
-                                  let normalizedProductImg = p.image;
-                                  if (normalizedProductImg.startsWith('http')) {
-                                    try {
-                                      const url = new URL(normalizedProductImg);
-                                      normalizedProductImg = url.pathname;
-                                    } catch (e) {
-                                      // If URL parsing fails, continue with the original
-                                    }
-                                  }
-                                  
-                                  // Check if either image includes parts of the other
-                                  return normalizedProductImg.includes(normalizedImgSrc) || 
-                                         normalizedImgSrc.includes(normalizedProductImg);
-                                });
-                                
-                                // Style the image regardless of product match
-                                const styledImg = imgElement.replace(/<img/, '<img style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;"');
-                                
-                                if (matchingProduct) {
-                                  // Replace the image with a linked version
-                                  const linkedImg = `<a href="${matchingProduct.admin_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
-                                  enhancedContent = enhancedContent.replace(imgElement, linkedImg);
-                                } else {
-                                  // Still replace with styled version even without product match
-                                  enhancedContent = enhancedContent.replace(imgElement, styledImg);
-                                }
-                              }
-                            });
-                            
-                            // Then process any remaining standalone images
-                            enhancedContent = enhancedContent
-                              // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                              .replace(
-                                /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                                '<img$1src="https://$2"$3>'
-                              )
+          {/* Add missing handlePublishContent function */}
+          {React.createElement(() => {
+            const handlePublishContent = async (publishData: any) => {
+              try {
+                console.log('Publishing content:', publishData);
+                // This would be implemented to handle actual publishing
+                toast({
+                  title: "Publishing functionality",
+                  description: "This feature will be implemented to handle content publishing",
+                  variant: "default"
+                });
+              } catch (error) {
+                console.error('Error publishing content:', error);
+                toast({
+                  title: "Publishing error", 
+                  description: "There was an error publishing the content",
+                  variant: "destructive"
+                });
+              }
+            };
+            
+            // Store the function globally for the component to use
+            (window as any).handlePublishContent = handlePublishContent;
+            return null;
+          }, {})
                               // Fix image URLs that might be missing domain (starting with //)
                               .replace(
                                 /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
