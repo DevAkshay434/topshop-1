@@ -3801,92 +3801,107 @@ export default function AdminPanel() {
                         </Button>
                       </div>
                     )}
-                        
-                        // Create YouTube embed component
-                        const YouTubeEmbed = () => (
-                          <div className="my-8 flex justify-center">
-                            <iframe 
-                              width="560" 
-                              height="315" 
-                              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                              title="YouTube video" 
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                              allowFullScreen
-                              className="rounded-md border border-gray-200"
-                            />
-                          </div>
-                        );
-                        
-                        // Check if content has YouTube placeholder
-                        const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
-                        
-                        // If content has placeholder, split and insert YouTube
-                        if (youtubeVideoId && hasYoutubePlaceholder) {
-                          const parts = content.split('[YOUTUBE_EMBED_PLACEHOLDER]');
-                          return (
-                            <div className="content-preview prose prose-blue max-w-none">
-                              {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
-                              <YouTubeEmbed />
-                              {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
-                            </div>
-                          );
-                        } 
-                        
-                        // Get secondary images
-                        const secondaryImages = generatedContent.secondaryImages || [];
-                        
-                        // Check for image tags in content 
-                        const hasImageTags = content.includes('<img');
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <p className="text-muted-foreground">
+                      Content will appear here after generation.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Fill out the form and click "Generate Content" to create new content.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-                        // If content has no YouTube placeholder but has secondary images or image tags
-                        if (secondaryImages.length > 0 || hasImageTags) {
-                          // Always consider content as having proper images
-                          // This ensures embedded images are always preserved
-                          const hasProperImages = true;
-                          
-                          if (hasProperImages) {
-                            // Enhanced processing for all content with images
-                            let enhancedContent = content;
-                            
-                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
-                            enhancedContent = enhancedContent.replace(
-                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
-                              (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
-                                // Ensure src is absolute URL
-                                let fixedSrc = src;
-                                if (!src.startsWith('http')) {
-                                  fixedSrc = 'https://' + src;
-                                } else if (src.startsWith('//')) {
-                                  fixedSrc = 'https:' + src;
-                                }
-                                
-                                // Make sure the image is inside an <a> tag and properly styled
-                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
-                              }
-                            );
-                            
-                            // Convert standalone images to be wrapped in product links when possible
-                            // First find images without surrounding <a> tags
-                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
-                            const matches = Array.from(enhancedContent.matchAll(imgRegex));
-                            
-                            // Get products if available 
-                            const products = selectedProducts || [];
-                            
-                            // Process each standalone image
-                            matches.forEach(match => {
-                              // Skip if the image is already inside an <a> tag
-                              const fullMatch = match[0];
-                              const beforeMatch = enhancedContent.substring(0, match.index);
-                              const afterMatch = enhancedContent.substring(match.index + fullMatch.length);
-                              
-                              // Check if this image is already in an <a> tag
-                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
-                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
-                              
-                              if (!isInLink) {
-                                // This is a standalone image, try to wrap it in a product link
-                                const imgElement = fullMatch;
+          {/* Keyword Selector Dialog */}
+          <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Select Keywords</DialogTitle>
+                <DialogDescription>
+                  Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
+                </DialogDescription>
+              </DialogHeader>
+              <KeywordSelector
+                initialKeywords={selectedKeywords}
+                onKeywordsSelected={handleKeywordsSelected}
+                onClose={() => setShowKeywordSelector(false)}
+                title="Select Keywords for SEO Optimization"
+                productTitle={productTitle}
+                selectedProducts={selectedProducts}
+                selectedCollections={selectedCollections}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Add necessary imports and handle publish function */}
+          {generatedContent && (
+            <div className="hidden">
+              {/* Publishing handler function */}
+              {(() => {
+                const handlePublishContent = async (publishData: any) => {
+                  try {
+                    console.log('Publishing content:', publishData);
+                    toast({
+                      title: "Publishing...",
+                      description: "Your content is being published to Shopify"
+                    });
+                  } catch (error) {
+                    console.error('Publishing error:', error);
+                    toast({
+                      title: "Publishing failed",
+                      description: "There was an error publishing your content",
+                      variant: "destructive"
+                    });
+                  }
+                };
+                return null;
+              })()}
+            </div>
+          )}
+
+          {/* Title Selector Dialog */}
+          <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
+            <DialogContent className="sm:max-w-[700px]">
+              <DialogHeader>
+                <DialogTitle>Select a Title</DialogTitle>
+                <DialogDescription>
+                  Choose from AI-generated title suggestions optimized for your selected keywords and products.
+                </DialogDescription>
+              </DialogHeader>
+              <TitleSelector
+                keywords={selectedKeywords}
+                productTitle={productTitle}
+                selectedProducts={selectedProducts}
+                selectedCollections={selectedCollections}
+                onTitleSelected={(title) => {
+                  form.setValue('title', title);
+                  setShowTitleSelector(false);
+                }}
+                onClose={() => setShowTitleSelector(false)}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Choose Media Dialog */}
+          <ChooseMediaDialog
+            open={showChooseMediaDialog}
+            onOpenChange={setShowChooseMediaDialog}
+            onMediaSelected={(mediaContent) => {
+              setSelectedMediaContent(mediaContent);
+              setShowChooseMediaDialog(false);
+            }}
+            selectedProducts={selectedProducts}
+            productTitle={productTitle}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
                                 const imgSrc = match[2];
                                 
                                 // Normalize the img source for comparison
