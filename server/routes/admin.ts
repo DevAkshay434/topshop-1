@@ -1572,20 +1572,30 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
-      // Insert all secondary content into placement markers (each image used only once)
+      // Insert secondary images one per H2 heading after the video (no repetition)
       if (secondaryContent.length > 0) {
-        let contentIndex = 0;
-        // Replace markers one by one, ensuring each secondary image is used only once
-        while (finalContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->') && contentIndex < secondaryContent.length) {
-          const content = secondaryContent[contentIndex];
+        console.log(`Distributing ${secondaryContent.length} secondary images across H2 headings after video`);
+        
+        // Only process image content (exclude videos which are handled separately)
+        const imageContent = secondaryContent.filter(item => item.type === 'image');
+        
+        let imageIndex = 0;
+        // Replace markers one by one, each secondary image used exactly once
+        while (finalContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->') && imageIndex < imageContent.length) {
+          const content = imageContent[imageIndex];
           finalContent = finalContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', content.html);
-          console.log(`Inserted ${content.description} (used once)`);
-          contentIndex++;
+          console.log(`Placed secondary image ${imageIndex + 1} under H2 heading: ${content.description}`);
+          imageIndex++;
         }
         
-        // Remove any remaining markers if we run out of secondary content
-        finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
-        console.log(`Removed remaining placement markers to prevent repetition`);
+        // Remove any remaining markers to prevent empty placeholders
+        const remainingMarkers = (finalContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g) || []).length;
+        if (remainingMarkers > 0) {
+          finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
+          console.log(`Removed ${remainingMarkers} unused placement markers to prevent repetition`);
+        }
+        
+        console.log(`✅ Secondary image distribution complete: ${imageIndex} images placed, no repetition`);
       }
 
       
