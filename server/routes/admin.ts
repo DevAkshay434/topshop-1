@@ -1320,7 +1320,7 @@ Instructions:
    ${requestData.enableLists ? '   - Use bullet or numbered lists when presenting multiple items or steps' : ''}
    ${requestData.enableTables ? '   - Use HTML tables for comparing items or presenting structured data' : ''}
 3. Maintain a ${requestData.toneOfVoice} tone throughout.
-4. Use the ${requestData.writingPerspective.replace(/_/g, ' ')} perspective consistently.
+4. Use the ${requestData.writingPerspective ? requestData.writingPerspective.replace(/_/g, ' ') : 'first person plural'} perspective consistently.
 5. VERY IMPORTANT - Use ALL the provided keywords naturally in the content - each keyword should appear at least once, with higher search volume keywords appearing more prominently and in important positions (title, headings, early paragraphs).
 ${productsInfo.length > 0 ? '6. Naturally mention and link to the provided products where relevant.' : ''}
 ${collectionsInfo.length > 0 ? `${productsInfo.length > 0 ? '7' : '6'}. Naturally mention and link to the provided collections where relevant.` : ''}
