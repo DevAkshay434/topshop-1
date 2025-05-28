@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import ShopifyImageViewer from '../components/ShopifyImageViewer';
+
+// Define MediaImage interface locally
+interface MediaImage {
+  id: string;
+  url: string;
+  src: string;
+  alt?: string;
+  source?: string;
+}
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
-import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
+
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
@@ -4006,6 +4015,7 @@ export default function AdminPanel() {
                             ...prev,
                             primaryImage: { 
                               id: img.id || `${product.id}-${idx}`,
+                              url: img.src,
                               src: img.src, 
                               alt: img.alt || product.title,
                               source: 'product'
@@ -4045,6 +4055,7 @@ export default function AdminPanel() {
                                 ? prev.secondaryImages.filter((secImg: any) => secImg.src !== img.src)
                                 : [...prev.secondaryImages, {
                                     id: img.id || `${product.id}-${idx}`,
+                                    url: img.src,
                                     src: img.src,
                                     alt: img.alt || product.title,
                                     source: 'product'
