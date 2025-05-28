@@ -1473,6 +1473,39 @@ Place this at a logical position in the content, typically after introducing a c
       // 6. Prepare content for blog post or page
       let finalContent = generatedContent.content || `<h2>${requestData.title}</h2><p>Content being generated...</p>`;
       
+      // Handle primary image differently for pages vs blog posts
+      if (requestData.primaryImage && requestData.articleType === 'page') {
+        // For pages: Add primary image at the beginning of content
+        const primaryImageUrl = requestData.primaryImage.url;
+        const primaryImageAlt = requestData.primaryImage.alt || requestData.title;
+        
+        let primaryImageHtml;
+        if (productsInfo.length > 0) {
+          // Link primary image to first selected product
+          const product = productsInfo[0];
+          const productUrl = `https://${store.shopName}/products/${product.handle}`;
+          
+          primaryImageHtml = `
+<div class="featured-image-container" style="text-align: center; margin: 20px 0;">
+  <a href="${productUrl}" title="${product.title}">
+    <img src="${primaryImageUrl}" alt="${primaryImageAlt}" style="max-width: 100%; height: auto;">
+  </a>
+  <p style="margin-top: 5px; font-size: 0.9em;">
+    <a href="${productUrl}">${product.title}</a>
+  </p>
+</div>`;
+        } else {
+          primaryImageHtml = `
+<div class="featured-image-container" style="text-align: center; margin: 20px 0;">
+  <img src="${primaryImageUrl}" alt="${primaryImageAlt}" style="max-width: 100%; height: auto;">
+</div>`;
+        }
+        
+        // Add primary image at the beginning of content for pages
+        finalContent = primaryImageHtml + finalContent;
+        console.log("Added primary image to beginning of page content");
+      }
+      
       // Replace media placement markers with actual content
       // Create array of all secondary content (images + video)
       const secondaryContent = [];
@@ -1787,7 +1820,9 @@ Place this at a logical position in the content, typically after introducing a c
           category: categoryValue,
           categories: categoriesString,
           shopifyPostId: null,
-          shopifyBlogId: blogId
+          shopifyBlogId: blogId,
+          // Add primary image as featured image for blog posts
+          featuredImage: requestData.primaryImage?.url || featuredImage?.url
         });
         
         contentId = post.id;
