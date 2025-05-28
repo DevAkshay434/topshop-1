@@ -1233,7 +1233,8 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       if (requestData.productIds && requestData.productIds.length > 0) {
         // For simplicity, we'll use the product search API
         const allProducts = await shopifyService.getProducts(store, 100);
-        productsInfo = allProducts.filter(p => requestData.productIds?.includes(p.id));
+        productsInfo = allProducts.filter(p => requestData.productIds?.includes(String(p.id)));
+        console.log(`Loaded ${productsInfo.length} products for media interlinking:`, productsInfo.map(p => ({ id: p.id, title: p.title, handle: p.handle })));
       }
       
       if (requestData.collectionIds && requestData.collectionIds.length > 0) {
@@ -1422,6 +1423,11 @@ Place this at a logical position in the content, typically after introducing a c
       if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
         console.log(`Using ${requestData.secondaryImages.length} selected secondary images`);
         additionalImages = requestData.secondaryImages;
+        
+        // Log each secondary image for debugging
+        requestData.secondaryImages.forEach((img, idx) => {
+          console.log(`Secondary image ${idx + 1}: ${img.url} (source: ${img.source})`);
+        });
       }
       
       // Fallback: If no media selected from Choose Media, try the legacy approach
@@ -1510,8 +1516,10 @@ Place this at a logical position in the content, typically after introducing a c
       // Create array of all secondary content (images + video)
       const secondaryContent = [];
       
-      // Add secondary images to the array
+      // Add secondary images to the array with proper product interlinking
       if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
+        console.log(`Processing ${requestData.secondaryImages.length} secondary images with ${productsInfo.length} products for interlinking`);
+        
         requestData.secondaryImages.forEach((image, index) => {
           const imageUrl = image.url;
           const imageAlt = image.alt || requestData.title;
@@ -1522,19 +1530,22 @@ Place this at a logical position in the content, typically after introducing a c
             const product = productsInfo[productIndex];
             const productUrl = `https://${store.shopName}/products/${product.handle}`;
             
+            console.log(`Linking secondary image ${index + 1} to product: ${product.title} (${productUrl})`);
+            
             imageHtml = `
 <div class="image-container" style="text-align: center; margin: 20px 0;">
-  <a href="${productUrl}" title="${product.title}">
-    <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;">
+  <a href="${productUrl}" title="View ${product.title}">
+    <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto; border-radius: 8px;">
   </a>
-  <p style="margin-top: 5px; font-size: 0.9em;">
-    <a href="${productUrl}">${product.title}</a>
+  <p style="margin-top: 8px; font-size: 0.9em; color: #666;">
+    <a href="${productUrl}" style="text-decoration: none; color: #2563eb; font-weight: 500;">${product.title}</a>
   </p>
 </div>`;
           } else {
+            console.log(`No products available for linking secondary image ${index + 1}`);
             imageHtml = `
 <div class="image-container" style="text-align: center; margin: 20px 0;">
-  <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;">
+  <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto; border-radius: 8px;">
 </div>`;
           }
           
