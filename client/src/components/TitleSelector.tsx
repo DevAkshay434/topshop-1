@@ -150,7 +150,7 @@ export default function TitleSelector({
             
             <Button 
               onClick={generateTitles}
-              disabled={isLoading || selectedKeywords.length === 0}
+              disabled={isLoading || !selectedKeywords || selectedKeywords.length === 0}
             >
               Generate New Suggestions
             </Button>
