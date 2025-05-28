@@ -6,19 +6,21 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 export interface TitleSelectionProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  keywords: any[];
+  productTitle: string;
+  selectedProducts: any[];
+  selectedCollections: any[];
   onTitleSelected: (title: string) => void;
-  selectedKeywords: any[];
-  productTitle?: string;
+  onClose: () => void;
 }
 
 export default function TitleSelector({
-  open,
-  onOpenChange,
+  keywords,
+  productTitle,
+  selectedProducts,
+  selectedCollections,
   onTitleSelected,
-  selectedKeywords,
-  productTitle
+  onClose
 }: TitleSelectionProps) {
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);

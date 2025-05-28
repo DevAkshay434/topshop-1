@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -67,7 +67,7 @@ export function ChooseMediaDialog({
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
 
   // Enhanced method to get selected product ID from any available source
-  const getSelectedProductId = () => {
+  const getSelectedProductId = useCallback(() => {
     try {
       // Try to get the product ID from the URL parameters first (highest priority)
       const urlParams = new URLSearchParams(window.location.search);
@@ -95,7 +95,7 @@ export function ChooseMediaDialog({
       console.error("Error getting product ID:", error);
       return null;
     }
-  };
+  }, []);
 
   // Load appropriate images when dialog is opened
   useEffect(() => {
@@ -118,7 +118,7 @@ export function ChooseMediaDialog({
         console.log("Pexels tab selected");
       }
     }
-  }, [open, activeTab]);
+  }, [open, activeTab, getSelectedProductId]);
 
   // Initialize with passed-in selected images
   useEffect(() => {
