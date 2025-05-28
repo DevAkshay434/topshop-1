@@ -18,7 +18,7 @@ import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
-import MediaSelectionStep from '../components/MediaSelectionStep';
+
 import { 
   Card, 
   CardContent, 
@@ -132,7 +132,6 @@ import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
 import TitleSelector from '@/components/TitleSelector';
-import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
 
@@ -3549,23 +3548,7 @@ export default function AdminPanel() {
                         />
                       )}
 
-                    {/* Image Selection Dialog */}
-                      <ImageSearchDialog
-                        open={showImageDialog}
-                        onOpenChange={setShowImageDialog}
-                        onImagesSelected={(images) => {
-                          setSelectedImages(images);
-                          toast({
-                            title: `${images.length} image(s) selected`,
-                            description: "Images will be included in your content",
-                          });
-                        }}
-                        initialSelectedImages={selectedImages}
-                        selectedKeywords={selectedKeywords.map(k => ({
-                          keyword: k.keyword,
-                          isMainKeyword: k === selectedKeywords[0] // First keyword is main
-                        }))}
-                      />
+
                     </div>
                     
                     {/* Template Controls */}
