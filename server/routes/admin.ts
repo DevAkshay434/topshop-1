@@ -1146,7 +1146,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       contentStyleDisplayName: z.string().optional(),
       // Media selection fields from Choose Media step
       primaryImage: z.object({
-        id: z.string(),
+        id: z.string().optional(),
         url: z.string(),
         alt: z.string().optional(),
         width: z.number().optional(),
@@ -1160,7 +1160,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
         }).optional()
       }).optional(),
       secondaryImages: z.array(z.object({
-        id: z.string(),
+        id: z.string().optional(),
         url: z.string(),
         alt: z.string().optional(),
         width: z.number().optional(),
@@ -1685,11 +1685,10 @@ Place this at a logical position in the content, typically after introducing a c
                 // Get the actual position in the content
                 const position = insertPoints[insertIndex] + insertionOffset;
                 
-                // Ensure we have valid image URLs from src properties
-                // Get highest quality image URL but avoid original which can be very large
-                const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
+                // Get image URL - handle both Choose Media format and legacy format
+                const imageUrl = image.url || image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
                 if (!imageUrl) {
-                  console.warn(`Image ${image.id || 'unknown'} is missing valid src URLs, skipping insertion`);
+                  console.warn(`Image ${image.id || 'unknown'} is missing valid URLs, skipping insertion`);
                   continue;
                 }
                 
