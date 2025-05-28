@@ -1553,7 +1553,7 @@ Place this at a logical position in the content, typically after introducing a c
         });
       }
       
-      // Add YouTube video to secondary content array
+      // Handle YouTube video placement under second H2 heading
       if (requestData.youtubeEmbed) {
         const videoHtml = `
 <div class="video-container" style="text-align: center; margin: 20px 0;">
@@ -1561,7 +1561,15 @@ Place this at a logical position in the content, typically after introducing a c
           frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
           allowfullscreen style="max-width: 560px;"></iframe>
 </div>`;
-        secondaryContent.push({ type: 'video', html: videoHtml, description: `YouTube video: ${requestData.youtubeEmbed}` });
+        
+        // Place video under SECOND H2 heading only
+        if (finalContent.includes('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->')) {
+          finalContent = finalContent.replace('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->', videoHtml);
+          console.log(`Inserted YouTube video under second H2 heading: ${requestData.youtubeEmbed}`);
+        } else {
+          // Fallback: add video as secondary content if no specific marker found
+          secondaryContent.push({ type: 'video', html: videoHtml, description: `YouTube video: ${requestData.youtubeEmbed}` });
+        }
       }
       
       // Insert all secondary content into placement markers (each image used only once)

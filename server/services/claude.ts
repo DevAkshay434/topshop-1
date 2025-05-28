@@ -94,8 +94,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
     
     FAQ SECTION FORMATTING (if FAQ is enabled):
-    - Format all FAQ questions with "Q: " prefix
-    - Format all FAQ answers with "A: " prefix
+    - Format all FAQ questions with "Q:" prefix (colon, not period)
+    - Format all FAQ answers with "A:" prefix (colon, not period) 
     - Use proper HTML structure: <h3>Q: Question here?</h3><p>A: Answer here.</p>
     - Make FAQ section engaging and helpful for readers
     
@@ -142,7 +142,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
         promptText += `
       
       YOUTUBE VIDEO: ${request.youtubeEmbed}
-      - This video will be embedded under the SECOND H2 heading
+      - This video MUST be embedded under the SECOND H2 heading only
+      - Use the marker: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
       - Reference this video content in your structure to create natural integration`;
       }
       
