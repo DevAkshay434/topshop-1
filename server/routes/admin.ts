@@ -1986,7 +1986,8 @@ Place this at a logical position in the content, typically after introducing a c
                 generatedContent.title || requestData.title,
                 finalContent,
                 false, // Create as draft
-                undefined // Don't pass any scheduled date
+                undefined, // Don't pass any scheduled date
+                featuredImage?.src?.large || featuredImage?.src?.medium || featuredImage?.url // Add featured image
               );
             }
           } else {
@@ -1996,7 +1997,8 @@ Place this at a logical position in the content, typically after introducing a c
               generatedContent.title || requestData.title,
               finalContent,
               shouldPublishNow, // Only publish now if explicitly set
-              undefined // Don't pass any scheduled date to avoid issues
+              undefined, // Don't pass any scheduled date to avoid issues
+              featuredImage?.src?.large || featuredImage?.src?.medium || featuredImage?.url // Add featured image
             );
           }
           
