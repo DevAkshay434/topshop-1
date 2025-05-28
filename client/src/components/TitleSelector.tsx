@@ -6,33 +6,31 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 export interface TitleSelectionProps {
-  keywords: any[];
-  productTitle: string;
-  selectedProducts: any[];
-  selectedCollections: any[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onTitleSelected: (title: string) => void;
-  onClose: () => void;
+  selectedKeywords: any[];
+  productTitle?: string;
 }
 
 export default function TitleSelector({
-  keywords,
-  productTitle,
-  selectedProducts,
-  selectedCollections,
+  open,
+  onOpenChange,
   onTitleSelected,
-  onClose
+  selectedKeywords,
+  productTitle
 }: TitleSelectionProps) {
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Generate title suggestions when the component receives keywords
+  // Generate title suggestions when the component is opened
   useEffect(() => {
-    if (keywords && keywords.length > 0) {
+    if (open && selectedKeywords.length > 0) {
       generateTitles();
     }
-  }, [keywords]);
+  }, [open, selectedKeywords]);
 
   const generateTitles = async () => {
     setIsLoading(true);
@@ -40,8 +38,8 @@ export default function TitleSelector({
     
     // Log the request data for debugging
     const requestData = {
-      keywords: keywords.map((k: any) => k.keyword),
-      keywordData: keywords,
+      keywords: selectedKeywords.map(k => k.keyword),
+      keywordData: selectedKeywords,
       productTitle: productTitle
     };
     
@@ -83,7 +81,7 @@ export default function TitleSelector({
 
   const handleTitleSelect = (title: string) => {
     onTitleSelected(title);
-    onClose();
+    onOpenChange(false);
   };
 
   return (
@@ -131,7 +129,7 @@ export default function TitleSelector({
                   <Button 
                     onClick={generateTitles} 
                     className="mt-2"
-                    disabled={!keywords || keywords.length === 0}
+                    disabled={selectedKeywords.length === 0}
                   >
                     Generate Titles
                   </Button>
@@ -143,14 +141,16 @@ export default function TitleSelector({
           <div className="flex justify-between pt-4">
             <Button 
               variant="outline" 
-              onClick={onClose}
+              onClick={() => {
+                onOpenChange(false);
+              }}
             >
               Cancel
             </Button>
             
             <Button 
               onClick={generateTitles}
-              disabled={isLoading || !keywords || keywords.length === 0}
+              disabled={isLoading || selectedKeywords.length === 0}
             >
               Generate New Suggestions
             </Button>

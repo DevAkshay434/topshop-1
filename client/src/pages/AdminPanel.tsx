@@ -1,24 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import ShopifyImageViewer from '../components/ShopifyImageViewer';
-
-// Define MediaImage interface locally
-interface MediaImage {
-  id: string;
-  url: string;
-  src: string;
-  alt?: string;
-  source?: string;
-}
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
-
+import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
-
+import MediaSelectionStep from '../components/MediaSelectionStep';
 import { 
   Card, 
   CardContent, 
@@ -132,6 +123,7 @@ import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
 import KeywordSelector from '@/components/KeywordSelector';
 import TitleSelector from '@/components/TitleSelector';
+import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
 
@@ -705,7 +697,7 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'content' | 'preview' | 'publish';
+  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
@@ -1590,46 +1582,39 @@ export default function AdminPanel() {
                         </div>
                         
                         {/* Step 2: Related Products */}
-                        <Badge className={workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'content' || workflowStep === 'preview' || workflowStep === 'publish' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
+                        <Badge className={workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'content' || workflowStep === 'preview' || workflowStep === 'publish' ? 'w-full' : 'w-0'}`}></div>
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 3: Keywords & Title */}
-                        <Badge className={workflowStep === 'keyword' || workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'media' || workflowStep === 'content' || workflowStep === 'preview' || workflowStep === 'publish' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
+                        {/* Step 3: Related Collections */}
+                        <Badge className={workflowStep === 'related-collections' ? 'bg-blue-600' : (workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'media' || workflowStep === 'content' || workflowStep === 'preview' || workflowStep === 'publish' ? 'w-full' : 'w-0'}`}></div>
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 4: Media Selection */}
-                        <Badge className={workflowStep === 'media' ? 'bg-blue-600' : (workflowStep === 'content' || workflowStep === 'preview' || workflowStep === 'publish' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
+                        {/* Step 4: Keywords */}
+                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' || workflowStep === 'preview' || workflowStep === 'publish' ? 'w-full' : 'w-0'}`}></div>
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 5: Generate Content */}
-                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : (workflowStep === 'preview' || workflowStep === 'publish' ? 'bg-green-600' : 'bg-gray-300')}>5</Badge>
+                        {/* Step 5: Title */}
+                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>5</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'preview' || workflowStep === 'publish' ? 'w-full' : 'w-0'}`}></div>
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 6: Preview & Edit */}
-                        <Badge className={workflowStep === 'preview' ? 'bg-blue-600' : (workflowStep === 'publish' ? 'bg-green-600' : 'bg-gray-300')}>6</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'publish' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 7: Publish */}
-                        <Badge className={workflowStep === 'publish' ? 'bg-blue-600' : 'bg-gray-300'}>7</Badge>
+                        {/* Step 6: Content */}
+                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>6</Badge>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-gray-600">
-                        <span>Product</span>
-                        <span>Related</span>
+                        <span>Main Product</span>
+                        <span>Related Products</span>
+                        <span>Collections</span>
                         <span>Keywords</span>
-                        <span>Media</span>
+                        <span>Title</span>
                         <span>Generate</span>
-                        <span>Preview</span>
-                        <span>Publish</span>
                       </div>
                     </div>
                       
@@ -2466,45 +2451,6 @@ export default function AdminPanel() {
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Media</h4>
                           <p className="text-sm text-blue-600">Select compelling visuals to enhance your content and boost engagement</p>
-                        </div>
-                        
-                        {/* Media Selection Button */}
-                        <div className="mb-6 p-4 border rounded-lg bg-white">
-                          <Button 
-                            type="button" 
-                            onClick={() => setShowChooseMediaDialog(true)}
-                            className="w-full mb-4"
-                            size="lg"
-                          >
-                            <ImageIcon className="mr-2 h-5 w-5" />
-                            Choose Media for Content
-                          </Button>
-                          
-                          {/* Display Selected Images Summary */}
-                          {selectedImages.length > 0 && (
-                            <div className="p-4 bg-gray-50 rounded-lg">
-                              <h4 className="font-medium mb-2">Selected Images ({selectedImages.length})</h4>
-                              <div className="grid grid-cols-3 gap-2">
-                                {selectedImages.slice(0, 6).map((img, idx) => (
-                                  <div key={idx} className="relative">
-                                    <img 
-                                      src={img.src?.medium || img.url} 
-                                      alt={img.alt || 'Selected image'}
-                                      className="w-full h-16 object-cover rounded"
-                                    />
-                                    {idx === 0 && (
-                                      <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-1 rounded">
-                                        Primary
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                              {selectedImages.length > 6 && (
-                                <p className="text-sm text-gray-600 mt-2">+{selectedImages.length - 6} more images</p>
-                              )}
-                            </div>
-                          )}
                         </div>
                         
                         <Tabs defaultValue="primary" className="mb-6">
@@ -3491,11 +3437,19 @@ export default function AdminPanel() {
                                   type="button" 
                                   variant="outline" 
                                   className="mt-2" 
-                                  onClick={() => setShowChooseMediaDialog(true)}
+                                  onClick={() => {
+                                    // Close any existing dialogs first to prevent overlap
+                                    if (showChooseMediaDialog) {
+                                      setShowChooseMediaDialog(false);
+                                      setTimeout(() => setShowImageDialog(true), 300);
+                                    } else {
+                                      setShowImageDialog(true);
+                                    }
+                                  }}
                                 >
                                   {Array.isArray(selectedImages) && selectedImages.length > 0 
                                     ? `${selectedImages.length} Image(s) Selected` 
-                                    : "Choose Media for Content"}
+                                    : "Search & Select Images"}
                                 </Button>
                               )}
                             </div>
@@ -3579,7 +3533,23 @@ export default function AdminPanel() {
                         />
                       )}
 
-
+                    {/* Image Selection Dialog */}
+                      <ImageSearchDialog
+                        open={showImageDialog}
+                        onOpenChange={setShowImageDialog}
+                        onImagesSelected={(images) => {
+                          setSelectedImages(images);
+                          toast({
+                            title: `${images.length} image(s) selected`,
+                            description: "Images will be included in your content",
+                          });
+                        }}
+                        initialSelectedImages={selectedImages}
+                        selectedKeywords={selectedKeywords.map(k => ({
+                          keyword: k.keyword,
+                          isMainKeyword: k === selectedKeywords[0] // First keyword is main
+                        }))}
+                      />
                     </div>
                     
                     {/* Template Controls */}
@@ -3615,16 +3585,7 @@ export default function AdminPanel() {
                             // Manually trigger form submission
                             const values = form.getValues();
                             console.log("Manual form submission triggered with values:", values);
-                            handleSubmit(values).then(() => {
-                              // After successful content generation, move to preview step
-                              setWorkflowStep('preview');
-                              toast({
-                                title: "Content Generated Successfully",
-                                description: "Review and edit your content in the preview section below",
-                              });
-                            }).catch((error) => {
-                              console.error('Content generation failed:', error);
-                            });
+                            handleSubmit(values);
                           }}
                         >
                           {isGenerating ? (
@@ -3775,7 +3736,7 @@ export default function AdminPanel() {
                           </button>
                         </div>
                         
-                        {/* Editable Content Area with Enhanced Media Display */}
+                        {/* Editable Content Area */}
                         <div
                           contentEditable
                           suppressContentEditableWarning={true}
@@ -3785,55 +3746,8 @@ export default function AdminPanel() {
                           }}
                           className="min-h-[400px] p-4 prose prose-blue max-w-none focus:outline-none"
                           style={{ maxWidth: 'none' }}
-                        >
-                          {generatedContent.content ? (
-                            <div dangerouslySetInnerHTML={{ __html: generatedContent.content }} />
-                          ) : (
-                            <div className="text-gray-500 text-center py-8">
-                              <p>Generated content will appear here for editing...</p>
-                              <p className="text-sm">Complete the form above and click "Generate Content" to begin.</p>
-                            </div>
-                          )}
-                          
-                          {/* Display Secondary Images */}
-                          {selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0 && (
-                            <div className="my-6 space-y-4">
-                              <h4 className="text-lg font-semibold text-gray-800">Secondary Images</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {selectedMediaContent.secondaryImages.map((image, index) => (
-                                  <div key={index} className="text-center">
-                                    <img 
-                                      src={image.url || image.src?.medium} 
-                                      alt={image.alt || `Secondary image ${index + 1}`}
-                                      className="w-full h-auto rounded-lg shadow-md mb-2 cursor-pointer hover:shadow-lg transition-shadow"
-                                      style={{ maxHeight: '300px', objectFit: 'cover' }}
-                                    />
-                                    {image.photographer && (
-                                      <p className="text-xs text-gray-500">Photo by {image.photographer}</p>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Display YouTube Video */}
-                          {selectedMediaContent.youtubeVideo && (
-                            <div className="my-6">
-                              <h4 className="text-lg font-semibold text-gray-800 mb-3">Featured Video</h4>
-                              <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 */ }}>
-                                <iframe
-                                  className="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
-                                  src={`https://www.youtube.com/embed/${selectedMediaContent.youtubeVideo.videoId}`}
-                                  title={selectedMediaContent.youtubeVideo.title || 'YouTube Video'}
-                                  frameBorder="0"
-                                  allowFullScreen
-                                />
-                              </div>
-                              <p className="text-sm text-gray-600 mt-2">{selectedMediaContent.youtubeVideo.title}</p>
-                            </div>
-                          )}
-                        </div>
+                          dangerouslySetInnerHTML={{ __html: generatedContent.content || '<p>Content will appear here after generation...</p>' }}
+                        />
                       </div>
                     </div>
 
@@ -4000,147 +3914,16 @@ export default function AdminPanel() {
           </Dialog>
 
           {/* Choose Media Dialog */}
-          <Dialog open={showChooseMediaDialog} onOpenChange={setShowChooseMediaDialog}>
-            <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Choose Media for Content</DialogTitle>
-                <DialogDescription>
-                  Select images and videos for your content
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Input
-                    placeholder="Search for images..."
-                    value={imageSearchQuery}
-                    onChange={(e) => setImageSearchQuery(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={async () => {
-                      if (!imageSearchQuery.trim()) return;
-                      setIsSearchingImages(true);
-                      try {
-                        const response = await fetch('/api/admin/generate-images', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
-                            query: imageSearchQuery,
-                            count: 12
-                          })
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                          setSearchedImages(data.images || []);
-                        }
-                      } catch (error) {
-                        console.error('Error searching images:', error);
-                      } finally {
-                        setIsSearchingImages(false);
-                      }
-                    }}
-                    disabled={isSearchingImages || !imageSearchQuery.trim()}
-                  >
-                    {isSearchingImages ? 'Searching...' : 'Search'}
-                  </Button>
-                </div>
-                
-                {searchedImages.length > 0 && (
-                  <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                    {searchedImages.map((img, idx) => {
-                      const isSelected = selectedImages.some(selected => selected.id === img.id);
-                      return (
-                        <div 
-                          key={`search-${idx}`}
-                          className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
-                            isSelected ? 'border-blue-500' : 'border-gray-200'
-                          }`}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedImages(prev => prev.filter(selected => selected.id !== img.id));
-                            } else {
-                              setSelectedImages(prev => [...prev, img]);
-                            }
-                          }}
-                        >
-                          <img 
-                            src={img.src?.medium || img.url} 
-                            alt={img.alt || 'Search result'}
-                            className="w-full h-24 object-cover"
-                          />
-                          {isSelected && (
-                            <div className="p-1 bg-blue-50 text-xs text-blue-600 text-center">Selected</div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                {selectedProducts.length > 0 && (
-                  <div>
-                    <h3 className="font-medium mb-3">Product Images</h3>
-                    <div className="grid grid-cols-3 gap-3 max-h-48 overflow-y-auto">
-                      {selectedProducts.map((product) => 
-                        product.images?.map((img: any, idx: number) => {
-                          const isSelected = selectedImages.some(selected => selected.url === img.src);
-                          return (
-                            <div 
-                              key={`product-${product.id}-${idx}`}
-                              className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
-                                isSelected ? 'border-blue-500' : 'border-gray-200'
-                              }`}
-                              onClick={() => {
-                                const productImage = {
-                                  id: img.id || `${product.id}-${idx}`,
-                                  url: img.src,
-                                  src: { medium: img.src },
-                                  alt: img.alt || product.title,
-                                  source: 'product',
-                                  width: 500,
-                                  height: 500
-                                } as any;
-                                if (isSelected) {
-                                  setSelectedImages(prev => prev.filter(selected => selected.url !== img.src));
-                                } else {
-                                  setSelectedImages(prev => [...prev, productImage]);
-                                }
-                              }}
-                            >
-                              <img 
-                                src={img.src} 
-                                alt={img.alt || product.title}
-                                className="w-full h-24 object-cover"
-                              />
-                              {isSelected && (
-                                <div className="p-1 bg-blue-50 text-xs text-blue-600 text-center">Selected</div>
-                              )}
-                            </div>
-                          );
-                        }) || []
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="outline" onClick={() => setShowChooseMediaDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => {
-                  setShowChooseMediaDialog(false);
-                  toast({
-                    title: "Media selected",
-                    description: `${selectedImages.length} image(s) selected`,
-                  });
-                }}>
-                  Add Selected Items
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <ChooseMediaDialog
+            open={showChooseMediaDialog}
+            onOpenChange={setShowChooseMediaDialog}
+            onMediaSelected={(mediaContent) => {
+              setSelectedMediaContent(mediaContent);
+              setShowChooseMediaDialog(false);
+            }}
+            selectedProducts={selectedProducts}
+            productTitle={productTitle}
+          />
         </TabsContent>
 
         {/* Services Tab */}
