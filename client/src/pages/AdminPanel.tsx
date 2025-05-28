@@ -3592,7 +3592,16 @@ export default function AdminPanel() {
                             // Manually trigger form submission
                             const values = form.getValues();
                             console.log("Manual form submission triggered with values:", values);
-                            handleSubmit(values);
+                            handleSubmit(values).then(() => {
+                              // After successful content generation, move to preview step
+                              setWorkflowStep('preview');
+                              toast({
+                                title: "Content Generated Successfully",
+                                description: "Review and edit your content in the preview section below",
+                              });
+                            }).catch((error) => {
+                              console.error('Content generation failed:', error);
+                            });
                           }}
                         >
                           {isGenerating ? (
