@@ -29,12 +29,7 @@ export default function BlogPosts() {
             Manage all your blog posts
           </p>
         </div>
-        <div className="mt-4 md:mt-0 md:ml-4">
-          <Button onClick={handleCreatePost}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Post
-          </Button>
-        </div>
+
       </div>
       
       <PostList
