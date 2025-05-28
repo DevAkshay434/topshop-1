@@ -3976,17 +3976,136 @@ export default function AdminPanel() {
             </DialogContent>
           </Dialog>
 
-          {/* Choose Media Dialog */}
-          <ChooseMediaDialog
-            open={showChooseMediaDialog}
-            onOpenChange={setShowChooseMediaDialog}
-            onMediaSelected={(mediaContent) => {
-              setSelectedMediaContent(mediaContent);
-              setShowChooseMediaDialog(false);
-            }}
-            selectedProducts={selectedProducts}
-            productTitle={productTitle}
-          />
+          {/* Choose Media Dialog - Using Built-in Media Selection */}
+          <Dialog open={showChooseMediaDialog} onOpenChange={setShowChooseMediaDialog}>
+            <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Choose Media for Content</DialogTitle>
+                <DialogDescription>
+                  Select a primary image, secondary images, and optional YouTube video for your content.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <Tabs defaultValue="primary" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="primary">Primary Image</TabsTrigger>
+                  <TabsTrigger value="secondary">Secondary Images</TabsTrigger>
+                  <TabsTrigger value="youtube">YouTube Video</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="primary" className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedProducts.map((product) => 
+                      product.images?.map((img: any, idx: number) => (
+                        <div 
+                          key={`${product.id}-${idx}`}
+                          className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
+                            selectedMediaContent.primaryImage?.src === img.src ? 'border-blue-500' : 'border-gray-200'
+                          }`}
+                          onClick={() => setSelectedMediaContent(prev => ({
+                            ...prev,
+                            primaryImage: { 
+                              id: img.id || `${product.id}-${idx}`,
+                              src: img.src, 
+                              alt: img.alt || product.title,
+                              source: 'product'
+                            }
+                          }))}
+                        >
+                          <img 
+                            src={img.src} 
+                            alt={img.alt || product.title}
+                            className="w-full h-32 object-cover"
+                          />
+                          <div className="p-2">
+                            <p className="text-xs text-gray-600 truncate">{product.title}</p>
+                          </div>
+                        </div>
+                      )) || []
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="secondary" className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedProducts.map((product) => 
+                      product.images?.map((img: any, idx: number) => {
+                        const isSelected = selectedMediaContent.secondaryImages.some(
+                          (secImg: any) => secImg.src === img.src
+                        );
+                        return (
+                          <div 
+                            key={`secondary-${product.id}-${idx}`}
+                            className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
+                              isSelected ? 'border-green-500' : 'border-gray-200'
+                            }`}
+                            onClick={() => setSelectedMediaContent(prev => ({
+                              ...prev,
+                              secondaryImages: isSelected 
+                                ? prev.secondaryImages.filter((secImg: any) => secImg.src !== img.src)
+                                : [...prev.secondaryImages, {
+                                    id: img.id || `${product.id}-${idx}`,
+                                    src: img.src,
+                                    alt: img.alt || product.title,
+                                    source: 'product'
+                                  }]
+                            }))}
+                          >
+                            <img 
+                              src={img.src} 
+                              alt={img.alt || product.title}
+                              className="w-full h-32 object-cover"
+                            />
+                            <div className="p-2">
+                              <p className="text-xs text-gray-600 truncate">{product.title}</p>
+                              {isSelected && (
+                                <div className="text-xs text-green-600 font-medium">Selected</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }) || []
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="youtube" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="youtube-url">YouTube Video URL</Label>
+                      <Input
+                        id="youtube-url"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        value={selectedMediaContent.youtubeEmbed || ''}
+                        onChange={(e) => setSelectedMediaContent(prev => ({
+                          ...prev,
+                          youtubeEmbed: e.target.value
+                        }))}
+                      />
+                    </div>
+                    {selectedMediaContent.youtubeEmbed && (
+                      <div className="aspect-video">
+                        <iframe
+                          src={selectedMediaContent.youtubeEmbed.replace('watch?v=', 'embed/')}
+                          className="w-full h-full rounded-lg"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setShowChooseMediaDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => setShowChooseMediaDialog(false)}>
+                  Confirm Selection
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Services Tab */}
