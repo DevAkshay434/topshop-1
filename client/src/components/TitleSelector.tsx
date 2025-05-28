@@ -27,12 +27,12 @@ export default function TitleSelector({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Generate title suggestions when the component is opened
+  // Generate title suggestions when the component receives keywords
   useEffect(() => {
-    if (open && selectedKeywords.length > 0) {
+    if (keywords && keywords.length > 0) {
       generateTitles();
     }
-  }, [open, selectedKeywords]);
+  }, [keywords]);
 
   const generateTitles = async () => {
     setIsLoading(true);
@@ -40,8 +40,8 @@ export default function TitleSelector({
     
     // Log the request data for debugging
     const requestData = {
-      keywords: selectedKeywords.map(k => k.keyword),
-      keywordData: selectedKeywords,
+      keywords: keywords.map((k: any) => k.keyword),
+      keywordData: keywords,
       productTitle: productTitle
     };
     
@@ -83,7 +83,7 @@ export default function TitleSelector({
 
   const handleTitleSelect = (title: string) => {
     onTitleSelected(title);
-    onOpenChange(false);
+    onClose();
   };
 
   return (
@@ -131,7 +131,7 @@ export default function TitleSelector({
                   <Button 
                     onClick={generateTitles} 
                     className="mt-2"
-                    disabled={!selectedKeywords || selectedKeywords.length === 0}
+                    disabled={!keywords || keywords.length === 0}
                   >
                     Generate Titles
                   </Button>
@@ -143,16 +143,14 @@ export default function TitleSelector({
           <div className="flex justify-between pt-4">
             <Button 
               variant="outline" 
-              onClick={() => {
-                onOpenChange(false);
-              }}
+              onClick={onClose}
             >
               Cancel
             </Button>
             
             <Button 
               onClick={generateTitles}
-              disabled={isLoading || !selectedKeywords || selectedKeywords.length === 0}
+              disabled={isLoading || !keywords || keywords.length === 0}
             >
               Generate New Suggestions
             </Button>
