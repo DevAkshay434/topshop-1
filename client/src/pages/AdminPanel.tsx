@@ -3644,8 +3644,7 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </TabsContent>
+        </TabsContent>
 
       {/* Analytics Tab */}
       <TabsContent value="analytics">
