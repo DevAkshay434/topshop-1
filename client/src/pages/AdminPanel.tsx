@@ -3452,19 +3452,11 @@ export default function AdminPanel() {
                                   type="button" 
                                   variant="outline" 
                                   className="mt-2" 
-                                  onClick={() => {
-                                    // Close any existing dialogs first to prevent overlap
-                                    if (showChooseMediaDialog) {
-                                      setShowChooseMediaDialog(false);
-                                      setTimeout(() => setShowImageDialog(true), 300);
-                                    } else {
-                                      setShowImageDialog(true);
-                                    }
-                                  }}
+                                  onClick={() => setShowChooseMediaDialog(true)}
                                 >
                                   {Array.isArray(selectedImages) && selectedImages.length > 0 
                                     ? `${selectedImages.length} Image(s) Selected` 
-                                    : "Search & Select Images"}
+                                    : "Choose Media for Content"}
                                 </Button>
                               )}
                             </div>
