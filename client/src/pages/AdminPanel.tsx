@@ -3867,16 +3867,152 @@ export default function AdminPanel() {
                         );
                       })()}
                     </div>
-                                const imgElement = fullMatch;
-                                const imgSrc = match[2];
-                                
-                                // Normalize the img source for comparison
-                                let normalizedImgSrc = imgSrc;
-                                // Remove http/https and domain for comparison
-                                if (normalizedImgSrc.startsWith('http')) {
-                                  try {
-                                    // Try to get just the path portion for more flexible matching
-                                    const url = new URL(normalizedImgSrc);
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Generate content to see the preview</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </TabsContent>
+
+      {/* Other tabs content */}
+      <TabsContent value="analytics">
+        <Card>
+          <CardHeader>
+            <CardTitle>Analytics Dashboard</CardTitle>
+            <CardDescription>
+              Track your content performance and engagement metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Analytics features coming soon</p>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="settings">
+        <Card>
+          <CardHeader>
+            <CardTitle>Settings</CardTitle>
+            <CardDescription>
+              Configure your content generation preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Settings panel coming soon</p>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
+
+    {/* Media Selection Dialogs */}
+    <ChooseMediaDialog
+      open={showChooseMediaDialog}
+      onOpenChange={setShowChooseMediaDialog}
+      onImagesSelected={(images) => {
+        if (images && images.length > 0) {
+          try {
+            console.log("Images received in onImagesSelected:", images);
+            
+            // Map each image to MediaImage format with proper type handling
+            const safeImages = images.map(img => {
+              // Ensure the image has proper structure
+              if (typeof img === 'string') {
+                console.warn("Received string instead of image object:", img);
+                return null;
+              }
+              
+              // Create a safe image object
+              const safeImg = {
+                id: img.id || String(Math.random()),
+                url: img.url || (typeof img.src === 'object' ? img.src.medium || img.src.original : img.src) || '',
+                alt: img.alt || img.photographer || '',
+                width: img.width || 0,
+                height: img.height || 0,
+                source: img.source || 'pexels'
+              };
+              
+              return safeImg;
+            }).filter(Boolean); // Remove any null entries
+            
+            if (safeImages.length === 0) {
+              console.error("No valid images after processing");
+              return;
+            }
+            
+            console.log("Safe images created:", safeImages);
+            
+            // Check which type of images we're adding based on current context
+            if (imageTab === 'primary') {
+              // Update selectedMediaContent with primary image
+              setSelectedMediaContent(prev => ({
+                ...prev,
+                primaryImage: safeImages[0] ? {
+                  id: safeImages[0].id,
+                  url: safeImages[0].url,
+                  alt: safeImages[0].alt || '',
+                  width: safeImages[0].width || 0,
+                  height: safeImages[0].height || 0,
+                  source: safeImages[0].source || 'pexels'
+                } : null
+              }));
+              
+              toast({
+                title: "Featured image added",
+                description: `Featured image added successfully`
+              });
+            } else {
+              // Add to secondary images
+              console.log("Adding to secondary images...");
+              
+              // Update selectedMediaContent state immediately
+              setSelectedMediaContent(prev => ({
+                ...prev,
+                secondaryImages: [...prev.secondaryImages, ...safeImages.map(img => ({
+                  id: img.id,
+                  url: img.url,
+                  alt: img.alt || '',
+                  width: img.width || 0,
+                  height: img.height || 0,
+                  source: img.source || 'pexels'
+                }))]
+              }));
+              
+              toast({
+                title: "Content images added",
+                description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
+              });
+            }
+          } catch (error) {
+            console.error("Error adding images:", error);
+            toast({
+              title: "Error adding images",
+              description: "There was a problem adding the selected images. Please try again.",
+              variant: "destructive"
+            });
+          }
+        }
+      }}
+      initialSelectedImages={imageTab === 'primary' ? primaryImages : secondaryImages}
+      maxImages={10}
+      allowMultiple={true}
+      title={imageTab === 'primary' ? "Choose Featured Images" : "Choose Content Images"}
+      description={imageTab === 'primary' 
+        ? "Select emotionally compelling images for the top of your content" 
+        : "Select product images to appear throughout your article body"}
+    />
+  </div>
+);
+
+export default AdminPanel;
                                     normalizedImgSrc = url.pathname;
                                   } catch (e) {
                                     // If URL parsing fails, continue with the original
