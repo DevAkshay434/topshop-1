@@ -109,7 +109,10 @@ import {
   Trash, 
   Type,
   X, 
-  XCircle 
+  XCircle,
+  Bold,
+  Italic,
+  List 
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -3582,15 +3585,162 @@ export default function AdminPanel() {
                   </div>
                 ) : generatedContent ? (
                   <div className="space-y-4">
+                    {/* Editable Meta Title */}
                     <div>
-                      <h3 className="text-xl font-bold">{generatedContent.title}</h3>
-                      {generatedContent.tags && generatedContent.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {generatedContent.tags.map((tag: string, index: number) => (
-                            <Badge key={index} variant="outline">{tag}</Badge>
-                          ))}
+                      <Label htmlFor="edit-title" className="text-sm font-medium">Title</Label>
+                      <Input
+                        id="edit-title"
+                        value={generatedContent.title || ''}
+                        onChange={(e) => {
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            title: e.target.value
+                          }));
+                        }}
+                        className="text-xl font-bold border-0 p-0 focus-visible:ring-0 bg-transparent"
+                        placeholder="Enter title..."
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {(generatedContent.title || '').length}/60 characters
+                      </div>
+                    </div>
+
+                    {/* Editable Meta Description */}
+                    <div>
+                      <Label htmlFor="edit-excerpt" className="text-sm font-medium">Meta Description</Label>
+                      <Textarea
+                        id="edit-excerpt"
+                        value={generatedContent.excerpt || ''}
+                        onChange={(e) => {
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            excerpt: e.target.value
+                          }));
+                        }}
+                        className="min-h-[60px] text-sm"
+                        placeholder="Enter meta description..."
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {(generatedContent.excerpt || '').length}/160 characters
+                      </div>
+                    </div>
+
+                    {/* Tags Display */}
+                    {generatedContent.tags && generatedContent.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {generatedContent.tags.map((tag: string, index: number) => (
+                          <Badge key={index} variant="outline">{tag}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Rich Text Editor for Content */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label htmlFor="edit-content" className="text-sm font-medium">Content</Label>
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const textarea = document.getElementById('edit-content') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const selectedText = textarea.value.substring(start, end);
+                                const newText = textarea.value.substring(0, start) + 
+                                  `**${selectedText || 'Bold text'}**` + 
+                                  textarea.value.substring(end);
+                                
+                                setGeneratedContent(prev => ({
+                                  ...prev,
+                                  content: newText
+                                }));
+                                
+                                setTimeout(() => {
+                                  textarea.focus();
+                                  textarea.setSelectionRange(start + 2, start + 2 + (selectedText || 'Bold text').length);
+                                }, 0);
+                              }
+                            }}
+                            title="Bold"
+                          >
+                            <Bold className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const textarea = document.getElementById('edit-content') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const selectedText = textarea.value.substring(start, end);
+                                const newText = textarea.value.substring(0, start) + 
+                                  `*${selectedText || 'Italic text'}*` + 
+                                  textarea.value.substring(end);
+                                
+                                setGeneratedContent(prev => ({
+                                  ...prev,
+                                  content: newText
+                                }));
+                                
+                                setTimeout(() => {
+                                  textarea.focus();
+                                  textarea.setSelectionRange(start + 1, start + 1 + (selectedText || 'Italic text').length);
+                                }, 0);
+                              }
+                            }}
+                            title="Italic"
+                          >
+                            <Italic className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const textarea = document.getElementById('edit-content') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const content = textarea.value;
+                                const beforeText = content.substring(0, start);
+                                const needsNewLine = beforeText.length > 0 && !beforeText.endsWith('\n');
+                                
+                                const newContent = content.substring(0, start) + 
+                                  (needsNewLine ? '\n' : '') + 
+                                  '• List item\n• List item\n• List item' + 
+                                  content.substring(start);
+                                
+                                setGeneratedContent(prev => ({
+                                  ...prev,
+                                  content: newContent
+                                }));
+                              }
+                            }}
+                            title="Bullet List"
+                          >
+                            <List className="h-3 w-3" />
+                          </Button>
                         </div>
-                      )}
+                      </div>
+                      <Textarea
+                        id="edit-content"
+                        value={generatedContent.content || ''}
+                        onChange={(e) => {
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            content: e.target.value
+                          }));
+                        }}
+                        className="min-h-[300px] font-mono text-sm"
+                        placeholder="Enter your content here..."
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {(generatedContent.content || '').split(' ').filter(word => word.length > 0).length} words
+                      </div>
                     </div>
                     
                     {/* Display featured image if available */}
@@ -3605,18 +3755,39 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
-                      {(() => {
-                        // Get content
-                        const content = generatedContent.content;
-                        if (!content) return <p>No content available</p>;
+                    {/* Enhanced Content Preview with Secondary Images and YouTube */}
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Content Preview</Label>
+                      
+                      {/* Selected Media Summary */}
+                      {(selectedMediaContent.secondaryImages.length > 0 || selectedMediaContent.youtubeEmbed) && (
+                        <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                          <h4 className="text-sm font-medium text-blue-900 mb-2">Selected Media</h4>
+                          {selectedMediaContent.youtubeEmbed && (
+                            <div className="text-xs text-blue-700 mb-1">
+                              📺 YouTube Video: {selectedMediaContent.youtubeEmbed}
+                            </div>
+                          )}
+                          {selectedMediaContent.secondaryImages.length > 0 && (
+                            <div className="text-xs text-blue-700">
+                              🖼️ Secondary Images: {selectedMediaContent.secondaryImages.length} selected
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
+                        {(() => {
+                          // Get content
+                          const content = generatedContent.content;
+                          if (!content) return <p>No content available</p>;
 
-                        // Get YouTube data if exists
-                        const youtubeUrl = form.watch("youtubeUrl");
-                        let youtubeVideoId: string | null = null;
-                        if (youtubeUrl) {
-                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
-                        }
+                          // Get YouTube data from selectedMediaContent or form
+                          let youtubeVideoId: string | null = null;
+                          const youtubeUrl = selectedMediaContent.youtubeEmbed || form.watch("youtubeUrl");
+                          if (youtubeUrl) {
+                            youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
+                          }
                         
                         // Create YouTube embed component
                         const YouTubeEmbed = () => (
@@ -3648,60 +3819,54 @@ export default function AdminPanel() {
                           );
                         } 
                         
-                        // Get secondary images
-                        const secondaryImages = generatedContent.secondaryImages || [];
+                        // Get secondary images from selectedMediaContent
+                        const secondaryImages = selectedMediaContent.secondaryImages || [];
                         
-                        // Check for image tags in content 
-                        const hasImageTags = content.includes('<img');
-
-                        // If content has no YouTube placeholder but has secondary images or image tags
-                        if (secondaryImages.length > 0 || hasImageTags) {
-                          // Always consider content as having proper images
-                          // This ensures embedded images are always preserved
-                          const hasProperImages = true;
-                          
-                          if (hasProperImages) {
-                            // Enhanced processing for all content with images
-                            let enhancedContent = content;
+                        // Enhanced content preview with proper image and video display
+                        return (
+                          <div className="prose prose-blue max-w-none">
+                            {/* Display content with proper formatting */}
+                            <div dangerouslySetInnerHTML={{ __html: content }} />
                             
-                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
-                            enhancedContent = enhancedContent.replace(
-                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
-                              (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
-                                // Ensure src is absolute URL
-                                let fixedSrc = src;
-                                if (!src.startsWith('http')) {
-                                  fixedSrc = 'https://' + src;
-                                } else if (src.startsWith('//')) {
-                                  fixedSrc = 'https:' + src;
-                                }
-                                
-                                // Make sure the image is inside an <a> tag and properly styled
-                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
-                              }
-                            );
+                            {/* Display YouTube video if selected */}
+                            {youtubeVideoId && (
+                              <div className="my-8 flex justify-center">
+                                <iframe 
+                                  width="560" 
+                                  height="315" 
+                                  src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                                  title="YouTube video" 
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                  allowFullScreen
+                                  className="rounded-md border border-gray-200"
+                                />
+                              </div>
+                            )}
                             
-                            // Convert standalone images to be wrapped in product links when possible
-                            // First find images without surrounding <a> tags
-                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
-                            const matches = Array.from(enhancedContent.matchAll(imgRegex));
-                            
-                            // Get products if available 
-                            const products = selectedProducts || [];
-                            
-                            // Process each standalone image
-                            matches.forEach(match => {
-                              // Skip if the image is already inside an <a> tag
-                              const fullMatch = match[0];
-                              const beforeMatch = enhancedContent.substring(0, match.index);
-                              const afterMatch = enhancedContent.substring(match.index + fullMatch.length);
-                              
-                              // Check if this image is already in an <a> tag
-                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
-                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
-                              
-                              if (!isInLink) {
-                                // This is a standalone image, try to wrap it in a product link
+                            {/* Display secondary images */}
+                            {secondaryImages.length > 0 && (
+                              <div className="my-8">
+                                <h4 className="text-lg font-semibold mb-4">Product Images</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {secondaryImages.map((image, index) => (
+                                    <div key={index} className="text-center">
+                                      <img 
+                                        src={image.url} 
+                                        alt={image.alt || `Product image ${index + 1}`}
+                                        className="w-full h-64 object-cover rounded-md border border-gray-200"
+                                      />
+                                      {image.alt && (
+                                        <p className="text-sm text-gray-600 mt-2">{image.alt}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
                                 const imgElement = fullMatch;
                                 const imgSrc = match[2];
                                 
