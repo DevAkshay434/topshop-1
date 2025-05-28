@@ -2468,6 +2468,45 @@ export default function AdminPanel() {
                           <p className="text-sm text-blue-600">Select compelling visuals to enhance your content and boost engagement</p>
                         </div>
                         
+                        {/* Media Selection Button */}
+                        <div className="mb-6 p-4 border rounded-lg bg-white">
+                          <Button 
+                            type="button" 
+                            onClick={() => setShowChooseMediaDialog(true)}
+                            className="w-full mb-4"
+                            size="lg"
+                          >
+                            <ImageIcon className="mr-2 h-5 w-5" />
+                            Choose Media for Content
+                          </Button>
+                          
+                          {/* Display Selected Images Summary */}
+                          {selectedImages.length > 0 && (
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                              <h4 className="font-medium mb-2">Selected Images ({selectedImages.length})</h4>
+                              <div className="grid grid-cols-3 gap-2">
+                                {selectedImages.slice(0, 6).map((img, idx) => (
+                                  <div key={idx} className="relative">
+                                    <img 
+                                      src={img.src?.medium || img.url} 
+                                      alt={img.alt || 'Selected image'}
+                                      className="w-full h-16 object-cover rounded"
+                                    />
+                                    {idx === 0 && (
+                                      <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-1 rounded">
+                                        Primary
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                              {selectedImages.length > 6 && (
+                                <p className="text-sm text-gray-600 mt-2">+{selectedImages.length - 6} more images</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
                         <Tabs defaultValue="primary" className="mb-6">
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="primary">Primary Images</TabsTrigger>
