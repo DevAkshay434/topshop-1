@@ -3596,52 +3596,17 @@ export default function AdminPanel() {
                     </p>
                   </div>
                 ) : generatedContent ? (
-                  <div className="space-y-6">
-                    {/* Editable Title Section */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium">Title (H1)</label>
-                      <input
-                        type="text"
-                        value={generatedContent.title}
-                        onChange={(e) => setGeneratedContent(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full p-3 text-xl font-bold border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter your title..."
-                      />
-                      <div className="text-xs text-gray-500">
-                        {generatedContent.title?.length || 0} characters
-                      </div>
-                    </div>
-
-                    {/* Editable Meta Description */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium">Meta Description</label>
-                      <textarea
-                        value={generatedContent.metaDescription || ''}
-                        onChange={(e) => setGeneratedContent(prev => ({ ...prev, metaDescription: e.target.value }))}
-                        className="w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        rows={3}
-                        placeholder="Enter meta description (155-160 characters recommended)..."
-                        maxLength={200}
-                      />
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>{(generatedContent.metaDescription || '').length}/200 characters</span>
-                        <span className={`${(generatedContent.metaDescription || '').length >= 155 && (generatedContent.metaDescription || '').length <= 160 ? 'text-green-600' : 'text-orange-600'}`}>
-                          {(generatedContent.metaDescription || '').length >= 155 && (generatedContent.metaDescription || '').length <= 160 ? 'Optimal length' : 'Recommended: 155-160 chars'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Tags Section */}
-                    {generatedContent.tags && generatedContent.tags.length > 0 && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Tags</label>
-                        <div className="flex flex-wrap gap-2">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-xl font-bold">{generatedContent.title}</h3>
+                      {generatedContent.tags && generatedContent.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
                           {generatedContent.tags.map((tag: string, index: number) => (
                             <Badge key={index} variant="outline">{tag}</Badge>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     
                     {/* Display featured image if available */}
                     {generatedContent.featuredImage && (
@@ -3655,127 +3620,369 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    {/* Rich Text Content Editor */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium flex items-center justify-between">
-                        Content
-                        <div className="text-xs text-gray-500">
-                          {generatedContent.content ? `${generatedContent.content.replace(/<[^>]*>/g, '').split(' ').length} words` : '0 words'}
-                        </div>
-                      </label>
-                      <div className="border rounded-md">
-                        {/* Rich Text Toolbar */}
-                        <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
-                          <button
-                            type="button"
-                            onClick={() => document.execCommand('bold')}
-                            className="px-2 py-1 text-sm border rounded hover:bg-white"
-                            title="Bold"
-                          >
-                            <strong>B</strong>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => document.execCommand('italic')}
-                            className="px-2 py-1 text-sm border rounded hover:bg-white"
-                            title="Italic"
-                          >
-                            <em>I</em>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => document.execCommand('underline')}
-                            className="px-2 py-1 text-sm border rounded hover:bg-white"
-                            title="Underline"
-                          >
-                            <u>U</u>
-                          </button>
-                          <div className="w-px h-6 bg-gray-300 mx-1"></div>
-                          <button
-                            type="button"
-                            onClick={() => document.execCommand('insertUnorderedList')}
-                            className="px-2 py-1 text-sm border rounded hover:bg-white"
-                            title="Bullet Points"
-                          >
-                            • List
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => document.execCommand('insertOrderedList')}
-                            className="px-2 py-1 text-sm border rounded hover:bg-white"
-                            title="Numbered List"
-                          >
-                            1. List
-                          </button>
-                        </div>
+                    <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
+                      {(() => {
+                        // Get content
+                        const content = generatedContent.content;
+                        if (!content) return <p>No content available</p>;
+
+                        // Get YouTube data if exists
+                        const youtubeUrl = form.watch("youtubeUrl");
+                        let youtubeVideoId: string | null = null;
+                        if (youtubeUrl) {
+                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
+                        }
                         
-                        {/* Editable Content Area */}
-                        <div
-                          contentEditable
-                          suppressContentEditableWarning={true}
-                          onInput={(e) => {
-                            const content = e.currentTarget.innerHTML;
-                            setGeneratedContent(prev => ({ ...prev, content }));
-                          }}
-                          className="min-h-[400px] p-4 prose prose-blue max-w-none focus:outline-none"
-                          style={{ maxWidth: 'none' }}
-                          dangerouslySetInnerHTML={{ __html: generatedContent.content || '<p>Content will appear here after generation...</p>' }}
-                        />
+                        // Create YouTube embed component
+                        const YouTubeEmbed = () => (
+                          <div className="my-8 flex justify-center">
+                            <iframe 
+                              width="560" 
+                              height="315" 
+                              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                              title="YouTube video" 
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen
+                              className="rounded-md border border-gray-200"
+                            />
+                          </div>
+                        );
+                        
+                        // Check if content has YouTube placeholder
+                        const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
+                        
+                        // If content has placeholder, split and insert YouTube
+                        if (youtubeVideoId && hasYoutubePlaceholder) {
+                          const parts = content.split('[YOUTUBE_EMBED_PLACEHOLDER]');
+                          return (
+                            <div className="content-preview prose prose-blue max-w-none">
+                              {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
+                              <YouTubeEmbed />
+                              {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
+                            </div>
+                          );
+                        } 
+                        
+                        // Get secondary images
+                        const secondaryImages = generatedContent.secondaryImages || [];
+                        
+                        // Check for image tags in content 
+                        const hasImageTags = content.includes('<img');
+
+                        // If content has no YouTube placeholder but has secondary images or image tags
+                        if (secondaryImages.length > 0 || hasImageTags) {
+                          // Always consider content as having proper images
+                          // This ensures embedded images are always preserved
+                          const hasProperImages = true;
+                          
+                          if (hasProperImages) {
+                            // Enhanced processing for all content with images
+                            let enhancedContent = content;
+                            
+                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
+                            enhancedContent = enhancedContent.replace(
+                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
+                              (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
+                                // Ensure src is absolute URL
+                                let fixedSrc = src;
+                                if (!src.startsWith('http')) {
+                                  fixedSrc = 'https://' + src;
+                                } else if (src.startsWith('//')) {
+                                  fixedSrc = 'https:' + src;
+                                }
+                                
+                                // Make sure the image is inside an <a> tag and properly styled
+                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
+                              }
+                            );
+                            
+                            // Convert standalone images to be wrapped in product links when possible
+                            // First find images without surrounding <a> tags
+                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+                            const matches = Array.from(enhancedContent.matchAll(imgRegex));
+                            
+                            // Get products if available 
+                            const products = selectedProducts || [];
+                            
+                            // Process each standalone image
+                            matches.forEach(match => {
+                              // Skip if the image is already inside an <a> tag
+                              const fullMatch = match[0];
+                              const beforeMatch = enhancedContent.substring(0, match.index);
+                              const afterMatch = enhancedContent.substring(match.index + fullMatch.length);
+                              
+                              // Check if this image is already in an <a> tag
+                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
+                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
+                              
+                              if (!isInLink) {
+                                // This is a standalone image, try to wrap it in a product link
+                                const imgElement = fullMatch;
+                                const imgSrc = match[2];
+                                
+                                // Normalize the img source for comparison
+                                let normalizedImgSrc = imgSrc;
+                                // Remove http/https and domain for comparison
+                                if (normalizedImgSrc.startsWith('http')) {
+                                  try {
+                                    // Try to get just the path portion for more flexible matching
+                                    const url = new URL(normalizedImgSrc);
+                                    normalizedImgSrc = url.pathname;
+                                  } catch (e) {
+                                    // If URL parsing fails, continue with the original
+                                    console.log("Failed to parse URL:", imgSrc);
+                                  }
+                                }
+                                
+                                // Find a matching product if possible - with more flexible matching
+                                const matchingProduct = products.find(p => {
+                                  if (!p.image) return false;
+                                  
+                                  // Try to normalize product image as well
+                                  let normalizedProductImg = p.image;
+                                  if (normalizedProductImg.startsWith('http')) {
+                                    try {
+                                      const url = new URL(normalizedProductImg);
+                                      normalizedProductImg = url.pathname;
+                                    } catch (e) {
+                                      // If URL parsing fails, continue with the original
+                                    }
+                                  }
+                                  
+                                  // Check if either image includes parts of the other
+                                  return normalizedProductImg.includes(normalizedImgSrc) || 
+                                         normalizedImgSrc.includes(normalizedProductImg);
+                                });
+                                
+                                // Style the image regardless of product match
+                                const styledImg = imgElement.replace(/<img/, '<img style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;"');
+                                
+                                if (matchingProduct) {
+                                  // Replace the image with a linked version
+                                  const linkedImg = `<a href="${matchingProduct.admin_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
+                                  enhancedContent = enhancedContent.replace(imgElement, linkedImg);
+                                } else {
+                                  // Still replace with styled version even without product match
+                                  enhancedContent = enhancedContent.replace(imgElement, styledImg);
+                                }
+                              }
+                            });
+                            
+                            // Then process any remaining standalone images
+                            enhancedContent = enhancedContent
+                              // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                              .replace(
+                                /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$2"$3>'
+                              )
+                              // Fix image URLs that might be missing domain (starting with //)
+                              .replace(
+                                /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$3"$4>'
+                              );
+                              
+                            // Wrap standalone images (those not in an <a> tag) with clickable links
+                            const imgRegexStandalone = /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
+                            enhancedContent = enhancedContent.replace(
+                              imgRegexStandalone,
+                              (match, imgTag, imgSrc) => {
+                                return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
+                              }
+                            );
+                            
+                            // Log for debugging
+                            console.log("Content before final processing:", enhancedContent);
+                            
+                            // Add styling to all remaining images that don't already have style
+                            enhancedContent = enhancedContent.replace(
+                              /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi, 
+                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
+                            );
+                            
+                            // Ensure all images have cursor pointer
+                            enhancedContent = enhancedContent.replace(
+                              /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
+                              (match, before, style, after) => {
+                                // Add cursor: pointer if it's not already there
+                                const updatedStyle = style.includes('cursor:') ? style : style + '; cursor: pointer;';
+                                return `<img${before}style="${updatedStyle}"${after}>`;
+                              }
+                            );
+                            
+                            // Return the enhanced content with proper image styling
+                            return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
+                          } else {
+                            // Remove any img tags without proper src
+                            let cleanedContent = content;
+                            if (hasImageTags) {
+                              cleanedContent = content.replace(/<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi, '');
+                            }
+                            
+                            // Split into paragraphs
+                            const paragraphs = cleanedContent.split(/\n\n+/);
+                            const result: React.ReactNode[] = [];
+                            let imageIndex = 0;
+                            
+                            // Process each paragraph, inserting images occasionally
+                            paragraphs.forEach((para: string, i: number) => {
+                              // Check if paragraph already has image tags
+                              const hasImageInParagraph = para.includes('<img');
+                              
+                              if (para.trim()) {
+                                // Process paragraph to ensure proper image handling
+                                const processedPara = para
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  );
+                                
+                                result.push(
+                                  <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: processedPara }} />
+                                );
+                              }
+                              
+                              // Only insert secondary images if the paragraph doesn't already have images
+                              // And do it after every 2-3 paragraphs for optimal spacing
+                              if (!hasImageInParagraph && (i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
+                                const image = secondaryImages[imageIndex];
+                                
+                                // Try to find a matching product for this image
+                                let productUrl = image.productUrl || "#";
+                                
+                                // Check if this image belongs to a selected product
+                                const products = selectedProducts || [];
+                                if (products.length > 0 && image.url) {
+                                  const matchingProduct = products.find(p => 
+                                    p.image && (p.image === image.url || image.url?.includes(p.id))
+                                  );
+                                  
+                                  if (matchingProduct) {
+                                    productUrl = matchingProduct.admin_url || productUrl;
+                                  }
+                                }
+                                
+                                result.push(
+                                  <div key={`img-${i}`} className="my-6 flex justify-center">
+                                    <a href={productUrl} target="_blank" rel="noopener noreferrer" className="product-link">
+                                      <img 
+                                        src={image.url || (image.src?.medium ?? '')} 
+                                        alt={image.alt || `Product image ${imageIndex + 1}`} 
+                                        style={{
+                                          maxWidth: '100%',
+                                          maxHeight: '400px',
+                                          cursor: 'pointer', 
+                                          objectFit: 'contain',
+                                          margin: '1rem auto',
+                                          display: 'block',
+                                          borderRadius: '0.375rem'
+                                        }}
+                                      />
+                                    </a>
+                                  </div>
+                                );
+                                imageIndex++;
+                              }
+                              
+                              // Insert YouTube after first or second paragraph if not already inserted via placeholder
+                              if (youtubeVideoId && !hasYoutubePlaceholder && (i === 0 || i === 1)) {
+                                result.push(<YouTubeEmbed key="youtube" />);
+                                // Prevent multiple inserts
+                                youtubeVideoId = null;
+                              }
+                            });
+                            
+                            return <div className="content-preview prose prose-blue max-w-none">{result}</div>;
+                          }
+                        }
+                        
+                        // If no secondary images or YouTube placeholder, handle YouTube separately
+                        if (youtubeVideoId && !hasYoutubePlaceholder) {
+                          return (
+                            <div className="content-preview prose prose-blue max-w-none">
+                              <div dangerouslySetInnerHTML={{ 
+                                __html: content.substring(0, content.length / 3)
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  )
+                              }} />
+                              <YouTubeEmbed />
+                              <div dangerouslySetInnerHTML={{ 
+                                __html: content.substring(content.length / 3)
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  )
+                              }} />
+                            </div>
+                          );
+                        }
+                        
+                        // Default: ensure content displays correctly with embedded images
+                        const processedContent = content
+                          // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                          .replace(
+                            /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$2"$3>'
+                          )
+                          // Fix image URLs that might be missing domain (starting with //)
+                          .replace(
+                            /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$3"$4>'
+                          )
+                          // Add styling to all images for proper display
+                          .replace(
+                            /<img([^>]*?)>/gi, 
+                            '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                          );
+                        
+                        // Return enhanced content with all embedded images properly displayed
+                        return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: processedContent }} />;
+                      })()}
+                    </div>
+                    
+                    {generatedContent.metaDescription && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold">Meta Description:</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {generatedContent.metaDescription}
+                        </p>
                       </div>
-                    </div>
-
-                    {/* Publishing Actions */}
-                    <div className="flex gap-3 pt-4 border-t">
-                      <Button
-                        onClick={() => {
-                          const publishData = {
-                            ...generatedContent,
-                            contentType: form.watch('articleType'),
-                            blogId: form.watch('blogId'),
-                            publishAction: 'publish'
-                          };
-                          handlePublishContent(publishData);
-                        }}
-                        className="flex-1"
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Publish Now
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const publishData = {
-                            ...generatedContent,
-                            contentType: form.watch('articleType'),
-                            blogId: form.watch('blogId'),
-                            publishAction: 'schedule'
-                          };
-                          handlePublishContent(publishData);
-                        }}
-                        className="flex-1"
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Schedule
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const publishData = {
-                            ...generatedContent,
-                            contentType: form.watch('articleType'),
-                            blogId: form.watch('blogId'),
-                            publishAction: 'draft'
-                          };
-                          handlePublishContent(publishData);
-                        }}
-                        className="flex-1"
-                      >
-                        <FileText className="mr-2 h-4 w-4" />
-                        Save Draft
-                      </Button>
-                    </div>
-
-                    {/* Links to published content */}
+                    )}
+                    
                     {generatedContent.contentUrl && (
                       <div className="grid grid-cols-2 gap-2 mt-4">
                         <Button 
@@ -3816,32 +4023,6 @@ export default function AdminPanel() {
             </Card>
           </div>
 
-          {/* Add missing handlePublishContent function */}
-          {React.createElement(() => {
-            const handlePublishContent = async (publishData: any) => {
-              try {
-                console.log('Publishing content:', publishData);
-                // This would be implemented to handle actual publishing
-                toast({
-                  title: "Publishing functionality",
-                  description: "This feature will be implemented to handle content publishing",
-                  variant: "default"
-                });
-              } catch (error) {
-                console.error('Error publishing content:', error);
-                toast({
-                  title: "Publishing error", 
-                  description: "There was an error publishing the content",
-                  variant: "destructive"
-                });
-              }
-            };
-            
-            // Store the function globally for the component to use
-            (window as any).handlePublishContent = handlePublishContent;
-            return null;
-          }, {})}
-
           {/* Keyword Selector Dialog */}
           <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -3867,39 +4048,502 @@ export default function AdminPanel() {
           <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
             <DialogContent className="sm:max-w-[700px]">
               <DialogHeader>
-                <DialogTitle>Choose Your Title</DialogTitle>
+                <DialogTitle>Choose a Title</DialogTitle>
                 <DialogDescription>
-                  Select from AI-generated title suggestions optimized for your keywords
+                  Select a title that incorporates your keywords for better SEO.
                 </DialogDescription>
               </DialogHeader>
-              <TitleSelector
-                initialTitle={form.watch('title')}
-                keywords={selectedKeywords}
+              
+              <TitleSelector 
+                open={showTitleSelector}
+                onOpenChange={setShowTitleSelector}
                 onTitleSelected={handleTitleSelected}
-                onClose={() => setShowTitleSelector(false)}
-                selectedProducts={selectedProducts}
-                selectedCollections={selectedCollections}
+                selectedKeywords={selectedKeywords}
+                productTitle={productTitle}
               />
             </DialogContent>
           </Dialog>
+          
+          {/* Save Template Dialog */}
+          <Dialog 
+            open={showSaveTemplateDialog} 
+            onOpenChange={(open) => {
+              if (!open) {
+                setTemplateName('');
+              }
+              setShowSaveTemplateDialog(open);
+            }}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Save as Template</DialogTitle>
+                <DialogDescription>
+                  Save your current settings as a template for future use
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="templateName" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="templateName"
+                    value={templateName || ''}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    className="col-span-3"
+                    placeholder="My Template"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSaveTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // Save current form values as template
+                    if (!templateName) {
+                      toast({
+                        title: "Template name required",
+                        description: "Please enter a name for your template",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    const templateData = {
+                      ...form.getValues(),
+                      selectedKeywords,
+                      selectedProducts,
+                      selectedCollections,
+                      contentStyleToneId: selectedContentToneId,
+                      contentStyleDisplayName: selectedContentDisplayName
+                    };
+                    
+                    const updatedTemplates = [...templates, {
+                      name: templateName,
+                      data: templateData
+                    }];
+                    
+                    setTemplates(updatedTemplates);
+                    
+                    // Save to localStorage
+                    localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
+                    
+                    setTemplateName('');
+                    setShowSaveTemplateDialog(false);
+                    
+                    toast({
+                      title: "Template saved",
+                      description: "Your template has been saved successfully",
+                      variant: "default"
+                    });
+                  }}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Template
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Load Template Dialog */}
+          <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+            <DialogContent className="sm:max-w-[525px]">
+              <DialogHeader>
+                <DialogTitle>Load Template</DialogTitle>
+                <DialogDescription>
+                  Select a saved template to load its settings
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[300px] overflow-y-auto">
+                {templates.length > 0 ? (
+                  <div className="space-y-2">
+                    {templates.map((template, index) => (
+                      <Card key={index} className="p-3">
+                        <div className="flex justify-between items-center">
+                          <div className="font-medium">{template.name}</div>
+                          <div className="flex space-x-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                // Ensure all array values are properly initialized
+                                const formDataWithArrays = {
+                                  ...template.data,
+                                  // Initialize required arrays
+                                  productIds: Array.isArray(template.data.productIds) ? template.data.productIds : [],
+                                  collectionIds: Array.isArray(template.data.collectionIds) ? template.data.collectionIds : [],
+                                  keywords: Array.isArray(template.data.keywords) ? template.data.keywords : []
+                                };
+                                
+                                // Load template data into form
+                                form.reset(formDataWithArrays);
+                                
+                                // Update selected states
+                                if (template.data.selectedKeywords) {
+                                  setSelectedKeywords(template.data.selectedKeywords);
+                                }
+                                
+                                if (template.data.selectedProducts) {
+                                  setSelectedProducts(Array.isArray(template.data.selectedProducts) ? template.data.selectedProducts : []);
+                                }
+                                
+                                if (template.data.selectedCollections) {
+                                  setSelectedCollections(Array.isArray(template.data.selectedCollections) ? template.data.selectedCollections : []);
+                                }
+                                
+                                // Set content style if available in the template
+                                if (template.data.contentStyleToneId) {
+                                  setSelectedContentToneId(template.data.contentStyleToneId);
+                                }
+                                
+                                if (template.data.contentStyleDisplayName) {
+                                  setSelectedContentDisplayName(template.data.contentStyleDisplayName);
+                                }
+                                
+                                setShowLoadTemplateDialog(false);
+                                
+                                toast({
+                                  title: "Template loaded",
+                                  description: "Template settings have been applied",
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Load
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                // Remove this template
+                                const updatedTemplates = templates.filter((_, i) => i !== index);
+                                setTemplates(updatedTemplates);
+                                
+                                // Update localStorage
+                                localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
+                                
+                                toast({
+                                  title: "Template deleted",
+                                  description: `"${template.name}" has been removed`,
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No saved templates. Save a template first.
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowLoadTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
 
-          {/* Choose Media Dialog */}
-          <ChooseMediaDialog
-            isOpen={showChooseMediaDialog}
-            onClose={() => setShowChooseMediaDialog(false)}
-            onMediaSelected={(media) => {
-              console.log('Media selected:', media);
-              setSelectedMediaContent(media);
-              setShowChooseMediaDialog(false);
-            }}
+        {/* Connections Tab */}
+        <TabsContent value="connections" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Connections</CardTitle>
+              <CardDescription>
+                Check the status of your connected services
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {servicesStatusQuery.isLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : servicesStatusQuery.data ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {Object.entries(servicesStatusQuery.data.connections as ServiceStatus).map(([service, status]) => (
+                    <Card key={service}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center">
+                          {status ? (
+                            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                          )}
+                          {service.charAt(0).toUpperCase() + service.slice(1)}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          {status 
+                            ? `Connected and working properly.` 
+                            : `Not connected or having issues.`}
+                        </p>
+                      </CardContent>
+                      <CardFooter className="pt-0">
+                        {!status && (
+                          <Button variant="outline" size="sm">
+                            Fix Connection
+                          </Button>
+                        )}
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Failed to load service status. Please try again.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Settings</CardTitle>
+              <CardDescription>
+                Configure your TopShop SEO application
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-center py-12">
+                Settings functionality coming soon.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Create Post Modal */}
+      {(() => {
+        // Get values beforehand to ensure proper typing
+        const blogId = form.getValues('blogId');
+        const articleType = form.getValues('articleType') as "blog" | "page";
+        const categoriesValue = form.getValues('categories');
+        const categories = Array.isArray(categoriesValue) ? categoriesValue : undefined;
+        
+        return (
+          <CreatePostModal
+            open={createPostModalOpen}
+            onOpenChange={setCreatePostModalOpen}
+            initialData={null}
+            generatedContent={generatedContent}
             selectedProducts={selectedProducts}
-            selectedCollections={selectedCollections}
+            selectedBlogId={blogId}
+            articleType={articleType}
+            categories={categories}
+            mediaImages={[...primaryImages, ...secondaryImages]} // Pass selected media including YouTube videos
           />
-        </div>
-      );
-    }
-
-export default AdminPanel;
+        );
+      })()}
+      
+      {/* Image Search Dialog */}
+      <Dialog open={showImageDialog && !showChooseMediaDialog} onOpenChange={(open) => {
+        // When dialog closes, always reset the UI to a clean state
+        if (!open) {
+          // Reset loading state if dialog is closed during a search
+          if (isSearchingImages) {
+            setIsSearchingImages(false);
+          }
+        }
+        
+        // Ensure only one dialog is open at a time
+        if (open && showChooseMediaDialog) {
+          setShowChooseMediaDialog(false); // Close the other dialog first
+          setTimeout(() => setShowImageDialog(open), 300); // Then open this one after a short delay
+        } else {
+          setShowImageDialog(open);
+        }
+      }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <DialogTitle className="text-xl">Choose Media</DialogTitle>
+              
+              <Tabs 
+                value={imageTab} 
+                onValueChange={(v) => setImageTab(v as 'primary' | 'secondary')}
+                className="w-[400px]"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="primary" className="flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Primary Images
+                    {primaryImages.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{primaryImages.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="secondary" className="flex items-center">
+                    <FileImage className="h-4 w-4 mr-2" />
+                    Secondary Images
+                    {secondaryImages.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{secondaryImages.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            
+            <DialogDescription className="mt-1">
+              {imageTab === 'primary' ? (
+                <div className="flex items-center mb-2">
+                  <AlertCircle className="h-4 w-4 text-blue-500 mr-2" />
+                  <span className="text-blue-700 text-sm">
+                    Choose emotionally compelling images with human subjects to feature at the top of your content
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center mb-2">
+                  <Info className="h-4 w-4 text-green-500 mr-2" />
+                  <span className="text-green-700 text-sm">
+                    Select additional product images to appear throughout your article body
+                  </span>
+                </div>
+              )}
+            </DialogDescription>
+            
+            {/* Image source tabs */}
+            <div className="flex gap-2 mt-3">
+              <Button 
+                size="sm"
+                variant={imageSource === 'pexels' ? 'default' : 'outline'} 
+                onClick={() => {
+                  setImageSource('pexels');
+                  if (searchedImages.length === 0 && !imageSearchQuery) {
+                    // Set a default search query based on selected tab
+                    if (imageTab === 'primary') {
+                      setImageSearchQuery("happy woman using product");
+                    } else {
+                      setImageSearchQuery(selectedProducts.length > 0 ? 
+                        `${selectedProducts[0].title} in use` : "product in use"
+                      );
+                    }
+                  }
+                }}
+                className="flex-1"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Pexels Images
+              </Button>
+              
+              <Button 
+                size="sm"
+                variant={imageSource === 'pixabay' ? 'default' : 'outline'} 
+                onClick={() => {
+                  setImageSource('pixabay');
+                  toast({
+                    title: "Coming Soon",
+                    description: "Pixabay integration will be available in a future update."
+                  });
+                }}
+                className="flex-1"
+              >
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Pixabay 
+                <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
+              </Button>
+              
+              <Button 
+                  size="sm"
+                  variant={imageSource === 'product_images' ? 'default' : 'outline'} 
+                  onClick={() => {
+                    if (selectedProducts.length === 0) {
+                      toast({
+                        title: "No products selected",
+                        description: "Please select at least one product in Step 2 first.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setImageSource('product_images');
+                    // Load selected product images
+                    fetchProductAndVariantImages();
+                  }}
+                  className="flex-1"
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Product Images
+                </Button>
+                
+              
+              
+              <div className="flex-1 flex flex-col gap-1">
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'upload' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('upload')}
+                  className="w-full"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Image
+                </Button>
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'youtube' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('youtube')}
+                  className="w-full"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  YouTube Video
+                </Button>
+              </div>
+            </div>
+            
+            {/* YouTube video embedding section */}
+            {imageSource === 'youtube' && (
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-700">Add YouTube videos to embed in your content</p>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="youtube-url">YouTube Video URL</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      id="youtube-url"
+                      placeholder="https://www.youtube.com/watch?v=..." 
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      variant="default"
+                      disabled={!youtubeUrl.trim()}
+                      onClick={() => {
+                        // Extract video ID from YouTube URL
+                        try {
+                          const url = new URL(youtubeUrl);
+                          let videoId = '';
+                          
+                          if (url.hostname === 'youtu.be') {
+                            videoId = url.pathname.substring(1);
+                          } else if (url.hostname.includes('youtube.com')) {
+                            videoId = url.searchParams.get('v') || '';
+                          }
+                          
+                          if (videoId) {
                             setYoutubeVideoId(videoId);
                             // Create a PexelsImage-like object to store the YouTube video info
                             const youtubeImage: PexelsImage = {
