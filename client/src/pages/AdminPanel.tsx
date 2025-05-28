@@ -3968,300 +3968,144 @@ export default function AdminPanel() {
             </DialogContent>
           </Dialog>
 
-          {/* Choose Media Dialog - Using Built-in Media Selection */}
+          {/* Choose Media Dialog */}
           <Dialog open={showChooseMediaDialog} onOpenChange={setShowChooseMediaDialog}>
-            <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Choose Media for Content</DialogTitle>
                 <DialogDescription>
-                  Select a primary image, secondary images, and optional YouTube video for your content.
+                  Select images and videos for your content
                 </DialogDescription>
               </DialogHeader>
               
-              <Tabs defaultValue="primary" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="primary">Primary Image</TabsTrigger>
-                  <TabsTrigger value="secondary">Secondary Images</TabsTrigger>
-                  <TabsTrigger value="youtube">YouTube Video</TabsTrigger>
-                </TabsList>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Input
+                    placeholder="Search for images..."
+                    value={imageSearchQuery}
+                    onChange={(e) => setImageSearchQuery(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!imageSearchQuery.trim()) return;
+                      setIsSearchingImages(true);
+                      try {
+                        const response = await fetch('/api/admin/generate-images', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ 
+                            query: imageSearchQuery,
+                            count: 12
+                          })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          setSearchedImages(data.images || []);
+                        }
+                      } catch (error) {
+                        console.error('Error searching images:', error);
+                      } finally {
+                        setIsSearchingImages(false);
+                      }
+                    }}
+                    disabled={isSearchingImages || !imageSearchQuery.trim()}
+                  >
+                    {isSearchingImages ? 'Searching...' : 'Search'}
+                  </Button>
+                </div>
                 
-                <TabsContent value="primary" className="space-y-4">
-                  <div className="mb-4">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <Search className="h-4 w-4 text-gray-500" />
-                      <Input
-                        placeholder="Search for images (e.g., 'happy customer', 'product in use')"
-                        value={imageSearchQuery}
-                        onChange={(e) => setImageSearchQuery(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={async () => {
-                          if (!imageSearchQuery.trim()) return;
-                          setIsSearchingImages(true);
-                          try {
-                            const response = await fetch('/api/admin/generate-images', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ 
-                                query: imageSearchQuery,
-                                count: 20
-                              })
-                            });
-                            const data = await response.json();
-                            if (data.success) {
-                              setSearchedImages(data.images || []);
-                            }
-                          } catch (error) {
-                            console.error('Error searching images:', error);
-                          } finally {
-                            setIsSearchingImages(false);
-                          }
-                        }}
-                        disabled={isSearchingImages || !imageSearchQuery.trim()}
-                      >
-                        {isSearchingImages ? 'Searching...' : 'Search'}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* Product Images */}
-                    {selectedProducts.map((product) => 
-                      product.images?.map((img: any, idx: number) => (
-                        <div 
-                          key={`product-${product.id}-${idx}`}
-                          className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
-                            selectedMediaContent.primaryImage?.src === img.src ? 'border-blue-500' : 'border-gray-200'
-                          }`}
-                          onClick={() => setSelectedMediaContent(prev => ({
-                            ...prev,
-                            primaryImage: { 
-                              id: img.id || `${product.id}-${idx}`,
-                              url: img.src,
-                              src: img.src, 
-                              alt: img.alt || product.title,
-                              source: 'product'
-                            }
-                          }))}
-                        >
-                          <img 
-                            src={img.src} 
-                            alt={img.alt || product.title}
-                            className="w-full h-32 object-cover"
-                          />
-                          <div className="p-2">
-                            <p className="text-xs text-gray-600 truncate">{product.title}</p>
-                            <div className="text-xs text-blue-600 font-medium">Product Image</div>
-                          </div>
-                        </div>
-                      )) || []
-                    )}
-                    
-                    {/* Searched Images */}
-                    {searchedImages.map((img, idx) => (
-                      <div 
-                        key={`search-${idx}`}
-                        className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
-                          selectedMediaContent.primaryImage?.src === img.src?.medium ? 'border-blue-500' : 'border-gray-200'
-                        }`}
-                        onClick={() => setSelectedMediaContent(prev => ({
-                          ...prev,
-                          primaryImage: { 
-                            id: img.id || `search-${idx}`,
-                            url: img.src?.medium || img.url,
-                            src: img.src?.medium || img.url, 
-                            alt: img.alt || 'Search result',
-                            source: 'pexels'
-                          }
-                        }))}
-                      >
-                        <img 
-                          src={img.src?.medium || img.url} 
-                          alt={img.alt || 'Search result'}
-                          className="w-full h-32 object-cover"
-                        />
-                        <div className="p-2">
-                          <p className="text-xs text-gray-600 truncate">{img.photographer || 'Pexels'}</p>
-                          <div className="text-xs text-green-600 font-medium">Stock Photo</div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {searchedImages.length === 0 && selectedProducts.length === 0 && (
-                      <div className="col-span-full text-center py-8 text-gray-500">
-                        <Search className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                        <p>Search for images or select products to see available images</p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="secondary" className="space-y-4">
-                  <div className="mb-4">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <Search className="h-4 w-4 text-gray-500" />
-                      <Input
-                        placeholder="Search for secondary images (e.g., 'product details', 'lifestyle')"
-                        value={imageSearchQuery}
-                        onChange={(e) => setImageSearchQuery(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={async () => {
-                          if (!imageSearchQuery.trim()) return;
-                          setIsSearchingImages(true);
-                          try {
-                            const response = await fetch('/api/admin/generate-images', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ 
-                                query: imageSearchQuery,
-                                count: 20
-                              })
-                            });
-                            const data = await response.json();
-                            if (data.success) {
-                              setSearchedImages(data.images || []);
-                            }
-                          } catch (error) {
-                            console.error('Error searching images:', error);
-                          } finally {
-                            setIsSearchingImages(false);
-                          }
-                        }}
-                        disabled={isSearchingImages || !imageSearchQuery.trim()}
-                      >
-                        {isSearchingImages ? 'Searching...' : 'Search'}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* Product Images */}
-                    {selectedProducts.map((product) => 
-                      product.images?.map((img: any, idx: number) => {
-                        const isSelected = selectedMediaContent.secondaryImages.some(
-                          (secImg: any) => secImg.src === img.src
-                        );
-                        return (
-                          <div 
-                            key={`secondary-${product.id}-${idx}`}
-                            className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
-                              isSelected ? 'border-green-500' : 'border-gray-200'
-                            }`}
-                            onClick={() => setSelectedMediaContent(prev => ({
-                              ...prev,
-                              secondaryImages: isSelected 
-                                ? prev.secondaryImages.filter((secImg: any) => secImg.src !== img.src)
-                                : [...prev.secondaryImages, {
-                                    id: img.id || `${product.id}-${idx}`,
-                                    url: img.src,
-                                    src: img.src,
-                                    alt: img.alt || product.title,
-                                    source: 'product'
-                                  }]
-                            }))}
-                          >
-                            <img 
-                              src={img.src} 
-                              alt={img.alt || product.title}
-                              className="w-full h-32 object-cover"
-                            />
-                            <div className="p-2">
-                              <p className="text-xs text-gray-600 truncate">{product.title}</p>
-                              <div className="text-xs text-blue-600 font-medium">Product Image</div>
-                              {isSelected && (
-                                <div className="text-xs text-green-600 font-medium">✓ Selected</div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }) || []
-                    )}
-                    
-                    {/* Searched Images */}
+                {searchedImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
                     {searchedImages.map((img, idx) => {
-                      const isSelected = selectedMediaContent.secondaryImages.some(
-                        (secImg: any) => secImg.src === (img.src?.medium || img.url)
-                      );
+                      const isSelected = selectedImages.some(selected => selected.id === img.id);
                       return (
                         <div 
-                          key={`search-secondary-${idx}`}
+                          key={`search-${idx}`}
                           className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
-                            isSelected ? 'border-green-500' : 'border-gray-200'
+                            isSelected ? 'border-blue-500' : 'border-gray-200'
                           }`}
-                          onClick={() => setSelectedMediaContent(prev => ({
-                            ...prev,
-                            secondaryImages: isSelected 
-                              ? prev.secondaryImages.filter((secImg: any) => secImg.src !== (img.src?.medium || img.url))
-                              : [...prev.secondaryImages, {
-                                  id: img.id || `search-${idx}`,
-                                  url: img.src?.medium || img.url,
-                                  src: img.src?.medium || img.url,
-                                  alt: img.alt || 'Search result',
-                                  source: 'pexels'
-                                }]
-                          }))}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedImages(prev => prev.filter(selected => selected.id !== img.id));
+                            } else {
+                              setSelectedImages(prev => [...prev, img]);
+                            }
+                          }}
                         >
                           <img 
                             src={img.src?.medium || img.url} 
                             alt={img.alt || 'Search result'}
-                            className="w-full h-32 object-cover"
+                            className="w-full h-24 object-cover"
                           />
-                          <div className="p-2">
-                            <p className="text-xs text-gray-600 truncate">{img.photographer || 'Pexels'}</p>
-                            <div className="text-xs text-green-600 font-medium">Stock Photo</div>
-                            {isSelected && (
-                              <div className="text-xs text-green-600 font-medium">✓ Selected</div>
-                            )}
-                          </div>
+                          {isSelected && (
+                            <div className="p-1 bg-blue-50 text-xs text-blue-600 text-center">Selected</div>
+                          )}
                         </div>
                       );
                     })}
-                    
-                    {searchedImages.length === 0 && selectedProducts.length === 0 && (
-                      <div className="col-span-full text-center py-8 text-gray-500">
-                        <Search className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                        <p>Search for images or select products to see available images</p>
-                      </div>
-                    )}
                   </div>
-                </TabsContent>
+                )}
                 
-                <TabsContent value="youtube" className="space-y-4">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="youtube-url">YouTube Video URL</Label>
-                      <Input
-                        id="youtube-url"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        value={selectedMediaContent.youtubeEmbed || ''}
-                        onChange={(e) => setSelectedMediaContent(prev => ({
-                          ...prev,
-                          youtubeEmbed: e.target.value
-                        }))}
-                      />
+                {selectedProducts.length > 0 && (
+                  <div>
+                    <h3 className="font-medium mb-3">Product Images</h3>
+                    <div className="grid grid-cols-3 gap-3 max-h-48 overflow-y-auto">
+                      {selectedProducts.map((product) => 
+                        product.images?.map((img: any, idx: number) => {
+                          const isSelected = selectedImages.some(selected => selected.url === img.src);
+                          return (
+                            <div 
+                              key={`product-${product.id}-${idx}`}
+                              className={`cursor-pointer border-2 rounded-lg overflow-hidden ${
+                                isSelected ? 'border-blue-500' : 'border-gray-200'
+                              }`}
+                              onClick={() => {
+                                const productImage = {
+                                  id: img.id || `${product.id}-${idx}`,
+                                  url: img.src,
+                                  src: { medium: img.src },
+                                  alt: img.alt || product.title,
+                                  source: 'product',
+                                  width: 500,
+                                  height: 500
+                                } as any;
+                                if (isSelected) {
+                                  setSelectedImages(prev => prev.filter(selected => selected.url !== img.src));
+                                } else {
+                                  setSelectedImages(prev => [...prev, productImage]);
+                                }
+                              }}
+                            >
+                              <img 
+                                src={img.src} 
+                                alt={img.alt || product.title}
+                                className="w-full h-24 object-cover"
+                              />
+                              {isSelected && (
+                                <div className="p-1 bg-blue-50 text-xs text-blue-600 text-center">Selected</div>
+                              )}
+                            </div>
+                          );
+                        }) || []
+                      )}
                     </div>
-                    {selectedMediaContent.youtubeEmbed && (
-                      <div className="aspect-video">
-                        <iframe
-                          src={selectedMediaContent.youtubeEmbed.replace('watch?v=', 'embed/')}
-                          className="w-full h-full rounded-lg"
-                          allowFullScreen
-                        />
-                      </div>
-                    )}
                   </div>
-                </TabsContent>
-              </Tabs>
+                )}
+              </div>
               
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-end space-x-2 mt-6">
                 <Button variant="outline" onClick={() => setShowChooseMediaDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => setShowChooseMediaDialog(false)}>
-                  Confirm Selection
+                <Button onClick={() => {
+                  setShowChooseMediaDialog(false);
+                  toast({
+                    title: "Media selected",
+                    description: `${selectedImages.length} image(s) selected`,
+                  });
+                }}>
+                  Add Selected Items
                 </Button>
               </div>
             </DialogContent>
