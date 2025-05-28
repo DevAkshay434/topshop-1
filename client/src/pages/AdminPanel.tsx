@@ -3646,8 +3646,8 @@ export default function AdminPanel() {
           </div>
         </TabsContent>
 
-      {/* Analytics Tab */}
-      <TabsContent value="analytics">
+        {/* Analytics Tab */}
+        <TabsContent value="analytics">
         <Card>
           <CardHeader>
             <CardTitle>Analytics Dashboard</CardTitle>
@@ -3680,7 +3680,6 @@ export default function AdminPanel() {
         </Card>
       </TabsContent>
     </Tabs>
-
     {/* Media Selection Dialog */}
     <ChooseMediaDialog
       open={showChooseMediaDialog}
