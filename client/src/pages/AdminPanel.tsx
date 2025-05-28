@@ -3596,17 +3596,52 @@ export default function AdminPanel() {
                     </p>
                   </div>
                 ) : generatedContent ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-xl font-bold">{generatedContent.title}</h3>
-                      {generatedContent.tags && generatedContent.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="space-y-6">
+                    {/* Editable Title Section */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium">Title (H1)</label>
+                      <input
+                        type="text"
+                        value={generatedContent.title}
+                        onChange={(e) => setGeneratedContent(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full p-3 text-xl font-bold border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter your title..."
+                      />
+                      <div className="text-xs text-gray-500">
+                        {generatedContent.title?.length || 0} characters
+                      </div>
+                    </div>
+
+                    {/* Editable Meta Description */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium">Meta Description</label>
+                      <textarea
+                        value={generatedContent.metaDescription || ''}
+                        onChange={(e) => setGeneratedContent(prev => ({ ...prev, metaDescription: e.target.value }))}
+                        className="w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        rows={3}
+                        placeholder="Enter meta description (155-160 characters recommended)..."
+                        maxLength={200}
+                      />
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>{(generatedContent.metaDescription || '').length}/200 characters</span>
+                        <span className={`${(generatedContent.metaDescription || '').length >= 155 && (generatedContent.metaDescription || '').length <= 160 ? 'text-green-600' : 'text-orange-600'}`}>
+                          {(generatedContent.metaDescription || '').length >= 155 && (generatedContent.metaDescription || '').length <= 160 ? 'Optimal length' : 'Recommended: 155-160 chars'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Tags Section */}
+                    {generatedContent.tags && generatedContent.tags.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Tags</label>
+                        <div className="flex flex-wrap gap-2">
                           {generatedContent.tags.map((tag: string, index: number) => (
                             <Badge key={index} variant="outline">{tag}</Badge>
                           ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     
                     {/* Display featured image if available */}
                     {generatedContent.featuredImage && (
@@ -3620,18 +3655,152 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
-                      {(() => {
-                        // Get content
-                        const content = generatedContent.content;
-                        if (!content) return <p>No content available</p>;
+                    {/* Rich Text Content Editor */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium flex items-center justify-between">
+                        Content
+                        <div className="text-xs text-gray-500">
+                          {generatedContent.content ? `${generatedContent.content.replace(/<[^>]*>/g, '').split(' ').length} words` : '0 words'}
+                        </div>
+                      </label>
+                      <div className="border rounded-md">
+                        {/* Rich Text Toolbar */}
+                        <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
+                          <button
+                            type="button"
+                            onClick={() => document.execCommand('bold')}
+                            className="px-2 py-1 text-sm border rounded hover:bg-white"
+                            title="Bold"
+                          >
+                            <strong>B</strong>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => document.execCommand('italic')}
+                            className="px-2 py-1 text-sm border rounded hover:bg-white"
+                            title="Italic"
+                          >
+                            <em>I</em>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => document.execCommand('underline')}
+                            className="px-2 py-1 text-sm border rounded hover:bg-white"
+                            title="Underline"
+                          >
+                            <u>U</u>
+                          </button>
+                          <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                          <button
+                            type="button"
+                            onClick={() => document.execCommand('insertUnorderedList')}
+                            className="px-2 py-1 text-sm border rounded hover:bg-white"
+                            title="Bullet Points"
+                          >
+                            • List
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => document.execCommand('insertOrderedList')}
+                            className="px-2 py-1 text-sm border rounded hover:bg-white"
+                            title="Numbered List"
+                          >
+                            1. List
+                          </button>
+                        </div>
+                        
+                        {/* Editable Content Area */}
+                        <div
+                          contentEditable
+                          suppressContentEditableWarning={true}
+                          onInput={(e) => {
+                            const content = e.currentTarget.innerHTML;
+                            setGeneratedContent(prev => ({ ...prev, content }));
+                          }}
+                          className="min-h-[400px] p-4 prose prose-blue max-w-none focus:outline-none"
+                          style={{ maxWidth: 'none' }}
+                          dangerouslySetInnerHTML={{ __html: generatedContent.content || '<p>Content will appear here after generation...</p>' }}
+                        />
+                      </div>
+                    </div>
 
-                        // Get YouTube data if exists
-                        const youtubeUrl = form.watch("youtubeUrl");
-                        let youtubeVideoId: string | null = null;
-                        if (youtubeUrl) {
-                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
-                        }
+                    {/* Publishing Actions */}
+                    <div className="flex gap-3 pt-4 border-t">
+                      <Button
+                        onClick={() => {
+                          const publishData = {
+                            ...generatedContent,
+                            contentType: form.watch('articleType'),
+                            blogId: form.watch('blogId'),
+                            publishAction: 'publish'
+                          };
+                          handlePublishContent(publishData);
+                        }}
+                        className="flex-1"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Publish Now
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const publishData = {
+                            ...generatedContent,
+                            contentType: form.watch('articleType'),
+                            blogId: form.watch('blogId'),
+                            publishAction: 'schedule'
+                          };
+                          handlePublishContent(publishData);
+                        }}
+                        className="flex-1"
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Schedule
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const publishData = {
+                            ...generatedContent,
+                            contentType: form.watch('articleType'),
+                            blogId: form.watch('blogId'),
+                            publishAction: 'draft'
+                          };
+                          handlePublishContent(publishData);
+                        }}
+                        className="flex-1"
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Save Draft
+                      </Button>
+                    </div>
+
+                    {/* Links to published content */}
+                    {generatedContent.contentUrl && (
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => window.open(generatedContent.contentUrl, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View on Shopify
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedContent.contentUrl);
+                            toast({
+                              title: "Link copied",
+                              description: "URL has been copied to clipboard",
+                              variant: "default"
+                            });
+                          }}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Link
+                        </Button>
+                      </div>
+                    )}
                         
                         // Create YouTube embed component
                         const YouTubeEmbed = () => (
