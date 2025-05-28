@@ -829,7 +829,8 @@ export class ShopifyService {
     title: string,
     content: string,
     published: boolean = false,
-    publishDate?: Date
+    publishDate?: Date,
+    featuredImage?: string
   ): Promise<any> {
     try {
       const client = this.getClient(store);
@@ -842,7 +843,8 @@ export class ShopifyService {
       const pageData: any = {
         page: {
           title,
-          body_html: content
+          body_html: content,
+          image: featuredImage ? { src: featuredImage } : undefined
         }
       };
 
