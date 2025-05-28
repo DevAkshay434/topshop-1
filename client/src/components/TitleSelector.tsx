@@ -129,7 +129,7 @@ export default function TitleSelector({
                   <Button 
                     onClick={generateTitles} 
                     className="mt-2"
-                    disabled={selectedKeywords.length === 0}
+                    disabled={!selectedKeywords || selectedKeywords.length === 0}
                   >
                     Generate Titles
                   </Button>
