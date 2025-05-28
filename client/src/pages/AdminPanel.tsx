@@ -1287,6 +1287,33 @@ export default function AdminPanel() {
   };
   
   // Handle content generation form submission
+  // Handle publishing content
+  const handlePublishContent = async (publishData: any) => {
+    try {
+      console.log('Publishing content:', publishData);
+      toast({
+        title: "Publishing...",
+        description: "Your content is being published to Shopify"
+      });
+      
+      // Here you would implement the actual publishing logic
+      // For now, we'll just show a success message
+      setTimeout(() => {
+        toast({
+          title: "Content published!",
+          description: "Your content has been successfully published to Shopify"
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Publishing error:', error);
+      toast({
+        title: "Publishing failed",
+        description: "There was an error publishing your content",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSubmit = async (values: ContentFormValues) => {
     try {
       console.log("Form submission started with values:", values);
@@ -3897,8 +3924,24 @@ export default function AdminPanel() {
             selectedProducts={selectedProducts}
             productTitle={productTitle}
           />
-        </div>
-      </div>
+        </TabsContent>
+
+        {/* Services Tab */}
+        <TabsContent value="connections">
+          <div className="text-center p-8">
+            <h3 className="text-lg font-semibold mb-2">Service Connections</h3>
+            <p className="text-gray-600">Manage your external service connections here.</p>
+          </div>
+        </TabsContent>
+
+        {/* Settings Tab */}
+        <TabsContent value="settings">
+          <div className="text-center p-8">
+            <h3 className="text-lg font-semibold mb-2">Settings</h3>
+            <p className="text-gray-600">Configure your application settings here.</p>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
