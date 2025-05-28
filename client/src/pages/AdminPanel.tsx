@@ -316,7 +316,7 @@ const predefinedBuyerPersonas: BuyerPersona[] = [
   }
 ];
 
-export default function AdminPanel() {
+function AdminPanel() {
   const [selectedTab, setSelectedTab] = useState("generate");
   const [selectedContentToneId, setSelectedContentToneId] = useState<string>("");
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
@@ -3766,6 +3766,7 @@ export default function AdminPanel() {
         : "Select product images to appear throughout your article body"}
     />
   </div>
-);
+  );
+}
 
 export default AdminPanel;
