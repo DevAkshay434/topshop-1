@@ -1564,15 +1564,20 @@ Place this at a logical position in the content, typically after introducing a c
         secondaryContent.push({ type: 'video', html: videoHtml, description: `YouTube video: ${requestData.youtubeEmbed}` });
       }
       
-      // Insert all secondary content into placement markers
+      // Insert all secondary content into placement markers (each image used only once)
       if (secondaryContent.length > 0) {
         let contentIndex = 0;
+        // Replace markers one by one, ensuring each secondary image is used only once
         while (finalContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->') && contentIndex < secondaryContent.length) {
           const content = secondaryContent[contentIndex];
           finalContent = finalContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', content.html);
-          console.log(`Inserted ${content.description}`);
+          console.log(`Inserted ${content.description} (used once)`);
           contentIndex++;
         }
+        
+        // Remove any remaining markers if we run out of secondary content
+        finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
+        console.log(`Removed remaining placement markers to prevent repetition`);
       }
 
       
