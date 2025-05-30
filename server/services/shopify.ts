@@ -500,7 +500,7 @@ export class ShopifyService {
         // Replace high-resolution image URLs with medium or small versions
         articleData.body_html = articleData.body_html.replace(
           /src="([^"]*?\.(?:jpg|jpeg|png|webp)[^"]*?)"/gi,
-          (match, url) => {
+          (match: string, url: string) => {
             // Convert large images to medium size to avoid 25 megapixel limit
             if (url.includes('cdn.shopify.com') && url.includes('large')) {
               return match.replace('large', 'medium');
@@ -636,11 +636,10 @@ export class ShopifyService {
         console.error('Shopify 422 validation error details:');
         console.error('Response data:', JSON.stringify(error.response.data, null, 2));
         console.error('Article data sent:', JSON.stringify({
-          title: articleData?.title,
-          body_html_length: articleData?.body_html?.length || 0,
-          published: articleData?.published,
-          published_at: articleData?.published_at,
-          tags: articleData?.tags
+          title: post?.title,
+          body_html_length: post?.content?.length || 0,
+          published: post?.status,
+          tags: post?.tags
         }, null, 2));
       }
       
@@ -754,7 +753,7 @@ export class ShopifyService {
       
       // Critical for scheduling: published must be false
       if (isScheduled) {
-        articleData.published = false;
+        article.published = false;
         console.log("Setting up scheduled article with published=false for future publication");
       } else if (isPublish) {
         console.log("Publishing article immediately with published=true");
@@ -764,9 +763,9 @@ export class ShopifyService {
       
       // Log the update request
       console.log(`Updating article with data:`, {
-        title: articleData.title,
-        published: articleData.published,
-        published_at: articleData.published_at,
+        title: article.title,
+        published: article.published,
+        published_at: article.published_at,
         isScheduled
       });
       
