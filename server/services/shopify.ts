@@ -423,7 +423,7 @@ export class ShopifyService {
       }
       
       // Create the article object with proper validation
-      const article: any = {
+      const articleData: any = {
         title: post.title,
         author: post.author || store.shopName,
         body_html: processedContent,
@@ -434,7 +434,7 @@ export class ShopifyService {
       
       // Only add image if it exists and is properly formatted
       if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
-        article.image = { src: post.featuredImage.trim() };
+        articleData.image = { src: post.featuredImage.trim() };
       }
       
       // For scheduled posts, we need to implement a different approach
@@ -602,7 +602,32 @@ export class ShopifyService {
         }
       }
       
-      return response.data.article;
+      // Ensure we have the handle in the response for URL generation
+      const article = response.data.article;
+      console.log(`Article created with ID: ${article.id}`);
+      
+      // If Shopify didn't return a handle, fetch the full article to get it
+      if (!article.handle) {
+        console.log(`No handle in response, fetching full article details...`);
+        try {
+          const fullArticleResponse = await client.get(`/blogs/${blogId}/articles/${article.id}.json`);
+          const fullArticle = fullArticleResponse.data.article;
+          console.log(`Fetched article handle: ${fullArticle.handle}`);
+          
+          // Merge the full article data with our created article
+          Object.assign(article, fullArticle);
+        } catch (fetchError) {
+          console.error(`Error fetching full article details:`, fetchError);
+          // Generate handle from title as fallback
+          if (article.title) {
+            article.handle = article.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            console.log(`Generated handle from title: ${article.handle}`);
+          }
+        }
+      }
+      
+      console.log(`Final article handle: ${article.handle}`);
+      return article;
     } catch (error: any) {
       console.error(`Error creating article in Shopify store ${store.shopName}:`, error);
       
