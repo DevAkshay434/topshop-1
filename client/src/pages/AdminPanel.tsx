@@ -1491,22 +1491,7 @@ export default function AdminPanel() {
             Manage content generation, view service status, and configure settings
           </p>
         </div>
-        <Button 
-          onClick={() => {
-            // Ensure we have form data ready before opening the modal
-            if (!form.getValues('articleType')) {
-              form.setValue('articleType', "blog");
-            }
-            // Set default blog ID if not already set
-            if (!form.getValues('blogId') && blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0) {
-              form.setValue('blogId', blogsQuery.data.blogs[0].id);
-            }
-            setCreatePostModalOpen(true);
-          }}
-          className="bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-900"
-        >
-          Create New Post
-        </Button>
+
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
@@ -4320,28 +4305,7 @@ export default function AdminPanel() {
         </TabsContent>
       </Tabs>
       
-      {/* Create Post Modal */}
-      {(() => {
-        // Get values beforehand to ensure proper typing
-        const blogId = form.getValues('blogId');
-        const articleType = form.getValues('articleType') as "blog" | "page";
-        const categoriesValue = form.getValues('categories');
-        const categories = Array.isArray(categoriesValue) ? categoriesValue : undefined;
-        
-        return (
-          <CreatePostModal
-            open={createPostModalOpen}
-            onOpenChange={setCreatePostModalOpen}
-            initialData={null}
-            generatedContent={generatedContent}
-            selectedProducts={selectedProducts}
-            selectedBlogId={blogId}
-            articleType={articleType}
-            categories={categories}
-            mediaImages={[...primaryImages, ...secondaryImages]} // Pass selected media including YouTube videos
-          />
-        );
-      })()}
+
       
       {/* Image Search Dialog */}
       <Dialog open={showImageDialog && !showChooseMediaDialog} onOpenChange={(open) => {
