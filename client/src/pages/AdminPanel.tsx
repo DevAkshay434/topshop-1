@@ -1423,7 +1423,7 @@ export default function AdminPanel() {
       }
 
       // Save project data before generating content
-      if (currentProjectName) {
+      if (currentProjectName && currentProjectName.trim()) {
         try {
           const projectData = {
             name: currentProjectName,
@@ -1462,6 +1462,13 @@ export default function AdminPanel() {
             variant: "destructive",
           });
         }
+      } else {
+        // Show warning if no project name is set
+        toast({
+          title: "No project name set",
+          description: "Please create a project first to save your settings. Content will still be generated.",
+          variant: "default",
+        });
       }
       
       // Determine publication type based on scheduling checkbox
