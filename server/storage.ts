@@ -496,6 +496,84 @@ export class MemStorage implements IStorage {
   async deleteSavedProject(id: number): Promise<void> {
     this.savedProjects.delete(id);
   }
+
+  // Multi-store Shopify operations (in-memory)
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return Array.from(this.shopifyStores.values());
+  }
+
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    return Array.from(this.shopifyStores.values()).find(
+      (store) => store.storeName === shopDomain
+    );
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    return this.shopifyStores.get(id);
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    const id = this.currentStoreId++;
+    const newStore: ShopifyStore = {
+      ...store,
+      id,
+      installedAt: new Date(),
+      lastSynced: new Date(),
+      uninstalledAt: null,
+      chargeId: null,
+      trialEndsAt: null,
+      defaultBlogId: store.defaultBlogId || null,
+      isConnected: store.isConnected !== undefined ? store.isConnected : true,
+      planName: store.planName || null
+    };
+    this.shopifyStores.set(id, newStore);
+    return newStore;
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    const existingStore = this.shopifyStores.get(id);
+    if (!existingStore) {
+      throw new Error(`Store with ID ${id} not found`);
+    }
+
+    const updatedStore = { ...existingStore, ...store };
+    this.shopifyStores.set(id, updatedStore);
+    return updatedStore;
+  }
+
+  // User-store relationship operations (in-memory)
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    // Find all user-store relationships for this user
+    const userStoreIds = Array.from(this.userStores.entries())
+      .filter(([key, value]) => value.userId === userId)
+      .map(([key, value]) => value.storeId);
+
+    // Get the store objects
+    return userStoreIds
+      .map(storeId => this.shopifyStores.get(storeId))
+      .filter(store => store !== undefined) as ShopifyStore[];
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    // Create composite key
+    const key = `${userStore.userId}:${userStore.storeId}`;
+
+    // Check if relationship already exists
+    if (this.userStores.has(key)) {
+      throw new Error('User-store relationship already exists');
+    }
+
+    // Create new relationship
+    const newUserStore: UserStore = {
+      userId: userStore.userId,
+      storeId: userStore.storeId,
+      role: userStore.role || null,
+      createdAt: new Date()
+    };
+
+    this.userStores.set(key, newUserStore);
+    return newUserStore;
+  }
 }
 
 // DatabaseStorage class with PostgreSQL operations
@@ -766,88 +844,13 @@ class DatabaseStorage implements IStorage {
   async deleteSavedProject(id: number): Promise<void> {
     await db.delete(savedProjects).where(eq(savedProjects.id, id));
   }
-  
-  // Multi-store Shopify operations
-  async getShopifyStores(): Promise<ShopifyStore[]> {
-    return Array.from(this.shopifyStores.values());
-  }
-  
-  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
-    return Array.from(this.shopifyStores.values()).find(
-      (store) => store.shopName === shopDomain
-    );
-  }
-  
-  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
-    return this.shopifyStores.get(id);
-  }
-  
-  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
-    const id = this.currentStoreId++;
-    const newStore: ShopifyStore = {
-      ...store,
-      id,
-      installedAt: new Date(),
-      lastSynced: new Date(),
-      uninstalledAt: null,
-      chargeId: null,
-      trialEndsAt: null,
-      defaultBlogId: store.defaultBlogId || null,
-      isConnected: store.isConnected !== undefined ? store.isConnected : true,
-      planName: store.planName || null
-    };
-    this.shopifyStores.set(id, newStore);
-    return newStore;
-  }
-  
-  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
-    const existingStore = this.shopifyStores.get(id);
-    if (!existingStore) {
-      throw new Error(`Store with ID ${id} not found`);
-    }
-    
-    const updatedStore = { ...existingStore, ...store };
-    this.shopifyStores.set(id, updatedStore);
-    return updatedStore;
-  }
-  
-  // User-store relationship operations
-  async getUserStores(userId: number): Promise<ShopifyStore[]> {
-    // Find all user-store relationships for this user
-    const userStoreIds = Array.from(this.userStores.entries())
-      .filter(([key, value]) => value.userId === userId)
-      .map(([key, value]) => value.storeId);
-    
-    // Get the store objects
-    return userStoreIds
-      .map(storeId => this.shopifyStores.get(storeId))
-      .filter(store => store !== undefined) as ShopifyStore[];
-  }
-  
-  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
-    // Create composite key
-    const key = `${userStore.userId}:${userStore.storeId}`;
-    
-    // Check if relationship already exists
-    if (this.userStores.has(key)) {
-      throw new Error('User-store relationship already exists');
-    }
-    
-    // Create new relationship
-    const newUserStore: UserStore = {
-      userId: userStore.userId,
-      storeId: userStore.storeId,
-      role: userStore.role || null,
-      createdAt: new Date()
-    };
-    
-    this.userStores.set(key, newUserStore);
-    return newUserStore;
-  }
 }
 
-// Database implementation of the storage interface
-export class DatabaseStorage implements IStorage {
+// Export an instance of MemStorage for now to get server running
+export const storage = new MemStorage();
+
+// Database implementation of the storage interface  
+class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
