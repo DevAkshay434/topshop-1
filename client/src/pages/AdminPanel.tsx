@@ -1533,7 +1533,12 @@ export default function AdminPanel() {
           throw new Error("Received empty response from server");
         }
         
-        setGeneratedContent(response);
+        // Store the API response with proper URL mapping for frontend access
+        setGeneratedContent({
+          ...response,
+          contentUrl: response.contentUrl,
+          shopifyUrl: response.contentUrl // Map contentUrl to shopifyUrl for button compatibility
+        });
         
         toast({
           title: "Content generated successfully",
