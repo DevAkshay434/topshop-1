@@ -832,6 +832,12 @@ export default function AdminPanel() {
     queryKey: ['/api/admin/blogs'],
     enabled: selectedTab === "generate" && form.watch('articleType') === "blog"
   });
+
+  // Query for saved projects
+  const savedProjectsQuery = useQuery<{ success: boolean; projects: any[] }>({
+    queryKey: ['/api/projects'],
+    enabled: selectedTab === "generate"
+  });
   
   // Initialize form defaults when data is loaded
   useEffect(() => {
@@ -882,6 +888,61 @@ export default function AdminPanel() {
     }
   }, [hasShownWelcomeDialog]);
   
+  // Function to load a selected project and populate form fields
+  const handleLoadProject = async () => {
+    if (!selectedProjectId) return;
+    
+    setIsLoadingProject(true);
+    
+    try {
+      const response = await fetch(`/api/projects/${selectedProjectId}`);
+      const data = await response.json();
+      
+      if (data.success && data.project) {
+        const projectData = data.project.formData;
+        
+        // Reset form with project data
+        form.reset(projectData);
+        
+        // Handle media content if it exists
+        if (projectData.selectedMediaContent) {
+          setSelectedMediaContent(projectData.selectedMediaContent);
+        }
+        
+        // Handle other complex state
+        if (projectData.keywords) {
+          setSelectedKeywords(projectData.keywords);
+        }
+        
+        if (projectData.productIds) {
+          setSelectedProducts(projectData.productIds);
+        }
+        
+        if (projectData.collectionIds) {
+          setSelectedCollections(projectData.collectionIds);
+        }
+        
+        toast({
+          title: "Project Loaded",
+          description: `"${data.project.name}" has been loaded successfully.`,
+        });
+        
+        // Clear the selection after loading
+        setSelectedProjectId("");
+      } else {
+        throw new Error(data.error || "Failed to load project");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load project",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingProject(false);
+    }
+  };
+
   // Function to add a new custom category
   const addCustomCategory = (name: string) => {
     if (!name.trim()) return;
@@ -1620,6 +1681,71 @@ export default function AdminPanel() {
                     {/* Basic information section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Basic Information</h3>
+
+                      {/* Load Project Section */}
+                      <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2">
+                          <FolderOpen className="h-4 w-4 text-blue-600" />
+                          <h3 className="text-sm font-medium text-blue-900">Quick Load Project</h3>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Select
+                              value={selectedProjectId}
+                              onValueChange={setSelectedProjectId}
+                            >
+                              <SelectTrigger className="bg-white">
+                                <SelectValue placeholder="Select a saved project to load..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {savedProjectsQuery.isLoading ? (
+                                  <SelectItem value="loading" disabled>
+                                    Loading projects...
+                                  </SelectItem>
+                                ) : !savedProjectsQuery.data?.projects?.length ? (
+                                  <SelectItem value="no-projects" disabled>
+                                    No saved projects found
+                                  </SelectItem>
+                                ) : (
+                                  savedProjectsQuery.data.projects.map((project) => (
+                                    <SelectItem key={project.id} value={String(project.id)}>
+                                      {project.name}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          {selectedProjectId && selectedProjectId !== "loading" && selectedProjectId !== "no-projects" && (
+                            <Button 
+                              type="button"
+                              onClick={handleLoadProject}
+                              disabled={isLoadingProject}
+                              variant="outline"
+                              size="default"
+                              className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                            >
+                              {isLoadingProject ? (
+                                <>
+                                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                  Loading...
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Load Project
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <p className="text-xs text-blue-700">
+                          Select a project from the dropdown and click "Load Project" to automatically fill all form fields with saved settings.
+                        </p>
+                      </div>
 
                       {/* Region selection - always visible regardless of step */}
                       <FormField
