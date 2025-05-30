@@ -1442,10 +1442,7 @@ export default function AdminPanel() {
           
           console.log("Saving project data:", projectData);
           
-          await apiRequest('/api/projects/save', {
-            method: 'POST',
-            body: JSON.stringify(projectData),
-          });
+          await apiRequest('POST', '/api/projects/save', projectData);
           
           // Invalidate projects query to refresh the dropdown
           queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
