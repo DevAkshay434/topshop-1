@@ -1091,6 +1091,35 @@ class FallbackStorage implements IStorage {
       () => memStorage.getContentGenRequest(id)
     );
   }
+
+  // Saved project operations
+  async createSavedProject(project: InsertSavedProject): Promise<SavedProject> {
+    return this.tryOrFallback(
+      () => dbStorage.createSavedProject(project),
+      () => memStorage.createSavedProject(project)
+    );
+  }
+
+  async getSavedProjects(storeId: number): Promise<SavedProject[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getSavedProjects(storeId),
+      () => memStorage.getSavedProjects(storeId)
+    );
+  }
+
+  async getSavedProject(id: number): Promise<SavedProject | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getSavedProject(id),
+      () => memStorage.getSavedProject(id)
+    );
+  }
+
+  async deleteSavedProject(id: number): Promise<void> {
+    return this.tryOrFallback(
+      () => dbStorage.deleteSavedProject(id),
+      () => memStorage.deleteSavedProject(id)
+    );
+  }
 }
 
 // Export an instance of FallbackStorage that will use MemStorage if DatabaseStorage fails

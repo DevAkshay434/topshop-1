@@ -6,6 +6,8 @@ import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNo
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
+import { SaveProjectDialog } from '../components/SaveProjectDialog';
+import { LoadProjectDialog } from '../components/LoadProjectDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
