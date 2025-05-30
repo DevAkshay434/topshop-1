@@ -1513,26 +1513,36 @@ Place this at a logical position in the content, typically after introducing a c
       }
       
       // Replace media placement markers with actual content
-      // Create array of all secondary content (images + video)
-      const secondaryContent = [];
-      
-      // Add secondary images to the array with proper product interlinking
+      // Manually insert secondary images and videos into content after H2 headings
+      // This ensures selected media actually appears in the final content
       if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
-        console.log(`Processing ${requestData.secondaryImages.length} secondary images with ${productsInfo.length} products for interlinking`);
+        console.log(`Embedding ${requestData.secondaryImages.length} secondary images directly into content`);
         
-        requestData.secondaryImages.forEach((image, index) => {
-          const imageUrl = image.url;
-          const imageAlt = image.alt || requestData.title;
+        // Find all H2 headings in the content
+        const h2Pattern = /<\/h2>/gi;
+        const h2Matches = [...finalContent.matchAll(h2Pattern)];
+        
+        if (h2Matches.length > 0) {
+          // Insert secondary images after H2 headings (starting from the third H2 to leave space for video)
+          let insertionOffset = 0;
+          let startingH2Index = requestData.youtubeEmbed ? 2 : 1; // Skip first 2 H2s if video present, otherwise skip first 1
           
-          let imageHtml;
-          if (productsInfo.length > 0) {
-            const productIndex = index % productsInfo.length;
-            const product = productsInfo[productIndex];
-            const productUrl = `https://${store.shopName}/products/${product.handle}`;
+          requestData.secondaryImages.forEach((image, imageIndex) => {
+            const h2Index = startingH2Index + imageIndex;
             
-            console.log(`Linking secondary image ${index + 1} to product: ${product.title} (${productUrl})`);
-            
-            imageHtml = `
+            if (h2Index < h2Matches.length) {
+              const imageUrl = image.url;
+              const imageAlt = image.alt || requestData.title;
+              
+              let imageHtml;
+              if (productsInfo.length > 0) {
+                const productIndex = imageIndex % productsInfo.length;
+                const product = productsInfo[productIndex];
+                const productUrl = `https://${store.shopName}/products/${product.handle}`;
+                
+                console.log(`Linking secondary image ${imageIndex + 1} to product: ${product.title}`);
+                
+                imageHtml = `
 <div class="image-container" style="text-align: center; margin: 20px 0;">
   <a href="${productUrl}" title="View ${product.title}">
     <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto; border-radius: 8px;">
@@ -1541,20 +1551,31 @@ Place this at a logical position in the content, typically after introducing a c
     <a href="${productUrl}" style="text-decoration: none; color: #2563eb; font-weight: 500;">${product.title}</a>
   </p>
 </div>`;
-          } else {
-            console.log(`No products available for linking secondary image ${index + 1}`);
-            imageHtml = `
+              } else {
+                console.log(`No products available for linking secondary image ${imageIndex + 1}`);
+                imageHtml = `
 <div class="image-container" style="text-align: center; margin: 20px 0;">
   <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto; border-radius: 8px;">
 </div>`;
-          }
-          
-          secondaryContent.push({ type: 'image', html: imageHtml, description: `secondary image: ${imageUrl}` });
-        });
+              }
+              
+              // Calculate insertion position with offset
+              const insertPosition = h2Matches[h2Index].index + h2Matches[h2Index][0].length + insertionOffset;
+              
+              // Insert the image HTML
+              finalContent = finalContent.slice(0, insertPosition) + imageHtml + finalContent.slice(insertPosition);
+              insertionOffset += imageHtml.length;
+              
+              console.log(`Embedded secondary image ${imageIndex + 1} after H2 heading ${h2Index + 1}`);
+            }
+          });
+        }
       }
       
       // Handle YouTube video placement under second H2 heading
       if (requestData.youtubeEmbed) {
+        console.log(`Embedding YouTube video: ${requestData.youtubeEmbed}`);
+        
         const videoHtml = `
 <div class="video-container" style="text-align: center; margin: 20px 0;">
   <iframe width="100%" height="315" src="https://www.youtube.com/embed/${requestData.youtubeEmbed}" 
@@ -1562,63 +1583,26 @@ Place this at a logical position in the content, typically after introducing a c
           allowfullscreen style="max-width: 560px;"></iframe>
 </div>`;
         
-        // Place video under SECOND H2 heading only
-        if (finalContent.includes('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->')) {
-          finalContent = finalContent.replace('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->', videoHtml);
-          console.log(`Inserted YouTube video under second H2 heading: ${requestData.youtubeEmbed}`);
-        } else {
-          // Fallback: add video as secondary content if no specific marker found
-          secondaryContent.push({ type: 'video', html: videoHtml, description: `YouTube video: ${requestData.youtubeEmbed}` });
+        // Place video under SECOND H2 heading
+        const h2Pattern = /<\/h2>/gi;
+        const h2Matches = [...finalContent.matchAll(h2Pattern)];
+        
+        if (h2Matches.length >= 2) {
+          // Insert after the second H2 heading
+          const insertPosition = h2Matches[1].index + h2Matches[1][0].length;
+          finalContent = finalContent.slice(0, insertPosition) + videoHtml + finalContent.slice(insertPosition);
+          console.log(`Embedded YouTube video under second H2 heading`);
+        } else if (h2Matches.length === 1) {
+          // If only one H2, insert after it
+          const insertPosition = h2Matches[0].index + h2Matches[0][0].length;
+          finalContent = finalContent.slice(0, insertPosition) + videoHtml + finalContent.slice(insertPosition);
+          console.log(`Embedded YouTube video under first H2 heading (only one available)`);
         }
       }
       
-      // Insert secondary images one per H2 heading after the video (no repetition)
-      if (secondaryContent.length > 0) {
-        console.log(`Distributing ${secondaryContent.length} secondary media across H2 headings after video`);
-        
-        // Only process image content (exclude videos which are handled separately)
-        const imageContent = secondaryContent.filter(item => item.type === 'image');
-        
-        let imageIndex = 0;
-        // Replace markers one by one, each secondary image used exactly once
-        while (finalContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->') && imageIndex < imageContent.length) {
-          const content = imageContent[imageIndex];
-          finalContent = finalContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', content.html);
-          console.log(`Placed secondary image ${imageIndex + 1} under H2 heading: ${content.description}`);
-          imageIndex++;
-        }
-        
-        // If no markers were found but we have secondary images, insert them manually after H2 headings
-        if (imageIndex === 0 && imageContent.length > 0) {
-          console.log(`No placement markers found, manually inserting ${imageContent.length} secondary images after H2 headings`);
-          
-          // Find all H2 headings and insert images after them
-          const h2Pattern = /<\/h2>/gi;
-          const h2Matches = [...finalContent.matchAll(h2Pattern)];
-          
-          if (h2Matches.length > 0) {
-            // Start from the end to maintain correct indices
-            for (let i = Math.min(h2Matches.length - 1, imageContent.length - 1); i >= 0; i--) {
-              if (i < imageContent.length && i < h2Matches.length) {
-                const insertPosition = h2Matches[i].index + h2Matches[i][0].length;
-                const imageHtml = imageContent[i].html;
-                finalContent = finalContent.slice(0, insertPosition) + imageHtml + finalContent.slice(insertPosition);
-                console.log(`Manually placed secondary image ${i + 1} after H2 heading ${i + 1}`);
-                imageIndex++;
-              }
-            }
-          }
-        }
-        
-        // Remove any remaining markers to prevent empty placeholders
-        const remainingMarkers = (finalContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g) || []).length;
-        if (remainingMarkers > 0) {
-          finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
-          console.log(`Removed ${remainingMarkers} unused placement markers to prevent repetition`);
-        }
-        
-        console.log(`✅ Secondary image distribution complete: ${imageIndex} images placed, no repetition`);
-      }
+      // Remove any remaining placement markers to prevent empty placeholders
+      finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
+      finalContent = finalContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
 
       
       // Add featured image at the beginning if available
