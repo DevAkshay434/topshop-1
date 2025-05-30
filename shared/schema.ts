@@ -250,6 +250,35 @@ export const contentGenRequestsRelations = relations(contentGenRequests, ({ one 
   }),
 }));
 
+// Saved projects schema for reusable form configurations
+export const savedProjects = pgTable("saved_projects", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => shopifyStores.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  formData: text("form_data").notNull(), // JSON string of all form values
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSavedProjectSchema = createInsertSchema(savedProjects).pick({
+  storeId: true,
+  name: true,
+  description: true,
+  formData: true,
+});
+
+export type InsertSavedProject = z.infer<typeof insertSavedProjectSchema>;
+export type SavedProject = typeof savedProjects.$inferSelect;
+
+// Define saved project relations
+export const savedProjectsRelations = relations(savedProjects, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [savedProjects.storeId],
+    references: [shopifyStores.id],
+  }),
+}));
+
 // Relations can be added later if needed
 
 // Gender schema for copywriting style
