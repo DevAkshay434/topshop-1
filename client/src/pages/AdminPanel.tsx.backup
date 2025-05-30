@@ -6831,7 +6831,7 @@ export default function AdminPanel() {
           ? "Select emotionally compelling images for the top of your content" 
           : "Select product images to appear throughout your article body"}
       />
-      </div>
+        </div>
       </Dialog>
       
       {/* Image Selection Dialog */}
@@ -6851,8 +6851,8 @@ export default function AdminPanel() {
           isMainKeyword: k === selectedKeywords[0] // First keyword is main
         }))}
       />
-      </TabsContent>
-    </Tabs>
-    </div>
+    </TabsContent>
+  </Tabs>
+  </div>
   );
 }

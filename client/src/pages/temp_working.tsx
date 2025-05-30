@@ -6818,41 +6818,8 @@ export default function AdminPanel() {
               toast({
                 title: "Error adding images",
                 description: "There was a problem adding the selected images. Please try again.",
-                variant: "destructive"
-              });
-            }
-          }
-        }}
-        initialSelectedImages={imageTab === 'primary' ? primaryImages : secondaryImages}
-        maxImages={10}
-        allowMultiple={true}
-        title={imageTab === 'primary' ? "Choose Featured Images" : "Choose Content Images"}
-        description={imageTab === 'primary' 
-          ? "Select emotionally compelling images for the top of your content" 
-          : "Select product images to appear throughout your article body"}
-      />
-      </div>
-      </Dialog>
-      
-      {/* Image Selection Dialog */}
-      <ImageSearchDialog
-        open={showImageDialog}
-        onOpenChange={setShowImageDialog}
-        onImagesSelected={(images) => {
-          setSelectedImages(images);
-          toast({
-            title: `${images.length} image(s) selected`,
-            description: "Images will be included in your content",
-          });
-        }}
-        initialSelectedImages={selectedImages}
-        selectedKeywords={selectedKeywords.map(k => ({
-          keyword: k.keyword,
-          isMainKeyword: k === selectedKeywords[0] // First keyword is main
-        }))}
-      />
-      </TabsContent>
-    </Tabs>
-    </div>
-  );
+    </TabsContent>
+  </Tabs>
+  </div>
+);
 }
