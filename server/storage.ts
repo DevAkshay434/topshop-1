@@ -6,7 +6,6 @@ import {
   blogPosts,
   syncActivities,
   contentGenRequests,
-  savedProjects,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -20,9 +19,7 @@ import {
   type SyncActivity,
   type InsertSyncActivity,
   type ContentGenRequest,
-  type InsertContentGenRequest,
-  type SavedProject,
-  type InsertSavedProject
+  type InsertContentGenRequest
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
@@ -68,12 +65,6 @@ export interface IStorage {
   createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest>;
   updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined>;
   getContentGenRequest(id: number): Promise<ContentGenRequest | undefined>;
-  
-  // Saved project operations
-  createSavedProject(project: InsertSavedProject): Promise<SavedProject>;
-  getSavedProjects(storeId: number): Promise<SavedProject[]>;
-  getSavedProject(id: number): Promise<SavedProject | undefined>;
-  deleteSavedProject(id: number): Promise<void>;
 }
 
 // In-memory implementation of the storage interface
@@ -445,36 +436,6 @@ export class MemStorage implements IStorage {
   async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
     return this.contentGenRequests.get(id);
   }
-
-  // Saved project operations (in-memory fallback)
-  async createSavedProject(project: InsertSavedProject): Promise<SavedProject> {
-    const id = Date.now(); // Simple ID for memory storage
-    const newProject: SavedProject = {
-      id,
-      storeId: project.storeId,
-      name: project.name,
-      description: project.description || null,
-      formData: project.formData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    // Store in memory (note: this will be lost on restart)
-    return newProject;
-  }
-
-  async getSavedProjects(storeId: number): Promise<SavedProject[]> {
-    // Return empty array for in-memory fallback
-    return [];
-  }
-
-  async getSavedProject(id: number): Promise<SavedProject | undefined> {
-    // Return undefined for in-memory fallback
-    return undefined;
-  }
-
-  async deleteSavedProject(id: number): Promise<void> {
-    // No-op for in-memory fallback
-  }
   
   // Multi-store Shopify operations
   async getShopifyStores(): Promise<ShopifyStore[]> {
@@ -770,35 +731,6 @@ export class DatabaseStorage implements IStorage {
   async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
     const [request] = await db.select().from(contentGenRequests).where(eq(contentGenRequests.id, id));
     return request;
-  }
-
-  // Saved project operations
-  async createSavedProject(project: InsertSavedProject): Promise<SavedProject> {
-    const [newProject] = await db.insert(savedProjects)
-      .values({
-        storeId: project.storeId,
-        name: project.name,
-        description: project.description || null,
-        formData: project.formData
-      })
-      .returning();
-    return newProject;
-  }
-
-  async getSavedProjects(storeId: number): Promise<SavedProject[]> {
-    return db.select()
-      .from(savedProjects)
-      .where(eq(savedProjects.storeId, storeId))
-      .orderBy(desc(savedProjects.updatedAt));
-  }
-
-  async getSavedProject(id: number): Promise<SavedProject | undefined> {
-    const [project] = await db.select().from(savedProjects).where(eq(savedProjects.id, id));
-    return project;
-  }
-
-  async deleteSavedProject(id: number): Promise<void> {
-    await db.delete(savedProjects).where(eq(savedProjects.id, id));
   }
 
   // Multi-store Shopify operations
