@@ -1307,8 +1307,10 @@ export default function AdminPanel() {
         content: generatedContent.content,
         metaTitle: generatedContent.metaTitle,
         metaDescription: generatedContent.metaDescription,
-        tags: generatedContent.tags || [],
-        featuredImage: generatedContent.featuredImage,
+        tags: Array.isArray(generatedContent.tags) 
+          ? generatedContent.tags.join(', ') 
+          : generatedContent.tags || '',
+        featuredImage: generatedContent.featuredImage?.url || generatedContent.featuredImage || '',
         articleType: formValues.articleType,
         blogId: formValues.blogId,
         publicationType,
