@@ -87,6 +87,7 @@ import {
   FileVideo,
   FolderOpen,
   Folders,
+  FolderPlus,
   Gem,
   Heart,
   Image as ImageIcon,
