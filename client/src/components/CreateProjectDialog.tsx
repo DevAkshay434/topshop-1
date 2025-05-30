@@ -1,169 +1,138 @@
-import React, { useState, useEffect } from "react";
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Info as InfoIcon, FolderPlus } from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-// Define the form schema for project creation
-const projectFormSchema = z.object({
-  projectName: z.string().min(3, { 
-    message: "Project name must be at least 3 characters" 
-  }).max(50, { 
-    message: "Project name must be less than 50 characters" 
-  }),
-});
-
-type ProjectFormValues = z.infer<typeof projectFormSchema>;
+import { apiRequest } from "@/lib/queryClient";
+import { Info } from "lucide-react";
 
 interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onProjectCreated: (projectName: string) => void;
+  onProjectCreated?: (project: any) => void;
 }
 
-export default function CreateProjectDialog({
-  open,
-  onOpenChange,
-  onProjectCreated
-}: CreateProjectDialogProps) {
+export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: CreateProjectDialogProps) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Force the dialog to display
-  useEffect(() => {
-    console.log("CreateProjectDialog mounted, open state:", open);
-  }, [open]);
+  const queryClient = useQueryClient();
 
-  // Form setup with default values
-  const form = useForm<ProjectFormValues>({
-    resolver: zodResolver(projectFormSchema),
-    defaultValues: {
-      projectName: "",
+  const createProjectMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string }) => {
+      return apiRequest('/api/projects/save', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description,
+          formData: {} // Empty form data for new project
+        }),
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Project Created",
+        description: "Your new project has been created successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      if (onProjectCreated) {
+        onProjectCreated(data);
+      }
+      onOpenChange(false);
+      setName('');
+      setDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project",
+        variant: "destructive",
+      });
     },
   });
 
-  // Handle form submission
-  const onSubmit = async (values: ProjectFormValues) => {
-    setIsSubmitting(true);
-    
-    try {
-      // Here you would typically make an API call to create the project
-      // For now, we'll just simulate success and call the callback
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-      
-      // Call the callback with the project name
-      onProjectCreated(values.projectName);
-      
-      // Show success message
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
       toast({
-        title: "Project created",
-        description: `"${values.projectName}" has been created successfully`,
-        variant: "default",
-      });
-      
-      // Close the dialog
-      onOpenChange(false);
-      
-      // Reset the form
-      form.reset();
-    } catch (error: any) {
-      console.error("Failed to create project:", error);
-      toast({
-        title: "Failed to create project",
-        description: error.message || "An unexpected error occurred",
+        title: "Project name required",
+        description: "Please enter a name for your project",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+    createProjectMutation.mutate({ name: name.trim(), description: description.trim() });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} defaultOpen={true}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-            <FolderPlus className="h-5 w-5 text-primary" />
+          <DialogTitle className="flex items-center gap-2">
             Create New Project
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Most Shopify users create a project for each of their top-selling products.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </DialogTitle>
           <DialogDescription>
-            Start by naming your content generation project.
+            Create a new project to organize your content generation. You can save your settings and reuse them later.
           </DialogDescription>
         </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="projectName"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center space-x-2">
-                    <FormLabel className="text-base">Project Name</FormLabel>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger type="button">
-                          <InfoIcon className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="w-[220px] text-sm">
-                            Most Shopify users create a project for each of their top-selling products.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <FormControl>
-                    <Input
-                      placeholder="Valentine Campaign – Best Sellers"
-                      className="text-base"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Name your project based on your campaign or content goal.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Project"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                placeholder="e.g., Winter Collection 2024"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="project-description">Description (Optional)</Label>
+              <Textarea
+                id="project-description"
+                placeholder="Brief description of this project"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createProjectMutation.isPending}>
+              {createProjectMutation.isPending ? "Creating..." : "Create Project"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

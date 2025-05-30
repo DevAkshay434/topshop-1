@@ -8,6 +8,7 @@ import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { SaveProjectDialog } from '../components/SaveProjectDialog';
 import { LoadProjectDialog } from '../components/LoadProjectDialog';
+import { CreateProjectDialog } from '../components/CreateProjectDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
@@ -321,6 +322,10 @@ export default function AdminPanel() {
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+  
+  // Project creation dialog state
+  const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
+  const [hasShownWelcomeDialog, setHasShownWelcomeDialog] = useState(false);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -857,6 +862,21 @@ export default function AdminPanel() {
   useEffect(() => {
     localStorage.setItem('topshop-custom-categories', JSON.stringify(customCategories));
   }, [customCategories]);
+  
+  // Auto-show Create New Project Dialog on first visit
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('topshop-has-seen-welcome');
+    if (!hasSeenWelcome && !hasShownWelcomeDialog) {
+      // Small delay to ensure the page is fully loaded
+      const timer = setTimeout(() => {
+        setShowCreateProjectDialog(true);
+        setHasShownWelcomeDialog(true);
+        localStorage.setItem('topshop-has-seen-welcome', 'true');
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasShownWelcomeDialog]);
   
   // Function to add a new custom category
   const addCustomCategory = (name: string) => {
@@ -6550,6 +6570,18 @@ export default function AdminPanel() {
         description={imageTab === 'primary' 
           ? "Select emotionally compelling images for the top of your content" 
           : "Select product images to appear throughout your article body"}
+      />
+
+      {/* Create New Project Dialog - Shows automatically on first visit */}
+      <CreateProjectDialog
+        open={showCreateProjectDialog}
+        onOpenChange={setShowCreateProjectDialog}
+        onProjectCreated={(project) => {
+          toast({
+            title: "Project created",
+            description: `${project.name} is ready for content generation`,
+          });
+        }}
       />
     </div>
   );
