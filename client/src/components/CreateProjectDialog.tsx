@@ -36,13 +36,10 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: Cr
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: { name: string; description: string }) => {
-      return apiRequest('/api/projects/save', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: data.name,
-          description: data.description,
-          formData: {} // Empty form data for new project
-        }),
+      return apiRequest('POST', '/api/projects/save', {
+        name: data.name,
+        description: data.description,
+        formData: {} // Empty form data for new project
       });
     },
     onSuccess: (data) => {
