@@ -3656,8 +3656,151 @@ export default function AdminPanel() {
                         <p className="text-xs text-gray-500">These tags will be applied to your {form.watch('articleType') === 'blog' ? 'blog post' : 'page'}</p>
                       </div>
                     )}
-                    
-                    <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
+
+                    {/* Editable Content Section */}
+                    <div className="space-y-4">
+                      <label className="text-sm font-medium text-gray-700">Content Body</label>
+                      
+                      {/* Visual Editor Toolbar */}
+                      <div className="border border-gray-200 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('bold', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 font-bold"
+                          title="Bold"
+                        >
+                          B
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('italic', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 italic"
+                          title="Italic"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('underline', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 underline"
+                          title="Underline"
+                        >
+                          U
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h1')}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 1"
+                        >
+                          H1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h2')}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 2"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h3')}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 3"
+                        >
+                          H3
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('insertUnorderedList', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Bullet List"
+                        >
+                          • List
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('insertOrderedList', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Numbered List"
+                        >
+                          1. List
+                        </button>
+                      </div>
+
+                      {/* Content Editor */}
+                      <div
+                        contentEditable
+                        suppressContentEditableWarning={true}
+                        className="min-h-[400px] max-h-[60vh] overflow-y-auto p-5 border border-gray-200 rounded-b-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent prose prose-blue max-w-none"
+                        style={{ 
+                          borderTop: 'none',
+                          lineHeight: '1.6',
+                          fontSize: '16px'
+                        }}
+                        onInput={(e) => {
+                          const target = e.target as HTMLDivElement;
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            content: target.innerHTML
+                          }));
+                        }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: generatedContent.content || '<p>Your generated content will appear here for editing...</p>'
+                        }}
+                      />
+                      
+                      {/* Word Count */}
+                      <div className="text-xs text-gray-500 text-right">
+                        Words: {generatedContent.content ? 
+                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
+                          : 0}
+                      </div>
+                    </div>
+
+                    {/* Secondary Images Display */}
+                    {generatedContent.secondaryImages && generatedContent.secondaryImages.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Secondary Images</label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {generatedContent.secondaryImages.map((image: any, index: number) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={image.src?.medium || image.url}
+                                alt={image.alt || `Secondary image ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-md border border-gray-200"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-md flex items-center justify-center">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Insert image into content at cursor position
+                                    const selection = window.getSelection();
+                                    if (selection && selection.rangeCount > 0) {
+                                      const range = selection.getRangeAt(0);
+                                      const imgElement = document.createElement('img');
+                                      imgElement.src = image.src?.medium || image.url;
+                                      imgElement.alt = image.alt || `Secondary image ${index + 1}`;
+                                      imgElement.className = 'w-full h-auto my-4 rounded-md';
+                                      range.insertNode(imgElement);
+                                    }
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 bg-white text-gray-700 px-2 py-1 rounded text-xs font-medium transition-opacity duration-200"
+                                >
+                                  Insert
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500">Click "Insert" to add images to your content</p>
+                      </div>
+                    )}
+
+                    <div className="hidden">
                       {(() => {
                         // Get content
                         const content = generatedContent.content;
