@@ -326,6 +326,10 @@ export default function AdminPanel() {
   // Project creation dialog state
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [hasShownWelcomeDialog, setHasShownWelcomeDialog] = useState(false);
+  
+  // Project loading state
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [isLoadingProject, setIsLoadingProject] = useState(false);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
