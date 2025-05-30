@@ -85,32 +85,26 @@ export default function ProjectCreationDialog() {
     
     setIsSubmitting(true);
     
-    // Save project name and content style settings to localStorage
+    // Just set the project name for later use when Generate Content is clicked
+    // Don't save to database yet
     localStorage.setItem('current-project', projectName);
-    localStorage.setItem('content-style-settings', JSON.stringify(contentStyleSettings));
-    
-    // Add to saved projects if not already there
-    const updatedProjects = [...savedProjects];
-    if (!updatedProjects.some((p: any) => p.name === projectName)) {
-      updatedProjects.push({ 
-        id: Date.now().toString(), 
-        name: projectName,
-        createdAt: new Date().toISOString(),
-        contentStyle: contentStyleSettings
-      });
-      localStorage.setItem('saved-projects', JSON.stringify(updatedProjects));
-      setSavedProjects(updatedProjects);
-    }
     
     setTimeout(() => {
       toast({
-        title: "Project created successfully",
-        description: `"${projectName}" has been created and set as your current project`
+        title: "Project name set",
+        description: `"${projectName}" will be saved when you generate content`
       });
       
       setIsSubmitting(false);
       setOpen(false);
-    }, 500);
+      
+      // Notify parent component about project name change
+      if (window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('projectNameChanged', { 
+          detail: { projectName } 
+        }));
+      }
+    }, 300);
   };
   
   // Handle template selection

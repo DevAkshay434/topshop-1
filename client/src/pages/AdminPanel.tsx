@@ -327,6 +327,25 @@ export default function AdminPanel() {
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [hasShownWelcomeDialog, setHasShownWelcomeDialog] = useState(false);
   
+  // Current project name state
+  const [currentProjectName, setCurrentProjectName] = useState<string>(() => {
+    return localStorage.getItem('current-project') || '';
+  });
+
+  // Listen for project name changes from Create New Project dialog
+  useEffect(() => {
+    const handleProjectNameChange = (event: CustomEvent) => {
+      const { projectName } = event.detail;
+      setCurrentProjectName(projectName);
+    };
+
+    window.addEventListener('projectNameChanged', handleProjectNameChange as EventListener);
+
+    return () => {
+      window.removeEventListener('projectNameChanged', handleProjectNameChange as EventListener);
+    };
+  }, []);
+  
   // Project loading state
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [isLoadingProject, setIsLoadingProject] = useState(false);
@@ -1401,6 +1420,48 @@ export default function AdminPanel() {
         console.warn("Attempting to generate content when not in content step. Current step:", workflowStep);
         setWorkflowStep('content');
         await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state update
+      }
+
+      // Save project data before generating content
+      if (currentProjectName) {
+        try {
+          const projectData = {
+            name: currentProjectName,
+            description: `Auto-saved project for ${values.title}`,
+            formData: {
+              ...values,
+              selectedKeywords,
+              selectedProducts,
+              selectedCollections,
+              selectedMediaContent,
+              contentStyleToneId: selectedContentToneId,
+              contentStyleDisplayName: selectedContentDisplayName
+            }
+          };
+          
+          console.log("Saving project data:", projectData);
+          
+          await apiRequest('/api/projects/save', {
+            method: 'POST',
+            body: JSON.stringify(projectData),
+          });
+          
+          // Invalidate projects query to refresh the dropdown
+          queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+          
+          toast({
+            title: "Project saved",
+            description: `${currentProjectName} has been saved with current settings`,
+          });
+        } catch (saveError: any) {
+          console.error("Error saving project:", saveError);
+          // Don't stop content generation if project saving fails
+          toast({
+            title: "Project save failed",
+            description: "Content generation will continue, but project was not saved",
+            variant: "destructive",
+          });
+        }
       }
       
       // Determine publication type based on scheduling checkbox
