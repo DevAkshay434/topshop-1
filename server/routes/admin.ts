@@ -2086,16 +2086,20 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
-      // 8. Return the result
+      // 8. Return the result with selected media included for preview
       return res.json({
         success: true,
         contentId,
         contentUrl,
-        content: generatedContent.content,
+        content: finalContent, // Use finalContent which includes embedded secondary media
         title: generatedContent.title,
         tags: generatedContent.tags,
         metaDescription: generatedContent.metaDescription || '',
-        featuredImage: featuredImage
+        featuredImage: featuredImage,
+        // Include selected media for preview display
+        secondaryImages: requestData.secondaryImages || [],
+        youtubeEmbed: requestData.youtubeEmbed || null,
+        primaryImage: requestData.primaryImage || featuredImage
       });
     } catch (error: any) {
       console.error("Error in content generation process:", error);
