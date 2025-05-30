@@ -3642,48 +3642,6 @@ export default function AdminPanel() {
                       </div>
                     )}
 
-                    {/* Secondary Images and Videos Display */}
-                    {(selectedMediaContent.secondaryImages?.length > 0 || selectedMediaContent.youtubeEmbed) && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Media Content</label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {/* Secondary Images */}
-                          {selectedMediaContent.secondaryImages?.map((image, index) => (
-                            <div key={`secondary-${index}`} className="relative">
-                              <div className="absolute top-2 left-2 z-10">
-                                <Badge variant="secondary" className="text-xs">Image {index + 1}</Badge>
-                              </div>
-                              <ShopifyImageViewer 
-                                src={image.src?.medium || image.url} 
-                                alt={image.alt || `Secondary image ${index + 1}`} 
-                                className="w-full h-32 object-cover rounded-md shadow-sm border"
-                              />
-                            </div>
-                          ))}
-                          
-                          {/* YouTube Video */}
-                          {selectedMediaContent.youtubeEmbed && (
-                            <div className="relative">
-                              <div className="absolute top-2 left-2 z-10">
-                                <Badge variant="secondary" className="bg-red-600 text-white text-xs">Video</Badge>
-                              </div>
-                              <div className="w-full h-32 bg-gray-100 rounded-md shadow-sm border flex items-center justify-center">
-                                <div className="text-center">
-                                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-1">
-                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
-                                    </svg>
-                                  </div>
-                                  <p className="text-xs text-gray-600">YouTube Video</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500">These images and videos will be embedded in your content</p>
-                      </div>
-                    )}
-
                     {/* Tags with Clear Label */}
                     {generatedContent.tags && generatedContent.tags.length > 0 && (
                       <div className="space-y-2">
@@ -3699,190 +3657,2914 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    {/* Editable Content Area with Basic Formatting */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Content</label>
-                      
-                      {/* Basic Formatting Toolbar */}
-                      <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-t-md">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const selection = window.getSelection();
-                            if (selection && selection.rangeCount > 0) {
-                              document.execCommand('bold', false);
-                            }
-                          }}
-                          className="p-1 hover:bg-gray-200 rounded text-sm font-bold"
-                          title="Bold"
-                        >
-                          B
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const selection = window.getSelection();
-                            if (selection && selection.rangeCount > 0) {
-                              document.execCommand('italic', false);
-                            }
-                          }}
-                          className="p-1 hover:bg-gray-200 rounded text-sm italic"
-                          title="Italic"
-                        >
-                          I
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const selection = window.getSelection();
-                            if (selection && selection.rangeCount > 0) {
-                              document.execCommand('underline', false);
-                            }
-                          }}
-                          className="p-1 hover:bg-gray-200 rounded text-sm underline"
-                          title="Underline"
-                        >
-                          U
-                        </button>
-                        <div className="w-px h-4 bg-gray-300"></div>
-                        <button
-                          type="button"
-                          onClick={() => document.execCommand('formatBlock', false, 'h2')}
-                          className="px-2 py-1 hover:bg-gray-200 rounded text-sm"
-                          title="Heading 2"
-                        >
-                          H2
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => document.execCommand('formatBlock', false, 'h3')}
-                          className="px-2 py-1 hover:bg-gray-200 rounded text-sm"
-                          title="Heading 3"
-                        >
-                          H3
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => document.execCommand('formatBlock', false, 'p')}
-                          className="px-2 py-1 hover:bg-gray-200 rounded text-sm"
-                          title="Paragraph"
-                        >
-                          P
-                        </button>
-                      </div>
-                      
-                      {/* Editable Content Area */}
-                      <div 
-                        contentEditable
-                        suppressContentEditableWarning={true}
-                        className="min-h-[400px] p-4 border border-gray-200 rounded-b-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ 
-                          whiteSpace: 'pre-wrap',
-                          lineHeight: '1.6'
-                        }}
-                        onBlur={(e) => {
-                          // Update the generated content when user finishes editing
-                          const updatedContent = e.target.innerHTML;
-                          setGeneratedContent(prev => ({
-                            ...prev,
-                            content: updatedContent
-                          }));
-                        }}
-                        dangerouslySetInnerHTML={{
-                          __html: (() => {
-                            const content = generatedContent.content;
-                            if (!content) return 'No content available';
-                            return content;
-                          })()
-                        }}
-                      />
-                      <p className="text-xs text-gray-500 mt-2">Click in the content area above to edit your content directly. Use the formatting toolbar to style your text.</p>
-                    </div>
-                    
                     <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
                       {(() => {
-                        // Get content for read-only preview
+                        // Get content
                         const content = generatedContent.content;
                         if (!content) return <p>No content available</p>;
+
+                        // Get YouTube data if exists
+                        const youtubeUrl = form.watch("youtubeUrl");
+                        let youtubeVideoId: string | null = null;
+                        if (youtubeUrl) {
+                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
+                        }
                         
-                        // Create a preview version
-                        return (
-                          <div 
-                            className="prose max-w-none" 
-                            dangerouslySetInnerHTML={{ __html: content }}
-                          />
+                        // Create YouTube embed component
+                        const YouTubeEmbed = () => (
+                          <div className="my-8 flex justify-center">
+                            <iframe 
+                              width="560" 
+                              height="315" 
+                              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                              title="YouTube video" 
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                              allowFullScreen
+                              className="rounded-md border border-gray-200"
+                            />
+                          </div>
                         );
+                        
+                        // Check if content has YouTube placeholder
+                        const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
+                        
+                        // If content has placeholder, split and insert YouTube
+                        if (youtubeVideoId && hasYoutubePlaceholder) {
+                          const parts = content.split('[YOUTUBE_EMBED_PLACEHOLDER]');
+                          return (
+                            <div className="content-preview prose prose-blue max-w-none">
+                              {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
+                              <YouTubeEmbed />
+                              {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
+                            </div>
+                          );
+                        } 
+                        
+                        // Get secondary images
+                        const secondaryImages = generatedContent.secondaryImages || [];
+                        
+                        // Check for image tags in content 
+                        const hasImageTags = content.includes('<img');
+
+                        // If content has no YouTube placeholder but has secondary images or image tags
+                        if (secondaryImages.length > 0 || hasImageTags) {
+                          // Always consider content as having proper images
+                          // This ensures embedded images are always preserved
+                          const hasProperImages = true;
+                          
+                          if (hasProperImages) {
+                            // Enhanced processing for all content with images
+                            let enhancedContent = content;
+                            
+                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
+                            enhancedContent = enhancedContent.replace(
+                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
+                              (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
+                                // Ensure src is absolute URL
+                                let fixedSrc = src;
+                                if (!src.startsWith('http')) {
+                                  fixedSrc = 'https://' + src;
+                                } else if (src.startsWith('//')) {
+                                  fixedSrc = 'https:' + src;
+                                }
+                                
+                                // Make sure the image is inside an <a> tag and properly styled
+                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
+                              }
+                            );
+                            
+                            // Convert standalone images to be wrapped in product links when possible
+                            // First find images without surrounding <a> tags
+                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+                            const matches = Array.from(enhancedContent.matchAll(imgRegex));
+                            
+                            // Get products if available 
+                            const products = selectedProducts || [];
+                            
+                            // Process each standalone image
+                            matches.forEach(match => {
+                              // Skip if the image is already inside an <a> tag
+                              const fullMatch = match[0];
+                              const beforeMatch = enhancedContent.substring(0, match.index);
+                              const afterMatch = enhancedContent.substring(match.index + fullMatch.length);
+                              
+                              // Check if this image is already in an <a> tag
+                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
+                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
+                              
+                              if (!isInLink) {
+                                // This is a standalone image, try to wrap it in a product link
+                                const imgElement = fullMatch;
+                                const imgSrc = match[2];
+                                
+                                // Normalize the img source for comparison
+                                let normalizedImgSrc = imgSrc;
+                                // Remove http/https and domain for comparison
+                                if (normalizedImgSrc.startsWith('http')) {
+                                  try {
+                                    // Try to get just the path portion for more flexible matching
+                                    const url = new URL(normalizedImgSrc);
+                                    normalizedImgSrc = url.pathname;
+                                  } catch (e) {
+                                    // If URL parsing fails, continue with the original
+                                    console.log("Failed to parse URL:", imgSrc);
+                                  }
+                                }
+                                
+                                // Find a matching product if possible - with more flexible matching
+                                const matchingProduct = products.find(p => {
+                                  if (!p.image) return false;
+                                  
+                                  // Try to normalize product image as well
+                                  let normalizedProductImg = p.image;
+                                  if (normalizedProductImg.startsWith('http')) {
+                                    try {
+                                      const url = new URL(normalizedProductImg);
+                                      normalizedProductImg = url.pathname;
+                                    } catch (e) {
+                                      // If URL parsing fails, continue with the original
+                                    }
+                                  }
+                                  
+                                  // Check if either image includes parts of the other
+                                  return normalizedProductImg.includes(normalizedImgSrc) || 
+                                         normalizedImgSrc.includes(normalizedProductImg);
+                                });
+                                
+                                // Style the image regardless of product match
+                                const styledImg = imgElement.replace(/<img/, '<img style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;"');
+                                
+                                if (matchingProduct) {
+                                  // Replace the image with a linked version
+                                  const linkedImg = `<a href="${matchingProduct.admin_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
+                                  enhancedContent = enhancedContent.replace(imgElement, linkedImg);
+                                } else {
+                                  // Still replace with styled version even without product match
+                                  enhancedContent = enhancedContent.replace(imgElement, styledImg);
+                                }
+                              }
+                            });
+                            
+                            // Then process any remaining standalone images
+                            enhancedContent = enhancedContent
+                              // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                              .replace(
+                                /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$2"$3>'
+                              )
+                              // Fix image URLs that might be missing domain (starting with //)
+                              .replace(
+                                /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$3"$4>'
+                              );
+                              
+                            // Wrap standalone images (those not in an <a> tag) with clickable links
+                            const imgRegexStandalone = /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
+                            enhancedContent = enhancedContent.replace(
+                              imgRegexStandalone,
+                              (match, imgTag, imgSrc) => {
+                                return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
+                              }
+                            );
+                            
+                            // Log for debugging
+                            console.log("Content before final processing:", enhancedContent);
+                            
+                            // Add styling to all remaining images that don't already have style
+                            enhancedContent = enhancedContent.replace(
+                              /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi, 
+                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
+                            );
+                            
+                            // Ensure all images have cursor pointer
+                            enhancedContent = enhancedContent.replace(
+                              /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
+                              (match, before, style, after) => {
+                                // Add cursor: pointer if it's not already there
+                                const updatedStyle = style.includes('cursor:') ? style : style + '; cursor: pointer;';
+                                return `<img${before}style="${updatedStyle}"${after}>`;
+                              }
+                            );
+                            
+                            // Return the enhanced content with proper image styling
+                            return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
+                          } else {
+                            // Remove any img tags without proper src
+                            let cleanedContent = content;
+                            if (hasImageTags) {
+                              cleanedContent = content.replace(/<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi, '');
+                            }
+                            
+                            // Split into paragraphs
+                            const paragraphs = cleanedContent.split(/\n\n+/);
+                            const result: React.ReactNode[] = [];
+                            let imageIndex = 0;
+                            
+                            // Process each paragraph, inserting images occasionally
+                            paragraphs.forEach((para: string, i: number) => {
+                              // Check if paragraph already has image tags
+                              const hasImageInParagraph = para.includes('<img');
+                              
+                              if (para.trim()) {
+                                // Process paragraph to ensure proper image handling
+                                const processedPara = para
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  );
+                                
+                                result.push(
+                                  <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: processedPara }} />
+                                );
+                              }
+                              
+                              // Only insert secondary images if the paragraph doesn't already have images
+                              // And do it after every 2-3 paragraphs for optimal spacing
+                              if (!hasImageInParagraph && (i + 1) % 2 === 0 && imageIndex < secondaryImages.length) {
+                                const image = secondaryImages[imageIndex];
+                                
+                                // Try to find a matching product for this image
+                                let productUrl = image.productUrl || "#";
+                                
+                                // Check if this image belongs to a selected product
+                                const products = selectedProducts || [];
+                                if (products.length > 0 && image.url) {
+                                  const matchingProduct = products.find(p => 
+                                    p.image && (p.image === image.url || image.url?.includes(p.id))
+                                  );
+                                  
+                                  if (matchingProduct) {
+                                    productUrl = matchingProduct.admin_url || productUrl;
+                                  }
+                                }
+                                
+                                result.push(
+                                  <div key={`img-${i}`} className="my-6 flex justify-center">
+                                    <a href={productUrl} target="_blank" rel="noopener noreferrer" className="product-link">
+                                      <img 
+                                        src={image.url || (image.src?.medium ?? '')} 
+                                        alt={image.alt || `Product image ${imageIndex + 1}`} 
+                                        style={{
+                                          maxWidth: '100%',
+                                          maxHeight: '400px',
+                                          cursor: 'pointer', 
+                                          objectFit: 'contain',
+                                          margin: '1rem auto',
+                                          display: 'block',
+                                          borderRadius: '0.375rem'
+                                        }}
+                                      />
+                                    </a>
+                                  </div>
+                                );
+                                imageIndex++;
+                              }
+                              
+                              // Insert YouTube after first or second paragraph if not already inserted via placeholder
+                              if (youtubeVideoId && !hasYoutubePlaceholder && (i === 0 || i === 1)) {
+                                result.push(<YouTubeEmbed key="youtube" />);
+                                // Prevent multiple inserts
+                                youtubeVideoId = null;
+                              }
+                            });
+                            
+                            return <div className="content-preview prose prose-blue max-w-none">{result}</div>;
+                          }
+                        }
+                        
+                        // If no secondary images or YouTube placeholder, handle YouTube separately
+                        if (youtubeVideoId && !hasYoutubePlaceholder) {
+                          return (
+                            <div className="content-preview prose prose-blue max-w-none">
+                              <div dangerouslySetInnerHTML={{ 
+                                __html: content.substring(0, content.length / 3)
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  )
+                              }} />
+                              <YouTubeEmbed />
+                              <div dangerouslySetInnerHTML={{ 
+                                __html: content.substring(content.length / 3)
+                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$2"$3>'
+                                  )
+                                  // Fix image URLs that might be missing domain (starting with //)
+                                  .replace(
+                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                    '<img$1src="https://$3"$4>'
+                                  )
+                                  // Add styling to all images for proper display
+                                  .replace(
+                                    /<img([^>]*?)>/gi, 
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                  )
+                              }} />
+                            </div>
+                          );
+                        }
+                        
+                        // Default: ensure content displays correctly with embedded images
+                        const processedContent = content
+                          // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                          .replace(
+                            /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$2"$3>'
+                          )
+                          // Fix image URLs that might be missing domain (starting with //)
+                          .replace(
+                            /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$3"$4>'
+                          )
+                          // Add styling to all images for proper display
+                          .replace(
+                            /<img([^>]*?)>/gi, 
+                            '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                          );
+                        
+                        // Return enhanced content with all embedded images properly displayed
+                        return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: processedContent }} />;
                       })()}
                     </div>
+                    
+                    {generatedContent.metaDescription && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold">Meta Description:</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {generatedContent.metaDescription}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {generatedContent.contentUrl && (
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => window.open(generatedContent.contentUrl, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View on Shopify
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedContent.contentUrl);
+                            toast({
+                              title: "Link copied",
+                              description: "URL has been copied to clipboard",
+                              variant: "default"
+                            });
+                          }}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Link
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="text-center text-gray-500">
-                    <p>Generate content to see the preview here</p>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <p className="text-muted-foreground">
+                      Content will appear here after generation.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Fill out the form and click "Generate Content" to create new content.
+                    </p>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Publishing Actions Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Publish Content</CardTitle>
-                <CardDescription>
-                  Choose how to publish your content
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Button
-                    type="submit"
-                    disabled={!generatedContent || isGenerating}
-                    className="w-full"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : generatedContent ? (
-                      'Publish Content'
-                    ) : (
-                      'Generate Content First'
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
+
+          {/* Keyword Selector Dialog */}
+          <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Select Keywords</DialogTitle>
+                <DialogDescription>
+                  Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
+                </DialogDescription>
+              </DialogHeader>
+              <KeywordSelector
+                initialKeywords={selectedKeywords}
+                onKeywordsSelected={handleKeywordsSelected}
+                onClose={() => setShowKeywordSelector(false)}
+                title="Select Keywords for SEO Optimization"
+                productTitle={productTitle}
+                selectedProducts={selectedProducts}
+                selectedCollections={selectedCollections}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Title Selector Dialog */}
+          <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
+            <DialogContent className="sm:max-w-[700px]">
+              <DialogHeader>
+                <DialogTitle>Choose a Title</DialogTitle>
+                <DialogDescription>
+                  Select a title that incorporates your keywords for better SEO.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <TitleSelector 
+                open={showTitleSelector}
+                onOpenChange={setShowTitleSelector}
+                onTitleSelected={handleTitleSelected}
+                selectedKeywords={selectedKeywords}
+                productTitle={productTitle}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Save Template Dialog */}
+          <Dialog 
+            open={showSaveTemplateDialog} 
+            onOpenChange={(open) => {
+              if (!open) {
+                setTemplateName('');
+              }
+              setShowSaveTemplateDialog(open);
+            }}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Save as Template</DialogTitle>
+                <DialogDescription>
+                  Save your current settings as a template for future use
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="templateName" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="templateName"
+                    value={templateName || ''}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    className="col-span-3"
+                    placeholder="My Template"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSaveTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // Save current form values as template
+                    if (!templateName) {
+                      toast({
+                        title: "Template name required",
+                        description: "Please enter a name for your template",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    const templateData = {
+                      ...form.getValues(),
+                      selectedKeywords,
+                      selectedProducts,
+                      selectedCollections,
+                      contentStyleToneId: selectedContentToneId,
+                      contentStyleDisplayName: selectedContentDisplayName
+                    };
+                    
+                    const updatedTemplates = [...templates, {
+                      name: templateName,
+                      data: templateData
+                    }];
+                    
+                    setTemplates(updatedTemplates);
+                    
+                    // Save to localStorage
+                    localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
+                    
+                    setTemplateName('');
+                    setShowSaveTemplateDialog(false);
+                    
+                    toast({
+                      title: "Template saved",
+                      description: "Your template has been saved successfully",
+                      variant: "default"
+                    });
+                  }}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Template
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Load Template Dialog */}
+          <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+            <DialogContent className="sm:max-w-[525px]">
+              <DialogHeader>
+                <DialogTitle>Load Template</DialogTitle>
+                <DialogDescription>
+                  Select a saved template to load its settings
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[300px] overflow-y-auto">
+                {templates.length > 0 ? (
+                  <div className="space-y-2">
+                    {templates.map((template, index) => (
+                      <Card key={index} className="p-3">
+                        <div className="flex justify-between items-center">
+                          <div className="font-medium">{template.name}</div>
+                          <div className="flex space-x-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                // Ensure all array values are properly initialized
+                                const formDataWithArrays = {
+                                  ...template.data,
+                                  // Initialize required arrays
+                                  productIds: Array.isArray(template.data.productIds) ? template.data.productIds : [],
+                                  collectionIds: Array.isArray(template.data.collectionIds) ? template.data.collectionIds : [],
+                                  keywords: Array.isArray(template.data.keywords) ? template.data.keywords : []
+                                };
+                                
+                                // Load template data into form
+                                form.reset(formDataWithArrays);
+                                
+                                // Update selected states
+                                if (template.data.selectedKeywords) {
+                                  setSelectedKeywords(template.data.selectedKeywords);
+                                }
+                                
+                                if (template.data.selectedProducts) {
+                                  setSelectedProducts(Array.isArray(template.data.selectedProducts) ? template.data.selectedProducts : []);
+                                }
+                                
+                                if (template.data.selectedCollections) {
+                                  setSelectedCollections(Array.isArray(template.data.selectedCollections) ? template.data.selectedCollections : []);
+                                }
+                                
+                                // Set content style if available in the template
+                                if (template.data.contentStyleToneId) {
+                                  setSelectedContentToneId(template.data.contentStyleToneId);
+                                }
+                                
+                                if (template.data.contentStyleDisplayName) {
+                                  setSelectedContentDisplayName(template.data.contentStyleDisplayName);
+                                }
+                                
+                                setShowLoadTemplateDialog(false);
+                                
+                                toast({
+                                  title: "Template loaded",
+                                  description: "Template settings have been applied",
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Load
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                // Remove this template
+                                const updatedTemplates = templates.filter((_, i) => i !== index);
+                                setTemplates(updatedTemplates);
+                                
+                                // Update localStorage
+                                localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
+                                
+                                toast({
+                                  title: "Template deleted",
+                                  description: `"${template.name}" has been removed`,
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No saved templates. Save a template first.
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowLoadTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
-        {/* Services Tab */}
+        {/* Connections Tab */}
         <TabsContent value="connections" className="space-y-6">
-          <div className="text-center text-gray-500">
-            <p>Service connections panel coming soon</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Connections</CardTitle>
+              <CardDescription>
+                Check the status of your connected services
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {servicesStatusQuery.isLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : servicesStatusQuery.data ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {Object.entries(servicesStatusQuery.data.connections as ServiceStatus).map(([service, status]) => (
+                    <Card key={service}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center">
+                          {status ? (
+                            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                          )}
+                          {service.charAt(0).toUpperCase() + service.slice(1)}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                          {status 
+                            ? `Connected and working properly.` 
+                            : `Not connected or having issues.`}
+                        </p>
+                      </CardContent>
+                      <CardFooter className="pt-0">
+                        {!status && (
+                          <Button variant="outline" size="sm">
+                            Fix Connection
+                          </Button>
+                        )}
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Failed to load service status. Please try again.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-6">
-          <div className="text-center text-gray-500">
-            <p>Settings panel coming soon</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Settings</CardTitle>
+              <CardDescription>
+                Configure your TopShop SEO application
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-center py-12">
+                Settings functionality coming soon.
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+      
 
-      {/* Keyword Selection Dialog */}
-      {showKeywordSelector && (
-        <KeywordSelector
-          isOpen={showKeywordSelector}
-          onClose={() => setShowKeywordSelector(false)}
-          selectedProducts={selectedProducts}
-          selectedCollections={selectedCollections}
-          onKeywordsSelected={(keywords) => {
-            setSelectedKeywords(keywords);
-            setShowKeywordSelector(false);
-          }}
-        />
-      )}
+      
+      {/* Image Search Dialog */}
+      <Dialog open={showImageDialog && !showChooseMediaDialog} onOpenChange={(open) => {
+        // When dialog closes, always reset the UI to a clean state
+        if (!open) {
+          // Reset loading state if dialog is closed during a search
+          if (isSearchingImages) {
+            setIsSearchingImages(false);
+          }
+        }
+        
+        // Ensure only one dialog is open at a time
+        if (open && showChooseMediaDialog) {
+          setShowChooseMediaDialog(false); // Close the other dialog first
+          setTimeout(() => setShowImageDialog(open), 300); // Then open this one after a short delay
+        } else {
+          setShowImageDialog(open);
+        }
+      }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <DialogTitle className="text-xl">Choose Media</DialogTitle>
+              
+              <Tabs 
+                value={imageTab} 
+                onValueChange={(v) => setImageTab(v as 'primary' | 'secondary')}
+                className="w-[400px]"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="primary" className="flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Primary Images
+                    {primaryImages.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{primaryImages.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="secondary" className="flex items-center">
+                    <FileImage className="h-4 w-4 mr-2" />
+                    Secondary Images
+                    {secondaryImages.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">{secondaryImages.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            
+            <DialogDescription className="mt-1">
+              {imageTab === 'primary' ? (
+                <div className="flex items-center mb-2">
+                  <AlertCircle className="h-4 w-4 text-blue-500 mr-2" />
+                  <span className="text-blue-700 text-sm">
+                    Choose emotionally compelling images with human subjects to feature at the top of your content
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center mb-2">
+                  <Info className="h-4 w-4 text-green-500 mr-2" />
+                  <span className="text-green-700 text-sm">
+                    Select additional product images to appear throughout your article body
+                  </span>
+                </div>
+              )}
+            </DialogDescription>
+            
+            {/* Image source tabs */}
+            <div className="flex gap-2 mt-3">
+              <Button 
+                size="sm"
+                variant={imageSource === 'pexels' ? 'default' : 'outline'} 
+                onClick={() => {
+                  setImageSource('pexels');
+                  if (searchedImages.length === 0 && !imageSearchQuery) {
+                    // Set a default search query based on selected tab
+                    if (imageTab === 'primary') {
+                      setImageSearchQuery("happy woman using product");
+                    } else {
+                      setImageSearchQuery(selectedProducts.length > 0 ? 
+                        `${selectedProducts[0].title} in use` : "product in use"
+                      );
+                    }
+                  }
+                }}
+                className="flex-1"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Pexels Images
+              </Button>
+              
+              <Button 
+                size="sm"
+                variant={imageSource === 'pixabay' ? 'default' : 'outline'} 
+                onClick={() => {
+                  setImageSource('pixabay');
+                  toast({
+                    title: "Coming Soon",
+                    description: "Pixabay integration will be available in a future update."
+                  });
+                }}
+                className="flex-1"
+              >
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Pixabay 
+                <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
+              </Button>
+              
+              <Button 
+                  size="sm"
+                  variant={imageSource === 'product_images' ? 'default' : 'outline'} 
+                  onClick={() => {
+                    if (selectedProducts.length === 0) {
+                      toast({
+                        title: "No products selected",
+                        description: "Please select at least one product in Step 2 first.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setImageSource('product_images');
+                    // Load selected product images
+                    fetchProductAndVariantImages();
+                  }}
+                  className="flex-1"
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Product Images
+                </Button>
+                
+              
+              
+              <div className="flex-1 flex flex-col gap-1">
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'upload' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('upload')}
+                  className="w-full"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Image
+                </Button>
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'youtube' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('youtube')}
+                  className="w-full"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  YouTube Video
+                </Button>
+              </div>
+            </div>
+            
+            {/* YouTube video embedding section */}
+            {imageSource === 'youtube' && (
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-sm text-red-700">Add YouTube videos to embed in your content</p>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="youtube-url">YouTube Video URL</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      id="youtube-url"
+                      placeholder="https://www.youtube.com/watch?v=..." 
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      variant="default"
+                      disabled={!youtubeUrl.trim()}
+                      onClick={() => {
+                        // Extract video ID from YouTube URL
+                        try {
+                          const url = new URL(youtubeUrl);
+                          let videoId = '';
+                          
+                          if (url.hostname === 'youtu.be') {
+                            videoId = url.pathname.substring(1);
+                          } else if (url.hostname.includes('youtube.com')) {
+                            videoId = url.searchParams.get('v') || '';
+                          }
+                          
+                          if (videoId) {
+                            setYoutubeVideoId(videoId);
+                            // Create a PexelsImage-like object to store the YouTube video info
+                            const youtubeImage: PexelsImage = {
+                              id: `youtube-${videoId}`,
+                              url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                              width: 1280,
+                              height: 720,
+                              alt: `YouTube video ${videoId}`,
+                              type: 'youtube',
+                              videoId: videoId
+                            };
+                            
+                            if (imageTab === 'primary') {
+                              setPrimaryImages([...primaryImages, youtubeImage]);
+                            } else {
+                              setSecondaryImages([...secondaryImages, youtubeImage]);
+                            }
+                            
+                            // Update selectedMediaContent state immediately
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              youtubeEmbed: videoId
+                            }));
+                            
+                            toast({
+                              title: "YouTube Video Added",
+                              description: "YouTube video has been added to your content.",
+                              variant: "default"
+                            });
+                            
+                            // Clear the input after adding
+                            setYoutubeUrl('');
+                          } else {
+                            toast({
+                              title: "Invalid YouTube URL",
+                              description: "Couldn't extract video ID from the URL",
+                              variant: "destructive"
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Invalid URL",
+                            description: "Please enter a valid YouTube URL",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Video
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Paste a YouTube video URL (like https://www.youtube.com/watch?v=abcXYZ) to embed it in your content.
+                  </p>
+                </div>
+                
+                {youtubeVideoId && (
+                  <div className="mt-4 border rounded-md p-4">
+                    <h4 className="text-sm font-medium mb-2">Video Ready to Add</h4>
+                    <div className="bg-muted rounded-md p-3 flex items-center gap-3">
+                      <div className="bg-red-100 text-red-600 p-2 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">YouTube Video ID: {youtubeVideoId}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This video will be embedded in your content when you click 'Add Video'
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Selected images preview - With fixed height to prevent overlapping buttons */}
+            {((imageTab === 'primary' && primaryImages.length > 0) || 
+              (imageTab === 'secondary' && secondaryImages.length > 0)) && (
+              <div className="mt-4 mb-16 bg-slate-50 p-2 rounded-md border">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-medium">
+                    Your Selected {imageTab === 'primary' ? 'Primary' : 'Secondary'} Images
+                  </h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      if (imageTab === 'primary') {
+                        setPrimaryImages([]);
+                      } else {
+                        setSecondaryImages([]);
+                      }
+                      toast({
+                        title: "Images cleared",
+                        description: `All ${imageTab} images have been removed`
+                      });
+                    }}
+                    className="h-7 text-xs"
+                  >
+                    <Trash className="mr-1 h-3 w-3" />
+                    Clear All
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 max-h-60 overflow-y-auto p-2">
+                  {(imageTab === 'primary' ? primaryImages : secondaryImages).map((img, index) => (
+                    <div key={img.id} className="relative group">
+                      <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
+                        {img.type === 'youtube' ? (
+                          <div className="w-full h-full relative">
+                            <ShopifyImageViewer 
+                              src={img.url} 
+                              alt={img.alt || "YouTube video thumbnail"} 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-red-600 text-white rounded-full p-2 shadow-lg opacity-90">
+                                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <ShopifyImageViewer 
+                            src={img.src?.medium || img.url} 
+                            alt={img.alt || "Selected image"} 
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <div className="absolute top-0 left-0 bg-blue-500 text-white px-1 py-0.5 text-xs">
+                          {img.type === 'youtube' ? 
+                            'YouTube Video' : 
+                            (imageTab === 'primary' ? 
+                              (index === 0 ? 'Featured' : `Image ${index + 1}`) : 
+                              `Content ${index + 1}`)}
+                        </div>
+                      </div>
+                      
+                      <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button 
+                          variant="secondary" 
+                          size="icon" 
+                          className="h-6 w-6 bg-white"
+                          onClick={() => {
+                            setCurrentImageEdit({
+                              id: img.id,
+                              alt: img.alt || ""
+                            });
+                            setIsEditingImage(true);
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (imageTab === 'primary') {
+                              setPrimaryImages(prev => prev.filter(i => i.id !== img.id));
+                            } else {
+                              setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
+                            }
+                            toast({
+                              title: "Image removed",
+                              description: "Image has been removed from your selection",
+                            });
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </DialogHeader>
+          
+          {/* Image edit dialog */}
+          <Dialog open={isEditingImage} onOpenChange={setIsEditingImage}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Edit Image Details</DialogTitle>
+                <DialogDescription>
+                  Add alt text and keywords to optimize your image for SEO
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="image-alt">Alt Text</Label>
+                  <Input
+                    id="image-alt"
+                    placeholder="Describe what's in the image"
+                    value={currentImageEdit.alt}
+                    onChange={(e) => setCurrentImageEdit(prev => ({...prev, alt: e.target.value}))}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Good alt text improves accessibility and SEO
+                  </p>
+                </div>
+                
+                <div className="flex justify-between">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => {
+                      // Generate alt text based on selected keywords
+                      const keywordText = selectedKeywords.length > 0 
+                        ? selectedKeywords.map(k => k.keyword).join(", ") 
+                        : "product";
+                      
+                      setCurrentImageEdit(prev => ({
+                        ...prev, 
+                        alt: `Image showing ${keywordText}`
+                      }));
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate from Keywords
+                  </Button>
+                  
+                  <Button 
+                    type="submit"
+                    onClick={() => {
+                      // Update the image alt text
+                      if (imageTab === 'primary') {
+                        setPrimaryImages(prev => 
+                          prev.map(img => 
+                            img.id === currentImageEdit.id 
+                              ? {...img, alt: currentImageEdit.alt} 
+                              : img
+                          )
+                        );
+                      } else {
+                        setSecondaryImages(prev => 
+                          prev.map(img => 
+                            img.id === currentImageEdit.id 
+                              ? {...img, alt: currentImageEdit.alt} 
+                              : img
+                          )
+                        );
+                      }
+                      
+                      setIsEditingImage(false);
+                      toast({
+                        title: "Image updated",
+                        description: "Image details have been saved",
+                      });
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {imageSource === 'pexels' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Input 
+                  placeholder="Search for images (e.g., happy woman, smiling family, confused customer)" 
+                  value={imageSearchQuery}
+                  onChange={(e) => setImageSearchQuery(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  disabled={isSearchingImages || !imageSearchQuery.trim()} 
+                  onClick={async () => {
+                    setIsSearchingImages(true);
+                    try {
+                      // Using the correct generate-images endpoint with POST method
+                      const response = await fetch('/api/admin/generate-images', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          query: imageSearchQuery,
+                          count: 20
+                        })
+                      });
+                      
+                      const data = await response.json();
+                      if (data.success) {
+                        // Convert the response data to PexelsImage format
+                        const formattedImages = data.images.map((img: any) => ({
+                          id: img.id,
+                          url: img.src.original,
+                          width: img.width,
+                          height: img.height,
+                          alt: img.alt || imageSearchQuery,
+                          src: img.src,
+                          photographer: img.photographer,
+                          photographer_url: img.photographer_url,
+                          selected: false,
+                          isPrimary: false,
+                          source: 'pexels',
+                          type: 'image'
+                        }));
+                        
+                        setSearchedImages(formattedImages || []);
+                      } else {
+                        toast({
+                          title: "Search Failed",
+                          description: data.message || "Failed to search for images",
+                          variant: "destructive"
+                        });
+                      }
+                    } catch (error) {
+                      console.error("Image search error:", error);
+                      toast({
+                        title: "Search Error",
+                        description: "An error occurred while searching for images",
+                        variant: "destructive"
+                      });
+                    } finally {
+                      setIsSearchingImages(false);
+                    }
+                  }}
+                >
+                  {isSearchingImages ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                  {isSearchingImages ? 'Searching...' : 'Search'}
+                </Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-1 mb-2">
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("happy woman using product")}>
+                  Happy woman
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("satisfied customer")}>
+                  Satisfied customer
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("family using product")}>
+                  Family
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("professional man")}>
+                  Professional
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setImageSearchQuery("person enjoying " + (selectedProducts.length > 0 ? selectedProducts[0].title : "product"))}>
+                  Enjoying product
+                </Button>
+              </div>
+              
+              {isSearchingImages ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  <span className="ml-2">Searching for images...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-2">
+                  {searchedImages && searchedImages.length > 0 ? searchedImages.map((image) => (
+                    <div 
+                      key={image.id} 
+                      className={`relative rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
+                    >
+                      <ShopifyImageViewer 
+                        src={image.src?.medium || image.url} 
+                        alt={image.alt || "Stock image"} 
+                        className="w-full h-28 md:h-32 object-cover"
+                      />
+                      
+                      {/* Primary/Secondary Selection buttons - always visible on hover */}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        <Button 
+                          size="sm" 
+                          className="w-3/4 bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Mark as primary image
+                            const updatedImages = searchedImages.map(img => {
+                              if (img.id === image.id) {
+                                return { ...img, selected: true, isPrimary: true };
+                              } else {
+                                // Keep other images selected but not primary
+                                return { ...img, isPrimary: false };
+                              }
+                            });
+                            setSearchedImages(updatedImages);
+                            
+                            // Also set this as primary in the main images collection
+                            setPrimaryImages([{...image, selected: true, isPrimary: true}]);
+                            
+                            // Update selectedMediaContent state immediately
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              primaryImage: {
+                                id: image.id,
+                                url: image.url,
+                                alt: image.alt || '',
+                                width: image.width || 0,
+                                height: image.height || 0,
+                                source: image.source || 'pexels'
+                              }
+                            }));
+                            
+                            toast({
+                              title: "Primary image selected",
+                              description: "This image will appear as a featured image at the top of your content"
+                            });
+                          }}
+                        >
+                          <ImageIcon className="h-3 w-3 mr-1" />
+                          Select as Primary
+                        </Button>
+                        
+                        <Button 
+                          size="sm"
+                          className="w-3/4 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => {
+                            // Mark as secondary image
+                            const updatedImages = searchedImages.map(img =>
+                              img.id === image.id ? { ...img, selected: true, isPrimary: false } : img
+                            );
+                            setSearchedImages(updatedImages);
+                            
+                            // Also add to secondary images collection
+                            setSecondaryImages(prev => [...prev, {...image, selected: true, isPrimary: false}]);
+                            
+                            // Update selectedMediaContent state immediately
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              secondaryImages: [...prev.secondaryImages, {
+                                id: image.id,
+                                url: image.url,
+                                alt: image.alt || '',
+                                width: image.width || 0,
+                                height: image.height || 0,
+                                source: image.source || 'pexels'
+                              }]
+                            }));
+                            
+                            toast({
+                              title: "Secondary image selected",
+                              description: "This image will appear throughout your content body"
+                            });
+                          }}
+                        >
+                          <FileImage className="h-3 w-3 mr-1" />
+                          Select as Secondary
+                        </Button>
+                      </div>
+                      
+                      {/* Selection indicator with clear primary/secondary label */}
+                      {image.selected && (
+                        <>
+                          <div className={`absolute top-1 right-1 ${image.isPrimary ? 'bg-blue-500' : 'bg-green-500'} text-white p-1 rounded-full`}>
+                            <Check className="h-4 w-4" />
+                          </div>
+                          <div className={`absolute top-1 left-1 text-white text-xs px-1.5 py-0.5 rounded-sm ${image.isPrimary ? 'bg-blue-500' : 'bg-green-500'}`}>
+                            {image.isPrimary ? 'Primary' : 'Secondary'}
+                          </div>
+                        </>
+                      )}
+                      
+                      {image.photographer && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1 text-white text-xs truncate">
+                          {image.photographer}
+                        </div>
+                      )}
+                    </div>
+                  )) : (
+                    !isSearchingImages && (
+                      <div className="col-span-full text-center py-6">
+                        <p className="text-slate-500">No images found. Try searching for something else.</p>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+              
+              {!isSearchingImages && searchedImages.length === 0 && imageSearchQuery && (
+                <div className="text-center py-8">
+                  <p className="text-slate-500">No images found for "{imageSearchQuery}"</p>
+                  <p className="text-sm text-slate-400 mt-1">Try different keywords or phrases</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {imageSource === 'product_images' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Product & Variant Images</h3>
+                {isLoadingMedia ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-xs text-slate-500">Loading images...</span>
+                  </div>
+                ) : shopifyFiles.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-slate-500" />
+                    <span className="text-xs text-slate-500">{shopifyFiles.length} images found</span>
+                  </div>
+                )}
+              </div>
+              
+              {shopifyFiles.length === 0 && !isLoadingMedia && (
+                <div className="flex flex-col items-center justify-center py-8 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                  <div className="flex flex-col items-center gap-2 max-w-xs text-center">
+                    <Package className="h-8 w-8 text-slate-400" />
+                    <h3 className="text-sm font-medium">No product images found</h3>
+                    <p className="text-xs text-slate-500">
+                      {selectedProducts.length === 0 
+                        ? "Select a product in Step 2 first to view its images here." 
+                        : "The selected products don't have any associated images."}
+                    </p>
+                    {selectedProducts.length > 0 && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={fetchProductAndVariantImages}
+                        className="mt-2"
+                      >
+                        <RefreshCcw className="h-3 w-3 mr-1" />
+                        Refresh
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {shopifyFiles.length > 0 && !isLoadingMedia && (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {shopifyFiles.map((image) => {
+                      // Check if this image is selected (either as primary or secondary)
+                      const isPrimary = selectedImages.some(img => 
+                        img.id === image.id && img.selectionType === 'primary'
+                      );
+                      const isSecondary = selectedImages.some(img => 
+                        img.id === image.id && img.selectionType === 'secondary'
+                      );
+                      const isSelected = isPrimary || isSecondary;
+                      
+                      // Determine if this is a product or variant image
+                      const isVariant = image.source === 'variant_image';
+                      
+                      return (
+                        <div 
+                          key={image.id} 
+                          className={cn(
+                            "relative rounded-md overflow-hidden border group hover:shadow-md transition-all duration-200",
+                            isPrimary ? "border-blue-500 ring-2 ring-blue-200" : 
+                            isSecondary ? "border-green-500 ring-2 ring-green-200" : 
+                            "border-slate-200"
+                          )}
+                        >
+                          {/* Product/Variant Badge */}
+                          <div className="absolute top-2 left-2 z-10">
+                            <Badge variant="outline" className="text-xs bg-white/80 backdrop-blur-sm">
+                              {isVariant ? (
+                                <span className="flex items-center gap-1">
+                                  <CircleDot className="h-3 w-3 text-purple-500" />
+                                  Variant
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1">
+                                  <Package className="h-3 w-3 text-blue-500" />
+                                  Product
+                                </span>
+                              )}
+                            </Badge>
+                          </div>
+                          
+                          {/* Selection Badges */}
+                          {isPrimary && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <Badge className="bg-blue-500 text-white">Primary</Badge>
+                            </div>
+                          )}
+                          {isSecondary && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <Badge className="bg-green-500 text-white">Secondary</Badge>
+                            </div>
+                          )}
+                          
+                          {/* Image */}
+                          <div className="relative aspect-square bg-slate-100">
+                            <ShopifyImageViewer
+                              src={image.url}
+                              alt={image.alt || "Product image"}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          
+                          {/* Product/Variant Info */}
+                          <div className="p-2 bg-white">
+                            <p className="text-xs font-medium truncate">{image.title || image.alt || "Product image"}</p>
+                            {image.product_title && (
+                              <p className="text-xs text-slate-500 truncate">{image.product_title}</p>
+                            )}
+                            {image.variant_title && (
+                              <p className="text-xs text-purple-500 truncate">{image.variant_title}</p>
+                            )}
+                          </div>
+                          
+                          {/* Selection Controls */}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant={isPrimary ? "default" : "outline"}
+                                className={cn(
+                                  "bg-blue-500 hover:bg-blue-600 text-white",
+                                  isPrimary ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                )}
+                                onClick={() => {
+                                  // Select this image as primary
+                                  setPrimaryImages(prev => {
+                                    // Create a new array with this image as the primary
+                                    return [{ ...image, isPrimary: true }];
+                                  });
+                                  toast({
+                                    title: "Primary image selected",
+                                    description: "Image has been set as the primary featured image"
+                                  });
+                                }}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Primary
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant={isSecondary ? "default" : "outline"}
+                                className={cn(
+                                  "bg-green-500 hover:bg-green-600 text-white",
+                                  isSecondary ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                )}
+                                onClick={() => {
+                                  // Add this image to secondary images
+                                  setSecondaryImages(prev => {
+                                    // Check if image is already in the list
+                                    const exists = prev.some(img => img.id === image.id);
+                                    if (exists) {
+                                      return prev; // Already added
+                                    }
+                                    // Add it to the list
+                                    return [...prev, { ...image, isPrimary: false }];
+                                  });
+                                  
+                                  // Update selectedMediaContent state immediately
+                                  setSelectedMediaContent(prev => ({
+                                    ...prev,
+                                    secondaryImages: [...prev.secondaryImages, {
+                                      id: image.id,
+                                      url: image.url,
+                                      alt: image.alt || '',
+                                      width: image.width || 0,
+                                      height: image.height || 0,
+                                      source: image.source || 'pexels'
+                                    }]
+                                  }));
+                                  
+                                  toast({
+                                    title: "Secondary image added",
+                                    description: "Image has been added to your content images"
+                                  });
+                                }}
+                              >
+                                <PlusCircle className="h-4 w-4 mr-1" />
+                                Secondary
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          
+          {imageSource === 'shopify_media' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Shopify Media Library</h3>
+                <div className="flex gap-2">
+                  <Select 
+                    defaultValue="products" 
+                    onValueChange={(value) => {
+                      if (value === 'variants') {
+                        toast({
+                          title: "Showing variant images",
+                          description: "Browse and select from all product variants"
+                        });
+                        
+                        // Show product variants
+                        if (selectedProducts.length > 0) {
+                          // Extract all images from selected products including variants
+                          const productImages: PexelsImage[] = [];
+                          let uniqueImageUrls = new Set<string>();
+                          
+                          selectedProducts.forEach(product => {
+                            // Include variant images
+                            if (product.variants && Array.isArray(product.variants)) {
+                              product.variants.forEach((variant, variantIndex) => {
+                                if (variant.image) {
+                                  const imageUrl = typeof variant.image === 'string' ? variant.image : variant.image.src;
+                                  if (imageUrl && !uniqueImageUrls.has(imageUrl)) {
+                                    uniqueImageUrls.add(imageUrl);
+                                    productImages.push({
+                                      id: `variant-${variant.id}`,
+                                      url: imageUrl,
+                                      width: 500,
+                                      height: 500,
+                                      alt: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
+                                      src: {
+                                        original: imageUrl,
+                                        large: imageUrl,
+                                        medium: imageUrl,
+                                        small: imageUrl,
+                                        thumbnail: imageUrl
+                                      },
+                                      selected: false,
+                                      type: 'image'
+                                    });
+                                  }
+                                }
+                              });
+                            }
+                          });
+                          
+                          setContentFiles(productImages);
+                          console.log(`Loaded ${productImages.length} variant images`);
+                          
+                        } else {
+                          toast({
+                            title: "No products selected",
+                            description: "Please select products first to view their variants",
+                            variant: "destructive"
+                          });
+                        }
+                      } else if (value === 'products') {
+                        toast({
+                          title: "Showing product images",
+                          description: "Browse and select from main product images"
+                        });
+                        
+                        if (selectedProducts.length > 0) {
+                          // Extract images from selected products
+                          const productImages: any[] = [];
+                          let uniqueImageUrls = new Set<string>();
+                          
+                          selectedProducts.forEach(product => {
+                            // Add main product image
+                            if (product.image) {
+                              const imageUrl = typeof product.image === 'string' ? product.image : (product.image.src || '');
+                              if (imageUrl && !uniqueImageUrls.has(imageUrl)) {
+                                uniqueImageUrls.add(imageUrl);
+                                productImages.push({
+                                  id: `product-${product.id}-main`,
+                                  url: imageUrl,
+                                  width: 500,
+                                  height: 500,
+                                  alt: product.title || 'Product image',
+                                  src: {
+                                    original: imageUrl,
+                                    large: imageUrl,
+                                    medium: imageUrl,
+                                    small: imageUrl,
+                                    thumbnail: imageUrl
+                                  },
+                                  selected: false,
+                                  type: 'image'
+                                });
+                              }
+                            }
+                            
+                            // Add additional product images
+                            if (product.images && Array.isArray(product.images)) {
+                              product.images.forEach((image, index) => {
+                                // Handle different image object structures
+                                const imageSrc = typeof image === 'string' ? image : 
+                                  (image.src ? image.src : '');
+                                const imageId = typeof image === 'string' ? `img-${index}` : 
+                                  (image.id ? image.id : `img-${index}`);
+                                
+                                // Skip the main image (already added above) and empty URLs
+                                if (imageSrc && (typeof product.image === 'string' || imageId !== (product.image?.id || ''))) {
+                                  if (!uniqueImageUrls.has(imageSrc)) {
+                                    uniqueImageUrls.add(imageSrc);
+                                    productImages.push({
+                                      id: `product-${product.id}-image-${imageId}-${index}`,
+                                      url: imageSrc,
+                                      width: 500,
+                                      height: 500,
+                                      alt: (typeof image === 'string' ? `${product.title} - Image ${index + 1}` : 
+                                        (image.alt || `${product.title} - Image ${index + 1}`)),
+                                      src: {
+                                        original: imageSrc,
+                                        large: imageSrc,
+                                        medium: imageSrc,
+                                        small: imageSrc,
+                                        thumbnail: imageSrc
+                                      },
+                                      selected: false,
+                                      type: 'image'
+                                    });
+                                  }
+                                }
+                              });
+                            }
+                          });
+                          
+                          setContentFiles(productImages);
+                          console.log(`Loaded ${productImages.length} product images from ${selectedProducts.length} products`);
+                          
+                        } else {
+                          toast({
+                            title: "No products selected",
+                            description: "Please select products first to view their images",
+                            variant: "destructive"
+                          });
+                        }
+                      } else if (value === 'media') {
+                        toast({
+                          title: "Loading media files",
+                          description: "Fetching images from your Shopify store"
+                        });
+                        
+                        // Fetch all media files from Shopify Media Library
+                        setIsLoadingContentFiles(true);
+                        
+                        // Try fetching media files from the API
+                        apiRequest({
+                          url: '/api/admin/files',
+                          method: 'GET'
+                        }).then(response => {
+                          if (response.success && response.files && response.files.length > 0) {
+                            // Convert to standard format
+                            const mediaFiles = response.files
+                              .filter((file: any) => file && file.url)
+                              .map((file: any) => ({
+                                id: file.id || `media-${Math.random().toString(36).substring(7)}`,
+                                url: file.url,
+                                width: 500, // Standard width for display
+                                height: 500, // Standard height for display
+                                alt: file.alt || file.filename || 'Media File',
+                                src: {
+                                  original: file.url,
+                                  large: file.url,
+                                  medium: file.url,
+                                  small: file.url,
+                                  thumbnail: file.url
+                                },
+                                selected: false,
+                                type: 'image'
+                              }));
+                            
+                            setContentFiles(mediaFiles);
+                            console.log(`Loaded ${mediaFiles.length} files from Shopify Media Library`);
+                          } else {
+                            // If no files found, fallback to product images
+                            fallbackToProductImages();
+                          }
+                        }).catch(error => {
+                          console.error('Error fetching media files:', error);
+                          fallbackToProductImages();
+                        }).finally(() => {
+                          setIsLoadingContentFiles(false);
+                        });
+                        
+                        // Function to fallback to product images if media library fails
+                        function fallbackToProductImages() {
+                          console.log('Falling back to product images');
+                          
+                          if (selectedProducts.length === 0) {
+                            toast({
+                              title: "No products selected",
+                              description: "Please select products to view their images",
+                              variant: "destructive"
+                            });
+                            setContentFiles([]);
+                            return;
+                          }
+                          
+                          // Extract product images
+                          const productImages = [];
+                          const uniqueUrls = new Set();
+                          
+                          selectedProducts.forEach(product => {
+                            // Add main product image
+                            if (product.image && product.image.src) {
+                              if (!uniqueUrls.has(product.image.src)) {
+                                uniqueUrls.add(product.image.src);
+                                productImages.push({
+                                  id: `product-${product.id}-main`,
+                                  url: product.image.src,
+                                  width: 500,
+                                  height: 500,
+                                  alt: product.title || 'Product image',
+                                  src: {
+                                    original: product.image.src,
+                                    large: product.image.src,
+                                    medium: product.image.src,
+                                    small: product.image.src,
+                                    thumbnail: product.image.src
+                                  },
+                                  selected: false,
+                                  type: 'image'
+                                });
+                              }
+                            }
+                            
+                            // Add variant images
+                            if (product.images && Array.isArray(product.images)) {
+                              product.images.forEach((image, index) => {
+                                const imageUrl = typeof image === 'string' ? image : (image.src || '');
+                                if (imageUrl && !uniqueUrls.has(imageUrl)) {
+                                  uniqueUrls.add(imageUrl);
+                                  productImages.push({
+                                    id: `product-${product.id}-image-${index}`,
+                                    url: imageUrl,
+                                    width: 500,
+                                    height: 500,
+                                    alt: `${product.title} - Image ${index + 1}`,
+                                    src: {
+                                      original: imageUrl,
+                                      large: imageUrl,
+                                      medium: imageUrl,
+                                      small: imageUrl,
+                                      thumbnail: imageUrl
+                                    },
+                                    selected: false,
+                                    type: 'image'
+                                  });
+                                }
+                              });
+                            }
+                          });
+                          
+                          if (productImages.length > 0) {
+                            setContentFiles(productImages);
+                            toast({
+                              title: "Product images loaded",
+                              description: `Showing ${productImages.length} images from your products`
+                            });
+                          } else {
+                            setContentFiles([]);
+                            toast({
+                              title: "No images found",
+                              description: "Selected products don't have any images",
+                              variant: "destructive"
+                            });
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px] h-8">
+                      <SelectValue placeholder="Image source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="products">Selected Product Images</SelectItem>
+                      <SelectItem value="variants">Product Variant Images</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {selectedProducts.length > 0 ? (
+                <>
+                  {/* Selected images preview */}
+                  {(primaryImages.length > 0 || secondaryImages.length > 0) && (
+                    <div className="mb-4 bg-slate-50 p-3 rounded-md border">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium">Your Selected Images</h4>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            setPrimaryImages([]);
+                            setSecondaryImages([]);
+                            toast({
+                              title: "Images cleared",
+                              description: "All selected images have been removed"
+                            });
+                          }}
+                          className="h-7 text-xs"
+                        >
+                          <Trash className="mr-1 h-3 w-3" />
+                          Clear All
+                        </Button>
+                      </div>
+                      
+                      {primaryImages.length > 0 && (
+                        <>
+                          <h5 className="text-xs font-medium text-gray-500 mb-1">Featured/Primary Images:</h5>
+                          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-3">
+                            {primaryImages.map((img, index) => (
+                              <div key={img.id} className="relative group">
+                                <div className="relative aspect-square rounded-md overflow-hidden border-2 border-blue-500">
+                                  <ShopifyImageViewer 
+                                    src={img.src?.medium || img.url || ''} 
+                                    alt={img.alt || "Selected image"} 
+                                    className="w-full h-full"
+                                  />
+                                  <div className="absolute top-1 left-1 bg-blue-500 text-white px-1 py-0.5 rounded text-xs">
+                                    {index === 0 ? 'Featured' : `Image ${index + 1}`}
+                                  </div>
+                                </div>
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button 
+                                    variant="destructive" 
+                                    size="icon" 
+                                    className="h-6 w-6" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPrimaryImages(prev => prev.filter(i => i.id !== img.id));
+                                      toast({
+                                        title: "Image removed",
+                                        description: "Primary image has been removed",
+                                      });
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      
+                      {secondaryImages.length > 0 && (
+                        <>
+                          <h5 className="text-xs font-medium text-gray-500 mb-1">Secondary Content Images:</h5>
+                          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                            {secondaryImages.map((img, index) => (
+                              <div key={img.id} className="relative group">
+                                <div className="relative aspect-square rounded-md overflow-hidden border-2 border-green-500">
+                                  <ShopifyImageViewer 
+                                    src={img.src?.medium || img.url || ''} 
+                                    alt={img.alt || "Content image"} 
+                                    className="w-full h-full"
+                                  />
+                                  <div className="absolute top-1 left-1 bg-green-500 text-white px-1 py-0.5 rounded text-xs">
+                                    Content {index + 1}
+                                  </div>
+                                </div>
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button 
+                                    variant="destructive" 
+                                    size="icon" 
+                                    className="h-6 w-6" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
+                                      toast({
+                                        title: "Image removed",
+                                        description: "Content image has been removed",
+                                      });
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                
+                  <div className="max-h-[400px] overflow-y-auto p-2">
+                    {shopifyMediaType === 'products' && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {selectedProducts.map((product) => {
+                          // Get image from product - try multiple sources
+                          const productImage = product.image || 
+                            (product.images && product.images.length > 0 ? product.images[0].src : null);
+                            
+                          if (!productImage) return null;
+                          
+                          // Check if this product image has already been added
+                          const isAlreadySelected = primaryImages.some(img => 
+                            img.id === `product-${product.id}` || img.url === productImage
+                          );
+                          
+                          return (
+                            <div 
+                              key={product.id} 
+                              className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
+                            >
+                              <div className="relative aspect-square">
+                                <ShopifyImageViewer 
+                                  src={productImage} 
+                                  alt={product.title || 'Product image'} 
+                                  className="w-full h-full bg-white"
+                                />
+                                {isAlreadySelected && (
+                                  <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
+                                    <Check className="h-4 w-4" />
+                                  </div>
+                                )}
+                                
+                                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Skip if already selected
+                                      if (isAlreadySelected) {
+                                        toast({
+                                          title: "Already selected",
+                                          description: "This image is already in your selection"
+                                        });
+                                        return;
+                                      }
+                                      
+                                      // Create a Pexels-compatible image object for the product image
+                                      const imageForSelection: PexelsImage = {
+                                        id: `product-${product.id}`,
+                                        url: productImage || '',
+                                        width: 500,
+                                        height: 500,
+                                        alt: product.title,
+                                        src: {
+                                          original: productImage || '',
+                                          large: productImage || '',
+                                          medium: productImage || '',
+                                          small: productImage || '',
+                                          thumbnail: productImage || '',
+                                        }
+                                      };
+                                      
+                                      // Add as featured image (first in array)
+                                      setPrimaryImages(prev => [imageForSelection, ...prev]);
+                                      
+                                      toast({
+                                        title: "Featured image added",
+                                        description: "Product image added as featured image",
+                                      });
+                                    }}
+                                    className="w-4/5 bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    <ImageIcon className="mr-2 h-4 w-4" />
+                                    Set as Featured
+                                  </Button>
+                                  
+                                  <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Create a Pexels-compatible image object for the product image
+                                      const imageForSelection: PexelsImage = {
+                                        id: `product-${product.id}-secondary`,
+                                        url: productImage || '',
+                                        width: 500,
+                                        height: 500,
+                                        alt: product.title,
+                                        src: {
+                                          original: productImage || '',
+                                          large: productImage || '',
+                                          medium: productImage || '',
+                                          small: productImage || '',
+                                          thumbnail: productImage || '',
+                                        }
+                                      };
+                                      
+                                      // Add to secondary images
+                                      setSecondaryImages(prev => [...prev, imageForSelection]);
+                                      
+                                      toast({
+                                        title: "Secondary image added",
+                                        description: "Image added for use in content body",
+                                      });
+                                    }}
+                                    className="w-4/5 bg-green-600 hover:bg-green-700 text-white"
+                                  >
+                                    <LayoutGrid className="mr-2 h-4 w-4" />
+                                    Add to Content
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="bg-black bg-opacity-70 p-2">
+                                <p className="text-white text-xs truncate">{product.title}</p>
+                                <div className="flex justify-between items-center mt-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Create a Pexels-compatible image object for the product image
+                                      const productImage: PexelsImage = {
+                                        id: `product-${product.id}-secondary`,
+                                        url: product.image || '',
+                                        width: 500,
+                                        height: 500,
+                                        alt: product.title,
+                                        src: {
+                                          original: product.image || '',
+                                          large: product.image || '',
+                                          medium: product.image || '',
+                                          small: product.image || '',
+                                          thumbnail: product.image || '',
+                                        }
+                                      };
+                                      
+                                      // Add to secondary images
+                                      setSecondaryImages(prev => [...prev, productImage]);
+                                      
+                                      toast({
+                                        title: "Secondary image added",
+                                        description: "Image added for use in content body",
+                                      });
+                                    }}
+                                    className="h-6 px-2 text-white hover:bg-white hover:bg-opacity-20"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    <span className="text-xs">Add to Content</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {shopifyMediaType === 'variants' && (
+                      <div className="space-y-6">
+                        {selectedProducts.map(product => {
+                          // Skip products with no variants or images
+                          if (!product.variants || product.variants.length === 0) {
+                            return null;
+                          }
+                          
+                          return (
+                            <div key={`variants-${product.id}`} className="space-y-2">
+                              <h4 className="text-sm font-medium">{product.title} Variants</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                {product.variants.map(variant => {
+                                  // Skip variants without images
+                                  if (!variant.image) return null;
+                                  
+                                  // Check if this variant image has already been added
+                                  const isAlreadySelected = primaryImages.some(img => 
+                                    img.id === `variant-${variant.id}` || img.url === variant.image
+                                  );
+                                  
+                                  return (
+                                    <div 
+                                      key={variant.id} 
+                                      className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
+                                    >
+                                      <div className="relative aspect-square">
+                                        <ShopifyImageViewer 
+                                          src={variant.image || ''} 
+                                          alt={variant.title || 'Product variant'} 
+                                          className="w-full h-full object-contain bg-white"
+                                        />
+                                        {isAlreadySelected && (
+                                          <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
+                                            <Check className="h-4 w-4" />
+                                          </div>
+                                        )}
+                                        
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all flex items-center justify-center">
+                                          <div className="opacity-0 hover:opacity-100 transition-all flex gap-2">
+                                            <Button
+                                              type="button"
+                                              variant="secondary"
+                                              size="sm"
+                                              onClick={() => {
+                                                // Skip if already selected
+                                                if (isAlreadySelected) {
+                                                  toast({
+                                                    title: "Already selected",
+                                                    description: "This image is already in your selection"
+                                                  });
+                                                  return;
+                                                }
+                                                
+                                                // Create a Pexels-compatible image object for the variant image
+                                                const variantImage: PexelsImage = {
+                                                  id: `variant-${variant.id}`,
+                                                  url: variant.image || '',
+                                                  width: 500,
+                                                  height: 500,
+                                                  alt: `${product.title} - ${variant.title}`,
+                                                  src: {
+                                                    original: variant.image || '',
+                                                    large: variant.image || '',
+                                                    medium: variant.image || '',
+                                                    small: variant.image || '',
+                                                    thumbnail: variant.image || '',
+                                                  }
+                                                };
+                                                
+                                                // Add as featured image (first in array)
+                                                setPrimaryImages(prev => [variantImage, ...prev]);
+                                                
+                                                toast({
+                                                  title: "Featured image added",
+                                                  description: "Variant image added as featured image",
+                                                });
+                                              }}
+                                              className="bg-white text-black hover:bg-gray-100"
+                                            >
+                                              <ImageIcon className="mr-1 h-3 w-3" />
+                                              Set as Featured
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="bg-black bg-opacity-70 p-2">
+                                        <p className="text-white text-xs truncate">{variant.title}</p>
+                                        <div className="flex justify-between items-center mt-1">
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                              // Create a Pexels-compatible image object for the variant image
+                                              const variantImage: PexelsImage = {
+                                                id: `variant-${variant.id}-secondary`,
+                                                url: variant.image || '',
+                                                width: 500,
+                                                height: 500,
+                                                alt: `${product.title} - ${variant.title}`,
+                                                src: {
+                                                  original: variant.image || '',
+                                                  large: variant.image || '',
+                                                  medium: variant.image || '',
+                                                  small: variant.image || '',
+                                                  thumbnail: variant.image || '',
+                                                }
+                                              };
+                                              
+                                              // Add to secondary images
+                                              setSecondaryImages(prev => [...prev, variantImage]);
+                                              
+                                              toast({
+                                                title: "Secondary image added",
+                                                description: "Image added for use in content body",
+                                              });
+                                            }}
+                                            className="h-6 px-2 text-white hover:bg-white hover:bg-opacity-20"
+                                          >
+                                            <Plus className="h-3 w-3 mr-1" />
+                                            <span className="text-xs">Add to Content</span>
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {selectedProducts.every(p => !p.variants || p.variants.length === 0) && (
+                          <div className="text-center py-8">
+                            <ShoppingBag className="h-12 w-12 mx-auto text-slate-300 mb-2" />
+                            <p className="text-slate-500 mb-2">No product variants with images found</p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShopifyMediaType('products')}
+                            >
+                              <ArrowLeft className="mr-2 h-3 w-3" />
+                              Switch to Product Images
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {shopifyMediaType === 'media' && (
+                      <>
+                        {isLoadingContentFiles ? (
+                          <div className="flex justify-center items-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                            <span className="ml-2">Loading content files...</span>
+                          </div>
+                        ) : contentFiles.length > 0 ? (
+                          <div>
+                            <div className="pb-3 mb-3 border-b border-gray-200">
+                              <div className="flex items-center">
+                                <h4 className="text-sm font-medium flex items-center">
+                                  <Store className="h-4 w-4 mr-2 text-blue-500" />
+                                  Product & Media Images
+                                </h4>
+                                <Badge variant="outline" className="ml-3">{contentFiles.length} images</Badge>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="ml-auto"
+                                  onClick={fetchShopifyFiles}
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Refresh
+                                </Button>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Select product and media images from your Shopify store
+                              </p>
+                            </div>
+                          
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                              {contentFiles.map((file) => {
+                                // Check if already selected
+                                const isPrimarySelected = primaryImages.some(img => 
+                                  img.id === file.id || img.url === file.url
+                                );
+                                const isSecondarySelected = secondaryImages.some(img => 
+                                  img.id === `${file.id}-secondary` || img.url === file.url
+                                );
+                                
+                                let borderClass = 'border-gray-200';
+                                if (isPrimarySelected) borderClass = 'border-blue-500';
+                                if (isSecondarySelected) borderClass = 'border-green-500';
+                                
+                                return (
+                                  <div 
+                                    key={file.id} 
+                                    className={`relative rounded-md overflow-hidden border-2 ${borderClass} hover:shadow-md transition-all`}
+                                  >
+                                    {isPrimarySelected && (
+                                      <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs z-10 shadow-sm">
+                                        Primary
+                                      </div>
+                                    )}
+                                    {isSecondarySelected && (
+                                      <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs z-10 shadow-sm">
+                                        Secondary
+                                      </div>
+                                    )}
+                                    
+                                    <div className="relative aspect-square">
+                                      <ShopifyImageViewer 
+                                        src={file.url} 
+                                        alt={file.alt || file.filename || "Shopify image"} 
+                                        className="w-full h-full object-contain bg-white"
+                                      />
+                                      
+                                      {/* Action buttons overlay */}
+                                      <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-all flex items-center justify-center gap-2 p-3">
+                                        <Button 
+                                          size="sm" 
+                                          variant={isPrimarySelected ? "default" : "outline"}
+                                          className={cn(
+                                            "bg-blue-500 hover:bg-blue-600 text-white",
+                                            isPrimarySelected ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                          )}
+                                          onClick={() => {
+                                            // Create a Pexels-compatible image object
+                                            const imageForSelection: PexelsImage = {
+                                              id: file.id,
+                                              url: file.url,
+                                              width: 800,
+                                              height: 800,
+                                              alt: file.alt || file.name,
+                                              src: {
+                                                original: file.url,
+                                                large: file.url,
+                                                medium: file.url,
+                                                small: file.url,
+                                                thumbnail: file.url,
+                                              }
+                                            };
+                                            
+                                            // Add to primary images (featured)
+                                            setPrimaryImages(prev => [imageForSelection, ...prev.filter(img => img.id !== file.id)]);
+                                            
+                                            // If it was in secondary images, remove it from there
+                                            if (isSecondarySelected) {
+                                              setSecondaryImages(prev => prev.filter(img => 
+                                                img.id !== `${file.id}-secondary` && img.url !== file.url
+                                              ));
+                                            }
+                                            
+                                            toast({
+                                              title: "Primary image selected",
+                                              description: "Image will appear as the featured image"
+                                            });
+                                          }}
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Primary
+                                        </Button>
+                                        
+                                        <Button 
+                                          size="sm" 
+                                          variant={isSecondarySelected ? "default" : "outline"}
+                                          className={cn(
+                                            "bg-green-500 hover:bg-green-600 text-white",
+                                            isSecondarySelected ? "opacity-100" : "opacity-90 hover:opacity-100"
+                                          )}
+                                          onClick={() => {
+                                            // Create a Pexels-compatible image object
+                                            const imageForSelection: PexelsImage = {
+                                              id: `${file.id}-secondary`,
+                                              url: file.url,
+                                              width: 800,
+                                              height: 800,
+                                              alt: file.alt || file.filename || "Media image",
+                                              src: {
+                                                original: file.url,
+                                                large: file.url,
+                                                medium: file.url,
+                                                small: file.url,
+                                                thumbnail: file.url,
+                                              }
+                                            };
+                                            
+                                            // Add to secondary images (content)
+                                            setSecondaryImages(prev => [...prev, imageForSelection]);
+                                            
+                                            // Update selectedMediaContent state immediately
+                                            setSelectedMediaContent(prev => ({
+                                              ...prev,
+                                              secondaryImages: [...prev.secondaryImages, {
+                                                id: imageForSelection.id,
+                                                url: imageForSelection.url,
+                                                alt: imageForSelection.alt || '',
+                                                width: imageForSelection.width || 0,
+                                                height: imageForSelection.height || 0,
+                                                source: imageForSelection.source || 'uploaded'
+                                              }]
+                                            }));
+                                            
+                                            // If it was in primary images, remove it from there
+                                            if (isPrimarySelected) {
+                                              setPrimaryImages(prev => prev.filter(img => 
+                                                img.id !== file.id && img.url !== file.url
+                                              ));
+                                            }
+                                            
+                                            toast({
+                                              title: "Secondary image added",
+                                              description: "Image will appear in your content body"
+                                            });
+                                          }}
+                                          disabled={isSecondarySelected}
+                                        >
+                                          <PlusCircle className="h-4 w-4 mr-1" />
+                                          Secondary
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Image name/label */}
+                                    <div className="p-2 bg-black bg-opacity-75">
+                                      <p className="text-white text-xs truncate">{file.filename || "Shopify Image"}</p>
+                                      {file.source && (
+                                        <p className="text-gray-400 text-xs truncate mt-0.5">
+                                          {file.source === 'product_image' ? 'Product Image' : 'Media Library'}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <FileImage className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                            <p className="text-gray-500 mb-2">No media files found</p>
+                            <p className="text-xs text-gray-400 max-w-md mx-auto mb-4">
+                              Your Shopify Media Library appears to be empty. You can upload images directly in Shopify or select from Product Images instead.
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={fetchShopifyFiles}
+                            >
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Refresh Content Files
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 mx-auto text-slate-300 mb-2" />
+                  <p className="text-slate-500 mb-2">No products selected yet</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowImageDialog(false);
+                      setWorkflowStep('product');
+                    }}
+                  >
+                    <ArrowLeft className="mr-2 h-3 w-3" />
+                    Select Products First
+                  </Button>
+                </div>
+              )}
+              
+              {selectedProducts.length > 0 && (
+                <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                  <div className="flex">
+                    <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-blue-700 mb-1 font-medium">Image Selection Tips</p>
+                      <p className="text-xs text-blue-600">
+                        • Use "Set as Featured" for your main product image<br />
+                        • Add additional images to the content body with "Add to Content"<br />
+                        • For best results, include emotionally compelling images with people using your products
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {imageSource === 'upload' && (
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-slate-300 rounded-md p-8 text-center cursor-pointer"
+                onClick={() => {
+                  document.getElementById('image-upload')?.click();
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  const files = e.dataTransfer.files;
+                  if (files && files.length > 0) {
+                    const file = files[0];
+                    if (file.type.startsWith('image/')) {
+                      // Create a URL for the image file
+                      const localUrl = URL.createObjectURL(file);
+                      
+                      // Create a Pexels-compatible image object
+                      const uploadedImage: PexelsImage = {
+                        id: `upload-${new Date().getTime()}`,
+                        url: localUrl,
+                        width: 600,
+                        height: 400,
+                        alt: file.name,
+                        src: {
+                          original: localUrl,
+                          large: localUrl,
+                          medium: localUrl,
+                          small: localUrl,
+                          thumbnail: localUrl,
+                        }
+                      };
+                      
+                      // Add to appropriate images array
+                      if (workflowStep === 'media') {
+                        setPrimaryImages(prev => [...prev, uploadedImage]);
+                      } else {
+                        setSecondaryImages(prev => [...prev, uploadedImage]);
+                      }
+                      
+                      toast({
+                        title: "Image uploaded",
+                        description: "Your image has been added to the selected images",
+                      });
+                      
+                      // Close dialog
+                      setShowImageDialog(false);
+                    } else {
+                      toast({
+                        title: "Invalid file type",
+                        description: "Please upload an image file",
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                }}
+              >
+                <Upload className="h-10 w-10 mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-600 mb-4">
+                  Drag and drop image files here, or click to select files
+                </p>
+                <Input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  id="image-upload"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      const file = files[0];
+                      
+                      // Create a URL for the image file
+                      const localUrl = URL.createObjectURL(file);
+                      
+                      // Create a Pexels-compatible image object
+                      const uploadedImage: PexelsImage = {
+                        id: `upload-${new Date().getTime()}`,
+                        url: localUrl,
+                        width: 600,
+                        height: 400,
+                        alt: file.name,
+                        src: {
+                          original: localUrl,
+                          large: localUrl,
+                          medium: localUrl,
+                          small: localUrl,
+                          thumbnail: localUrl,
+                        }
+                      };
+                      
+                      // Add to appropriate images array
+                      if (workflowStep === 'media') {
+                        setPrimaryImages(prev => [...prev, uploadedImage]);
+                      } else {
+                        setSecondaryImages(prev => [...prev, uploadedImage]);
+                      }
+                      
+                      toast({
+                        title: "Image uploaded successfully",
+                        description: "Your image has been added to the selected images",
+                      });
+                      
+                      // Close dialog
+                      setShowImageDialog(false);
+                    }
+                  }}
+                />
+                <Button 
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    document.getElementById('image-upload')?.click();
+                  }}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Select Image
+                </Button>
+              </div>
+              
+              <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                <div className="flex">
+                  <Info className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-yellow-700 mb-1 font-medium">About Image Uploads</p>
+                    <p className="text-xs text-yellow-600">
+                      Make sure you have the rights to use any images you upload. For best results,
+                      use high-quality images at least 1200×800 pixels in size.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowImageDialog(false)}>
+              Cancel
+            </Button>
+            
+            <Button
+              type="button"
+              onClick={() => {
+                  // Add selected images to the appropriate collection
+                  const selectedPexelsImages = searchedImages.filter(img => img.selected);
+                  
+                  if (selectedPexelsImages.length === 0) {
+                    toast({
+                      title: "No Images Selected",
+                      description: "Please select at least one image",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  // Process the selected images, maintaining their primary/secondary status
+                  const primarySelected = selectedPexelsImages.filter(img => img.isPrimary);
+                  const secondarySelected = selectedPexelsImages.filter(img => !img.isPrimary);
+                  
+                  // Add to appropriate collections based on their selected status
+                  if (primarySelected.length > 0) {
+                    setPrimaryImages(prev => [...prev, ...primarySelected]);
+                  }
+                  
+                  if (secondarySelected.length > 0) {
+                    setSecondaryImages(prev => [...prev, ...secondarySelected]);
+                  }
+                  
+                  // If no isPrimary flag is set but we're in media step, treat all as primary
+                  if (primarySelected.length === 0 && secondarySelected.length === 0) {
+                    if (workflowStep === 'media') {
+                      setPrimaryImages(prev => [...prev, ...selectedPexelsImages]);
+                    } else {
+                      setSecondaryImages(prev => [...prev, ...selectedPexelsImages]);
+                    }
+                  }
+                  
+                  // Clear selections and close dialog
+                  setSearchedImages(searchedImages.map(img => ({ ...img, selected: false })));
+                  setShowImageDialog(false);
+                  
+                  toast({
+                    title: "Images Added",
+                    description: `Added ${selectedPexelsImages.length} image${selectedPexelsImages.length === 1 ? '' : 's'} to your content`,
+                  });
+                }}
+                disabled={searchedImages.filter(img => img.selected).length === 0}
+              >
+                Add Selected Items
+              </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add the standalone project creation dialog that shows automatically */}
+      <ProjectCreationDialog />
+      {/* Choose Media Dialog - New improved component */}
+      <ChooseMediaDialog
+        open={showChooseMediaDialog && !showImageDialog} 
+        onOpenChange={(open) => {
+          // Ensure only one dialog is open at a time
+          if (open && showImageDialog) {
+            setShowImageDialog(false); // Close the other dialog first
+            setTimeout(() => setShowChooseMediaDialog(open), 300); // Then open this one after a short delay
+          } else {
+            setShowChooseMediaDialog(open);
+          }
+        }}
+        onImagesSelected={(images) => {
+          // When user confirms selected images
+          if (images.length > 0) {
+            // Create a standardized image format that works for both Shopify and Pexels images
+            const standardizedImages = images.map(img => {
+              // Create a common format that has all necessary properties
+              const standardImage = {
+                id: img.id,
+                url: img.url,
+                width: 500, // default size if not available
+                height: 500,
+                alt: img.alt || img.title || 'Image',
+                // Ensure src is properly formatted for our components
+                src: {
+                  original: img.url,
+                  large: img.url,
+                  medium: img.url,
+                  small: img.url,
+                  thumbnail: img.url,
+                },
+                // Keep track of the original source
+                source: img.source || 'shopify',
+                // For type safety - let's add these fields to make it compatible with PexelsImage
+                selected: false,
+                type: 'image',
+                // Store the primary/secondary designation from the ChooseMediaDialog
+                isPrimary: img.isPrimary
+              };
+              return standardImage;
+            });
+            
+            try {
+              // Sort images into primary and secondary based on the isPrimary flag
+              const primaryImgs = standardizedImages.filter(img => img.isPrimary === true);
+              const secondaryImgs = standardizedImages.filter(img => img.isPrimary === false);
+              
+              // Process primary images if any exist
+              if (primaryImgs.length > 0) {
+                const safePrimaryImages = primaryImgs.map(img => ({
+                  ...img,
+                  selected: false,
+                  type: 'image',
+                  src: {
+                    original: img.url,
+                    large: img.url,
+                    medium: img.url,
+                    small: img.url,
+                    thumbnail: img.url
+                  }
+                }));
+                setPrimaryImages(prev => [...prev, ...safePrimaryImages]);
+                toast({
+                  title: "Featured images added",
+                  description: `${primaryImgs.length} featured image${primaryImgs.length === 1 ? '' : 's'} added successfully`
+                });
+              }
+              
+              // Process secondary images if any exist
+              if (secondaryImgs.length > 0) {
+                const safeSecondaryImages = secondaryImgs.map(img => ({
+                  ...img,
+                  selected: false,
+                  type: 'image',
+                  src: {
+                    original: img.url,
+                    large: img.url,
+                    medium: img.url,
+                    small: img.url,
+                    thumbnail: img.url
+                  }
+                }));
+                setSecondaryImages(prev => [...prev, ...safeSecondaryImages]);
+                
+                // Update selectedMediaContent state immediately
+                setSelectedMediaContent(prev => ({
+                  ...prev,
+                  secondaryImages: [...prev.secondaryImages, ...safeSecondaryImages.map(img => ({
+                    id: img.id,
+                    url: img.url,
+                    alt: img.alt || '',
+                    width: img.width || 0,
+                    height: img.height || 0,
+                    source: img.source || 'pexels'
+                  }))]
+                }));
+                
+                toast({
+                  title: "Content images added",
+                  description: `${secondaryImgs.length} content image${secondaryImgs.length === 1 ? '' : 's'} added successfully`
+                });
+              }
+              
+              // If no isPrimary designation was made, use the active tab as before
+              if (primaryImgs.length === 0 && secondaryImgs.length === 0) {
+                // Fallback to the old method - add to the appropriate collection based on active tab
+                if (imageTab === 'primary') {
+                  const safeImages = standardizedImages.map(img => ({
+                    ...img,
+                    selected: false,
+                    type: 'image',
+                    src: {
+                      original: img.url,
+                      large: img.url,
+                      medium: img.url,
+                      small: img.url,
+                      thumbnail: img.url
+                    }
+                  }));
+                  setPrimaryImages(prev => [...prev, ...safeImages]);
+                  toast({
+                    title: "Featured images added",
+                    description: `${images.length} featured image${images.length === 1 ? '' : 's'} added successfully`
+                  });
+                } else {
+                  const safeImages = standardizedImages.map(img => ({
+                    ...img,
+                    selected: false,
+                    type: 'image',
+                    src: {
+                      original: img.url,
+                      large: img.url,
+                      medium: img.url,
+                      small: img.url,
+                      thumbnail: img.url
+                    }
+                  }));
+                  setSecondaryImages(prev => [...prev, ...safeImages]);
+                  
+                  // Update selectedMediaContent state immediately
+                  setSelectedMediaContent(prev => ({
+                    ...prev,
+                    secondaryImages: [...prev.secondaryImages, ...safeImages.map(img => ({
+                      id: img.id,
+                      url: img.url,
+                      alt: img.alt || '',
+                      width: img.width || 0,
+                      height: img.height || 0,
+                      source: img.source || 'pexels'
+                    }))]
+                  }));
+                  
+                  toast({
+                    title: "Content images added",
+                    description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
+                  });
+                }
+              }
+            } catch (error) {
+              console.error("Error adding images:", error);
+              toast({
+                title: "Error adding images",
+                description: "There was a problem adding the selected images. Please try again.",
+                variant: "destructive"
+              });
+            }
+          }
+        }}
+        initialSelectedImages={imageTab === 'primary' ? primaryImages : secondaryImages}
+        maxImages={10}
+        allowMultiple={true}
+        title={imageTab === 'primary' ? "Choose Featured Images" : "Choose Content Images"}
+        description={imageTab === 'primary' 
+          ? "Select emotionally compelling images for the top of your content" 
+          : "Select product images to appear throughout your article body"}
+      />
     </div>
   );
 }
