@@ -109,7 +109,14 @@ import {
   Trash, 
   Type,
   X, 
-  XCircle 
+  XCircle,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  Edit3,
+  Crown,
+  Tag
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -319,6 +326,10 @@ export default function AdminPanel() {
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [isEditingContent, setIsEditingContent] = useState(false);
+  const [editableTitle, setEditableTitle] = useState('');
+  const [editableContent, setEditableContent] = useState('');
+  const [editableMetaDescription, setEditableMetaDescription] = useState('');
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -343,6 +354,34 @@ export default function AdminPanel() {
   
   // Add logging to track state changes
   console.log('Current selectedMediaContent state:', selectedMediaContent);
+
+  // Update editable fields when generated content changes
+  useEffect(() => {
+    if (generatedContent) {
+      setEditableTitle(generatedContent.title || '');
+      setEditableContent(generatedContent.content || '');
+      setEditableMetaDescription(generatedContent.metaDescription || '');
+      setIsEditingContent(false);
+    }
+  }, [generatedContent]);
+
+  // Word count utility functions
+  const getWordCount = (text: string) => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
+
+  const getCharacterCount = (text: string) => {
+    return text.length;
+  };
+
+  // Rich text formatting functions
+  const formatText = (command: string) => {
+    document.execCommand(command, false);
+  };
+
+  const insertList = () => {
+    document.execCommand('insertUnorderedList', false);
+  };
   
   // Workflow step state
   const [currentStep, setCurrentStep] = useState<string>("product");
@@ -3565,10 +3604,24 @@ export default function AdminPanel() {
 
             <Card className="lg:col-span-1">
               <CardHeader>
-                <CardTitle>Content Preview</CardTitle>
-                <CardDescription>
-                  Preview of your generated content
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Content Preview & Editor</CardTitle>
+                    <CardDescription>
+                      Preview and edit your generated content
+                    </CardDescription>
+                  </div>
+                  {generatedContent && (
+                    <Button
+                      variant={isEditingContent ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsEditingContent(!isEditingContent)}
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      {isEditingContent ? "Save" : "Edit"}
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {isGenerating ? (
@@ -3579,27 +3632,67 @@ export default function AdminPanel() {
                     </p>
                   </div>
                 ) : generatedContent ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-xl font-bold">{generatedContent.title}</h3>
-                      {generatedContent.tags && generatedContent.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {generatedContent.tags.map((tag: string, index: number) => (
-                            <Badge key={index} variant="outline">{tag}</Badge>
-                          ))}
-                        </div>
+                  <div className="space-y-6">
+                    {/* Editable Title Section */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-muted-foreground">Title</h4>
+                        <span className="text-xs text-muted-foreground">
+                          {getCharacterCount(editableTitle)}/255 characters
+                        </span>
+                      </div>
+                      {isEditingContent ? (
+                        <Input
+                          value={editableTitle}
+                          onChange={(e) => setEditableTitle(e.target.value)}
+                          maxLength={255}
+                          className="text-xl font-bold"
+                          placeholder="Enter title..."
+                        />
+                      ) : (
+                        <h3 className="text-xl font-bold">{editableTitle}</h3>
                       )}
                     </div>
+
+                    {/* Tags Section with Visual Indicators */}
+                    {generatedContent.tags && generatedContent.tags.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-muted-foreground" />
+                          <h4 className="text-sm font-medium text-muted-foreground">Tags to be applied</h4>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {generatedContent.tags.map((tag: string, index: number) => (
+                            <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                              <Tag className="h-3 w-3" />
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
-                    {/* Display featured image if available */}
+                    {/* Featured Image with Badge */}
                     {generatedContent.featuredImage && (
-                      <div className="mb-6">
-                        <ShopifyImageViewer 
-                          src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
-                          alt={generatedContent.featuredImage.alt || generatedContent.title} 
-                          className="w-full h-auto rounded-md shadow-md"
-                        />
-                        {/* Photographer credit removed as per client request */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                          <h4 className="text-sm font-medium text-muted-foreground">Featured Image</h4>
+                          <Badge variant="secondary" className="text-xs">
+                            Primary
+                          </Badge>
+                        </div>
+                        <div className="relative">
+                          <ShopifyImageViewer 
+                            src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
+                            alt={generatedContent.featuredImage.alt || generatedContent.title} 
+                            className="w-full h-auto rounded-md shadow-md"
+                          />
+                          <Badge className="absolute top-2 left-2 bg-yellow-500 text-black">
+                            <Crown className="h-3 w-3 mr-1" />
+                            Featured
+                          </Badge>
+                        </div>
                       </div>
                     )}
                     
