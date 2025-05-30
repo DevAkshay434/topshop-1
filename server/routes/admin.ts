@@ -1574,7 +1574,7 @@ Place this at a logical position in the content, typically after introducing a c
       
       // Insert secondary images one per H2 heading after the video (no repetition)
       if (secondaryContent.length > 0) {
-        console.log(`Distributing ${secondaryContent.length} secondary images across H2 headings after video`);
+        console.log(`Distributing ${secondaryContent.length} secondary media across H2 headings after video`);
         
         // Only process image content (exclude videos which are handled separately)
         const imageContent = secondaryContent.filter(item => item.type === 'image');
@@ -1586,6 +1586,28 @@ Place this at a logical position in the content, typically after introducing a c
           finalContent = finalContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', content.html);
           console.log(`Placed secondary image ${imageIndex + 1} under H2 heading: ${content.description}`);
           imageIndex++;
+        }
+        
+        // If no markers were found but we have secondary images, insert them manually after H2 headings
+        if (imageIndex === 0 && imageContent.length > 0) {
+          console.log(`No placement markers found, manually inserting ${imageContent.length} secondary images after H2 headings`);
+          
+          // Find all H2 headings and insert images after them
+          const h2Pattern = /<\/h2>/gi;
+          const h2Matches = [...finalContent.matchAll(h2Pattern)];
+          
+          if (h2Matches.length > 0) {
+            // Start from the end to maintain correct indices
+            for (let i = Math.min(h2Matches.length - 1, imageContent.length - 1); i >= 0; i--) {
+              if (i < imageContent.length && i < h2Matches.length) {
+                const insertPosition = h2Matches[i].index + h2Matches[i][0].length;
+                const imageHtml = imageContent[i].html;
+                finalContent = finalContent.slice(0, insertPosition) + imageHtml + finalContent.slice(insertPosition);
+                console.log(`Manually placed secondary image ${i + 1} after H2 heading ${i + 1}`);
+                imageIndex++;
+              }
+            }
+          }
         }
         
         // Remove any remaining markers to prevent empty placeholders
