@@ -186,7 +186,8 @@ export default function PostList({
             posts.map(post => (
               <li key={post.id}>
                 <div 
-                  className="block hover:bg-neutral-50" 
+                  className="block hover:bg-neutral-50 cursor-pointer" 
+                  onClick={() => onEditPost && onEditPost(post)}
                 >
                   <div className="px-4 py-4 sm:px-6">
                     <div className="flex items-center justify-between">
