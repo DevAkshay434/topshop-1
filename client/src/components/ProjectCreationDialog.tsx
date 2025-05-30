@@ -85,14 +85,13 @@ export default function ProjectCreationDialog() {
     
     setIsSubmitting(true);
     
-    // Just set the project name for later use when Generate Content is clicked
-    // Don't save to database yet
-    localStorage.setItem('current-project', projectName);
+    // Save project name to localStorage for later use when Generate Content is clicked
+    localStorage.setItem('current-project', projectName.trim());
     
     setTimeout(() => {
       toast({
-        title: "Project name set",
-        description: `"${projectName}" will be saved when you generate content`
+        title: "Project created",
+        description: `"${projectName}" is ready. Your settings will be saved when you generate content.`
       });
       
       setIsSubmitting(false);
@@ -101,7 +100,7 @@ export default function ProjectCreationDialog() {
       // Notify parent component about project name change
       if (window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('projectNameChanged', { 
-          detail: { projectName } 
+          detail: { projectName: projectName.trim() } 
         }));
       }
     }, 300);

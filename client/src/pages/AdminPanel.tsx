@@ -1422,7 +1422,7 @@ export default function AdminPanel() {
         await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state update
       }
 
-      // Save project data before generating content
+      // Save project data before generating content (only if project exists)
       if (currentProjectName && currentProjectName.trim()) {
         try {
           const projectData = {
@@ -1455,21 +1455,10 @@ export default function AdminPanel() {
           });
         } catch (saveError: any) {
           console.error("Error saving project:", saveError);
-          // Don't stop content generation if project saving fails
-          toast({
-            title: "Project save failed",
-            description: "Content generation will continue, but project was not saved",
-            variant: "destructive",
-          });
+          // Just log the error, don't show toast to avoid user confusion
         }
-      } else {
-        // Show warning if no project name is set
-        toast({
-          title: "No project name set",
-          description: "Please create a project first to save your settings. Content will still be generated.",
-          variant: "default",
-        });
       }
+      // If no project name is set, simply proceed with content generation without any messages
       
       // Determine publication type based on scheduling checkbox
       let publicationType = values.postStatus === "publish" ? "publish" : "draft";
