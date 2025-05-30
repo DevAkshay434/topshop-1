@@ -3452,7 +3452,6 @@ export default function AdminPanel() {
                           isMainKeyword: k === selectedKeywords[0] // First keyword is main
                         }))}
                       />
-                    </div>
                     
                     {/* Template Controls */}
                     <div className="mt-6 grid grid-cols-2 gap-3">
