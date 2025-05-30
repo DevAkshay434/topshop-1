@@ -1327,22 +1327,31 @@ export default function AdminPanel() {
         data: publishData
       });
 
-      if (response?.success) {
+      if (response?.post) {
+        // Check if content was successfully published to Shopify
+        const isPublishedToShopify = response.post.shopifyPostId && publicationType === 'publish';
+        
         setGeneratedContent({
           ...generatedContent,
-          contentUrl: response.contentUrl
+          contentUrl: response.contentUrl,
+          isPublished: isPublishedToShopify
         });
 
         const actionText = publicationType === 'publish' ? 'published' : 
                           publicationType === 'schedule' ? 'scheduled' : 'saved as draft';
         
+        let description = `Your content has been ${actionText} successfully`;
+        if (isPublishedToShopify) {
+          description = `Your content has been published to Shopify successfully (Article ID: ${response.post.shopifyPostId})`;
+        }
+        
         toast({
           title: `Content ${actionText}`,
-          description: `Your content has been ${actionText} successfully`,
+          description: description,
           variant: "default"
         });
       } else {
-        throw new Error(response?.message || "Failed to publish content");
+        throw new Error(response?.message || "Failed to process content");
       }
     } catch (error: any) {
       console.error("Publication error:", error);
