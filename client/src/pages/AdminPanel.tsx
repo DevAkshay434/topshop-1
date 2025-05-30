@@ -3731,55 +3731,78 @@ export default function AdminPanel() {
                         </button>
                       </div>
 
-                      {/* Content Editor */}
+                      {/* Content Editor with Inline Media */}
                       <div
                         ref={(el) => {
-                          if (el && generatedContent.content && el.innerHTML !== generatedContent.content) {
-                            // Only update innerHTML if content actually changed to prevent cursor jumping
-                            const selection = window.getSelection();
-                            const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-                            const caretOffset = range?.startOffset;
-                            const caretContainer = range?.startContainer;
+                          if (el && generatedContent.content) {
+                            // Process content to render embedded images and videos properly
+                            let processedContent = generatedContent.content;
                             
-                            el.innerHTML = generatedContent.content;
+                            // Ensure images have proper styling and are visible
+                            processedContent = processedContent.replace(
+                              /<img([^>]*?)>/gi,
+                              '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
+                            );
                             
-                            // Restore cursor position
-                            if (selection && range && caretContainer && caretOffset !== undefined) {
-                              try {
-                                const newRange = document.createRange();
-                                const walker = document.createTreeWalker(
-                                  el,
-                                  NodeFilter.SHOW_TEXT,
-                                  null,
-                                  false
-                                );
-                                
-                                let currentOffset = 0;
-                                let targetNode = null;
-                                let node;
-                                
-                                while (node = walker.nextNode()) {
-                                  const nodeLength = node.textContent?.length || 0;
-                                  if (currentOffset + nodeLength >= caretOffset) {
-                                    targetNode = node;
-                                    break;
+                            // Ensure iframes (YouTube videos) have proper styling
+                            processedContent = processedContent.replace(
+                              /<iframe([^>]*?)>/gi,
+                              '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
+                            );
+                            
+                            // Close the wrapper div for iframes
+                            processedContent = processedContent.replace(
+                              /<\/iframe>/gi,
+                              '</iframe></div>'
+                            );
+                            
+                            // Only update if content actually changed to prevent cursor jumping
+                            if (el.innerHTML !== processedContent) {
+                              const selection = window.getSelection();
+                              const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+                              const caretOffset = range?.startOffset;
+                              const caretContainer = range?.startContainer;
+                              
+                              el.innerHTML = processedContent;
+                              
+                              // Restore cursor position
+                              if (selection && range && caretContainer && caretOffset !== undefined) {
+                                try {
+                                  const newRange = document.createRange();
+                                  const walker = document.createTreeWalker(
+                                    el,
+                                    NodeFilter.SHOW_TEXT,
+                                    null,
+                                    false
+                                  );
+                                  
+                                  let currentOffset = 0;
+                                  let targetNode = null;
+                                  let node;
+                                  
+                                  while (node = walker.nextNode()) {
+                                    const nodeLength = node.textContent?.length || 0;
+                                    if (currentOffset + nodeLength >= caretOffset) {
+                                      targetNode = node;
+                                      break;
+                                    }
+                                    currentOffset += nodeLength;
                                   }
-                                  currentOffset += nodeLength;
-                                }
-                                
-                                if (targetNode) {
-                                  newRange.setStart(targetNode, Math.min(caretOffset - currentOffset, targetNode.textContent?.length || 0));
-                                  newRange.collapse(true);
+                                  
+                                  if (targetNode) {
+                                    newRange.setStart(targetNode, Math.min(caretOffset - currentOffset, targetNode.textContent?.length || 0));
+                                    newRange.collapse(true);
+                                    selection.removeAllRanges();
+                                    selection.addRange(newRange);
+                                  }
+                                } catch (e) {
+                                  // Fallback: place cursor at end
+                                  const newRange = document.createRange();
+                                  newRange.selectNodeContents(el);
+                                  newRange.collapse(false);
                                   selection.removeAllRanges();
                                   selection.addRange(newRange);
                                 }
-                              } catch (e) {
-                                // Fallback: place cursor at end
-                                const newRange = document.createRange();
-                                newRange.selectNodeContents(el);
-                                newRange.collapse(false);
-                                selection.removeAllRanges();
-                                selection.addRange(newRange);
                               }
                             }
                           } else if (el && !generatedContent.content) {
