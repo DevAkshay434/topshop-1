@@ -3696,11 +3696,78 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
-                      {(() => {
-                        // Get content
-                        const content = generatedContent.content;
-                        if (!content) return <p>No content available</p>;
+                    {/* Rich Text Content Editor */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-muted-foreground">Content</h4>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{getWordCount(editableContent)} words</span>
+                          <span>•</span>
+                          <span>{getCharacterCount(editableContent)} characters</span>
+                        </div>
+                      </div>
+                      
+                      {isEditingContent ? (
+                        <div className="space-y-2">
+                          {/* Rich Text Formatting Toolbar */}
+                          <div className="flex items-center gap-1 p-2 border rounded-md bg-gray-50">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => formatText('bold')}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Bold className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => formatText('italic')}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Italic className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => formatText('underline')}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Underline className="h-4 w-4" />
+                            </Button>
+                            <div className="w-px h-6 bg-gray-300 mx-1" />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={insertList}
+                              className="h-8 w-8 p-0"
+                            >
+                              <List className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Rich Text Editor */}
+                          <div
+                            contentEditable
+                            suppressContentEditableWarning={true}
+                            className="min-h-[400px] p-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 prose prose-blue max-w-none"
+                            onInput={(e) => {
+                              const target = e.target as HTMLDivElement;
+                              setEditableContent(target.innerHTML);
+                            }}
+                            dangerouslySetInnerHTML={{ __html: editableContent }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
+                          {(() => {
+                            // Get content
+                            const content = editableContent || generatedContent.content;
+                            if (!content) return <p>No content available</p>;
 
                         // Get YouTube data if exists
                         const youtubeUrl = form.watch("youtubeUrl");
@@ -4048,9 +4115,160 @@ export default function AdminPanel() {
                         // Return enhanced content with all embedded images properly displayed
                         return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: processedContent }} />;
                       })()}
+                        </div>
+                      )}
                     </div>
-                    
-                    {generatedContent.metaDescription && (
+
+                    {/* Editable Meta Description Section */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-muted-foreground">Meta Description</h4>
+                        <span className="text-xs text-muted-foreground">
+                          {getCharacterCount(editableMetaDescription)}/160 characters
+                        </span>
+                      </div>
+                      {isEditingContent ? (
+                        <Textarea
+                          value={editableMetaDescription}
+                          onChange={(e) => setEditableMetaDescription(e.target.value)}
+                          maxLength={160}
+                          rows={3}
+                          placeholder="Enter meta description..."
+                          className="text-sm"
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground p-3 bg-gray-50 rounded-md border">
+                          {editableMetaDescription || generatedContent.metaDescription || "No meta description available"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-2 text-sm font-semibold text-muted-foreground">No content generated</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Fill out the form and click "Generate Content" to see a preview
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Publishing Actions */}
+          {generatedContent && (
+            <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>Publish Content</CardTitle>
+                <CardDescription>
+                  Choose how you want to publish your generated content
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  <Button
+                    onClick={() => handlePublish('immediate')}
+                    disabled={isPublishing}
+                    className="flex items-center gap-2"
+                  >
+                    {isPublishing && publishAction === 'immediate' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    Publish Now
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePublish('draft')}
+                    disabled={isPublishing}
+                    className="flex items-center gap-2"
+                  >
+                    {isPublishing && publishAction === 'draft' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Save as Draft
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePublish('scheduled')}
+                    disabled={isPublishing}
+                    className="flex items-center gap-2"
+                  >
+                    {isPublishing && publishAction === 'scheduled' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Calendar className="h-4 w-4" />
+                    )}
+                    Schedule for Later
+                  </Button>
+                </div>
+
+                {publishAction === 'scheduled' && (
+                  <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+                    <h4 className="text-sm font-medium mb-4">Schedule Publishing</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="publish-date" className="text-xs font-medium">
+                          Publish Date
+                        </Label>
+                        <Input
+                          id="publish-date"
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="publish-time" className="text-xs font-medium">
+                          Publish Time
+                        </Label>
+                        <Input
+                          id="publish-time"
+                          type="time"
+                          value={scheduleTime}
+                          onChange={(e) => setScheduleTime(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">TopshopSEO Admin Panel</h1>
+          <p className="text-muted-foreground mt-2">
+            Generate SEO-optimized content for your Shopify store
+          </p>
+        </div>
+
+        {!isConnected ? (
+          <ShopifyConnectionPrompt />
+        ) : (
+          <>
+            <AdminPanelContent />
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
                       <div className="mt-4">
                         <h4 className="text-sm font-semibold">Meta Description:</h4>
                         <p className="text-sm text-muted-foreground">
