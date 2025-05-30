@@ -121,6 +121,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
+import KeywordSelector from '@/components/KeywordSelector';
 import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
@@ -3868,6 +3869,20 @@ export default function AdminPanel() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Keyword Selection Dialog */}
+      {showKeywordSelector && (
+        <KeywordSelector
+          isOpen={showKeywordSelector}
+          onClose={() => setShowKeywordSelector(false)}
+          selectedProducts={selectedProducts}
+          selectedCollections={selectedCollections}
+          onKeywordsSelected={(keywords) => {
+            setSelectedKeywords(keywords);
+            setShowKeywordSelector(false);
+          }}
+        />
+      )}
     </div>
   );
 }
