@@ -1350,6 +1350,18 @@ export default function AdminPanel() {
           description: description,
           variant: "default"
         });
+        
+        // Update generated content with Shopify information if published
+        if (isPublishedToShopify) {
+          setGeneratedContent(prev => prev ? {
+            ...prev,
+            shopifyPostId: response.post.shopifyPostId,
+            shopifyBlogId: response.post.shopifyBlogId,
+            shopifyUrl: response.post.articleType === 'blog' 
+              ? `https://rajeshshah.myshopify.com/blogs/news/${response.post.shopifyPostId}`
+              : `https://rajeshshah.myshopify.com/pages/${response.post.shopifyPostId}`
+          } : null);
+        }
       } else {
         throw new Error(response?.message || "Failed to process content");
       }
@@ -4155,22 +4167,26 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
-                    {generatedContent.contentUrl && (
+                    {(generatedContent.contentUrl || generatedContent.shopifyUrl) && (
                       <div className="grid grid-cols-2 gap-2 mt-4">
                         <Button 
                           variant="outline" 
-                          onClick={() => window.open(generatedContent.contentUrl, '_blank')}
+                          onClick={() => {
+                            const url = generatedContent.shopifyUrl || generatedContent.contentUrl;
+                            window.open(url, '_blank');
+                          }}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
-                          View on Shopify
+                          View in Shopify
                         </Button>
                         <Button 
                           variant="outline"
                           onClick={() => {
-                            navigator.clipboard.writeText(generatedContent.contentUrl);
+                            const url = generatedContent.shopifyUrl || generatedContent.contentUrl;
+                            navigator.clipboard.writeText(url);
                             toast({
                               title: "Link copied",
-                              description: "URL has been copied to clipboard",
+                              description: "Shopify URL has been copied to clipboard",
                               variant: "default"
                             });
                           }}
