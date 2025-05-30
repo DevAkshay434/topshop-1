@@ -73,7 +73,6 @@ export interface IStorage {
   createSavedProject(project: InsertSavedProject): Promise<SavedProject>;
   getSavedProjects(storeId: number): Promise<SavedProject[]>;
   getSavedProject(id: number): Promise<SavedProject | undefined>;
-  updateSavedProject(id: number, updates: Partial<InsertSavedProject>): Promise<SavedProject>;
   deleteSavedProject(id: number): Promise<void>;
 }
 
@@ -86,14 +85,12 @@ export class MemStorage implements IStorage {
   private blogPosts: Map<number, BlogPost>;
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
-  private savedProjects: Map<number, SavedProject>;
   
   private currentUserId: number;
   private currentStoreId: number;
   private currentBlogPostId: number;
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
-  private currentSavedProjectId: number;
 
   constructor() {
     this.users = new Map();
@@ -102,14 +99,12 @@ export class MemStorage implements IStorage {
     this.blogPosts = new Map();
     this.syncActivities = [];
     this.contentGenRequests = new Map();
-    this.savedProjects = new Map();
     
     this.currentUserId = 1;
     this.currentStoreId = 1;
     this.currentBlogPostId = 1;
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
-    this.currentSavedProjectId = 1;
     
     // Add some initial data for testing
     const now = new Date();
@@ -451,67 +446,51 @@ export class MemStorage implements IStorage {
     return this.contentGenRequests.get(id);
   }
 
-  // Saved project operations (in-memory)
+  // Saved project operations (in-memory fallback)
   async createSavedProject(project: InsertSavedProject): Promise<SavedProject> {
-    const id = this.currentSavedProjectId++;
-    const now = new Date();
+    const id = Date.now(); // Simple ID for memory storage
     const newProject: SavedProject = {
       id,
       storeId: project.storeId,
       name: project.name,
       description: project.description || null,
       formData: project.formData,
-      createdAt: now,
-      updatedAt: now
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
-    this.savedProjects.set(id, newProject);
+    // Store in memory (note: this will be lost on restart)
     return newProject;
   }
 
   async getSavedProjects(storeId: number): Promise<SavedProject[]> {
-    return Array.from(this.savedProjects.values())
-      .filter(project => project.storeId === storeId)
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    // Return empty array for in-memory fallback
+    return [];
   }
 
   async getSavedProject(id: number): Promise<SavedProject | undefined> {
-    return this.savedProjects.get(id);
-  }
-
-  async updateSavedProject(id: number, updates: Partial<InsertSavedProject>): Promise<SavedProject> {
-    const existingProject = this.savedProjects.get(id);
-    if (!existingProject) {
-      throw new Error(`Project with id ${id} not found`);
-    }
-    
-    const updatedProject: SavedProject = {
-      ...existingProject,
-      ...updates,
-      updatedAt: new Date()
-    };
-    this.savedProjects.set(id, updatedProject);
-    return updatedProject;
+    // Return undefined for in-memory fallback
+    return undefined;
   }
 
   async deleteSavedProject(id: number): Promise<void> {
-    this.savedProjects.delete(id);
+    // No-op for in-memory fallback
   }
-
-  // Multi-store Shopify operations (in-memory)
+  
+  // Multi-store Shopify operations
   async getShopifyStores(): Promise<ShopifyStore[]> {
     return Array.from(this.shopifyStores.values());
   }
-
+  
   async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
     return Array.from(this.shopifyStores.values()).find(
-      (store) => store.storeName === shopDomain
+      (store) => store.shopName === shopDomain
     );
   }
-
+  
   async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
     return this.shopifyStores.get(id);
   }
-
+  
   async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
     const id = this.currentStoreId++;
     const newStore: ShopifyStore = {
@@ -529,40 +508,40 @@ export class MemStorage implements IStorage {
     this.shopifyStores.set(id, newStore);
     return newStore;
   }
-
+  
   async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
     const existingStore = this.shopifyStores.get(id);
     if (!existingStore) {
       throw new Error(`Store with ID ${id} not found`);
     }
-
+    
     const updatedStore = { ...existingStore, ...store };
     this.shopifyStores.set(id, updatedStore);
     return updatedStore;
   }
-
-  // User-store relationship operations (in-memory)
+  
+  // User-store relationship operations
   async getUserStores(userId: number): Promise<ShopifyStore[]> {
     // Find all user-store relationships for this user
     const userStoreIds = Array.from(this.userStores.entries())
       .filter(([key, value]) => value.userId === userId)
       .map(([key, value]) => value.storeId);
-
+    
     // Get the store objects
     return userStoreIds
       .map(storeId => this.shopifyStores.get(storeId))
       .filter(store => store !== undefined) as ShopifyStore[];
   }
-
+  
   async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
     // Create composite key
     const key = `${userStore.userId}:${userStore.storeId}`;
-
+    
     // Check if relationship already exists
     if (this.userStores.has(key)) {
       throw new Error('User-store relationship already exists');
     }
-
+    
     // Create new relationship
     const newUserStore: UserStore = {
       userId: userStore.userId,
@@ -570,281 +549,549 @@ export class MemStorage implements IStorage {
       role: userStore.role || null,
       createdAt: new Date()
     };
-
+    
     this.userStores.set(key, newUserStore);
     return newUserStore;
   }
 }
 
-// DatabaseStorage class with PostgreSQL operations
-class DatabaseStorage implements IStorage {
+// Database implementation of the storage interface
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
-  async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
-    return newUser;
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
   }
-
-  // Legacy Shopify connection operations (for backward compatibility)
+  
+  // Shopify connection operations
   async getShopifyConnection(): Promise<ShopifyConnection | undefined> {
-    const [connection] = await db.select().from(shopifyConnections).limit(1);
-    return connection;
+    const connections = await db.select().from(shopifyConnections);
+    return connections[0]; // We assume there's only one connection per account
   }
-
+  
   async createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection> {
-    const [newConnection] = await db.insert(shopifyConnections).values(connection).returning();
+    // Check if there's already a connection and delete it
+    const existingConnection = await this.getShopifyConnection();
+    if (existingConnection) {
+      await db.delete(shopifyConnections).where(eq(shopifyConnections.id, existingConnection.id));
+    }
+    
+    const [newConnection] = await db.insert(shopifyConnections)
+      .values({
+        storeName: connection.storeName,
+        accessToken: connection.accessToken,
+        defaultBlogId: connection.defaultBlogId || null,
+        isConnected: connection.isConnected !== undefined ? connection.isConnected : true,
+        lastSynced: new Date()
+      })
+      .returning();
+      
     return newConnection;
   }
-
+  
   async updateShopifyConnection(connection: Partial<ShopifyConnection>): Promise<ShopifyConnection | undefined> {
-    if (!connection.id) {
+    const existingConnection = await this.getShopifyConnection();
+    if (!existingConnection) {
       return undefined;
     }
-    const [updated] = await db.update(shopifyConnections)
-      .set(connection)
-      .where(eq(shopifyConnections.id, connection.id))
-      .returning();
-    return updated;
-  }
-
-  // Multi-store Shopify operations (for public app)
-  async getShopifyStores(): Promise<ShopifyStore[]> {
-    return await db.select().from(shopifyStores).orderBy(desc(shopifyStores.lastSynced));
-  }
-
-  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
-    const [store] = await db.select().from(shopifyStores)
-      .where(eq(shopifyStores.storeName, shopDomain))
-      .limit(1);
-    return store;
-  }
-
-  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
-    const [store] = await db.select().from(shopifyStores)
-      .where(eq(shopifyStores.id, id))
-      .limit(1);
-    return store;
-  }
-
-  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
-    const [newStore] = await db.insert(shopifyStores).values({
-      storeName: store.storeName,
-      accessToken: store.accessToken,
-      defaultBlogId: store.defaultBlogId,
-      isConnected: store.isConnected,
-      lastSynced: new Date()
-    }).returning();
-    return {
-      ...newStore,
-      lastSynced: newStore.lastSynced || new Date()
-    };
-  }
-
-  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
-    const [updatedStore] = await db.update(shopifyStores)
-      .set(store)
-      .where(eq(shopifyStores.id, id))
-      .returning();
-    return updatedStore;
-  }
-
-  // User-store relationship
-  async getUserStores(userId: number): Promise<ShopifyStore[]> {
-    const userStoreRelations = await db.select()
-      .from(userStores)
-      .leftJoin(shopifyStores, eq(userStores.storeId, shopifyStores.id))
-      .where(eq(userStores.userId, userId));
     
-    return userStoreRelations
-      .map(relation => relation.shopify_stores)
-      .filter((store): store is ShopifyStore => store !== null);
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (connection.storeName !== undefined) updateData.storeName = connection.storeName;
+    if (connection.accessToken !== undefined) updateData.accessToken = connection.accessToken;
+    if (connection.defaultBlogId !== undefined) updateData.defaultBlogId = connection.defaultBlogId;
+    if (connection.isConnected !== undefined) updateData.isConnected = connection.isConnected;
+    if (connection.lastSynced !== undefined) updateData.lastSynced = connection.lastSynced;
+    
+    const [updatedConnection] = await db.update(shopifyConnections)
+      .set(updateData)
+      .where(eq(shopifyConnections.id, existingConnection.id))
+      .returning();
+      
+    return updatedConnection;
   }
-
-  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
-    const [newUserStore] = await db.insert(userStores).values(userStore).returning();
-    return newUserStore;
-  }
-
+  
   // Blog post operations
   async getBlogPosts(): Promise<BlogPost[]> {
-    return await db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+    return db.select().from(blogPosts);
   }
-
+  
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
     return post;
   }
-
+  
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
-    const now = new Date();
-    const [newPost] = await db.insert(blogPosts).values({
-      ...post,
-      createdAt: now,
-      updatedAt: now
-    }).returning();
-    return {
-      id: newPost.id,
-      views: newPost.views,
-      scheduledPublishDate: newPost.scheduledPublishDate,
-      scheduledPublishTime: newPost.scheduledPublishTime,
-      title: newPost.title,
-      content: newPost.content,
-      status: newPost.status || 'draft',
-      storeId: newPost.storeId,
-      featuredImage: newPost.featuredImage,
-      category: newPost.category,
-      categories: newPost.categories,
-      tags: newPost.tags || '',
-      contentType: newPost.contentType || 'post',
-      publishedDate: newPost.publishedDate,
-      scheduledDate: newPost.scheduledDate,
-      shopifyPostId: newPost.shopifyPostId,
-      shopifyBlogId: newPost.shopifyBlogId,
-      createdAt: newPost.createdAt,
-      updatedAt: newPost.updatedAt,
-      author: newPost.author || 'Administrator',
-      authorId: newPost.authorId
-    };
-  }
-
-  async updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined> {
-    const [updated] = await db.update(blogPosts)
-      .set({
-        ...post,
-        updatedAt: new Date()
+    console.log("DatabaseStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
+    // Ensure required fields are present and nulls are handled properly
+    const [newPost] = await db.insert(blogPosts)
+      .values({
+        title: post.title,
+        content: post.content,
+        status: post.status || 'draft',
+        featuredImage: post.featuredImage || null,
+        category: post.category || null,
+        categories: post.categories || null,
+        tags: post.tags || null,
+        scheduledDate: post.scheduledDate || null,
+        scheduledPublishDate: post.scheduledPublishDate || null,
+        scheduledPublishTime: post.scheduledPublishTime || null,
+        publishedDate: post.publishedDate || null,
+        shopifyPostId: post.shopifyPostId || null,
+        shopifyBlogId: post.shopifyBlogId || null,
+        storeId: post.storeId || 1,
+        views: post.views || 0,
+        author: post.author || null,
+        authorId: post.authorId || null
       })
+      .returning();
+      
+    console.log("DatabaseStorage.createBlogPost - Created post:", JSON.stringify(newPost, null, 2));
+    return newPost;
+  }
+  
+  async updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined> {
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (post.title !== undefined) updateData.title = post.title;
+    if (post.content !== undefined) updateData.content = post.content;
+    if (post.status !== undefined) updateData.status = post.status;
+    if (post.featuredImage !== undefined) updateData.featuredImage = post.featuredImage;
+    if (post.category !== undefined) updateData.category = post.category;
+    if (post.tags !== undefined) updateData.tags = post.tags;
+    if (post.scheduledDate !== undefined) updateData.scheduledDate = post.scheduledDate;
+    if (post.publishedDate !== undefined) updateData.publishedDate = post.publishedDate;
+    if (post.shopifyPostId !== undefined) updateData.shopifyPostId = post.shopifyPostId;
+    if (post.views !== undefined) updateData.views = post.views;
+    
+    const [updatedPost] = await db.update(blogPosts)
+      .set(updateData)
       .where(eq(blogPosts.id, id))
       .returning();
-    return updated;
+      
+    return updatedPost;
   }
-
+  
   async deleteBlogPost(id: number): Promise<boolean> {
-    const result = await db.delete(blogPosts).where(eq(blogPosts.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(blogPosts).where(eq(blogPosts.id, id)).returning({ id: blogPosts.id });
+    return result.length > 0;
   }
-
+  
   async getRecentPosts(limit: number): Promise<BlogPost[]> {
-    return await db.select().from(blogPosts)
-      .orderBy(desc(blogPosts.createdAt))
+    // Get posts sorted by published date or scheduled date in descending order
+    return db.select()
+      .from(blogPosts)
+      .orderBy(desc(blogPosts.publishedDate))
       .limit(limit);
   }
-
+  
   async getScheduledPosts(): Promise<BlogPost[]> {
-    return await db.select().from(blogPosts)
+    return db.select()
+      .from(blogPosts)
       .where(eq(blogPosts.status, 'scheduled'))
       .orderBy(asc(blogPosts.scheduledDate));
   }
-
+  
   async getPublishedPosts(): Promise<BlogPost[]> {
-    return await db.select().from(blogPosts)
+    return db.select()
+      .from(blogPosts)
       .where(eq(blogPosts.status, 'published'))
       .orderBy(desc(blogPosts.publishedDate));
   }
-
+  
   // Sync activity operations
   async getSyncActivities(limit: number): Promise<SyncActivity[]> {
-    return await db.select().from(syncActivities)
+    return db.select()
+      .from(syncActivities)
       .orderBy(desc(syncActivities.timestamp))
       .limit(limit);
   }
-
+  
   async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
-    const [newActivity] = await db.insert(syncActivities).values({
-      ...activity,
-      timestamp: new Date()
-    }).returning();
-    return {
-      id: newActivity.id,
-      timestamp: newActivity.timestamp,
-      status: newActivity.status,
-      activity: newActivity.activity,
-      storeId: newActivity.storeId,
-      details: newActivity.details
-    };
+    const [newActivity] = await db.insert(syncActivities)
+      .values({
+        activity: activity.activity,
+        status: activity.status,
+        details: activity.details || null,
+        timestamp: new Date()
+      })
+      .returning();
+      
+    return newActivity;
   }
-
-  // Content generation request operations
+  
+  // Content generation operations
   async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
-    const [newRequest] = await db.insert(contentGenRequests).values({
-      ...request,
-      timestamp: new Date()
-    }).returning();
-    return {
-      id: newRequest.id,
-      timestamp: newRequest.timestamp,
-      length: newRequest.length,
-      status: newRequest.status,
-      topic: newRequest.topic,
-      tone: newRequest.tone,
-      userId: newRequest.userId,
-      storeId: newRequest.storeId,
-      generatedContent: newRequest.generatedContent
-    };
+    const [newRequest] = await db.insert(contentGenRequests)
+      .values({
+        topic: request.topic,
+        tone: request.tone,
+        length: request.length,
+        status: request.status,
+        generatedContent: request.generatedContent || null,
+        timestamp: new Date()
+      })
+      .returning();
+      
+    return newRequest;
   }
-
+  
   async updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined> {
-    const [updated] = await db.update(contentGenRequests)
-      .set(request)
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (request.topic !== undefined) updateData.topic = request.topic;
+    if (request.tone !== undefined) updateData.tone = request.tone;
+    if (request.length !== undefined) updateData.length = request.length;
+    if (request.status !== undefined) updateData.status = request.status;
+    if (request.generatedContent !== undefined) updateData.generatedContent = request.generatedContent;
+    if (request.timestamp !== undefined) updateData.timestamp = request.timestamp;
+    
+    const [updatedRequest] = await db.update(contentGenRequests)
+      .set(updateData)
       .where(eq(contentGenRequests.id, id))
       .returning();
-    return updated;
+      
+    return updatedRequest;
   }
-
+  
   async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
-    const [request] = await db.select().from(contentGenRequests)
-      .where(eq(contentGenRequests.id, id))
-      .limit(1);
+    const [request] = await db.select().from(contentGenRequests).where(eq(contentGenRequests.id, id));
     return request;
   }
 
-  // Saved project operations (PostgreSQL database)
+  // Saved project operations
   async createSavedProject(project: InsertSavedProject): Promise<SavedProject> {
-    const [newProject] = await db.insert(savedProjects).values({
-      storeId: project.storeId,
-      name: project.name,
-      description: project.description || null,
-      formData: project.formData
-    }).returning();
+    const [newProject] = await db.insert(savedProjects)
+      .values({
+        storeId: project.storeId,
+        name: project.name,
+        description: project.description || null,
+        formData: project.formData
+      })
+      .returning();
     return newProject;
   }
 
   async getSavedProjects(storeId: number): Promise<SavedProject[]> {
-    return await db.select().from(savedProjects)
+    return db.select()
+      .from(savedProjects)
       .where(eq(savedProjects.storeId, storeId))
       .orderBy(desc(savedProjects.updatedAt));
   }
 
   async getSavedProject(id: number): Promise<SavedProject | undefined> {
-    const [project] = await db.select().from(savedProjects)
-      .where(eq(savedProjects.id, id))
-      .limit(1);
+    const [project] = await db.select().from(savedProjects).where(eq(savedProjects.id, id));
     return project;
-  }
-
-  async updateSavedProject(id: number, updates: Partial<InsertSavedProject>): Promise<SavedProject> {
-    const [updatedProject] = await db.update(savedProjects)
-      .set({
-        ...updates,
-        updatedAt: new Date()
-      })
-      .where(eq(savedProjects.id, id))
-      .returning();
-    return updatedProject;
   }
 
   async deleteSavedProject(id: number): Promise<void> {
     await db.delete(savedProjects).where(eq(savedProjects.id, id));
   }
+
+  // Multi-store Shopify operations
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return db.select().from(shopifyStores);
+  }
+
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select()
+      .from(shopifyStores)
+      .where(eq(shopifyStores.shopName, shopDomain));
+    return store;
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select()
+      .from(shopifyStores)
+      .where(eq(shopifyStores.id, id));
+    return store;
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    const [newStore] = await db.insert(shopifyStores)
+      .values({
+        shopName: store.shopName,
+        accessToken: store.accessToken,
+        scope: store.scope,
+        defaultBlogId: store.defaultBlogId || null,
+        isConnected: store.isConnected !== undefined ? store.isConnected : true,
+        planName: store.planName || null,
+        chargeId: store.chargeId || null,
+        trialEndsAt: store.trialEndsAt || null
+      })
+      .returning();
+    return newStore;
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    // Create a clean update object with only the fields that are present
+    const updateData: Record<string, any> = {};
+    
+    if (store.shopName !== undefined) updateData.shopName = store.shopName;
+    if (store.accessToken !== undefined) updateData.accessToken = store.accessToken;
+    if (store.scope !== undefined) updateData.scope = store.scope;
+    if (store.defaultBlogId !== undefined) updateData.defaultBlogId = store.defaultBlogId;
+    if (store.isConnected !== undefined) updateData.isConnected = store.isConnected;
+    if (store.lastSynced !== undefined) updateData.lastSynced = store.lastSynced;
+    if (store.uninstalledAt !== undefined) updateData.uninstalledAt = store.uninstalledAt;
+    if (store.planName !== undefined) updateData.planName = store.planName;
+    if (store.chargeId !== undefined) updateData.chargeId = store.chargeId;
+    if (store.trialEndsAt !== undefined) updateData.trialEndsAt = store.trialEndsAt;
+    
+    const [updatedStore] = await db.update(shopifyStores)
+      .set(updateData)
+      .where(eq(shopifyStores.id, id))
+      .returning();
+    
+    return updatedStore;
+  }
+
+  // User-store relationship operations
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    // Join user_stores with shopify_stores to get all stores for a user
+    const stores = await db.select({
+        id: shopifyStores.id,
+        shopName: shopifyStores.shopName,
+        accessToken: shopifyStores.accessToken,
+        scope: shopifyStores.scope,
+        defaultBlogId: shopifyStores.defaultBlogId,
+        isConnected: shopifyStores.isConnected,
+        lastSynced: shopifyStores.lastSynced,
+        installedAt: shopifyStores.installedAt,
+        uninstalledAt: shopifyStores.uninstalledAt,
+        planName: shopifyStores.planName,
+        chargeId: shopifyStores.chargeId,
+        trialEndsAt: shopifyStores.trialEndsAt
+      })
+      .from(shopifyStores)
+      .innerJoin(userStores, eq(userStores.storeId, shopifyStores.id))
+      .where(eq(userStores.userId, userId));
+    
+    return stores;
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    const [newUserStore] = await db.insert(userStores)
+      .values({
+        userId: userStore.userId,
+        storeId: userStore.storeId,
+        role: userStore.role || 'member'
+      })
+      .returning();
+    return newUserStore;
+  }
 }
 
-// Export an instance of MemStorage for now to get server running
-export const storage = new MemStorage();
+// Use MemStorage as the database connection is having issues
+const memStorage = new MemStorage();
+const dbStorage = new DatabaseStorage();
+
+// Create a fallback storage that tries DatabaseStorage first and falls back to MemStorage
+class FallbackStorage implements IStorage {
+  private async tryOrFallback<T>(dbOperation: () => Promise<T>, memOperation: () => Promise<T>): Promise<T> {
+    try {
+      return await dbOperation();
+    } catch (error) {
+      console.warn("Database operation failed, falling back to in-memory storage:", error);
+      return await memOperation();
+    }
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getUser(id),
+      () => memStorage.getUser(id)
+    );
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getUserByUsername(username),
+      () => memStorage.getUserByUsername(username)
+    );
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    return this.tryOrFallback(
+      () => dbStorage.createUser(user),
+      () => memStorage.createUser(user)
+    );
+  }
+
+  async getShopifyConnection(): Promise<ShopifyConnection | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyConnection(),
+      () => memStorage.getShopifyConnection()
+    );
+  }
+
+  async createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection> {
+    return this.tryOrFallback(
+      () => dbStorage.createShopifyConnection(connection),
+      () => memStorage.createShopifyConnection(connection)
+    );
+  }
+
+  async updateShopifyConnection(connection: Partial<ShopifyConnection>): Promise<ShopifyConnection | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateShopifyConnection(connection),
+      () => memStorage.updateShopifyConnection(connection)
+    );
+  }
+
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStores(),
+      () => memStorage.getShopifyStores()
+    );
+  }
+
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStoreByDomain(shopDomain),
+      () => memStorage.getShopifyStoreByDomain(shopDomain)
+    );
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStore(id),
+      () => memStorage.getShopifyStore(id)
+    );
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    return this.tryOrFallback(
+      () => dbStorage.createShopifyStore(store),
+      () => memStorage.createShopifyStore(store)
+    );
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    return this.tryOrFallback(
+      () => dbStorage.updateShopifyStore(id, store),
+      () => memStorage.updateShopifyStore(id, store)
+    );
+  }
+
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getUserStores(userId),
+      () => memStorage.getUserStores(userId)
+    );
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    return this.tryOrFallback(
+      () => dbStorage.createUserStore(userStore),
+      () => memStorage.createUserStore(userStore)
+    );
+  }
+
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getBlogPosts(),
+      () => memStorage.getBlogPosts()
+    );
+  }
+
+  async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getBlogPost(id),
+      () => memStorage.getBlogPost(id)
+    );
+  }
+
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    return this.tryOrFallback(
+      () => dbStorage.createBlogPost(post),
+      () => memStorage.createBlogPost(post)
+    );
+  }
+
+  async updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateBlogPost(id, post),
+      () => memStorage.updateBlogPost(id, post)
+    );
+  }
+
+  async deleteBlogPost(id: number): Promise<boolean> {
+    return this.tryOrFallback(
+      () => dbStorage.deleteBlogPost(id),
+      () => memStorage.deleteBlogPost(id)
+    );
+  }
+
+  async getRecentPosts(limit: number): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getRecentPosts(limit),
+      () => memStorage.getRecentPosts(limit)
+    );
+  }
+
+  async getScheduledPosts(): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getScheduledPosts(),
+      () => memStorage.getScheduledPosts()
+    );
+  }
+
+  async getPublishedPosts(): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getPublishedPosts(),
+      () => memStorage.getPublishedPosts()
+    );
+  }
+
+  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getSyncActivities(limit),
+      () => memStorage.getSyncActivities(limit)
+    );
+  }
+
+  async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
+    return this.tryOrFallback(
+      () => dbStorage.createSyncActivity(activity),
+      () => memStorage.createSyncActivity(activity)
+    );
+  }
+
+  async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
+    return this.tryOrFallback(
+      () => dbStorage.createContentGenRequest(request),
+      () => memStorage.createContentGenRequest(request)
+    );
+  }
+
+  async updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateContentGenRequest(id, request),
+      () => memStorage.updateContentGenRequest(id, request)
+    );
+  }
+
+  async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getContentGenRequest(id),
+      () => memStorage.getContentGenRequest(id)
+    );
+  }
+}
+
+// Export an instance of FallbackStorage that will use MemStorage if DatabaseStorage fails
+export const storage = new FallbackStorage();

@@ -1246,31 +1246,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "No Shopify connection found" });
       }
       
-      // Check if a project with this name already exists for this store
-      const existingProjects = await storage.getSavedProjects(connection.id);
-      const existingProject = existingProjects.find(p => p.name.toLowerCase() === name.toLowerCase());
+      const projectData = {
+        storeId: connection.id,
+        name,
+        description: description || "",
+        formData: JSON.stringify(formData)
+      };
       
-      let savedProject;
-      
-      if (existingProject) {
-        // Update existing project
-        savedProject = await storage.updateSavedProject(existingProject.id, {
-          description: description || "",
-          formData: JSON.stringify(formData)
-        });
-        console.log(`Updated existing project: ${name} (ID: ${existingProject.id})`);
-      } else {
-        // Create new project
-        const projectData = {
-          storeId: connection.id,
-          name,
-          description: description || "",
-          formData: JSON.stringify(formData)
-        };
-        
-        savedProject = await storage.createSavedProject(projectData);
-        console.log(`Created new project: ${name} (ID: ${savedProject.id})`);
-      }
+      const savedProject = await storage.createSavedProject(projectData);
       
       res.json({ 
         success: true, 
@@ -1294,7 +1277,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ 
         success: true, 
-        projects: projects
+        projects: projects.map(project => ({
+          ...project,
+          formData: JSON.parse(project.formData)
+        }))
       });
     } catch (error: any) {
       console.error("Error fetching projects:", error);
@@ -1316,7 +1302,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         success: true, 
         project: {
           ...project,
-          formData: typeof project.formData === 'string' ? JSON.parse(project.formData) : project.formData
+          formData: JSON.parse(project.formData)
         }
       });
     } catch (error: any) {

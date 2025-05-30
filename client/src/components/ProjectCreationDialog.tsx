@@ -85,25 +85,32 @@ export default function ProjectCreationDialog() {
     
     setIsSubmitting(true);
     
-    // Save project name to localStorage for later use when Generate Content is clicked
-    localStorage.setItem('current-project', projectName.trim());
+    // Save project name and content style settings to localStorage
+    localStorage.setItem('current-project', projectName);
+    localStorage.setItem('content-style-settings', JSON.stringify(contentStyleSettings));
+    
+    // Add to saved projects if not already there
+    const updatedProjects = [...savedProjects];
+    if (!updatedProjects.some((p: any) => p.name === projectName)) {
+      updatedProjects.push({ 
+        id: Date.now().toString(), 
+        name: projectName,
+        createdAt: new Date().toISOString(),
+        contentStyle: contentStyleSettings
+      });
+      localStorage.setItem('saved-projects', JSON.stringify(updatedProjects));
+      setSavedProjects(updatedProjects);
+    }
     
     setTimeout(() => {
       toast({
-        title: "Project created",
-        description: `"${projectName}" is ready. Your settings will be saved when you generate content.`
+        title: "Project created successfully",
+        description: `"${projectName}" has been created and set as your current project`
       });
       
       setIsSubmitting(false);
       setOpen(false);
-      
-      // Notify parent component about project name change
-      if (window.dispatchEvent) {
-        window.dispatchEvent(new CustomEvent('projectNameChanged', { 
-          detail: { projectName: projectName.trim() } 
-        }));
-      }
-    }, 300);
+    }, 500);
   };
   
   // Handle template selection
@@ -176,7 +183,63 @@ export default function ProjectCreationDialog() {
                 Name your project based on your campaign or content goal.
               </p>
               
-
+              {/* Template Selection */}
+              {showTemplates && (
+                <div className="space-y-3 pt-2 border-t">
+                  <Label htmlFor="templateSelect" className="flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-primary" />
+                    Template Projects
+                  </Label>
+                  
+                  <Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Template Projects</SelectLabel>
+                        {TEMPLATE_PROJECTS.map(template => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  
+                  {selectedTemplate && (
+                    <p className="text-sm text-muted-foreground italic">
+                      {TEMPLATE_PROJECTS.find(t => t.id === selectedTemplate)?.description}
+                    </p>
+                  )}
+                </div>
+              )}
+              
+              {/* Saved Projects - Only show if there are saved projects */}
+              {!showTemplates && savedProjects.length > 0 && (
+                <div className="space-y-3 pt-2 border-t">
+                  <Label htmlFor="savedProjectSelect" className="flex items-center gap-1.5">
+                    <SaveAll className="h-4 w-4 text-primary" />
+                    Your Projects
+                  </Label>
+                  
+                  <Select onValueChange={handleSavedProjectSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a saved project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Saved Projects</SelectLabel>
+                        {savedProjects.map(project => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               
               <div className="pt-4 flex justify-end">
                 <Button 
@@ -190,7 +253,18 @@ export default function ProjectCreationDialog() {
             </div>
           </div>
           
-          <div className="flex justify-end pt-2 border-t">
+          <div className="flex items-center justify-between pt-2 border-t">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm"
+              className="flex items-center gap-1.5 text-primary"
+              onClick={() => setShowTemplates(!showTemplates)}
+            >
+              <FileDown className="h-4 w-4" />
+              {showTemplates ? "View Saved Projects" : "Load Template"}
+            </Button>
+            
             <Button 
               type="button" 
               variant="outline" 

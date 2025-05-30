@@ -4,11 +4,8 @@ import ShopifyImageViewer from '../components/ShopifyImageViewer';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
-
+import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
-import { SaveProjectDialog } from '../components/SaveProjectDialog';
-import { LoadProjectDialog } from '../components/LoadProjectDialog';
-import { CreateProjectDialog } from '../components/CreateProjectDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
@@ -87,7 +84,6 @@ import {
   FileVideo,
   FolderOpen,
   Folders,
-  FolderPlus,
   Gem,
   Heart,
   Image as ImageIcon,
@@ -323,33 +319,6 @@ export default function AdminPanel() {
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
-  
-  // Project creation dialog state
-  const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
-  const [hasShownWelcomeDialog, setHasShownWelcomeDialog] = useState(false);
-  
-  // Current project name state
-  const [currentProjectName, setCurrentProjectName] = useState<string>(() => {
-    return localStorage.getItem('current-project') || '';
-  });
-
-  // Listen for project name changes from Create New Project dialog
-  useEffect(() => {
-    const handleProjectNameChange = (event: CustomEvent) => {
-      const { projectName } = event.detail;
-      setCurrentProjectName(projectName);
-    };
-
-    window.addEventListener('projectNameChanged', handleProjectNameChange as EventListener);
-
-    return () => {
-      window.removeEventListener('projectNameChanged', handleProjectNameChange as EventListener);
-    };
-  }, []);
-  
-  // Project loading state
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
-  const [isLoadingProject, setIsLoadingProject] = useState(false);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -852,12 +821,6 @@ export default function AdminPanel() {
     queryKey: ['/api/admin/blogs'],
     enabled: selectedTab === "generate" && form.watch('articleType') === "blog"
   });
-
-  // Query for saved projects
-  const savedProjectsQuery = useQuery<{ success: boolean; projects: any[] }>({
-    queryKey: ['/api/projects'],
-    enabled: selectedTab === "generate"
-  });
   
   // Initialize form defaults when data is loaded
   useEffect(() => {
@@ -893,76 +856,6 @@ export default function AdminPanel() {
     localStorage.setItem('topshop-custom-categories', JSON.stringify(customCategories));
   }, [customCategories]);
   
-  // Auto-show Create New Project Dialog on first visit
-  useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem('topshop-has-seen-welcome');
-    if (!hasSeenWelcome && !hasShownWelcomeDialog) {
-      // Small delay to ensure the page is fully loaded
-      const timer = setTimeout(() => {
-        setShowCreateProjectDialog(true);
-        setHasShownWelcomeDialog(true);
-        localStorage.setItem('topshop-has-seen-welcome', 'true');
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [hasShownWelcomeDialog]);
-  
-  // Function to load a selected project and populate form fields
-  const handleLoadProject = async () => {
-    if (!selectedProjectId) return;
-    
-    setIsLoadingProject(true);
-    
-    try {
-      const response = await fetch(`/api/projects/${selectedProjectId}`);
-      const data = await response.json();
-      
-      if (data.success && data.project) {
-        const projectData = data.project.formData;
-        
-        // Reset form with project data
-        form.reset(projectData);
-        
-        // Handle media content if it exists
-        if (projectData.selectedMediaContent) {
-          setSelectedMediaContent(projectData.selectedMediaContent);
-        }
-        
-        // Handle other complex state
-        if (projectData.keywords) {
-          setSelectedKeywords(projectData.keywords);
-        }
-        
-        if (projectData.productIds) {
-          setSelectedProducts(projectData.productIds);
-        }
-        
-        if (projectData.collectionIds) {
-          setSelectedCollections(projectData.collectionIds);
-        }
-        
-        toast({
-          title: "Project Loaded",
-          description: `"${data.project.name}" has been loaded successfully.`,
-        });
-        
-        // Clear the selection after loading
-        setSelectedProjectId("");
-      } else {
-        throw new Error(data.error || "Failed to load project");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load project",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingProject(false);
-    }
-  };
-
   // Function to add a new custom category
   const addCustomCategory = (name: string) => {
     if (!name.trim()) return;
@@ -1422,49 +1315,6 @@ export default function AdminPanel() {
         setWorkflowStep('content');
         await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state update
       }
-
-      // Save project data before generating content (only if project exists)
-      if (currentProjectName && currentProjectName.trim()) {
-        try {
-          const projectData = {
-            name: currentProjectName,
-            description: `Auto-saved project for ${values.title}`,
-            formData: {
-              ...values,
-              selectedKeywords,
-              selectedProducts,
-              selectedCollections,
-              selectedBuyerPersonas,
-              selectedMediaContent,
-              contentStyleToneId: selectedContentToneId,
-              contentStyleDisplayName: selectedContentDisplayName
-            }
-          };
-          
-          console.log("Saving project data:", projectData);
-          console.log("Current state values:");
-          console.log("- selectedKeywords:", selectedKeywords);
-          console.log("- selectedProducts:", selectedProducts);
-          console.log("- selectedCollections:", selectedCollections);
-          console.log("- selectedBuyerPersonas:", selectedBuyerPersonas);
-          console.log("- selectedMediaContent:", selectedMediaContent);
-          console.log("- form values:", values);
-          
-          await apiRequest('POST', '/api/projects/save', projectData);
-          
-          // Invalidate projects query to refresh the dropdown
-          queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-          
-          toast({
-            title: "Project saved",
-            description: `${currentProjectName} has been saved with current settings`,
-          });
-        } catch (saveError: any) {
-          console.error("Error saving project:", saveError);
-          // Just log the error, don't show toast to avoid user confusion
-        }
-      }
-      // If no project name is set, simply proceed with content generation without any messages
       
       // Determine publication type based on scheduling checkbox
       let publicationType = values.postStatus === "publish" ? "publish" : "draft";
@@ -1744,85 +1594,6 @@ export default function AdminPanel() {
                     {/* Basic information section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Basic Information</h3>
-
-                      {/* Load Project Section */}
-                      <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="flex items-center gap-2">
-                          <FolderOpen className="h-4 w-4 text-blue-600" />
-                          <h3 className="text-sm font-medium text-blue-900">Quick Load Project</h3>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <Select
-                              value={selectedProjectId}
-                              onValueChange={setSelectedProjectId}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Select a saved project to load..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {savedProjectsQuery.isLoading ? (
-                                  <SelectItem value="loading" disabled>
-                                    Loading projects...
-                                  </SelectItem>
-                                ) : !savedProjectsQuery.data?.projects?.length ? (
-                                  <SelectItem value="no-projects" disabled>
-                                    No saved projects found
-                                  </SelectItem>
-                                ) : (
-                                  savedProjectsQuery.data.projects.map((project) => (
-                                    <SelectItem key={project.id} value={String(project.id)}>
-                                      {project.name}
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          {selectedProjectId && selectedProjectId !== "loading" && selectedProjectId !== "no-projects" && (
-                            <Button 
-                              type="button"
-                              onClick={handleLoadProject}
-                              disabled={isLoadingProject}
-                              variant="outline"
-                              size="default"
-                              className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
-                            >
-                              {isLoadingProject ? (
-                                <>
-                                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                  Loading...
-                                </>
-                              ) : (
-                                <>
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Load Project
-                                </>
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                        
-                        <p className="text-xs text-blue-700">
-                          Select a project from the dropdown and click "Load Project" to automatically fill all form fields with saved settings.
-                        </p>
-                        
-                        {/* Create New Project Button */}
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <Button 
-                            type="button"
-                            onClick={() => setShowCreateProjectDialog(true)}
-                            variant="outline"
-                            size="sm"
-                            className="w-full bg-green-50 text-green-700 hover:bg-green-100 border-green-300"
-                          >
-                            <FolderPlus className="mr-2 h-4 w-4" />
-                            Create New Project
-                          </Button>
-                        </div>
-                      </div>
 
                       {/* Region selection - always visible regardless of step */}
                       <FormField
@@ -6599,7 +6370,8 @@ export default function AdminPanel() {
         </DialogContent>
       </Dialog>
       
-
+      {/* Add the standalone project creation dialog that shows automatically */}
+      <ProjectCreationDialog />
       {/* Choose Media Dialog - New improved component */}
       <ChooseMediaDialog
         open={showChooseMediaDialog && !showImageDialog} 
@@ -6776,18 +6548,6 @@ export default function AdminPanel() {
         description={imageTab === 'primary' 
           ? "Select emotionally compelling images for the top of your content" 
           : "Select product images to appear throughout your article body"}
-      />
-
-      {/* Create New Project Dialog - Shows automatically on first visit */}
-      <CreateProjectDialog
-        open={showCreateProjectDialog}
-        onOpenChange={setShowCreateProjectDialog}
-        onProjectCreated={(project) => {
-          toast({
-            title: "Project created",
-            description: `${project.name} is ready for content generation`,
-          });
-        }}
       />
     </div>
   );
