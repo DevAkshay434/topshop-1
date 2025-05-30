@@ -428,7 +428,7 @@ export class ShopifyService {
         author: post.author || store.shopName,
         body_html: processedContent,
         tags: post.tags || "",
-        summary: post.summary || "", // Add summary field if available
+        summary: (post as any).summary || "", // Add summary field if available
         handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled'
       };
       
