@@ -2438,11 +2438,13 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setShowChooseMediaDialog(true);
+                                        setImageSource('pexels');
+                                        setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
+                                        setShowImageDialog(true);
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
-                                      Choose Media
+                                      Search Pexels
                                     </Button>
                                   </CardContent>
                                 </Card>
@@ -2465,11 +2467,21 @@ export default function AdminPanel() {
                                           className="w-full" 
                                           size="sm"
                                           onClick={() => {
-                                            setShowChooseMediaDialog(true);
+                                            setImageSource('product_images');
+                                            if (selectedProducts[0]?.id) {
+                                              fetchProductImages(selectedProducts[0].id);
+                                            } else {
+                                              toast({
+                                                title: "No product selected",
+                                                description: "Please select a product first",
+                                                variant: "destructive"
+                                              });
+                                            }
+                                            setShowImageDialog(true);
                                           }}
                                         >
                                           <ImageIcon className="mr-2 h-4 w-4" />
-                                          Choose Media
+                                          Product Images
                                         </Button>
                                       )}
                                     </div>
@@ -2489,11 +2501,12 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setShowChooseMediaDialog(true);
+                                        setImageSource('upload');
+                                        setShowImageDialog(true);
                                       }}
                                     >
                                       <Upload className="mr-2 h-4 w-4" />
-                                      Choose Media
+                                      Upload Image
                                     </Button>
                                   </CardContent>
                                 </Card>
