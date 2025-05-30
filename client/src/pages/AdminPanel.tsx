@@ -1287,6 +1287,73 @@ export default function AdminPanel() {
     }
   };
   
+  // Handle publication actions
+  const handlePublishContent = async (publicationType: 'publish' | 'draft' | 'schedule') => {
+    if (!generatedContent) {
+      toast({
+        title: "No content to publish",
+        description: "Please generate content first before publishing",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      
+      const formValues = form.getValues();
+      const publishData = {
+        title: generatedContent.title,
+        content: generatedContent.content,
+        metaTitle: generatedContent.metaTitle,
+        metaDescription: generatedContent.metaDescription,
+        tags: generatedContent.tags || [],
+        featuredImage: generatedContent.featuredImage,
+        articleType: formValues.articleType,
+        blogId: formValues.blogId,
+        publicationType,
+        status: publicationType === 'publish' ? 'published' : publicationType === 'schedule' ? 'scheduled' : 'draft',
+        scheduledPublishDate: publicationType === 'schedule' ? formValues.scheduledPublishDate : undefined,
+        scheduledPublishTime: publicationType === 'schedule' ? formValues.scheduledPublishTime || "09:30" : undefined
+      };
+
+      console.log("Publishing content with data:", publishData);
+
+      const response = await apiRequest({
+        url: '/api/posts',
+        method: 'POST',
+        data: publishData
+      });
+
+      if (response?.success) {
+        setGeneratedContent({
+          ...generatedContent,
+          contentUrl: response.contentUrl
+        });
+
+        const actionText = publicationType === 'publish' ? 'published' : 
+                          publicationType === 'schedule' ? 'scheduled' : 'saved as draft';
+        
+        toast({
+          title: `Content ${actionText}`,
+          description: `Your content has been ${actionText} successfully`,
+          variant: "default"
+        });
+      } else {
+        throw new Error(response?.message || "Failed to publish content");
+      }
+    } catch (error: any) {
+      console.error("Publication error:", error);
+      toast({
+        title: "Publication failed",
+        description: error?.message || "Failed to publish content. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Handle content generation form submission
   const handleSubmit = async (values: ContentFormValues) => {
     try {
@@ -4237,33 +4304,45 @@ export default function AdminPanel() {
                         )}
                       />
 
-                      {/* Submit Button */}
-                      <Button 
-                        type="button" 
-                        className="w-full" 
-                        onClick={() => {
-                          const values = form.getValues();
-                          handleSubmit(values);
-                        }}
-                        disabled={isGenerating}
-                      >
-                        {form.getValues('postStatus') === 'publish' && !form.getValues('scheduledPublishDate') ? (
-                          <>
-                            <Send className="mr-2 h-4 w-4" />
-                            Publish Now
-                          </>
-                        ) : form.getValues('scheduledPublishDate') ? (
-                          <>
+                      {/* Publication Action Buttons */}
+                      <div className="flex flex-col gap-3">
+                        {/* Publish Now Button */}
+                        <Button 
+                          type="button" 
+                          onClick={() => handlePublishContent('publish')}
+                          disabled={isGenerating}
+                          className="w-full"
+                        >
+                          <Send className="mr-2 h-4 w-4" />
+                          Publish Now
+                        </Button>
+
+                        {/* Save as Draft Button */}
+                        <Button 
+                          type="button" 
+                          variant="outline"
+                          onClick={() => handlePublishContent('draft')}
+                          disabled={isGenerating}
+                          className="w-full"
+                        >
+                          <Save className="mr-2 h-4 w-4" />
+                          Save as Draft
+                        </Button>
+
+                        {/* Schedule Publication Button - only show if date is selected */}
+                        {form.getValues('scheduledPublishDate') && (
+                          <Button 
+                            type="button" 
+                            variant="secondary"
+                            onClick={() => handlePublishContent('schedule')}
+                            disabled={isGenerating}
+                            className="w-full"
+                          >
                             <CalendarCheck className="mr-2 h-4 w-4" />
                             Schedule Publication
-                          </>
-                        ) : (
-                          <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save as Draft
-                          </>
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     </div>
                   </Form>
                 </CardContent>
