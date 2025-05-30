@@ -3455,6 +3455,7 @@ export default function AdminPanel() {
                         }))}
                       />
                     </div>
+                    </div>
                     
                     {/* Template Controls */}
                     <div className="mt-6 grid grid-cols-2 gap-3">
