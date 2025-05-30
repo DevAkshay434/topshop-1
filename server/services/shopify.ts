@@ -541,15 +541,17 @@ export class ShopifyService {
       // Make the API request
       const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
       
-      // Log the response with scheduling data
+      // Log the response with scheduling data and handle
       console.log(`Shopify API response:`, {
         id: response.data.article.id,
         title: response.data.article.title,
+        handle: response.data.article.handle,
         published: response.data.article.published,
         published_at: response.data.article.published_at,
         sentRequest: {
           published: article.published,
           published_at: article.published_at,
+          handle: article.handle,
           isScheduled: isScheduledPublishing
         }
       });
