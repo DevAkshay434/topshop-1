@@ -446,34 +446,43 @@ export class MemStorage implements IStorage {
     return this.contentGenRequests.get(id);
   }
 
-  // Saved project operations (in-memory fallback)
+  // Saved project operations (PostgreSQL database)
   async createSavedProject(project: InsertSavedProject): Promise<SavedProject> {
-    const id = Date.now(); // Simple ID for memory storage
-    const newProject: SavedProject = {
-      id,
+    const [newProject] = await db.insert(savedProjects).values({
       storeId: project.storeId,
       name: project.name,
       description: project.description || null,
-      formData: project.formData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    // Store in memory (note: this will be lost on restart)
+      formData: project.formData
+    }).returning();
     return newProject;
   }
 
   async getSavedProjects(storeId: number): Promise<SavedProject[]> {
-    // Return empty array for in-memory fallback
-    return [];
+    return await db.select().from(savedProjects)
+      .where(eq(savedProjects.storeId, storeId))
+      .orderBy(desc(savedProjects.updatedAt));
   }
 
   async getSavedProject(id: number): Promise<SavedProject | undefined> {
-    // Return undefined for in-memory fallback
-    return undefined;
+    const [project] = await db.select().from(savedProjects)
+      .where(eq(savedProjects.id, id))
+      .limit(1);
+    return project;
+  }
+
+  async updateSavedProject(id: number, updates: Partial<InsertSavedProject>): Promise<SavedProject> {
+    const [updatedProject] = await db.update(savedProjects)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(savedProjects.id, id))
+      .returning();
+    return updatedProject;
   }
 
   async deleteSavedProject(id: number): Promise<void> {
-    // No-op for in-memory fallback
+    await db.delete(savedProjects).where(eq(savedProjects.id, id));
   }
   
   // Multi-store Shopify operations

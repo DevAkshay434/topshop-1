@@ -1246,14 +1246,31 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "No Shopify connection found" });
       }
       
-      const projectData = {
-        storeId: connection.id,
-        name,
-        description: description || "",
-        formData: JSON.stringify(formData)
-      };
+      // Check if a project with this name already exists for this store
+      const existingProjects = await storage.getSavedProjects(connection.id);
+      const existingProject = existingProjects.find(p => p.name.toLowerCase() === name.toLowerCase());
       
-      const savedProject = await storage.createSavedProject(projectData);
+      let savedProject;
+      
+      if (existingProject) {
+        // Update existing project
+        savedProject = await storage.updateSavedProject(existingProject.id, {
+          description: description || "",
+          formData: JSON.stringify(formData)
+        });
+        console.log(`Updated existing project: ${name} (ID: ${existingProject.id})`);
+      } else {
+        // Create new project
+        const projectData = {
+          storeId: connection.id,
+          name,
+          description: description || "",
+          formData: JSON.stringify(formData)
+        };
+        
+        savedProject = await storage.createSavedProject(projectData);
+        console.log(`Created new project: ${name} (ID: ${savedProject.id})`);
+      }
       
       res.json({ 
         success: true, 
