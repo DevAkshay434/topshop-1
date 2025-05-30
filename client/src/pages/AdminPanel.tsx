@@ -3854,8 +3854,21 @@ export default function AdminPanel() {
             </Card>
           </div>
         </TabsContent>
+
+        {/* Services Tab */}
+        <TabsContent value="connections" className="space-y-6">
+          <div className="text-center text-gray-500">
+            <p>Service connections panel coming soon</p>
+          </div>
+        </TabsContent>
+
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="space-y-6">
+          <div className="text-center text-gray-500">
+            <p>Settings panel coming soon</p>
+          </div>
+        </TabsContent>
       </Tabs>
-      </form>
-    </Form>
+    </div>
   );
 }
