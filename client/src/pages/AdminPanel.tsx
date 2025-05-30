@@ -6851,5 +6851,8 @@ export default function AdminPanel() {
           : "Select product images to appear throughout your article body"}
       />
     </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
