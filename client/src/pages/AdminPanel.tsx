@@ -3733,6 +3733,59 @@ export default function AdminPanel() {
 
                       {/* Content Editor */}
                       <div
+                        ref={(el) => {
+                          if (el && generatedContent.content && el.innerHTML !== generatedContent.content) {
+                            // Only update innerHTML if content actually changed to prevent cursor jumping
+                            const selection = window.getSelection();
+                            const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+                            const caretOffset = range?.startOffset;
+                            const caretContainer = range?.startContainer;
+                            
+                            el.innerHTML = generatedContent.content;
+                            
+                            // Restore cursor position
+                            if (selection && range && caretContainer && caretOffset !== undefined) {
+                              try {
+                                const newRange = document.createRange();
+                                const walker = document.createTreeWalker(
+                                  el,
+                                  NodeFilter.SHOW_TEXT,
+                                  null,
+                                  false
+                                );
+                                
+                                let currentOffset = 0;
+                                let targetNode = null;
+                                let node;
+                                
+                                while (node = walker.nextNode()) {
+                                  const nodeLength = node.textContent?.length || 0;
+                                  if (currentOffset + nodeLength >= caretOffset) {
+                                    targetNode = node;
+                                    break;
+                                  }
+                                  currentOffset += nodeLength;
+                                }
+                                
+                                if (targetNode) {
+                                  newRange.setStart(targetNode, Math.min(caretOffset - currentOffset, targetNode.textContent?.length || 0));
+                                  newRange.collapse(true);
+                                  selection.removeAllRanges();
+                                  selection.addRange(newRange);
+                                }
+                              } catch (e) {
+                                // Fallback: place cursor at end
+                                const newRange = document.createRange();
+                                newRange.selectNodeContents(el);
+                                newRange.collapse(false);
+                                selection.removeAllRanges();
+                                selection.addRange(newRange);
+                              }
+                            }
+                          } else if (el && !generatedContent.content) {
+                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
+                          }
+                        }}
                         contentEditable
                         suppressContentEditableWarning={true}
                         className="min-h-[400px] max-h-[60vh] overflow-y-auto p-5 border border-gray-200 rounded-b-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent prose prose-blue max-w-none"
@@ -3748,9 +3801,6 @@ export default function AdminPanel() {
                             content: target.innerHTML
                           }));
                         }}
-                        dangerouslySetInnerHTML={{ 
-                          __html: generatedContent.content || '<p>Your generated content will appear here for editing...</p>'
-                        }}
                       />
                       
                       {/* Word Count */}
@@ -3761,42 +3811,170 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    {/* Secondary Images Display */}
-                    {generatedContent.secondaryImages && generatedContent.secondaryImages.length > 0 && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Secondary Images</label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {generatedContent.secondaryImages.map((image: any, index: number) => (
-                            <div key={index} className="relative group">
-                              <img
-                                src={image.src?.medium || image.url}
-                                alt={image.alt || `Secondary image ${index + 1}`}
-                                className="w-full h-32 object-cover rounded-md border border-gray-200"
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-md flex items-center justify-center">
+                    {/* Media Gallery - Secondary Images and Videos */}
+                    {((generatedContent.secondaryImages && generatedContent.secondaryImages.length > 0) || 
+                      (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0) ||
+                      selectedMediaContent.youtubeEmbed) && (
+                      <div className="space-y-4">
+                        <label className="text-sm font-medium text-gray-700">Media Gallery</label>
+                        
+                        {/* Secondary Images */}
+                        {(generatedContent.secondaryImages?.length > 0 || selectedMediaContent.secondaryImages?.length > 0) && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-medium text-gray-600">Secondary Images</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              {(generatedContent.secondaryImages || selectedMediaContent.secondaryImages || []).map((image: any, index: number) => (
+                                <div key={index} className="relative group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                                  <div className="aspect-square">
+                                    <img
+                                      src={image.src?.medium || image.url}
+                                      alt={image.alt || `Secondary image ${index + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                                    <div className="opacity-0 group-hover:opacity-100 flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          // Get the content editor element
+                                          const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+                                          if (editor) {
+                                            editor.focus();
+                                            
+                                            // Insert image at the end or current cursor position
+                                            const selection = window.getSelection();
+                                            let range;
+                                            
+                                            if (selection && selection.rangeCount > 0) {
+                                              range = selection.getRangeAt(0);
+                                            } else {
+                                              // If no selection, insert at the end
+                                              range = document.createRange();
+                                              range.selectNodeContents(editor);
+                                              range.collapse(false);
+                                            }
+                                            
+                                            // Create image element with proper styling
+                                            const imgWrapper = document.createElement('div');
+                                            imgWrapper.className = 'my-6 text-center';
+                                            
+                                            const imgElement = document.createElement('img');
+                                            imgElement.src = image.src?.large || image.src?.medium || image.url;
+                                            imgElement.alt = image.alt || `Secondary image ${index + 1}`;
+                                            imgElement.className = 'max-w-full h-auto rounded-lg shadow-sm mx-auto';
+                                            imgElement.style.maxHeight = '400px';
+                                            
+                                            imgWrapper.appendChild(imgElement);
+                                            
+                                            // Insert the wrapper
+                                            range.insertNode(imgWrapper);
+                                            
+                                            // Update content state
+                                            setTimeout(() => {
+                                              setGeneratedContent(prev => ({
+                                                ...prev,
+                                                content: editor.innerHTML
+                                              }));
+                                            }, 100);
+                                          }
+                                        }}
+                                        className="bg-white text-gray-700 px-3 py-1 rounded text-xs font-medium shadow-md hover:bg-gray-50"
+                                      >
+                                        Insert
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => window.open(image.src?.original || image.url, '_blank')}
+                                        className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium shadow-md hover:bg-blue-700"
+                                      >
+                                        View
+                                      </button>
+                                    </div>
+                                  </div>
+                                  {/* Image info overlay */}
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                    <p className="text-white text-xs truncate">{image.alt || `Image ${index + 1}`}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* YouTube Video */}
+                        {selectedMediaContent.youtubeEmbed && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-medium text-gray-600">Video Content</h4>
+                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                              <div className="aspect-video">
+                                <iframe
+                                  src={`https://www.youtube.com/embed/${selectedMediaContent.youtubeEmbed.videoId}`}
+                                  title="YouTube video"
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                              <div className="p-3 border-t border-gray-100">
+                                <p className="text-sm text-gray-700 mb-2">{selectedMediaContent.youtubeEmbed.alt || 'YouTube Video'}</p>
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    // Insert image into content at cursor position
-                                    const selection = window.getSelection();
-                                    if (selection && selection.rangeCount > 0) {
-                                      const range = selection.getRangeAt(0);
-                                      const imgElement = document.createElement('img');
-                                      imgElement.src = image.src?.medium || image.url;
-                                      imgElement.alt = image.alt || `Secondary image ${index + 1}`;
-                                      imgElement.className = 'w-full h-auto my-4 rounded-md';
-                                      range.insertNode(imgElement);
+                                    // Get the content editor element
+                                    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+                                    if (editor) {
+                                      editor.focus();
+                                      
+                                      // Insert video at current cursor position or end
+                                      const selection = window.getSelection();
+                                      let range;
+                                      
+                                      if (selection && selection.rangeCount > 0) {
+                                        range = selection.getRangeAt(0);
+                                      } else {
+                                        range = document.createRange();
+                                        range.selectNodeContents(editor);
+                                        range.collapse(false);
+                                      }
+                                      
+                                      // Create video embed wrapper
+                                      const videoWrapper = document.createElement('div');
+                                      videoWrapper.className = 'my-8 text-center';
+                                      
+                                      const iframe = document.createElement('iframe');
+                                      iframe.src = `https://www.youtube.com/embed/${selectedMediaContent.youtubeEmbed?.videoId}`;
+                                      iframe.title = selectedMediaContent.youtubeEmbed?.alt || 'YouTube video';
+                                      iframe.className = 'w-full rounded-lg shadow-sm mx-auto';
+                                      iframe.style.height = '315px';
+                                      iframe.style.maxWidth = '560px';
+                                      iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                                      iframe.setAttribute('allowfullscreen', 'true');
+                                      
+                                      videoWrapper.appendChild(iframe);
+                                      range.insertNode(videoWrapper);
+                                      
+                                      // Update content state
+                                      setTimeout(() => {
+                                        setGeneratedContent(prev => ({
+                                          ...prev,
+                                          content: editor.innerHTML
+                                        }));
+                                      }, 100);
                                     }
                                   }}
-                                  className="opacity-0 group-hover:opacity-100 bg-white text-gray-700 px-2 py-1 rounded text-xs font-medium transition-opacity duration-200"
+                                  className="bg-red-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-red-700 transition-colors"
                                 >
-                                  Insert
+                                  Insert Video
                                 </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                        <p className="text-xs text-gray-500">Click "Insert" to add images to your content</p>
+                          </div>
+                        )}
+                        
+                        <p className="text-xs text-gray-500">
+                          Click "Insert" to add media to your content. Images and videos will be properly formatted and sized.
+                        </p>
                       </div>
                     )}
 
