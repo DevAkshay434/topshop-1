@@ -422,14 +422,20 @@ export class ShopifyService {
         console.log(`Using explicit publish date: ${futurePublishDate.toISOString()}`);
       }
       
-      // Create the article object
+      // Create the article object with proper validation
       const article: any = {
         title: post.title,
         author: post.author || store.shopName,
         body_html: processedContent,
         tags: post.tags || "",
-        image: post.featuredImage ? { src: post.featuredImage } : undefined
+        summary: post.summary || "", // Add summary field if available
+        handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled'
       };
+      
+      // Only add image if it exists and is properly formatted
+      if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
+        article.image = { src: post.featuredImage.trim() };
+      }
       
       // For scheduled posts, we need to implement a different approach
       // Shopify's API behavior is more complex:
@@ -582,8 +588,16 @@ export class ShopifyService {
       
       // Log detailed error information for 422 validation errors
       if (error.response?.status === 422) {
-        console.error('Shopify validation error details:', JSON.stringify(error.response.data, null, 2));
-        console.error('Content was likely too long or contained invalid formatting');
+        console.error('Shopify 422 validation error details:');
+        console.error('Response data:', JSON.stringify(error.response.data, null, 2));
+        console.error('Article data sent:', JSON.stringify({
+          title: article.title,
+          summary: article.summary,
+          body_html_length: article.body_html?.length || 0,
+          published: article.published,
+          published_at: article.published_at,
+          tags: article.tags
+        }, null, 2));
       }
       
       throw new Error(`Failed to create article: ${error?.message || 'Unknown error'}`);
