@@ -489,6 +489,18 @@ export class ShopifyService {
         status: post.status
       });
       
+      // Validate content before sending to Shopify
+      if (article.body_html && article.body_html.length > 65000) {
+        console.log(`Content length ${article.body_html.length} exceeds Shopify limit, truncating...`);
+        article.body_html = article.body_html.substring(0, 60000) + '...</p>';
+      }
+      
+      // Ensure title is not too long
+      if (article.title && article.title.length > 255) {
+        console.log(`Title too long, truncating from ${article.title.length} to 255 characters`);
+        article.title = article.title.substring(0, 252) + '...';
+      }
+      
       // Log the request with detailed information to diagnose publishing issues
       console.log(`Sending to Shopify API:`, {
         title: article.title,
@@ -498,7 +510,8 @@ export class ShopifyService {
         publicationType: (post as any).publicationType,
         postStatus: (post as any).postStatus,
         status: post.status,
-        endpointUrl: `/blogs/${blogId}/articles.json`
+        endpointUrl: `/blogs/${blogId}/articles.json`,
+        contentLength: article.body_html?.length || 0
       });
       
       // Make the API request
@@ -566,6 +579,13 @@ export class ShopifyService {
       return response.data.article;
     } catch (error: any) {
       console.error(`Error creating article in Shopify store ${store.shopName}:`, error);
+      
+      // Log detailed error information for 422 validation errors
+      if (error.response?.status === 422) {
+        console.error('Shopify validation error details:', JSON.stringify(error.response.data, null, 2));
+        console.error('Content was likely too long or contained invalid formatting');
+      }
+      
       throw new Error(`Failed to create article: ${error?.message || 'Unknown error'}`);
     }
   }
