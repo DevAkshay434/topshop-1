@@ -3811,8 +3811,8 @@ export default function AdminPanel() {
                             className="prose max-w-none" 
                             dangerouslySetInnerHTML={{ __html: content }}
                           />
-                        })()}
-                      </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 ) : (
@@ -3850,9 +3850,11 @@ export default function AdminPanel() {
                     )}
                   </Button>
                 </div>
+              </CardContent>
             </Card>
           </div>
-        </div>
+        </TabsContent>
+      </Tabs>
       </form>
     </Form>
   );
