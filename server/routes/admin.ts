@@ -1959,12 +1959,17 @@ Place this at a logical position in the content, typically after introducing a c
             try {
               const blogDetails = await shopifyService.getBlogById(store, shopifyArticle.blog_id);
               blogHandle = blogDetails.handle;
-              console.log(`Using blog handle "${blogHandle}" instead of ID for URL`);
+              console.log(`Using blog handle "${blogHandle}" for URL generation`);
             } catch (blogError) {
-              console.warn(`Could not fetch blog handle, falling back to ID: ${blogError}`);
-              blogHandle = shopifyArticle.blog_id;
+              console.warn(`Could not fetch blog handle, using default: ${blogError}`);
+              blogHandle = 'news'; // Default blog handle
             }
-            contentUrl = `https://${store.shopName}/blogs/${blogHandle}/${shopifyArticle.handle}`;
+            
+            // Ensure we use the article handle from Shopify response, not numeric ID
+            const articleHandle = shopifyArticle.handle || shopifyArticle.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled';
+            contentUrl = `https://${store.shopName}/blogs/${blogHandle}/${articleHandle}`;
+            
+            console.log(`Generated blog post URL: ${contentUrl}`);
           } catch (shopifyError: any) {
             console.error('Error creating Shopify article:', shopifyError);
             throw new Error(`Failed to publish to Shopify: ${shopifyError.message || 'Unknown error'}`);
@@ -2079,7 +2084,12 @@ Place this at a logical position in the content, typically after introducing a c
           }
           
           contentId = page.id;
-          contentUrl = `https://${store.shopName}/pages/${page.handle}`;
+          
+          // Ensure we use the page handle from Shopify response, not numeric ID
+          const pageHandle = page.handle || generatedContent.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled';
+          contentUrl = `https://${store.shopName}/pages/${pageHandle}`;
+          
+          console.log(`Generated page URL: ${contentUrl}`);
         } catch (pageError: any) {
           console.error('Error creating Shopify page:', pageError);
           throw new Error(`Failed to create page: ${pageError?.message || 'Unknown error'}`);
