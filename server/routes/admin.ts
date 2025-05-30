@@ -1633,8 +1633,10 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
-      // Insert secondary images throughout the content
-      if (additionalImages.length > 0) {
+      // LEGACY IMAGE INSERTION - DISABLED TO PREVENT DUPLICATION
+      // This section was causing secondary images to repeat multiple times
+      // All image placement is now handled by the Choose Media workflow above
+      if (false && additionalImages.length > 0) {
         // Get product info either from productsInfo or from the request's productIds
         let availableProducts = productsInfo;
         
