@@ -2504,12 +2504,11 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setImageSource('upload');
-                                        setShowImageDialog(true);
+                                        setShowChooseMediaDialog(true);
                                       }}
                                     >
                                       <Upload className="mr-2 h-4 w-4" />
-                                      Upload Image
+                                      Choose Media
                                     </Button>
                                   </CardContent>
                                 </Card>
