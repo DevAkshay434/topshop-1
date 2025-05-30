@@ -2453,14 +2453,11 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setImageSource('pexels');
-                                        // Suggested emotional search terms based on products
-                                        setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
-                                        setShowImageDialog(true);
+                                        setShowChooseMediaDialog(true);
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
-                                      Search Pexels
+                                      Choose Media
                                     </Button>
                                   </CardContent>
                                 </Card>
@@ -2483,22 +2480,11 @@ export default function AdminPanel() {
                                           className="w-full" 
                                           size="sm"
                                           onClick={() => {
-                                            setImageSource('product_images');
-                                            // Use the first selected product for product-specific images
-                                            if (selectedProducts[0]?.id) {
-                                              fetchProductImages(selectedProducts[0].id);
-                                            } else {
-                                              toast({
-                                                title: "No product selected",
-                                                description: "Please select a product first",
-                                                variant: "destructive"
-                                              });
-                                            }
-                                            setShowImageDialog(true);
+                                            setShowChooseMediaDialog(true);
                                           }}
                                         >
                                           <ImageIcon className="mr-2 h-4 w-4" />
-                                          Product Images
+                                          Choose Media
                                         </Button>
                                       )}
                                     </div>
