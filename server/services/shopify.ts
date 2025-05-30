@@ -495,6 +495,24 @@ export class ShopifyService {
         status: post.status
       });
       
+      // Optimize images in content to meet Shopify's 25 megapixel limit
+      if (article.body_html) {
+        // Replace high-resolution image URLs with medium or small versions
+        article.body_html = article.body_html.replace(
+          /src="([^"]*?\.(?:jpg|jpeg|png|webp)[^"]*?)"/gi,
+          (match, url) => {
+            // Convert large images to medium size to avoid 25 megapixel limit
+            if (url.includes('cdn.shopify.com') && url.includes('large')) {
+              return match.replace('large', 'medium');
+            }
+            if (url.includes('images.pexels.com') && url.includes('original')) {
+              return match.replace('original', 'large');
+            }
+            return match;
+          }
+        );
+      }
+
       // Validate content before sending to Shopify
       if (article.body_html && article.body_html.length > 65000) {
         console.log(`Content length ${article.body_html.length} exceeds Shopify limit, truncating...`);
@@ -591,12 +609,11 @@ export class ShopifyService {
         console.error('Shopify 422 validation error details:');
         console.error('Response data:', JSON.stringify(error.response.data, null, 2));
         console.error('Article data sent:', JSON.stringify({
-          title: article.title,
-          summary: article.summary,
-          body_html_length: article.body_html?.length || 0,
-          published: article.published,
-          published_at: article.published_at,
-          tags: article.tags
+          title: articleData.title,
+          body_html_length: articleData.body_html?.length || 0,
+          published: articleData.published,
+          published_at: articleData.published_at,
+          tags: articleData.tags
         }, null, 2));
       }
       
