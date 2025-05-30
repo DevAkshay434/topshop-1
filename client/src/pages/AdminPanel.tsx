@@ -1444,12 +1444,9 @@ export default function AdminPanel() {
         
         setGeneratedContent(response);
         
-        // Open the CreatePostModal to show the preview with all images
-        setCreatePostModalOpen(true);
-        
         toast({
           title: "Content generated successfully",
-          description: "Your content has been generated and saved.",
+          description: "Your content has been generated and is ready for review in the Content Preview section.",
           variant: "default"
         });
       } catch (apiError: any) {
