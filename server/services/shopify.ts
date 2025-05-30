@@ -451,7 +451,7 @@ export class ShopifyService {
         // When scheduling content, we need TWO parameters:
         // 1. published: false - to keep it as a draft until the scheduled date
         // 2. published_at: future date - when it should be published
-        article.published = false;
+        articleData.published = false;
         
         // Make sure the date is in the future (at least tomorrow)
         const tomorrow = new Date();
@@ -462,43 +462,43 @@ export class ShopifyService {
         const tomorrowTime = tomorrow.getTime();
         if (scheduledTime <= tomorrowTime) {
           console.log(`WARNING: Schedule date not far enough in future, adjusting to tomorrow`);
-          article.published_at = tomorrow.toISOString();
+          articleData.published_at = tomorrow.toISOString();
         } else {
-          article.published_at = futurePublishDate.toISOString();
+          articleData.published_at = futurePublishDate.toISOString();
         }
         
         // For debugging
-        console.log(`CRITICAL SCHEDULING UPDATE: Article will publish at ${article.published_at}`);
+        console.log(`CRITICAL SCHEDULING UPDATE: Article will publish at ${articleData.published_at}`);
         
         // Add a custom property for tracking in the response
-        article.isScheduledPost = true;
+        articleData.isScheduledPost = true;
       } else if (post.status === 'published' || 
                 (post as any).publicationType === 'publish' || 
                 (post as any).postStatus === 'published') {
         // For immediate publishing - check multiple flags
         console.log("Publishing article immediately");
-        article.published = true;
-        article.published_at = new Date().toISOString();
+        articleData.published = true;
+        articleData.published_at = new Date().toISOString();
       } else {
         // For drafts
         console.log("Saving article as draft");
-        article.published = false;
+        articleData.published = false;
         // Remove published_at to prevent scheduling
-        article.published_at = undefined;
+        articleData.published_at = undefined;
       }
       
       // Log the scheduling configuration
       console.log(`Article scheduling configuration:`, {
-        published: article.published,
-        published_at: article.published_at,
+        published: articleData.published,
+        published_at: articleData.published_at,
         isScheduled,
         status: post.status
       });
       
       // Optimize images in content to meet Shopify's 25 megapixel limit
-      if (article.body_html) {
+      if (articleData.body_html) {
         // Replace high-resolution image URLs with medium or small versions
-        article.body_html = article.body_html.replace(
+        articleData.body_html = articleData.body_html.replace(
           /src="([^"]*?\.(?:jpg|jpeg|png|webp)[^"]*?)"/gi,
           (match, url) => {
             // Convert large images to medium size to avoid 25 megapixel limit
@@ -514,32 +514,32 @@ export class ShopifyService {
       }
 
       // Validate content before sending to Shopify
-      if (article.body_html && article.body_html.length > 65000) {
-        console.log(`Content length ${article.body_html.length} exceeds Shopify limit, truncating...`);
-        article.body_html = article.body_html.substring(0, 60000) + '...</p>';
+      if (articleData.body_html && articleData.body_html.length > 65000) {
+        console.log(`Content length ${articleData.body_html.length} exceeds Shopify limit, truncating...`);
+        articleData.body_html = articleData.body_html.substring(0, 60000) + '...</p>';
       }
       
       // Ensure title is not too long
-      if (article.title && article.title.length > 255) {
-        console.log(`Title too long, truncating from ${article.title.length} to 255 characters`);
-        article.title = article.title.substring(0, 252) + '...';
+      if (articleData.title && articleData.title.length > 255) {
+        console.log(`Title too long, truncating from ${articleData.title.length} to 255 characters`);
+        articleData.title = articleData.title.substring(0, 252) + '...';
       }
       
       // Log the request with detailed information to diagnose publishing issues
       console.log(`Sending to Shopify API:`, {
-        title: article.title,
-        published: article.published,
-        published_at: article.published_at,
+        title: articleData.title,
+        published: articleData.published,
+        published_at: articleData.published_at,
         isScheduled,
         publicationType: (post as any).publicationType,
         postStatus: (post as any).postStatus,
         status: post.status,
         endpointUrl: `/blogs/${blogId}/articles.json`,
-        contentLength: article.body_html?.length || 0
+        contentLength: articleData.body_html?.length || 0
       });
       
       // Make the API request
-      const response = await client.post(`/blogs/${blogId}/articles.json`, { article });
+      const response = await client.post(`/blogs/${blogId}/articles.json`, { article: articleData });
       
       // Log the response with scheduling data and handle
       console.log(`Shopify API response:`, {
@@ -549,9 +549,9 @@ export class ShopifyService {
         published: response.data.article.published,
         published_at: response.data.article.published_at,
         sentRequest: {
-          published: article.published,
-          published_at: article.published_at,
-          handle: article.handle,
+          published: articleData.published,
+          published_at: articleData.published_at,
+          handle: articleData.handle,
           isScheduled: isScheduledPublishing
         }
       });
@@ -559,8 +559,8 @@ export class ShopifyService {
       // Verify the scheduling was successful by checking if the published_at date matches
       // what we sent (or is very close to it)
       if (isScheduledPublishing && futurePublishDate) {
-        const responseDate = new Date(response.data.article.published_at);
-        const sentDate = new Date(article.published_at);
+        const responseDate = new Date(response.data.articleData.published_at);
+        const sentDate = new Date(articleData.published_at);
         const timeDiff = Math.abs(responseDate.getTime() - sentDate.getTime());
         const oneHourInMs = 60 * 60 * 1000;
         
@@ -580,18 +580,18 @@ export class ShopifyService {
             try {
               console.log(`Attempting to fix by updating the article with scheduled date...`);
               const updateResponse = await client.put(
-                `/blogs/${blogId}/articles/${response.data.article.id}.json`, 
+                `/blogs/${blogId}/articles/${response.data.articleData.id}.json`, 
                 { 
                   article: {
-                    id: response.data.article.id,
+                    id: response.data.articleData.id,
                     published: false,
-                    published_at: article.published_at
+                    published_at: articleData.published_at
                   } 
                 }
               );
               console.log(`Update response:`, {
-                published: updateResponse.data.article.published,
-                published_at: updateResponse.data.article.published_at
+                published: updateResponse.data.articleData.published,
+                published_at: updateResponse.data.articleData.published_at
               });
             } catch (updateError) {
               console.error(`Failed to update article with scheduling:`, updateError);
@@ -604,13 +604,13 @@ export class ShopifyService {
       
       // Ensure we have the handle in the response for URL generation
       const article = response.data.article;
-      console.log(`Article created with ID: ${article.id}`);
+      console.log(`Article created with ID: ${articleData.id}`);
       
       // If Shopify didn't return a handle, fetch the full article to get it
-      if (!article.handle) {
+      if (!articleData.handle) {
         console.log(`No handle in response, fetching full article details...`);
         try {
-          const fullArticleResponse = await client.get(`/blogs/${blogId}/articles/${article.id}.json`);
+          const fullArticleResponse = await client.get(`/blogs/${blogId}/articles/${articleData.id}.json`);
           const fullArticle = fullArticleResponse.data.article;
           console.log(`Fetched article handle: ${fullArticle.handle}`);
           
@@ -619,14 +619,14 @@ export class ShopifyService {
         } catch (fetchError) {
           console.error(`Error fetching full article details:`, fetchError);
           // Generate handle from title as fallback
-          if (article.title) {
-            article.handle = article.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-            console.log(`Generated handle from title: ${article.handle}`);
+          if (articleData.title) {
+            articleData.handle = articleData.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            console.log(`Generated handle from title: ${articleData.handle}`);
           }
         }
       }
       
-      console.log(`Final article handle: ${article.handle}`);
+      console.log(`Final article handle: ${articleData.handle}`);
       return article;
     } catch (error: any) {
       console.error(`Error creating article in Shopify store ${store.shopName}:`, error);
@@ -636,11 +636,11 @@ export class ShopifyService {
         console.error('Shopify 422 validation error details:');
         console.error('Response data:', JSON.stringify(error.response.data, null, 2));
         console.error('Article data sent:', JSON.stringify({
-          title: articleData.title,
-          body_html_length: articleData.body_html?.length || 0,
-          published: articleData.published,
-          published_at: articleData.published_at,
-          tags: articleData.tags
+          title: articleData?.title,
+          body_html_length: articleData?.body_html?.length || 0,
+          published: articleData?.published,
+          published_at: articleData?.published_at,
+          tags: articleData?.tags
         }, null, 2));
       }
       
@@ -754,7 +754,7 @@ export class ShopifyService {
       
       // Critical for scheduling: published must be false
       if (isScheduled) {
-        article.published = false;
+        articleData.published = false;
         console.log("Setting up scheduled article with published=false for future publication");
       } else if (isPublish) {
         console.log("Publishing article immediately with published=true");
@@ -764,9 +764,9 @@ export class ShopifyService {
       
       // Log the update request
       console.log(`Updating article with data:`, {
-        title: article.title,
-        published: article.published,
-        published_at: article.published_at,
+        title: articleData.title,
+        published: articleData.published,
+        published_at: articleData.published_at,
         isScheduled
       });
       
@@ -774,9 +774,9 @@ export class ShopifyService {
       const response = await client.put(`/blogs/${blogId}/articles/${articleId}.json`, { article });
       
       console.log(`Article updated successfully:`, {
-        id: response.data.article.id,
-        published: response.data.article.published,
-        published_at: response.data.article.published_at
+        id: response.data.articleData.id,
+        published: response.data.articleData.published,
+        published_at: response.data.articleData.published_at
       });
       
       return response.data.article;
