@@ -3316,57 +3316,8 @@ export default function AdminPanel() {
                     </div>
                     */}
                     
-                    {/* Publication section */}
+                    {/* Media Selection Section */}
                     <div className="space-y-4 pt-4">
-                      <h3 className="text-lg font-medium">Publication</h3>
-                      
-                      <FormField
-                        control={form.control}
-                        name="postStatus"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-2">
-                              <FormLabel>Publish Status</FormLabel>
-                              {form.getValues('scheduledPublishDate') && (
-                                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                                  <CalendarCheck className="h-3 w-3 mr-1" />
-                                  Scheduled
-                                </Badge>
-                              )}
-                            </div>
-                            <Select 
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                // Update publicationType to match the selected status
-                                form.setValue('publicationType', value === 'publish' ? 'publish' : 'draft');
-                                
-                                // If scheduling is active, ensure it takes precedence
-                                if (form.getValues('scheduledPublishDate')) {
-                                  form.setValue('publicationType', 'schedule');
-                                }
-                              }} 
-                              defaultValue={field.value}
-                              disabled={!!form.getValues('scheduledPublishDate')}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="draft">Save as Draft</SelectItem>
-                                <SelectItem value="publish">Publish Immediately</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Choose whether to publish immediately or save as draft. 
-                              <strong>Note:</strong> If "Schedule for later" is checked below, this post will be saved as a draft and published at the scheduled time.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
                       <FormField
                         control={form.control}
                         name="generateImages"
@@ -4237,6 +4188,160 @@ export default function AdminPanel() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Publication Settings - Moved below Content Preview */}
+            {generatedContent && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Publication Settings</CardTitle>
+                  <CardDescription>
+                    Choose how to publish your content
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...form}>
+                    <div className="space-y-6">
+                      {/* Publication Status */}
+                      <FormField
+                        control={form.control}
+                        name="postStatus"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-2">
+                              <FormLabel>Publish Status</FormLabel>
+                              {form.getValues('scheduledPublishDate') && (
+                                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                                  <CalendarCheck className="h-3 w-3 mr-1" />
+                                  Scheduled
+                                </Badge>
+                              )}
+                            </div>
+                            <Select 
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                form.setValue('publicationType', value === 'publish' ? 'publish' : 'draft');
+                                if (form.getValues('scheduledPublishDate')) {
+                                  form.setValue('publicationType', 'schedule');
+                                }
+                              }} 
+                              defaultValue={field.value}
+                              disabled={!!form.getValues('scheduledPublishDate')}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="draft">Save as Draft</SelectItem>
+                                <SelectItem value="publish">Publish Immediately</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Choose whether to publish immediately or save as draft. 
+                              <strong>Note:</strong> If "Schedule for later" is checked below, this post will be saved as a draft and published at the scheduled time.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Schedule for Later */}
+                      <FormField
+                        control={form.control}
+                        name="scheduledPublishDate"
+                        render={({ field }) => (
+                          <FormItem className="rounded-md border border-slate-200 p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <CalendarCheck className="h-5 w-5 text-blue-500 mr-2" />
+                                <FormLabel className="text-lg font-medium">
+                                  Schedule for later
+                                </FormLabel>
+                              </div>
+                              <FormControl>
+                                <Checkbox
+                                  checked={!!field.value}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      const tomorrow = new Date();
+                                      tomorrow.setDate(tomorrow.getDate() + 1);
+                                      tomorrow.setHours(9, 0, 0, 0);
+                                      field.onChange(tomorrow.toISOString().split('T')[0]);
+                                      form.setValue('publicationType', 'schedule');
+                                    } else {
+                                      field.onChange(undefined);
+                                      const currentPostStatus = form.getValues('postStatus');
+                                      form.setValue('publicationType', 
+                                        currentPostStatus === 'publish' ? 'publish' : 'draft');
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                            </div>
+                            {field.value && (
+                              <div className="space-y-3 pt-3 border-t border-slate-200">
+                                <div className="flex flex-col space-y-2">
+                                  <FormLabel className="text-sm">Publication Date</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="date"
+                                      value={field.value}
+                                      onChange={field.onChange}
+                                      min={new Date().toISOString().split('T')[0]}
+                                      className="w-40"
+                                    />
+                                  </FormControl>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                  <div className="flex flex-col">
+                                    <FormLabel className="text-sm mb-1">Publication Time</FormLabel>
+                                    <Input
+                                      type="time"
+                                      value={form.watch('scheduledPublishTime') || "09:30"}
+                                      onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+                                      className="w-32"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Submit Button */}
+                      <Button 
+                        type="button" 
+                        className="w-full" 
+                        onClick={() => {
+                          const values = form.getValues();
+                          handleSubmit(values);
+                        }}
+                        disabled={isGenerating}
+                      >
+                        {form.getValues('postStatus') === 'publish' && !form.getValues('scheduledPublishDate') ? (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Publish Now
+                          </>
+                        ) : form.getValues('scheduledPublishDate') ? (
+                          <>
+                            <CalendarCheck className="mr-2 h-4 w-4" />
+                            Schedule Publication
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save as Draft
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Form>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Keyword Selector Dialog */}
