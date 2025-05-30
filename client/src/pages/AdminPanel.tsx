@@ -6,7 +6,6 @@ import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNo
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
 import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
-import KeywordSelector from '../components/KeywordSelector';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
@@ -122,7 +121,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Badge } from '@/components/ui/badge';
-import KeywordSelector from '@/components/KeywordSelector';
 import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
