@@ -1279,7 +1279,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         success: true, 
         projects: projects.map(project => ({
           ...project,
-          formData: JSON.parse(project.formData)
+          formData: typeof project.formData === 'string' ? JSON.parse(project.formData) : project.formData
         }))
       });
     } catch (error: any) {
