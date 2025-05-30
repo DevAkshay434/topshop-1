@@ -1434,6 +1434,7 @@ export default function AdminPanel() {
               selectedKeywords,
               selectedProducts,
               selectedCollections,
+              selectedBuyerPersonas,
               selectedMediaContent,
               contentStyleToneId: selectedContentToneId,
               contentStyleDisplayName: selectedContentDisplayName
@@ -1441,6 +1442,13 @@ export default function AdminPanel() {
           };
           
           console.log("Saving project data:", projectData);
+          console.log("Current state values:");
+          console.log("- selectedKeywords:", selectedKeywords);
+          console.log("- selectedProducts:", selectedProducts);
+          console.log("- selectedCollections:", selectedCollections);
+          console.log("- selectedBuyerPersonas:", selectedBuyerPersonas);
+          console.log("- selectedMediaContent:", selectedMediaContent);
+          console.log("- form values:", values);
           
           await apiRequest('POST', '/api/projects/save', projectData);
           
