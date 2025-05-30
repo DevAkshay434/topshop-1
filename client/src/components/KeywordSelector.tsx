@@ -7,6 +7,13 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +46,7 @@ interface KeywordData {
 }
 
 interface KeywordSelectorProps {
+  isOpen?: boolean;
   initialKeywords?: KeywordData[];
   onKeywordsSelected: (keywords: KeywordData[]) => void;
   title?: string;
@@ -61,6 +69,7 @@ interface KeywordSelectorProps {
 }
 
 export default function KeywordSelector({
+  isOpen = false,
   initialKeywords = [],
   onKeywordsSelected,
   title = "Select Keywords for Your Content",
@@ -297,16 +306,18 @@ export default function KeywordSelector({
     return "bg-red-500";
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Card className="w-full max-w-4xl">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
-          Select up to 4 keywords (1 main + 3 secondary) to include in your content
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            Select up to 4 keywords (1 main + 3 secondary) to include in your content
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 px-6">
           {/* Display Selected Products and Collections */}
           {(selectedProducts.length > 0 || selectedCollections.length > 0) && (
             <div className="mb-4 p-3 bg-slate-50 rounded-md border">
@@ -522,53 +533,55 @@ export default function KeywordSelector({
             </div>
           )}
         </div>
-      </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row justify-between gap-4 border-t bg-white sticky bottom-0 z-10 shadow-md">
-        <div className="text-sm w-full sm:w-auto">
-          {selectedCount > 0 ? (
-            <div className="flex flex-col gap-1">
-              <span className="flex items-center text-green-700 font-medium">
-                <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                {selectedCount} keyword{selectedCount !== 1 ? 's' : ''} selected
-              </span>
-              
-              <div className="flex flex-wrap gap-2 mt-1">
-                {keywords.filter(k => k.selected).map((kw, idx) => (
-                  <Badge 
-                    key={idx} 
-                    variant={kw.isMainKeyword ? "default" : "outline"}
-                    className={kw.isMainKeyword ? "bg-blue-500" : ""}
-                  >
-                    {kw.keyword}
-                    {kw.isMainKeyword && " (Main)"}
-                  </Badge>
-                ))}
+        
+        {/* Footer with actions */}
+        <div className="flex flex-col sm:flex-row justify-between gap-4 border-t bg-white px-6 py-4 mt-4">
+          <div className="text-sm w-full sm:w-auto">
+            {selectedCount > 0 ? (
+              <div className="flex flex-col gap-1">
+                <span className="flex items-center text-green-700 font-medium">
+                  <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                  {selectedCount} keyword{selectedCount !== 1 ? 's' : ''} selected
+                </span>
+                
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {keywords.filter(k => k.selected).map((kw, idx) => (
+                    <Badge 
+                      key={idx} 
+                      variant={kw.isMainKeyword ? "default" : "outline"}
+                      className={kw.isMainKeyword ? "bg-blue-500" : ""}
+                    >
+                      {kw.keyword}
+                      {kw.isMainKeyword && " (Main)"}
+                    </Badge>
+                  ))}
+                </div>
+                
+                <span className="text-xs text-muted-foreground mt-1">
+                  {mainKeyword ? `Main keyword: "${mainKeyword.keyword}"` : "No main keyword selected yet"}
+                </span>
               </div>
-              
-              <span className="text-xs text-muted-foreground mt-1">
-                {mainKeyword ? `Main keyword: "${mainKeyword.keyword}"` : "No main keyword selected yet"}
+            ) : (
+              <span className="text-amber-600">
+                Please select at least 1 keyword (up to 4 max)
               </span>
-            </div>
-          ) : (
-            <span className="text-amber-600">
-              Please select at least 1 keyword (up to 4 max)
-            </span>
-          )}
-        </div>
-        <div className="space-x-2 flex-shrink-0">
-          {onClose && (
-            <Button variant="outline" onClick={onClose}>
-              Cancel
+            )}
+          </div>
+          <div className="space-x-2 flex-shrink-0">
+            {onClose && (
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+            )}
+            <Button 
+              onClick={handleSubmit} 
+              disabled={selectedCount === 0}
+            >
+              Use Selected Keywords
             </Button>
-          )}
-          <Button 
-            onClick={handleSubmit} 
-            disabled={selectedCount === 0}
-          >
-            Use Selected Keywords
-          </Button>
+          </div>
         </div>
-      </CardFooter>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
