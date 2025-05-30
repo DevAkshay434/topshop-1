@@ -1802,6 +1802,20 @@ export default function AdminPanel() {
                         <p className="text-xs text-blue-700">
                           Select a project from the dropdown and click "Load Project" to automatically fill all form fields with saved settings.
                         </p>
+                        
+                        {/* Create New Project Button */}
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <Button 
+                            type="button"
+                            onClick={() => setShowCreateProjectDialog(true)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full bg-green-50 text-green-700 hover:bg-green-100 border-green-300"
+                          >
+                            <FolderPlus className="mr-2 h-4 w-4" />
+                            Create New Project
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Region selection - always visible regardless of step */}
