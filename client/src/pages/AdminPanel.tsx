@@ -4,7 +4,7 @@ import ShopifyImageViewer from '../components/ShopifyImageViewer';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
-import ProjectCreationDialog from '../components/ProjectCreationDialog';
+
 import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { SaveProjectDialog } from '../components/SaveProjectDialog';
 import { LoadProjectDialog } from '../components/LoadProjectDialog';
@@ -6579,8 +6579,7 @@ export default function AdminPanel() {
         </DialogContent>
       </Dialog>
       
-      {/* Add the standalone project creation dialog that shows automatically */}
-      <ProjectCreationDialog />
+
       {/* Choose Media Dialog - New improved component */}
       <ChooseMediaDialog
         open={showChooseMediaDialog && !showImageDialog} 

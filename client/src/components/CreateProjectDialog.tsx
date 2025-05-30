@@ -46,9 +46,17 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: Cr
       });
     },
     onSuccess: (data) => {
+      // Save project name to localStorage for immediate use
+      localStorage.setItem('current-project', name.trim());
+      
+      // Dispatch custom event to notify AdminPanel of project creation
+      window.dispatchEvent(new CustomEvent('projectNameChanged', {
+        detail: { projectName: name.trim() }
+      }));
+      
       toast({
         title: "Project Created",
-        description: "Your new project has been created successfully.",
+        description: "Your new project has been created and is ready to use.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       if (onProjectCreated) {
