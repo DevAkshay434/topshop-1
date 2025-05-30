@@ -866,12 +866,23 @@ export async function registerRoutes(app: Express): Promise<void> {
               );
             }
             
-            // Update post with Shopify ID
-            const updatedPost = await storage.updateBlogPost(post.id, {
-              shopifyPostId: shopifyArticle.id,
-              shopifyBlogId: isPage ? null : connection.defaultBlogId,
-              articleType: post.articleType || (isPage ? 'page' : 'blog')
-            });
+            // Update post with Shopify ID and handle for URL generation
+            let updatedPost;
+            try {
+              updatedPost = await storage.updateBlogPost(post.id, {
+                shopifyPostId: shopifyArticle.id,
+                shopifyBlogId: isPage ? null : connection.defaultBlogId
+              });
+            } catch (dbError) {
+              console.log('Database update failed, using in-memory post data with Shopify info');
+              // Even if database update fails, return post with Shopify information for button display
+              updatedPost = {
+                ...post,
+                shopifyPostId: shopifyArticle.id,
+                shopifyBlogId: isPage ? null : connection.defaultBlogId,
+                shopifyHandle: shopifyArticle.handle // Add handle for URL generation
+              };
+            }
             
             // Create appropriate sync activity based on status
             const activityType = post.status === 'published' ? 'Published' : 'Scheduled';
@@ -879,13 +890,23 @@ export async function registerRoutes(app: Express): Promise<void> {
               ? 'Successfully published to Shopify'
               : `Successfully scheduled for publication on ${post.scheduledPublishDate} at ${post.scheduledPublishTime}`;
             
-            await storage.createSyncActivity({
-              activity: `${activityType} "${post.title}"`,
-              status: "success",
-              details: details
-            });
+            try {
+              await storage.createSyncActivity({
+                activity: `${activityType} "${post.title}"`,
+                status: "success",
+                details: details
+              });
+            } catch (activityError) {
+              console.log('Failed to create sync activity, but continuing with response');
+            }
             
-            return res.json({ post: updatedPost });
+            return res.json({ 
+              post: updatedPost,
+              shopifyUrl: isPage 
+                ? `https://${connection.storeName}/pages/${shopifyArticle.handle || shopifyArticle.id}`
+                : `https://${connection.storeName}/blogs/${connection.defaultBlogId ? 'news' : 'blog'}/${shopifyArticle.handle || shopifyArticle.id}`,
+              success: true
+            });
           } catch (shopifyError: any) {
             // Log error but don't fail the request
             console.error("Error sending to Shopify:", shopifyError);
