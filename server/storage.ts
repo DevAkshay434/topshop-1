@@ -73,6 +73,7 @@ export interface IStorage {
   createSavedProject(project: InsertSavedProject): Promise<SavedProject>;
   getSavedProjects(storeId: number): Promise<SavedProject[]>;
   getSavedProject(id: number): Promise<SavedProject | undefined>;
+  updateSavedProject(id: number, updates: Partial<InsertSavedProject>): Promise<SavedProject>;
   deleteSavedProject(id: number): Promise<void>;
 }
 
@@ -85,12 +86,14 @@ export class MemStorage implements IStorage {
   private blogPosts: Map<number, BlogPost>;
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
+  private savedProjects: Map<number, SavedProject>;
   
   private currentUserId: number;
   private currentStoreId: number;
   private currentBlogPostId: number;
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
+  private currentSavedProjectId: number;
 
   constructor() {
     this.users = new Map();
@@ -99,12 +102,14 @@ export class MemStorage implements IStorage {
     this.blogPosts = new Map();
     this.syncActivities = [];
     this.contentGenRequests = new Map();
+    this.savedProjects = new Map();
     
     this.currentUserId = 1;
     this.currentStoreId = 1;
     this.currentBlogPostId = 1;
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
+    this.currentSavedProjectId = 1;
     
     // Add some initial data for testing
     const now = new Date();
@@ -444,6 +449,283 @@ export class MemStorage implements IStorage {
   
   async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
     return this.contentGenRequests.get(id);
+  }
+
+  // Saved project operations (in-memory)
+  async createSavedProject(project: InsertSavedProject): Promise<SavedProject> {
+    const id = this.currentSavedProjectId++;
+    const now = new Date();
+    const newProject: SavedProject = {
+      id,
+      storeId: project.storeId,
+      name: project.name,
+      description: project.description || null,
+      formData: project.formData,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.savedProjects.set(id, newProject);
+    return newProject;
+  }
+
+  async getSavedProjects(storeId: number): Promise<SavedProject[]> {
+    return Array.from(this.savedProjects.values())
+      .filter(project => project.storeId === storeId)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  }
+
+  async getSavedProject(id: number): Promise<SavedProject | undefined> {
+    return this.savedProjects.get(id);
+  }
+
+  async updateSavedProject(id: number, updates: Partial<InsertSavedProject>): Promise<SavedProject> {
+    const existingProject = this.savedProjects.get(id);
+    if (!existingProject) {
+      throw new Error(`Project with id ${id} not found`);
+    }
+    
+    const updatedProject: SavedProject = {
+      ...existingProject,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.savedProjects.set(id, updatedProject);
+    return updatedProject;
+  }
+
+  async deleteSavedProject(id: number): Promise<void> {
+    this.savedProjects.delete(id);
+  }
+}
+
+// DatabaseStorage class with PostgreSQL operations
+class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  // Legacy Shopify connection operations (for backward compatibility)
+  async getShopifyConnection(): Promise<ShopifyConnection | undefined> {
+    const [connection] = await db.select().from(shopifyConnections).limit(1);
+    return connection;
+  }
+
+  async createShopifyConnection(connection: InsertShopifyConnection): Promise<ShopifyConnection> {
+    const [newConnection] = await db.insert(shopifyConnections).values(connection).returning();
+    return newConnection;
+  }
+
+  async updateShopifyConnection(connection: Partial<ShopifyConnection>): Promise<ShopifyConnection | undefined> {
+    if (!connection.id) {
+      return undefined;
+    }
+    const [updated] = await db.update(shopifyConnections)
+      .set(connection)
+      .where(eq(shopifyConnections.id, connection.id))
+      .returning();
+    return updated;
+  }
+
+  // Multi-store Shopify operations (for public app)
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return await db.select().from(shopifyStores).orderBy(desc(shopifyStores.lastSynced));
+  }
+
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select().from(shopifyStores)
+      .where(eq(shopifyStores.storeName, shopDomain))
+      .limit(1);
+    return store;
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select().from(shopifyStores)
+      .where(eq(shopifyStores.id, id))
+      .limit(1);
+    return store;
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    const [newStore] = await db.insert(shopifyStores).values({
+      storeName: store.storeName,
+      accessToken: store.accessToken,
+      defaultBlogId: store.defaultBlogId,
+      isConnected: store.isConnected,
+      lastSynced: new Date()
+    }).returning();
+    return {
+      ...newStore,
+      lastSynced: newStore.lastSynced || new Date()
+    };
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    const [updatedStore] = await db.update(shopifyStores)
+      .set(store)
+      .where(eq(shopifyStores.id, id))
+      .returning();
+    return updatedStore;
+  }
+
+  // User-store relationship
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    const userStoreRelations = await db.select()
+      .from(userStores)
+      .leftJoin(shopifyStores, eq(userStores.storeId, shopifyStores.id))
+      .where(eq(userStores.userId, userId));
+    
+    return userStoreRelations
+      .map(relation => relation.shopify_stores)
+      .filter((store): store is ShopifyStore => store !== null);
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    const [newUserStore] = await db.insert(userStores).values(userStore).returning();
+    return newUserStore;
+  }
+
+  // Blog post operations
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return await db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+  }
+
+  async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+    return post;
+  }
+
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    const now = new Date();
+    const [newPost] = await db.insert(blogPosts).values({
+      ...post,
+      createdAt: now,
+      updatedAt: now
+    }).returning();
+    return {
+      id: newPost.id,
+      views: newPost.views,
+      scheduledPublishDate: newPost.scheduledPublishDate,
+      scheduledPublishTime: newPost.scheduledPublishTime,
+      title: newPost.title,
+      content: newPost.content,
+      status: newPost.status || 'draft',
+      storeId: newPost.storeId,
+      featuredImage: newPost.featuredImage,
+      category: newPost.category,
+      categories: newPost.categories,
+      tags: newPost.tags || '',
+      contentType: newPost.contentType || 'post',
+      publishedDate: newPost.publishedDate,
+      scheduledDate: newPost.scheduledDate,
+      shopifyPostId: newPost.shopifyPostId,
+      shopifyBlogId: newPost.shopifyBlogId,
+      createdAt: newPost.createdAt,
+      updatedAt: newPost.updatedAt,
+      author: newPost.author || 'Administrator',
+      authorId: newPost.authorId
+    };
+  }
+
+  async updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined> {
+    const [updated] = await db.update(blogPosts)
+      .set({
+        ...post,
+        updatedAt: new Date()
+      })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBlogPost(id: number): Promise<boolean> {
+    const result = await db.delete(blogPosts).where(eq(blogPosts.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getRecentPosts(limit: number): Promise<BlogPost[]> {
+    return await db.select().from(blogPosts)
+      .orderBy(desc(blogPosts.createdAt))
+      .limit(limit);
+  }
+
+  async getScheduledPosts(): Promise<BlogPost[]> {
+    return await db.select().from(blogPosts)
+      .where(eq(blogPosts.status, 'scheduled'))
+      .orderBy(asc(blogPosts.scheduledDate));
+  }
+
+  async getPublishedPosts(): Promise<BlogPost[]> {
+    return await db.select().from(blogPosts)
+      .where(eq(blogPosts.status, 'published'))
+      .orderBy(desc(blogPosts.publishedDate));
+  }
+
+  // Sync activity operations
+  async getSyncActivities(limit: number): Promise<SyncActivity[]> {
+    return await db.select().from(syncActivities)
+      .orderBy(desc(syncActivities.timestamp))
+      .limit(limit);
+  }
+
+  async createSyncActivity(activity: InsertSyncActivity): Promise<SyncActivity> {
+    const [newActivity] = await db.insert(syncActivities).values({
+      ...activity,
+      timestamp: new Date()
+    }).returning();
+    return {
+      id: newActivity.id,
+      timestamp: newActivity.timestamp,
+      status: newActivity.status,
+      activity: newActivity.activity,
+      storeId: newActivity.storeId,
+      details: newActivity.details
+    };
+  }
+
+  // Content generation request operations
+  async createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest> {
+    const [newRequest] = await db.insert(contentGenRequests).values({
+      ...request,
+      timestamp: new Date()
+    }).returning();
+    return {
+      id: newRequest.id,
+      timestamp: newRequest.timestamp,
+      length: newRequest.length,
+      status: newRequest.status,
+      topic: newRequest.topic,
+      tone: newRequest.tone,
+      userId: newRequest.userId,
+      storeId: newRequest.storeId,
+      generatedContent: newRequest.generatedContent
+    };
+  }
+
+  async updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined> {
+    const [updated] = await db.update(contentGenRequests)
+      .set(request)
+      .where(eq(contentGenRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getContentGenRequest(id: number): Promise<ContentGenRequest | undefined> {
+    const [request] = await db.select().from(contentGenRequests)
+      .where(eq(contentGenRequests.id, id))
+      .limit(1);
+    return request;
   }
 
   // Saved project operations (PostgreSQL database)
@@ -1120,6 +1402,13 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getSavedProject(id),
       () => memStorage.getSavedProject(id)
+    );
+  }
+
+  async updateSavedProject(id: number, updates: Partial<InsertSavedProject>): Promise<SavedProject> {
+    return this.tryOrFallback(
+      () => dbStorage.updateSavedProject(id, updates),
+      () => memStorage.updateSavedProject(id, updates)
     );
   }
 
