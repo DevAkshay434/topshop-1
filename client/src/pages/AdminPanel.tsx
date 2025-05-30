@@ -3579,27 +3579,84 @@ export default function AdminPanel() {
                     </p>
                   </div>
                 ) : generatedContent ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-xl font-bold">{generatedContent.title}</h3>
-                      {generatedContent.tags && generatedContent.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="space-y-6">
+                    {/* Editable Meta Title */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Meta Title</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={generatedContent.title}
+                          onChange={(e) => {
+                            setGeneratedContent(prev => ({
+                              ...prev,
+                              title: e.target.value
+                            }));
+                          }}
+                          className="w-full p-3 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter your meta title..."
+                        />
+                        <div className="absolute right-3 top-3 text-xs text-gray-500">
+                          {generatedContent.title?.length || 0}/60
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500">Optimal length: 50-60 characters for SEO</p>
+                    </div>
+
+                    {/* Editable Meta Description */}
+                    {generatedContent.metaDescription && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Meta Description</label>
+                        <div className="relative">
+                          <textarea
+                            value={generatedContent.metaDescription}
+                            onChange={(e) => {
+                              setGeneratedContent(prev => ({
+                                ...prev,
+                                metaDescription: e.target.value
+                              }));
+                            }}
+                            rows={3}
+                            className="w-full p-3 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            placeholder="Enter your meta description..."
+                          />
+                          <div className="absolute right-3 bottom-3 text-xs text-gray-500">
+                            {generatedContent.metaDescription?.length || 0}/160
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500">Optimal length: 150-160 characters for SEO</p>
+                      </div>
+                    )}
+
+                    {/* Featured Image with Badge */}
+                    {generatedContent.featuredImage && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Featured Image</label>
+                        <div className="relative mb-6">
+                          <div className="absolute top-2 left-2 z-10">
+                            <Badge className="bg-blue-600 text-white">Featured Image</Badge>
+                          </div>
+                          <ShopifyImageViewer 
+                            src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
+                            alt={generatedContent.featuredImage.alt || generatedContent.title} 
+                            className="w-full h-auto rounded-md shadow-md"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tags with Clear Label */}
+                    {generatedContent.tags && generatedContent.tags.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Content Tags</label>
+                        <div className="flex flex-wrap gap-2">
                           {generatedContent.tags.map((tag: string, index: number) => (
-                            <Badge key={index} variant="outline">{tag}</Badge>
+                            <Badge key={index} variant="outline" className="text-sm">
+                              {tag}
+                            </Badge>
                           ))}
                         </div>
-                      )}
-                    </div>
-                    
-                    {/* Display featured image if available */}
-                    {generatedContent.featuredImage && (
-                      <div className="mb-6">
-                        <ShopifyImageViewer 
-                          src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
-                          alt={generatedContent.featuredImage.alt || generatedContent.title} 
-                          className="w-full h-auto rounded-md shadow-md"
-                        />
-                        {/* Photographer credit removed as per client request */}
+                        <p className="text-xs text-gray-500">These tags will be applied to your {form.watch('articleType') === 'blog' ? 'blog post' : 'page'}</p>
                       </div>
                     )}
                     
