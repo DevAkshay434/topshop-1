@@ -1277,10 +1277,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ 
         success: true, 
-        projects: projects.map(project => ({
-          ...project,
-          formData: typeof project.formData === 'string' ? JSON.parse(project.formData) : project.formData
-        }))
+        projects: projects
       });
     } catch (error: any) {
       console.error("Error fetching projects:", error);
@@ -1302,7 +1299,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         success: true, 
         project: {
           ...project,
-          formData: JSON.parse(project.formData)
+          formData: typeof project.formData === 'string' ? JSON.parse(project.formData) : project.formData
         }
       });
     } catch (error: any) {
