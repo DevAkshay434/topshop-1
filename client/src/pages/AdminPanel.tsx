@@ -3642,6 +3642,48 @@ export default function AdminPanel() {
                       </div>
                     )}
 
+                    {/* Secondary Images and Videos Display */}
+                    {(selectedMediaContent.secondaryImages?.length > 0 || selectedMediaContent.youtubeEmbed) && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Media Content</label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {/* Secondary Images */}
+                          {selectedMediaContent.secondaryImages?.map((image, index) => (
+                            <div key={`secondary-${index}`} className="relative">
+                              <div className="absolute top-2 left-2 z-10">
+                                <Badge variant="secondary" className="text-xs">Image {index + 1}</Badge>
+                              </div>
+                              <ShopifyImageViewer 
+                                src={image.src?.medium || image.url} 
+                                alt={image.alt || `Secondary image ${index + 1}`} 
+                                className="w-full h-32 object-cover rounded-md shadow-sm border"
+                              />
+                            </div>
+                          ))}
+                          
+                          {/* YouTube Video */}
+                          {selectedMediaContent.youtubeEmbed && (
+                            <div className="relative">
+                              <div className="absolute top-2 left-2 z-10">
+                                <Badge variant="secondary" className="bg-red-600 text-white text-xs">Video</Badge>
+                              </div>
+                              <div className="w-full h-32 bg-gray-100 rounded-md shadow-sm border flex items-center justify-center">
+                                <div className="text-center">
+                                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-1">
+                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                                    </svg>
+                                  </div>
+                                  <p className="text-xs text-gray-600">YouTube Video</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">These images and videos will be embedded in your content</p>
+                      </div>
+                    )}
+
                     {/* Tags with Clear Label */}
                     {generatedContent.tags && generatedContent.tags.length > 0 && (
                       <div className="space-y-2">
@@ -3657,76 +3699,158 @@ export default function AdminPanel() {
                       </div>
                     )}
                     
+                    {/* Editable Content Area with Basic Formatting */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Content</label>
+                      
+                      {/* Basic Formatting Toolbar */}
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-t-md">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const selection = window.getSelection();
+                            if (selection && selection.rangeCount > 0) {
+                              document.execCommand('bold', false);
+                            }
+                          }}
+                          className="p-1 hover:bg-gray-200 rounded text-sm font-bold"
+                          title="Bold"
+                        >
+                          B
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const selection = window.getSelection();
+                            if (selection && selection.rangeCount > 0) {
+                              document.execCommand('italic', false);
+                            }
+                          }}
+                          className="p-1 hover:bg-gray-200 rounded text-sm italic"
+                          title="Italic"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const selection = window.getSelection();
+                            if (selection && selection.rangeCount > 0) {
+                              document.execCommand('underline', false);
+                            }
+                          }}
+                          className="p-1 hover:bg-gray-200 rounded text-sm underline"
+                          title="Underline"
+                        >
+                          U
+                        </button>
+                        <div className="w-px h-4 bg-gray-300"></div>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h2')}
+                          className="px-2 py-1 hover:bg-gray-200 rounded text-sm"
+                          title="Heading 2"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h3')}
+                          className="px-2 py-1 hover:bg-gray-200 rounded text-sm"
+                          title="Heading 3"
+                        >
+                          H3
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'p')}
+                          className="px-2 py-1 hover:bg-gray-200 rounded text-sm"
+                          title="Paragraph"
+                        >
+                          P
+                        </button>
+                      </div>
+                      
+                      {/* Editable Content Area */}
+                      <div 
+                        contentEditable
+                        suppressContentEditableWarning={true}
+                        className="min-h-[400px] p-4 border border-gray-200 rounded-b-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        style={{ 
+                          whiteSpace: 'pre-wrap',
+                          lineHeight: '1.6'
+                        }}
+                        onBlur={(e) => {
+                          // Update the generated content when user finishes editing
+                          const updatedContent = e.target.innerHTML;
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            content: updatedContent
+                          }));
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: (() => {
+                            const content = generatedContent.content;
+                            if (!content) return 'No content available';
+                            return content;
+                          })()
+                        }}
+                      />
+                      <p className="text-xs text-gray-500 mt-2">Click in the content area above to edit your content directly. Use the formatting toolbar to style your text.</p>
+                    </div>
+                    
                     <div className="rounded-md p-5 max-h-[60vh] overflow-y-auto bg-white shadow-sm border border-gray-100">
                       {(() => {
-                        // Get content
+                        // Get content for read-only preview
                         const content = generatedContent.content;
                         if (!content) return <p>No content available</p>;
+                        
+                        // Create a preview version
+                        return (
+                          <div 
+                            className="prose max-w-none" 
+                            dangerouslySetInnerHTML={{ __html: content }}
+                          />
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500">
+                    <p>Generate content to see the preview here</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                        // Get YouTube data if exists
-                        const youtubeUrl = form.watch("youtubeUrl");
-                        let youtubeVideoId: string | null = null;
-                        if (youtubeUrl) {
-                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
-                        }
-                        
-                        // Create YouTube embed component
-                        const YouTubeEmbed = () => (
-                          <div className="my-8 flex justify-center">
-                            <iframe 
-                              width="560" 
-                              height="315" 
-                              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                              title="YouTube video" 
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                              allowFullScreen
-                              className="rounded-md border border-gray-200"
-                            />
-                          </div>
-                        );
-                        
-                        // Check if content has YouTube placeholder
-                        const hasYoutubePlaceholder = content.includes('[YOUTUBE_EMBED_PLACEHOLDER]');
-                        
-                        // If content has placeholder, split and insert YouTube
-                        if (youtubeVideoId && hasYoutubePlaceholder) {
-                          const parts = content.split('[YOUTUBE_EMBED_PLACEHOLDER]');
-                          return (
-                            <div className="content-preview prose prose-blue max-w-none">
-                              {parts[0] && <div dangerouslySetInnerHTML={{ __html: parts[0] }} />}
-                              <YouTubeEmbed />
-                              {parts[1] && <div dangerouslySetInnerHTML={{ __html: parts[1] }} />}
-                            </div>
-                          );
-                        } 
-                        
-                        // Get secondary images
-                        const secondaryImages = generatedContent.secondaryImages || [];
-                        
-                        // Check for image tags in content 
-                        const hasImageTags = content.includes('<img');
-
-                        // If content has no YouTube placeholder but has secondary images or image tags
-                        if (secondaryImages.length > 0 || hasImageTags) {
-                          // Always consider content as having proper images
-                          // This ensures embedded images are always preserved
-                          const hasProperImages = true;
-                          
-                          if (hasProperImages) {
-                            // Enhanced processing for all content with images
-                            let enhancedContent = content;
-                            
-                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
-                            enhancedContent = enhancedContent.replace(
-                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
-                              (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
-                                // Ensure src is absolute URL
-                                let fixedSrc = src;
-                                if (!src.startsWith('http')) {
-                                  fixedSrc = 'https://' + src;
-                                } else if (src.startsWith('//')) {
-                                  fixedSrc = 'https:' + src;
-                                }
+            {/* Publishing Actions Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Publish Content</CardTitle>
+                <CardDescription>
+                  Choose how to publish your content
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button
+                    type="submit"
+                    disabled={!generatedContent || isGenerating}
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : generatedContent ? (
+                      'Publish Content'
+                    ) : (
+                      'Generate Content First'
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
                                 
                                 // Make sure the image is inside an <a> tag and properly styled
                                 return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
