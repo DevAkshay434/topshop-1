@@ -3435,24 +3435,6 @@ export default function AdminPanel() {
                         />
                       )}
 
-                    {/* Image Selection Dialog */}
-                      <ImageSearchDialog
-                        open={showImageDialog}
-                        onOpenChange={setShowImageDialog}
-                        onImagesSelected={(images) => {
-                          setSelectedImages(images);
-                          toast({
-                            title: `${images.length} image(s) selected`,
-                            description: "Images will be included in your content",
-                          });
-                        }}
-                        initialSelectedImages={selectedImages}
-                        selectedKeywords={selectedKeywords.map(k => ({
-                          keyword: k.keyword,
-                          isMainKeyword: k === selectedKeywords[0] // First keyword is main
-                        }))}
-                      />
-                    
                     {/* Template Controls */}
                     <div className="mt-6 grid grid-cols-2 gap-3">
                       <Button 
@@ -6849,7 +6831,25 @@ export default function AdminPanel() {
           ? "Select emotionally compelling images for the top of your content" 
           : "Select product images to appear throughout your article body"}
       />
-    </div>
+          </Dialog>
+          
+          {/* Image Selection Dialog */}
+          <ImageSearchDialog
+            open={showImageDialog}
+            onOpenChange={setShowImageDialog}
+            onImagesSelected={(images) => {
+              setSelectedImages(images);
+              toast({
+                title: `${images.length} image(s) selected`,
+                description: "Images will be included in your content",
+              });
+            }}
+            initialSelectedImages={selectedImages}
+            selectedKeywords={selectedKeywords.map(k => ({
+              keyword: k.keyword,
+              isMainKeyword: k === selectedKeywords[0] // First keyword is main
+            }))}
+          />
         </TabsContent>
       </Tabs>
     </div>
