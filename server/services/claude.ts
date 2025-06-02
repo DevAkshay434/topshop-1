@@ -76,6 +76,12 @@ function addTableOfContents(content: string): string {
   return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
 }
 
+// Function to remove any H1 tags from content to prevent title duplication
+function removeH1Tags(content: string): string {
+  // Remove H1 tags and their content, but preserve the text inside
+  return content.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '');
+}
+
 // Function to process media placements and prevent duplicate secondary images
 function processMediaPlacementsHandler(content: string, request: BlogContentRequest): string {
   let processedContent = content;
@@ -210,7 +216,7 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
 let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}
     
     The blog post MUST follow this exact structure:
-    1. A compelling title that includes the main topic and primary keywords (this will be formatted as H1 automatically)
+    1. A compelling title that includes the main topic and primary keywords (this will be used separately)
     2. Multiple clearly defined sections with H2 headings that incorporate important keywords
     3. Appropriate H3 subheadings within each section where needed
     4. Well-organized paragraphs (2-4 paragraphs per section)
@@ -226,7 +232,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - Distribute secondary images evenly across remaining H2 sections
     
     IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
-    - The page/blog post title MUST be an H1 element - wrap the title with <h1> tags at the very beginning of content
+    - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
+    - Start the content directly with the Table of Contents placement marker, then the introduction
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
     - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
     - Make sure sections flow logically and coherently
@@ -243,8 +250,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - The system will automatically prevent duplicate images and distribute them evenly
     
     TABLE OF CONTENTS REQUIREMENTS:
-    - AUTOMATICALLY include a Table of Contents right after the featured image
-    - Add this TOC placement marker at the very beginning after the H1 title: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
+    - AUTOMATICALLY include a Table of Contents at the very beginning of the content
+    - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
     - The system will automatically generate a TOC using all H2 headings in your content
     - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
     - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
@@ -443,8 +450,9 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
     
-    // Process the content to add automatic Table of Contents and handle media placement
-    let processedContent = addTableOfContents(jsonContent.content);
+    // Process the content to remove H1 tags, add automatic Table of Contents and handle media placement
+    let processedContent = removeH1Tags(jsonContent.content);
+    processedContent = addTableOfContents(processedContent);
     processedContent = processMediaPlacementsHandler(processedContent, request);
     
     return {
