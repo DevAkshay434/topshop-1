@@ -3707,7 +3707,11 @@ export default function AdminPanel() {
                         ref={(el) => {
                           // Reset initialization when new content is generated
                           if (el && generatedContent.content) {
-                            const currentContentHash = btoa(generatedContent.content).substring(0, 10);
+                            // Use a simple hash based on content length and first/last characters
+                            const contentLength = generatedContent.content.length;
+                            const contentStart = generatedContent.content.substring(0, 50);
+                            const contentEnd = generatedContent.content.substring(-50);
+                            const currentContentHash = `${contentLength}-${contentStart.length}-${contentEnd.length}`;
                             
                             // Check if this is new content or first load
                             if (!el.dataset.initialized || el.dataset.contentHash !== currentContentHash) {
