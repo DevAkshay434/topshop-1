@@ -233,12 +233,12 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
         </Dialog>
       </div>
 
-      <Select value={selectedAuthorId || ""} onValueChange={(value) => onAuthorSelect(value || undefined)}>
+      <Select value={selectedAuthorId || "none"} onValueChange={(value) => onAuthorSelect(value === "none" ? undefined : value)}>
         <SelectTrigger>
           <SelectValue placeholder="Select an author or create new" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">No author</SelectItem>
+          <SelectItem value="none">No author</SelectItem>
           {authors.map((author) => (
             <SelectItem key={author.id} value={author.id}>
               <div className="flex items-center space-x-2">
