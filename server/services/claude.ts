@@ -73,6 +73,58 @@ function addTableOfContents(content: string): string {
   return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
 }
 
+// Function to process media placements and prevent duplicate secondary images
+function processMediaPlacements(content: string, request: BlogContentRequest): string {
+  let processedContent = content;
+  
+  // Handle YouTube video placement under second H2 heading
+  if (request.youtubeEmbed) {
+    const videoId = request.youtubeEmbed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+    
+    if (videoId) {
+      const videoHtml = `
+<div style="margin: 20px 0; text-align: center;">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" 
+    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+    allowfullscreen style="max-width: 100%; border-radius: 8px;">
+  </iframe>
+</div>`;
+      
+      // Replace only the first occurrence (under second H2)
+      processedContent = processedContent.replace('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->', videoHtml);
+      
+      // Remove any additional video placement markers
+      processedContent = processedContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
+    }
+  }
+  
+  // Handle secondary images placement - ensure no duplicates
+  if (request.secondaryImages && request.secondaryImages.length > 0) {
+    const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
+    const availableMarkers = markers ? markers.length : 0;
+    
+    // Process each secondary image, but don't repeat any image
+    const uniqueImages = request.secondaryImages.slice(0, availableMarkers);
+    
+    uniqueImages.forEach((image, index) => {
+      const imageHtml = `
+<div style="margin: 20px 0; text-align: center;">
+  <img src="${image.url}" alt="${image.alt}" 
+    style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+  ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
+</div>`;
+      
+      // Replace one marker at a time to ensure even distribution
+      processedContent = processedContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', imageHtml);
+    });
+    
+    // Remove any remaining unused markers
+    processedContent = processedContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
+  }
+  
+  return processedContent;
+}
+
 // Function to generate blog content using Claude
 export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
   try {
@@ -120,18 +172,29 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     6. Lists and tables where appropriate to improve readability
     7. A conclusion with a clear call to action
     
+    MEDIA PLACEMENT RULES:
+    - Selected YouTube video MUST be placed under the SECOND H2 heading only
+    - Secondary images MUST be placed under H2 headings that come AFTER the video
+    - Each secondary image should be placed under a different H2 heading
+    - Never repeat the same secondary image multiple times
+    - Distribute secondary images evenly across remaining H2 sections
+    
     IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
-    - The title will automatically be formatted as an H1 element
+    - The page/blog post title MUST be an H1 element - wrap the title with <h1> tags at the very beginning of content
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
-    - DO NOT use <h1> tags in the content, as the title will be the H1
-    - Create at least 3-4 H2 sections for proper structure
-    - Under H2 headings, include placeholder comments for secondary content: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
-    - If video content is selected, treat it as secondary content and include it in the secondary placement markers
+    - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
+    
+    SPECIFIC MEDIA PLACEMENT INSTRUCTIONS:
+    - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
+    - Under each subsequent H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+    - Use unique placement markers - each secondary image will be automatically assigned to different H2 sections
+    - DO NOT repeat the same secondary image placement marker multiple times
+    - The system will automatically prevent duplicate images and distribute them evenly
     
     TABLE OF CONTENTS REQUIREMENTS:
     - AUTOMATICALLY include a Table of Contents right after the introduction paragraph
@@ -334,8 +397,9 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
     
-    // Process the content to add automatic Table of Contents
-    const processedContent = addTableOfContents(jsonContent.content);
+    // Process the content to add automatic Table of Contents and handle media placement
+    let processedContent = addTableOfContents(jsonContent.content);
+    processedContent = processMediaPlacements(processedContent, request);
     
     return {
       title: jsonContent.title,
