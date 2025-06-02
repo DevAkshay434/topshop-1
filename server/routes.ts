@@ -858,10 +858,20 @@ export async function registerRoutes(app: Express): Promise<void> {
             } else {
               // For blog posts, use the existing article creation logic
               console.log(`Creating a Shopify article for post with status: ${post.status}`);
+              
+              // Ensure we have the complete post data with meta fields
+              const completePost = await storage.getBlogPost(post.id);
+              console.log(`Complete post data before Shopify:`, {
+                id: completePost?.id,
+                title: completePost?.title,
+                metaTitle: completePost?.metaTitle,
+                metaDescription: completePost?.metaDescription
+              });
+              
               shopifyArticle = await shopifyService.createArticle(
                 tempStore, 
                 connection.defaultBlogId, 
-                post,
+                completePost || post,
                 scheduledPublishDate // This will trigger the scheduling logic in createArticle
               );
             }
