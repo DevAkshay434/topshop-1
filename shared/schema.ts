@@ -129,7 +129,7 @@ export const blogPosts = pgTable("blog_posts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
   author: text("author"),
-  authorId: integer("author_id").references(() => authors.id),
+  authorId: integer("author_id").references(() => users.id),
 });
 
 // Create a modified schema that properly handles dates
@@ -178,9 +178,9 @@ export const blogPostsRelations = relations(blogPosts, ({ one }) => ({
     fields: [blogPosts.storeId],
     references: [shopifyStores.id],
   }),
-  author: one(authors, {
+  user: one(users, {
     fields: [blogPosts.authorId],
-    references: [authors.id],
+    references: [users.id],
   }),
 }));
 
@@ -330,40 +330,4 @@ export const tonesRelations = relations(tones, ({ one }) => ({
     fields: [tones.styleId],
     references: [styles.id],
   }),
-}));
-
-// Author schema for managing post authors
-export const authors = pgTable("authors", {
-  id: serial("id").primaryKey(),
-  storeId: integer("store_id").references(() => shopifyStores.id),
-  shopifyMetaobjectId: text("shopify_metaobject_id"), // Shopify metaobject ID
-  name: text("name").notNull(),
-  description: text("description"),
-  avatarUrl: text("avatar_url"),
-  linkedinUrl: text("linkedin_url"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at"),
-});
-
-export const insertAuthorSchema = createInsertSchema(authors).pick({
-  storeId: true,
-  shopifyMetaobjectId: true,
-  name: true,
-  description: true,
-  avatarUrl: true,
-  linkedinUrl: true,
-  isActive: true,
-});
-
-export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
-export type Author = typeof authors.$inferSelect;
-
-// Define author relations
-export const authorsRelations = relations(authors, ({ one, many }) => ({
-  store: one(shopifyStores, {
-    fields: [authors.storeId],
-    references: [shopifyStores.id],
-  }),
-  posts: many(blogPosts),
 }));
