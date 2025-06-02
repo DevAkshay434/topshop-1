@@ -250,6 +250,42 @@ export const contentGenRequestsRelations = relations(contentGenRequests, ({ one 
   }),
 }));
 
+// Authors table for content attribution
+export const authors = pgTable("authors", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => shopifyStores.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  avatarUrl: text("avatar_url"),
+  linkedinUrl: text("linkedin_url"),
+  handle: text("handle").notNull(),
+  shopifyMetaobjectId: text("shopify_metaobject_id"), // For syncing with Shopify if available
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertAuthorSchema = createInsertSchema(authors).pick({
+  storeId: true,
+  name: true,
+  description: true,
+  avatarUrl: true,
+  linkedinUrl: true,
+  handle: true,
+  shopifyMetaobjectId: true,
+});
+
+export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
+export type Author = typeof authors.$inferSelect;
+
+// Define author relations
+export const authorsRelations = relations(authors, ({ one, many }) => ({
+  store: one(shopifyStores, {
+    fields: [authors.storeId],
+    references: [shopifyStores.id],
+  }),
+  posts: many(blogPosts),
+}));
+
 // Relations can be added later if needed
 
 // Gender schema for copywriting style

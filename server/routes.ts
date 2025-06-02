@@ -1951,6 +1951,192 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Author management routes
+  apiRouter.get("/authors", async (req: Request, res: Response) => {
+    try {
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No Shopify store found"
+        });
+      }
+
+      const store = stores[0];
+      const { MetaobjectService } = await import('./services/metaobjects');
+      const metaobjectService = new MetaobjectService(store);
+      
+      const authors = await metaobjectService.getAuthors();
+      
+      res.json({
+        success: true,
+        authors
+      });
+    } catch (error: any) {
+      console.error("Error fetching authors:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch authors"
+      });
+    }
+  });
+
+  apiRouter.post("/authors", async (req: Request, res: Response) => {
+    try {
+      const { name, description, avatarUrl, linkedinUrl } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: "Author name is required"
+        });
+      }
+
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No Shopify store found"
+        });
+      }
+
+      const store = stores[0];
+      const { MetaobjectService } = await import('./services/metaobjects');
+      const metaobjectService = new MetaobjectService(store);
+      
+      const author = await metaobjectService.createAuthor({
+        name,
+        description: description || '',
+        avatarUrl: avatarUrl || '',
+        linkedinUrl: linkedinUrl || ''
+      });
+      
+      res.json({
+        success: true,
+        author
+      });
+    } catch (error: any) {
+      console.error("Error creating author:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to create author"
+      });
+    }
+  });
+
+  apiRouter.put("/authors/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { name, description, avatarUrl, linkedinUrl } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          message: "Author name is required"
+        });
+      }
+
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No Shopify store found"
+        });
+      }
+
+      const store = stores[0];
+      const { MetaobjectService } = await import('./services/metaobjects');
+      const metaobjectService = new MetaobjectService(store);
+      
+      const author = await metaobjectService.updateAuthor(id, {
+        name,
+        description: description || '',
+        avatarUrl: avatarUrl || '',
+        linkedinUrl: linkedinUrl || ''
+      });
+      
+      res.json({
+        success: true,
+        author
+      });
+    } catch (error: any) {
+      console.error("Error updating author:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to update author"
+      });
+    }
+  });
+
+  apiRouter.delete("/authors/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No Shopify store found"
+        });
+      }
+
+      const store = stores[0];
+      const { MetaobjectService } = await import('./services/metaobjects');
+      const metaobjectService = new MetaobjectService(store);
+      
+      await metaobjectService.deleteAuthor(id);
+      
+      res.json({
+        success: true,
+        message: "Author deleted successfully"
+      });
+    } catch (error: any) {
+      console.error("Error deleting author:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to delete author"
+      });
+    }
+  });
+
+  apiRouter.get("/authors/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No Shopify store found"
+        });
+      }
+
+      const store = stores[0];
+      const { MetaobjectService } = await import('./services/metaobjects');
+      const metaobjectService = new MetaobjectService(store);
+      
+      const author = await metaobjectService.getAuthorById(id);
+      
+      if (!author) {
+        return res.status(404).json({
+          success: false,
+          message: "Author not found"
+        });
+      }
+      
+      res.json({
+        success: true,
+        author
+      });
+    } catch (error: any) {
+      console.error("Error fetching author:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch author"
+      });
+    }
+  });
+
   // Register feature-specific routers
   app.use('/api/content', contentRouter);
   app.use('/api/claude', claudeRouter);
