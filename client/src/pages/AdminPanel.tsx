@@ -3910,7 +3910,7 @@ export default function AdminPanel() {
                                 // Normalize the img source for comparison
                                 let normalizedImgSrc = imgSrc;
                                 // Remove http/https and domain for comparison
-                                if (normalizedImgSrc.startsWith('http')) {
+                                if (typeof normalizedImgSrc === 'string' && normalizedImgSrc.startsWith('http')) {
                                   try {
                                     // Try to get just the path portion for more flexible matching
                                     const url = new URL(normalizedImgSrc);
@@ -3927,7 +3927,7 @@ export default function AdminPanel() {
                                   
                                   // Try to normalize product image as well
                                   let normalizedProductImg = p.image;
-                                  if (normalizedProductImg.startsWith('http')) {
+                                  if (typeof normalizedProductImg === 'string' && normalizedProductImg.startsWith('http')) {
                                     try {
                                       const url = new URL(normalizedProductImg);
                                       normalizedProductImg = url.pathname;
@@ -3937,8 +3937,8 @@ export default function AdminPanel() {
                                   }
                                   
                                   // Check if either image includes parts of the other
-                                  return normalizedProductImg.includes(normalizedImgSrc) || 
-                                         normalizedImgSrc.includes(normalizedProductImg);
+                                  return (typeof normalizedProductImg === 'string' && normalizedProductImg.includes(normalizedImgSrc)) || 
+                                         (typeof normalizedImgSrc === 'string' && normalizedImgSrc.includes(normalizedProductImg));
                                 });
                                 
                                 // Style the image regardless of product match
