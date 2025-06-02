@@ -1400,7 +1400,10 @@ Place this at a logical position in the content, typically after introducing a c
         // Add selected media from Choose Media step
         primaryImage: requestData.primaryImage,
         secondaryImages: requestData.secondaryImages,
-        youtubeEmbed: requestData.youtubeEmbed
+        youtubeEmbed: requestData.youtubeEmbed,
+        // Add product information for secondary image linking
+        productIds: productsInfo.map(p => p.handle || String(p.id)),
+        productsInfo: productsInfo
       });
       
       // 4. Update content generation request

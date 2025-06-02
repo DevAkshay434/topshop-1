@@ -16,6 +16,9 @@ interface BlogContentRequest {
   primaryImage?: any;
   secondaryImages?: any[];
   youtubeEmbed?: string;
+  // Product linking fields
+  productIds?: string[];
+  productsInfo?: any[];
 }
 
 interface BlogContent {
@@ -98,7 +101,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     }
   }
   
-  // Handle secondary images placement - ensure no duplicates and proper distribution
+  // Handle secondary images placement - ensure no duplicates and proper distribution with product links
   if (request.secondaryImages && request.secondaryImages.length > 0) {
     // Find all secondary image placement markers
     const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
@@ -106,6 +109,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     
     // Create a set to track used image URLs to prevent duplicates
     const usedImages = new Set<string>();
+    
+    // Get products information for linking (from request or from secondary image metadata)
+    const availableProducts = request.productIds || [];
     
     // Process each marker location with a unique image
     for (let i = 0; i < availableMarkers && i < request.secondaryImages.length; i++) {
@@ -118,12 +124,41 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       usedImages.add(image.url);
       
-      const imageHtml = `
+      let imageHtml = '';
+      
+      // Try to link the image to a product
+      if (availableProducts.length > 0) {
+        // Cycle through available products to ensure each secondary image links to a product
+        const productIndex = i % availableProducts.length;
+        const productId = availableProducts[productIndex];
+        
+        // Create product-linked image HTML
+        imageHtml = `
+<div style="margin: 20px 0; text-align: center;">
+  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
+    <img src="${image.url}" alt="${image.alt || ''}" 
+      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease;" 
+      onmouseover="this.style.transform='scale(1.02)'" 
+      onmouseout="this.style.transform='scale(1)'" />
+  </a>
+  ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
+  <p style="margin-top: 4px; font-size: 12px;">
+    <a href="/products/${productId}" style="color: #2563eb; text-decoration: none; font-weight: 500;">View Product Details →</a>
+  </p>
+</div>`;
+        
+        console.log(`Secondary image ${i + 1} linked to product ID: ${productId}`);
+      } else {
+        // Fallback without product link if no products available
+        imageHtml = `
 <div style="margin: 20px 0; text-align: center;">
   <img src="${image.url}" alt="${image.alt || ''}" 
     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
   ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
 </div>`;
+        
+        console.log(`Secondary image ${i + 1} added without product link (no products selected)`);
+      }
       
       // Replace only the first remaining marker to ensure even distribution
       processedContent = processedContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', imageHtml);
