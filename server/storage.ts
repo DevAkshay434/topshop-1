@@ -635,7 +635,9 @@ export class DatabaseStorage implements IStorage {
     if (post.scheduledDate !== undefined) updateData.scheduledDate = post.scheduledDate;
     if (post.publishedDate !== undefined) updateData.publishedDate = post.publishedDate;
     if (post.shopifyPostId !== undefined) updateData.shopifyPostId = post.shopifyPostId;
+    if (post.shopifyBlogId !== undefined) updateData.shopifyBlogId = post.shopifyBlogId;
     if (post.views !== undefined) updateData.views = post.views;
+    if (post.contentType !== undefined) updateData.contentType = post.contentType;
     
     const [updatedPost] = await db.update(blogPosts)
       .set(updateData)
