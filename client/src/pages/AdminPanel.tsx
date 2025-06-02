@@ -3729,51 +3729,74 @@ export default function AdminPanel() {
                             
                             // Only update if content actually changed to prevent cursor jumping
                             if (el.innerHTML !== processedContent) {
+                              // Save cursor position before updating content
                               const selection = window.getSelection();
-                              const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-                              const caretOffset = range?.startOffset;
-                              const caretContainer = range?.startContainer;
+                              let cursorPosition = 0;
+                              let isSelectionInEditor = false;
                               
+                              if (selection && selection.rangeCount > 0) {
+                                const range = selection.getRangeAt(0);
+                                
+                                // Check if selection is within our editor
+                                if (el.contains(range.commonAncestorContainer)) {
+                                  isSelectionInEditor = true;
+                                  
+                                  // Calculate total text offset before cursor
+                                  const preCaretRange = range.cloneRange();
+                                  preCaretRange.selectNodeContents(el);
+                                  preCaretRange.setEnd(range.endContainer, range.endOffset);
+                                  cursorPosition = preCaretRange.toString().length;
+                                }
+                              }
+                              
+                              // Update content
                               el.innerHTML = processedContent;
                               
-                              // Restore cursor position
-                              if (selection && range && caretContainer && caretOffset !== undefined) {
-                                try {
-                                  const newRange = document.createRange();
-                                  const walker = document.createTreeWalker(
-                                    el,
-                                    NodeFilter.SHOW_TEXT,
-                                    null,
-                                    false
-                                  );
-                                  
-                                  let currentOffset = 0;
-                                  let targetNode = null;
-                                  let node;
-                                  
-                                  while (node = walker.nextNode()) {
-                                    const nodeLength = node.textContent?.length || 0;
-                                    if (currentOffset + nodeLength >= caretOffset) {
-                                      targetNode = node;
-                                      break;
+                              // Restore cursor position if it was in the editor
+                              if (isSelectionInEditor && selection) {
+                                setTimeout(() => {
+                                  try {
+                                    const walker = document.createTreeWalker(
+                                      el,
+                                      NodeFilter.SHOW_TEXT,
+                                      null
+                                    );
+                                    
+                                    let currentPosition = 0;
+                                    let textNode = walker.nextNode();
+                                    
+                                    // Find the text node that contains our cursor position
+                                    while (textNode) {
+                                      const textLength = textNode.textContent?.length || 0;
+                                      
+                                      if (currentPosition + textLength >= cursorPosition) {
+                                        // Found the target text node
+                                        const offsetInNode = cursorPosition - currentPosition;
+                                        const newRange = document.createRange();
+                                        newRange.setStart(textNode, Math.min(offsetInNode, textLength));
+                                        newRange.setEnd(textNode, Math.min(offsetInNode, textLength));
+                                        
+                                        selection.removeAllRanges();
+                                        selection.addRange(newRange);
+                                        break;
+                                      }
+                                      
+                                      currentPosition += textLength;
+                                      textNode = walker.nextNode();
                                     }
-                                    currentOffset += nodeLength;
+                                  } catch (e) {
+                                    // Fallback: place cursor at end
+                                    try {
+                                      const range = document.createRange();
+                                      range.selectNodeContents(el);
+                                      range.collapse(false);
+                                      selection.removeAllRanges();
+                                      selection.addRange(range);
+                                    } catch (fallbackError) {
+                                      console.warn('Could not restore cursor position:', fallbackError);
+                                    }
                                   }
-                                  
-                                  if (targetNode) {
-                                    newRange.setStart(targetNode, Math.min(caretOffset - currentOffset, targetNode.textContent?.length || 0));
-                                    newRange.collapse(true);
-                                    selection.removeAllRanges();
-                                    selection.addRange(newRange);
-                                  }
-                                } catch (e) {
-                                  // Fallback: place cursor at end
-                                  const newRange = document.createRange();
-                                  newRange.selectNodeContents(el);
-                                  newRange.collapse(false);
-                                  selection.removeAllRanges();
-                                  selection.addRange(newRange);
-                                }
+                                }, 0);
                               }
                             }
                           } else if (el && !generatedContent.content) {
