@@ -74,7 +74,7 @@ function addTableOfContents(content: string): string {
 }
 
 // Function to process media placements and prevent duplicate secondary images
-function processMediaPlacements(content: string, request: BlogContentRequest): string {
+function processMediaPlacementsHandler(content: string, request: BlogContentRequest): string {
   let processedContent = content;
   
   // Handle YouTube video placement under second H2 heading
@@ -399,7 +399,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     
     // Process the content to add automatic Table of Contents and handle media placement
     let processedContent = addTableOfContents(jsonContent.content);
-    processedContent = processMediaPlacements(processedContent, request);
+    processedContent = processMediaPlacementsHandler(processedContent, request);
     
     return {
       title: jsonContent.title,
