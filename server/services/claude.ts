@@ -341,8 +341,6 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
             "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
           }
           
-          CRITICAL: The "content" field should NOT include the title as an H1 or any other heading. The title will be added separately as the page title. Start the content directly with the introduction paragraph or first H2 heading.
-          
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
         }
       ],
