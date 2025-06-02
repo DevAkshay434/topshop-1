@@ -419,7 +419,11 @@ export default function KeywordSelector({
                   onClick={fetchKeywords}
                   disabled={isLoading || !directTopic}
                 >
-                  <Search className="h-4 w-4 mr-2" />
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4 mr-2" />
+                  )}
                   {isLoading ? "Searching..." : "Search"}
                 </Button>
               </div>
@@ -429,49 +433,75 @@ export default function KeywordSelector({
             </div>
           </div>
 
-          {/* Filter controls */}
+          {/* Filter and Sort controls */}
           {keywords.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 py-2">
-              <div className="flex items-center">
-                <Filter className="h-4 w-4 mr-1 text-muted-foreground" />
-                <span className="text-sm font-medium mr-2">Filter by intent:</span>
+            <div className="flex flex-wrap items-center justify-between gap-4 py-3 border-b">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center">
+                  <Filter className="h-4 w-4 mr-1 text-muted-foreground" />
+                  <span className="text-sm font-medium mr-2">Filter by intent:</span>
+                </div>
+                <Badge 
+                  variant={filterIntent === "Informational" ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => handleFilterByIntent("Informational")}
+                >
+                  Informational
+                </Badge>
+                <Badge 
+                  variant={filterIntent === "Transactional" ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => handleFilterByIntent("Transactional")}
+                >
+                  Transactional
+                </Badge>
+                <Badge 
+                  variant={filterIntent === "Commercial" ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => handleFilterByIntent("Commercial")}
+                >
+                  Commercial
+                </Badge>
+                <Badge 
+                  variant={filterIntent === "Navigational" ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => handleFilterByIntent("Navigational")}
+                >
+                  Navigational
+                </Badge>
+                <div className="flex-1"></div>
+                <div className="flex items-center">
+                  <Input 
+                    placeholder="Filter keywords..." 
+                    className="max-w-[200px]" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
               </div>
-              <Badge 
-                variant={filterIntent === "Informational" ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => handleFilterByIntent("Informational")}
-              >
-                Informational
-              </Badge>
-              <Badge 
-                variant={filterIntent === "Transactional" ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => handleFilterByIntent("Transactional")}
-              >
-                Transactional
-              </Badge>
-              <Badge 
-                variant={filterIntent === "Commercial" ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => handleFilterByIntent("Commercial")}
-              >
-                Commercial
-              </Badge>
-              <Badge 
-                variant={filterIntent === "Navigational" ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => handleFilterByIntent("Navigational")}
-              >
-                Navigational
-              </Badge>
-              <div className="flex-1"></div>
-              <div className="flex items-center">
-                <Input 
-                  placeholder="Filter keywords..." 
-                  className="max-w-[200px]" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+              
+              {/* Sort controls */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Sort by:</span>
+                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="searchVolume">Search Volume</SelectItem>
+                    <SelectItem value="competition">Competition</SelectItem>
+                    <SelectItem value="cpc">CPC</SelectItem>
+                    <SelectItem value="difficulty">Difficulty</SelectItem>
+                    <SelectItem value="keyword">Keyword</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                >
+                  {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                </Button>
               </div>
             </div>
           )}
