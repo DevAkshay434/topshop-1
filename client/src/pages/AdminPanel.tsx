@@ -1357,9 +1357,7 @@ export default function AdminPanel() {
             ...prev,
             shopifyPostId: response.post.shopifyPostId,
             shopifyBlogId: response.post.shopifyBlogId,
-            shopifyUrl: response.post.articleType === 'blog' 
-              ? `https://rajeshshah.myshopify.com/blogs/news/${response.post.shopifyPostId}`
-              : `https://rajeshshah.myshopify.com/pages/${response.post.shopifyPostId}`
+            shopifyUrl: response.shopifyUrl || response.post.shopifyUrl // Use handle-based URL from API
           } : null);
         }
       } else {
