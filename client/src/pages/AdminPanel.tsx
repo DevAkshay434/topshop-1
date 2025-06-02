@@ -320,6 +320,7 @@ export default function AdminPanel() {
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [contentEditorKey, setContentEditorKey] = useState(0); // Force re-render of editor
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -1537,6 +1538,9 @@ export default function AdminPanel() {
           contentUrl: response.contentUrl,
           shopifyUrl: response.contentUrl // Map contentUrl to shopifyUrl for button compatibility
         });
+        
+        // Force content editor to re-render with new content
+        setContentEditorKey(prev => prev + 1);
         
         toast({
           title: "Content generated successfully",
@@ -3704,49 +3708,39 @@ export default function AdminPanel() {
 
                       {/* Content Editor with Inline Media */}
                       <div
+                        key={contentEditorKey}
                         ref={(el) => {
-                          // Reset initialization when new content is generated
-                          if (el && generatedContent.content) {
-                            // Use a simple hash based on content length and first/last characters
-                            const contentLength = generatedContent.content.length;
-                            const contentStart = generatedContent.content.substring(0, 50);
-                            const contentEnd = generatedContent.content.substring(-50);
-                            const currentContentHash = `${contentLength}-${contentStart.length}-${contentEnd.length}`;
+                          // Only set content on initial load, never re-process during editing
+                          if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                            // Process content to render embedded images and videos properly
+                            let processedContent = generatedContent.content;
                             
-                            // Check if this is new content or first load
-                            if (!el.dataset.initialized || el.dataset.contentHash !== currentContentHash) {
-                              // Process content to render embedded images and videos properly
-                              let processedContent = generatedContent.content;
-                              
-                              // Ensure images have proper styling and are visible
-                              processedContent = processedContent.replace(
-                                /<img([^>]*?)>/gi,
-                                '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
-                              );
-                              
-                              // Ensure iframes (YouTube videos) have proper styling
-                              processedContent = processedContent.replace(
-                                /<iframe([^>]*?)>/gi,
-                                '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
-                              );
-                              
-                              // Close the wrapper div for iframes
-                              processedContent = processedContent.replace(
-                                /<\/iframe>/gi,
-                                '</iframe></div>'
-                              );
-                              
-                              // Set content and mark as initialized with content hash
-                              el.innerHTML = processedContent;
-                              el.dataset.initialized = 'true';
-                              el.dataset.contentHash = currentContentHash;
-                            }
-                          } else if (el && !generatedContent.content) {
-                            // Reset when no content
-                            if (el.dataset.initialized) {
-                              delete el.dataset.initialized;
-                              delete el.dataset.contentHash;
-                            }
+                            // Ensure images have proper styling and are visible
+                            processedContent = processedContent.replace(
+                              /<img([^>]*?)>/gi,
+                              '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
+                            );
+                            
+                            // Ensure iframes (YouTube videos) have proper styling
+                            processedContent = processedContent.replace(
+                              /<iframe([^>]*?)>/gi,
+                              '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
+                            );
+                            
+                            // Close the wrapper div for iframes
+                            processedContent = processedContent.replace(
+                              /<\/iframe>/gi,
+                              '</iframe></div>'
+                            );
+                            
+                            // Set content once and mark as loaded
+                            el.innerHTML = processedContent;
+                            el.setAttribute('data-content-loaded', 'true');
+                          } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
+                            // Clear content and reset when no content
+                            el.removeAttribute('data-content-loaded');
+                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
+                          } else if (el && !generatedContent.content && !el.hasAttribute('data-content-loaded')) {
                             el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
                           }
                         }}
