@@ -215,6 +215,8 @@ export default function CreatePostModal({
           : initialData.categories) 
         : undefined,
       tags: initialData?.tags || "",
+      metaTitle: initialData?.metaTitle || "",
+      metaDescription: initialData?.metaDescription || "",
       // Default to draft for new content, preserve status for existing content
       publicationType: initialData?.status || "draft",
       // Default values for new fields
