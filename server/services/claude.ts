@@ -98,25 +98,36 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     }
   }
   
-  // Handle secondary images placement - ensure no duplicates
+  // Handle secondary images placement - ensure no duplicates and proper distribution
   if (request.secondaryImages && request.secondaryImages.length > 0) {
+    // Find all secondary image placement markers
     const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const availableMarkers = markers ? markers.length : 0;
     
-    // Process each secondary image, but don't repeat any image
-    const uniqueImages = request.secondaryImages.slice(0, availableMarkers);
+    // Create a set to track used image URLs to prevent duplicates
+    const usedImages = new Set<string>();
     
-    uniqueImages.forEach((image, index) => {
+    // Process each marker location with a unique image
+    for (let i = 0; i < availableMarkers && i < request.secondaryImages.length; i++) {
+      const image = request.secondaryImages[i];
+      
+      // Skip if this image URL has already been used
+      if (usedImages.has(image.url)) {
+        continue;
+      }
+      
+      usedImages.add(image.url);
+      
       const imageHtml = `
 <div style="margin: 20px 0; text-align: center;">
-  <img src="${image.url}" alt="${image.alt}" 
+  <img src="${image.url}" alt="${image.alt || ''}" 
     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
   ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
 </div>`;
       
-      // Replace one marker at a time to ensure even distribution
+      // Replace only the first remaining marker to ensure even distribution
       processedContent = processedContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', imageHtml);
-    });
+    }
     
     // Remove any remaining unused markers
     processedContent = processedContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
@@ -197,8 +208,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - The system will automatically prevent duplicate images and distribute them evenly
     
     TABLE OF CONTENTS REQUIREMENTS:
-    - AUTOMATICALLY include a Table of Contents right after the introduction paragraph
-    - Add this TOC placement marker immediately after the intro: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
+    - AUTOMATICALLY include a Table of Contents right after the featured image
+    - Add this TOC placement marker at the very beginning after the H1 title: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
     - The system will automatically generate a TOC using all H2 headings in your content
     - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
     - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
