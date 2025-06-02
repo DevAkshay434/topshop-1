@@ -19,10 +19,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Filter, Search, Activity, FileText } from "lucide-react";
+import { CheckCircle, Filter, Search, Activity, FileText, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Interface for keyword data
 interface KeywordData {
@@ -75,12 +82,32 @@ export default function KeywordSelector({
   const [filterIntent, setFilterIntent] = useState<string | null>(null);
   const [productUrl, setProductUrl] = useState("");
   const [directTopic, setDirectTopic] = useState(productTitle || ""); // Pre-populate with product title if available
+  const [sortBy, setSortBy] = useState<'searchVolume' | 'competition' | 'cpc' | 'difficulty' | 'keyword'>('searchVolume');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Count selected keywords
   const selectedCount = keywords.filter(kw => kw.selected).length;
   const mainKeyword = keywords.find(kw => kw.isMainKeyword);
 
-  // Filter keywords based on search and intent filter, hide 0 search volume, and sort by search volume
+  // Function to get sort value
+  const getSortValue = (keyword: KeywordData, sortBy: string) => {
+    switch (sortBy) {
+      case 'searchVolume':
+        return keyword.searchVolume || 0;
+      case 'competition':
+        return keyword.competition || 0;
+      case 'cpc':
+        return keyword.cpc || 0;
+      case 'difficulty':
+        return keyword.difficulty || 0;
+      case 'keyword':
+        return keyword.keyword.toLowerCase();
+      default:
+        return 0;
+    }
+  };
+
+  // Filter keywords based on search and intent filter, hide 0 search volume, and sort dynamically
   const filteredKeywords = keywords
     .filter(keyword => {
       const matchesSearch = keyword.keyword.toLowerCase().includes(searchTerm.toLowerCase());
@@ -89,10 +116,16 @@ export default function KeywordSelector({
       return matchesSearch && matchesIntent && hasSearchVolume;
     })
     .sort((a, b) => {
-      // Sort by search volume in descending order
-      const volumeA = a.searchVolume || 0;
-      const volumeB = b.searchVolume || 0;
-      return volumeB - volumeA;
+      const valueA = getSortValue(a, sortBy);
+      const valueB = getSortValue(b, sortBy);
+      
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        return sortOrder === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+      }
+      
+      return sortOrder === 'asc' ? 
+        (valueA as number) - (valueB as number) : 
+        (valueB as number) - (valueA as number);
     });
 
   // Set a keyword as the main keyword
