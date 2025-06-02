@@ -497,20 +497,47 @@ export class ShopifyService {
       
       // Optimize images in content to meet Shopify's 25 megapixel limit
       if (articleData.body_html) {
-        // Replace high-resolution image URLs with medium or small versions
+        console.log('Optimizing images for Shopify 25MP limit...');
+        
+        // Replace high-resolution image URLs with optimized versions
         articleData.body_html = articleData.body_html.replace(
           /src="([^"]*?\.(?:jpg|jpeg|png|webp)[^"]*?)"/gi,
           (match: string, url: string) => {
-            // Convert large images to medium size to avoid 25 megapixel limit
-            if (url.includes('cdn.shopify.com') && url.includes('large')) {
-              return match.replace('large', 'medium');
+            let optimizedUrl = url;
+            
+            // Pexels images - use medium size (typically 1920x1280 = 2.45MP)
+            if (url.includes('images.pexels.com')) {
+              // Replace original with large, or add size parameters
+              optimizedUrl = url.replace('/original/', '/large/');
+              if (!optimizedUrl.includes('/large/')) {
+                // Add size parameters to stay under 25MP
+                const separator = optimizedUrl.includes('?') ? '&' : '?';
+                optimizedUrl = optimizedUrl + `${separator}w=1920&h=1280&fit=crop`;
+              }
             }
-            if (url.includes('images.pexels.com') && url.includes('original')) {
-              return match.replace('original', 'large');
+            // Shopify CDN images
+            else if (url.includes('cdn.shopify.com')) {
+              optimizedUrl = url.replace('_master', '_1024x1024').replace('_original', '_1024x1024');
+              if (url.includes('large')) {
+                optimizedUrl = url.replace('large', 'medium');
+              }
             }
-            return match;
+            // Other external images - add size constraints
+            else if (url.startsWith('http') && !url.includes('youtube.com')) {
+              const separator = optimizedUrl.includes('?') ? '&' : '?';
+              // Limit to reasonable dimensions (under 25MP)
+              optimizedUrl = optimizedUrl + `${separator}w=2048&h=1536`;
+            }
+            
+            if (optimizedUrl !== url) {
+              console.log(`Optimized image: ${url.substring(0, 80)}... -> ${optimizedUrl.substring(0, 80)}...`);
+            }
+            
+            return match.replace(url, optimizedUrl);
           }
         );
+        
+        console.log(`Image optimization complete. Content length: ${articleData.body_html.length}`);
       }
 
       // Validate content before sending to Shopify
