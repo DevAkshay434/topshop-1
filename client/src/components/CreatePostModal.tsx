@@ -122,6 +122,8 @@ const formSchema = insertBlogPostSchema.extend({
   category: z.string().optional(),
   categories: z.array(z.string()).optional(),
   tags: z.string().optional(),
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
   // Status is preserved when editing existing content
   publicationType: z.enum(["publish", "draft", "schedule"]).default("draft").optional(),
   // Fields for scheduling
@@ -870,6 +872,50 @@ export default function CreatePostModal({
                   </FormItem>
                 )}
               />
+
+              {/* SEO Fields */}
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="metaTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meta Title (SEO)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="SEO title for search engines (optional)"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Optimized title for search engines. If empty, the post title will be used.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="metaDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meta Description (SEO)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Brief description for search engine results (optional)"
+                          {...field}
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Summary that appears in search engine results (150-160 characters recommended).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               <Tabs 
                 value={activeTab} 
