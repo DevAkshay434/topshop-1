@@ -3705,101 +3705,44 @@ export default function AdminPanel() {
                       {/* Content Editor with Inline Media */}
                       <div
                         ref={(el) => {
+                          // Reset initialization when new content is generated
                           if (el && generatedContent.content) {
-                            // Process content to render embedded images and videos properly
-                            let processedContent = generatedContent.content;
+                            const currentContentHash = btoa(generatedContent.content).substring(0, 10);
                             
-                            // Ensure images have proper styling and are visible
-                            processedContent = processedContent.replace(
-                              /<img([^>]*?)>/gi,
-                              '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
-                            );
-                            
-                            // Ensure iframes (YouTube videos) have proper styling
-                            processedContent = processedContent.replace(
-                              /<iframe([^>]*?)>/gi,
-                              '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
-                            );
-                            
-                            // Close the wrapper div for iframes
-                            processedContent = processedContent.replace(
-                              /<\/iframe>/gi,
-                              '</iframe></div>'
-                            );
-                            
-                            // Only update if content actually changed to prevent cursor jumping
-                            if (el.innerHTML !== processedContent) {
-                              // Save cursor position before updating content
-                              const selection = window.getSelection();
-                              let cursorPosition = 0;
-                              let isSelectionInEditor = false;
+                            // Check if this is new content or first load
+                            if (!el.dataset.initialized || el.dataset.contentHash !== currentContentHash) {
+                              // Process content to render embedded images and videos properly
+                              let processedContent = generatedContent.content;
                               
-                              if (selection && selection.rangeCount > 0) {
-                                const range = selection.getRangeAt(0);
-                                
-                                // Check if selection is within our editor
-                                if (el.contains(range.commonAncestorContainer)) {
-                                  isSelectionInEditor = true;
-                                  
-                                  // Calculate total text offset before cursor
-                                  const preCaretRange = range.cloneRange();
-                                  preCaretRange.selectNodeContents(el);
-                                  preCaretRange.setEnd(range.endContainer, range.endOffset);
-                                  cursorPosition = preCaretRange.toString().length;
-                                }
-                              }
+                              // Ensure images have proper styling and are visible
+                              processedContent = processedContent.replace(
+                                /<img([^>]*?)>/gi,
+                                '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
+                              );
                               
-                              // Update content
+                              // Ensure iframes (YouTube videos) have proper styling
+                              processedContent = processedContent.replace(
+                                /<iframe([^>]*?)>/gi,
+                                '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
+                              );
+                              
+                              // Close the wrapper div for iframes
+                              processedContent = processedContent.replace(
+                                /<\/iframe>/gi,
+                                '</iframe></div>'
+                              );
+                              
+                              // Set content and mark as initialized with content hash
                               el.innerHTML = processedContent;
-                              
-                              // Restore cursor position if it was in the editor
-                              if (isSelectionInEditor && selection) {
-                                setTimeout(() => {
-                                  try {
-                                    const walker = document.createTreeWalker(
-                                      el,
-                                      NodeFilter.SHOW_TEXT,
-                                      null
-                                    );
-                                    
-                                    let currentPosition = 0;
-                                    let textNode = walker.nextNode();
-                                    
-                                    // Find the text node that contains our cursor position
-                                    while (textNode) {
-                                      const textLength = textNode.textContent?.length || 0;
-                                      
-                                      if (currentPosition + textLength >= cursorPosition) {
-                                        // Found the target text node
-                                        const offsetInNode = cursorPosition - currentPosition;
-                                        const newRange = document.createRange();
-                                        newRange.setStart(textNode, Math.min(offsetInNode, textLength));
-                                        newRange.setEnd(textNode, Math.min(offsetInNode, textLength));
-                                        
-                                        selection.removeAllRanges();
-                                        selection.addRange(newRange);
-                                        break;
-                                      }
-                                      
-                                      currentPosition += textLength;
-                                      textNode = walker.nextNode();
-                                    }
-                                  } catch (e) {
-                                    // Fallback: place cursor at end
-                                    try {
-                                      const range = document.createRange();
-                                      range.selectNodeContents(el);
-                                      range.collapse(false);
-                                      selection.removeAllRanges();
-                                      selection.addRange(range);
-                                    } catch (fallbackError) {
-                                      console.warn('Could not restore cursor position:', fallbackError);
-                                    }
-                                  }
-                                }, 0);
-                              }
+                              el.dataset.initialized = 'true';
+                              el.dataset.contentHash = currentContentHash;
                             }
                           } else if (el && !generatedContent.content) {
+                            // Reset when no content
+                            if (el.dataset.initialized) {
+                              delete el.dataset.initialized;
+                              delete el.dataset.contentHash;
+                            }
                             el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
                           }
                         }}
