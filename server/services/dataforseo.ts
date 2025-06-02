@@ -23,27 +23,12 @@ export class DataForSEOService {
   constructor() {
     this.apiUrl = 'https://api.dataforseo.com';
     
-    // DataForSEO requires credentials in the format 'username:password'
-    // The DATAFORSEO_API_KEY should be set to "login:password" from DataForSEO account
-    const apiKey = process.env.DATAFORSEO_API_KEY || '';
+    // Use separate environment variables for username and password
+    this.username = process.env.DATAFORSEO_LOGIN || '';
+    this.password = process.env.DATAFORSEO_PASSWORD || '';
     
-    console.log(`Initializing DataForSEO service with key format: ${apiKey.includes(':') ? 'username:password' : 'invalid format'}`);
-    
-    if (apiKey.includes(':')) {
-      // Split the API key into username and password
-      const [username, password] = apiKey.split(':');
-      this.username = username;
-      this.password = password;
-      
-      console.log(`DataForSEO credentials parsed - Login: ${username}, Password length: ${password.length}`);
-    } else {
-      // Log warning about invalid format
-      console.warn('WARNING: DataForSEO credentials not in correct format. Should be "login:password"');
-      
-      // Still try to use whatever was provided as both username and password
-      this.username = apiKey;
-      this.password = apiKey;
-    }
+    console.log(`Initializing DataForSEO service with credentials`);
+    console.log(`DataForSEO credentials - Login: ${this.username}, Password length: ${this.password.length}`);
     
     if (this.hasValidCredentials()) {
       console.log(`DataForSEO service initialized successfully with login: ${this.username}`);
