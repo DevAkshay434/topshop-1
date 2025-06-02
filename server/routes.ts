@@ -1243,6 +1243,102 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Keywords endpoint for SEO keyword research
+  apiRouter.get("/keywords", async (req: Request, res: Response) => {
+    try {
+      const { products, collections, region = 'us' } = req.query;
+      
+      console.log('Keywords API called with:', { products, collections, region });
+      
+      // Parse products and collections from query parameters
+      let selectedProducts: any[] = [];
+      let selectedCollections: any[] = [];
+      
+      if (products && typeof products === 'string') {
+        try {
+          selectedProducts = JSON.parse(products);
+        } catch (e) {
+          console.error('Error parsing products:', e);
+        }
+      }
+      
+      if (collections && typeof collections === 'string') {
+        try {
+          selectedCollections = JSON.parse(collections);
+        } catch (e) {
+          console.error('Error parsing collections:', e);
+        }
+      }
+      
+      // Import DataForSEO service
+      const { DataForSEOService } = await import('./services/dataforseo');
+      const dataForSEOService = new DataForSEOService();
+      
+      // Build search terms from products and collections
+      const searchTerms: string[] = [];
+      
+      // Add product titles
+      if (selectedProducts && Array.isArray(selectedProducts)) {
+        selectedProducts.forEach(product => {
+          if (product.title) {
+            searchTerms.push(product.title);
+          }
+        });
+      }
+      
+      // Add collection titles
+      if (selectedCollections && Array.isArray(selectedCollections)) {
+        selectedCollections.forEach(collection => {
+          if (collection.title) {
+            searchTerms.push(collection.title);
+          }
+        });
+      }
+      
+      // If no search terms, use a default
+      if (searchTerms.length === 0) {
+        searchTerms.push('business products');
+      }
+      
+      console.log(`Fetching keywords for terms: ${searchTerms.join(', ')}`);
+      
+      // Get keywords from DataForSEO
+      let allKeywords: any[] = [];
+      
+      // Process first search term
+      if (searchTerms.length > 0) {
+        const keywords = await dataForSEOService.getKeywordsForProduct(searchTerms[0]);
+        allKeywords = keywords;
+      }
+      
+      // Process additional terms and merge unique keywords
+      if (searchTerms.length > 1) {
+        const processedKeywords = new Set(allKeywords.map(k => k.keyword.toLowerCase()));
+        
+        for (let i = 1; i < Math.min(searchTerms.length, 3); i++) {
+          const additionalKeywords = await dataForSEOService.getKeywordsForProduct(searchTerms[i]);
+          
+          additionalKeywords.forEach(keyword => {
+            if (!processedKeywords.has(keyword.keyword.toLowerCase())) {
+              allKeywords.push(keyword);
+              processedKeywords.add(keyword.keyword.toLowerCase());
+            }
+          });
+        }
+      }
+      
+      console.log(`Returning ${allKeywords.length} keywords`);
+      res.json({ keywords: allKeywords });
+      
+    } catch (error: any) {
+      console.error('Error fetching keywords:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch keywords',
+        message: error.message 
+      });
+    }
+  });
+
   // Use our dedicated content router for content generation endpoints
   apiRouter.use(contentRouter);
   
