@@ -1512,11 +1512,10 @@ Place this at a logical position in the content, typically after introducing a c
         console.log("Added primary image to beginning of page content");
       }
       
-      // Replace media placement markers with actual content
-      // Manually insert secondary images and videos into content after H2 headings
-      // This ensures selected media actually appears in the final content
-      if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
-        console.log(`Embedding ${requestData.secondaryImages.length} secondary images directly into content`);
+      // Secondary images are now handled by the Claude service via processMediaPlacementsHandler
+      // This prevents duplication and ensures proper placement according to the placement markers
+      if (false && requestData.secondaryImages && requestData.secondaryImages.length > 0) {
+        console.log(`DISABLED: Embedding ${requestData.secondaryImages.length} secondary images directly into content`);
         
         // Find all H2 headings in the content
         const h2Pattern = /<\/h2>/gi;
