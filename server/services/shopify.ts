@@ -530,32 +530,35 @@ export class ShopifyService {
           (match: string, url: string) => {
             let optimizedUrl = url;
             
-            // Pexels images - use medium size (typically 1920x1280 = 2.45MP)
+            // Pexels images - use smaller sizes to stay well under 25MP
             if (url.includes('images.pexels.com')) {
-              // Replace original with large, or add size parameters
-              optimizedUrl = url.replace('/original/', '/large/');
-              if (!optimizedUrl.includes('/large/')) {
-                // Add size parameters to stay under 25MP
+              // Force use of medium size (typically 1280x853 = 1.09MP)
+              optimizedUrl = url.replace('/original/', '/medium/');
+              optimizedUrl = optimizedUrl.replace('/large/', '/medium/');
+              optimizedUrl = optimizedUrl.replace('/large2x/', '/medium/');
+              
+              // If no size specifier exists, add medium size parameters
+              if (!optimizedUrl.includes('/medium/') && !optimizedUrl.includes('w=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=1920&h=1280&fit=crop`;
+                optimizedUrl = optimizedUrl + `${separator}w=1280&h=853&fit=crop&auto=compress&cs=tinysrgb`;
               }
             }
-            // Shopify CDN images
+            // Shopify CDN images - use smaller variants
             else if (url.includes('cdn.shopify.com')) {
-              optimizedUrl = url.replace('_master', '_1024x1024').replace('_original', '_1024x1024');
-              if (url.includes('large')) {
-                optimizedUrl = url.replace('large', 'medium');
-              }
+              optimizedUrl = url.replace('_master', '_1024x1024');
+              optimizedUrl = optimizedUrl.replace('_original', '_1024x1024');
+              optimizedUrl = optimizedUrl.replace('_large', '_medium');
+              optimizedUrl = optimizedUrl.replace('_2048x2048', '_1024x1024');
             }
-            // Other external images - add size constraints
+            // Other external images - force smaller dimensions
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
+              // For any external image, add aggressive size constraints (well under 25MP)
               const separator = optimizedUrl.includes('?') ? '&' : '?';
-              // Limit to reasonable dimensions (under 25MP)
-              optimizedUrl = optimizedUrl + `${separator}w=2048&h=1536`;
+              optimizedUrl = optimizedUrl + `${separator}w=1280&h=853&q=80`;
             }
             
             if (optimizedUrl !== url) {
-              console.log(`Optimized image: ${url.substring(0, 80)}... -> ${optimizedUrl.substring(0, 80)}...`);
+              console.log(`Optimized image: ${url.substring(0, 60)}... -> ${optimizedUrl.substring(0, 60)}...`);
             }
             
             return match.replace(url, optimizedUrl);
