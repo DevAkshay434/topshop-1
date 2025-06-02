@@ -431,6 +431,31 @@ export class ShopifyService {
         summary: (post as any).summary || "", // Add summary field if available
         handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled'
       };
+
+      // Add SEO meta fields if available
+      // Note: Shopify uses metafields for SEO data, but for blog articles we can also use the summary field for meta description
+      if ((post as any).metaTitle) {
+        // Store meta title as a metafield
+        articleData.metafields = articleData.metafields || [];
+        articleData.metafields.push({
+          namespace: "seo",
+          key: "meta_title", 
+          value: (post as any).metaTitle,
+          type: "single_line_text_field"
+        });
+      }
+      
+      if ((post as any).metaDescription) {
+        // Store meta description as a metafield and also use summary_html for basic SEO
+        articleData.summary_html = (post as any).metaDescription;
+        articleData.metafields = articleData.metafields || [];
+        articleData.metafields.push({
+          namespace: "seo",
+          key: "meta_description",
+          value: (post as any).metaDescription,
+          type: "multi_line_text_field"
+        });
+      }
       
       // Only add image if it exists and is properly formatted
       if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
