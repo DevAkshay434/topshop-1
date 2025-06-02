@@ -605,6 +605,8 @@ export class DatabaseStorage implements IStorage {
         category: post.category || null,
         categories: post.categories || null,
         tags: post.tags || null,
+        metaTitle: post.metaTitle || null,
+        metaDescription: post.metaDescription || null,
         scheduledDate: post.scheduledDate || null,
         scheduledPublishDate: post.scheduledPublishDate || null,
         scheduledPublishTime: post.scheduledPublishTime || null,
