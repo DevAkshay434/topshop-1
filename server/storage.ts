@@ -86,12 +86,14 @@ export class MemStorage implements IStorage {
   private blogPosts: Map<number, BlogPost>;
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
+  private authors: Map<number, Author>;
   
   private currentUserId: number;
   private currentStoreId: number;
   private currentBlogPostId: number;
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
+  private currentAuthorId: number;
 
   constructor() {
     this.users = new Map();
@@ -100,12 +102,14 @@ export class MemStorage implements IStorage {
     this.blogPosts = new Map();
     this.syncActivities = [];
     this.contentGenRequests = new Map();
+    this.authors = new Map();
     
     this.currentUserId = 1;
     this.currentStoreId = 1;
     this.currentBlogPostId = 1;
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
+    this.currentAuthorId = 1;
     
     // Add some initial data for testing
     const now = new Date();
@@ -523,6 +527,58 @@ export class MemStorage implements IStorage {
     
     this.userStores.set(key, newUserStore);
     return newUserStore;
+  }
+
+  // Author operations
+  async getAuthors(storeId?: number): Promise<Author[]> {
+    const allAuthors = Array.from(this.authors.values());
+    if (storeId) {
+      return allAuthors.filter(author => author.storeId === storeId);
+    }
+    return allAuthors;
+  }
+
+  async getAuthor(id: number): Promise<Author | undefined> {
+    return this.authors.get(id);
+  }
+
+  async createAuthor(author: InsertAuthor): Promise<Author> {
+    const newAuthor: Author = {
+      id: this.currentAuthorId++,
+      storeId: author.storeId || null,
+      name: author.name,
+      description: author.description || null,
+      avatarUrl: author.avatarUrl || null,
+      linkedinUrl: author.linkedinUrl || null,
+      handle: author.handle,
+      shopifyMetaobjectId: author.shopifyMetaobjectId || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.authors.set(newAuthor.id, newAuthor);
+    return newAuthor;
+  }
+
+  async updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined> {
+    const existingAuthor = this.authors.get(id);
+    if (!existingAuthor) {
+      return undefined;
+    }
+
+    const updatedAuthor: Author = {
+      ...existingAuthor,
+      ...author,
+      id: existingAuthor.id, // Ensure ID doesn't change
+      updatedAt: new Date()
+    };
+
+    this.authors.set(id, updatedAuthor);
+    return updatedAuthor;
+  }
+
+  async deleteAuthor(id: number): Promise<boolean> {
+    return this.authors.delete(id);
   }
 }
 
@@ -1086,6 +1142,42 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getContentGenRequest(id),
       () => memStorage.getContentGenRequest(id)
+    );
+  }
+
+  // Author operations
+  async getAuthors(storeId?: number): Promise<Author[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getAuthors(storeId),
+      () => memStorage.getAuthors(storeId)
+    );
+  }
+
+  async getAuthor(id: number): Promise<Author | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getAuthor(id),
+      () => memStorage.getAuthor(id)
+    );
+  }
+
+  async createAuthor(author: InsertAuthor): Promise<Author> {
+    return this.tryOrFallback(
+      () => dbStorage.createAuthor(author),
+      () => memStorage.createAuthor(author)
+    );
+  }
+
+  async updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateAuthor(id, author),
+      () => memStorage.updateAuthor(id, author)
+    );
+  }
+
+  async deleteAuthor(id: number): Promise<boolean> {
+    return this.tryOrFallback(
+      () => dbStorage.deleteAuthor(id),
+      () => memStorage.deleteAuthor(id)
     );
   }
 }

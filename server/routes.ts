@@ -1955,18 +1955,13 @@ export async function registerRoutes(app: Express): Promise<void> {
   apiRouter.get("/authors", async (req: Request, res: Response) => {
     try {
       const stores = await storage.getShopifyStores();
-      if (!stores || stores.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "No Shopify store found"
-        });
-      }
-
-      const store = stores[0];
-      const { MetaobjectService } = await import('./services/metaobjects');
-      const metaobjectService = new MetaobjectService(store);
+      let storeId: number | undefined;
       
-      const authors = await metaobjectService.getAuthors();
+      if (stores && stores.length > 0) {
+        storeId = stores[0].id;
+      }
+      
+      const authors = await storage.getAuthors(storeId);
       
       res.json({
         success: true,
@@ -1993,22 +1988,22 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       const stores = await storage.getShopifyStores();
-      if (!stores || stores.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "No Shopify store found"
-        });
+      let storeId: number | undefined;
+      
+      if (stores && stores.length > 0) {
+        storeId = stores[0].id;
       }
 
-      const store = stores[0];
-      const { MetaobjectService } = await import('./services/metaobjects');
-      const metaobjectService = new MetaobjectService(store);
+      // Generate a unique handle from the name
+      const handle = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       
-      const author = await metaobjectService.createAuthor({
+      const author = await storage.createAuthor({
+        storeId,
         name,
-        description: description || '',
-        avatarUrl: avatarUrl || '',
-        linkedinUrl: linkedinUrl || ''
+        description: description || null,
+        avatarUrl: avatarUrl || null,
+        linkedinUrl: linkedinUrl || null,
+        handle
       });
       
       res.json({
