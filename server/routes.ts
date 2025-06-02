@@ -1955,13 +1955,18 @@ export async function registerRoutes(app: Express): Promise<void> {
   apiRouter.get("/authors", async (req: Request, res: Response) => {
     try {
       const stores = await storage.getShopifyStores();
-      let storeId: number | undefined;
-      
-      if (stores && stores.length > 0) {
-        storeId = stores[0].id;
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No Shopify store found"
+        });
       }
+
+      const store = stores[0];
+      const { MetaobjectService } = await import('./services/metaobjects');
+      const metaobjectService = new MetaobjectService(store);
       
-      const authors = await storage.getAuthors(storeId);
+      const authors = await metaobjectService.getAuthors();
       
       res.json({
         success: true,
@@ -1988,22 +1993,22 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       const stores = await storage.getShopifyStores();
-      let storeId: number | undefined;
-      
-      if (stores && stores.length > 0) {
-        storeId = stores[0].id;
+      if (!stores || stores.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No Shopify store found"
+        });
       }
 
-      // Generate a unique handle from the name
-      const handle = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const store = stores[0];
+      const { MetaobjectService } = await import('./services/metaobjects');
+      const metaobjectService = new MetaobjectService(store);
       
-      const author = await storage.createAuthor({
-        storeId,
+      const author = await metaobjectService.createAuthor({
         name,
-        description: description || null,
-        avatarUrl: avatarUrl || null,
-        linkedinUrl: linkedinUrl || null,
-        handle
+        description: description || '',
+        avatarUrl: avatarUrl || '',
+        linkedinUrl: linkedinUrl || ''
       });
       
       res.json({
