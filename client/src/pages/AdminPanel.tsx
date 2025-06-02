@@ -127,7 +127,6 @@ import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
-import { AuthorSelector } from '@/components/AuthorSelector';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -149,7 +148,6 @@ const contentFormSchema = z.object({
   toneOfVoice: z.enum(["neutral", "professional", "empathetic", "casual", "excited", "formal", "friendly", "humorous"]),
   postStatus: z.enum(["publish", "draft"]),
   generateImages: z.boolean().default(true),
-  authorId: z.string().optional(),
   scheduledPublishDate: z.string().optional(), // Added for future scheduling date
   scheduledPublishTime: z.string().optional(),  // Added for future scheduling time
   // Fields needed for scheduling functionality
@@ -1705,21 +1703,6 @@ export default function AdminPanel() {
                             <FormDescription>
                               Target region for content localization
                             </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Author selection */}
-                      <FormField
-                        control={form.control}
-                        name="authorId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <AuthorSelector
-                              selectedAuthorId={field.value}
-                              onAuthorSelect={field.onChange}
-                            />
                             <FormMessage />
                           </FormItem>
                         )}
