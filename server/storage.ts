@@ -6,6 +6,7 @@ import {
   blogPosts,
   syncActivities,
   contentGenRequests,
+  authors,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -19,7 +20,9 @@ import {
   type SyncActivity,
   type InsertSyncActivity,
   type ContentGenRequest,
-  type InsertContentGenRequest
+  type InsertContentGenRequest,
+  type Author,
+  type InsertAuthor
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
@@ -65,6 +68,13 @@ export interface IStorage {
   createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest>;
   updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined>;
   getContentGenRequest(id: number): Promise<ContentGenRequest | undefined>;
+  
+  // Author operations
+  getAuthors(storeId?: number): Promise<Author[]>;
+  getAuthor(id: number): Promise<Author | undefined>;
+  createAuthor(author: InsertAuthor): Promise<Author>;
+  updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined>;
+  deleteAuthor(id: number): Promise<boolean>;
 }
 
 // In-memory implementation of the storage interface
@@ -826,6 +836,59 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return newUserStore;
+  }
+
+  // Author operations
+  async getAuthors(storeId?: number): Promise<Author[]> {
+    if (storeId) {
+      return db.select().from(authors).where(eq(authors.storeId, storeId));
+    }
+    return db.select().from(authors);
+  }
+
+  async getAuthor(id: number): Promise<Author | undefined> {
+    const [author] = await db.select().from(authors).where(eq(authors.id, id));
+    return author;
+  }
+
+  async createAuthor(author: InsertAuthor): Promise<Author> {
+    const [newAuthor] = await db.insert(authors)
+      .values({
+        storeId: author.storeId,
+        name: author.name,
+        description: author.description || null,
+        avatarUrl: author.avatarUrl || null,
+        linkedinUrl: author.linkedinUrl || null,
+        handle: author.handle,
+        shopifyMetaobjectId: author.shopifyMetaobjectId || null
+      })
+      .returning();
+    return newAuthor;
+  }
+
+  async updateAuthor(id: number, author: Partial<Author>): Promise<Author | undefined> {
+    const updateData: Record<string, any> = {};
+    
+    if (author.name !== undefined) updateData.name = author.name;
+    if (author.description !== undefined) updateData.description = author.description;
+    if (author.avatarUrl !== undefined) updateData.avatarUrl = author.avatarUrl;
+    if (author.linkedinUrl !== undefined) updateData.linkedinUrl = author.linkedinUrl;
+    if (author.handle !== undefined) updateData.handle = author.handle;
+    if (author.shopifyMetaobjectId !== undefined) updateData.shopifyMetaobjectId = author.shopifyMetaobjectId;
+    
+    updateData.updatedAt = new Date();
+    
+    const [updatedAuthor] = await db.update(authors)
+      .set(updateData)
+      .where(eq(authors.id, id))
+      .returning();
+    
+    return updatedAuthor;
+  }
+
+  async deleteAuthor(id: number): Promise<boolean> {
+    const result = await db.delete(authors).where(eq(authors.id, id));
+    return result.rowCount > 0;
   }
 }
 
