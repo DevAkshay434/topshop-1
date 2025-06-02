@@ -33,6 +33,46 @@ const anthropic = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
+// Function to automatically generate Table of Contents from H2 headings
+function addTableOfContents(content: string): string {
+  // Check if content has TOC placement marker
+  if (!content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')) {
+    return content; // No TOC marker, return content as-is
+  }
+  
+  // Extract all H2 headings with their id attributes
+  const h2Regex = /<h2[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h2>/gi;
+  const headings: { id: string; title: string }[] = [];
+  let match;
+  
+  while ((match = h2Regex.exec(content)) !== null) {
+    const id = match[1];
+    const title = match[2].replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags from title
+    headings.push({ id, title });
+  }
+  
+  // If no headings found, remove the TOC marker
+  if (headings.length === 0) {
+    return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
+  }
+  
+  // Generate TOC HTML
+  const tocHtml = `
+<div class="table-of-contents" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; color: #495057; font-size: 18px; font-weight: 600; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-bottom: 15px;">
+    📋 Table of Contents
+  </h3>
+  <ol style="margin: 0; padding: 0 0 0 20px; line-height: 1.6;">
+    ${headings.map(heading => 
+      `<li style="margin: 8px 0;"><a href="#${heading.id}" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
+    ).join('')}
+  </ol>
+</div>`;
+  
+  // Replace the TOC marker with the generated TOC
+  return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
+}
+
 // Function to generate blog content using Claude
 export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
   try {
@@ -92,6 +132,15 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
+    
+    TABLE OF CONTENTS REQUIREMENTS:
+    - AUTOMATICALLY include a Table of Contents right after the introduction paragraph
+    - Add this TOC placement marker immediately after the intro: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
+    - The system will automatically generate a TOC using all H2 headings in your content
+    - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
+    - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
+    - Include an id="faq" on your FAQ section if present
+    - The TOC will be styled with a clean, professional appearance and will improve user navigation
     
     FAQ SECTION FORMATTING (if FAQ is enabled):
     - Format all FAQ questions with "Q:" prefix (colon, not period)
@@ -285,9 +334,12 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
     
+    // Process the content to add automatic Table of Contents
+    const processedContent = addTableOfContents(jsonContent.content);
+    
     return {
       title: jsonContent.title,
-      content: jsonContent.content,
+      content: processedContent,
       tags: jsonContent.tags,
       metaDescription: jsonContent.metaDescription || ''
     };
