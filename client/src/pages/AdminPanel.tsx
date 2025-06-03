@@ -12,6 +12,7 @@ import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import { StoreSelector } from '../components/StoreSelector';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { useStoreContext } from '../hooks/useStoreContext';
+import { useShopifyContext } from '../hooks/useShopifyContext';
 import { 
   Card, 
   CardContent, 
@@ -731,6 +732,20 @@ export default function AdminPanel() {
   
   // Store context for multi-store support
   const storeContext = useStoreContext();
+  
+  // Shopify context hook for automatic store detection
+  const shopifyContext = useShopifyContext();
+  
+  // Debug log for store detection
+  React.useEffect(() => {
+    console.log('Store detection status:', {
+      shopDomain: shopifyContext.shopDomain,
+      storeId: shopifyContext.storeId,
+      isDetected: shopifyContext.isDetected,
+      isEmbedded: shopifyContext.isEmbedded,
+      currentStoreId: storeContext?.selectedStore?.id
+    });
+  }, [shopifyContext, storeContext?.selectedStore?.id]);
 
   // Default form values
   const defaultValues: Partial<ContentFormValues> = {

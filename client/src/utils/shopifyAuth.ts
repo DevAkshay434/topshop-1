@@ -26,6 +26,16 @@ export function extractShopContext(): string | null {
   if (shopParam) {
     const domain = ensureShopDomain(shopParam);
     console.log('Using shop from URL params:', domain);
+    storeShopContext(domain);
+    return domain;
+  }
+
+  // Test mode: Check for test shop parameter (for demonstration)
+  const testShop = urlParams.get('testShop') || urlParams.get('demo_shop');
+  if (testShop) {
+    console.log('Using test shop parameter:', testShop);
+    const domain = ensureShopDomain(testShop);
+    storeShopContext(domain);
     return domain;
   }
 
