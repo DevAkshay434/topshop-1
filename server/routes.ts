@@ -1536,22 +1536,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           });
           storeId = store.id;
           
-          // Also update the legacy connection for backward compatibility
-          const existingConnection = await storage.getShopifyConnection();
-          if (existingConnection) {
-            await storage.updateShopifyConnection({
-              id: existingConnection.id,
-              storeName,
-              accessToken,
-              isConnected: true
-            });
-          } else {
-            await storage.createShopifyConnection({
-              storeName,
-              accessToken,
-              isConnected: true
-            });
-          }
+          console.log(`New store created with ID: ${storeId} for shop: ${shop}`);
         }
         
         // Redirect to the app with the shop and host parameters
