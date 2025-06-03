@@ -1,0 +1,92 @@
+import { Request, Response, NextFunction } from 'express';
+import { storage } from '../storage';
+
+// Extend Request interface to include store context
+declare global {
+  namespace Express {
+    interface Request {
+      currentStore?: {
+        id: number;
+        shopName: string;
+        accessToken: string;
+        scope: string;
+        defaultBlogId: string | null;
+        isConnected: boolean | null;
+        lastSynced: Date | null;
+        installedAt: Date;
+        uninstalledAt: Date | null;
+        planName: string | null;
+        chargeId: string | null;
+        trialEndsAt: Date | null;
+      };
+    }
+  }
+}
+
+/**
+ * Middleware to detect and set the current store context
+ * Based on shop parameter in query string or embedded context
+ */
+export async function storeContextMiddleware(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Skip store detection for non-API routes
+    if (!req.path.startsWith('/api/')) {
+      return next();
+    }
+
+    // Get shop parameter from query string (for embedded apps)
+    const shopParam = req.query.shop as string;
+    
+    // Get shop from headers (for webhook calls)
+    const shopHeader = req.headers['x-shopify-shop-domain'] as string;
+    
+    // Determine shop domain
+    const shopDomain = shopParam || shopHeader;
+    
+    if (shopDomain) {
+      // Get store by domain
+      const store = await storage.getShopifyStoreByDomain(shopDomain);
+      
+      if (store && store.isConnected) {
+        req.currentStore = store;
+        console.log(`Store context set: ${store.shopName} (ID: ${store.id})`);
+      } else {
+        console.log(`Store not found or not connected: ${shopDomain}`);
+      }
+    } else {
+      // Fallback to first connected store for legacy compatibility
+      const stores = await storage.getShopifyStores();
+      const connectedStore = stores.find(store => store.isConnected);
+      
+      if (connectedStore) {
+        req.currentStore = connectedStore;
+        console.log(`Using fallback store: ${connectedStore.shopName} (ID: ${connectedStore.id})`);
+      }
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Store context middleware error:', error);
+    next(); // Continue without store context if error occurs
+  }
+}
+
+/**
+ * Helper function to get current store from request
+ */
+export function getCurrentStore(req: Request) {
+  return req.currentStore;
+}
+
+/**
+ * Middleware to require store context for protected endpoints
+ */
+export function requireStoreContext(req: Request, res: Response, next: NextFunction) {
+  if (!req.currentStore) {
+    return res.status(400).json({
+      error: 'Store context required',
+      message: 'Please provide shop parameter or ensure store is properly connected'
+    });
+  }
+  next();
+}

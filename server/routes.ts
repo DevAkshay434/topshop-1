@@ -28,6 +28,7 @@ import {
 } from './services/oauth';
 import { generateBlogContentWithHF } from './services/huggingface';
 import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
+import { storeContextMiddleware, getCurrentStore } from './middleware/store-context';
 
 /**
  * Register all API routes for the app
@@ -35,6 +36,9 @@ import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubsc
 export async function registerRoutes(app: Express): Promise<void> {
   // API router for authenticated endpoints
   const apiRouter = Router();
+  
+  // Add store context middleware to all API routes
+  apiRouter.use(storeContextMiddleware);
   
   // Health check endpoint for server monitoring and keep-alive
   apiRouter.get("/health", async (req: Request, res: Response) => {
@@ -73,17 +77,15 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { hasSchedulingPermission, getMissingSchedulingPermissions } = await import('../shared/permissions');
       
-      // Get current store
-      const stores = await storage.getShopifyStores();
-      if (!stores || stores.length === 0) {
+      // Get current store from context
+      const store = getCurrentStore(req);
+      if (!store) {
         return res.status(404).json({
           success: false,
           hasPermission: false,
-          message: "No stores found"
+          message: "No store context found"
         });
       }
-      
-      const store = stores[0]; // Use first store for now
       const hasPermission = hasSchedulingPermission(store.scope || '');
       const missingPermissions = getMissingSchedulingPermissions(store.scope || '');
       
@@ -224,30 +226,15 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   apiRouter.get("/shopify/store-info", async (req: Request, res: Response) => {
     try {
-      const connection = await storage.getShopifyConnection();
+      // Get current store from context
+      const store = getCurrentStore(req);
       
-      if (!connection || !connection.isConnected) {
+      if (!store || !store.isConnected) {
         return res.status(404).json({
           success: false,
-          error: "No active Shopify connection found"
+          error: "No active store connection found"
         });
       }
-      
-      // Create temporary store object
-      const store = {
-        id: connection.id,
-        shopName: connection.storeName,
-        accessToken: connection.accessToken,
-        scope: '',
-        defaultBlogId: connection.defaultBlogId || '',
-        isConnected: connection.isConnected,
-        lastSynced: connection.lastSynced,
-        installedAt: new Date(),
-        uninstalledAt: null,
-        planName: null,
-        chargeId: null,
-        trialEndsAt: null
-      };
       
       // Get shop info with timezone directly from the shopifyService singleton
       const shopInfo = await shopifyService.getShopInfo(store);
