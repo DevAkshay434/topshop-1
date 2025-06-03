@@ -236,20 +236,8 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   apiRouter.get("/shopify/store-info", async (req: Request, res: Response) => {
     try {
-      // Get store ID from query parameter or use fallback
-      const storeIdParam = req.query.store_id as string;
-      let store = null;
-      
-      if (storeIdParam) {
-        const storeId = parseInt(storeIdParam);
-        store = await storage.getShopifyStore(storeId);
-      }
-      
-      if (!store) {
-        // Fallback to first connected store
-        const stores = await storage.getShopifyStores();
-        store = stores.find(s => s.isConnected);
-      }
+      // Use store from middleware context instead of fallback
+      const store = req.currentStore || await getCurrentStore(req);
       
       if (!store || !store.isConnected) {
         return res.status(404).json({
@@ -257,6 +245,8 @@ export async function registerRoutes(app: Express): Promise<void> {
           error: "No active store connection found"
         });
       }
+      
+      console.log(`Fetching store info for ${store.shopName} (ID: ${store.id})`);
       
       // Get shop info with timezone directly from the shopifyService singleton
       const shopInfo = await shopifyService.getShopInfo(store);
