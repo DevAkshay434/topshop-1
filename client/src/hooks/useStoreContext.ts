@@ -16,7 +16,7 @@ export function useStoreContext(): StoreContext {
 
   useEffect(() => {
     // Use the robust shop context extraction
-    const shopDomain = extractShopContext();
+    const detectedShopDomain = extractShopContext();
     
     // Get additional URL parameters for embedded detection
     const urlParams = new URLSearchParams(window.location.search);
@@ -25,15 +25,23 @@ export function useStoreContext(): StoreContext {
     const storeIdParam = urlParams.get('store_id');
     
     // Check if we're in embedded mode
-    const isEmbedded = !!(shopDomain && (host || embedded === '1'));
+    const isEmbedded = !!(detectedShopDomain && (host || embedded === '1'));
+    
+    // Determine store ID
+    let resolvedStoreId: number | null = null;
+    if (storeIdParam) {
+      resolvedStoreId = parseInt(storeIdParam, 10);
+    } else if (detectedShopDomain) {
+      resolvedStoreId = getStoreIdFromShop(detectedShopDomain);
+    }
     
     // Store the shop context for future use
-    if (shopDomain) {
-      storeShopContext(shopDomain);
+    if (detectedShopDomain) {
+      storeShopContext(detectedShopDomain);
     }
     
     console.log('Store context detected:', {
-      shopDomain,
+      shopDomain: detectedShopDomain,
       resolvedStoreId,
       isEmbedded,
       storeIdParam,
@@ -43,7 +51,7 @@ export function useStoreContext(): StoreContext {
     
     setStoreContext({
       storeId: resolvedStoreId,
-      shopDomain,
+      shopDomain: detectedShopDomain,
       isEmbedded
     });
   }, []);
