@@ -40,8 +40,19 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
     // Get shop from headers (for webhook calls)
     const shopHeader = req.headers['x-shopify-shop-domain'] as string;
     
-    // Determine shop domain
-    const shopDomain = shopParam || shopHeader;
+    // Get shop from referer for embedded app context
+    let shopFromReferer = '';
+    if (req.headers.referer) {
+      const refererUrl = new URL(req.headers.referer);
+      if (refererUrl.hostname.endsWith('.myshopify.com')) {
+        shopFromReferer = refererUrl.hostname;
+      }
+    }
+    
+    // Determine shop domain with priority: query param > header > referer
+    const shopDomain = shopParam || shopHeader || shopFromReferer;
+    
+    console.log(`Store context detection: shop=${shopParam}, header=${shopHeader}, referer=${shopFromReferer}, final=${shopDomain}`);
     
     if (shopDomain) {
       // Get store by domain
@@ -52,6 +63,14 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         console.log(`Store context set: ${store.shopName} (ID: ${store.id})`);
       } else {
         console.log(`Store not found or not connected: ${shopDomain}`);
+        // Still try fallback for legacy compatibility
+        const stores = await storage.getShopifyStores();
+        const connectedStore = stores.find(store => store.isConnected);
+        
+        if (connectedStore) {
+          req.currentStore = connectedStore;
+          console.log(`Using fallback store: ${connectedStore.shopName} (ID: ${connectedStore.id})`);
+        }
       }
     } else {
       // Fallback to first connected store for legacy compatibility

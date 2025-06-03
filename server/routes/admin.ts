@@ -9,8 +9,12 @@ import { generateBlogContentWithClaude } from "../services/claude";
 import OpenAI from "openai";
 import { ShopifyStore } from "../../shared/schema";
 import { MediaService } from "../services/media";
+import { storeContextMiddleware, getCurrentStore } from "../middleware/store-context";
 
 const adminRouter = Router();
+
+// Add store context middleware to all admin routes
+adminRouter.use(storeContextMiddleware);
 
 // Get supported regions
 adminRouter.get("/regions", async (_req: Request, res: Response) => {
@@ -209,34 +213,19 @@ adminRouter.get("/collections", async (req: Request, res: Response) => {
 });
 
 // Get blogs from Shopify
-adminRouter.get("/blogs", async (_req: Request, res: Response) => {
+adminRouter.get("/blogs", async (req: Request, res: Response) => {
   try {
-    // Get the Shopify connection
-    const connection = await storage.getShopifyConnection();
-    if (!connection || !connection.isConnected) {
+    // Get current store from context
+    const store = getCurrentStore(req);
+    
+    if (!store || !store.isConnected) {
       return res.status(400).json({
         success: false,
-        error: "No active Shopify connection found"
+        error: "No active store connection found"
       });
     }
     
-    // Create temporary store object
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || '',
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
-    
-    // Get blogs
+    // Get blogs using current store context
     const blogs = await shopifyService.getBlogs(store);
     
     res.json({
