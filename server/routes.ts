@@ -37,6 +37,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // API router for authenticated endpoints
   const apiRouter = Router();
   
+  // Apply store context middleware to all API routes
+  apiRouter.use(storeContextMiddleware);
+  
   // Health check endpoint for server monitoring and keep-alive
   apiRouter.get("/health", async (req: Request, res: Response) => {
     try {
