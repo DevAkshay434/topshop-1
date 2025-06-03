@@ -74,8 +74,21 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { hasSchedulingPermission, getMissingSchedulingPermissions } = await import('../shared/permissions');
       
-      // Get current store from context
-      const store = getCurrentStore(req);
+      // Get store ID from query parameter or use fallback
+      const storeIdParam = req.query.store_id as string;
+      let store = null;
+      
+      if (storeIdParam) {
+        const storeId = parseInt(storeIdParam);
+        store = await storage.getShopifyStore(storeId);
+      }
+      
+      if (!store) {
+        // Fallback to first connected store
+        const stores = await storage.getShopifyStores();
+        store = stores.find(s => s.isConnected);
+      }
+      
       if (!store) {
         return res.status(404).json({
           success: false,
@@ -223,8 +236,20 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   apiRouter.get("/shopify/store-info", async (req: Request, res: Response) => {
     try {
-      // Get current store from context
-      const store = getCurrentStore(req);
+      // Get store ID from query parameter or use fallback
+      const storeIdParam = req.query.store_id as string;
+      let store = null;
+      
+      if (storeIdParam) {
+        const storeId = parseInt(storeIdParam);
+        store = await storage.getShopifyStore(storeId);
+      }
+      
+      if (!store) {
+        // Fallback to first connected store
+        const stores = await storage.getShopifyStores();
+        store = stores.find(s => s.isConnected);
+      }
       
       if (!store || !store.isConnected) {
         return res.status(404).json({
