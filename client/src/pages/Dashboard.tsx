@@ -201,6 +201,9 @@ export default function Dashboard() {
         onEditPost={handleEditPost}
       /> */}
 
+      {/* Store Context Debug */}
+      <StoreContextDisplay />
+
       {/* Content Creation & Blog Settings */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ContentGenerator onContentGenerated={handleContentGenerated} />
