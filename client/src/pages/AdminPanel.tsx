@@ -127,6 +127,8 @@ import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
+import MultiStoreTest from '@/components/MultiStoreTest';
+import StoreContextDisplay from '@/components/StoreContextDisplay';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -1590,9 +1592,10 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="generate">Content Generator</TabsTrigger>
           <TabsTrigger value="connections">Services</TabsTrigger>
+          <TabsTrigger value="multistore">Multi-Store</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -4636,6 +4639,44 @@ export default function AdminPanel() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Multi-Store Tab */}
+        <TabsContent value="multistore" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-6">
+              <StoreContextDisplay />
+              <MultiStoreTest />
+            </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Multi-Store Information</CardTitle>
+                  <CardDescription>
+                    Your app supports multiple Shopify stores with isolated data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Current Features:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Complete data isolation between stores</li>
+                      <li>• Independent blog and product access</li>
+                      <li>• Store-specific content generation</li>
+                      <li>• Separate scheduling and permissions</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Test Stores:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Store 1: rajeshshah.myshopify.com</li>
+                      <li>• Store 2: reviewtesting434.myshopify.com</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Settings Tab */}
