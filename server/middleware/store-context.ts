@@ -52,7 +52,7 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
     // Determine shop domain with priority: query param > header > referer
     const shopDomain = shopParam || shopHeader || shopFromReferer;
     
-    console.log(`Store context detection: shop=${shopParam}, header=${shopHeader}, referer=${shopFromReferer}, final=${shopDomain}`);
+    console.log(`Store context detection for ${req.path}: shop=${shopParam}, header=${shopHeader}, referer=${shopFromReferer}, final=${shopDomain}`);
     
     if (shopDomain) {
       // Get store by domain
@@ -73,6 +73,18 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         }
       }
     } else {
+      // Check for store ID in query parameter as fallback
+      const storeId = req.query.store_id as string;
+      
+      if (storeId) {
+        const store = await storage.getShopifyStore(parseInt(storeId));
+        if (store && store.isConnected) {
+          req.currentStore = store;
+          console.log(`Store context set from store_id: ${store.shopName} (ID: ${store.id})`);
+          return next();
+        }
+      }
+      
       // Fallback to first connected store for legacy compatibility
       const stores = await storage.getShopifyStores();
       const connectedStore = stores.find(store => store.isConnected);
