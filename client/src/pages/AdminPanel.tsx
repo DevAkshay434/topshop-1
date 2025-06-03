@@ -4926,9 +4926,19 @@ export default function AdminPanel() {
                       placeholder="https://www.youtube.com/watch?v=..." 
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (youtubeUrl.trim()) {
+                            // Trigger the add video button when Enter is pressed
+                            document.getElementById('add-youtube-button')?.click();
+                          }
+                        }
+                      }}
                       className="flex-1"
                     />
                     <Button 
+                      id="add-youtube-button"
                       variant="default"
                       disabled={!youtubeUrl.trim()}
                       onClick={() => {
@@ -5213,9 +5223,19 @@ export default function AdminPanel() {
                   placeholder="Search for images (e.g., happy woman, smiling family, confused customer)" 
                   value={imageSearchQuery}
                   onChange={(e) => setImageSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (imageSearchQuery.trim() && !isSearchingImages) {
+                        // Trigger search when Enter is pressed
+                        document.getElementById('image-search-button')?.click();
+                      }
+                    }
+                  }}
                   className="flex-1"
                 />
                 <Button 
+                  id="image-search-button"
                   disabled={isSearchingImages || !imageSearchQuery.trim()} 
                   onClick={async () => {
                     setIsSearchingImages(true);
