@@ -7,6 +7,7 @@ import PostList from "@/components/PostList";
 import ContentGenerator from "@/components/ContentGenerator";
 import ShopifyStoreCard from "@/components/ShopifyStoreCard";
 import StoreContextDisplay from "@/components/StoreContextDisplay";
+import MultiStoreTest from "@/components/MultiStoreTest";
 import CreatePostModal from "@/components/CreatePostModal";
 import NewProjectDialog from "@/components/NewProjectDialog";
 import { Button } from "@/components/ui/button";
@@ -203,6 +204,9 @@ export default function Dashboard() {
 
       {/* Store Context Debug */}
       <StoreContextDisplay />
+      
+      {/* Multi-Store Isolation Test */}
+      <MultiStoreTest />
 
       {/* Content Creation & Blog Settings */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
