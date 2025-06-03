@@ -10,18 +10,35 @@ export default function MultiStoreTest() {
   const [testStoreId, setTestStoreId] = useState<string>("1");
   const { storeApiRequest } = useStoreApiRequest();
 
-  // Test queries for different stores
-  const { data: store1Blogs, refetch: refetchStore1 } = useStoreQuery<{ blogs: any[] }>(["/api/admin/blogs?store_id=1"]);
-  const { data: store2Blogs, refetch: refetchStore2 } = useStoreQuery<{ blogs: any[] }>(["/api/admin/blogs?store_id=2"]);
+  // Test queries for different stores using direct fetch to avoid query key conflicts
+  const [store1Blogs, setStore1Blogs] = useState<any>(null);
+  const [store2Blogs, setStore2Blogs] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleTestStoreIsolation = async () => {
     console.log("Testing store isolation...");
+    setIsLoading(true);
     
-    // Refetch data for both stores
-    await Promise.all([refetchStore1(), refetchStore2()]);
-    
-    console.log("Store 1 blogs:", store1Blogs);
-    console.log("Store 2 blogs:", store2Blogs);
+    try {
+      // Fetch data for both stores directly
+      const [store1Response, store2Response] = await Promise.all([
+        fetch('/api/admin/blogs?store_id=1'),
+        fetch('/api/admin/blogs?store_id=2')
+      ]);
+      
+      const store1Data = await store1Response.json();
+      const store2Data = await store2Response.json();
+      
+      setStore1Blogs(store1Data);
+      setStore2Blogs(store2Data);
+      
+      console.log("Store 1 blogs:", store1Data);
+      console.log("Store 2 blogs:", store2Data);
+    } catch (error) {
+      console.error("Error testing store isolation:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSimulateStoreContext = async (storeId: string) => {
@@ -90,9 +107,13 @@ export default function MultiStoreTest() {
           </Button>
         </div>
 
-        <Button onClick={handleTestStoreIsolation} className="w-full">
+        <Button 
+          onClick={handleTestStoreIsolation} 
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={isLoading}
+        >
           <Database className="mr-2 h-4 w-4" />
-          Test Data Isolation
+          {isLoading ? 'Testing...' : 'Test Data Isolation'}
         </Button>
       </CardContent>
     </Card>
