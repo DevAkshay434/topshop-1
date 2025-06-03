@@ -48,10 +48,10 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         if (refererUrl.hostname.endsWith('.myshopify.com')) {
           shopFromReferer = refererUrl.hostname;
         } else if (refererUrl.hostname === 'admin.shopify.com') {
-          // Extract store name from admin.shopify.com URLs like /store/reviewtesting434/
-          const storeMatch = refererUrl.pathname.match(/\/store\/([^\/]+)\//);
-          if (storeMatch) {
-            shopFromReferer = `${storeMatch[1]}.myshopify.com`;
+          // Extract store name from admin.shopify.com/store/{store-name}/apps/{app-name}
+          const pathMatch = refererUrl.pathname.match(/\/store\/([^\/]+)/);
+          if (pathMatch) {
+            shopFromReferer = `${pathMatch[1]}.myshopify.com`;
           }
         }
       } catch (e) {

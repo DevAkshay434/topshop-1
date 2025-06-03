@@ -39,9 +39,32 @@ export async function apiRequest<T = any>(
     requestData = data;
   }
   
-  const res = await fetch(url, {
+  // Get shop context for API requests
+  const shopDomain = localStorage.getItem('shopify_shop_domain');
+  const storeId = localStorage.getItem('shopify_store_id');
+  
+  const headers: Record<string, string> = {};
+  if (requestData) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Add shop context to headers if available
+  if (shopDomain) {
+    headers['x-shopify-shop-domain'] = shopDomain;
+  }
+  if (storeId) {
+    headers['x-store-id'] = storeId;
+  }
+
+  // Add shop as query parameter for better compatibility
+  const urlObj = new URL(url, window.location.origin);
+  if (shopDomain && !urlObj.searchParams.has('shop')) {
+    urlObj.searchParams.set('shop', shopDomain);
+  }
+
+  const res = await fetch(urlObj.toString(), {
     method,
-    headers: requestData ? { "Content-Type": "application/json" } : {},
+    headers,
     body: requestData ? JSON.stringify(requestData) : undefined,
     credentials: "include",
   });
@@ -56,8 +79,30 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Get shop context for query requests
+    const shopDomain = localStorage.getItem('shopify_shop_domain');
+    const storeId = localStorage.getItem('shopify_store_id');
+    
+    const headers: Record<string, string> = {};
+    
+    // Add shop context to headers if available
+    if (shopDomain) {
+      headers['x-shopify-shop-domain'] = shopDomain;
+    }
+    if (storeId) {
+      headers['x-store-id'] = storeId;
+    }
+
+    // Add shop as query parameter for better compatibility
+    const url = queryKey[0] as string;
+    const urlObj = new URL(url, window.location.origin);
+    if (shopDomain && !urlObj.searchParams.has('shop')) {
+      urlObj.searchParams.set('shop', shopDomain);
+    }
+
+    const res = await fetch(urlObj.toString(), {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

@@ -41,7 +41,33 @@ export function extractShopContext(): string | null {
     }
   }
 
-  // Method 3: Extract from parent frame URL (when embedded)
+  // Method 3: Extract from referrer (for embedded Shopify apps)
+  if (document.referrer) {
+    console.log('Checking referrer for shop context:', document.referrer);
+    try {
+      const referrerUrl = new URL(document.referrer);
+      
+      // Check for admin.shopify.com URLs with store path
+      if (referrerUrl.hostname === 'admin.shopify.com') {
+        const storeMatch = referrerUrl.pathname.match(/\/store\/([^\/]+)/);
+        if (storeMatch) {
+          const shopDomain = `${storeMatch[1]}.myshopify.com`;
+          console.log('Found shop from admin.shopify.com referrer:', shopDomain);
+          return shopDomain;
+        }
+      }
+      
+      // Check for direct myshopify.com referrers
+      if (referrerUrl.hostname.endsWith('.myshopify.com')) {
+        console.log('Found shop from myshopify.com referrer:', referrerUrl.hostname);
+        return referrerUrl.hostname;
+      }
+    } catch (e) {
+      console.log('Error parsing referrer URL:', e);
+    }
+  }
+
+  // Method 4: Try to extract from parent frame (when embedded)
   try {
     if (window !== window.parent) {
       console.log('App is in iframe, checking parent');
