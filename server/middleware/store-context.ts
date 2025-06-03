@@ -43,9 +43,19 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
     // Get shop from referer for embedded app context
     let shopFromReferer = '';
     if (req.headers.referer) {
-      const refererUrl = new URL(req.headers.referer);
-      if (refererUrl.hostname.endsWith('.myshopify.com')) {
-        shopFromReferer = refererUrl.hostname;
+      try {
+        const refererUrl = new URL(req.headers.referer);
+        if (refererUrl.hostname.endsWith('.myshopify.com')) {
+          shopFromReferer = refererUrl.hostname;
+        } else if (refererUrl.hostname === 'admin.shopify.com') {
+          // Extract store name from admin.shopify.com URLs like /store/reviewtesting434/
+          const storeMatch = refererUrl.pathname.match(/\/store\/([^\/]+)\//);
+          if (storeMatch) {
+            shopFromReferer = `${storeMatch[1]}.myshopify.com`;
+          }
+        }
+      } catch (e) {
+        // Ignore invalid referrer URLs
       }
     }
     

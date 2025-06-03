@@ -4646,32 +4646,32 @@ export default function AdminPanel() {
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
               <StoreContextDisplay />
-              <MultiStoreTest />
             </div>
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Multi-Store Information</CardTitle>
+                  <CardTitle>Multi-Store Support</CardTitle>
                   <CardDescription>
-                    Your app supports multiple Shopify stores with isolated data
+                    Automatic store detection when accessed from Shopify admin dashboard
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Current Features:</h4>
+                    <h4 className="text-sm font-medium">How it works:</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• App automatically detects which store you're accessing from</li>
                       <li>• Complete data isolation between stores</li>
-                      <li>• Independent blog and product access</li>
-                      <li>• Store-specific content generation</li>
-                      <li>• Separate scheduling and permissions</li>
+                      <li>• Independent blog and product access per store</li>
+                      <li>• Store-specific content generation and scheduling</li>
                     </ul>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Test Stores:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Store 1: rajeshshah.myshopify.com</li>
-                      <li>• Store 2: reviewtesting434.myshopify.com</li>
-                    </ul>
+                    <h4 className="text-sm font-medium">Access from Shopify Admin:</h4>
+                    <p className="text-sm text-muted-foreground">
+                      When you open this app from your Shopify admin dashboard at 
+                      <code className="bg-muted px-1 rounded text-xs">admin.shopify.com/store/[your-store]/apps/topshopseo</code>, 
+                      the app automatically connects to that specific store's data.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
