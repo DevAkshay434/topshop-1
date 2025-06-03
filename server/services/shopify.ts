@@ -442,20 +442,21 @@ export class ShopifyService {
         handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled'
       };
 
-      // For Shopify blog articles, SEO is primarily handled through the article content and title
-      // The summary_html field is used for excerpts, not meta descriptions
-      // Let's log what we're trying to do and note that blog articles have SEO limitations
+      // Add SEO meta fields if available
+      // For Shopify blog articles, use summary_html for meta description directly
       if ((post as any).metaDescription) {
         articleData.summary_html = (post as any).metaDescription;
-        console.log(`✓ Added meta description to summary_html (excerpt): ${(post as any).metaDescription}`);
-        console.log(`⚠️  Note: Shopify blog articles don't support custom meta descriptions in search listings like pages do`);
+        console.log(`✓ Added meta description to summary_html: ${(post as any).metaDescription}`);
       } else {
         console.log(`✗ No meta description found in post object`);
       }
       
+      // Note: Shopify blog articles don't have a direct meta title field in the API
+      // The article title serves as the meta title, but we'll log it for debugging
       if ((post as any).metaTitle) {
         console.log(`✓ Meta title available: ${(post as any).metaTitle}`);
-        console.log(`⚠️  Note: Blog articles use the article title for SEO. Custom meta titles aren't supported.`);
+        // For blog articles, we could override the title if different from meta title
+        // articleData.title = (post as any).metaTitle;
       } else {
         console.log(`✗ No meta title found in post object`);
       }
