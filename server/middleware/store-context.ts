@@ -28,15 +28,21 @@ declare global {
  * Based on shop parameter in query string or embedded context
  */
 export async function storeContextMiddleware(req: Request, res: Response, next: NextFunction) {
+  console.log('MIDDLEWARE CALLED:', req.path, req.method);
   try {
+    console.log(`=== Store Context Middleware Executing for ${req.path} ===`);
+    console.log('Method:', req.method);
+    console.log('Headers received:', {
+      'x-shopify-shop-domain': req.headers['x-shopify-shop-domain'],
+      'x-store-id': req.headers['x-store-id'],
+      'referer': req.headers['referer']
+    });
+
     // Skip store detection for non-API routes
     if (!req.path.startsWith('/api/')) {
+      console.log('Skipping non-API route');
       return next();
     }
-
-    // Debug: Log all headers to see what's being received
-    console.log(`=== Store Context Middleware Debug for ${req.path} ===`);
-    console.log('All headers:', JSON.stringify(req.headers, null, 2));
 
     // Get shop parameter from query string (for embedded apps)
     const shopParam = req.query.shop as string;

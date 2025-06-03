@@ -1956,14 +1956,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Apply store context middleware to ALL routes first
+  app.use(storeContextMiddleware);
+  
   // Register OAuth routes (not prefixed with /api)
   app.use('/oauth', oauthRouter);
   
   // Add direct callback route to match Partner Dashboard configuration
   app.use('/', oauthRouter);
-  
-  // Apply store context middleware to all API routes BEFORE registering routes
-  app.use('/api', storeContextMiddleware);
   
   // Register feature-specific routers
   app.use('/api/content', contentRouter);

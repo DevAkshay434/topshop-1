@@ -13,8 +13,7 @@ import { storeContextMiddleware, getCurrentStore } from "../middleware/store-con
 
 const adminRouter = Router();
 
-// Apply store context middleware to admin routes
-adminRouter.use(storeContextMiddleware);
+// Middleware is applied globally, no need for duplicate registration
 
 // Get supported regions
 adminRouter.get("/regions", async (_req: Request, res: Response) => {
