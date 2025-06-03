@@ -9,7 +9,9 @@ import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
+import { StoreSelector } from '../components/StoreSelector';
 import MediaSelectionStep from '../components/MediaSelectionStep';
+import { useStoreContext } from '../hooks/useStoreContext';
 import { 
   Card, 
   CardContent, 

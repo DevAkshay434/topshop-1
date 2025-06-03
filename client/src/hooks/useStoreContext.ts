@@ -5,10 +5,15 @@ interface StoreContext {
   storeId: number | null;
   shopDomain: string | null;
   isEmbedded: boolean;
+  setStore: (storeId: number, shopDomain: string) => void;
 }
 
 export function useStoreContext(): StoreContext {
-  const [storeContext, setStoreContext] = useState<StoreContext>({
+  const [storeContext, setStoreContext] = useState<{
+    storeId: number | null;
+    shopDomain: string | null;
+    isEmbedded: boolean;
+  }>({
     storeId: null,
     shopDomain: null,
     isEmbedded: false
@@ -56,5 +61,18 @@ export function useStoreContext(): StoreContext {
     });
   }, []);
 
-  return storeContext;
+  const setStore = (storeId: number, shopDomain: string) => {
+    console.log('Manual store change:', { storeId, shopDomain });
+    storeShopContext(shopDomain);
+    setStoreContext(prev => ({
+      ...prev,
+      storeId,
+      shopDomain
+    }));
+  };
+
+  return {
+    ...storeContext,
+    setStore
+  };
 }
