@@ -34,6 +34,10 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
       return next();
     }
 
+    // Debug: Log all headers to see what's being received
+    console.log(`=== Store Context Middleware Debug for ${req.path} ===`);
+    console.log('All headers:', JSON.stringify(req.headers, null, 2));
+
     // Get shop parameter from query string (for embedded apps)
     const shopParam = req.query.shop as string;
     
