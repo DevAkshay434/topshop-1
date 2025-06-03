@@ -43,6 +43,8 @@ export async function apiRequest<T = any>(
   const shopDomain = localStorage.getItem('shopify_shop_domain');
   const storeId = localStorage.getItem('shopify_store_id');
   
+  console.log('API Request context:', { shopDomain, storeId, url, method });
+  
   const headers: Record<string, string> = {};
   if (requestData) {
     headers["Content-Type"] = "application/json";
@@ -51,9 +53,11 @@ export async function apiRequest<T = any>(
   // Add shop context to headers if available
   if (shopDomain) {
     headers['x-shopify-shop-domain'] = shopDomain;
+    console.log('Adding shop domain header:', shopDomain);
   }
   if (storeId) {
     headers['x-store-id'] = storeId;
+    console.log('Adding store ID header:', storeId);
   }
 
   // Add shop as query parameter for better compatibility
@@ -83,18 +87,22 @@ export const getQueryFn: <T>(options: {
     const shopDomain = localStorage.getItem('shopify_shop_domain');
     const storeId = localStorage.getItem('shopify_store_id');
     
+    const url = queryKey[0] as string;
+    console.log('Query Request context:', { shopDomain, storeId, url });
+    
     const headers: Record<string, string> = {};
     
     // Add shop context to headers if available
     if (shopDomain) {
       headers['x-shopify-shop-domain'] = shopDomain;
+      console.log('Adding shop domain header to query:', shopDomain);
     }
     if (storeId) {
       headers['x-store-id'] = storeId;
+      console.log('Adding store ID header to query:', storeId);
     }
 
     // Add shop as query parameter for better compatibility
-    const url = queryKey[0] as string;
     const urlObj = new URL(url, window.location.origin);
     if (shopDomain && !urlObj.searchParams.has('shop')) {
       urlObj.searchParams.set('shop', shopDomain);
