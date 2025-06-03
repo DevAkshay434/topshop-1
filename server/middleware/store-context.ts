@@ -37,8 +37,11 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
     // Get shop parameter from query string (for embedded apps)
     const shopParam = req.query.shop as string;
     
-    // Get shop from headers (for webhook calls)
+    // Get shop from headers (for webhook calls and API requests)
     const shopHeader = req.headers['x-shopify-shop-domain'] as string;
+    
+    // Get store ID from headers
+    const storeIdHeader = req.headers['x-store-id'] as string;
     
     // Get shop from referer for embedded app context
     let shopFromReferer = '';
@@ -62,7 +65,21 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
     // Determine shop domain with priority: query param > header > referer
     const shopDomain = shopParam || shopHeader || shopFromReferer;
     
-    console.log(`Store context detection for ${req.path}: shop=${shopParam}, header=${shopHeader}, referer=${shopFromReferer}, final=${shopDomain}`);
+    console.log(`Store context detection for ${req.path}: shop=${shopParam}, header=${shopHeader}, referer=${shopFromReferer}, storeId=${storeIdHeader}, final=${shopDomain}`);
+    
+    // First, try to get store by header store ID if available
+    if (storeIdHeader) {
+      try {
+        const store = await storage.getShopifyStore(parseInt(storeIdHeader));
+        if (store && store.isConnected) {
+          req.currentStore = store;
+          console.log(`Store context set from header store ID: ${store.shopName} (ID: ${store.id})`);
+          return next();
+        }
+      } catch (e) {
+        console.log(`Invalid store ID in header: ${storeIdHeader}`);
+      }
+    }
     
     if (shopDomain) {
       // Get store by domain
@@ -70,7 +87,7 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
       
       if (store && store.isConnected) {
         req.currentStore = store;
-        console.log(`Store context set: ${store.shopName} (ID: ${store.id})`);
+        console.log(`Store context set from domain: ${store.shopName} (ID: ${store.id})`);
       } else {
         console.log(`Store not found or not connected: ${shopDomain}`);
         // Still try fallback for legacy compatibility
@@ -90,7 +107,7 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         const store = await storage.getShopifyStore(parseInt(storeId));
         if (store && store.isConnected) {
           req.currentStore = store;
-          console.log(`Store context set from store_id: ${store.shopName} (ID: ${store.id})`);
+          console.log(`Store context set from query store_id: ${store.shopName} (ID: ${store.id})`);
           return next();
         }
       }

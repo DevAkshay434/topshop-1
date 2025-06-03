@@ -9,9 +9,7 @@ import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
-import { StoreSelector } from '../components/StoreSelector';
 import MediaSelectionStep from '../components/MediaSelectionStep';
-import { useStoreContext } from '../hooks/useStoreContext';
 import { useShopifyContext } from '../hooks/useShopifyContext';
 import { 
   Card, 
@@ -731,9 +729,6 @@ export default function AdminPanel() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const { toast } = useToast();
   
-  // Store context for multi-store support
-  const storeContext = useStoreContext();
-  
   // Shopify context hook for automatic store detection
   const shopifyContext = useShopifyContext();
   
@@ -743,10 +738,9 @@ export default function AdminPanel() {
       shopDomain: shopifyContext.shopDomain,
       storeId: shopifyContext.storeId,
       isDetected: shopifyContext.isDetected,
-      isEmbedded: shopifyContext.isEmbedded,
-      currentStoreId: storeContext?.selectedStore?.id
+      isEmbedded: shopifyContext.isEmbedded
     });
-  }, [shopifyContext, storeContext?.selectedStore?.id]);
+  }, [shopifyContext]);
 
   // Default form values
   const defaultValues: Partial<ContentFormValues> = {
@@ -1646,13 +1640,13 @@ export default function AdminPanel() {
           </p>
         </div>
         
-        {/* Store selector for manual store switching */}
+        {/* Store Connection Status */}
         <div className="flex items-center space-x-4">
-          <StoreSelector
-            currentStoreId={storeContext.storeId}
-            currentShopDomain={storeContext.shopDomain}
-            onStoreChange={storeContext.setStore}
-          />
+          {shopifyContext.isDetected && (
+            <div className="text-sm text-muted-foreground">
+              Connected: {shopifyContext.shopDomain}
+            </div>
+          )}
         </div>
       </div>
 
