@@ -728,6 +728,9 @@ export default function AdminPanel() {
   const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const { toast } = useToast();
+  
+  // Store context for multi-store support
+  const storeContext = useStoreContext();
 
   // Default form values
   const defaultValues: Partial<ContentFormValues> = {
@@ -1590,7 +1593,15 @@ export default function AdminPanel() {
             Manage content generation, view service status, and configure settings
           </p>
         </div>
-
+        
+        {/* Store selector for manual store switching */}
+        <div className="flex items-center space-x-4">
+          <StoreSelector
+            currentStoreId={storeContext.storeId}
+            currentShopDomain={storeContext.shopDomain}
+            onStoreChange={storeContext.setStore}
+          />
+        </div>
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
