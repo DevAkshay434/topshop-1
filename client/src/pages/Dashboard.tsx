@@ -6,6 +6,7 @@ import StatsCard from "@/components/StatsCard";
 import PostList from "@/components/PostList";
 import ContentGenerator from "@/components/ContentGenerator";
 import ShopifyStoreCard from "@/components/ShopifyStoreCard";
+import StoreContextDisplay from "@/components/StoreContextDisplay";
 import CreatePostModal from "@/components/CreatePostModal";
 import NewProjectDialog from "@/components/NewProjectDialog";
 import { Button } from "@/components/ui/button";
