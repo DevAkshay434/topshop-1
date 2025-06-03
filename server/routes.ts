@@ -1445,13 +1445,14 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Use the exact redirect URL configured in the Shopify Partner Dashboard
-      // Use app URL for OAuth callback (will be proxied through to the actual app server)
-      // In local dev or testing, use the current hostname
       const hostname = req.headers.host || 'localhost:5000';
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const protocol = req.headers['x-forwarded-proto'] || (hostname.includes('replit.dev') ? 'https' : 'http');
       const baseUrl = `${protocol}://${hostname}`;
       
-      const redirectUri = `${baseUrl}/oauth/shopify/callback`;
+      // Use the correct callback path that matches Partner Dashboard configuration
+      const redirectUri = `${baseUrl}/shopify/callback`;
+      
+      console.log(`Using redirect URI: ${redirectUri}`);
       
       // Create the authorization URL, passing host parameter for embedded apps
       const authUrl = createAuthUrl(shop, apiKey, redirectUri, nonce, host as string | undefined);
@@ -1466,7 +1467,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // OAuth callback
+  // OAuth callback (matches Partner Dashboard configuration)
   oauthRouter.get("/shopify/callback", async (req: Request, res: Response) => {
     try {
       const { shop, code, state, hmac } = req.query as Record<string, string>;
@@ -1946,6 +1947,12 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Register OAuth routes (not prefixed with /api)
+  app.use('/oauth', oauthRouter);
+  
+  // Add direct callback route to match Partner Dashboard configuration
+  app.use('/', oauthRouter);
+  
   // Register feature-specific routers
   app.use('/api/content', contentRouter);
   app.use('/api/claude', claudeRouter);
