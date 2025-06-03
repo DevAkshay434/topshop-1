@@ -13,8 +13,7 @@ import { storeContextMiddleware, getCurrentStore } from "../middleware/store-con
 
 const adminRouter = Router();
 
-// Add store context middleware to all admin routes
-adminRouter.use(storeContextMiddleware);
+// Remove duplicate middleware - it's applied globally now
 
 // Get supported regions
 adminRouter.get("/regions", async (_req: Request, res: Response) => {
@@ -215,8 +214,22 @@ adminRouter.get("/collections", async (req: Request, res: Response) => {
 // Get blogs from Shopify
 adminRouter.get("/blogs", async (req: Request, res: Response) => {
   try {
-    // Get current store from context
-    const store = getCurrentStore(req);
+    // Get store ID from query parameter or use fallback
+    const storeIdParam = req.query.store_id as string;
+    let store = null;
+    
+    if (storeIdParam) {
+      const storeId = parseInt(storeIdParam);
+      store = await storage.getShopifyStore(storeId);
+      console.log(`Store ID ${storeId} requested: ${store ? 'found' : 'not found'}`);
+    }
+    
+    if (!store) {
+      // Fallback to first connected store
+      const stores = await storage.getShopifyStores();
+      store = stores.find(s => s.isConnected);
+      console.log(`Using fallback store: ${store ? store.shopName : 'none found'}`);
+    }
     
     if (!store || !store.isConnected) {
       return res.status(400).json({
@@ -224,6 +237,8 @@ adminRouter.get("/blogs", async (req: Request, res: Response) => {
         error: "No active store connection found"
       });
     }
+    
+    console.log(`Fetching blogs for store: ${store.shopName} (ID: ${store.id})`);
     
     // Get blogs using current store context
     const blogs = await shopifyService.getBlogs(store);
