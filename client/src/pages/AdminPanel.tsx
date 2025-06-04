@@ -1683,19 +1683,31 @@ export default function AdminPanel() {
                         </div>
                         
                         {/* Step 4: Keywords */}
-                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
+                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 5: Title */}
-                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>5</Badge>
+                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>5</Badge>
+                        <div className="flex-1 h-1 bg-gray-200 rounded">
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
+                        </div>
+                        
+                        {/* Step 6: Media */}
+                        <Badge className={workflowStep === 'media' ? 'bg-blue-600' : (workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>6</Badge>
+                        <div className="flex-1 h-1 bg-gray-200 rounded">
+                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
+                        </div>
+                        
+                        {/* Step 7: Author */}
+                        <Badge className={workflowStep === 'author' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>7</Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
-                        {/* Step 6: Content */}
-                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>6</Badge>
+                        {/* Step 8: Content */}
+                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>8</Badge>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-gray-600">
                         <span>Main Product</span>
@@ -2835,6 +2847,36 @@ export default function AdminPanel() {
                             Next: Choose Author
                           </Button>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Step 5: Author Selection Section */}
+                    <div className={workflowStep === 'author' ? 'block' : 'hidden'}>
+                      <div className="p-4 bg-blue-50 rounded-md mb-4">
+                        <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Author</h4>
+                        <p className="text-sm text-blue-600">Select an author for this content or create a new one</p>
+                      </div>
+                      
+                      <AuthorSelector
+                        selectedAuthorId={selectedAuthorId}
+                        onAuthorSelect={handleAuthorSelected}
+                      />
+                      
+                      <div className="flex justify-between mt-6">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleAuthorSelectionBack}
+                        >
+                          Back to Media
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          onClick={handleAuthorSelectionComplete}
+                        >
+                          Next: Generate Content
+                        </Button>
                       </div>
                     </div>
                     

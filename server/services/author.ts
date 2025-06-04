@@ -330,4 +330,5 @@ export class AuthorService {
 }
 
 // Export singleton instance
-export const authorService = new AuthorService(require('./shopify').shopifyService);
+import { shopifyService } from './shopify.js';
+export const authorService = new AuthorService(shopifyService);
