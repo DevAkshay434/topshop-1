@@ -10,7 +10,6 @@ import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
-import { useShopifyContext } from '../hooks/useShopifyContext';
 import { 
   Card, 
   CardContent, 
@@ -62,7 +61,6 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { 
   AlertCircle,
-  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   BarChart, 
@@ -129,8 +127,6 @@ import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
-import MultiStoreTest from '@/components/MultiStoreTest';
-import StoreContextDisplay from '@/components/StoreContextDisplay';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -728,19 +724,6 @@ export default function AdminPanel() {
   const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const { toast } = useToast();
-  
-  // Shopify context hook for automatic store detection
-  const shopifyContext = useShopifyContext();
-  
-  // Debug log for store detection
-  React.useEffect(() => {
-    console.log('Store detection status:', {
-      shopDomain: shopifyContext.shopDomain,
-      storeId: shopifyContext.storeId,
-      isDetected: shopifyContext.isDetected,
-      isEmbedded: shopifyContext.isEmbedded
-    });
-  }, [shopifyContext]);
 
   // Default form values
   const defaultValues: Partial<ContentFormValues> = {
@@ -1594,39 +1577,6 @@ export default function AdminPanel() {
           />
         </div>
       )}
-      {/* Store Detection Status */}
-      {shopifyContext.isDetected ? (
-        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <h3 className="text-lg font-medium text-green-800">Store Automatically Detected</h3>
-          </div>
-          <p className="text-green-700 mt-2">
-            Connected to store: <strong>{shopifyContext.shopDomain}</strong>
-            {shopifyContext.isEmbedded && ' (Embedded App Mode)'}
-          </p>
-        </div>
-      ) : shopifyContext.isEmbedded ? (
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <Info className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-medium text-blue-800">Embedded Mode Detected</h3>
-          </div>
-          <p className="text-blue-700 mt-2">
-            Running in embedded iframe. When accessed from Shopify admin URLs like 
-            <code className="bg-blue-100 px-1 rounded">admin.shopify.com/store/yourstore/apps/topshopseo</code>, 
-            the store context would be automatically detected.
-          </p>
-        </div>
-      ) : (
-        <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
-            <h3 className="text-lg font-medium text-yellow-800">Demo Mode</h3>
-          </div>
-        </div>
-      )}
-
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 text-transparent bg-clip-text mb-2">
@@ -1636,19 +1586,11 @@ export default function AdminPanel() {
             Manage content generation, view service status, and configure settings
           </p>
         </div>
-        
-        {/* Store Connection Status */}
-        <div className="flex items-center space-x-4">
-          {shopifyContext.isDetected && (
-            <div className="text-sm text-muted-foreground">
-              Connected: {shopifyContext.shopDomain}
-            </div>
-          )}
-        </div>
+
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
           <TabsTrigger value="generate">Content Generator</TabsTrigger>
           <TabsTrigger value="connections">Services</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -4696,8 +4638,6 @@ export default function AdminPanel() {
           </Card>
         </TabsContent>
 
-
-
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-6">
           <Card>
@@ -4886,19 +4826,9 @@ export default function AdminPanel() {
                       placeholder="https://www.youtube.com/watch?v=..." 
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (youtubeUrl.trim()) {
-                            // Trigger the add video button when Enter is pressed
-                            document.getElementById('add-youtube-button')?.click();
-                          }
-                        }
-                      }}
                       className="flex-1"
                     />
                     <Button 
-                      id="add-youtube-button"
                       variant="default"
                       disabled={!youtubeUrl.trim()}
                       onClick={() => {
@@ -5183,19 +5113,9 @@ export default function AdminPanel() {
                   placeholder="Search for images (e.g., happy woman, smiling family, confused customer)" 
                   value={imageSearchQuery}
                   onChange={(e) => setImageSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (imageSearchQuery.trim() && !isSearchingImages) {
-                        // Trigger search when Enter is pressed
-                        document.getElementById('image-search-button')?.click();
-                      }
-                    }
-                  }}
                   className="flex-1"
                 />
                 <Button 
-                  id="image-search-button"
                   disabled={isSearchingImages || !imageSearchQuery.trim()} 
                   onClick={async () => {
                     setIsSearchingImages(true);

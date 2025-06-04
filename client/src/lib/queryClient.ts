@@ -39,48 +39,9 @@ export async function apiRequest<T = any>(
     requestData = data;
   }
   
-  // Only use localStorage shop context if we have Shopify context (not direct access)
-  const hasShopifyContext = window.location.href.includes('admin.shopify.com') || 
-                           document.referrer.includes('admin.shopify.com') ||
-                           document.referrer.includes('.myshopify.com') ||
-                           new URLSearchParams(window.location.search).has('shop') ||
-                           new URLSearchParams(window.location.search).has('testShop') ||
-                           window.location.hash.includes('shop=');
-
-  let shopDomain = null;
-  let storeId = null;
-  
-  if (hasShopifyContext) {
-    shopDomain = localStorage.getItem('shopify_shop_domain');
-    storeId = localStorage.getItem('shopify_store_id');
-  }
-  
-  console.log('API Request context:', { shopDomain, storeId, url, method, hasShopifyContext });
-  
-  const headers: Record<string, string> = {};
-  if (requestData) {
-    headers["Content-Type"] = "application/json";
-  }
-  
-  // Add shop context to headers if available
-  if (shopDomain) {
-    headers['x-shopify-shop-domain'] = shopDomain;
-    console.log('Adding shop domain header:', shopDomain);
-  }
-  if (storeId) {
-    headers['x-store-id'] = storeId;
-    console.log('Adding store ID header:', storeId);
-  }
-
-  // Add shop as query parameter for better compatibility
-  const urlObj = new URL(url, window.location.origin);
-  if (shopDomain && !urlObj.searchParams.has('shop')) {
-    urlObj.searchParams.set('shop', shopDomain);
-  }
-
-  const res = await fetch(urlObj.toString(), {
+  const res = await fetch(url, {
     method,
-    headers,
+    headers: requestData ? { "Content-Type": "application/json" } : {},
     body: requestData ? JSON.stringify(requestData) : undefined,
     credentials: "include",
   });
@@ -95,46 +56,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Only use localStorage shop context if we have Shopify context (not direct access)
-    const hasShopifyContext = window.location.href.includes('admin.shopify.com') || 
-                             document.referrer.includes('admin.shopify.com') ||
-                             document.referrer.includes('.myshopify.com') ||
-                             new URLSearchParams(window.location.search).has('shop') ||
-                             new URLSearchParams(window.location.search).has('testShop') ||
-                             window.location.hash.includes('shop=');
-
-    let shopDomain = null;
-    let storeId = null;
-    
-    if (hasShopifyContext) {
-      shopDomain = localStorage.getItem('shopify_shop_domain');
-      storeId = localStorage.getItem('shopify_store_id');
-    }
-    
-    const url = queryKey[0] as string;
-    console.log('Query Request context:', { shopDomain, storeId, url, hasShopifyContext });
-    
-    const headers: Record<string, string> = {};
-    
-    // Add shop context to headers if available
-    if (shopDomain) {
-      headers['x-shopify-shop-domain'] = shopDomain;
-      console.log('Adding shop domain header to query:', shopDomain);
-    }
-    if (storeId) {
-      headers['x-store-id'] = storeId;
-      console.log('Adding store ID header to query:', storeId);
-    }
-
-    // Add shop as query parameter for better compatibility
-    const urlObj = new URL(url, window.location.origin);
-    if (shopDomain && !urlObj.searchParams.has('shop')) {
-      urlObj.searchParams.set('shop', shopDomain);
-    }
-
-    const res = await fetch(urlObj.toString(), {
+    const res = await fetch(queryKey[0] as string, {
       credentials: "include",
-      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

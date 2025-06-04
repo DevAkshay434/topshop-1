@@ -9,11 +9,8 @@ import { generateBlogContentWithClaude } from "../services/claude";
 import OpenAI from "openai";
 import { ShopifyStore } from "../../shared/schema";
 import { MediaService } from "../services/media";
-import { storeContextMiddleware, getCurrentStore } from "../middleware/store-context";
 
 const adminRouter = Router();
-
-// Middleware is applied globally, no need for duplicate registration
 
 // Get supported regions
 adminRouter.get("/regions", async (_req: Request, res: Response) => {
@@ -118,17 +115,30 @@ adminRouter.get("/check-scheduled-post/:articleId", async (req: Request, res: Re
 // Get products from Shopify
 adminRouter.get("/products", async (req: Request, res: Response) => {
   try {
-    // Use store from middleware context
-    const store = req.currentStore || getCurrentStore(req);
-    
-    if (!store || !store.isConnected) {
+    // Get the Shopify connection
+    const connection = await storage.getShopifyConnection();
+    if (!connection || !connection.isConnected) {
       return res.status(400).json({
         success: false,
-        error: "No active store connection found"
+        error: "No active Shopify connection found"
       });
     }
     
-    console.log(`Fetching products from ${store.shopName} (ID: ${store.id})`);
+    // Create temporary store object
+    const store = {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || '',
+      isConnected: connection.isConnected,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
     
     // Get limit from query params
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
@@ -152,17 +162,30 @@ adminRouter.get("/products", async (req: Request, res: Response) => {
 // Get collections from Shopify
 adminRouter.get("/collections", async (req: Request, res: Response) => {
   try {
-    // Use store from middleware context
-    const store = req.currentStore || getCurrentStore(req);
-    
-    if (!store || !store.isConnected) {
+    // Get the Shopify connection
+    const connection = await storage.getShopifyConnection();
+    if (!connection || !connection.isConnected) {
       return res.status(400).json({
         success: false,
-        error: "No active store connection found"
+        error: "No active Shopify connection found"
       });
     }
     
-    console.log(`Fetching collections from ${store.shopName} (ID: ${store.id})`);
+    // Create temporary store object
+    const store = {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || '',
+      isConnected: connection.isConnected,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
     
     // Get limit from query params
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
@@ -186,21 +209,34 @@ adminRouter.get("/collections", async (req: Request, res: Response) => {
 });
 
 // Get blogs from Shopify
-adminRouter.get("/blogs", async (req: Request, res: Response) => {
+adminRouter.get("/blogs", async (_req: Request, res: Response) => {
   try {
-    // Use store from middleware context
-    const store = req.currentStore || getCurrentStore(req);
-    
-    if (!store || !store.isConnected) {
+    // Get the Shopify connection
+    const connection = await storage.getShopifyConnection();
+    if (!connection || !connection.isConnected) {
       return res.status(400).json({
         success: false,
-        error: "No active store connection found"
+        error: "No active Shopify connection found"
       });
     }
     
-    console.log(`Fetching blogs for store: ${store.shopName} (ID: ${store.id})`);
+    // Create temporary store object
+    const store = {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || '',
+      isConnected: connection.isConnected,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
     
-    // Get blogs using current store context
+    // Get blogs
     const blogs = await shopifyService.getBlogs(store);
     
     res.json({

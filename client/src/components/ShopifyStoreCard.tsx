@@ -11,9 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Building, CheckCircle, History, RefreshCw, StoreIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useStoreQuery } from "@/hooks/useStoreQuery";
-import { useStoreApiRequest } from "@/hooks/useStoreApiRequest";
-import { useStoreContext } from "@/hooks/useStoreContext";
 
 export default function ShopifyStoreCard() {
   const { toast } = useToast();
@@ -21,16 +18,17 @@ export default function ShopifyStoreCard() {
   const [blogs, setBlogs] = useState<{id: string, title: string}[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   
-  // Use store context for proper multi-store support
-  const { storeId, shopDomain } = useStoreContext();
-  const { storeApiRequest } = useStoreApiRequest();
+  const { data: connectionData, isLoading: isConnectionLoading } = useQuery<{ connection: ShopifyConnection }>({
+    queryKey: ["/api/shopify/connection"],
+  });
   
-  const { data: connectionData, isLoading: isConnectionLoading } = useStoreQuery<{ connection: ShopifyConnection }>(["/api/shopify/connection"]);
+  const { data: activitiesData, isLoading: isActivitiesLoading } = useQuery<{ activities: SyncActivity[] }>({
+    queryKey: ["/api/sync-activities"],
+  });
   
-  const { data: activitiesData, isLoading: isActivitiesLoading } = useStoreQuery<{ activities: SyncActivity[] }>(["/api/sync-activities"]);
-  
-  const { data: blogsData, isLoading: isBlogsLoading } = useStoreQuery<{ blogs: { id: string, title: string }[] }>(["/api/admin/blogs"], {
-    enabled: true // Always try to fetch blogs for the current store
+  const { data: blogsData, isLoading: isBlogsLoading } = useQuery<{ blogs: { id: string, title: string }[] }>({
+    queryKey: ["/api/shopify/blogs"],
+    enabled: !!connectionData?.connection?.isConnected,
   });
   
   useEffect(() => {

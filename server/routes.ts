@@ -28,7 +28,6 @@ import {
 } from './services/oauth';
 import { generateBlogContentWithHF } from './services/huggingface';
 import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
-import { storeContextMiddleware, getCurrentStore } from './middleware/store-context';
 
 /**
  * Register all API routes for the app
@@ -74,28 +73,17 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { hasSchedulingPermission, getMissingSchedulingPermissions } = await import('../shared/permissions');
       
-      // Get store ID from query parameter or use fallback
-      const storeIdParam = req.query.store_id as string;
-      let store = null;
-      
-      if (storeIdParam) {
-        const storeId = parseInt(storeIdParam);
-        store = await storage.getShopifyStore(storeId);
-      }
-      
-      if (!store) {
-        // Fallback to first connected store
-        const stores = await storage.getShopifyStores();
-        store = stores.find(s => s.isConnected);
-      }
-      
-      if (!store) {
+      // Get current store
+      const stores = await storage.getShopifyStores();
+      if (!stores || stores.length === 0) {
         return res.status(404).json({
           success: false,
           hasPermission: false,
-          message: "No store context found"
+          message: "No stores found"
         });
       }
+      
+      const store = stores[0]; // Use first store for now
       const hasPermission = hasSchedulingPermission(store.scope || '');
       const missingPermissions = getMissingSchedulingPermissions(store.scope || '');
       
@@ -236,17 +224,30 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   apiRouter.get("/shopify/store-info", async (req: Request, res: Response) => {
     try {
-      // Use store from middleware context instead of fallback
-      const store = req.currentStore || await getCurrentStore(req);
+      const connection = await storage.getShopifyConnection();
       
-      if (!store || !store.isConnected) {
+      if (!connection || !connection.isConnected) {
         return res.status(404).json({
           success: false,
-          error: "No active store connection found"
+          error: "No active Shopify connection found"
         });
       }
       
-      console.log(`Fetching store info for ${store.shopName} (ID: ${store.id})`);
+      // Create temporary store object
+      const store = {
+        id: connection.id,
+        shopName: connection.storeName,
+        accessToken: connection.accessToken,
+        scope: '',
+        defaultBlogId: connection.defaultBlogId || '',
+        isConnected: connection.isConnected,
+        lastSynced: connection.lastSynced,
+        installedAt: new Date(),
+        uninstalledAt: null,
+        planName: null,
+        chargeId: null,
+        trialEndsAt: null
+      };
       
       // Get shop info with timezone directly from the shopifyService singleton
       const shopInfo = await shopifyService.getShopInfo(store);
@@ -757,12 +758,25 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       // Only send to Shopify if it's a published or scheduled post
       if (post.status === 'published' || post.status === 'scheduled') {
-        // Use store from middleware context instead of fallback
-        const currentStore = req.currentStore || await getCurrentStore(req);
+        const connection = await storage.getShopifyConnection();
         
-        if (currentStore && currentStore.isConnected && currentStore.defaultBlogId) {
+        if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            console.log(`Publishing to store: ${currentStore.shopName} (ID: ${currentStore.id})`);
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
             
             // Use the complete post object, including all scheduling fields
             console.log("Sending to Shopify API:", {
@@ -785,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               
               try {
                 // Get shop's timezone from the store info
-                const shopInfo = await shopifyService.getShopInfo(currentStore);
+                const shopInfo = await shopifyService.getShopInfo(tempStore);
                 const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
                 console.log(`Using timezone: ${timezone} for scheduling`);
                 
@@ -835,7 +849,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               console.log(`Creating a Shopify page for post with status: ${post.status}`);
               // For pages, we need to pass the published flag and date
               shopifyArticle = await shopifyService.createPage(
-                currentStore,
+                tempStore,
                 post.title,
                 post.content,
                 post.status === 'published', // true only if immediate publish
@@ -855,8 +869,8 @@ export async function registerRoutes(app: Express): Promise<void> {
               });
               
               shopifyArticle = await shopifyService.createArticle(
-                currentStore, 
-                currentStore.defaultBlogId, 
+                tempStore, 
+                connection.defaultBlogId, 
                 completePost || post,
                 scheduledPublishDate // This will trigger the scheduling logic in createArticle
               );
@@ -867,7 +881,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             try {
               updatedPost = await storage.updateBlogPost(post.id, {
                 shopifyPostId: shopifyArticle.id,
-                shopifyBlogId: isPage ? null : currentStore.defaultBlogId
+                shopifyBlogId: isPage ? null : connection.defaultBlogId
               });
             } catch (dbError) {
               console.log('Database update failed, using in-memory post data with Shopify info');
@@ -875,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               updatedPost = {
                 ...post,
                 shopifyPostId: shopifyArticle.id,
-                shopifyBlogId: isPage ? null : currentStore.defaultBlogId,
+                shopifyBlogId: isPage ? null : connection.defaultBlogId,
                 shopifyHandle: shopifyArticle.handle // Add handle for URL generation
               };
             }
@@ -899,8 +913,8 @@ export async function registerRoutes(app: Express): Promise<void> {
             return res.json({ 
               post: updatedPost,
               shopifyUrl: isPage 
-                ? `https://${currentStore.shopName}/pages/${shopifyArticle.handle || shopifyArticle.id}`
-                : `https://${currentStore.shopName}/blogs/${currentStore.defaultBlogId ? 'news' : 'blog'}/${shopifyArticle.handle || shopifyArticle.id}`,
+                ? `https://${connection.storeName}/pages/${shopifyArticle.handle || shopifyArticle.id}`
+                : `https://${connection.storeName}/blogs/${connection.defaultBlogId ? 'news' : 'blog'}/${shopifyArticle.handle || shopifyArticle.id}`,
               success: true
             });
           } catch (shopifyError: any) {
@@ -1933,9 +1947,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Apply store context middleware to ALL routes first
-  app.use(storeContextMiddleware);
-  
   // Register OAuth routes (not prefixed with /api)
   app.use('/oauth', oauthRouter);
   
