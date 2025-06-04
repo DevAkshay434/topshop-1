@@ -1624,9 +1624,6 @@ export default function AdminPanel() {
             <AlertTriangle className="h-5 w-5 text-yellow-600" />
             <h3 className="text-lg font-medium text-yellow-800">Demo Mode</h3>
           </div>
-          <p className="text-yellow-700 mt-2">
-            To test automatic store detection, add <code className="bg-yellow-100 px-1 rounded">?testShop=reviewtesting434</code> to the URL.
-          </p>
         </div>
       )}
 
@@ -1651,10 +1648,9 @@ export default function AdminPanel() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-3 w-full max-w-2xl">
           <TabsTrigger value="generate">Content Generator</TabsTrigger>
           <TabsTrigger value="connections">Services</TabsTrigger>
-          <TabsTrigger value="multistore">Multi-Store</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -4700,43 +4696,7 @@ export default function AdminPanel() {
           </Card>
         </TabsContent>
 
-        {/* Multi-Store Tab */}
-        <TabsContent value="multistore" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-6">
-              <StoreContextDisplay />
-            </div>
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Multi-Store Support</CardTitle>
-                  <CardDescription>
-                    Automatic store detection when accessed from Shopify admin dashboard
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">How it works:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• App automatically detects which store you're accessing from</li>
-                      <li>• Complete data isolation between stores</li>
-                      <li>• Independent blog and product access per store</li>
-                      <li>• Store-specific content generation and scheduling</li>
-                    </ul>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Access from Shopify Admin:</h4>
-                    <p className="text-sm text-muted-foreground">
-                      When you open this app from your Shopify admin dashboard at 
-                      <code className="bg-muted px-1 rounded text-xs">admin.shopify.com/store/[your-store]/apps/topshopseo</code>, 
-                      the app automatically connects to that specific store's data.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
+
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-6">
