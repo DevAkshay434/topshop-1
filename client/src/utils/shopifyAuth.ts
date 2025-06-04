@@ -127,16 +127,29 @@ export function extractShopContext(): string | null {
     }
   }
 
-  // Method 6: Check localStorage for previous session
-  try {
-    const storedShop = localStorage.getItem('shopify_shop_domain');
-    console.log('Stored shop in localStorage:', storedShop);
-    if (storedShop) {
-      console.log('Using shop from localStorage:', storedShop);
-      return ensureShopDomain(storedShop);
+  // Method 6: Check localStorage for previous session (only if we have Shopify context)
+  // Don't use localStorage for direct access - let server handle default store
+  const hasShopifyContext = currentUrl.includes('admin.shopify.com') || 
+                           document.referrer.includes('admin.shopify.com') ||
+                           document.referrer.includes('.myshopify.com') ||
+                           urlParams.has('shop') ||
+                           urlParams.has('testShop') ||
+                           urlParams.has('demo_shop') ||
+                           window.location.hash.includes('shop=');
+
+  if (hasShopifyContext) {
+    try {
+      const storedShop = localStorage.getItem('shopify_shop_domain');
+      console.log('Stored shop in localStorage:', storedShop);
+      if (storedShop) {
+        console.log('Using shop from localStorage:', storedShop);
+        return ensureShopDomain(storedShop);
+      }
+    } catch (e) {
+      console.log('Error accessing localStorage:', e);
     }
-  } catch (e) {
-    console.log('Error accessing localStorage:', e);
+  } else {
+    console.log('Direct access detected - letting server handle default store');
   }
 
   console.log('No shop context found, returning null');

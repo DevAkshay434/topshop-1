@@ -103,16 +103,16 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         // Still try fallback for legacy compatibility
         const stores = await storage.getShopifyStores();
         
-        // Priority order: reviewtesting434 > any connected store
-        const preferredStore = stores.find(store => 
-          store.isConnected && store.shopName === 'reviewtesting434.myshopify.com'
+        // Priority order: rajeshshah > any connected store for fallback
+        const defaultStore = stores.find(store => 
+          store.isConnected && store.shopName === 'rajeshshah.myshopify.com'
         );
         
-        const fallbackStore = preferredStore || stores.find(store => store.isConnected);
+        const fallbackStore = defaultStore || stores.find(store => store.isConnected);
         
         if (fallbackStore) {
           req.currentStore = fallbackStore;
-          console.log(`Using ${preferredStore ? 'preferred' : 'fallback'} store: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
+          console.log(`Using ${defaultStore ? 'default' : 'fallback'} store: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
         }
       }
     } else {
@@ -128,19 +128,19 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         }
       }
       
-      // Fallback to preferred store (reviewtesting434) or first connected store
+      // Fallback to default store (rajeshshah) for direct access
       const stores = await storage.getShopifyStores();
       
-      // Priority order: reviewtesting434 > any connected store
-      const preferredStore = stores.find(store => 
-        store.isConnected && store.shopName === 'reviewtesting434.myshopify.com'
+      // Priority order: rajeshshah > any connected store for direct access
+      const defaultStore = stores.find(store => 
+        store.isConnected && store.shopName === 'rajeshshah.myshopify.com'
       );
       
-      const fallbackStore = preferredStore || stores.find(store => store.isConnected);
+      const fallbackStore = defaultStore || stores.find(store => store.isConnected);
       
       if (fallbackStore) {
         req.currentStore = fallbackStore;
-        console.log(`Using ${preferredStore ? 'preferred' : 'fallback'} store: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
+        console.log(`Using ${defaultStore ? 'default' : 'fallback'} store for direct access: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
       }
     }
     
