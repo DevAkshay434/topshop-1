@@ -13,7 +13,7 @@ import {
   insertAuthorSchema,
 } from '@shared/schema';
 import { db } from './db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { shopifyStores } from '@shared/schema';
 import { storage } from './storage';
 import { shopifyService } from './services/shopify';
@@ -1434,11 +1434,16 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Store not found or not connected" });
       }
 
-      // Get authors from database instead of Shopify metaobjects
-      const authorsList = await db.select().from(authors).where(eq(authors.storeId, store.id)).orderBy(desc(authors.createdAt));
+      // Get authors from database using raw SQL to match actual table structure
+      const authorsList = await db.execute(sql`
+        SELECT id, store_id, name, description, avatar_url, created_at
+        FROM authors 
+        WHERE store_id = ${store.id} 
+        ORDER BY created_at DESC
+      `);
 
       // Convert database authors to expected format
-      const formattedAuthors = authorsList.map(author => ({
+      const formattedAuthors = authorsList.rows.map((author: any) => ({
         id: author.id.toString(),
         handle: author.name.toLowerCase().replace(/\s+/g, '-'), // Generate handle from name
         name: author.name,
@@ -1492,7 +1497,16 @@ export async function registerRoutes(app: Express): Promise<void> {
         avatar_url: profileImage || null
       }).returning();
       
-      res.json({ author });
+      // Format response to match expected structure
+      const formattedAuthor = {
+        id: newAuthor.id.toString(),
+        handle: newAuthor.name.toLowerCase().replace(/\s+/g, '-'),
+        name: newAuthor.name,
+        description: newAuthor.description || '',
+        profileImage: newAuthor.avatar_url || null
+      };
+      
+      res.json({ author: formattedAuthor });
     } catch (error: any) {
       console.error("Error creating author:", error);
       res.status(500).json({ error: error.message });
