@@ -10,6 +10,7 @@ import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
+import { AuthorSelector } from '../components/AuthorSelector';
 import { 
   Card, 
   CardContent, 
@@ -127,7 +128,7 @@ import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
-import { AuthorSelector } from '@/components/AuthorSelector';
+
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -703,7 +704,7 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'content';
+  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
@@ -2827,11 +2828,11 @@ export default function AdminPanel() {
                           <Button
                             type="button"
                             onClick={() => {
-                              // Continue to content generation step
-                              setWorkflowStep('content');
+                              // Continue to author selection step
+                              setWorkflowStep('author');
                             }}
                           >
-                            Next: Generate Content
+                            Next: Choose Author
                           </Button>
                         </div>
                       </div>
