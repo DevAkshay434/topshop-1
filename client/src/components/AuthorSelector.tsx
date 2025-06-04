@@ -53,6 +53,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
   // Fetch authors
   const { data: authorsData, isLoading } = useQuery({
     queryKey: ["/api/authors"],
+    queryFn: () => fetch("/api/authors").then(res => res.json()),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
