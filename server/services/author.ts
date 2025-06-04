@@ -147,32 +147,8 @@ export class AuthorService {
    */
   async getAuthorsFromMetafields(store: ShopifyStore): Promise<AuthorMetaobject[]> {
     try {
-      // Create some predefined authors that can be managed via metafields
-      const predefinedAuthors: AuthorMetaobject[] = [
-        {
-          id: 'store_admin',
-          handle: 'store-admin',
-          name: 'Store Administrator',
-          description: 'Primary store administrator and content manager',
-          profileImage: null
-        },
-        {
-          id: 'content_manager',
-          handle: 'content-manager', 
-          name: 'Content Manager',
-          description: 'Responsible for blog content and SEO optimization',
-          profileImage: null
-        },
-        {
-          id: 'marketing_team',
-          handle: 'marketing-team',
-          name: 'Marketing Team',
-          description: 'Marketing specialists creating promotional content',
-          profileImage: null
-        }
-      ];
-
-      return predefinedAuthors;
+      // Return empty array - users will create their own authors
+      return [];
     } catch (error: any) {
       console.error('Error in metafield-based author management:', error);
       return [];
@@ -184,23 +160,15 @@ export class AuthorService {
       // First ensure the author management setup
       await this.ensureAuthorMetaobjectDefinition(store);
       
-      // Try metafields approach first since metaobjects aren't available
+      // Try metafields approach - returns empty array for user-created authors only
       console.log('Using metafield-based author management');
       return await this.getAuthorsFromMetafields(store);
       
     } catch (error: any) {
       console.error('Error fetching authors:', error);
       
-      // Return minimal default author
-      return [
-        {
-          id: 'default_author',
-          handle: 'store-admin',
-          name: 'Store Administrator',
-          description: 'Default store administrator account',
-          profileImage: null
-        }
-      ];
+      // Return empty array - no predefined authors
+      return [];
     }
   }
 

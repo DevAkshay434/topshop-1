@@ -62,13 +62,19 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
   // Create author mutation
   const createAuthorMutation = useMutation({
     mutationFn: async (data: CreateAuthorForm) => {
-      return apiRequest("/api/authors", {
+      const response = await fetch("/api/authors", {
         method: "POST",
         body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json",
         },
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
