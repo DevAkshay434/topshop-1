@@ -189,13 +189,6 @@ export class AuthorService {
             name: 'Store Administrator',
             description: 'Default store administrator account',
             profileImage: null
-          },
-          {
-            id: 'default_author_2', 
-            handle: 'content-writer',
-            name: 'Content Writer',
-            description: 'Default content writer account',
-            profileImage: null
           }
         ];
       }
