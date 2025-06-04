@@ -242,6 +242,8 @@ export const insertContentGenRequestSchema = createInsertSchema(contentGenReques
 export type InsertContentGenRequest = z.infer<typeof insertContentGenRequestSchema>;
 export type ContentGenRequest = typeof contentGenRequests.$inferSelect;
 
+
+
 // Define content gen request relations
 export const contentGenRequestsRelations = relations(contentGenRequests, ({ one }) => ({
   store: one(shopifyStores, {
@@ -336,28 +338,23 @@ export const tonesRelations = relations(tones, ({ one }) => ({
   }),
 }));
 
-// Author schema for managing post authors
+// Author schema for managing post authors (database-backed instead of Shopify metaobjects)
 export const authors = pgTable("authors", {
   id: serial("id").primaryKey(),
-  storeId: integer("store_id").references(() => shopifyStores.id),
-  shopifyMetaobjectId: text("shopify_metaobject_id"), // Shopify metaobject ID
+  storeId: integer("store_id").references(() => shopifyStores.id).notNull(),
+  handle: text("handle").notNull(),
   name: text("name").notNull(),
-  description: text("description"),
-  avatarUrl: text("avatar_url"),
-  linkedinUrl: text("linkedin_url"),
-  isActive: boolean("is_active").default(true),
+  description: text("description").notNull(),
+  profileImage: text("profile_image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at"),
 });
 
 export const insertAuthorSchema = createInsertSchema(authors).pick({
   storeId: true,
-  shopifyMetaobjectId: true,
+  handle: true,
   name: true,
   description: true,
-  avatarUrl: true,
-  linkedinUrl: true,
-  isActive: true,
+  profileImage: true,
 });
 
 export type InsertAuthor = z.infer<typeof insertAuthorSchema>;

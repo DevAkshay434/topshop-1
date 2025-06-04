@@ -1395,32 +1395,27 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Get all authors
   apiRouter.get("/authors", async (req: Request, res: Response) => {
     try {
-      const connection = await storage.getShopifyConnection();
-      
-      if (!connection || !connection.isConnected) {
-        return res.status(400).json({ error: "Not connected to Shopify" });
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
       }
 
-      // Create temporary store object
-      const store = {
-        id: connection.id,
-        shopName: connection.storeName,
-        accessToken: connection.accessToken,
-        scope: '',
-        defaultBlogId: connection.defaultBlogId || '',
-        isConnected: connection.isConnected,
-        lastSynced: connection.lastSynced,
-        installedAt: new Date(),
-        uninstalledAt: null,
-        planName: null,
-        chargeId: null,
-        trialEndsAt: null
-      };
+      // Get authors from database instead of Shopify metaobjects
+      const authorsList = await db.query.authors.findMany({
+        where: eq(authors.storeId, store.id),
+        orderBy: [desc(authors.createdAt)]
+      });
 
-      const { authorService } = await import('./services/author');
-      const authors = await authorService.getAuthors(store);
-      
-      res.json({ authors });
+      // Convert database authors to expected format
+      const formattedAuthors = authorsList.map(author => ({
+        id: author.id.toString(),
+        handle: author.handle,
+        name: author.name,
+        description: author.description || '',
+        profileImage: author.profileImage
+      }));
+
+      res.json({ authors: formattedAuthors });
     } catch (error: any) {
       console.error("Error fetching authors:", error);
       res.status(500).json({ error: error.message });
