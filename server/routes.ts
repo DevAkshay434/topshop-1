@@ -9,7 +9,12 @@ import {
   insertShopifyConnectionSchema,
   insertShopifyStoreSchema,
   insertUserStoreSchema,
+  authors,
+  insertAuthorSchema,
 } from '@shared/schema';
+import { db } from './db';
+import { eq, desc } from 'drizzle-orm';
+import { shopifyStores } from '@shared/schema';
 import { storage } from './storage';
 import { shopifyService } from './services/shopify';
 import contentRouter from './routes/content';
@@ -28,6 +33,35 @@ import {
 } from './services/oauth';
 import { generateBlogContentWithHF } from './services/huggingface';
 import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
+
+// Helper function to get store from request
+async function getStoreFromRequest(req: Request): Promise<any | null> {
+  try {
+    const connection = await storage.getShopifyConnection();
+    
+    if (!connection || !connection.isConnected) {
+      return null;
+    }
+
+    return {
+      id: connection.id,
+      shopName: connection.storeName,
+      accessToken: connection.accessToken,
+      scope: '',
+      defaultBlogId: connection.defaultBlogId || '',
+      isConnected: connection.isConnected,
+      lastSynced: connection.lastSynced,
+      installedAt: new Date(),
+      uninstalledAt: null,
+      planName: null,
+      chargeId: null,
+      trialEndsAt: null
+    };
+  } catch (error) {
+    console.error('Error getting store from request:', error);
+    return null;
+  }
+}
 
 /**
  * Register all API routes for the app
