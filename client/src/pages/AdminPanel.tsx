@@ -127,6 +127,7 @@ import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
+import { AuthorSelector } from '@/components/AuthorSelector';
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -348,6 +349,9 @@ export default function AdminPanel() {
   
   // Workflow step state
   const [currentStep, setCurrentStep] = useState<string>("product");
+  
+  // Author selection state
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
   
   const [shopifyMediaType, setShopifyMediaType] = useState<'products' | 'variants' | 'media'>('products');
   
@@ -1154,8 +1158,8 @@ export default function AdminPanel() {
       }
     })));
     
-    // Move to content generation step
-    setWorkflowStep('content');
+    // Move to author selection step
+    setWorkflowStep('author');
     
     toast({
       title: "Media Selection Complete",
@@ -1168,6 +1172,37 @@ export default function AdminPanel() {
     // Go back to title selection
     setWorkflowStep('title');
     setShowTitleSelector(true);
+  };
+
+  // Handle author selection
+  const handleAuthorSelected = (authorId: string | null) => {
+    setSelectedAuthorId(authorId);
+    
+    if (authorId) {
+      toast({
+        title: "Author selected",
+        description: "Author will be assigned to your content",
+        variant: "default"
+      });
+    }
+  };
+
+  // Handle author selection completion
+  const handleAuthorSelectionComplete = () => {
+    // Move to content generation step
+    setWorkflowStep('content');
+    
+    toast({
+      title: "Setup Complete",
+      description: "Ready to generate your content",
+      variant: "default"
+    });
+  };
+
+  // Handle author selection back button
+  const handleAuthorSelectionBack = () => {
+    // Go back to media selection
+    setWorkflowStep('media');
   };
   
   // Handle product selection
