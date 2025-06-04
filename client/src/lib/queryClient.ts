@@ -39,11 +39,23 @@ export async function apiRequest<T = any>(
     requestData = data;
   }
   
-  // Get shop context for API requests
-  const shopDomain = localStorage.getItem('shopify_shop_domain');
-  const storeId = localStorage.getItem('shopify_store_id');
+  // Only use localStorage shop context if we have Shopify context (not direct access)
+  const hasShopifyContext = window.location.href.includes('admin.shopify.com') || 
+                           document.referrer.includes('admin.shopify.com') ||
+                           document.referrer.includes('.myshopify.com') ||
+                           new URLSearchParams(window.location.search).has('shop') ||
+                           new URLSearchParams(window.location.search).has('testShop') ||
+                           window.location.hash.includes('shop=');
+
+  let shopDomain = null;
+  let storeId = null;
   
-  console.log('API Request context:', { shopDomain, storeId, url, method });
+  if (hasShopifyContext) {
+    shopDomain = localStorage.getItem('shopify_shop_domain');
+    storeId = localStorage.getItem('shopify_store_id');
+  }
+  
+  console.log('API Request context:', { shopDomain, storeId, url, method, hasShopifyContext });
   
   const headers: Record<string, string> = {};
   if (requestData) {
@@ -83,12 +95,24 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Get shop context for query requests
-    const shopDomain = localStorage.getItem('shopify_shop_domain');
-    const storeId = localStorage.getItem('shopify_store_id');
+    // Only use localStorage shop context if we have Shopify context (not direct access)
+    const hasShopifyContext = window.location.href.includes('admin.shopify.com') || 
+                             document.referrer.includes('admin.shopify.com') ||
+                             document.referrer.includes('.myshopify.com') ||
+                             new URLSearchParams(window.location.search).has('shop') ||
+                             new URLSearchParams(window.location.search).has('testShop') ||
+                             window.location.hash.includes('shop=');
+
+    let shopDomain = null;
+    let storeId = null;
+    
+    if (hasShopifyContext) {
+      shopDomain = localStorage.getItem('shopify_shop_domain');
+      storeId = localStorage.getItem('shopify_store_id');
+    }
     
     const url = queryKey[0] as string;
-    console.log('Query Request context:', { shopDomain, storeId, url });
+    console.log('Query Request context:', { shopDomain, storeId, url, hasShopifyContext });
     
     const headers: Record<string, string> = {};
     
