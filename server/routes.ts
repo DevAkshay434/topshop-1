@@ -1435,18 +1435,15 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       // Get authors from database instead of Shopify metaobjects
-      const authorsList = await db.query.authors.findMany({
-        where: eq(authors.storeId, store.id),
-        orderBy: [desc(authors.createdAt)]
-      });
+      const authorsList = await db.select().from(authors).where(eq(authors.storeId, store.id)).orderBy(desc(authors.createdAt));
 
       // Convert database authors to expected format
       const formattedAuthors = authorsList.map(author => ({
         id: author.id.toString(),
-        handle: author.handle,
+        handle: author.name.toLowerCase().replace(/\s+/g, '-'), // Generate handle from name
         name: author.name,
         description: author.description || '',
-        profileImage: author.profileImage
+        profileImage: author.avatar_url || null
       }));
 
       res.json({ authors: formattedAuthors });
@@ -1487,12 +1484,13 @@ export async function registerRoutes(app: Express): Promise<void> {
         trialEndsAt: null
       };
 
-      const { authorService } = await import('./services/author');
-      const author = await authorService.createAuthor(store, {
+      // Insert author directly into database using actual table structure
+      const [newAuthor] = await db.insert(authors).values({
+        storeId: store.id,
         name,
-        description,
-        profileImage
-      });
+        description: description || '',
+        avatar_url: profileImage || null
+      }).returning();
       
       res.json({ author });
     } catch (error: any) {
