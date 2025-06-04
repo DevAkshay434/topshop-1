@@ -128,6 +128,7 @@ import TitleSelector from '@/components/TitleSelector';
 import ImageSearchDialog from '@/components/ImageSearchDialog';
 import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
+import { ImageUpload } from '@/components/ImageUpload';
 
 
 // Define the form schema for content generation
@@ -2555,9 +2556,10 @@ export default function AdminPanel() {
                         </div>
                         
                         <Tabs defaultValue="primary" className="mb-6">
-                          <TabsList className="grid w-full grid-cols-2">
+                          <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="primary">Primary Images</TabsTrigger>
                             <TabsTrigger value="secondary">Secondary Images</TabsTrigger>
+                            <TabsTrigger value="upload">Upload Images</TabsTrigger>
                           </TabsList>
                           
                           <TabsContent value="primary" className="p-4 bg-slate-50 rounded-md mt-2">
@@ -2825,6 +2827,24 @@ export default function AdminPanel() {
                                 )}
                               </div>
                             </div>
+                          </TabsContent>
+                          
+                          <TabsContent value="upload" className="p-4 bg-slate-50 rounded-md mt-2">
+                            <div className="mb-4">
+                              <h4 className="text-sm font-medium mb-2">Upload Your Own Images</h4>
+                              <p className="text-xs text-slate-600 mb-4">
+                                Upload custom images from your computer to use in your content
+                              </p>
+                            </div>
+                            
+                            <ImageUpload
+                              onImageUpload={(imageData) => {
+                                // Add uploaded image to secondary images
+                                setSecondaryImages(prev => [...prev, imageData]);
+                              }}
+                              maxFiles={10}
+                              accept="image/*"
+                            />
                           </TabsContent>
                         </Tabs>
                         

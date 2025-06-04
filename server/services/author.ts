@@ -149,6 +149,9 @@ export class AuthorService {
    */
   async getAuthors(store: ShopifyStore): Promise<AuthorMetaobject[]> {
     try {
+      // First ensure the metaobject definition exists
+      await this.ensureAuthorMetaobjectDefinition(store);
+      
       const response = await this.shopifyService.makeApiRequest(
         store,
         'GET',
@@ -166,6 +169,12 @@ export class AuthorService {
       }));
     } catch (error: any) {
       console.error('Error fetching authors:', error);
+      // If metaobject type doesn't exist, return empty array for now
+      if (error.message.includes('404') || error.message.includes('Not Found')) {
+        console.log('Author metaobject type not found, creating it...');
+        await this.ensureAuthorMetaobjectDefinition(store);
+        return [];
+      }
       throw new Error(`Failed to fetch authors: ${error.message}`);
     }
   }
