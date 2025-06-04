@@ -102,11 +102,17 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         console.log(`Store not found or not connected: ${shopDomain}`);
         // Still try fallback for legacy compatibility
         const stores = await storage.getShopifyStores();
-        const connectedStore = stores.find(store => store.isConnected);
         
-        if (connectedStore) {
-          req.currentStore = connectedStore;
-          console.log(`Using fallback store: ${connectedStore.shopName} (ID: ${connectedStore.id})`);
+        // Priority order: reviewtesting434 > any connected store
+        const preferredStore = stores.find(store => 
+          store.isConnected && store.shopName === 'reviewtesting434.myshopify.com'
+        );
+        
+        const fallbackStore = preferredStore || stores.find(store => store.isConnected);
+        
+        if (fallbackStore) {
+          req.currentStore = fallbackStore;
+          console.log(`Using ${preferredStore ? 'preferred' : 'fallback'} store: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
         }
       }
     } else {
@@ -122,13 +128,19 @@ export async function storeContextMiddleware(req: Request, res: Response, next: 
         }
       }
       
-      // Fallback to first connected store for legacy compatibility
+      // Fallback to preferred store (reviewtesting434) or first connected store
       const stores = await storage.getShopifyStores();
-      const connectedStore = stores.find(store => store.isConnected);
       
-      if (connectedStore) {
-        req.currentStore = connectedStore;
-        console.log(`Using fallback store: ${connectedStore.shopName} (ID: ${connectedStore.id})`);
+      // Priority order: reviewtesting434 > any connected store
+      const preferredStore = stores.find(store => 
+        store.isConnected && store.shopName === 'reviewtesting434.myshopify.com'
+      );
+      
+      const fallbackStore = preferredStore || stores.find(store => store.isConnected);
+      
+      if (fallbackStore) {
+        req.currentStore = fallbackStore;
+        console.log(`Using ${preferredStore ? 'preferred' : 'fallback'} store: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
       }
     }
     
