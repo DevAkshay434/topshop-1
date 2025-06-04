@@ -1389,6 +1389,88 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
     }
   });
+
+  // --- AUTHOR MANAGEMENT ROUTES ---
+  
+  // Get all authors
+  apiRouter.get("/authors", async (req: Request, res: Response) => {
+    try {
+      const connection = await storage.getShopifyConnection();
+      
+      if (!connection || !connection.isConnected) {
+        return res.status(400).json({ error: "Not connected to Shopify" });
+      }
+
+      // Create temporary store object
+      const store = {
+        id: connection.id,
+        shopName: connection.storeName,
+        accessToken: connection.accessToken,
+        scope: '',
+        defaultBlogId: connection.defaultBlogId || '',
+        isConnected: connection.isConnected,
+        lastSynced: connection.lastSynced,
+        installedAt: new Date(),
+        uninstalledAt: null,
+        planName: null,
+        chargeId: null,
+        trialEndsAt: null
+      };
+
+      const { authorService } = await import('./services/author');
+      const authors = await authorService.getAuthors(store);
+      
+      res.json({ authors });
+    } catch (error: any) {
+      console.error("Error fetching authors:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create a new author
+  apiRouter.post("/authors", async (req: Request, res: Response) => {
+    try {
+      const { name, description, profileImage } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Author name is required" });
+      }
+
+      const connection = await storage.getShopifyConnection();
+      
+      if (!connection || !connection.isConnected) {
+        return res.status(400).json({ error: "Not connected to Shopify" });
+      }
+
+      // Create temporary store object
+      const store = {
+        id: connection.id,
+        shopName: connection.storeName,
+        accessToken: connection.accessToken,
+        scope: '',
+        defaultBlogId: connection.defaultBlogId || '',
+        isConnected: connection.isConnected,
+        lastSynced: connection.lastSynced,
+        installedAt: new Date(),
+        uninstalledAt: null,
+        planName: null,
+        chargeId: null,
+        trialEndsAt: null
+      };
+
+      const { authorService } = await import('./services/author');
+      const author = await authorService.createAuthor(store, {
+        name,
+        description,
+        profileImage
+      });
+      
+      res.json({ author });
+    } catch (error: any) {
+      console.error("Error creating author:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
   
   // --- OAUTH ROUTES ---
   
