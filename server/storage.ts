@@ -618,7 +618,8 @@ export class DatabaseStorage implements IStorage {
         storeId: post.storeId || 1,
         views: post.views || 0,
         author: post.author || null,
-        authorId: post.authorId !== undefined ? post.authorId : null
+        authorId: post.authorId !== undefined && post.authorId !== null ? 
+          (typeof post.authorId === 'string' ? parseInt(post.authorId, 10) : post.authorId) : null
       })
       .returning();
       
