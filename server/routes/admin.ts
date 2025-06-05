@@ -1852,7 +1852,7 @@ Place this at a logical position in the content, typically after introducing a c
         });
 
         // Determine author name - prioritize selected author from AdminPanel
-        let authorName = connection.storeName.replace('.myshopify.com', ''); // Default fallback
+        let authorName = ''; // No default fallback - require explicit author selection
         let finalAuthorId: number | null = null;
         
         // Convert authorId to number if provided
@@ -1874,16 +1874,16 @@ Place this at a logical position in the content, typically after introducing a c
                 finalAuthorId = authorIdNum;
                 console.log(`AUTHOR SYNC SUCCESS - Using selected author: ${authorName} (ID: ${authorIdNum})`);
               } else {
-                console.log(`AUTHOR SYNC WARNING - Author ID ${authorIdNum} not found, using store name`);
+                console.log(`AUTHOR SYNC WARNING - Author ID ${authorIdNum} not found in database`);
               }
             } else {
-              console.log(`AUTHOR SYNC WARNING - Invalid authorId format: ${requestData.authorId}, using store name`);
+              console.log(`AUTHOR SYNC WARNING - Invalid authorId format: ${requestData.authorId}`);
             }
           } catch (error) {
             console.error('AUTHOR SYNC ERROR - Failed to fetch author from database:', error);
           }
         } else {
-          console.log(`AUTHOR SYNC INFO - No authorId provided, using store name: ${authorName}`);
+          console.log(`AUTHOR SYNC INFO - No authorId provided, no author will be assigned`);
         }
 
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
