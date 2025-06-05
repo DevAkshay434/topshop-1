@@ -171,6 +171,13 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts, {
   // Add these fields to support scheduling in the UI
   scheduledPublishDate: z.union([z.string(), z.null()]).optional(),
   scheduledPublishTime: z.union([z.string(), z.null()]).optional(),
+  // Ensure authorId is properly handled as a number (string to number conversion)
+  authorId: z.union([
+    z.number(),
+    z.string().transform(val => val ? parseInt(val, 10) : null),
+    z.null(),
+    z.undefined()
+  ]).optional(),
 });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
