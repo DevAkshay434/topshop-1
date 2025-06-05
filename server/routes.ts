@@ -1650,7 +1650,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         handle: author.name.toLowerCase().replace(/\s+/g, '-'), // Generate handle from name
         name: author.name,
         description: author.description || '',
-        profileImage: author.avatarUrl || null
+        profileImage: author.avatarUrl || null,
+        linkedinUrl: author.linkedinUrl || null
       }));
 
       res.json({ authors: formattedAuthors });
@@ -1663,7 +1664,8 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Create a new author
   apiRouter.post("/authors", async (req: Request, res: Response) => {
     try {
-      const { name, description, profileImage } = req.body;
+      console.log("POST /api/authors - Request body:", JSON.stringify(req.body));
+      const { name, description, profileImage, linkedinUrl } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: "Author name is required" });
@@ -1697,6 +1699,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         name,
         description: description || '',
         avatarUrl: profileImage || null,
+        linkedinUrl: linkedinUrl || null,
         isActive: true
       }).returning();
       
@@ -1706,12 +1709,111 @@ export async function registerRoutes(app: Express): Promise<void> {
         handle: newAuthor.name.toLowerCase().replace(/\s+/g, '-'),
         name: newAuthor.name,
         description: newAuthor.description || '',
-        profileImage: newAuthor.avatarUrl || null
+        profileImage: newAuthor.avatarUrl || null,
+        linkedinUrl: newAuthor.linkedinUrl || null
       };
       
+      console.log("Created author:", JSON.stringify(formattedAuthor));
       res.json({ author: formattedAuthor });
     } catch (error: any) {
       console.error("Error creating author:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update an author
+  apiRouter.put("/authors/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      console.log(`PUT /api/authors/${id} - Request body:`, JSON.stringify(req.body));
+      const { name, description, profileImage, linkedinUrl } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Author name is required" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Update author using Drizzle ORM
+      const [updatedAuthor] = await db.update(authors)
+        .set({
+          name,
+          description: description || '',
+          avatarUrl: profileImage || null,
+          linkedinUrl: linkedinUrl || null,
+          updatedAt: new Date()
+        })
+        .where(and(eq(authors.id, id), eq(authors.storeId, store.id)))
+        .returning();
+
+      if (!updatedAuthor) {
+        return res.status(404).json({ error: "Author not found" });
+      }
+
+      // Format response to match expected structure
+      const formattedAuthor = {
+        id: updatedAuthor.id.toString(),
+        handle: updatedAuthor.name.toLowerCase().replace(/\s+/g, '-'),
+        name: updatedAuthor.name,
+        description: updatedAuthor.description || '',
+        profileImage: updatedAuthor.avatarUrl || null,
+        linkedinUrl: updatedAuthor.linkedinUrl || null
+      };
+      
+      console.log("Updated author:", JSON.stringify(formattedAuthor));
+      res.json({ author: formattedAuthor });
+    } catch (error: any) {
+      console.error("Error updating author:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete an author
+  apiRouter.delete("/authors/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      console.log(`DELETE /api/authors/${id}`);
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Check if author has any posts
+      const postsWithAuthor = await db.select().from(blogPosts)
+        .where(and(eq(blogPosts.authorId, id), eq(blogPosts.storeId, store.id)))
+        .limit(1);
+
+      if (postsWithAuthor.length > 0) {
+        return res.status(400).json({ 
+          error: "Cannot delete author with existing posts. Please reassign posts to another author first." 
+        });
+      }
+
+      // Delete author using Drizzle ORM
+      const [deletedAuthor] = await db.delete(authors)
+        .where(and(eq(authors.id, id), eq(authors.storeId, store.id)))
+        .returning();
+
+      if (!deletedAuthor) {
+        return res.status(404).json({ error: "Author not found" });
+      }
+
+      console.log(`Deleted author: ${deletedAuthor.name}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting author:", error);
       res.status(500).json({ error: error.message });
     }
   });
