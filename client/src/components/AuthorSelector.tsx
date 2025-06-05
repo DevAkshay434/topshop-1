@@ -267,7 +267,10 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                   {/* Author Info */}
                   <div 
                     className="flex items-start gap-3 cursor-pointer"
-                    onClick={() => onAuthorSelect(author.id)}
+                    onClick={() => {
+                      console.log("AUTHOR SELECTOR - Author clicked:", author.id, author.name);
+                      onAuthorSelect(author.id);
+                    }}
                   >
                     <Avatar className="h-12 w-12 flex-shrink-0">
                       <AvatarImage src={author.profileImage} alt={author.name} />
