@@ -995,120 +995,33 @@ export async function registerRoutes(app: Express): Promise<void> {
                 authorId: completePost?.authorId
               });
 
-              // Always inject author box into content (use selected author or default to first available)
-              let authorToUse = null;
-              
-              if (completePost?.authorId) {
-                // Use selected author
-                try {
-                  const authorData = await db.select().from(authors).where(eq(authors.id, completePost.authorId)).limit(1);
-                  if (authorData.length > 0) {
-                    authorToUse = authorData[0];
-                  }
-                } catch (error) {
-                  console.error("Error fetching selected author:", error);
-                }
-              }
-              
-              // If no author selected or selected author not found, use default author
-              if (!authorToUse) {
-                try {
-                  const defaultAuthorData = await db.select().from(authors).limit(1);
-                  if (defaultAuthorData.length > 0) {
-                    authorToUse = defaultAuthorData[0];
-                    console.log(`Using default author: ${authorToUse.name}`);
-                  }
-                } catch (error) {
-                  console.error("Error fetching default author:", error);
-                }
-              }
-              
-              if (authorToUse) {
-                try {
-                  const author = authorToUse;
+              // Add default author information if available
+              try {
+                const defaultAuthorData = await db.select().from(authors).limit(1);
+                if (defaultAuthorData.length > 0 && completePost) {
+                  const author = defaultAuthorData[0];
                   
-                  // Generate author box HTML inline (since we can't import from client)
-                  const generateAuthorBoxHTML = (author: any) => {
-                    const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                    const avatarImg = author.profileImage 
-                      ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
-                      : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
-
-                    return `
-                      <div id="author-${author.id}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
-                        <div style="display: flex; gap: 16px; align-items: flex-start;">
-                          ${avatarImg}
-                          <div style="flex: 1;">
-                            <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
-                            ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0;">${author.description}</p>` : ''}
-                          </div>
+                  // Simple author box at end of content
+                  const authorBox = `
+                    <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
+                      <div style="display: flex; gap: 16px; align-items: flex-start;">
+                        <div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">
+                          ${author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                        </div>
+                        <div style="flex: 1;">
+                          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+                          ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0;">${author.description}</p>` : ''}
                         </div>
                       </div>
-                    `;
-                  };
-
-                  const generateWrittenByHTML = (author: any) => {
-                    const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                    const avatarImg = author.profileImage 
-                      ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
-                      : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
-
-                    return `
-                      <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
-                        ${avatarImg}
-                        <span style="color: #6b7280; font-size: 14px;">
-                          Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
-                        </span>
-                      </div>
-                    `;
-                  };
+                    </div>
+                  `;
                   
-                  const authorFormatted = {
-                    id: author.id.toString(),
-                    name: author.name,
-                    description: author.description || '',
-                    profileImage: author.avatarUrl || undefined
-                  };
-                  
-                  // Generate author HTML components
-                  const writtenByHTML = generateWrittenByHTML(authorFormatted);
-                  const authorBoxHTML = generateAuthorBoxHTML(authorFormatted);
-                  
-                  // Find the first image or paragraph in content to inject "Written by" after it
-                  let updatedContent = completePost?.content || '';
-                  
-                  // Look for first image tag or first paragraph
-                  const imageMatch = updatedContent.match(/<img[^>]*>/i);
-                  const paragraphMatch = updatedContent.match(/<p[^>]*>.*?<\/p>/i);
-                  
-                  if (imageMatch) {
-                    // Insert "Written by" after first image
-                    const imageEndIndex = updatedContent.indexOf(imageMatch[0]) + imageMatch[0].length;
-                    updatedContent = updatedContent.slice(0, imageEndIndex) + writtenByHTML + updatedContent.slice(imageEndIndex);
-                  } else if (paragraphMatch) {
-                    // Insert "Written by" after first paragraph
-                    const paragraphEndIndex = updatedContent.indexOf(paragraphMatch[0]) + paragraphMatch[0].length;
-                    updatedContent = updatedContent.slice(0, paragraphEndIndex) + writtenByHTML + updatedContent.slice(paragraphEndIndex);
-                  } else {
-                    // Fallback: add at beginning of content
-                    updatedContent = writtenByHTML + updatedContent;
-                  }
-                  
-                  // Add author box at the end of content
-                  updatedContent += authorBoxHTML;
-                  
-                  // Update the complete post content
-                  if (completePost) {
-                    completePost.content = updatedContent;
-                    completePost.author = author.name;
-                  }
-                  
-                  console.log(`Added author information for: ${author.name}`);
-                  }
-                } catch (authorError) {
-                  console.error("Error adding author information:", authorError);
-                  // Continue without author info if there's an error
+                  completePost.content += authorBox;
+                  completePost.author = author.name;
+                  console.log(`Added default author: ${author.name}`);
                 }
+              } catch (authorError) {
+                console.error("Error adding author information:", authorError);
               }
               
               shopifyArticle = await shopifyService.createArticle(
