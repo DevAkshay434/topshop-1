@@ -729,19 +729,28 @@ export class ShopifyService {
           console.log('Retrying article creation without images due to 25MP limit...');
           
           try {
-            // Remove all images from the article data
-            const fallbackArticleData = {
-              ...articleData,
-              body_html: articleData.body_html?.replace(/<img[^>]*>/g, '') || ''
+            // Create fallback article data without images
+            const fallbackData: any = {
+              title: post.title,
+              body_html: post.content?.replace(/<img[^>]*>/g, '') || '',
+              published: post.status === 'published',
+              tags: post.tags || '',
+              handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || ''
             };
-            
-            // Remove featured image if present
-            if (fallbackArticleData.image) {
-              delete fallbackArticleData.image;
+
+            // Add meta description as summary if available
+            if ((post as any).metaDescription) {
+              fallbackData.summary = (post as any).metaDescription;
+            }
+
+            // Add author information if available
+            if ((post as any).author && typeof (post as any).author === 'string') {
+              fallbackData.author = (post as any).author;
             }
             
-            const fallbackResponse = await client.post(`/blogs/${blogId}/articles.json`, {
-              article: fallbackArticleData
+            const fallbackClient = this.getClient(store);
+            const fallbackResponse = await fallbackClient.post(`/blogs/${blogId}/articles.json`, {
+              article: fallbackData
             });
             
             console.log('✓ Article created successfully without images to avoid 25MP limit');
