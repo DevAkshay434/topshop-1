@@ -232,6 +232,7 @@ export default function CreatePostModal({
       articleLength: initialData?.articleLength || "medium",
       headingsCount: initialData?.headingsCount || "3",
       youtubeUrl: initialData?.youtubeUrl || "",
+      authorId: initialData?.authorId?.toString() || "",
     },
   });
   
@@ -1240,6 +1241,43 @@ export default function CreatePostModal({
                       </FormControl>
                       <FormDescription>
                         Tags help customers find your content
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="authorId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Author</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an author (optional)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No author selected</SelectItem>
+                          {authorsData?.authors && authorsData.authors.map((author) => (
+                            <SelectItem key={author.id} value={author.id}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
+                                  {author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </div>
+                                <span>{author.name}</span>
+                                {author.linkedinUrl && (
+                                  <span className="text-xs text-blue-600 ml-1">(LinkedIn)</span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Choose an author for this post. Author information will be displayed in the published content.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

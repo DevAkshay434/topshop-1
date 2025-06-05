@@ -995,17 +995,41 @@ export async function registerRoutes(app: Express): Promise<void> {
                 authorId: completePost?.authorId
               });
 
-              // Add default author information if available
+              // Add author information with LinkedIn integration
               try {
-                const defaultAuthorData = await db.select().from(authors).limit(1);
-                if (defaultAuthorData.length > 0 && completePost) {
-                  const author = defaultAuthorData[0];
+                let authorToUse = null;
+                
+                // First, try to use the selected author from the form
+                if (completePost?.authorId) {
+                  const selectedAuthorData = await db.select().from(authors).where(eq(authors.id, parseInt(completePost.authorId.toString()))).limit(1);
+                  if (selectedAuthorData.length > 0) {
+                    authorToUse = selectedAuthorData[0];
+                    console.log(`Using selected author: ${authorToUse.name}`);
+                  }
+                }
+                
+                // If no author selected, use default author
+                if (!authorToUse) {
+                  const defaultAuthorData = await db.select().from(authors).limit(1);
+                  if (defaultAuthorData.length > 0) {
+                    authorToUse = defaultAuthorData[0];
+                    console.log(`Using default author: ${authorToUse.name}`);
+                  }
+                }
+                
+                if (authorToUse && completePost) {
+                  const author = authorToUse;
                   
-                  // Author box with proper avatar handling
+                  // Author box with LinkedIn integration
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const avatarElement = author.avatarUrl 
                     ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
                     : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+                  
+                  // LinkedIn "Learn More" button if LinkedIn URL is available
+                  const linkedinButton = author.linkedinUrl 
+                    ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Learn More</a>`
+                    : '';
                   
                   const authorBox = `
                     <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
@@ -1013,7 +1037,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                         ${avatarElement}
                         <div style="flex: 1;">
                           <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
-                          ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0;">${author.description}</p>` : ''}
+                          ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${author.description}</p>` : ''}
+                          ${linkedinButton}
                         </div>
                       </div>
                     </div>
@@ -1021,7 +1046,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                   
                   completePost.content += authorBox;
                   completePost.author = author.name;
-                  console.log(`Added default author: ${author.name}`);
+                  console.log(`Added author with LinkedIn integration: ${author.name}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);

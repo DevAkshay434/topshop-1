@@ -33,6 +33,7 @@ const createAuthorSchema = z.object({
   name: z.string().min(1, "Author name is required"),
   description: z.string().optional(),
   profileImage: z.string().optional(),
+  linkedinUrl: z.string().url("Please enter a valid LinkedIn URL").optional().or(z.literal("")),
 });
 
 type CreateAuthorForm = z.infer<typeof createAuthorSchema>;
@@ -47,6 +48,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
       name: "",
       description: "",
       profileImage: "",
+      linkedinUrl: "",
     },
   });
 
@@ -249,6 +251,24 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                           <FormControl>
                             <Input 
                               placeholder="https://example.com/image.jpg"
+                              type="url"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="linkedinUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>LinkedIn Profile URL (Optional)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://linkedin.com/in/username"
                               type="url"
                               {...field}
                             />
