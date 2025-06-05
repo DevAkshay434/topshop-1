@@ -1489,13 +1489,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         trialEndsAt: null
       };
 
-      // Insert author directly into database using actual table structure
-      const [newAuthor] = await db.insert(authors).values({
-        storeId: store.id,
-        name,
-        description: description || '',
-        avatar_url: profileImage || null
-      }).returning();
+      // Insert author directly into database using raw SQL with actual table structure
+      const result = await db.execute(sql`
+        INSERT INTO authors (store_id, name, description, avatar_url)
+        VALUES (${store.id}, ${name}, ${description || ''}, ${profileImage || null})
+        RETURNING id, store_id, name, description, avatar_url, created_at
+      `);
+      
+      const newAuthor = result.rows[0];
       
       // Format response to match expected structure
       const formattedAuthor = {
