@@ -435,7 +435,7 @@ export class ShopifyService {
       // Create the article object with proper validation
       const articleData: any = {
         title: post.title,
-        author: post.author || store.shopName,
+        author: post.author || '', // No fallback to store name - require explicit author
         body_html: processedContent,
         tags: post.tags || "",
         summary: (post as any).summary || "", // Add summary field if available
@@ -472,7 +472,7 @@ export class ShopifyService {
       }
 
       // Add author information - prioritize selected author from database
-      let authorName = store.shopName; // Default fallback
+      let authorName = ''; // No default fallback - require explicit author selection
       
       // First priority: Use the author name if already resolved in post.author
       if ((post as any).author && typeof (post as any).author === 'string') {

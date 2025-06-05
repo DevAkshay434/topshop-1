@@ -1065,13 +1065,9 @@ export async function registerRoutes(app: Express): Promise<void> {
                   }
                 }
                 
-                // If no author selected, use default author
+                // No automatic default author selection - require explicit author selection
                 if (!authorToUse) {
-                  const defaultAuthorData = await db.select().from(authors).limit(1);
-                  if (defaultAuthorData.length > 0) {
-                    authorToUse = defaultAuthorData[0];
-                    console.log(`Using default author: ${authorToUse.name}`);
-                  }
+                  console.log(`No author specified for post ${post.id} - skipping author information`);
                 }
                 
                 if (authorToUse && completePost) {
