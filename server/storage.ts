@@ -595,6 +595,8 @@ export class DatabaseStorage implements IStorage {
   
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     console.log("DatabaseStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
+    console.log("DatabaseStorage.createBlogPost - AuthorId value:", post.authorId, "Type:", typeof post.authorId);
+    
     // Ensure required fields are present and nulls are handled properly
     const [newPost] = await db.insert(blogPosts)
       .values({
@@ -616,7 +618,7 @@ export class DatabaseStorage implements IStorage {
         storeId: post.storeId || 1,
         views: post.views || 0,
         author: post.author || null,
-        authorId: post.authorId || null
+        authorId: post.authorId !== undefined ? post.authorId : null
       })
       .returning();
       
