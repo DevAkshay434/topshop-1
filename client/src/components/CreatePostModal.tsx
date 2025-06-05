@@ -1266,7 +1266,7 @@ export default function CreatePostModal({
                         <div>
                           <AuthorSelector
                             selectedAuthorId={field.value || ""}
-                            onAuthorSelect={(authorId) => {
+                            onAuthorSelect={(authorId: string) => {
                               console.log("Author selected in CreatePostModal:", authorId);
                               field.onChange(authorId);
                               // Trigger form change to ensure proper tracking
