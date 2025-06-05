@@ -63,7 +63,7 @@ export async function schedulePost(
     // Create the article as a draft (published=false, no published_at)
     const article: any = {
       title: post.title,
-      author: post.author || store.shopName,
+      author: post.author || '', // No fallback to store name - require explicit author
       body_html: post.content || "",
       tags: post.tags || "",
       published: false, // Always create as draft
@@ -259,7 +259,7 @@ export async function schedulePage(
       storeId: store.id,
       shopifyPostId: String(pageId),
       contentType: 'page', // Add this field to identify as a page
-      author: store.shopName, // Default author to store name if not provided
+      author: '', // No default author - require explicit selection
       tags: 'page,scheduled' // Add default tags for tracking
     };
     
