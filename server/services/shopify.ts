@@ -539,17 +539,18 @@ export class ShopifyService {
           (match: string, url: string) => {
             let optimizedUrl = url;
             
-            // Pexels images - use smaller sizes to stay well under 25MP
+            // Pexels images - use much smaller sizes to avoid 25MP issues
             if (url.includes('images.pexels.com')) {
-              // Force use of medium size (typically 1280x853 = 1.09MP)
-              optimizedUrl = url.replace('/original/', '/medium/');
-              optimizedUrl = optimizedUrl.replace('/large/', '/medium/');
-              optimizedUrl = optimizedUrl.replace('/large2x/', '/medium/');
+              // Force use of small size (800x600 = 0.48MP) to stay well under limit
+              optimizedUrl = url.replace('/original/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/large/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
               
-              // If no size specifier exists, add medium size parameters
-              if (!optimizedUrl.includes('/medium/') && !optimizedUrl.includes('w=')) {
+              // If no size specifier exists, add small size parameters
+              if (!optimizedUrl.includes('/small/') && !optimizedUrl.includes('w=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=1280&h=853&fit=crop&auto=compress&cs=tinysrgb`;
+                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb`;
               }
             }
             // Shopify CDN images - use smaller variants
@@ -559,22 +560,24 @@ export class ShopifyService {
               optimizedUrl = optimizedUrl.replace('_large', '_medium');
               optimizedUrl = optimizedUrl.replace('_2048x2048', '_1024x1024');
             }
-            // Other external images - force smaller dimensions to stay well under 25MP
+            // Other external images - force very small dimensions to avoid 25MP issues
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
-              // Force maximum dimensions to 1200x800 (0.96MP) - well under 25MP limit
-              const separator = optimizedUrl.includes('?') ? '&' : '?';
-              optimizedUrl = optimizedUrl + `${separator}w=1200&h=800&fit=crop&q=85&auto=compress`;
+              // Strip all existing parameters and force small size (600x400 = 0.24MP)
+              optimizedUrl = optimizedUrl.split('?')[0];
+              optimizedUrl = optimizedUrl + '?w=600&h=400&fit=crop&q=80&auto=compress&fm=jpg';
             }
             
-            // Additional safety check: if URL contains large dimensions, replace them
-            if (url.includes('w=') || url.includes('width=')) {
-              optimizedUrl = optimizedUrl.replace(/w=\d+/g, 'w=1200');
-              optimizedUrl = optimizedUrl.replace(/width=\d+/g, 'width=1200');
-            }
-            if (url.includes('h=') || url.includes('height=')) {
-              optimizedUrl = optimizedUrl.replace(/h=\d+/g, 'h=800');
-              optimizedUrl = optimizedUrl.replace(/height=\d+/g, 'height=800');
-            }
+            // Universal safety check: replace any large dimensions with small ones
+            optimizedUrl = optimizedUrl.replace(/w=\d{4,}/g, 'w=600');
+            optimizedUrl = optimizedUrl.replace(/width=\d{4,}/g, 'width=600');
+            optimizedUrl = optimizedUrl.replace(/h=\d{4,}/g, 'h=400');
+            optimizedUrl = optimizedUrl.replace(/height=\d{4,}/g, 'height=400');
+            
+            // Replace any remaining large numbers in URLs
+            optimizedUrl = optimizedUrl.replace(/(\d{4,})/g, (match) => {
+              const num = parseInt(match);
+              return num > 800 ? '600' : match;
+            });
             
             if (optimizedUrl !== url) {
               console.log(`Optimized image: ${url.substring(0, 60)}... -> ${optimizedUrl.substring(0, 60)}...`);
@@ -715,6 +718,46 @@ export class ShopifyService {
           published: post?.status,
           tags: post?.tags
         }, null, 2));
+        
+        // Check for 25MP image error and retry without images
+        const errorMessages = error.response?.data?.errors?.base || [];
+        const hasImageError = errorMessages.some((msg: string) => 
+          msg.includes('25 megapixels') || msg.includes('pixel limit') || msg.includes('Image upload failed')
+        );
+        
+        if (hasImageError) {
+          console.log('Retrying article creation without images due to 25MP limit...');
+          
+          try {
+            // Remove all images from the article data
+            const fallbackArticleData = {
+              ...articleData,
+              body_html: articleData.body_html?.replace(/<img[^>]*>/g, '') || ''
+            };
+            
+            // Remove featured image if present
+            if (fallbackArticleData.image) {
+              delete fallbackArticleData.image;
+            }
+            
+            const fallbackResponse = await client.post(`/blogs/${blogId}/articles.json`, {
+              article: fallbackArticleData
+            });
+            
+            console.log('✓ Article created successfully without images to avoid 25MP limit');
+            const article = fallbackResponse.data.article;
+            
+            // Generate handle if not provided
+            if (!article.handle && article.title) {
+              article.handle = article.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+              console.log(`Generated handle from title: ${article.handle}`);
+            }
+            
+            return article;
+          } catch (fallbackError: any) {
+            console.error('Failed to create article even without images:', fallbackError.response?.data || fallbackError.message);
+          }
+        }
       }
       
       throw new Error(`Failed to create article: ${error?.message || 'Unknown error'}`);
