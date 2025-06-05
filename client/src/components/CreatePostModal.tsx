@@ -406,13 +406,15 @@ export default function CreatePostModal({
         articleLength: values.articleLength,
         headingsCount: values.headingsCount,
         youtubeUrl: values.youtubeUrl || null,
-        // Author selection - ensure proper handling
-        authorId: values.authorId ? parseInt(values.authorId) : null,
+        // Author selection - ensure proper handling with detailed logging
+        authorId: values.authorId && values.authorId !== "" ? parseInt(values.authorId) : null,
       };
       
       // Debug log for author selection
-      console.log("Form values authorId:", values.authorId);
+      console.log("Form values authorId (raw):", values.authorId);
+      console.log("Form values authorId (type):", typeof values.authorId);
       console.log("Parsed authorId for postData:", postData.authorId);
+      console.log("Full postData being sent:", postData);
       
       // Add blogId and articleType if available
       if (selectedBlogId || values.blogId) {
@@ -1259,29 +1261,15 @@ export default function CreatePostModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Author</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an author (optional)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">No author selected</SelectItem>
-                          {authorsData?.authors && authorsData.authors.map((author) => (
-                            <SelectItem key={author.id} value={author.id}>
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
-                                  {author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                </div>
-                                <span>{author.name}</span>
-                                {author.linkedinUrl && (
-                                  <span className="text-xs text-blue-600 ml-1">(LinkedIn)</span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <AuthorSelector
+                          selectedAuthorId={field.value || ""}
+                          onAuthorSelect={(authorId) => {
+                            console.log("Author selected in CreatePostModal:", authorId);
+                            field.onChange(authorId);
+                          }}
+                        />
+                      </FormControl>
                       <FormDescription>
                         Choose an author for this post. Author information will be displayed in the published content.
                       </FormDescription>
