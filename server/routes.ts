@@ -1434,21 +1434,16 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: "Store not found or not connected" });
       }
 
-      // Get authors from database using raw SQL to match actual table structure
-      const authorsList = await db.execute(sql`
-        SELECT id, store_id, name, description, avatar_url, created_at
-        FROM authors 
-        WHERE store_id = ${store.id} 
-        ORDER BY created_at DESC
-      `);
+      // Get authors using Drizzle ORM with correct schema
+      const authorsList = await db.select().from(authors).where(eq(authors.storeId, store.id)).orderBy(desc(authors.createdAt));
 
       // Convert database authors to expected format
-      const formattedAuthors = authorsList.rows.map((author: any) => ({
+      const formattedAuthors = authorsList.map((author) => ({
         id: author.id.toString(),
         handle: author.name.toLowerCase().replace(/\s+/g, '-'), // Generate handle from name
         name: author.name,
         description: author.description || '',
-        profileImage: author.avatar_url || null
+        profileImage: author.avatarUrl || null
       }));
 
       res.json({ authors: formattedAuthors });
@@ -1489,14 +1484,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         trialEndsAt: null
       };
 
-      // Insert author directly into database using raw SQL with actual table structure
-      const result = await db.execute(sql`
-        INSERT INTO authors (store_id, name, description, avatar_url)
-        VALUES (${store.id}, ${name}, ${description || ''}, ${profileImage || null})
-        RETURNING id, store_id, name, description, avatar_url, created_at
-      `);
-      
-      const newAuthor = result.rows[0];
+      // Insert author using Drizzle ORM with correct schema
+      const [newAuthor] = await db.insert(authors).values({
+        storeId: store.id,
+        name,
+        description: description || '',
+        avatarUrl: profileImage || null,
+        isActive: true
+      }).returning();
       
       // Format response to match expected structure
       const formattedAuthor = {
@@ -1504,7 +1499,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         handle: newAuthor.name.toLowerCase().replace(/\s+/g, '-'),
         name: newAuthor.name,
         description: newAuthor.description || '',
-        profileImage: newAuthor.avatar_url || null
+        profileImage: newAuthor.avatarUrl || null
       };
       
       res.json({ author: formattedAuthor });

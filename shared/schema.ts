@@ -341,20 +341,25 @@ export const tonesRelations = relations(tones, ({ one }) => ({
 // Author schema for managing post authors (database-backed instead of Shopify metaobjects)
 export const authors = pgTable("authors", {
   id: serial("id").primaryKey(),
-  storeId: integer("store_id").references(() => shopifyStores.id).notNull(),
-  handle: text("handle").notNull(),
+  storeId: integer("store_id"),
+  shopifyMetaobjectId: text("shopify_metaobject_id"),
   name: text("name").notNull(),
-  description: text("description").notNull(),
-  profileImage: text("profile_image"),
+  description: text("description"),
+  avatarUrl: text("avatar_url"),
+  linkedinUrl: text("linkedin_url"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
 });
 
 export const insertAuthorSchema = createInsertSchema(authors).pick({
   storeId: true,
-  handle: true,
+  shopifyMetaobjectId: true,
   name: true,
   description: true,
-  profileImage: true,
+  avatarUrl: true,
+  linkedinUrl: true,
+  isActive: true,
 });
 
 export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
