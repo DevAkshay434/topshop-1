@@ -474,6 +474,14 @@ export class ShopifyService {
       // Add author information - prioritize selected author from database
       let authorName = ''; // No default fallback - require explicit author selection
       
+      console.log(`Complete post data before Shopify:`, {
+        id: post.id,
+        title: post.title,
+        metaTitle: post.metaTitle,
+        metaDescription: post.metaDescription,
+        authorId: (post as any).authorId
+      });
+      
       // First priority: Use the author name if already resolved in post.author
       if ((post as any).author && typeof (post as any).author === 'string') {
         authorName = (post as any).author;
@@ -481,6 +489,7 @@ export class ShopifyService {
       }
       // Second priority: If we have authorId but no resolved name, fetch from database
       else if ((post as any).authorId) {
+        console.log(`Found authorId in post: ${(post as any).authorId}, fetching from database`);
         try {
           const { db } = await import('../db');
           const { authors } = await import('../../shared/schema');
@@ -489,13 +498,15 @@ export class ShopifyService {
           const authorData = await db.select().from(authors).where(eq(authors.id, (post as any).authorId)).limit(1);
           if (authorData.length > 0) {
             authorName = authorData[0].name;
-            console.log(`Fetched author from database: ${authorName} (ID: ${(post as any).authorId})`);
+            console.log(`✓ Fetched author from database: ${authorName} (ID: ${(post as any).authorId})`);
           } else {
-            console.log(`Author ID ${(post as any).authorId} not found in database, using store name`);
+            console.log(`✗ Author ID ${(post as any).authorId} not found in database`);
           }
         } catch (error) {
           console.error('Error fetching author from database:', error);
         }
+      } else {
+        console.log(`No author specified for post ${post.id} - skipping author information`);
       }
       
       articleData.author = authorName;
