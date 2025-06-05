@@ -471,10 +471,35 @@ export class ShopifyService {
         articleData.image = { src: post.featuredImage.trim() };
       }
 
-      // Add author information if available
+      // Add author information - prioritize selected author from database
+      let authorName = store.shopName; // Default fallback
+      
+      // First priority: Use the author name if already resolved in post.author
       if ((post as any).author && typeof (post as any).author === 'string') {
-        articleData.author = (post as any).author;
+        authorName = (post as any).author;
+        console.log(`Using resolved author name: ${authorName}`);
       }
+      // Second priority: If we have authorId but no resolved name, fetch from database
+      else if ((post as any).authorId) {
+        try {
+          const { db } = await import('../db');
+          const { authors } = await import('../../shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          const authorData = await db.select().from(authors).where(eq(authors.id, (post as any).authorId)).limit(1);
+          if (authorData.length > 0) {
+            authorName = authorData[0].name;
+            console.log(`Fetched author from database: ${authorName} (ID: ${(post as any).authorId})`);
+          } else {
+            console.log(`Author ID ${(post as any).authorId} not found in database, using store name`);
+          }
+        } catch (error) {
+          console.error('Error fetching author from database:', error);
+        }
+      }
+      
+      articleData.author = authorName;
+      console.log(`Final article author set to: ${authorName}`);
       
       // For scheduled posts, we need to implement a different approach
       // Shopify's API behavior is more complex:
@@ -876,17 +901,41 @@ export class ShopifyService {
                        (post as any).publicationType === 'publish' || 
                        (post as any).postStatus === 'published';
       
-      // Create the update article object with enhanced publishing support
+      // Create the update article object with enhanced publishing support and proper author handling
+      let authorName = store.shopName; // Default fallback
+      
+      // Prioritize selected author from database over default
+      if ((post as any).author && typeof (post as any).author === 'string') {
+        authorName = (post as any).author;
+        console.log(`Using resolved author name for update: ${authorName}`);
+      } else if ((post as any).authorId) {
+        try {
+          const { db } = await import('../db');
+          const { authors } = await import('../../shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          const authorData = await db.select().from(authors).where(eq(authors.id, (post as any).authorId)).limit(1);
+          if (authorData.length > 0) {
+            authorName = authorData[0].name;
+            console.log(`Fetched author from database for update: ${authorName} (ID: ${(post as any).authorId})`);
+          }
+        } catch (error) {
+          console.error('Error fetching author from database for update:', error);
+        }
+      }
+      
       const article = {
         id: articleId,
         title: post.title,
-        author: post.author || store.shopName,
+        author: authorName,
         body_html: processedContent,
         tags: post.tags || "",
         published: isPublish,
         published_at: publishedAt,
         image: post.featuredImage ? { src: post.featuredImage } : undefined
       };
+      
+      console.log(`Article update author set to: ${authorName}`);
       
       // Critical for scheduling: published must be false
       if (isScheduled) {
