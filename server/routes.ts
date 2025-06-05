@@ -717,11 +717,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       console.log("POST /api/posts - Request body:", JSON.stringify(req.body));
       console.log("POST /api/posts - AuthorId from request:", req.body.authorId);
+      console.log("POST /api/posts - AuthorId type:", typeof req.body.authorId);
       
       // Validate request body
       let postData;
       try {
         postData = insertBlogPostSchema.parse(req.body);
+        console.log("POST /api/posts - After schema validation authorId:", postData.authorId);
+        console.log("POST /api/posts - After schema validation authorId type:", typeof postData.authorId);
         
         // Better handling for scheduling fields
         if (postData.status === 'scheduled') {
