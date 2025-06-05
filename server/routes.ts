@@ -13,8 +13,8 @@ import {
   insertAuthorSchema,
 } from '@shared/schema';
 import { db } from './db';
-import { eq, desc, sql } from 'drizzle-orm';
-import { shopifyStores } from '@shared/schema';
+import { eq, desc, sql, and } from 'drizzle-orm';
+import { shopifyStores, blogPosts } from '@shared/schema';
 import { storage } from './storage';
 import { shopifyService } from './services/shopify';
 import contentRouter from './routes/content';
