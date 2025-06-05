@@ -1178,7 +1178,9 @@ export default function AdminPanel() {
 
   // Handle author selection
   const handleAuthorSelected = (authorId: string | null) => {
+    console.log("AUTHOR SELECTION - handleAuthorSelected called with:", authorId);
     setSelectedAuthorId(authorId);
+    console.log("AUTHOR SELECTION - selectedAuthorId state updated to:", authorId);
     
     if (authorId) {
       toast({
