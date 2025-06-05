@@ -141,6 +141,8 @@ const formSchema = insertBlogPostSchema.extend({
   articleLength: z.enum(["short", "medium", "long", "comprehensive"]).default("medium"),
   headingsCount: z.string().default("3"),
   youtubeUrl: z.string().optional(),
+  // Author selection
+  authorId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -189,6 +191,12 @@ export default function CreatePostModal({
   const { data: blogsData } = useQuery<{ success: boolean; blogs: Array<{ id: string; title: string; handle: string; }> }>({
     queryKey: ['/api/admin/blogs'],
     enabled: true,
+  });
+  
+  // Query for authors
+  const { data: authorsData } = useQuery<{ authors: Array<{ id: string; name: string; description?: string; avatarUrl?: string; linkedinUrl?: string; }> }>({
+    queryKey: ['/api/authors'],
+    enabled: open,
   });
   
   // Get the store timezone or fall back to UTC

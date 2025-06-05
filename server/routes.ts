@@ -1001,13 +1001,16 @@ export async function registerRoutes(app: Express): Promise<void> {
                 if (defaultAuthorData.length > 0 && completePost) {
                   const author = defaultAuthorData[0];
                   
-                  // Simple author box at end of content
+                  // Author box with proper avatar handling
+                  const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                  const avatarElement = author.avatarUrl 
+                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
+                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+                  
                   const authorBox = `
                     <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
                       <div style="display: flex; gap: 16px; align-items: flex-start;">
-                        <div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">
-                          ${author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                        </div>
+                        ${avatarElement}
                         <div style="flex: 1;">
                           <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
                           ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0;">${author.description}</p>` : ''}

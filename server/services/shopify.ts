@@ -544,17 +544,17 @@ export class ShopifyService {
           (match: string, url: string) => {
             let optimizedUrl = url;
             
-            // Pexels images - use medium sizes that are safe but not too small
+            // Pexels images - use safe medium sizes to avoid 25MP limit
             if (url.includes('images.pexels.com')) {
-              // Use medium size which is typically around 1280x853 (1.09MP) - safe for Shopify
+              // Always use medium size (typically 1280x853 = 1.09MP) - well under 25MP limit
               optimizedUrl = url.replace('/original/', '/medium/');
               optimizedUrl = optimizedUrl.replace('/large/', '/medium/');
               optimizedUrl = optimizedUrl.replace('/large2x/', '/medium/');
               
-              // If no size specifier exists, add medium size parameters
+              // For URLs without size specifier, add conservative parameters
               if (!optimizedUrl.includes('/medium/') && !optimizedUrl.includes('w=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=1200&h=800&fit=crop&auto=compress&cs=tinysrgb`;
+                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb`;
               }
             }
             // Shopify CDN images - use smaller variants
@@ -564,12 +564,12 @@ export class ShopifyService {
               optimizedUrl = optimizedUrl.replace('_large', '_medium');
               optimizedUrl = optimizedUrl.replace('_2048x2048', '_1024x1024');
             }
-            // Other external images - optimize more conservatively 
+            // Other external images - use very conservative sizing
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
               // Only add optimization parameters if URL doesn't already have them
               if (!url.includes('w=') && !url.includes('width=') && !url.includes('h=') && !url.includes('height=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=1200&h=800&fit=crop&q=85&auto=compress`;
+                optimizedUrl = optimizedUrl + `${separator}w=600&h=400&fit=crop&q=80&auto=compress`;
               }
             }
             
