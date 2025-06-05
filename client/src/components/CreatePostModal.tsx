@@ -406,9 +406,13 @@ export default function CreatePostModal({
         articleLength: values.articleLength,
         headingsCount: values.headingsCount,
         youtubeUrl: values.youtubeUrl || null,
-        // Author selection
+        // Author selection - ensure proper handling
         authorId: values.authorId ? parseInt(values.authorId) : null,
       };
+      
+      // Debug log for author selection
+      console.log("Form values authorId:", values.authorId);
+      console.log("Parsed authorId for postData:", postData.authorId);
       
       // Add blogId and articleType if available
       if (selectedBlogId || values.blogId) {
