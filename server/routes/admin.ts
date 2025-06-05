@@ -1849,6 +1849,29 @@ Place this at a logical position in the content, typically after introducing a c
           scheduleTime: requestData.scheduleTime
         });
 
+        // Determine author name - prioritize selected author from AdminPanel
+        let authorName = connection.storeName.replace('.myshopify.com', ''); // Default fallback
+        
+        if (requestData.authorId) {
+          try {
+            const { db } = await import('../db');
+            const { authors } = await import('../../shared/schema');
+            const { eq } = await import('drizzle-orm');
+            
+            const authorData = await db.select().from(authors).where(eq(authors.id, requestData.authorId)).limit(1);
+            if (authorData.length > 0) {
+              authorName = authorData[0].name;
+              console.log(`AUTHOR SYNC SUCCESS - Using selected author: ${authorName} (ID: ${requestData.authorId})`);
+            } else {
+              console.log(`AUTHOR SYNC WARNING - Author ID ${requestData.authorId} not found, using store name`);
+            }
+          } catch (error) {
+            console.error('AUTHOR SYNC ERROR - Failed to fetch author from database:', error);
+          }
+        } else {
+          console.log(`AUTHOR SYNC INFO - No authorId provided, using store name: ${authorName}`);
+        }
+
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           title: generatedContent.title || requestData.title,
@@ -1858,7 +1881,8 @@ Place this at a logical position in the content, typically after introducing a c
           // Add scheduled date information if applicable
           scheduledPublishDate: isScheduled ? requestData.scheduleDate : undefined,
           scheduledPublishTime: isScheduled ? requestData.scheduleTime : undefined,
-          author: connection.storeName.replace('.myshopify.com', ''),
+          author: authorName,
+          authorId: requestData.authorId || null, // CRITICAL: Store the selected author ID
           tags: generatedContent.tags?.join(',') || '',
           category: categoryValue,
           categories: categoriesString,
