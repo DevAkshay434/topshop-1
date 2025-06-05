@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Plus, User, Edit3 } from "lucide-react";
+import { Plus, User, Edit3, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ export interface Author {
   name: string;
   description: string;
   profileImage?: string;
+  linkedinUrl?: string;
 }
 
 interface AuthorSelectorProps {
@@ -40,9 +41,20 @@ type CreateAuthorForm = z.infer<typeof createAuthorSchema>;
 
 export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelectorProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
   const { toast } = useToast();
 
   const form = useForm<CreateAuthorForm>({
+    resolver: zodResolver(createAuthorSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      profileImage: "",
+      linkedinUrl: "",
+    },
+  });
+
+  const editForm = useForm<CreateAuthorForm>({
     resolver: zodResolver(createAuthorSchema),
     defaultValues: {
       name: "",
@@ -106,6 +118,76 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
     createAuthorMutation.mutate(data);
   };
 
+  // Update author mutation
+  const updateAuthorMutation = useMutation({
+    mutationFn: async (data: { id: string; author: CreateAuthorForm }) => {
+      return apiRequest(`/api/authors/${data.id}`, {
+        method: "PUT",
+        body: JSON.stringify(data.author),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
+      setEditingAuthor(null);
+      toast({
+        title: "Author updated successfully",
+        description: "The author has been updated in your content library.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error updating author",
+        description: "There was an error updating the author. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete author mutation
+  const deleteAuthorMutation = useMutation({
+    mutationFn: async (authorId: string) => {
+      return apiRequest(`/api/authors/${authorId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
+      toast({
+        title: "Author deleted successfully",
+        description: "The author has been removed from your content library.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error deleting author",
+        description: "There was an error deleting the author. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEdit = (author: Author) => {
+    setEditingAuthor(author);
+    editForm.reset({
+      name: author.name,
+      description: author.description,
+      profileImage: author.profileImage || "",
+      linkedinUrl: author.linkedinUrl || "",
+    });
+  };
+
+  const handleDelete = (authorId: string) => {
+    if (confirm("Are you sure you want to delete this author?")) {
+      deleteAuthorMutation.mutate(authorId);
+    }
+  };
+
+  const handleUpdateAuthor = (data: CreateAuthorForm) => {
+    if (editingAuthor) {
+      updateAuthorMutation.mutate({ id: editingAuthor.id, author: data });
+    }
+  };
+
   const selectedAuthor = authors.find(author => author.id === selectedAuthorId);
 
   if (isLoading) {
@@ -166,15 +248,17 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
         {/* Author Selection Grid */}
         {!selectedAuthor && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {authors.map((author) => (
-                <Card 
+                <div 
                   key={author.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => onAuthorSelect(author.id)}
+                  className="border rounded-lg p-3 hover:bg-gray-50 transition-colors"
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="flex items-center gap-3 flex-1 cursor-pointer"
+                      onClick={() => onAuthorSelect(author.id)}
+                    >
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={author.profileImage} alt={author.name} />
                         <AvatarFallback>
@@ -186,10 +270,35 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                         {author.description && (
                           <p className="text-sm text-gray-600 truncate">{author.description}</p>
                         )}
+                        {author.linkedinUrl && (
+                          <p className="text-xs text-blue-600">LinkedIn Profile Available</p>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(author);
+                        }}
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(author.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
 
