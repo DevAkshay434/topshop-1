@@ -57,6 +57,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { AuthorSelector } from "@/components/AuthorSelector";
 
 interface CreatePostModalProps {
   open: boolean;
@@ -1262,13 +1263,17 @@ export default function CreatePostModal({
                     <FormItem>
                       <FormLabel>Author</FormLabel>
                       <FormControl>
-                        <AuthorSelector
-                          selectedAuthorId={field.value || ""}
-                          onAuthorSelect={(authorId) => {
-                            console.log("Author selected in CreatePostModal:", authorId);
-                            field.onChange(authorId);
-                          }}
-                        />
+                        <div>
+                          <AuthorSelector
+                            selectedAuthorId={field.value || ""}
+                            onAuthorSelect={(authorId) => {
+                              console.log("Author selected in CreatePostModal:", authorId);
+                              field.onChange(authorId);
+                              // Trigger form change to ensure proper tracking
+                              form.trigger("authorId");
+                            }}
+                          />
+                        </div>
                       </FormControl>
                       <FormDescription>
                         Choose an author for this post. Author information will be displayed in the published content.
