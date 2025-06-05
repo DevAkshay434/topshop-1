@@ -719,6 +719,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       console.log("POST /api/posts - AuthorId from request:", req.body.authorId);
       console.log("POST /api/posts - AuthorId type:", typeof req.body.authorId);
       
+      // CRITICAL FIX: Ensure authorId is properly converted to number before validation
+      if (req.body.authorId && typeof req.body.authorId === 'string') {
+        req.body.authorId = parseInt(req.body.authorId, 10);
+        console.log("POST /api/posts - Converted authorId to number:", req.body.authorId);
+      }
+      
       // Validate request body
       let postData;
       try {

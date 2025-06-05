@@ -489,21 +489,22 @@ export class ShopifyService {
       }
       // Second priority: If we have authorId but no resolved name, fetch from database
       else if ((post as any).authorId) {
-        console.log(`Found authorId in post: ${(post as any).authorId}, fetching from database`);
+        const numericAuthorId = typeof (post as any).authorId === 'string' ? parseInt((post as any).authorId, 10) : (post as any).authorId;
+        console.log(`Found authorId in post: ${(post as any).authorId} (converted to: ${numericAuthorId}), fetching from database`);
         try {
-          const { db } = await import('../db');
-          const { authors } = await import('../../shared/schema');
-          const { eq } = await import('drizzle-orm');
+          const { storage } = await import('../storage');
+          const authors = await storage.getAuthors();
+          console.log(`Available authors in database:`, authors.map(a => ({ id: a.id, name: a.name })));
           
-          const authorData = await db.select().from(authors).where(eq(authors.id, (post as any).authorId)).limit(1);
-          if (authorData.length > 0) {
-            authorName = authorData[0].name;
-            console.log(`✓ Fetched author from database: ${authorName} (ID: ${(post as any).authorId})`);
+          const author = authors.find(a => parseInt(a.id) === numericAuthorId);
+          if (author) {
+            authorName = author.name;
+            console.log(`✓ Successfully fetched author from storage: ${authorName} (ID: ${author.id})`);
           } else {
-            console.log(`✗ Author ID ${(post as any).authorId} not found in database`);
+            console.log(`✗ Author ID ${numericAuthorId} not found in storage. Available IDs: ${authors.map(a => a.id).join(', ')}`);
           }
         } catch (error) {
-          console.error('Error fetching author from database:', error);
+          console.error('Error fetching author from storage:', error);
         }
       } else {
         console.log(`No author specified for post ${post.id} - skipping author information`);
