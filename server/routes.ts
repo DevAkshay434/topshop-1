@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // --- BLOG POST ROUTES ---
   
-  // Get all blog posts with pagination
+  // Get all blog posts with pagination and populate author names
   apiRouter.get("/posts", async (req: Request, res: Response) => {
     try {
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -586,12 +586,29 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Get all posts to calculate total
       const allPosts = await storage.getBlogPosts();
       
+      // Populate author names for posts that have authorId but no author name
+      const postsWithAuthors = await Promise.all(
+        allPosts.map(async (post) => {
+          if (post.authorId && !post.author) {
+            try {
+              const authorData = await db.select().from(authors).where(eq(authors.id, post.authorId)).limit(1);
+              if (authorData.length > 0) {
+                return { ...post, author: authorData[0].name };
+              }
+            } catch (error) {
+              console.error(`Error fetching author for post ${post.id}:`, error);
+            }
+          }
+          return post;
+        })
+      );
+      
       // Calculate pagination
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
       
       // Get the paginated posts
-      const posts = allPosts.slice(startIndex, endIndex);
+      const posts = postsWithAuthors.slice(startIndex, endIndex);
       
       res.json({ 
         posts,
@@ -607,22 +624,58 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Get recent blog posts
+  // Get recent blog posts with author names populated
   apiRouter.get("/posts/recent", async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
       const posts = await storage.getRecentPosts(limit);
-      res.json({ posts });
+      
+      // Populate author names for posts that have authorId but no author name
+      const postsWithAuthors = await Promise.all(
+        posts.map(async (post) => {
+          if (post.authorId && !post.author) {
+            try {
+              const authorData = await db.select().from(authors).where(eq(authors.id, post.authorId)).limit(1);
+              if (authorData.length > 0) {
+                return { ...post, author: authorData[0].name };
+              }
+            } catch (error) {
+              console.error(`Error fetching author for post ${post.id}:`, error);
+            }
+          }
+          return post;
+        })
+      );
+      
+      res.json({ posts: postsWithAuthors });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
   
-  // Get scheduled blog posts
+  // Get scheduled blog posts with author names populated
   apiRouter.get("/posts/scheduled", async (req: Request, res: Response) => {
     try {
       const posts = await storage.getScheduledPosts();
-      res.json({ posts });
+      
+      // Populate author names for posts that have authorId but no author name
+      const postsWithAuthors = await Promise.all(
+        posts.map(async (post) => {
+          if (post.authorId && !post.author) {
+            try {
+              const authorData = await db.select().from(authors).where(eq(authors.id, post.authorId)).limit(1);
+              if (authorData.length > 0) {
+                return { ...post, author: authorData[0].name };
+              }
+            } catch (error) {
+              console.error(`Error fetching author for post ${post.id}:`, error);
+            }
+          }
+          return post;
+        })
+      );
+      
+      res.json({ posts: postsWithAuthors });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
