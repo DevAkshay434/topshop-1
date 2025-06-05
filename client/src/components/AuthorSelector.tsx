@@ -115,10 +115,20 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
   // Update author mutation
   const updateAuthorMutation = useMutation({
     mutationFn: async (data: { id: string; author: CreateAuthorForm }) => {
-      return apiRequest(`/api/authors/${data.id}`, {
+      const response = await fetch(`/api/authors/${data.id}`, {
         method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data.author),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
@@ -128,10 +138,11 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
         description: "The author has been updated in your content library.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Author update error:", error);
       toast({
         title: "Error updating author",
-        description: "There was an error updating the author. Please try again.",
+        description: error.message || "There was an error updating the author. Please try again.",
         variant: "destructive",
       });
     },
