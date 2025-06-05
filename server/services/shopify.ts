@@ -539,18 +539,17 @@ export class ShopifyService {
           (match: string, url: string) => {
             let optimizedUrl = url;
             
-            // Pexels images - use much smaller sizes to avoid 25MP issues
+            // Pexels images - use medium sizes that are safe but not too small
             if (url.includes('images.pexels.com')) {
-              // Force use of small size (800x600 = 0.48MP) to stay well under limit
-              optimizedUrl = url.replace('/original/', '/small/');
-              optimizedUrl = optimizedUrl.replace('/large/', '/small/');
-              optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
-              optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
+              // Use medium size which is typically around 1280x853 (1.09MP) - safe for Shopify
+              optimizedUrl = url.replace('/original/', '/medium/');
+              optimizedUrl = optimizedUrl.replace('/large/', '/medium/');
+              optimizedUrl = optimizedUrl.replace('/large2x/', '/medium/');
               
-              // If no size specifier exists, add small size parameters
-              if (!optimizedUrl.includes('/small/') && !optimizedUrl.includes('w=')) {
+              // If no size specifier exists, add medium size parameters
+              if (!optimizedUrl.includes('/medium/') && !optimizedUrl.includes('w=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb`;
+                optimizedUrl = optimizedUrl + `${separator}w=1200&h=800&fit=crop&auto=compress&cs=tinysrgb`;
               }
             }
             // Shopify CDN images - use smaller variants
@@ -560,24 +559,29 @@ export class ShopifyService {
               optimizedUrl = optimizedUrl.replace('_large', '_medium');
               optimizedUrl = optimizedUrl.replace('_2048x2048', '_1024x1024');
             }
-            // Other external images - force very small dimensions to avoid 25MP issues
+            // Other external images - optimize more conservatively 
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
-              // Strip all existing parameters and force small size (600x400 = 0.24MP)
-              optimizedUrl = optimizedUrl.split('?')[0];
-              optimizedUrl = optimizedUrl + '?w=600&h=400&fit=crop&q=80&auto=compress&fm=jpg';
+              // Only add optimization parameters if URL doesn't already have them
+              if (!url.includes('w=') && !url.includes('width=') && !url.includes('h=') && !url.includes('height=')) {
+                const separator = optimizedUrl.includes('?') ? '&' : '?';
+                optimizedUrl = optimizedUrl + `${separator}w=1200&h=800&fit=crop&q=85&auto=compress`;
+              }
             }
             
-            // Universal safety check: replace any large dimensions with small ones
-            optimizedUrl = optimizedUrl.replace(/w=\d{4,}/g, 'w=600');
-            optimizedUrl = optimizedUrl.replace(/width=\d{4,}/g, 'width=600');
-            optimizedUrl = optimizedUrl.replace(/h=\d{4,}/g, 'h=400');
-            optimizedUrl = optimizedUrl.replace(/height=\d{4,}/g, 'height=400');
-            
-            // Replace any remaining large numbers in URLs
-            optimizedUrl = optimizedUrl.replace(/(\d{4,})/g, (match) => {
-              const num = parseInt(match);
-              return num > 800 ? '600' : match;
-            });
+            // Only apply dimension limits if the image has explicit dimension parameters
+            // and they exceed safe limits (avoid breaking URLs without dimensions)
+            if (url.includes('w=') || url.includes('width=')) {
+              optimizedUrl = optimizedUrl.replace(/(\?|&)(w|width)=(\d{4,})/g, (match, prefix, param, value) => {
+                const numValue = parseInt(value);
+                return numValue > 2000 ? `${prefix}${param}=1200` : match;
+              });
+            }
+            if (url.includes('h=') || url.includes('height=')) {
+              optimizedUrl = optimizedUrl.replace(/(\?|&)(h|height)=(\d{4,})/g, (match, prefix, param, value) => {
+                const numValue = parseInt(value);
+                return numValue > 2000 ? `${prefix}${param}=800` : match;
+              });
+            }
             
             if (optimizedUrl !== url) {
               console.log(`Optimized image: ${url.substring(0, 60)}... -> ${optimizedUrl.substring(0, 60)}...`);
