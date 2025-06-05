@@ -881,11 +881,100 @@ export async function registerRoutes(app: Express): Promise<void> {
             
             if (isPage) {
               console.log(`Creating a Shopify page for post with status: ${post.status}`);
+              
+              // Get complete post data for pages too
+              const completePost = await storage.getBlogPost(post.id);
+              let pageContent = completePost?.content || post.content;
+              
+              // If page has an author, inject author box into content
+              if (completePost?.authorId) {
+                try {
+                  // Get author data from database
+                  const authorData = await db.select().from(authors).where(eq(authors.id, completePost.authorId)).limit(1);
+                  
+                  if (authorData.length > 0) {
+                    const author = authorData[0];
+                    
+                    // Generate author box HTML inline
+                    const generateAuthorBoxHTML = (author: any) => {
+                      const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                      const avatarImg = author.profileImage 
+                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
+                        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+
+                      return `
+                        <div id="author-${author.id}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
+                          <div style="display: flex; gap: 16px; align-items: flex-start;">
+                            ${avatarImg}
+                            <div style="flex: 1;">
+                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+                              ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0;">${author.description}</p>` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                    };
+
+                    const generateWrittenByHTML = (author: any) => {
+                      const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                      const avatarImg = author.profileImage 
+                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
+                        : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
+
+                      return `
+                        <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
+                          ${avatarImg}
+                          <span style="color: #6b7280; font-size: 14px;">
+                            Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
+                          </span>
+                        </div>
+                      `;
+                    };
+                    
+                    const authorFormatted = {
+                      id: author.id.toString(),
+                      name: author.name,
+                      description: author.description || '',
+                      profileImage: author.avatarUrl || undefined
+                    };
+                    
+                    // Generate author HTML components
+                    const writtenByHTML = generateWrittenByHTML(authorFormatted);
+                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted);
+                    
+                    // Find the first image or paragraph in content to inject "Written by" after it
+                    const imageMatch = pageContent.match(/<img[^>]*>/i);
+                    const paragraphMatch = pageContent.match(/<p[^>]*>.*?<\/p>/i);
+                    
+                    if (imageMatch) {
+                      // Insert "Written by" after first image
+                      const imageEndIndex = pageContent.indexOf(imageMatch[0]) + imageMatch[0].length;
+                      pageContent = pageContent.slice(0, imageEndIndex) + writtenByHTML + pageContent.slice(imageEndIndex);
+                    } else if (paragraphMatch) {
+                      // Insert "Written by" after first paragraph
+                      const paragraphEndIndex = pageContent.indexOf(paragraphMatch[0]) + paragraphMatch[0].length;
+                      pageContent = pageContent.slice(0, paragraphEndIndex) + writtenByHTML + pageContent.slice(paragraphEndIndex);
+                    } else {
+                      // Fallback: add at beginning of content
+                      pageContent = writtenByHTML + pageContent;
+                    }
+                    
+                    // Add author box at the end of content
+                    pageContent += authorBoxHTML;
+                    
+                    console.log(`Added author information to page for: ${author.name}`);
+                  }
+                } catch (authorError) {
+                  console.error("Error adding author information to page:", authorError);
+                  // Continue without author info if there's an error
+                }
+              }
+              
               // For pages, we need to pass the published flag and date
               shopifyArticle = await shopifyService.createPage(
                 tempStore,
                 post.title,
-                post.content,
+                pageContent,
                 post.status === 'published', // true only if immediate publish
                 scheduledPublishDate // date for scheduled posts
               );
@@ -899,8 +988,99 @@ export async function registerRoutes(app: Express): Promise<void> {
                 id: completePost?.id,
                 title: completePost?.title,
                 metaTitle: completePost?.metaTitle,
-                metaDescription: completePost?.metaDescription
+                metaDescription: completePost?.metaDescription,
+                authorId: completePost?.authorId
               });
+
+              // If post has an author, inject author box into content
+              if (completePost?.authorId) {
+                try {
+                  // Get author data from database
+                  const authorData = await db.select().from(authors).where(eq(authors.id, completePost.authorId)).limit(1);
+                  
+                  if (authorData.length > 0) {
+                    const author = authorData[0];
+                    
+                    // Generate author box HTML inline (since we can't import from client)
+                    const generateAuthorBoxHTML = (author: any) => {
+                      const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                      const avatarImg = author.profileImage 
+                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
+                        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+
+                      return `
+                        <div id="author-${author.id}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
+                          <div style="display: flex; gap: 16px; align-items: flex-start;">
+                            ${avatarImg}
+                            <div style="flex: 1;">
+                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+                              ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0;">${author.description}</p>` : ''}
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                    };
+
+                    const generateWrittenByHTML = (author: any) => {
+                      const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                      const avatarImg = author.profileImage 
+                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
+                        : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
+
+                      return `
+                        <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
+                          ${avatarImg}
+                          <span style="color: #6b7280; font-size: 14px;">
+                            Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
+                          </span>
+                        </div>
+                      `;
+                    };
+                    
+                    const authorFormatted = {
+                      id: author.id.toString(),
+                      name: author.name,
+                      description: author.description || '',
+                      profileImage: author.avatarUrl || undefined
+                    };
+                    
+                    // Generate author HTML components
+                    const writtenByHTML = generateWrittenByHTML(authorFormatted);
+                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted);
+                    
+                    // Find the first image or paragraph in content to inject "Written by" after it
+                    let updatedContent = completePost.content;
+                    
+                    // Look for first image tag or first paragraph
+                    const imageMatch = updatedContent.match(/<img[^>]*>/i);
+                    const paragraphMatch = updatedContent.match(/<p[^>]*>.*?<\/p>/i);
+                    
+                    if (imageMatch) {
+                      // Insert "Written by" after first image
+                      const imageEndIndex = updatedContent.indexOf(imageMatch[0]) + imageMatch[0].length;
+                      updatedContent = updatedContent.slice(0, imageEndIndex) + writtenByHTML + updatedContent.slice(imageEndIndex);
+                    } else if (paragraphMatch) {
+                      // Insert "Written by" after first paragraph
+                      const paragraphEndIndex = updatedContent.indexOf(paragraphMatch[0]) + paragraphMatch[0].length;
+                      updatedContent = updatedContent.slice(0, paragraphEndIndex) + writtenByHTML + updatedContent.slice(paragraphEndIndex);
+                    } else {
+                      // Fallback: add at beginning of content
+                      updatedContent = writtenByHTML + updatedContent;
+                    }
+                    
+                    // Add author box at the end of content
+                    updatedContent += authorBoxHTML;
+                    
+                    // Update the complete post content
+                    completePost.content = updatedContent;
+                    
+                    console.log(`Added author information for: ${author.name}`);
+                  }
+                } catch (authorError) {
+                  console.error("Error adding author information:", authorError);
+                  // Continue without author info if there's an error
+                }
+              }
               
               shopifyArticle = await shopifyService.createArticle(
                 tempStore, 
