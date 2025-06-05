@@ -407,6 +407,105 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
               </DialogContent>
             </Dialog>
 
+            {/* Edit Author Dialog */}
+            <Dialog open={!!editingAuthor} onOpenChange={() => setEditingAuthor(null)}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Author</DialogTitle>
+                  <DialogDescription>
+                    Update the author information in your content library.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...editForm}>
+                  <form onSubmit={editForm.handleSubmit(handleUpdateAuthor)} className="space-y-4">
+                    <FormField
+                      control={editForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Author Name *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter author name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Author Bio</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Brief description or bio"
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={editForm.control}
+                      name="profileImage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profile Image URL</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://example.com/image.jpg"
+                              type="url"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={editForm.control}
+                      name="linkedinUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>LinkedIn Profile URL (Optional)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://linkedin.com/in/username"
+                              type="url"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => setEditingAuthor(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={updateAuthorMutation.isPending}
+                      >
+                        {updateAuthorMutation.isPending ? "Updating..." : "Update Author"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+
             {/* No Authors State */}
             {authors.length === 0 && (
               <div className="text-center py-8 text-gray-500">
