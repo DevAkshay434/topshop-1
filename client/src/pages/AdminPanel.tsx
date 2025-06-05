@@ -1542,6 +1542,8 @@ export default function AdminPanel() {
         // Add content style selection if available
         contentStyleToneId: selectedContentToneId || "",
         contentStyleDisplayName: selectedContentDisplayName || "",
+        // CRITICAL: Include selected author ID from workflow
+        authorId: selectedAuthorId ? parseInt(selectedAuthorId) : null,
         // Add selected media from selectedMediaContent state (the correct source)
         primaryImage: selectedMediaContent.primaryImage,
         secondaryImages: selectedMediaContent.secondaryImages || [],
@@ -1553,6 +1555,8 @@ export default function AdminPanel() {
       console.log("Primary image in submit data:", submitData.primaryImage);
       console.log("Secondary images in submit data:", submitData.secondaryImages);
       console.log("YouTube embed in submit data:", submitData.youtubeEmbed);
+      console.log("AUTHOR SYNC DEBUG - Selected author ID:", selectedAuthorId);
+      console.log("AUTHOR SYNC DEBUG - Author ID in submit data:", submitData.authorId);
       console.log("Media data being sent to server - Primary:", !!submitData.primaryImage, "Secondary:", submitData.secondaryImages?.length || 0, "YouTube:", !!submitData.youtubeEmbed);
       
       // Specific try-catch for the API request
