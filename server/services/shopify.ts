@@ -439,7 +439,12 @@ export class ShopifyService {
         body_html: processedContent,
         tags: post.tags || "",
         summary: (post as any).summary || "", // Add summary field if available
-        handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled'
+        handle: (() => {
+          if (!post.title) return 'untitled';
+          const baseHandle = post.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+          const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+          return `${baseHandle}-${timestamp}`;
+        })()
       };
 
       // Add SEO meta fields if available
@@ -699,10 +704,12 @@ export class ShopifyService {
           Object.assign(article, fullArticle);
         } catch (fetchError) {
           console.error(`Error fetching full article details:`, fetchError);
-          // Generate handle from title as fallback
+          // Generate unique handle from title as fallback
           if (articleData.title) {
-            articleData.handle = articleData.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-            console.log(`Generated handle from title: ${articleData.handle}`);
+            const baseHandle = articleData.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+            articleData.handle = `${baseHandle}-${timestamp}`;
+            console.log(`Generated unique handle from title: ${articleData.handle}`);
           }
         }
       }
