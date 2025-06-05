@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -32,9 +31,9 @@ interface AuthorSelectorProps {
 
 const createAuthorSchema = z.object({
   name: z.string().min(1, "Author name is required"),
-  description: z.string().optional(),
+  description: z.string(),
   profileImage: z.string().optional(),
-  linkedinUrl: z.string().url("Please enter a valid LinkedIn URL").optional().or(z.literal("")),
+  linkedinUrl: z.string().optional(),
 });
 
 type CreateAuthorForm = z.infer<typeof createAuthorSchema>;
@@ -71,7 +70,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const authors: Author[] = authorsData?.authors || [];
+  const authors: Author[] = (authorsData?.authors || []).sort((a: Author, b: Author) => a.name.localeCompare(b.name));
 
   // Create author mutation
   const createAuthorMutation = useMutation({
@@ -85,30 +84,25 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error("Failed to create author");
       }
       
       return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/authors"] });
-      setIsCreateDialogOpen(false);
       form.reset();
-      
-      // Auto-select the newly created author
-      if (data.author) {
-        onAuthorSelect(data.author.id);
-      }
-      
+      setIsCreateDialogOpen(false);
       toast({
-        title: "Author created",
-        description: "The new author has been added successfully.",
+        title: "Author created successfully",
+        description: "The new author has been added to your content library.",
       });
+      onAuthorSelect(data.author.id);
     },
-    onError: (error: any) => {
+    onError: () => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create author",
+        title: "Error creating author",
+        description: "There was an error creating the author. Please try again.",
         variant: "destructive",
       });
     },
@@ -245,288 +239,296 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
           </div>
         )}
 
-        {/* Author Selection Grid */}
-        {!selectedAuthor && (
-          <>
-            <div className="grid grid-cols-1 gap-3">
-              {authors.map((author) => (
-                <div 
-                  key={author.id} 
-                  className="border rounded-lg p-3 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="flex items-center gap-3 flex-1 cursor-pointer"
-                      onClick={() => onAuthorSelect(author.id)}
-                    >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={author.profileImage} alt={author.name} />
-                        <AvatarFallback>
-                          {author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">{author.name}</h4>
-                        {author.description && (
-                          <p className="text-sm text-gray-600 truncate">{author.description}</p>
-                        )}
-                        {author.linkedinUrl && (
-                          <p className="text-xs text-blue-600">LinkedIn Profile Available</p>
-                        )}
+        {/* Author Selection Grid - Always Show All Authors */}
+        <div className="space-y-4">
+          <div className="text-sm font-medium text-gray-700 mb-2">Available Authors:</div>
+          <div className="grid grid-cols-1 gap-2">
+            {authors.map((author) => (
+              <div 
+                key={author.id} 
+                className={`border rounded-lg p-3 transition-colors ${
+                  selectedAuthorId === author.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="flex items-center gap-3 flex-1 cursor-pointer"
+                    onClick={() => onAuthorSelect(author.id)}
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={author.profileImage} alt={author.name} />
+                      <AvatarFallback>
+                        {author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{author.name}</h4>
+                      {author.description && (
+                        <p className="text-sm text-gray-600 truncate">{author.description}</p>
+                      )}
+                      {author.linkedinUrl && (
+                        <p className="text-xs text-blue-600">LinkedIn Profile Available</p>
+                      )}
+                    </div>
+                    {selectedAuthorId === author.id && (
+                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full" />
                       </div>
-                    </div>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(author);
-                        }}
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(author.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </div>
+                    )}
+                  </div>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(author);
+                      }}
+                      title="Edit Author"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(author.id);
+                      }}
+                      title="Delete Author"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Create New Author Button */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Author
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Create New Author</DialogTitle>
-                  <DialogDescription>
-                    Add a new author to your content library. Authors are managed using Shopify Metaobjects.
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleCreateAuthor)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Author Name *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter author name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Author Bio</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Brief description or bio"
-                              rows={3}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="profileImage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Profile Image URL</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="https://example.com/image.jpg"
-                              type="url"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="linkedinUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>LinkedIn Profile URL (Optional)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="https://linkedin.com/in/username"
-                              type="url"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => setIsCreateDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={createAuthorMutation.isPending}
-                      >
-                        {createAuthorMutation.isPending ? "Creating..." : "Create Author"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-
-            {/* Edit Author Dialog */}
-            <Dialog open={!!editingAuthor} onOpenChange={() => setEditingAuthor(null)}>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Edit Author</DialogTitle>
-                  <DialogDescription>
-                    Update the author information in your content library.
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...editForm}>
-                  <form onSubmit={editForm.handleSubmit(handleUpdateAuthor)} className="space-y-4">
-                    <FormField
-                      control={editForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Author Name *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter author name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={editForm.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Author Bio</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Brief description or bio"
-                              rows={3}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={editForm.control}
-                      name="profileImage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Profile Image URL</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="https://example.com/image.jpg"
-                              type="url"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={editForm.control}
-                      name="linkedinUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>LinkedIn Profile URL (Optional)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="https://linkedin.com/in/username"
-                              type="url"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => setEditingAuthor(null)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={updateAuthorMutation.isPending}
-                      >
-                        {updateAuthorMutation.isPending ? "Updating..." : "Update Author"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-
-            {/* No Authors State */}
-            {authors.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">No authors found</p>
-                <p className="text-sm">Create your first author to get started</p>
               </div>
-            )}
-          </>
+            ))}
+          </div>
+        </div>
+
+        {/* Create New Author Button */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Author
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New Author</DialogTitle>
+              <DialogDescription>
+                Add a new author to your content library.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreateAuthor)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Author Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter author name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Author Bio</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Brief description or bio"
+                          rows={3}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="profileImage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Profile Image URL</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://example.com/image.jpg"
+                          type="url"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="linkedinUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LinkedIn Profile URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://linkedin.com/in/username"
+                          type="url"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createAuthorMutation.isPending}
+                  >
+                    {createAuthorMutation.isPending ? "Creating..." : "Create Author"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Author Dialog */}
+        <Dialog open={!!editingAuthor} onOpenChange={() => setEditingAuthor(null)}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Author</DialogTitle>
+              <DialogDescription>
+                Update the author information in your content library.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(handleUpdateAuthor)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Author Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter author name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Author Bio</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Brief description or bio"
+                          rows={3}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="profileImage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Profile Image URL</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://example.com/image.jpg"
+                          type="url"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="linkedinUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LinkedIn Profile URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://linkedin.com/in/username"
+                          type="url"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setEditingAuthor(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={updateAuthorMutation.isPending}
+                  >
+                    {updateAuthorMutation.isPending ? "Updating..." : "Update Author"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* No Authors State */}
+        {authors.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">No authors found</p>
+            <p className="text-sm">Create your first author to get started</p>
+          </div>
         )}
 
         {/* Skip Author Option */}
-        {!selectedAuthor && (
-          <Button 
-            variant="ghost" 
-            className="w-full"
-            onClick={() => onAuthorSelect(null)}
-          >
-            Skip - No Author
-          </Button>
-        )}
+        <Button 
+          variant="ghost" 
+          className="w-full mt-4"
+          onClick={() => onAuthorSelect(null)}
+        >
+          Skip - No Author
+        </Button>
       </CardContent>
     </Card>
   );
