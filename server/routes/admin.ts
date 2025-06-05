@@ -1173,7 +1173,9 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
           thumbnail: z.string()
         }).optional()
       })).optional(),
-      youtubeEmbed: z.string().nullable().optional()
+      youtubeEmbed: z.string().nullable().optional(),
+      // Author selection field
+      authorId: z.union([z.string(), z.number()]).nullable().optional()
     });
     
     // Parse the request data to verify it matches the schema
@@ -1851,19 +1853,31 @@ Place this at a logical position in the content, typically after introducing a c
 
         // Determine author name - prioritize selected author from AdminPanel
         let authorName = connection.storeName.replace('.myshopify.com', ''); // Default fallback
+        let finalAuthorId: number | null = null;
         
+        // Convert authorId to number if provided
         if (requestData.authorId) {
           try {
-            const { db } = await import('../db');
-            const { authors } = await import('../../shared/schema');
-            const { eq } = await import('drizzle-orm');
+            // Handle both string and number types from frontend
+            const authorIdNum = typeof requestData.authorId === 'string' 
+              ? parseInt(requestData.authorId, 10) 
+              : requestData.authorId;
             
-            const authorData = await db.select().from(authors).where(eq(authors.id, requestData.authorId)).limit(1);
-            if (authorData.length > 0) {
-              authorName = authorData[0].name;
-              console.log(`AUTHOR SYNC SUCCESS - Using selected author: ${authorName} (ID: ${requestData.authorId})`);
+            if (!isNaN(authorIdNum)) {
+              const { db } = await import('../db');
+              const { authors } = await import('../../shared/schema');
+              const { eq } = await import('drizzle-orm');
+              
+              const authorData = await db.select().from(authors).where(eq(authors.id, authorIdNum)).limit(1);
+              if (authorData.length > 0) {
+                authorName = authorData[0].name;
+                finalAuthorId = authorIdNum;
+                console.log(`AUTHOR SYNC SUCCESS - Using selected author: ${authorName} (ID: ${authorIdNum})`);
+              } else {
+                console.log(`AUTHOR SYNC WARNING - Author ID ${authorIdNum} not found, using store name`);
+              }
             } else {
-              console.log(`AUTHOR SYNC WARNING - Author ID ${requestData.authorId} not found, using store name`);
+              console.log(`AUTHOR SYNC WARNING - Invalid authorId format: ${requestData.authorId}, using store name`);
             }
           } catch (error) {
             console.error('AUTHOR SYNC ERROR - Failed to fetch author from database:', error);
@@ -1882,7 +1896,7 @@ Place this at a logical position in the content, typically after introducing a c
           scheduledPublishDate: isScheduled ? requestData.scheduleDate : undefined,
           scheduledPublishTime: isScheduled ? requestData.scheduleTime : undefined,
           author: authorName,
-          authorId: requestData.authorId || null, // CRITICAL: Store the selected author ID
+          authorId: finalAuthorId, // CRITICAL: Store the properly converted author ID
           tags: generatedContent.tags?.join(',') || '',
           category: categoryValue,
           categories: categoriesString,
