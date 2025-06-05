@@ -962,6 +962,9 @@ export async function registerRoutes(app: Express): Promise<void> {
                     // Add author box at the end of content
                     pageContent += authorBoxHTML;
                     
+                    // Add author name to the post object for Shopify API
+                    completePost.author = author.name;
+                    
                     console.log(`Added author information to page for: ${author.name}`);
                   }
                 } catch (authorError) {
@@ -1073,6 +1076,9 @@ export async function registerRoutes(app: Express): Promise<void> {
                     
                     // Update the complete post content
                     completePost.content = updatedContent;
+                    
+                    // Add author name to the post object for Shopify API
+                    completePost.author = author.name;
                     
                     console.log(`Added author information for: ${author.name}`);
                   }

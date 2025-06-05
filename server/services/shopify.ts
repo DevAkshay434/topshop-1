@@ -465,6 +465,11 @@ export class ShopifyService {
       if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
         articleData.image = { src: post.featuredImage.trim() };
       }
+
+      // Add author information if available
+      if ((post as any).author && typeof (post as any).author === 'string') {
+        articleData.author = (post as any).author;
+      }
       
       // For scheduled posts, we need to implement a different approach
       // Shopify's API behavior is more complex:
@@ -554,11 +559,21 @@ export class ShopifyService {
               optimizedUrl = optimizedUrl.replace('_large', '_medium');
               optimizedUrl = optimizedUrl.replace('_2048x2048', '_1024x1024');
             }
-            // Other external images - force smaller dimensions
+            // Other external images - force smaller dimensions to stay well under 25MP
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
-              // For any external image, add aggressive size constraints (well under 25MP)
+              // Force maximum dimensions to 1200x800 (0.96MP) - well under 25MP limit
               const separator = optimizedUrl.includes('?') ? '&' : '?';
-              optimizedUrl = optimizedUrl + `${separator}w=1280&h=853&q=80`;
+              optimizedUrl = optimizedUrl + `${separator}w=1200&h=800&fit=crop&q=85&auto=compress`;
+            }
+            
+            // Additional safety check: if URL contains large dimensions, replace them
+            if (url.includes('w=') || url.includes('width=')) {
+              optimizedUrl = optimizedUrl.replace(/w=\d+/g, 'w=1200');
+              optimizedUrl = optimizedUrl.replace(/width=\d+/g, 'width=1200');
+            }
+            if (url.includes('h=') || url.includes('height=')) {
+              optimizedUrl = optimizedUrl.replace(/h=\d+/g, 'h=800');
+              optimizedUrl = optimizedUrl.replace(/height=\d+/g, 'height=800');
             }
             
             if (optimizedUrl !== url) {
