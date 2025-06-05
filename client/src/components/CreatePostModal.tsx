@@ -406,6 +406,8 @@ export default function CreatePostModal({
         articleLength: values.articleLength,
         headingsCount: values.headingsCount,
         youtubeUrl: values.youtubeUrl || null,
+        // Author selection
+        authorId: values.authorId ? parseInt(values.authorId) : null,
       };
       
       // Add blogId and articleType if available

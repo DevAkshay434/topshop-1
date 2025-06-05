@@ -224,6 +224,13 @@ export default function PostList({
                             </span>
                           </p>
                         )}
+                        {post.author && (
+                          <p className="mt-2 flex items-center text-sm text-neutral-500 sm:mt-0 sm:ml-6">
+                            <span className="px-2 py-1 text-xs font-medium rounded-md bg-green-50 text-green-700">
+                              Author: {post.author}
+                            </span>
+                          </p>
+                        )}
                         {post.status === "published" && (
                           <p className="mt-2 flex items-center text-sm text-neutral-500 sm:mt-0 sm:ml-6">
                             <Eye className="text-neutral-400 mr-1 h-4 w-4" />
