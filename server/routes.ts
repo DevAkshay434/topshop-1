@@ -716,6 +716,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   apiRouter.post("/posts", async (req: Request, res: Response) => {
     try {
       console.log("POST /api/posts - Request body:", JSON.stringify(req.body));
+      console.log("POST /api/posts - AuthorId from request:", req.body.authorId);
       
       // Validate request body
       let postData;
@@ -801,10 +802,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Save post to storage
       console.log("Saving post to storage with data:", {
         status: postData.status,
+        authorId: postData.authorId,
         scheduledDate: postData.scheduledDate ? postData.scheduledDate.toISOString() : null,
         scheduledPublishDate: postData.scheduledPublishDate,
         scheduledPublishTime: postData.scheduledPublishTime
       });
+      
+      console.log("Full postData being saved:", JSON.stringify(postData, null, 2));
       
       const post = await storage.createBlogPost(postData);
       
