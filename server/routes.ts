@@ -969,7 +969,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                         : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
                       return `
-                        <div id="author-${author.id}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
+                        <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
                           <div style="display: flex; gap: 16px; align-items: flex-start;">
                             ${avatarImg}
                             <div style="flex: 1;">
@@ -1094,7 +1094,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                     : '';
                   
                   const authorBox = `
-                    <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
+                    <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
                       <div style="display: flex; gap: 16px; align-items: flex-start;">
                         ${avatarElement}
                         <div style="flex: 1;">
