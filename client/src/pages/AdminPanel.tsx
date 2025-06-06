@@ -60,6 +60,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useMutation } from '@tanstack/react-query';
 import { 
   AlertCircle,
   ArrowLeft,
@@ -714,6 +715,8 @@ export default function AdminPanel() {
   const [currentProject, setCurrentProject] = useState<string>(() => {
     return localStorage.getItem('current-project') || '';
   });
+  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
     // Load custom categories from localStorage
     const savedCategories = localStorage.getItem('topshop-custom-categories');
@@ -767,6 +770,120 @@ export default function AdminPanel() {
     resolver: zodResolver(contentFormSchema),
     defaultValues
   });
+
+  // Project mutations for auto-save functionality
+  const createProjectMutation = useMutation({
+    mutationFn: async (data: { name: string; formData: any }) => {
+      return apiRequest('/api/projects', {
+        method: 'POST',
+        body: data
+      });
+    },
+    onMutate: () => {
+      setAutoSaveStatus('saving');
+    },
+    onSuccess: (data: any) => {
+      if (data.success && data.project) {
+        setCurrentProjectId(data.project.id);
+        setAutoSaveStatus('saved');
+        setTimeout(() => setAutoSaveStatus('idle'), 2000);
+      }
+    },
+    onError: () => {
+      setAutoSaveStatus('error');
+      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+    }
+  });
+
+  const updateProjectMutation = useMutation({
+    mutationFn: async (data: { id: number; formData: any }) => {
+      return apiRequest(`/api/projects/${data.id}`, {
+        method: 'PUT',
+        body: { formData: data.formData }
+      });
+    },
+    onMutate: () => {
+      setAutoSaveStatus('saving');
+    },
+    onSuccess: () => {
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    },
+    onError: () => {
+      setAutoSaveStatus('error');
+      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+    }
+  });
+
+  // Auto-save function
+  const autoSaveProject = (formData: any) => {
+    if (!currentProject) return;
+
+    const projectData = {
+      ...formData,
+      selectedProducts,
+      selectedCollections,
+      selectedKeywords,
+      selectedMediaContent,
+      selectedBuyerPersonas
+    };
+
+    if (currentProjectId) {
+      updateProjectMutation.mutate({
+        id: currentProjectId,
+        formData: projectData
+      });
+    } else {
+      createProjectMutation.mutate({
+        name: currentProject,
+        formData: projectData
+      });
+    }
+  };
+
+  // Auto-save effect - triggers when form data changes
+  useEffect(() => {
+    if (!currentProject) return;
+
+    const subscription = form.watch((data) => {
+      // Debounce auto-save to avoid too frequent saves
+      const timeoutId = setTimeout(() => {
+        autoSaveProject(data);
+      }, 2000); // Save after 2 seconds of inactivity
+
+      return () => clearTimeout(timeoutId);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [currentProject, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, selectedBuyerPersonas]);
+
+  // Auto-save status indicator component
+  const AutoSaveIndicator = () => {
+    if (!currentProject) return null;
+    
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {autoSaveStatus === 'saving' && (
+          <>
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Saving...
+          </>
+        )}
+        {autoSaveStatus === 'saved' && (
+          <>
+            <CheckCircle className="h-3 w-3 text-green-500" />
+            Saved
+          </>
+        )}
+        {autoSaveStatus === 'error' && (
+          <>
+            <AlertCircle className="h-3 w-3 text-red-500" />
+            Save failed
+          </>
+        )}
+      </div>
+    );
+  };
 
   // Define response types
   interface RegionsResponse {
@@ -1630,7 +1747,16 @@ export default function AdminPanel() {
             Manage content generation, view service status, and configure settings
           </p>
         </div>
-
+        <div className="flex items-center gap-4">
+          {currentProject && (
+            <div className="text-right">
+              <div className="text-sm font-medium text-gray-900">
+                Project: {currentProject}
+              </div>
+              <AutoSaveIndicator />
+            </div>
+          )}
+        </div>
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
