@@ -961,12 +961,17 @@ export async function registerRoutes(app: Express): Promise<void> {
                   if (authorData.length > 0) {
                     const author = authorData[0];
                     
-                    // Generate author box HTML inline
+                    // Generate author box HTML inline with LinkedIn integration
                     const generateAuthorBoxHTML = (author: any) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                       const avatarImg = author.profileImage 
                         ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
                         : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+
+                      // LinkedIn "Learn More" button if LinkedIn URL is available
+                      const linkedinButton = author.linkedinUrl 
+                        ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Learn More</a>`
+                        : '';
 
                       return `
                         <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
@@ -974,7 +979,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                             ${avatarImg}
                             <div style="flex: 1;">
                               <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
-                              ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0;">${author.description}</p>` : ''}
+                              ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${author.description}</p>` : ''}
+                              ${linkedinButton}
                             </div>
                           </div>
                         </div>
@@ -1001,7 +1007,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                       id: author.id.toString(),
                       name: author.name,
                       description: author.description || '',
-                      profileImage: author.avatarUrl || undefined
+                      profileImage: author.avatarUrl || undefined,
+                      linkedinUrl: author.linkedin_url || undefined
                     };
                     
                     // Generate author HTML components
