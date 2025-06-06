@@ -1356,7 +1356,8 @@ export default function AdminPanel() {
         publicationType,
         status: publicationType === 'publish' ? 'published' : publicationType === 'schedule' ? 'scheduled' : 'draft',
         scheduledPublishDate: publicationType === 'schedule' ? formValues.scheduledPublishDate : undefined,
-        scheduledPublishTime: publicationType === 'schedule' ? formValues.scheduledPublishTime || "09:30" : undefined
+        scheduledPublishTime: publicationType === 'schedule' ? formValues.scheduledPublishTime || "09:30" : undefined,
+        authorId: selectedAuthorId // CRITICAL FIX: Include selected author ID
       };
 
       console.log("Publishing content with data:", publishData);
