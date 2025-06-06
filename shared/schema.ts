@@ -392,6 +392,7 @@ export const projects = pgTable("projects", {
   templateCategory: text("template_category"),
   lastModified: timestamp("last_modified").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertProjectSchema = createInsertSchema(projects).pick({
