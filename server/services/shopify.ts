@@ -636,6 +636,31 @@ export class ShopifyService {
         console.log(`Image optimization complete. Content length: ${articleData.body_html.length}`);
       }
 
+      // Add "Written by" text at the beginning if author is specified
+      if (authorName && articleData.body_html) {
+        const authorId = (post as any).authorId || 'author';
+        const writtenByHTML = `<div style="margin: 16px 0; padding: 12px 0; border-bottom: 1px solid #e5e7eb;"><p style="color: #6b7280; font-size: 14px; margin: 0;">Written by <a href="#author-${authorId}" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'" onmouseout="this.style.borderBottomColor='transparent'">${authorName}</a></p></div>`;
+        
+        // Find the first meaningful content to insert after (h1, h2, or first paragraph)
+        const titleMatch = articleData.body_html.match(/<h[12][^>]*>.*?<\/h[12]>/i);
+        const paragraphMatch = articleData.body_html.match(/<p[^>]*>.*?<\/p>/i);
+        
+        if (titleMatch) {
+          // Insert after the first h1 or h2 title
+          const titleEndIndex = articleData.body_html.indexOf(titleMatch[0]) + titleMatch[0].length;
+          articleData.body_html = articleData.body_html.slice(0, titleEndIndex) + writtenByHTML + articleData.body_html.slice(titleEndIndex);
+        } else if (paragraphMatch) {
+          // Insert before the first paragraph if no title found
+          const paragraphStartIndex = articleData.body_html.indexOf(paragraphMatch[0]);
+          articleData.body_html = articleData.body_html.slice(0, paragraphStartIndex) + writtenByHTML + articleData.body_html.slice(paragraphStartIndex);
+        } else {
+          // Fallback: add at the beginning of content
+          articleData.body_html = writtenByHTML + articleData.body_html;
+        }
+        
+        console.log(`Added "Written by ${authorName}" at beginning of content`);
+      }
+
       // Validate content before sending to Shopify
       if (articleData.body_html && articleData.body_html.length > 65000) {
         console.log(`Content length ${articleData.body_html.length} exceeds Shopify limit, truncating...`);
