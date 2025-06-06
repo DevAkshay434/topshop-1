@@ -869,9 +869,20 @@ export default function AdminPanel() {
   useEffect(() => {
     if (savedProjectData?.success && savedProjectData.project) {
       const projectData = savedProjectData.project;
-      const formData = projectData.formData;
+      let formData = projectData.formData;
+      
+      // Parse formData if it's a string (from database storage)
+      if (typeof formData === 'string') {
+        try {
+          formData = JSON.parse(formData);
+        } catch (error) {
+          console.error('Failed to parse saved form data:', error);
+          return;
+        }
+      }
       
       console.log('Loading saved project data:', projectData);
+      console.log('Parsed form data:', formData);
       
       if (formData) {
         // Reset the form with saved data
@@ -882,18 +893,22 @@ export default function AdminPanel() {
 
         // Load additional state data
         if (formData.selectedProducts) {
+          console.log('Setting selected products:', formData.selectedProducts);
           setSelectedProducts(formData.selectedProducts);
         }
         
         if (formData.selectedCollections) {
+          console.log('Setting selected collections:', formData.selectedCollections);
           setSelectedCollections(formData.selectedCollections);
         }
         
         if (formData.selectedKeywords) {
+          console.log('Setting selected keywords:', formData.selectedKeywords);
           setSelectedKeywords(formData.selectedKeywords);
         }
         
         if (formData.selectedMediaContent) {
+          console.log('Setting selected media content:', formData.selectedMediaContent);
           setSelectedMediaContent(formData.selectedMediaContent);
           
           // Also update primary and secondary images
@@ -907,11 +922,13 @@ export default function AdminPanel() {
         }
         
         if (formData.selectedBuyerPersonas) {
+          console.log('Setting selected buyer personas:', formData.selectedBuyerPersonas);
           setSelectedBuyerPersonas(formData.selectedBuyerPersonas);
         }
 
         // Update workflow step if saved
         if (formData.workflowStep) {
+          console.log('Setting workflow step:', formData.workflowStep);
           setWorkflowStep(formData.workflowStep);
         }
       }
