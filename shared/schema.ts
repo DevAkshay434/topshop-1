@@ -380,3 +380,40 @@ export const authorsRelations = relations(authors, ({ one, many }) => ({
   }),
   posts: many(blogPosts),
 }));
+
+// Projects schema for saving user projects and form data
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  storeId: integer("store_id").references(() => shopifyStores.id),
+  userId: integer("user_id").references(() => users.id),
+  formData: text("form_data"), // JSON string of complete form state
+  isTemplate: boolean("is_template").default(false),
+  templateCategory: text("template_category"),
+  lastModified: timestamp("last_modified").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertProjectSchema = createInsertSchema(projects).pick({
+  name: true,
+  storeId: true,
+  userId: true,
+  formData: true,
+  isTemplate: true,
+  templateCategory: true,
+});
+
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projects.$inferSelect;
+
+// Define project relations
+export const projectsRelations = relations(projects, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [projects.storeId],
+    references: [shopifyStores.id],
+  }),
+  user: one(users, {
+    fields: [projects.userId],
+    references: [users.id],
+  }),
+}));

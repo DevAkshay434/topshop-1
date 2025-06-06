@@ -6,6 +6,7 @@ import {
   blogPosts,
   syncActivities,
   contentGenRequests,
+  projects,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -19,7 +20,9 @@ import {
   type SyncActivity,
   type InsertSyncActivity,
   type ContentGenRequest,
-  type InsertContentGenRequest
+  type InsertContentGenRequest,
+  type Project,
+  type InsertProject
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
@@ -65,6 +68,13 @@ export interface IStorage {
   createContentGenRequest(request: InsertContentGenRequest): Promise<ContentGenRequest>;
   updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined>;
   getContentGenRequest(id: number): Promise<ContentGenRequest | undefined>;
+  
+  // Project operations
+  createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: number, project: Partial<Project>): Promise<Project | undefined>;
+  getProject(id: number): Promise<Project | undefined>;
+  getUserProjects(userId?: number, storeId?: number): Promise<Project[]>;
+  deleteProject(id: number): Promise<boolean>;
 }
 
 // In-memory implementation of the storage interface
@@ -76,12 +86,14 @@ export class MemStorage implements IStorage {
   private blogPosts: Map<number, BlogPost>;
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
+  private projects: Map<number, Project>;
   
   private currentUserId: number;
   private currentStoreId: number;
   private currentBlogPostId: number;
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
+  private currentProjectId: number;
 
   constructor() {
     this.users = new Map();
@@ -90,12 +102,14 @@ export class MemStorage implements IStorage {
     this.blogPosts = new Map();
     this.syncActivities = [];
     this.contentGenRequests = new Map();
+    this.projects = new Map();
     
     this.currentUserId = 1;
     this.currentStoreId = 1;
     this.currentBlogPostId = 1;
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
+    this.currentProjectId = 1;
     
     // Add some initial data for testing
     const now = new Date();
