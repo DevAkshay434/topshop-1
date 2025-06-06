@@ -856,8 +856,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         console.log(`Post status updated to '${correctedStatus}' based on form flags`);
       }
       
-      // Only send to Shopify if it's a published or scheduled post
-      if (post.status === 'published' || post.status === 'scheduled') {
+      // Only send to Shopify if it's a published or scheduled post AND the user explicitly wants to publish
+      // Check if this is content generation (draft by default) vs explicit publishing
+      const isContentGeneration = !publicationType && !postStatus && post.status === 'draft';
+      const shouldPushToShopify = (post.status === 'published' || post.status === 'scheduled') && !isContentGeneration;
+      
+      if (shouldPushToShopify) {
         const connection = await storage.getShopifyConnection();
         
         if (connection && connection.isConnected && connection.defaultBlogId) {

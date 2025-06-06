@@ -1892,8 +1892,10 @@ Place this at a logical position in the content, typically after introducing a c
         
         contentId = post.id;
         
-        // If set to publish or scheduled, create in Shopify too
-        if (requestData.postStatus === 'publish' || isScheduled) {
+        // IMPORTANT: Content generation should NEVER automatically publish to Shopify
+        // Content should only be pushed to Shopify when user explicitly clicks publish buttons
+        // This prevents automatic publishing during content generation
+        if (false) { // Disabled automatic Shopify publishing during content generation
           console.log(`Publishing to Shopify blog ID: ${blogId}${isScheduled ? ' (scheduled)' : ''}`);
           try {
             // For scheduled posts, create a proper Date object to pass to Shopify API
@@ -2000,6 +2002,10 @@ Place this at a logical position in the content, typically after introducing a c
           }
         }
       } else {
+        // IMPORTANT: Content generation should NEVER automatically publish pages to Shopify
+        // Pages should only be pushed to Shopify when user explicitly clicks publish buttons
+        // This prevents automatic publishing during content generation
+        if (false) { // Disabled automatic Shopify page publishing during content generation
         // Create page in Shopify
         try {
           // CRITICAL: Check if this is a scheduled page - publicationType takes precedence
@@ -2118,6 +2124,7 @@ Place this at a logical position in the content, typically after introducing a c
           console.error('Error creating Shopify page:', pageError);
           throw new Error(`Failed to create page: ${pageError?.message || 'Unknown error'}`);
         }
+        } // End of disabled automatic page creation
       }
       
       // 8. Return the result with selected media included for preview
