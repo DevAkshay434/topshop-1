@@ -715,13 +715,56 @@ export default function AdminPanel() {
   const [currentProject, setCurrentProject] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
 
-  // Handle project selection from dialog
-  const handleProjectSelected = (projectId: number, projectName: string) => {
+  // Handle project selection from dialog and load project data
+  const handleProjectSelected = async (projectId: number, projectName: string) => {
     setCurrentProject(projectName);
     setCurrentProjectId(projectId);
     setProjectDialogOpen(false);
     
     console.log('Project selected:', { projectId, projectName });
+    
+    // Load project data from backend and hydrate form
+    try {
+      const response = await fetch(`/api/projects/${projectId}`);
+      const projectData = await response.json();
+      
+      if (projectData.success && projectData.project) {
+        const { formData } = projectData.project;
+        console.log('Loading form data:', formData);
+        
+        // Reset form with loaded data
+        form.reset(formData);
+        
+        // Update state variables that aren't part of the form
+        if (formData.productIds && formData.productIds.length > 0) {
+          // Load selected products based on IDs
+          const selectedProds = productsQuery.data?.products?.filter((p: Product) => 
+            formData.productIds.includes(p.id)
+          ) || [];
+          setSelectedProducts(selectedProds);
+        }
+        
+        if (formData.collectionIds && formData.collectionIds.length > 0) {
+          // Load selected collections based on IDs
+          const selectedColls = collectionsQuery.data?.collections?.filter((c: Collection) => 
+            formData.collectionIds.includes(c.id)
+          ) || [];
+          setSelectedCollections(selectedColls);
+        }
+        
+        toast({
+          title: "Project loaded",
+          description: `"${projectName}" data has been loaded into the form`
+        });
+      }
+    } catch (error) {
+      console.error('Error loading project data:', error);
+      toast({
+        title: "Error loading project",
+        description: "Failed to load project data. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
@@ -6987,7 +7030,7 @@ export default function AdminPanel() {
       </Dialog>
       
       {/* Add the standalone project creation dialog that shows automatically */}
-      <ProjectCreationDialog />
+      <ProjectCreationDialog onProjectSelected={handleProjectSelected} />
       {/* Choose Media Dialog - New improved component */}
       <ChooseMediaDialog
         open={showChooseMediaDialog && !showImageDialog} 
