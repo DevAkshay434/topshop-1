@@ -825,7 +825,8 @@ export default function AdminPanel() {
       selectedCollections,
       selectedKeywords,
       selectedMediaContent,
-      selectedBuyerPersonas
+      selectedBuyerPersonas,
+      workflowStep
     };
 
     if (currentProjectId) {
@@ -840,6 +841,13 @@ export default function AdminPanel() {
       });
     }
   };
+
+  // Query for loading saved project data
+  const { data: savedProjectData } = useQuery({
+    queryKey: ['/api/projects', currentProjectId],
+    queryFn: () => currentProjectId ? apiRequest(`/api/projects/${currentProjectId}`) : null,
+    enabled: !!currentProjectId
+  });
 
   // Auto-save effect - triggers when form data changes
   useEffect(() => {
@@ -856,6 +864,59 @@ export default function AdminPanel() {
 
     return () => subscription.unsubscribe();
   }, [currentProject, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, selectedBuyerPersonas]);
+
+  // Project data loading and form hydration effect
+  useEffect(() => {
+    if (savedProjectData?.success && savedProjectData.project) {
+      const projectData = savedProjectData.project;
+      const formData = projectData.formData;
+      
+      console.log('Loading saved project data:', projectData);
+      
+      if (formData) {
+        // Reset the form with saved data
+        form.reset({
+          ...defaultValues,
+          ...formData
+        });
+
+        // Load additional state data
+        if (formData.selectedProducts) {
+          setSelectedProducts(formData.selectedProducts);
+        }
+        
+        if (formData.selectedCollections) {
+          setSelectedCollections(formData.selectedCollections);
+        }
+        
+        if (formData.selectedKeywords) {
+          setSelectedKeywords(formData.selectedKeywords);
+        }
+        
+        if (formData.selectedMediaContent) {
+          setSelectedMediaContent(formData.selectedMediaContent);
+          
+          // Also update primary and secondary images
+          if (formData.selectedMediaContent.primaryImage) {
+            setPrimaryImages([formData.selectedMediaContent.primaryImage]);
+          }
+          
+          if (formData.selectedMediaContent.secondaryImages) {
+            setSecondaryImages(formData.selectedMediaContent.secondaryImages);
+          }
+        }
+        
+        if (formData.selectedBuyerPersonas) {
+          setSelectedBuyerPersonas(formData.selectedBuyerPersonas);
+        }
+
+        // Update workflow step if saved
+        if (formData.workflowStep) {
+          setWorkflowStep(formData.workflowStep);
+        }
+      }
+    }
+  }, [savedProjectData, form]);
 
   // Auto-save status indicator component
   const AutoSaveIndicator = () => {
