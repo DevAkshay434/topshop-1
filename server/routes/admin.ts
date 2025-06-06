@@ -1490,27 +1490,11 @@ Place this at a logical position in the content, typically after introducing a c
         const primaryImageUrl = requestData.primaryImage.url;
         const primaryImageAlt = requestData.primaryImage.alt || requestData.title;
         
-        let primaryImageHtml;
-        if (productsInfo.length > 0) {
-          // Link primary image to first selected product
-          const product = productsInfo[0];
-          const productUrl = `https://${store.shopName}/products/${product.handle}`;
-          
-          primaryImageHtml = `
-<div class="featured-image-container" style="text-align: center; margin: 20px 0;">
-  <a href="${productUrl}" title="${product.title}">
-    <img src="${primaryImageUrl}" alt="${primaryImageAlt}" style="max-width: 100%; height: auto;">
-  </a>
-  <p style="margin-top: 5px; font-size: 0.9em;">
-    <a href="${productUrl}">${product.title}</a>
-  </p>
-</div>`;
-        } else {
-          primaryImageHtml = `
+        // Featured image should NOT be linked to products - display as standalone image
+        const primaryImageHtml = `
 <div class="featured-image-container" style="text-align: center; margin: 20px 0;">
   <img src="${primaryImageUrl}" alt="${primaryImageAlt}" style="max-width: 100%; height: auto;">
 </div>`;
-        }
         
         // Add primary image at the beginning of content for pages
         finalContent = primaryImageHtml + finalContent;
