@@ -575,61 +575,61 @@ export class ShopifyService {
       if (articleData.body_html) {
         console.log('Optimizing images for Shopify 25MP limit...');
         
-        // Replace high-resolution image URLs with optimized versions
+        // Replace all images with heavily optimized versions and center alignment
         articleData.body_html = articleData.body_html.replace(
-          /src="([^"]*?\.(?:jpg|jpeg|png|webp)[^"]*?)"/gi,
+          /<img[^>]*src="([^"]*?\.(?:jpg|jpeg|png|webp)[^"]*?)"[^>]*>/gi,
           (match: string, url: string) => {
             let optimizedUrl = url;
             
-            // Pexels images - use safe medium sizes to avoid 25MP limit
+            // Pexels images - use small sizes to avoid 25MP limit
             if (url.includes('images.pexels.com')) {
-              // Always use medium size (typically 1280x853 = 1.09MP) - well under 25MP limit
-              optimizedUrl = url.replace('/original/', '/medium/');
-              optimizedUrl = optimizedUrl.replace('/large/', '/medium/');
-              optimizedUrl = optimizedUrl.replace('/large2x/', '/medium/');
+              // Use small size (typically 640x427 = 0.27MP) - well under 25MP limit
+              optimizedUrl = url.replace('/original/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/large/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
               
-              // For URLs without size specifier, add conservative parameters
-              if (!optimizedUrl.includes('/medium/') && !optimizedUrl.includes('w=')) {
+              // For URLs without size specifier, add very conservative parameters
+              if (!optimizedUrl.includes('/small/') && !optimizedUrl.includes('w=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb`;
+                optimizedUrl = optimizedUrl + `${separator}w=480&h=320&fit=crop&auto=compress&cs=tinysrgb`;
               }
             }
-            // Shopify CDN images - use smaller variants
+            // Shopify CDN images - use much smaller variants
             else if (url.includes('cdn.shopify.com')) {
-              optimizedUrl = url.replace('_master', '_1024x1024');
-              optimizedUrl = optimizedUrl.replace('_original', '_1024x1024');
-              optimizedUrl = optimizedUrl.replace('_large', '_medium');
-              optimizedUrl = optimizedUrl.replace('_2048x2048', '_1024x1024');
+              optimizedUrl = url.replace('_master', '_480x480');
+              optimizedUrl = optimizedUrl.replace('_original', '_480x480');
+              optimizedUrl = optimizedUrl.replace('_large', '_480x480');
+              optimizedUrl = optimizedUrl.replace('_medium', '_480x480');
+              optimizedUrl = optimizedUrl.replace('_2048x2048', '_480x480');
+              optimizedUrl = optimizedUrl.replace('_1024x1024', '_480x480');
             }
             // Other external images - use very conservative sizing
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
-              // Only add optimization parameters if URL doesn't already have them
+              // Force small dimensions for all external images
+              const separator = optimizedUrl.includes('?') ? '&' : '?';
               if (!url.includes('w=') && !url.includes('width=') && !url.includes('h=') && !url.includes('height=')) {
-                const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=600&h=400&fit=crop&q=80&auto=compress`;
+                optimizedUrl = optimizedUrl + `${separator}w=480&h=320&fit=crop&q=75&auto=compress`;
               }
             }
             
-            // Only apply dimension limits if the image has explicit dimension parameters
-            // and they exceed safe limits (avoid breaking URLs without dimensions)
-            if (url.includes('w=') || url.includes('width=')) {
-              optimizedUrl = optimizedUrl.replace(/(\?|&)(w|width)=(\d{4,})/g, (match, prefix, param, value) => {
-                const numValue = parseInt(value);
-                return numValue > 2000 ? `${prefix}${param}=1200` : match;
-              });
-            }
-            if (url.includes('h=') || url.includes('height=')) {
-              optimizedUrl = optimizedUrl.replace(/(\?|&)(h|height)=(\d{4,})/g, (match, prefix, param, value) => {
-                const numValue = parseInt(value);
-                return numValue > 2000 ? `${prefix}${param}=800` : match;
-              });
-            }
+            // Force smaller dimensions for ALL images to avoid 25MP limit
+            optimizedUrl = optimizedUrl.replace(/(\?|&)(w|width)=(\d+)/g, (match, prefix, param, value) => {
+              const numValue = parseInt(value);
+              return numValue > 480 ? `${prefix}${param}=480` : match;
+            });
+            
+            optimizedUrl = optimizedUrl.replace(/(\?|&)(h|height)=(\d+)/g, (match, prefix, param, value) => {
+              const numValue = parseInt(value);
+              return numValue > 320 ? `${prefix}${param}=320` : match;
+            });
             
             if (optimizedUrl !== url) {
               console.log(`Optimized image: ${url.substring(0, 60)}... -> ${optimizedUrl.substring(0, 60)}...`);
             }
             
-            return match.replace(url, optimizedUrl);
+            // Return centered image with proper styling and guaranteed small dimensions
+            return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="" style="max-width: 480px; max-height: 320px; width: auto; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
           }
         );
         
