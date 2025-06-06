@@ -33,6 +33,8 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Sample template projects - in a real app, these might come from an API
 const TEMPLATE_PROJECTS = [
@@ -43,26 +45,42 @@ const TEMPLATE_PROJECTS = [
   { id: "how-to", name: "How-To Guide", description: "Step-by-step instructions for using products" }
 ];
 
-// Load previously saved projects from localStorage
-function getSavedProjects() {
-  try {
-    const savedProjects = localStorage.getItem('saved-projects');
-    return savedProjects ? JSON.parse(savedProjects) : [];
-  } catch (error) {
-    console.error("Error loading saved projects:", error);
-    return [];
-  }
+interface ProjectCreationDialogProps {
+  onProjectSelected?: (projectId: number, projectName: string) => void;
 }
 
 // This component adds a standalone project creation dialog that appears immediately
-export default function ProjectCreationDialog() {
+export default function ProjectCreationDialog({ onProjectSelected }: ProjectCreationDialogProps) {
   const [open, setOpen] = useState(true);
   const [projectName, setProjectName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [savedProjects, setSavedProjects] = useState(getSavedProjects());
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch saved projects from backend API
+  const { data: savedProjectsData } = useQuery({
+    queryKey: ['/api/projects'],
+    queryFn: () => apiRequest('/api/projects')
+  });
+
+  const savedProjects = savedProjectsData?.success ? savedProjectsData.projects : [];
+
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: (data: { name: string; formData: any }) => 
+      apiRequest('/api/projects', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      if (data.success && onProjectSelected) {
+        onProjectSelected(data.project.id, data.project.name);
+      }
+    }
+  });
 
   // Default content style settings
   const contentStyleSettings = {
@@ -85,22 +103,29 @@ export default function ProjectCreationDialog() {
     
     setIsSubmitting(true);
     
-    // Save project name and content style settings to localStorage
-    localStorage.setItem('current-project', projectName);
-    localStorage.setItem('content-style-settings', JSON.stringify(contentStyleSettings));
-    
-    // Add to saved projects if not already there
-    const updatedProjects = [...savedProjects];
-    if (!updatedProjects.some((p: any) => p.name === projectName)) {
-      updatedProjects.push({ 
-        id: Date.now().toString(), 
-        name: projectName,
-        createdAt: new Date().toISOString(),
-        contentStyle: contentStyleSettings
+    // Check if project already exists
+    const existingProject = savedProjects.find((p: any) => p.name === projectName);
+    if (existingProject) {
+      // Load existing project
+      if (onProjectSelected) {
+        onProjectSelected(existingProject.id, existingProject.name);
+      }
+      
+      toast({
+        title: "Project loaded",
+        description: `"${projectName}" has been loaded`
       });
-      localStorage.setItem('saved-projects', JSON.stringify(updatedProjects));
-      setSavedProjects(updatedProjects);
+      
+      setIsSubmitting(false);
+      setOpen(false);
+      return;
     }
+    
+    // Create new project via API
+    createProjectMutation.mutate({
+      name: projectName,
+      formData: contentStyleSettings
+    });
     
     setTimeout(() => {
       toast({
@@ -129,14 +154,21 @@ export default function ProjectCreationDialog() {
   
   // Handle saved project selection
   const handleSavedProjectSelect = (projectId: string) => {
-    const project = savedProjects.find(p => p.id === projectId);
+    const project = savedProjects.find((p: any) => p.id.toString() === projectId);
     if (project) {
       setProjectName(project.name);
+      
+      // Load the project immediately
+      if (onProjectSelected) {
+        onProjectSelected(project.id, project.name);
+      }
       
       toast({
         title: "Project loaded",
         description: `"${project.name}" has been loaded`
       });
+      
+      setOpen(false);
     }
   };
 

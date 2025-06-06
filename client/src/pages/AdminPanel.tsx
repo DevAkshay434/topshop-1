@@ -712,10 +712,17 @@ export default function AdminPanel() {
   
   // Project Creation Dialog state
   const [projectDialogOpen, setProjectDialogOpen] = useState(true); // Set to true to show by default
-  const [currentProject, setCurrentProject] = useState<string>(() => {
-    return localStorage.getItem('current-project') || '';
-  });
+  const [currentProject, setCurrentProject] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+
+  // Handle project selection from dialog
+  const handleProjectSelected = (projectId: number, projectName: string) => {
+    setCurrentProject(projectName);
+    setCurrentProjectId(projectId);
+    setProjectDialogOpen(false);
+    
+    console.log('Project selected:', { projectId, projectName });
+  };
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
     // Load custom categories from localStorage
