@@ -145,7 +145,7 @@ adminRouter.get("/products", async (req: Request, res: Response) => {
     
     // Get products
     const products = await shopifyService.getProducts(store, limit);
-    a
+    
     res.json({
       success: true,
       products
