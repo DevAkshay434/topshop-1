@@ -997,7 +997,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                         <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
                           ${avatarImg}
                           <span style="color: #6b7280; font-size: 14px;">
-                            Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
+                            Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
                           </span>
                         </div>
                       `;
