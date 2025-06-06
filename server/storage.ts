@@ -528,6 +528,53 @@ export class MemStorage implements IStorage {
     this.userStores.set(key, newUserStore);
     return newUserStore;
   }
+
+  // Project operations
+  async createProject(project: InsertProject): Promise<Project> {
+    const id = this.currentProjectId++;
+    const newProject: Project = {
+      ...project,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.projects.set(id, newProject);
+    return newProject;
+  }
+
+  async updateProject(id: number, project: Partial<Project>): Promise<Project | undefined> {
+    const existingProject = this.projects.get(id);
+    if (!existingProject) {
+      return undefined;
+    }
+    
+    const updatedProject = { 
+      ...existingProject, 
+      ...project, 
+      id,
+      updatedAt: new Date() 
+    };
+    this.projects.set(id, updatedProject);
+    return updatedProject;
+  }
+
+  async getProject(id: number): Promise<Project | undefined> {
+    return this.projects.get(id);
+  }
+
+  async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
+    const allProjects = Array.from(this.projects.values());
+    
+    return allProjects.filter(project => {
+      if (userId && project.userId !== userId) return false;
+      if (storeId && project.storeId !== storeId) return false;
+      return true;
+    });
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    return this.projects.delete(id);
+  }
 }
 
 // Database implementation of the storage interface
@@ -846,6 +893,61 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newUserStore;
   }
+
+  // Project operations
+  async createProject(project: InsertProject): Promise<Project> {
+    const [newProject] = await db.insert(projects)
+      .values({
+        name: project.name,
+        formData: project.formData,
+        userId: project.userId,
+        storeId: project.storeId
+      })
+      .returning();
+    return newProject;
+  }
+
+  async updateProject(id: number, project: Partial<Project>): Promise<Project | undefined> {
+    const updateData: Record<string, any> = {};
+    
+    if (project.name !== undefined) updateData.name = project.name;
+    if (project.formData !== undefined) updateData.formData = project.formData;
+    if (project.userId !== undefined) updateData.userId = project.userId;
+    if (project.storeId !== undefined) updateData.storeId = project.storeId;
+    
+    updateData.updatedAt = new Date();
+    
+    const [updatedProject] = await db.update(projects)
+      .set(updateData)
+      .where(eq(projects.id, id))
+      .returning();
+      
+    return updatedProject;
+  }
+
+  async getProject(id: number): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
+    let query = db.select().from(projects);
+    
+    if (userId && storeId) {
+      query = query.where(sql`${projects.userId} = ${userId} AND ${projects.storeId} = ${storeId}`);
+    } else if (userId) {
+      query = query.where(eq(projects.userId, userId));
+    } else if (storeId) {
+      query = query.where(eq(projects.storeId, storeId));
+    }
+    
+    return query.orderBy(desc(projects.updatedAt));
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    const result = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
+    return result.length > 0;
+  }
 }
 
 // Use MemStorage as the database connection is having issues
@@ -1042,6 +1144,42 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getContentGenRequest(id),
       () => memStorage.getContentGenRequest(id)
+    );
+  }
+
+  // Project operations
+  async createProject(project: InsertProject): Promise<Project> {
+    return this.tryOrFallback(
+      () => dbStorage.createProject(project),
+      () => memStorage.createProject(project)
+    );
+  }
+
+  async updateProject(id: number, project: Partial<Project>): Promise<Project | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.updateProject(id, project),
+      () => memStorage.updateProject(id, project)
+    );
+  }
+
+  async getProject(id: number): Promise<Project | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getProject(id),
+      () => memStorage.getProject(id)
+    );
+  }
+
+  async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getUserProjects(userId, storeId),
+      () => memStorage.getUserProjects(userId, storeId)
+    );
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    return this.tryOrFallback(
+      () => dbStorage.deleteProject(id),
+      () => memStorage.deleteProject(id)
     );
   }
 }
