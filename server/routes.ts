@@ -940,7 +940,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             // Determine if this is a page or a blog post
             let shopifyArticle;
             // Get the article type from the request or default to blog
-            const articleType = req.body.articleType || 'blog';
+            const articleType = req.body.articleType || req.body.contentType || 'blog';
             const isPage = articleType === 'page';
             // Add this info to the post for later use
             post.articleType = articleType;
