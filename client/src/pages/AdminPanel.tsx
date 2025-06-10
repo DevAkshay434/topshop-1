@@ -163,7 +163,9 @@ const contentFormSchema = z.object({
   headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
   // Custom category fields
   categories: z.array(z.string()).optional(),
-  customCategory: z.string().optional()
+  customCategory: z.string().optional(),
+  // Buyer personas as flexible text input
+  buyerPersonas: z.string().optional()
 });
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
@@ -260,62 +262,19 @@ const predefinedCategories = [
   { id: "how-to", name: "How-To" },
 ];
 
-// Predefined buyer personas for content targeting
-const predefinedBuyerPersonas: BuyerPersona[] = [
-  { 
-    id: "budget_conscious", 
-    name: "Budget-Conscious Shopper", 
-    description: "Price-sensitive customers looking for the best deals and value", 
-    icon: "piggy-bank" 
-  },
-  { 
-    id: "luxury_seeker", 
-    name: "Luxury Seeker", 
-    description: "Premium shoppers willing to pay more for quality and exclusivity", 
-    icon: "gem" 
-  },
-  { 
-    id: "convenience_focused", 
-    name: "Convenience Focused", 
-    description: "Time-starved customers who value ease and simplicity over price", 
-    icon: "zap" 
-  },
-  { 
-    id: "eco_conscious", 
-    name: "Eco-Conscious Consumer", 
-    description: "Environmentally aware shoppers who prioritize sustainability", 
-    icon: "leaf" 
-  },
-  { 
-    id: "tech_savvy", 
-    name: "Tech-Savvy", 
-    description: "Early adopters who appreciate innovative features and technology",
-    icon: "cpu" 
-  },
-  { 
-    id: "research_driven", 
-    name: "Research-Driven Buyer", 
-    description: "Detail-oriented customers who thoroughly compare options before purchase", 
-    icon: "search" 
-  },
-  { 
-    id: "impulse_buyer", 
-    name: "Impulse Buyer", 
-    description: "Spontaneous shoppers who make quick decisions based on emotion", 
-    icon: "zap-fast" 
-  },
-  { 
-    id: "health_conscious", 
-    name: "Health & Wellness Focused", 
-    description: "Customers prioritizing products that contribute to wellbeing", 
-    icon: "heart" 
-  },
-  {
-    id: "parents",
-    name: "Parents & Families",
-    description: "Shopping for household needs with children's interests in mind",
-    icon: "users"
-  }
+// Predefined buyer persona suggestions for quick insertion
+const buyerPersonaSuggestions = [
+  "35+ Aged Buyer",
+  "Children",
+  "Business Owners", 
+  "Parents",
+  "Students",
+  "Retired Adults",
+  "Young Professionals",
+  "Homeowners",
+  "First-time Buyers",
+  "Budget-Conscious Shoppers",
+  "Luxury Seekers"
 ];
 
 export default function AdminPanel() {
@@ -702,7 +661,7 @@ export default function AdminPanel() {
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Collection[]>([]);
-  const [selectedBuyerPersonas, setSelectedBuyerPersonas] = useState<string[]>([]);
+  // Removed selectedBuyerPersonas state - now using form field buyerPersonas
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
@@ -2209,50 +2168,17 @@ export default function AdminPanel() {
                             </div>
                           )}
 
-                          {/* Selected Buyer Personas */}
-                          {selectedBuyerPersonas.length > 0 && (
+                          {/* Buyer Personas Display */}
+                          {form.watch('buyerPersonas') && (
                             <div className="space-y-2">
                               <div className="flex items-center">
                                 <h5 className="text-sm font-medium flex items-center">
                                   <Users className="h-4 w-4 mr-2 text-blue-500" />
-                                  Selected Buyer Personas ({selectedBuyerPersonas.length})
+                                  Target Audience
                                 </h5>
                               </div>
-                              <div className="flex flex-wrap gap-2">
-                                {selectedBuyerPersonas.map((personaId) => {
-                                  const persona = predefinedBuyerPersonas.find(p => p.id === personaId);
-                                  if (!persona) return null;
-                                  
-                                  let IconComponent = User;
-                                  if (persona.icon === 'piggy-bank') IconComponent = PiggyBank;
-                                  else if (persona.icon === 'gem') IconComponent = Gem;
-                                  else if (persona.icon === 'zap') IconComponent = Zap;
-                                  else if (persona.icon === 'leaf') IconComponent = Leaf;
-                                  else if (persona.icon === 'cpu') IconComponent = Cpu;
-                                  else if (persona.icon === 'search') IconComponent = Search;
-                                  else if (persona.icon === 'heart') IconComponent = Heart;
-                                  else if (persona.icon === 'users') IconComponent = Users;
-                                  
-                                  return (
-                                    <div key={persona.id} className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border">
-                                      <div className="h-5 w-5 rounded bg-blue-100 text-blue-600 flex items-center justify-center">
-                                        <IconComponent className="h-3 w-3" />
-                                      </div>
-                                      <span className="text-sm font-medium truncate max-w-32">{persona.name}</span>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
-                                        onClick={() => {
-                                          setSelectedBuyerPersonas(prev => prev.filter(id => id !== persona.id));
-                                        }}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  );
-                                })}
+                              <div className="p-3 bg-slate-50 rounded-md border">
+                                <p className="text-sm text-gray-700">{form.watch('buyerPersonas')}</p>
                               </div>
                             </div>
                           )}
