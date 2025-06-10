@@ -338,6 +338,9 @@ export default function AdminPanel() {
     secondaryImages: [],
     youtubeEmbed: null
   });
+
+  // Category input state for space-to-tag functionality
+  const [categoryInput, setCategoryInput] = useState('');
   
   // Add logging to track state changes
   console.log('Current selectedMediaContent state:', selectedMediaContent);
@@ -3221,32 +3224,51 @@ export default function AdminPanel() {
                         />
                         
                         
-                        {/* Categories Multi-select */}
+                        {/* Categories with Space-to-Tag Input */}
                         <FormField
                           control={form.control}
                           name="categories"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Categories</FormLabel>
-                              <div className="flex flex-col space-y-3">
-                                <div className="flex flex-wrap gap-2 border p-2 rounded-md min-h-[38px]">
-                                  {field.value && Array.isArray(field.value) && field.value.length > 0 ? (
-                                    field.value.map(category => {
-                                      // Find display name for this category
-                                      const foundCategory = [...predefinedCategories, ...customCategories]
-                                        .find(cat => cat.id === category);
-                                        
-                                      return (
+                          render={({ field }) => {
+                            const addCategory = (categoryText: string) => {
+                              if (!categoryText.trim()) return;
+                              
+                              const currentCategories = Array.isArray(field.value) ? field.value : [];
+                              const trimmedCategory = categoryText.trim();
+                              
+                              // Prevent duplicates
+                              if (!currentCategories.includes(trimmedCategory)) {
+                                form.setValue('categories', [...currentCategories, trimmedCategory]);
+                              }
+                              setCategoryInput('');
+                            };
+                            
+                            const handleKeyDown = (e: React.KeyboardEvent) => {
+                              if (e.key === ' ' && categoryInput.trim()) {
+                                e.preventDefault();
+                                addCategory(categoryInput);
+                              } else if (e.key === 'Enter' && categoryInput.trim()) {
+                                e.preventDefault();
+                                addCategory(categoryInput);
+                              }
+                            };
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel>Categories</FormLabel>
+                                <div className="space-y-3">
+                                  {/* Display existing tags */}
+                                  <div className="flex flex-wrap gap-2 min-h-[20px]">
+                                    {field.value && Array.isArray(field.value) && field.value.length > 0 ? (
+                                      field.value.map((category, index) => (
                                         <Badge
-                                          key={category}
+                                          key={index}
                                           variant="secondary"
                                           className="flex items-center gap-1"
                                         >
-                                          {foundCategory?.name || category}
+                                          {category}
                                           <X
-                                            className="h-3 w-3 cursor-pointer"
+                                            className="h-3 w-3 cursor-pointer hover:text-destructive"
                                             onClick={() => {
-                                              // Remove this category - ensure field.value is an array
                                               const currentCategories = Array.isArray(field.value) ? field.value : [];
                                               const updatedCategories = currentCategories.filter(
                                                 (cat: string) => cat !== category
@@ -3255,122 +3277,28 @@ export default function AdminPanel() {
                                             }}
                                           />
                                         </Badge>
-                                      );
-                                    })
-                                  ) : (
-                                    <span className="text-sm text-muted-foreground p-1">
-                                      No categories selected
-                                    </span>
-                                  )}
+                                      ))
+                                    ) : null}
+                                  </div>
+                                  
+                                  {/* Text input for adding new categories */}
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Type category name and press space or enter..."
+                                      value={categoryInput}
+                                      onChange={(e) => setCategoryInput(e.target.value)}
+                                      onKeyDown={handleKeyDown}
+                                      className="w-full"
+                                    />
+                                  </FormControl>
                                 </div>
-                                
-                                <div className="grid grid-cols-1 gap-2">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        type="button"
-                                      >
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Add Category
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56">
-                                      <DropdownMenuLabel>Predefined Categories</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      {predefinedCategories.map(category => (
-                                        <DropdownMenuItem
-                                          key={category.id}
-                                          onClick={() => {
-                                            const currentCategories = Array.isArray(field.value) ? field.value : [];
-                                            
-                                            // Only add if not already in the list
-                                            if (!currentCategories.includes(category.id)) {
-                                              form.setValue('categories', [
-                                                ...currentCategories,
-                                                category.id
-                                              ]);
-                                            }
-                                          }}
-                                        >
-                                          {category.name}
-                                        </DropdownMenuItem>
-                                      ))}
-                                      
-                                      {customCategories.length > 0 && (
-                                        <>
-                                          <DropdownMenuLabel>Custom Categories</DropdownMenuLabel>
-                                          <DropdownMenuSeparator />
-                                          {customCategories.map(category => (
-                                            <DropdownMenuItem
-                                              key={category.id}
-                                              onClick={() => {
-                                                const currentCategories = Array.isArray(field.value) ? field.value : [];
-                                                
-                                                // Only add if not already in the list
-                                                if (!currentCategories.includes(category.id)) {
-                                                  form.setValue('categories', [
-                                                    ...currentCategories,
-                                                    category.id
-                                                  ]);
-                                                }
-                                              }}
-                                            >
-                                              {category.name}
-                                            </DropdownMenuItem>
-                                          ))}
-                                        </>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </div>
-                              <FormDescription className="text-xs">
-                                Add categories to organize your content
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        {/* Custom Category Input */}
-                        <FormField
-                          control={form.control}
-                          name="customCategory"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Add Custom Category</FormLabel>
-                              <div className="flex space-x-2">
-                                <FormControl>
-                                  <Input
-                                    placeholder="Enter new category name"
-                                    {...field}
-                                    className="flex-1"
-                                  />
-                                </FormControl>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (field.value) {
-                                      addCustomCategory(field.value);
-                                      // Clear the input after adding
-                                      form.setValue('customCategory', '');
-                                    }
-                                  }}
-                                >
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Add
-                                </Button>
-                              </div>
-                              <FormDescription className="text-xs">
-                                Create your own custom categories
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                                <FormDescription className="text-xs">
+                                  Type a category name and press space or enter to add it as a tag
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            );
+                          }}
                         />
                       </div>
                       
