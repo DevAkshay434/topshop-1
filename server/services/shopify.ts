@@ -432,12 +432,26 @@ export class ShopifyService {
         hasMetaDescription: !!(post as any).metaDescription
       });
 
+      // Convert categories to tags format for Shopify
+      let tagsString = post.tags || "";
+      
+      // Add categories as tags if they exist
+      if ((post as any).categories && Array.isArray((post as any).categories) && (post as any).categories.length > 0) {
+        const categoryTags = (post as any).categories.join(', ');
+        if (tagsString) {
+          tagsString += ', ' + categoryTags;
+        } else {
+          tagsString = categoryTags;
+        }
+        console.log(`Added categories as tags: ${categoryTags}`);
+      }
+
       // Create the article object with proper validation
       const articleData: any = {
         title: post.title,
         author: post.author || '', // No fallback to store name - require explicit author
         body_html: processedContent,
-        tags: post.tags || "",
+        tags: tagsString,
         summary: (post as any).summary || "", // Add summary field if available
         handle: (() => {
           if (!post.title) return 'untitled';
@@ -1138,6 +1152,8 @@ export class ShopifyService {
    * @param content The HTML content of the page
    * @param published Whether the page should be published or not
    * @param publishDate Optional publish date for scheduling
+   * @param featuredImage Optional featured image URL
+   * @param post Optional post object with metadata like categories
    * @returns The created page data
    */
   public async createPage(
@@ -1146,7 +1162,8 @@ export class ShopifyService {
     content: string,
     published: boolean = false,
     publishDate?: Date,
-    featuredImage?: string
+    featuredImage?: string,
+    post?: any
   ): Promise<any> {
     try {
       const client = this.getClient(store);
@@ -1155,11 +1172,22 @@ export class ShopifyService {
       const publishType = published ? 'IMMEDIATE PUBLISH' : publishDate ? 'SCHEDULED' : 'DRAFT';
       console.log(`Creating page in Shopify store ${store.shopName} with publish setting: ${publishType}`);
       
+      // Handle categories for pages - convert to metafields or add to content
+      let processedContent = content;
+      if (post && (post as any).categories && Array.isArray((post as any).categories) && (post as any).categories.length > 0) {
+        const categoryTags = (post as any).categories.join(', ');
+        console.log(`Adding categories as metadata for page: ${categoryTags}`);
+        
+        // For pages, we can add categories as a hidden meta section in the content
+        const categoryMeta = `<!-- Categories: ${categoryTags} -->`;
+        processedContent = categoryMeta + '\n' + content;
+      }
+      
       // Set up the basic page data
       const pageData: any = {
         page: {
           title,
-          body_html: content,
+          body_html: processedContent,
           image: featuredImage ? { src: featuredImage } : undefined
         }
       };
