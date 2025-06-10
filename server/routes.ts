@@ -1057,7 +1057,9 @@ export async function registerRoutes(app: Express): Promise<void> {
                 post.title,
                 pageContent,
                 post.status === 'published', // true only if immediate publish
-                scheduledPublishDate // date for scheduled posts
+                scheduledPublishDate, // date for scheduled posts
+                undefined, // featured image
+                post // pass the post object with categories for metadata
               );
             } else {
               // For blog posts, use the existing article creation logic

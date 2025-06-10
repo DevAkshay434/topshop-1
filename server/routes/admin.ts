@@ -2098,7 +2098,8 @@ Place this at a logical position in the content, typically after introducing a c
                 finalContent,
                 false, // Create as draft
                 undefined, // Don't pass any scheduled date
-                featuredImage?.src?.large || featuredImage?.src?.medium || featuredImage?.url // Add featured image
+                featuredImage?.src?.large || featuredImage?.src?.medium || featuredImage?.url, // Add featured image
+                { categories: requestData.categories } // Pass categories for page metadata
               );
             }
           } else {
@@ -2109,7 +2110,8 @@ Place this at a logical position in the content, typically after introducing a c
               finalContent,
               shouldPublishNow, // Only publish now if explicitly set
               undefined, // Don't pass any scheduled date to avoid issues
-              featuredImage?.src?.large || featuredImage?.src?.medium || featuredImage?.url // Add featured image
+              featuredImage?.src?.large || featuredImage?.src?.medium || featuredImage?.url, // Add featured image
+              { categories: requestData.categories } // Pass categories for page metadata
             );
           }
           
