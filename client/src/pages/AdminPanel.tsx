@@ -303,7 +303,29 @@ export default function AdminPanel() {
     'Parents',
     'Students',
     'Retired Adults',
-    'Young Professionals'
+    'Young Professionals',
+    'First-Time Buyers',
+    'Budget-Conscious Shoppers',
+    'Luxury Seekers',
+    'Health-Conscious Consumers',
+    'Tech Enthusiasts',
+    'Eco-Friendly Shoppers',
+    'Millennials',
+    'Gen Z Customers',
+    'Baby Boomers',
+    'Working Mothers',
+    'Single Professionals',
+    'Empty Nesters',
+    'College Students',
+    'Small Business Owners',
+    'Fitness Enthusiasts',
+    'Home Improvement DIYers',
+    'Fashion-Forward Individuals',
+    'Pet Owners',
+    'Outdoor Adventure Seekers',
+    'Urban Dwellers',
+    'Suburban Families',
+    'Rural Communities'
   ];
   
   // Media selection state - initialized with empty values
