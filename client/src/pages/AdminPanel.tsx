@@ -834,7 +834,7 @@ export default function AdminPanel() {
       selectedCollections,
       selectedKeywords,
       selectedMediaContent,
-      selectedBuyerPersonas,
+      buyerPersonas: formData.buyerPersonas || '',
       workflowStep
     };
 
@@ -872,7 +872,7 @@ export default function AdminPanel() {
     });
 
     return () => subscription.unsubscribe();
-  }, [currentProject, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, selectedBuyerPersonas]);
+  }, [currentProject, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, form.watch('buyerPersonas')]);
 
   // Project data loading and form hydration effect
   useEffect(() => {
@@ -930,9 +930,9 @@ export default function AdminPanel() {
           }
         }
         
-        if (formData.selectedBuyerPersonas) {
-          console.log('Setting selected buyer personas:', formData.selectedBuyerPersonas);
-          setSelectedBuyerPersonas(formData.selectedBuyerPersonas);
+        if (formData.buyerPersonas) {
+          console.log('Setting buyer personas:', formData.buyerPersonas);
+          form.setValue('buyerPersonas', formData.buyerPersonas);
         }
 
         // Update workflow step if saved
@@ -1492,10 +1492,11 @@ export default function AdminPanel() {
     // Move to keyword selection step after buyer personas selection
     setWorkflowStep('keyword');
     
+    const buyerPersonas = form.getValues('buyerPersonas');
     toast({
-      title: `${selectedBuyerPersonas.length} buyer personas saved`,
-      description: selectedBuyerPersonas.length > 0 
-        ? "Content will be tailored to your selected audience segments" 
+      title: "Buyer personas saved",
+      description: buyerPersonas && buyerPersonas.trim() 
+        ? "Content will be tailored to your defined audience" 
         : "Using automatic audience detection",
     });
   };
@@ -1688,8 +1689,8 @@ export default function AdminPanel() {
         keywords: Array.isArray(values.keywords) ? values.keywords : [],
         // Ensure categories are properly included
         categories: Array.isArray(values.categories) ? values.categories : [],
-        // Include selected buyer personas to target specific customer types
-        buyerPersonas: selectedBuyerPersonas || [],
+        // Include buyer personas to target specific customer types
+        buyerPersonas: values.buyerPersonas || '',
         // Ensure we have these required fields
         articleType: values.articleType || "blog",
         title: values.title || "",
@@ -2448,81 +2449,64 @@ export default function AdminPanel() {
                         />
                       </div>
                       
-                      {/* Step 4: Buyer Personas Selection Section */}
+                      {/* Step 4: Buyer Personas Input Section */}
                       <div className={workflowStep === 'buying-avatars' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Select Target Buyer Personas</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Define Target Buyer Personas</h4>
                           <p className="text-sm text-blue-600 mb-2">
-                            Choose the types of customers you want to target with this content. This helps personalize the content to specific audience segments.
+                            Describe your target audience in detail. You can type custom descriptions or use the suggestion buttons below.
                           </p>
                         </div>
                         
-                        {/* Buyer Personas Grid with Multi-Select */}
-                        <div className="mt-4">
-                          <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-md font-medium">Buyer Personas</h3>
-                            {selectedBuyerPersonas.length > 0 && (
-                              <div className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium flex items-center">
-                                <CheckSquare className="h-3.5 w-3.5 mr-1" />
-                                <span>{selectedBuyerPersonas.length} selected</span>
-                              </div>
+                        {/* Flexible Buyer Personas Text Input */}
+                        <div className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="buyerPersonas"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-medium">Target Audience Description</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    {...field}
+                                    placeholder="Example: homeowners in the United States that are 30+ in age, interested in home improvement and water quality solutions"
+                                    className="min-h-[80px] resize-y"
+                                    autoFocus={!field.value}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Provide a detailed description of your target customers. The more specific, the better your content will be tailored.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
                             )}
-                          </div>
+                          />
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {predefinedBuyerPersonas.map(persona => {
-                              const isSelected = selectedBuyerPersonas.includes(persona.id);
-                              
-                              // Get the appropriate icon component
-                              let IconComponent = User;
-                              if (persona.icon === 'piggy-bank') IconComponent = PiggyBank;
-                              else if (persona.icon === 'gem') IconComponent = Gem;
-                              else if (persona.icon === 'zap') IconComponent = Zap;
-                              else if (persona.icon === 'leaf') IconComponent = Leaf;
-                              else if (persona.icon === 'cpu') IconComponent = Cpu;
-                              else if (persona.icon === 'search') IconComponent = Search;
-                              else if (persona.icon === 'heart') IconComponent = Heart;
-                              else if (persona.icon === 'users') IconComponent = Users;
-                              
-                              return (
-                                <div 
-                                  key={persona.id}
-                                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                                    isSelected 
-                                      ? 'bg-blue-50 border-blue-300 shadow-sm' 
-                                      : 'bg-white hover:bg-gray-50 border-gray-200'
-                                  }`}
+                          {/* Suggestion Buttons */}
+                          <div className="space-y-3">
+                            <h5 className="text-sm font-medium text-gray-700">Quick Suggestions:</h5>
+                            <div className="flex flex-wrap gap-2">
+                              {buyerPersonaSuggestions.map((suggestion, index) => (
+                                <Button
+                                  key={index}
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 text-xs"
                                   onClick={() => {
-                                    setSelectedBuyerPersonas(prev => {
-                                      if (prev.includes(persona.id)) {
-                                        return prev.filter(id => id !== persona.id);
-                                      } else {
-                                        return [...prev, persona.id];
-                                      }
-                                    });
+                                    const currentValue = form.getValues('buyerPersonas') || '';
+                                    const newValue = currentValue ? `${currentValue}, ${suggestion}` : suggestion;
+                                    form.setValue('buyerPersonas', newValue);
                                   }}
                                 >
-                                  <div className="flex items-start gap-3">
-                                    <div className={`w-10 h-10 rounded-md flex items-center justify-center ${
-                                      isSelected ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-                                    }`}>
-                                      <IconComponent className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between">
-                                        <h4 className="font-medium text-gray-900 text-sm">{persona.name}</h4>
-                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                          isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
-                                        }`}>
-                                          {isSelected && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                      </div>
-                                      <p className="text-xs text-gray-500 mt-1">{persona.description}</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  {suggestion}
+                                </Button>
+                              ))}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Click any suggestion to add it to your description. You can combine multiple suggestions or write your own.
+                            </p>
                           </div>
                         </div>
                         
