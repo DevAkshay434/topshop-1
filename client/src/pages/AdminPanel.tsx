@@ -294,6 +294,17 @@ export default function AdminPanel() {
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
+
+  // Buyer persona suggestions for the flexible text input
+  const buyerPersonaSuggestions = [
+    '35+ Aged Buyer',
+    'Children',
+    'Business Owners',
+    'Parents',
+    'Students',
+    'Retired Adults',
+    'Young Professionals'
+  ];
   
   // Media selection state - initialized with empty values
   const [selectedMediaContent, setSelectedMediaContent] = useState<{
@@ -2094,7 +2105,7 @@ export default function AdminPanel() {
                       )}
                       
                       {/* Selected Items Display - appears after blog selection */}
-                      {(selectedProducts.length > 0 || selectedCollections.length > 0 || selectedBuyerPersonas.length > 0 || selectedKeywords.length > 0 || form.watch('title')) && (
+                      {(selectedProducts.length > 0 || selectedCollections.length > 0 || form.watch('buyerPersonas') || selectedKeywords.length > 0 || form.watch('title')) && (
                         <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
                           <h4 className="text-sm font-medium text-slate-700 mb-3">Current Selections</h4>
                           
@@ -3096,57 +3107,19 @@ export default function AdminPanel() {
                         </div>
                         
                         <div className="border rounded-md p-3 bg-slate-50">
-                          {selectedBuyerPersonas.length > 0 ? (
+                          {form.watch('buyerPersonas') ? (
                             <div className="space-y-2">
-                              <div className="flex flex-wrap gap-2">
-                                {selectedBuyerPersonas.map((personaId) => {
-                                  const persona = predefinedBuyerPersonas.find(p => p.id === personaId);
-                                  if (!persona) return null;
-                                  
-                                  // Get the appropriate icon component
-                                  let IconComponent = User;
-                                  if (persona.icon === 'piggy-bank') IconComponent = PiggyBank;
-                                  else if (persona.icon === 'gem') IconComponent = Gem;
-                                  else if (persona.icon === 'zap') IconComponent = Zap;
-                                  else if (persona.icon === 'leaf') IconComponent = Leaf;
-                                  else if (persona.icon === 'cpu') IconComponent = Cpu;
-                                  else if (persona.icon === 'search') IconComponent = Search;
-                                  else if (persona.icon === 'heart') IconComponent = Heart;
-                                  else if (persona.icon === 'users') IconComponent = Users;
-                                  
-                                  return (
-                                    <div 
-                                      key={persona.id} 
-                                      className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border"
-                                    >
-                                      <div className="h-6 w-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center">
-                                        <IconComponent className="h-3.5 w-3.5" />
-                                      </div>
-                                      <span className="text-sm font-medium">{persona.name}</span>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
-                                        onClick={() => {
-                                          setSelectedBuyerPersonas(prev => 
-                                            prev.filter(id => id !== persona.id)
-                                          );
-                                        }}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  );
-                                })}
+                              <div className="text-sm font-medium text-gray-700 mb-2">Target Audience:</div>
+                              <div className="text-sm text-gray-600 bg-white p-2 rounded border">
+                                {form.watch('buyerPersonas')}
                               </div>
                               <p className="text-xs text-muted-foreground">
-                                Content will be tailored to these target audience segments
+                                Content will be tailored to this target audience
                               </p>
                             </div>
                           ) : (
                             <div className="text-center py-4">
-                              <p className="text-sm text-muted-foreground mb-2">No buyer personas selected</p>
+                              <p className="text-sm text-muted-foreground mb-2">No buyer personas defined</p>
                               <Button
                                 type="button"
                                 variant="secondary"
@@ -3154,7 +3127,7 @@ export default function AdminPanel() {
                                 onClick={() => setWorkflowStep('buying-avatars')}
                               >
                                 <Users className="mr-2 h-4 w-4" />
-                                Select Target Audience
+                                Define Target Audience
                               </Button>
                             </div>
                           )}
