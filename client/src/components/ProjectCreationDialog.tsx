@@ -60,27 +60,20 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
   const queryClient = useQueryClient();
 
   // Fetch saved projects from backend API
-  const { data: savedProjectsData, isLoading: isLoadingProjects } = useQuery({
+  const { data: savedProjectsData, isLoading: isLoadingProjects, error } = useQuery({
     queryKey: ['/api/projects'],
-    queryFn: () => apiRequest('/api/projects')
+    queryFn: () => apiRequest('GET', '/api/projects'),
+    retry: 1
   });
 
   const savedProjects = savedProjectsData?.success ? savedProjectsData.projects : [];
   
-  // Debug logging
-  useEffect(() => {
-    console.log('ProjectCreationDialog - savedProjectsData:', savedProjectsData);
-    console.log('ProjectCreationDialog - savedProjects:', savedProjects);
-    console.log('ProjectCreationDialog - savedProjects.length:', savedProjects.length);
-  }, [savedProjectsData, savedProjects]);
+
 
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: { name: string; formData: any }) => 
-      apiRequest('/api/projects', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      }),
+      apiRequest('POST', '/api/projects', data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       if (data.success && onProjectSelected) {
