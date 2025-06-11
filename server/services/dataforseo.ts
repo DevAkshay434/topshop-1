@@ -345,18 +345,23 @@ export class DataForSEOService {
             cpc: cpc
           });
           
-          // Add the keyword data
-          keywordData.push({
-            keyword: keywordText,
-            searchVolume,
-            cpc,
-            competition,
-            competitionLevel,
-            intent: this.determineIntent({ keyword: keywordText }),
-            trend,
-            difficulty,
-            selected: false // Default to not selected
-          });
+          // Sanitize and format the keyword properly
+          const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
+          
+          // Only add keywords that pass quality checks
+          if (this.isValidSEOKeyword(sanitizedKeyword)) {
+            keywordData.push({
+              keyword: sanitizedKeyword,
+              searchVolume,
+              cpc,
+              competition,
+              competitionLevel,
+              intent: this.determineIntent({ keyword: sanitizedKeyword }),
+              trend,
+              difficulty,
+              selected: false // Default to not selected
+            });
+          }
           
           // Flag whether we got valid data
           if (hasSearchData) {
@@ -792,9 +797,9 @@ export class DataForSEOService {
   }
 
   /**
-   * Clean a keyword string by removing special characters and noise words
+   * Clean and sanitize keyword string following SEO best practices
    * @param input The raw keyword string
-   * @returns Cleaned keyword string
+   * @returns Cleaned, lowercase keyword string
    */
   private cleanKeywordString(input: string): string {
     console.log(`Cleaning keyword string: "${input}"`);
@@ -807,12 +812,14 @@ export class DataForSEOService {
       .replace(/^\d+\s*[.:)]\s*/, '') // Remove list numbers (e.g., "1. ", "2) ")
       .replace(/\b\d{5,}\b/g, '') // Remove long numbers (likely SKUs, model numbers)
       .replace(/\s+-\s+.*$/, '') // Remove everything after a dash with spaces around it
-      .replace(/\s*,\s*([a-z])/g, ' $1') // Convert commas to spaces when followed by lowercase (likely list items)
+      .replace(/\s*-\s*$/, '') // Remove trailing dash with spaces
+      .replace(/\s*-$/, '') // Remove trailing dash without spaces
+      .replace(/^-\s*/, '') // Remove leading dash
+      .replace(/\s*,\s*([a-z])/g, ' $1') // Convert commas to spaces when followed by lowercase
       .replace(/\s+/g, ' ') // Normalize spaces
       .trim(); // Remove leading/trailing whitespace
       
-    // Next, check if there are any model numbers or variant codes that should be removed
-    // These often appear as alphanumeric codes that don't add search value
+    // Remove model numbers and variant codes that don't add search value
     cleaned = cleaned
       .replace(/\b[A-Z]\d{3,}\b/g, '') // Remove model numbers like "A1234"
       .replace(/\b[A-Z]{2,}\d{2,}\b/g, '') // Remove codes like "AB123"
@@ -820,19 +827,134 @@ export class DataForSEOService {
       .replace(/\s+/g, ' ') // Normalize spaces again
       .trim();
       
-    console.log(`After cleaning: "${cleaned}"`);
+    // Convert to lowercase for SEO best practices
+    cleaned = cleaned.toLowerCase();
     
-    // Remove any excess words if the keyword is still very long
-    if (cleaned.length > 50) {
+    // Remove common noise words that don't add search value
+    const noiseWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+    const words = cleaned.split(' ');
+    const filteredWords = words.filter((word, index) => {
+      // Keep noise words if they're not at the beginning or end, or if the keyword is very short
+      if (words.length <= 3) return true;
+      if (index === 0 || index === words.length - 1) {
+        return !noiseWords.includes(word);
+      }
+      return true;
+    });
+    
+    cleaned = filteredWords.join(' ');
+    
+    console.log(`After cleaning and formatting: "${cleaned}"`);
+    
+    // Ensure reasonable length for SEO
+    if (cleaned.length > 60) {
       const words = cleaned.split(' ');
-      if (words.length > 7) {
-        // Keep only the first 7 words which typically contain the main product details
-        cleaned = words.slice(0, 7).join(' ');
+      if (words.length > 8) {
+        // Keep only the first 8 words for long keywords
+        cleaned = words.slice(0, 8).join(' ');
         console.log(`Truncated long keyword to: "${cleaned}"`);
       }
     }
     
+    // Final validation - ensure we have a meaningful keyword
+    if (cleaned.length < 2 || cleaned.split(' ').length === 0) {
+      console.warn(`Warning: Cleaned keyword is too short: "${cleaned}"`);
+      return input.toLowerCase().trim(); // Fallback to original input
+    }
+    
     return cleaned;
+  }
+
+  /**
+   * Sanitize keyword for SEO best practices
+   * @param keyword Raw keyword string
+   * @returns Properly formatted SEO keyword
+   */
+  private sanitizeKeywordForSEO(keyword: string): string {
+    if (!keyword || typeof keyword !== 'string') {
+      return '';
+    }
+
+    let sanitized = keyword
+      // Convert to lowercase
+      .toLowerCase()
+      // Remove special characters and symbols
+      .replace(/[®™©℠]/g, '')
+      // Remove hyphens and dashes (replace with spaces)
+      .replace(/[-–—_]/g, ' ')
+      // Remove extra punctuation
+      .replace(/[!@#$%^&*()+={}[\]|\\:";'<>?,./]/g, ' ')
+      // Remove numbers that look like model numbers or SKUs
+      .replace(/\b[a-z]*\d+[a-z]*\d*\b/gi, '')
+      // Remove text in parentheses or brackets
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/\[[^\]]*\]/g, ' ')
+      // Normalize whitespace
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Remove stop words from beginning and end (but keep them in middle)
+    const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+    const words = sanitized.split(' ');
+    
+    // Remove leading stop words
+    while (words.length > 1 && stopWords.includes(words[0])) {
+      words.shift();
+    }
+    
+    // Remove trailing stop words
+    while (words.length > 1 && stopWords.includes(words[words.length - 1])) {
+      words.pop();
+    }
+
+    sanitized = words.join(' ');
+
+    // Ensure reasonable length for SEO (2-8 words typically)
+    if (words.length > 8) {
+      sanitized = words.slice(0, 8).join(' ');
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Validate if keyword meets SEO quality standards
+   * @param keyword Sanitized keyword
+   * @returns True if keyword is valid for SEO
+   */
+  private isValidSEOKeyword(keyword: string): boolean {
+    if (!keyword || keyword.length < 2) {
+      return false;
+    }
+
+    // Check for minimum meaningful content
+    if (keyword.length < 3 && !keyword.match(/[a-zA-Z]/)) {
+      return false;
+    }
+
+    // Reject keywords that are just numbers or single characters
+    if (keyword.match(/^\d+$/) || keyword.length === 1) {
+      return false;
+    }
+
+    // Reject keywords that are too generic or meaningless
+    const meaninglessKeywords = [
+      'item', 'product', 'thing', 'stuff', 'new', 'old', 'good', 'bad',
+      'big', 'small', 'cheap', 'expensive', 'free', 'sale', 'buy', 'get'
+    ];
+    
+    if (meaninglessKeywords.includes(keyword.toLowerCase())) {
+      return false;
+    }
+
+    // Reject keywords with excessive repetition
+    const words = keyword.split(' ');
+    const uniqueWords = new Set(words);
+    if (words.length > 2 && uniqueWords.size < words.length / 2) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -1452,23 +1574,27 @@ export class DataForSEOService {
         const keywordData: KeywordData[] = [];
         
         for (const suggestion of suggestions) {
-          // The keyword_suggestions endpoint has a different data structure
-          // Make sure we're extracting the right fields
-          keywordData.push({
-            keyword: suggestion.keyword || '',
-            searchVolume: suggestion.search_volume || 0,
-            cpc: suggestion.cpc || 0,
-            competition: suggestion.competition_index || 0,
-            competitionLevel: this.getCompetitionLevel(suggestion.competition_index || 0),
-            intent: this.determineIntent({ keyword: suggestion.keyword || '' }),
-            trend: Array(12).fill(Math.round((suggestion.search_volume || 0) / 12)),
-            difficulty: this.calculateKeywordDifficulty({
-              search_volume: suggestion.search_volume || 0,
+          // Sanitize and validate each keyword suggestion
+          const sanitizedKeyword = this.sanitizeKeywordForSEO(suggestion.keyword || '');
+          
+          // Only add valid keywords
+          if (this.isValidSEOKeyword(sanitizedKeyword)) {
+            keywordData.push({
+              keyword: sanitizedKeyword,
+              searchVolume: suggestion.search_volume || 0,
+              cpc: suggestion.cpc || 0,
               competition: suggestion.competition_index || 0,
-              cpc: suggestion.cpc || 0
-            }),
-            selected: false
-          });
+              competitionLevel: this.getCompetitionLevel(suggestion.competition_index || 0),
+              intent: this.determineIntent({ keyword: sanitizedKeyword }),
+              trend: Array(12).fill(Math.round((suggestion.search_volume || 0) / 12)),
+              difficulty: this.calculateKeywordDifficulty({
+                search_volume: suggestion.search_volume || 0,
+                competition: suggestion.competition_index || 0,
+                cpc: suggestion.cpc || 0
+              }),
+              selected: false
+            });
+          }
         }
         
         // If the suggestions API returned data, use it
@@ -1518,10 +1644,12 @@ export class DataForSEOService {
     // to query DataForSEO again instead of generating fake data
     const simplifiedTerms = this.extractGenericTerms(input);
     
-    // Return just the input keyword with zero metrics to indicate API failure
-    // This helps us identify when we need to fix the API connection
+    // Sanitize the input keyword and create a minimal fallback
+    const sanitizedInput = this.sanitizeKeywordForSEO(input);
+    
+    // Return sanitized keyword with zero metrics to indicate API failure
     const result: KeywordData[] = [{
-      keyword: input,
+      keyword: sanitizedInput,
       searchVolume: 0,
       cpc: 0,
       competition: 0,
