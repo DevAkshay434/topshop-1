@@ -5044,7 +5044,9 @@ export default function AdminPanel() {
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">Choose Media</DialogTitle>
-            <div className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
+          </DialogHeader>
+          
+          <div className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full">
