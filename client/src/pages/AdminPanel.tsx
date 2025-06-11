@@ -2864,42 +2864,215 @@ export default function AdminPanel() {
                                 </Card>
                               </div>
                               
-                              {/* Display selected primary images */}
-                              {primaryImages.length > 0 ? (
-                                <div className="space-y-3">
-                                  <h4 className="text-sm font-medium">Selected Primary Images:</h4>
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {primaryImages.map((image) => (
-                                      <div key={image.id} className="relative group">
+                              {/* Featured Image Preview */}
+                              <div className="space-y-4">
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                      <span className="text-white text-xs font-bold">🖼️</span>
+                                    </div>
+                                    <h4 className="text-sm font-semibold text-blue-800">Featured Image</h4>
+                                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                      Primary
+                                    </span>
+                                  </div>
+                                  
+                                  {primaryImages.length > 0 ? (
+                                    <div className="space-y-2">
+                                      <div className="relative group max-w-sm">
                                         <ShopifyImageViewer 
-                                          src={image.src?.medium || image.url} 
-                                          alt={image.alt || "Primary image"} 
-                                          className="w-full h-32 object-cover rounded-md border"
+                                          src={primaryImages[0].src?.medium || primaryImages[0].url} 
+                                          alt={primaryImages[0].alt || "Featured image"} 
+                                          className="w-full h-48 object-cover rounded-lg border-2 border-blue-300 shadow-md"
                                         />
                                         <div className="absolute top-2 right-2">
                                           <Button
                                             type="button"
                                             variant="destructive"
                                             size="icon"
-                                            className="h-6 w-6 rounded-full opacity-80 hover:opacity-100"
-                                            onClick={() => setPrimaryImages(prev => prev.filter(img => img.id !== image.id))}
+                                            className="h-7 w-7 rounded-full opacity-90 hover:opacity-100 shadow-md"
+                                            onClick={() => setPrimaryImages([])}
                                           >
-                                            <X className="h-3 w-3" />
+                                            <X className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                        <div className="absolute bottom-2 left-2">
+                                          <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            className="text-xs opacity-90 hover:opacity-100"
+                                            onClick={() => {
+                                              // Replace featured image functionality
+                                              setImageTab('primary');
+                                              setShowImageDialog(true);
+                                            }}
+                                          >
+                                            Replace Featured
                                           </Button>
                                         </div>
                                       </div>
-                                    ))}
+                                      {primaryImages.length > 1 && (
+                                        <p className="text-xs text-blue-600">
+                                          Multiple images selected - only the first will be used as featured
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-6 bg-white rounded-lg border-2 border-dashed border-blue-200">
+                                      <ImageIcon className="h-12 w-12 mx-auto text-blue-300 mb-2" />
+                                      <p className="text-sm font-medium text-blue-600 mb-1">No Featured Image Selected</p>
+                                      <p className="text-xs text-blue-500 mb-3">
+                                        Choose an emotionally compelling image that represents your content
+                                      </p>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          setImageTab('primary');
+                                          setShowImageDialog(true);
+                                        }}
+                                        className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                                      >
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Select Featured Image
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Secondary Images Preview */}
+                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white text-xs font-bold">📷</span>
+                                      </div>
+                                      <h4 className="text-sm font-semibold text-green-800">Secondary Images</h4>
+                                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                        {secondaryImages.length} Selected
+                                      </span>
+                                    </div>
+                                    {secondaryImages.length > 0 && (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setSecondaryImages([])}
+                                        className="text-xs border-green-300 text-green-600 hover:bg-green-50"
+                                      >
+                                        Clear All
+                                      </Button>
+                                    )}
                                   </div>
+                                  
+                                  {secondaryImages.length > 0 ? (
+                                    <div className="space-y-3">
+                                      <div className="text-xs text-green-600 bg-green-50 p-2 rounded border">
+                                        💡 Tip: Images will appear in your content in the order shown below. Click and drag to reorder.
+                                      </div>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {secondaryImages.map((image, index) => (
+                                          <div 
+                                            key={image.id} 
+                                            className="relative group cursor-move hover:scale-105 transition-transform"
+                                            draggable
+                                            onDragStart={(e) => {
+                                              e.dataTransfer.setData('text/plain', index.toString());
+                                            }}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={(e) => {
+                                              e.preventDefault();
+                                              const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                                              const dropIndex = index;
+                                              
+                                              if (dragIndex !== dropIndex) {
+                                                const newImages = [...secondaryImages];
+                                                const [draggedImage] = newImages.splice(dragIndex, 1);
+                                                newImages.splice(dropIndex, 0, draggedImage);
+                                                setSecondaryImages(newImages);
+                                              }
+                                            }}
+                                          >
+                                            <ShopifyImageViewer 
+                                              src={image.src?.medium || image.url} 
+                                              alt={image.alt || `Secondary image ${index + 1}`} 
+                                              className="w-full h-24 object-cover rounded-md border-2 border-green-300 shadow-sm"
+                                            />
+                                            
+                                            {/* Action buttons */}
+                                            <div className="absolute top-1 right-1 flex gap-1">
+                                              <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="icon"
+                                                className="h-5 w-5 rounded-full opacity-80 hover:opacity-100 bg-blue-500 hover:bg-blue-600"
+                                                onClick={() => {
+                                                  // Promote to featured
+                                                  if (primaryImages.length > 0) {
+                                                    // Move current primary to secondary
+                                                    setSecondaryImages(prev => [...prev, ...primaryImages]);
+                                                  }
+                                                  setPrimaryImages([image]);
+                                                  setSecondaryImages(prev => prev.filter(img => img.id !== image.id));
+                                                }}
+                                                title="Make Featured"
+                                              >
+                                                <span className="text-white text-[8px]">🖼️</span>
+                                              </Button>
+                                              <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="h-5 w-5 rounded-full opacity-80 hover:opacity-100"
+                                                onClick={() => setSecondaryImages(prev => prev.filter(img => img.id !== image.id))}
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                            
+                                            {/* Order indicator */}
+                                            <div className="absolute bottom-1 left-1">
+                                              <span className="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded font-medium">
+                                                {index + 1}
+                                              </span>
+                                            </div>
+                                            
+                                            {/* Drag handle */}
+                                            <div className="absolute bottom-1 right-1">
+                                              <div className="w-4 h-4 bg-gray-600 bg-opacity-60 rounded flex items-center justify-center">
+                                                <span className="text-white text-[8px]">⋮⋮</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-6 bg-white rounded-lg border-2 border-dashed border-green-200">
+                                      <ImageIcon className="h-12 w-12 mx-auto text-green-300 mb-2" />
+                                      <p className="text-sm font-medium text-green-600 mb-1">No Secondary Images Selected</p>
+                                      <p className="text-xs text-green-500 mb-3">
+                                        Add supporting images to showcase product details and context
+                                      </p>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          setImageTab('secondary');
+                                          setShowImageDialog(true);
+                                        }}
+                                        className="border-green-300 text-green-600 hover:bg-green-50"
+                                      >
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Add Secondary Images
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className="text-center py-4 bg-white rounded-md border border-dashed">
-                                  <ImageIcon className="h-10 w-10 mx-auto text-slate-300 mb-2" />
-                                  <p className="text-sm text-slate-500">No primary images selected</p>
-                                  <p className="text-xs text-slate-400 mt-1">
-                                    Select emotionally compelling images featuring people or subjects relevant to your content
-                                  </p>
-                                </div>
-                              )}
+                              </div>
                             </div>
                           </TabsContent>
                           
@@ -4871,23 +5044,46 @@ export default function AdminPanel() {
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
             <div className="flex justify-between items-center mb-2">
-              <DialogTitle className="text-xl">Choose Media</DialogTitle>
+              <div className="flex items-center gap-3">
+                <DialogTitle className="text-xl">Choose Media</DialogTitle>
+                <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full">
+                  {imageTab === 'primary' ? (
+                    <>
+                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">🖼️</span>
+                      </div>
+                      <span className="text-sm font-medium text-blue-700">Selecting Featured Image</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">📷</span>
+                      </div>
+                      <span className="text-sm font-medium text-green-700">Selecting Secondary Images</span>
+                    </>
+                  )}
+                </div>
+              </div>
               
               <Tabs 
                 value={imageTab} 
                 onValueChange={(v) => setImageTab(v as 'primary' | 'secondary')}
-                className="w-[400px]"
+                className="w-[500px]"
               >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="primary" className="flex items-center">
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Primary Images
+                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center mr-2">
+                      <span className="text-white text-xs">🖼️</span>
+                    </div>
+                    Featured Image
                     {primaryImages.length > 0 && (
                       <Badge variant="secondary" className="ml-2">{primaryImages.length}</Badge>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="secondary" className="flex items-center">
-                    <FileImage className="h-4 w-4 mr-2" />
+                    <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center mr-2">
+                      <span className="text-white text-xs">📷</span>
+                    </div>
                     Secondary Images
                     {secondaryImages.length > 0 && (
                       <Badge variant="secondary" className="ml-2">{secondaryImages.length}</Badge>
