@@ -1923,8 +1923,10 @@ export default function AdminPanel() {
 
         {/* Content Generation Tab */}
         <TabsContent value="generate" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
+          <div className="flex flex-col xl:flex-row gap-6">
+            {/* Content Generator Section */}
+            <div className="xl:w-1/3 w-full">
+              <Card>
               <CardHeader>
                 <CardTitle>Content Generator</CardTitle>
                 <CardDescription>
@@ -4208,23 +4210,357 @@ export default function AdminPanel() {
                           : 0}
                       </div>
                     </div>
+                  </Form>
+                </CardContent>
+              </Card>
+            </div>
 
+            {/* Content Preview and Publication Section */}
+            <div className="xl:w-2/3 w-full space-y-6">
+              {/* Content Preview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Content Preview</CardTitle>
+                  <CardDescription>
+                    Preview of your generated content
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {generatedContent ? (
+                    <div className="space-y-4">
+                      {/* Title */}
+                      {generatedContent.title && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Title:</h3>
+                          <h1 className="text-2xl font-bold text-gray-900">
+                            {generatedContent.title}
+                          </h1>
+                        </div>
+                      )}
 
+                      {/* Content Body */}
+                      <div className="border-t pt-4">
+                        <h4 className="text-sm font-semibold mb-2">Content:</h4>
+                        {(() => {
+                          const content = generatedContent.content;
+                          if (!content) return <p>No content available</p>;
+                          
+                          // Process and display content with proper styling
+                          const processedContent = content
+                            .replace(
+                              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                              '<img$1src="https://$2"$3>'
+                            )
+                            .replace(
+                              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                              '<img$1src="https://$3"$4>'
+                            )
+                            .replace(
+                              /<img([^>]*?)>/gi, 
+                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                            );
+                          
+                          return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: processedContent }} />;
+                        })()}
+                      </div>
+                      
+                      {generatedContent.metaDescription && (
+                        <div className="mt-4">
+                          <h4 className="text-sm font-semibold">Meta Description:</h4>
+                          <p className="text-gray-600 text-sm mt-1">{generatedContent.metaDescription}</p>
+                        </div>
+                      )}
 
-                    <div className="hidden">
-                      {(() => {
-                        // Get content
-                        const content = generatedContent.content;
-                        if (!content) return <p>No content available</p>;
+                      {(generatedContent.shopifyUrl || generatedContent.contentUrl) && (
+                        <div className="flex gap-2 pt-4 border-t">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              const url = generatedContent.shopifyUrl || generatedContent.contentUrl;
+                              window.open(url, '_blank');
+                            }}
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View in Shopify
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              const url = generatedContent.shopifyUrl || generatedContent.contentUrl;
+                              navigator.clipboard.writeText(url);
+                              toast({
+                                title: "Link copied",
+                                description: "Shopify URL has been copied to clipboard",
+                                variant: "default"
+                              });
+                            }}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy Link
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <p className="text-muted-foreground">
+                        Content will appear here after generation.
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Fill out the form and click "Generate Content" to create new content.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-                        // Get YouTube data if exists
-                        const youtubeUrl = form.watch("youtubeUrl");
-                        let youtubeVideoId: string | null = null;
-                        if (youtubeUrl) {
-                          youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
-                        }
-                        
-                        // Create YouTube embed component
+              {/* Publication Section */}
+              {generatedContent && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Publication Settings</CardTitle>
+                    <CardDescription>
+                      Choose how to publish your content
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Form {...form}>
+                      <div className="space-y-6">
+                        {/* Publication Status */}
+                        <FormField
+                          control={form.control}
+                          name="postStatus"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex items-center gap-2">
+                                <FormLabel>Publish Status</FormLabel>
+                                {form.getValues('scheduledPublishDate') && (
+                                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                                    <CalendarCheck className="h-3 w-3 mr-1" />
+                                    Scheduled
+                                  </Badge>
+                                )}
+                              </div>
+                              <Select 
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  form.setValue('publicationType', value === 'publish' ? 'publish' : 'draft');
+                                  if (form.getValues('scheduledPublishDate')) {
+                                    form.setValue('publicationType', 'schedule');
+                                  }
+                                }} 
+                                defaultValue={field.value}
+                                disabled={!!form.getValues('scheduledPublishDate')}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="draft">Save as Draft</SelectItem>
+                                  <SelectItem value="publish">Publish Immediately</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Choose whether to publish immediately or save as draft. 
+                                <strong>Note:</strong> If "Schedule for later" is checked below, this post will be saved as a draft and published at the scheduled time.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Schedule for Later */}
+                        <FormField
+                          control={form.control}
+                          name="scheduledPublishDate"
+                          render={({ field }) => (
+                            <FormItem className="rounded-md border border-slate-200 p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center">
+                                  <CalendarCheck className="h-5 w-5 text-blue-500 mr-2" />
+                                  <FormLabel className="text-lg font-medium">
+                                    Schedule for later
+                                  </FormLabel>
+                                </div>
+                                <FormControl>
+                                  <Checkbox
+                                    checked={!!field.value}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        const tomorrow = new Date();
+                                        tomorrow.setDate(tomorrow.getDate() + 1);
+                                        tomorrow.setHours(9, 0, 0, 0);
+                                        field.onChange(tomorrow.toISOString().split('T')[0]);
+                                        form.setValue('publicationType', 'schedule');
+                                      } else {
+                                        field.onChange(undefined);
+                                        const currentPostStatus = form.getValues('postStatus');
+                                        form.setValue('publicationType', 
+                                          currentPostStatus === 'publish' ? 'publish' : 'draft');
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                              </div>
+                              {field.value && (
+                                <div className="space-y-3 pt-3 border-t border-slate-200">
+                                  <div className="flex flex-col space-y-2">
+                                    <FormLabel className="text-sm">Publication Date</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        className="w-40"
+                                      />
+                                    </FormControl>
+                                  </div>
+                                  <div className="flex items-center space-x-4">
+                                    <div className="flex flex-col">
+                                      <FormLabel className="text-sm mb-1">Publication Time</FormLabel>
+                                      <Input
+                                        type="time"
+                                        value={form.watch('scheduledPublishTime') || "09:30"}
+                                        onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+                                        className="w-32"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Publication Action Buttons */}
+                        <div className="flex flex-col gap-3">
+                          {/* Publish Now Button */}
+                          <Button 
+                            type="button" 
+                            onClick={() => handlePublishContent('publish')}
+                            disabled={isGenerating}
+                            className="w-full"
+                          >
+                            <Send className="mr-2 h-4 w-4" />
+                            Publish Now
+                          </Button>
+
+                          {/* Save as Draft Button */}
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            onClick={() => handlePublishContent('draft')}
+                            disabled={isGenerating}
+                            className="w-full"
+                          >
+                            <Save className="mr-2 h-4 w-4" />
+                            Save as Draft
+                          </Button>
+
+                          {/* Schedule Publication Button - only show if date is selected */}
+                          {form.getValues('scheduledPublishDate') && (
+                            <Button 
+                              type="button" 
+                              variant="secondary"
+                              onClick={() => handlePublishContent('schedule')}
+                              disabled={isGenerating}
+                              className="w-full"
+                            >
+                              <CalendarCheck className="mr-2 h-4 w-4" />
+                              Schedule Publication
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </Form>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Keyword Selector Dialog */}
+          <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Select Keywords</DialogTitle>
+                <DialogDescription>
+                  Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
+                </DialogDescription>
+              </DialogHeader>
+              <KeywordSelector
+                initialKeywords={selectedKeywords}
+                onKeywordsSelected={handleKeywordsSelected}
+                onClose={() => setShowKeywordSelector(false)}
+                title="Select Keywords for SEO Optimization"
+                productTitle={productTitle}
+                selectedProducts={selectedProducts}
+                selectedCollections={selectedCollections}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Title Selector Dialog */}
+          <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
+            <DialogContent className="sm:max-w-[700px]">
+              <DialogHeader>
+                <DialogTitle>Choose a Title</DialogTitle>
+                <DialogDescription>
+                  Select a title that incorporates your keywords for better SEO.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <TitleSelector 
+                open={showTitleSelector}
+                onOpenChange={setShowTitleSelector}
+                keywords={selectedKeywords}
+                selectedProducts={selectedProducts}
+                selectedCollections={selectedCollections}
+                productTitle={productTitle}
+                onTitleSelected={(title) => {
+                  form.setValue('title', title);
+                  setShowTitleSelector(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Media Selection Dialog */}
+          <ChooseMediaDialog
+            open={showChooseMedia}
+            onOpenChange={setShowChooseMedia}
+            onImagesSelected={handleMediaSelected}
+            selectedProducts={selectedProducts}
+            selectedCollections={selectedCollections}
+            productTitle={productTitle}
+            keywords={selectedKeywords}
+            initialSelectedImages={selectedMediaContent.primaryImage ? 
+              [selectedMediaContent.primaryImage, ...selectedMediaContent.secondaryImages] : 
+              selectedMediaContent.secondaryImages}
+            maxImages={6}
+            allowMultiple={true}
+            title="Choose Media for Your Content"
+            description="Select images and videos to enhance your content. Choose a primary image and up to 5 secondary images."
+          />
+        </TabsContent>
+
+        {/* Other Tab Content */}
+        <TabsContent value="connections" className="space-y-6">
+          <ServiceConnectionStatus />
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Settings panel coming soon...</p>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
                         const YouTubeEmbed = () => (
                           <div className="my-8 flex justify-center">
                             <iframe 
