@@ -5115,9 +5115,9 @@ export default function AdminPanel() {
             <div className="flex gap-2 mt-3">
               <Button 
                 size="sm"
-                variant={imageSource === 'pexels' ? 'default' : 'outline'} 
+                variant={imageSource === 'unified_search' ? 'default' : 'outline'} 
                 onClick={() => {
-                  setImageSource('pexels');
+                  setImageSource('unified_search');
                   if (searchedImages.length === 0 && !imageSearchQuery) {
                     // Set a default search query based on selected tab
                     if (imageTab === 'primary') {
@@ -5132,24 +5132,8 @@ export default function AdminPanel() {
                 className="flex-1"
               >
                 <Search className="mr-2 h-4 w-4" />
-                Pexels Images
-              </Button>
-              
-              <Button 
-                size="sm"
-                variant={imageSource === 'pixabay' ? 'default' : 'outline'} 
-                onClick={() => {
-                  setImageSource('pixabay');
-                  toast({
-                    title: "Coming Soon",
-                    description: "Pixabay integration will be available in a future update."
-                  });
-                }}
-                className="flex-1"
-              >
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Pixabay 
-                <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
+                Search Images
+                <Badge variant="secondary" className="ml-2 text-xs">Pexels + Pixabay</Badge>
               </Button>
               
               <Button 
@@ -5494,7 +5478,7 @@ export default function AdminPanel() {
             </DialogContent>
           </Dialog>
           
-          {imageSource === 'pexels' && (
+          {imageSource === 'unified_search' && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Input 
@@ -5508,7 +5492,7 @@ export default function AdminPanel() {
                   onClick={async () => {
                     setIsSearchingImages(true);
                     try {
-                      // Using the correct generate-images endpoint with POST method
+                      // Fetch from both sources using the unified endpoint
                       const response = await fetch('/api/admin/generate-images', {
                         method: 'POST',
                         headers: {
@@ -5516,29 +5500,46 @@ export default function AdminPanel() {
                         },
                         body: JSON.stringify({
                           query: imageSearchQuery,
-                          count: 20
+                          count: 20,
+                          source: 'all' // Request from both Pexels and Pixabay
                         })
                       });
                       
                       const data = await response.json();
                       if (data.success) {
-                        // Convert the response data to PexelsImage format
+                        // Convert the response data to PexelsImage format, preserving source info
                         const formattedImages = data.images.map((img: any) => ({
                           id: img.id,
-                          url: img.src.original,
+                          url: img.src?.original || img.url,
                           width: img.width,
                           height: img.height,
                           alt: img.alt || imageSearchQuery,
-                          src: img.src,
+                          src: img.src || {
+                            original: img.url,
+                            large: img.url,
+                            medium: img.url,
+                            small: img.url,
+                            thumbnail: img.url
+                          },
                           photographer: img.photographer,
                           photographer_url: img.photographer_url,
                           selected: false,
                           isPrimary: false,
-                          source: 'pexels',
+                          source: img.source || 'pexels', // Preserve the source from backend
                           type: 'image'
                         }));
                         
                         setSearchedImages(formattedImages || []);
+                        
+                        // Show search results summary
+                        const pexelsCount = formattedImages.filter(img => img.source === 'pexels').length;
+                        const pixabayCount = formattedImages.filter(img => img.source === 'pixabay').length;
+                        
+                        toast({
+                          title: "Images Found",
+                          description: `Found ${pexelsCount} from Pexels and ${pixabayCount} from Pixabay`,
+                          variant: "default"
+                        });
                       } else {
                         toast({
                           title: "Search Failed",
@@ -5598,6 +5599,20 @@ export default function AdminPanel() {
                         alt={image.alt || "Stock image"} 
                         className="w-full h-28 md:h-32 object-cover"
                       />
+                      
+                      {/* Source badge */}
+                      <div className="absolute top-1 right-1">
+                        <Badge 
+                          variant={image.source === 'pixabay' ? 'default' : 'secondary'} 
+                          className={`text-xs px-1.5 py-0.5 ${
+                            image.source === 'pixabay' 
+                              ? 'bg-green-600 text-white' 
+                              : 'bg-blue-600 text-white'
+                          }`}
+                        >
+                          {image.source === 'pixabay' ? 'Pixabay' : 'Pexels'}
+                        </Badge>
+                      </div>
                       
                       {/* Primary/Secondary Selection buttons - always visible on hover */}
                       <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
