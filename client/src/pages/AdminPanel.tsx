@@ -5043,30 +5043,31 @@ export default function AdminPanel() {
       }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
+            <DialogTitle className="text-xl">Choose Media</DialogTitle>
             <div className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
               <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-3">
-                <DialogTitle className="text-xl">Choose Media</DialogTitle>
-                <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full">
-                  {imageTab === 'primary' ? (
-                    <>
-                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs">🖼️</span>
-                      </div>
-                      <span className="text-sm font-medium text-blue-700">Selecting Featured Image</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs">📷</span>
-                      </div>
-                      <span className="text-sm font-medium text-green-700">Selecting Secondary Images</span>
-                    </>
-                  )}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full">
+                    {imageTab === 'primary' ? (
+                      <>
+                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">🖼️</span>
+                        </div>
+                        <span className="text-sm font-medium text-blue-700">Selecting Featured Image</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">📷</span>
+                        </div>
+                        <span className="text-sm font-medium text-green-700">Selecting Secondary Images</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-              
-              <Tabs 
+                
+                <Tabs 
                 value={imageTab} 
                 onValueChange={(v) => setImageTab(v as 'primary' | 'secondary')}
                 className="w-[500px]"
@@ -5292,10 +5293,9 @@ export default function AdminPanel() {
                 )}
               </div>
             )}
-            </div>
           </DialogHeader>
-            
-            {/* Selected images preview - Show both featured and secondary images */}
+          
+          {/* Selected images preview - Show both featured and secondary images */}
             {(primaryImages.length > 0 || secondaryImages.length > 0) && (
               <div className="mt-4 mb-16 bg-slate-50 p-3 rounded-md border">
                 <div className="flex justify-between items-center mb-3">
