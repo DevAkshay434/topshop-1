@@ -1923,7 +1923,7 @@ export default function AdminPanel() {
 
         {/* Content Generation Tab */}
         <TabsContent value="generate" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Content Generator</CardTitle>
@@ -4617,9 +4617,9 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            {/* Publication Settings - Moved below Content Preview */}
+            {/* Publication Section - Third column position */}
             {generatedContent && (
-              <Card className="mt-6">
+              <Card className="lg:col-span-1">
                 <CardHeader>
                   <CardTitle>Publication Settings</CardTitle>
                   <CardDescription>
