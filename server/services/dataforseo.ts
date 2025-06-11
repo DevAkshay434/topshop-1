@@ -1660,20 +1660,23 @@ export class DataForSEOService {
       selected: false
     }];
     
-    // Add a few generic keywords ONLY for UI display purposes
+    // Add sanitized generic keywords for better search alternatives
     if (simplifiedTerms.length > 0) {
-      // Add just the first generic term with a flag showing it's a suggested term
-      const genericKeyword = simplifiedTerms[0];
-      result.push({
-        keyword: `Try API search for: ${genericKeyword}`,
-        searchVolume: 0,
-        cpc: 0,
-        competition: 0,
-        competitionLevel: "Low",
-        intent: "Informational",
-        trend: Array(12).fill(0),
-        difficulty: 0,
-        selected: false
+      simplifiedTerms.slice(0, 2).forEach(term => {
+        const sanitizedTerm = this.sanitizeKeywordForSEO(term);
+        if (this.isValidSEOKeyword(sanitizedTerm)) {
+          result.push({
+            keyword: sanitizedTerm,
+            searchVolume: 0,
+            cpc: 0,
+            competition: 0,
+            competitionLevel: "Low",
+            intent: "Informational",
+            trend: Array(12).fill(0),
+            difficulty: 0,
+            selected: false
+          });
+        }
       });
     }
     

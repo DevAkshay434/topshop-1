@@ -31,6 +31,89 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// SEO keyword sanitization functions
+const sanitizeKeywordForSEO = (keyword: string): string => {
+  if (!keyword || typeof keyword !== 'string') {
+    return '';
+  }
+
+  let sanitized = keyword
+    // Convert to lowercase
+    .toLowerCase()
+    // Remove special characters and symbols
+    .replace(/[®™©℠]/g, '')
+    // Remove hyphens and dashes (replace with spaces)
+    .replace(/[-–—_]/g, ' ')
+    // Remove extra punctuation
+    .replace(/[!@#$%^&*()+={}[\]|\\:";'<>?,./]/g, ' ')
+    // Remove numbers that look like model numbers or SKUs
+    .replace(/\b[a-z]*\d+[a-z]*\d*\b/gi, '')
+    // Remove text in parentheses or brackets
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Remove stop words from beginning and end (but keep them in middle)
+  const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+  const words = sanitized.split(' ');
+  
+  // Remove leading stop words
+  while (words.length > 1 && stopWords.includes(words[0])) {
+    words.shift();
+  }
+  
+  // Remove trailing stop words
+  while (words.length > 1 && stopWords.includes(words[words.length - 1])) {
+    words.pop();
+  }
+
+  sanitized = words.join(' ');
+
+  // Ensure reasonable length for SEO (2-8 words typically)
+  if (words.length > 8) {
+    sanitized = words.slice(0, 8).join(' ');
+  }
+
+  return sanitized;
+};
+
+const isValidSEOKeyword = (keyword: string): boolean => {
+  if (!keyword || keyword.length < 2) {
+    return false;
+  }
+
+  // Check for minimum meaningful content
+  if (keyword.length < 3 && !keyword.match(/[a-zA-Z]/)) {
+    return false;
+  }
+
+  // Reject keywords that are just numbers or single characters
+  if (keyword.match(/^\d+$/) || keyword.length === 1) {
+    return false;
+  }
+
+  // Reject keywords that are too generic or meaningless
+  const meaninglessKeywords = [
+    'item', 'product', 'thing', 'stuff', 'new', 'old', 'good', 'bad',
+    'big', 'small', 'cheap', 'expensive', 'free', 'sale', 'buy', 'get'
+  ];
+  
+  if (meaninglessKeywords.includes(keyword.toLowerCase())) {
+    return false;
+  }
+
+  // Reject keywords with excessive repetition
+  const words = keyword.split(' ');
+  const uniqueWords = new Set(words);
+  if (words.length > 2 && uniqueWords.size < words.length / 2) {
+    return false;
+  }
+
+  return true;
+};
+
 // Interface for keyword data
 interface KeywordData {
   keyword: string;
@@ -244,49 +327,15 @@ export default function KeywordSelector({
       });
 
       if (response.success && response.keywords && response.keywords.length > 0) {
-        // Process keywords, clean up formatting and ensure we don't show product titles as keywords
+        // Apply comprehensive SEO sanitization to all keywords
         const keywordsWithSelection = response.keywords.map(kw => {
-          let processedKeyword = kw.keyword;
-          
-          // Clean up the keyword by removing special characters and brackets
-          processedKeyword = processedKeyword
-            .replace(/®|™|©/g, '') // Remove trademark symbols
-            .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets/parentheses
-            .replace(/\s+/g, ' ') // Normalize spaces
-            .trim();
-          
-          // If the keyword is still the full product name, try to extract a shorter version
-          if (directTopic && processedKeyword.length > 30 && 
-              (processedKeyword.toLowerCase() === directTopic.toLowerCase().replace(/®|™|©|\[.*?\]|\(.*?\)/g, '').trim())) {
-            // Extract meaningful part (e.g., "water softener" from "SoftPro Elite Salt Free Water Conditioner")
-            const parts = processedKeyword.split(' ');
-            if (parts.length > 3) {
-              // Try to find meaningful pairs of words
-              const keywords = [
-                'water softener', 'water conditioner', 'water filter', 
-                'salt free', 'water treatment', 'softener system'
-              ];
-              
-              for (const keyword of keywords) {
-                if (processedKeyword.toLowerCase().includes(keyword)) {
-                  processedKeyword = keyword;
-                  break;
-                }
-              }
-              
-              // If no specific keyword found, use last 2-3 words which often contain the product category
-              if (processedKeyword.length > 30) {
-                processedKeyword = parts.slice(-Math.min(3, parts.length)).join(' ');
-              }
-            }
-          }
-
+          const sanitizedKeyword = sanitizeKeywordForSEO(kw.keyword);
           return {
             ...kw,
-            keyword: processedKeyword,
+            keyword: sanitizedKeyword,
             selected: false
           };
-        });
+        }).filter(kw => isValidSEOKeyword(kw.keyword)); // Filter out invalid keywords
         
         setKeywords(keywordsWithSelection);
         console.log(`Received ${keywordsWithSelection.length} keywords from API`);
