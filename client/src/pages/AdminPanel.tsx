@@ -1923,8 +1923,8 @@ export default function AdminPanel() {
 
         {/* Content Generation Tab */}
         <TabsContent value="generate" className="space-y-6">
-          {/* Content Generator Section */}
-          <Card>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Content Generator</CardTitle>
                 <CardDescription>
@@ -3975,10 +3975,7 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-          
-          {/* Content Preview and Publication Section - Side by side on larger screens */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
+            <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Content Preview</CardTitle>
                 <CardDescription>
@@ -4620,9 +4617,9 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            {/* Publication Section - Second column position */}
+            {/* Publication Settings - Moved below Content Preview */}
             {generatedContent && (
-              <Card>
+              <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Publication Settings</CardTitle>
                   <CardDescription>
@@ -4786,7 +4783,6 @@ export default function AdminPanel() {
               </Card>
             )}
           </div>
-        </TabsContent>
 
           {/* Keyword Selector Dialog */}
           <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
