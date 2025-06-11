@@ -205,6 +205,10 @@ export default function KeywordSelector({
     setIsLoading(true);
     setKeywords([]); // Clear previous keywords when starting a new search
 
+    // Store start time for minimum display duration
+    const startTime = Date.now();
+    const minimumLoadingTime = 800; // 800ms minimum to prevent flicker
+
     try {
       console.log(`Fetching keywords for ${directTopic ? 'topic' : 'URL'}: ${directTopic || productUrl}`);
       
@@ -293,7 +297,15 @@ export default function KeywordSelector({
       console.error("Error fetching keywords:", error);
       // Keep any existing keywords
     } finally {
-      setIsLoading(false);
+      // Ensure minimum loading time to prevent flicker
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minimumLoadingTime - elapsedTime);
+      
+      if (remainingTime > 0) {
+        setTimeout(() => setIsLoading(false), remainingTime);
+      } else {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -506,8 +518,35 @@ export default function KeywordSelector({
             </div>
           )}
 
-          {/* Keywords table */}
-          {keywords.length > 0 ? (
+          {/* Keywords table with loading state */}
+          {isLoading ? (
+            <div className="py-12 text-center border rounded-md bg-gradient-to-br from-blue-50 to-indigo-50 relative overflow-hidden">
+              <div className="relative z-10">
+                <div className="mx-auto w-16 h-16 mb-4 relative">
+                  <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                  <Search className="absolute inset-0 m-auto h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-medium text-blue-900 mb-2">Searching for Keywords</h3>
+                <p className="text-blue-700 mb-4">
+                  Analyzing search data and competition metrics...
+                </p>
+                <div className="flex justify-center items-center gap-2 text-sm text-blue-600">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  <span className="ml-2">This may take a few moments</span>
+                </div>
+              </div>
+              {/* Animated background elements */}
+              <div className="absolute top-4 left-4 w-8 h-8 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>
+              <div className="absolute top-8 right-8 w-6 h-6 bg-indigo-200 rounded-full opacity-30 animate-pulse" style={{ animationDelay: '1s' }}></div>
+              <div className="absolute bottom-6 left-8 w-4 h-4 bg-blue-300 rounded-full opacity-25 animate-pulse" style={{ animationDelay: '2s' }}></div>
+              <div className="absolute bottom-4 right-6 w-10 h-10 bg-indigo-200 rounded-full opacity-15 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+            </div>
+          ) : keywords.length > 0 ? (
             <div className="border rounded-md">
               <Table>
                 <TableHeader>
@@ -586,9 +625,14 @@ export default function KeywordSelector({
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row justify-between gap-4 border-t bg-white sticky bottom-0 z-10 shadow-md">
+      <CardFooter className={`flex flex-col sm:flex-row justify-between gap-4 border-t bg-white sticky bottom-0 z-10 shadow-md ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="text-sm w-full sm:w-auto">
-          {selectedCount > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center text-blue-600">
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Searching for keywords...
+            </div>
+          ) : selectedCount > 0 ? (
             <div className="flex flex-col gap-1">
               <span className="flex items-center text-green-700 font-medium">
                 <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
@@ -620,13 +664,13 @@ export default function KeywordSelector({
         </div>
         <div className="space-x-2 flex-shrink-0">
           {onClose && (
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
           )}
           <Button 
             onClick={handleSubmit} 
-            disabled={selectedCount === 0}
+            disabled={selectedCount === 0 || isLoading}
           >
             Use Selected Keywords
           </Button>
