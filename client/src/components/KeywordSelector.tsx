@@ -514,6 +514,35 @@ export default function KeywordSelector({
             </div>
           </div>
 
+          {/* Difficulty Legend */}
+          {keywords.length > 0 && (
+            <div className="bg-slate-50 rounded-lg p-3 border">
+              <div className="flex items-center gap-4 text-xs">
+                <span className="font-medium text-slate-700">Difficulty Scale:</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-green-500"></div>
+                  <span className="text-green-700">Very Easy (0-19)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-lime-500"></div>
+                  <span className="text-lime-700">Easy (20-39)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-yellow-500"></div>
+                  <span className="text-yellow-700">Medium (40-59)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-orange-500"></div>
+                  <span className="text-orange-700">Hard (60-79)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-red-600"></div>
+                  <span className="text-red-700">Very Hard (80+)</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Filter and Sort controls */}
           {keywords.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-4 py-3 border-b">
