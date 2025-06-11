@@ -385,10 +385,30 @@ export default function KeywordSelector({
 
   // Get class for difficulty progress bar
   const getDifficultyClass = (difficulty?: number) => {
-    if (!difficulty) return "bg-gray-500";
-    if (difficulty < 30) return "bg-green-500";
-    if (difficulty < 60) return "bg-orange-500";
-    return "bg-red-500";
+    if (!difficulty) return "bg-gray-200";
+    if (difficulty < 20) return "bg-green-500"; // Very Easy - Bright Green
+    if (difficulty < 40) return "bg-lime-500"; // Easy - Lime Green
+    if (difficulty < 60) return "bg-yellow-500"; // Medium - Yellow
+    if (difficulty < 80) return "bg-orange-500"; // Hard - Orange
+    return "bg-red-600"; // Very Hard - Deep Red
+  }
+
+  const getDifficultyLabel = (difficulty?: number) => {
+    if (!difficulty) return "Unknown";
+    if (difficulty < 20) return "Very Easy";
+    if (difficulty < 40) return "Easy";
+    if (difficulty < 60) return "Medium";
+    if (difficulty < 80) return "Hard";
+    return "Very Hard";
+  }
+
+  const getDifficultyTextColor = (difficulty?: number) => {
+    if (!difficulty) return "text-gray-600";
+    if (difficulty < 20) return "text-green-700";
+    if (difficulty < 40) return "text-lime-700";
+    if (difficulty < 60) return "text-yellow-700";
+    if (difficulty < 80) return "text-orange-700";
+    return "text-red-700";
   };
 
   return (
@@ -646,12 +666,24 @@ export default function KeywordSelector({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Progress 
-                            value={keyword.difficulty || 0} 
-                            max={100} 
-                            className={`h-2 ${getDifficultyClass(keyword.difficulty)}`}
-                          />
-                          <span className="text-xs">{keyword.difficulty || 0}</span>
+                          <div className="flex-1 min-w-[80px]">
+                            <div className="relative">
+                              <div className="w-full bg-gray-200 rounded-full h-3">
+                                <div 
+                                  className={`h-3 rounded-full transition-all duration-300 ${getDifficultyClass(keyword.difficulty)}`}
+                                  style={{ width: `${Math.min(keyword.difficulty || 0, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end text-xs min-w-[50px]">
+                            <span className={`font-medium ${getDifficultyTextColor(keyword.difficulty)}`}>
+                              {keyword.difficulty || 0}
+                            </span>
+                            <span className={`text-[10px] ${getDifficultyTextColor(keyword.difficulty)}`}>
+                              {getDifficultyLabel(keyword.difficulty)}
+                            </span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
