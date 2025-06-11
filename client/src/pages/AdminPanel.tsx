@@ -5293,7 +5293,7 @@ export default function AdminPanel() {
               </div>
             )}
             
-            {/* Unified Selected Images Preview - Shows Featured + Secondary */}
+            {/* Unified Selected Images Preview - Single Row Layout */}
             {(primaryImages.length > 0 || secondaryImages.length > 0) && (
               <div className="mt-4 mb-16 bg-slate-50 p-3 rounded-md border">
                 <div className="flex justify-between items-center mb-3">
@@ -5323,177 +5323,180 @@ export default function AdminPanel() {
                   </Button>
                 </div>
                 
-                {/* Featured Image Section */}
-                {primaryImages.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ImageIcon className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-600">Featured Image</span>
-                    </div>
-                    <div className="flex gap-2">
-                      {primaryImages.map((img) => (
-                        <div key={`featured-${img.id}`} className="relative group">
-                          <div className="relative w-24 h-24 rounded-md overflow-hidden border-2 border-blue-500 shadow-sm">
-                            {img.type === 'youtube' ? (
-                              <div className="w-full h-full relative">
-                                <ShopifyImageViewer 
-                                  src={img.url} 
-                                  alt={img.alt || "YouTube video thumbnail"} 
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <div className="bg-red-600 text-white rounded-full p-1 shadow-lg opacity-90">
-                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
-                                    </svg>
-                                  </div>
-                                </div>
+                {/* Single Row Layout for All Images */}
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {/* Featured Images */}
+                  {primaryImages.map((img) => (
+                    <div key={`featured-${img.id}`} className="relative group flex-shrink-0">
+                      <div className="relative w-24 h-24 rounded-md overflow-hidden border-2 border-blue-500 shadow-sm">
+                        {img.type === 'youtube' ? (
+                          <div className="w-full h-full relative">
+                            <ShopifyImageViewer 
+                              src={img.url} 
+                              alt={img.alt || "YouTube video thumbnail"} 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-red-600 text-white rounded-full p-1 shadow-lg opacity-90">
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
+                                </svg>
                               </div>
-                            ) : (
-                              <ShopifyImageViewer 
-                                src={img.src?.medium || img.url} 
-                                alt={img.alt || "Featured image"} 
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                            <div className="absolute top-0 left-0 bg-blue-600 text-white px-1 py-0.5 text-xs font-medium">
-                              Featured
                             </div>
-                            {img.source && (
-                              <div className="absolute top-0 right-0">
-                                <Badge variant="secondary" className="text-xs px-1 py-0">
-                                  {img.source}
-                                </Badge>
-                              </div>
-                            )}
                           </div>
-                          
-                          <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                            <Button 
-                              variant="secondary" 
-                              size="icon" 
-                              className="h-5 w-5 bg-white shadow-sm"
-                              onClick={() => {
-                                setCurrentImageEdit({
-                                  id: img.id,
-                                  alt: img.alt || ""
-                                });
-                                setIsEditingImage(true);
-                              }}
-                            >
-                              <Pencil className="h-2 w-2" />
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="icon" 
-                              className="h-5 w-5 shadow-sm" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPrimaryImages([]);
-                                setSelectedMediaContent(prev => ({
-                                  ...prev,
-                                  primaryImage: null
-                                }));
-                                toast({
-                                  title: "Featured image removed",
-                                  description: "Featured image has been removed",
-                                });
-                              }}
-                            >
-                              <X className="h-2 w-2" />
-                            </Button>
-                          </div>
+                        ) : (
+                          <ShopifyImageViewer 
+                            src={img.src?.medium || img.url} 
+                            alt={img.alt || "Featured image"} 
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <div className="absolute top-0 left-0 bg-blue-600 text-white px-1 py-0.5 text-xs font-medium">
+                          Featured
                         </div>
-                      ))}
+                        {img.source && (
+                          <div className="absolute top-0 right-0">
+                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                              {img.source}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button 
+                          variant="secondary" 
+                          size="icon" 
+                          className="h-5 w-5 bg-white shadow-sm"
+                          onClick={() => {
+                            setCurrentImageEdit({
+                              id: img.id,
+                              alt: img.alt || ""
+                            });
+                            setIsEditingImage(true);
+                          }}
+                        >
+                          <Pencil className="h-2 w-2" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-5 w-5 shadow-sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPrimaryImages([]);
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              primaryImage: null
+                            }));
+                            toast({
+                              title: "Featured image removed",
+                              description: "Featured image has been removed",
+                            });
+                          }}
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                  
+                  {/* Secondary Images */}
+                  {secondaryImages.map((img, index) => (
+                    <div key={`secondary-${img.id}`} className="relative group flex-shrink-0">
+                      <div className="relative w-20 h-20 rounded-md overflow-hidden border-2 border-green-500 shadow-sm">
+                        {img.type === 'youtube' ? (
+                          <div className="w-full h-full relative">
+                            <ShopifyImageViewer 
+                              src={img.url} 
+                              alt={img.alt || "YouTube video thumbnail"} 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-red-600 text-white rounded-full p-1 shadow-lg opacity-90">
+                                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <ShopifyImageViewer 
+                            src={img.src?.medium || img.url} 
+                            alt={img.alt || "Secondary image"} 
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <div className="absolute top-0 left-0 bg-green-600 text-white px-1 py-0.5 text-xs">
+                          {index + 1}
+                        </div>
+                        {img.source && (
+                          <div className="absolute bottom-0 right-0">
+                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                              {img.source}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button 
+                          variant="secondary" 
+                          size="icon" 
+                          className="h-4 w-4 bg-white shadow-sm"
+                          onClick={() => {
+                            setCurrentImageEdit({
+                              id: img.id,
+                              alt: img.alt || ""
+                            });
+                            setIsEditingImage(true);
+                          }}
+                        >
+                          <Pencil className="h-2 w-2" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-4 w-4 shadow-sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              secondaryImages: prev.secondaryImages.filter(i => i.id !== img.id)
+                            }));
+                            toast({
+                              title: "Secondary image removed",
+                              description: "Image has been removed from secondary images",
+                            });
+                          }}
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 
-                {/* Secondary Images Section */}
-                {secondaryImages.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Camera className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-600">Secondary Images ({secondaryImages.length})</span>
+                {/* Labels Row */}
+                <div className="flex gap-3 mt-2 text-xs text-gray-500">
+                  {primaryImages.length > 0 && (
+                    <div className="w-24 text-center flex-shrink-0">
+                      <div className="flex items-center justify-center gap-1">
+                        <ImageIcon className="h-3 w-3 text-blue-600" />
+                        <span className="text-blue-600 font-medium">Featured</span>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 max-h-40 overflow-y-auto">
-                      {secondaryImages.map((img, index) => (
-                        <div key={`secondary-${img.id}`} className="relative group">
-                          <div className="relative aspect-square rounded-md overflow-hidden border-2 border-green-500 shadow-sm">
-                            {img.type === 'youtube' ? (
-                              <div className="w-full h-full relative">
-                                <ShopifyImageViewer 
-                                  src={img.url} 
-                                  alt={img.alt || "YouTube video thumbnail"} 
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <div className="bg-red-600 text-white rounded-full p-1 shadow-lg opacity-90">
-                                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
-                                    </svg>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <ShopifyImageViewer 
-                                src={img.src?.medium || img.url} 
-                                alt={img.alt || "Secondary image"} 
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                            <div className="absolute top-0 left-0 bg-green-600 text-white px-1 py-0.5 text-xs">
-                              {index + 1}
-                            </div>
-                            {img.source && (
-                              <div className="absolute top-0 right-0">
-                                <Badge variant="secondary" className="text-xs px-1 py-0">
-                                  {img.source}
-                                </Badge>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                            <Button 
-                              variant="secondary" 
-                              size="icon" 
-                              className="h-4 w-4 bg-white shadow-sm"
-                              onClick={() => {
-                                setCurrentImageEdit({
-                                  id: img.id,
-                                  alt: img.alt || ""
-                                });
-                                setIsEditingImage(true);
-                              }}
-                            >
-                              <Pencil className="h-2 w-2" />
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="icon" 
-                              className="h-4 w-4 shadow-sm" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
-                                setSelectedMediaContent(prev => ({
-                                  ...prev,
-                                  secondaryImages: prev.secondaryImages.filter(i => i.id !== img.id)
-                                }));
-                                toast({
-                                  title: "Secondary image removed",
-                                  description: "Image has been removed from secondary images",
-                                });
-                              }}
-                            >
-                              <X className="h-2 w-2" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                  )}
+                  {secondaryImages.map((_, index) => (
+                    <div key={`label-${index}`} className="w-20 text-center flex-shrink-0">
+                      <div className="flex items-center justify-center gap-1">
+                        <Camera className="h-3 w-3 text-green-600" />
+                        <span className="text-green-600 font-medium">#{index + 1}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             )}
           </DialogHeader>
