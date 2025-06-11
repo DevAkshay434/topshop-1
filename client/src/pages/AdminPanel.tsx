@@ -1009,6 +1009,36 @@ export default function AdminPanel() {
     );
   };
 
+  // Content generation readiness validation
+  const isReadyToGenerateContent = () => {
+    const formValues = form.getValues();
+    
+    // Check required fields
+    const hasTitle = !!formValues.title;
+    const hasArticleType = !!formValues.articleType;
+    const hasBlog = formValues.articleType !== 'blog' || !!formValues.blogId;
+    const hasKeywords = selectedKeywords && selectedKeywords.length > 0;
+    const hasFeaturedImage = primaryImages && primaryImages.length > 0;
+    const hasAuthor = !!selectedAuthorId; // Use selectedAuthorId state instead of form field
+    
+    return hasTitle && hasArticleType && hasBlog && hasKeywords && hasFeaturedImage && hasAuthor;
+  };
+
+  // Get incomplete steps for tooltip
+  const getIncompleteSteps = () => {
+    const formValues = form.getValues();
+    const missing = [];
+    
+    if (!formValues.title) missing.push("Title");
+    if (!formValues.articleType) missing.push("Article Type");
+    if (formValues.articleType === 'blog' && !formValues.blogId) missing.push("Blog Selection");
+    if (!selectedKeywords || selectedKeywords.length === 0) missing.push("Keywords");
+    if (!primaryImages || primaryImages.length === 0) missing.push("Featured Image");
+    if (!selectedAuthorId) missing.push("Author"); // Use selectedAuthorId state instead of form field
+    
+    return missing;
+  };
+
   // Define response types
   interface RegionsResponse {
     regions: Array<Region>;
@@ -3871,29 +3901,73 @@ export default function AdminPanel() {
                     {/* Sticky Generate Content button fixed to bottom of screen */}
                     <div className="sticky bottom-6 left-0 right-0 mt-8 z-10">
                       <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200">
+                        {/* Progress indicator and validation status */}
+                        {!isReadyToGenerateContent() && (
+                          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-800">Complete Required Steps</p>
+                                <p className="text-xs text-amber-700 mt-1">
+                                  Missing: {getIncompleteSteps().join(', ')}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Generate Content Button with conditional styling */}
                         <Button 
                           type="button" 
-                          className="w-full" 
-                          disabled={isGenerating}
+                          className={cn(
+                            "w-full transition-all duration-200",
+                            !isReadyToGenerateContent() && !isGenerating 
+                              ? "opacity-50 cursor-not-allowed" 
+                              : "opacity-100"
+                          )}
+                          disabled={isGenerating || !isReadyToGenerateContent()}
                           onClick={() => {
-                            // Manually trigger form submission
-                            const values = form.getValues();
-                            console.log("Manual form submission triggered with values:", values);
-                            handleSubmit(values);
+                            if (isReadyToGenerateContent()) {
+                              // Manually trigger form submission
+                              const values = form.getValues();
+                              console.log("Manual form submission triggered with values:", values);
+                              handleSubmit(values);
+                            }
                           }}
+                          title={!isReadyToGenerateContent() 
+                            ? `Please complete: ${getIncompleteSteps().join(', ')}` 
+                            : "Generate content with current settings"
+                          }
                         >
                           {isGenerating ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Generating Content...
                             </>
-                          ) : (
+                          ) : isReadyToGenerateContent() ? (
                             <>
                               <Sparkles className="mr-2 h-4 w-4" />
                               Generate Content
                             </>
+                          ) : (
+                            <>
+                              <AlertCircle className="mr-2 h-4 w-4" />
+                              Complete All Steps
+                            </>
                           )}
                         </Button>
+                        
+                        {/* Completion checklist for ready state */}
+                        {isReadyToGenerateContent() && (
+                          <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <p className="text-xs text-green-700 font-medium">
+                                Ready to generate content
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </form>
