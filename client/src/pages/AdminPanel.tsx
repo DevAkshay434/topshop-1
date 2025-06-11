@@ -54,9 +54,6 @@ import {
   Zap 
 } from "lucide-react";
 import { ChooseMediaDialog, type MediaImage } from "@/components/ChooseMediaDialog";
-import { KeywordSelector } from "@/components/KeywordSelector";
-import { TitleSelectionDialog } from "@/components/TitleSelectionDialog";
-import { SelectedImagesPanel } from "@/components/SelectedImagesPanel";
 
 // Schema for form validation
 const contentFormSchema = z.object({
@@ -211,8 +208,6 @@ export default function AdminPanel() {
   });
   
   // Dialog states
-  const [showKeywordSelector, setShowKeywordSelector] = useState(false);
-  const [showTitleDialog, setShowTitleDialog] = useState(false);
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
   
   // Media content state
@@ -246,18 +241,22 @@ export default function AdminPanel() {
   // API Queries
   const regionsQuery = useQuery({
     queryKey: ['/api/admin/regions'],
+    enabled: false // Disabled for now
   });
 
   const productsQuery = useQuery({
     queryKey: ['/api/admin/products'],
+    enabled: false // Disabled for now
   });
 
   const collectionsQuery = useQuery({
     queryKey: ['/api/admin/collections'],
+    enabled: false // Disabled for now
   });
 
   const blogsQuery = useQuery({
     queryKey: ['/api/admin/blogs'],
+    enabled: false // Disabled for now
   });
 
   const permissionsData = {
@@ -373,11 +372,9 @@ export default function AdminPanel() {
                                   <SelectValue placeholder="Select a region" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {regionsQuery.data?.regions.map((region: Region) => (
-                                    <SelectItem key={region.id} value={region.id}>
-                                      {region.name}
-                                    </SelectItem>
-                                  ))}
+                                  <SelectItem value="us">United States</SelectItem>
+                                  <SelectItem value="ca">Canada</SelectItem>
+                                  <SelectItem value="uk">United Kingdom</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -399,11 +396,9 @@ export default function AdminPanel() {
                                   <SelectValue placeholder="Select a blog" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {blogsQuery.data?.blogs && blogsQuery.data.blogs.map((blog: Blog) => (
-                                    <SelectItem key={blog.id} value={blog.id}>
-                                      {blog.title}
-                                    </SelectItem>
-                                  ))}
+                                  <SelectItem value="main-blog">Main Blog</SelectItem>
+                                  <SelectItem value="news">News</SelectItem>
+                                  <SelectItem value="updates">Updates</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -509,39 +504,7 @@ export default function AdminPanel() {
             </div>
           </div>
 
-          {/* Dialogs */}
-          <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Select Keywords</DialogTitle>
-              </DialogHeader>
-              <KeywordSelector
-                open={showKeywordSelector}
-                onClose={() => setShowKeywordSelector(false)}
-                onKeywordsSelected={(keywords) => {
-                  setSelectedKeywords(keywords);
-                  setShowKeywordSelector(false);
-                }}
-                selectedProducts={selectedProducts}
-                selectedCollections={selectedCollections}
-                productTitle={productTitle}
-                initialKeywords={selectedKeywords}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <TitleSelectionDialog
-            open={showTitleDialog}
-            onOpenChange={setShowTitleDialog}
-            selectedProducts={selectedProducts}
-            selectedCollections={selectedCollections}
-            productTitle={productTitle}
-            onTitleSelected={(title) => {
-              setProductTitle(title);
-              form.setValue("title", title);
-              setShowTitleDialog(false);
-            }}
-          />
+          {/* Dialogs - Simplified for now */}
 
           <ChooseMediaDialog
             open={showChooseMediaDialog}
