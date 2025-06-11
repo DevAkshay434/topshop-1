@@ -4788,7 +4788,7 @@ export default function AdminPanel() {
           </div>
         </TabsContent>
 
-          {/* Keyword Selector Dialog */}
+        {/* Connections Tab */}
           <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
