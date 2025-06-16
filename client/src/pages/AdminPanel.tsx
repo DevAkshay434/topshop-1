@@ -1616,9 +1616,17 @@ export default function AdminPanel() {
       setIsGenerating(true);
       
       const formValues = form.getValues();
+      
+      // CRITICAL FIX: Ensure we're using the latest content from rich text editor
+      const currentContent = generatedContent.content;
+      console.log("Rich text editor content being published:", {
+        contentLength: currentContent?.length || 0,
+        contentPreview: currentContent?.substring(0, 200) + "..."
+      });
+      
       const publishData = {
         title: generatedContent.title,
-        content: generatedContent.content,
+        content: currentContent, // Use the content from generatedContent state (updated by rich editor)
         metaTitle: generatedContent.metaTitle,
         metaDescription: generatedContent.metaDescription,
         tags: Array.isArray(generatedContent.tags) 
@@ -1631,10 +1639,16 @@ export default function AdminPanel() {
         status: publicationType === 'publish' ? 'published' : publicationType === 'schedule' ? 'scheduled' : 'draft',
         scheduledPublishDate: publicationType === 'schedule' ? formValues.scheduledPublishDate : undefined,
         scheduledPublishTime: publicationType === 'schedule' ? formValues.scheduledPublishTime || "09:30" : undefined,
-        authorId: selectedAuthorId // CRITICAL FIX: Include selected author ID
+        authorId: selectedAuthorId,
+        // Include media content for proper Shopify sync
+        primaryImage: selectedMediaContent.primaryImage,
+        secondaryImages: selectedMediaContent.secondaryImages
       };
 
-      console.log("Publishing content with data:", publishData);
+      console.log("Publishing content with complete data:", {
+        ...publishData,
+        contentLength: publishData.content?.length || 0
+      });
 
       const response = await apiRequest({
         url: '/api/posts',
@@ -4080,6 +4094,7 @@ export default function AdminPanel() {
                                   const content = document.querySelector('[contenteditable]').innerHTML;
                                   window.updateGeneratedContent(content);
                                   document.body.removeChild(document.querySelector('[data-rich-editor]'));
+                                  window.showSaveConfirmation && window.showSaveConfirmation();
                                 " style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Save Changes</button>
                                 <button onclick="document.body.removeChild(document.querySelector('[data-rich-editor]'))" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
                               `;
@@ -4092,9 +4107,17 @@ export default function AdminPanel() {
                               
                               editor.focus();
                               
-                              // Add global function to update content
+                              // Add global functions to update content and show confirmation
                               (window as any).updateGeneratedContent = (content: string) => {
                                 setGeneratedContent(prev => ({ ...prev, content }));
+                              };
+                              
+                              (window as any).showSaveConfirmation = () => {
+                                toast({
+                                  title: "Content updated",
+                                  description: "Your content changes have been saved. They will be included when you publish.",
+                                  variant: "default"
+                                });
                               };
                             }}
                           >
