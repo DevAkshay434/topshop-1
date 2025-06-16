@@ -286,6 +286,7 @@ export default function AdminPanel() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [contentUpdateCounter, setContentUpdateCounter] = useState(0);
   const [contentEditorKey, setContentEditorKey] = useState(0); // Force re-render of editor
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
@@ -4109,7 +4110,29 @@ export default function AdminPanel() {
                               
                               // Add global functions to update content and show confirmation
                               (window as any).updateGeneratedContent = (content: string) => {
-                                setGeneratedContent(prev => ({ ...prev, content }));
+                                console.log("Rich editor updating content:", {
+                                  contentLength: content?.length || 0,
+                                  contentPreview: content?.substring(0, 100) + "..."
+                                });
+                                setGeneratedContent(prev => {
+                                  const updated = { ...prev, content };
+                                  console.log("Content state updated:", {
+                                    previousLength: prev.content?.length || 0,
+                                    newLength: content?.length || 0
+                                  });
+                                  return updated;
+                                });
+                                
+                                // Force re-render by updating the counter
+                                setContentUpdateCounter(prev => prev + 1);
+                                
+                                // Force re-render of preview to show updated content
+                                setTimeout(() => {
+                                  const previewElement = document.querySelector('.prose');
+                                  if (previewElement) {
+                                    previewElement.scrollTop = 0; // Trigger visual update
+                                  }
+                                }, 100);
                               };
                               
                               (window as any).showSaveConfirmation = () => {
@@ -4128,7 +4151,10 @@ export default function AdminPanel() {
                       </div>
                       <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border h-96 overflow-y-auto">
                         {(() => {
+                          // Force re-render when content changes by using a key
                           const content = generatedContent.content || '';
+                          console.log("Preview rendering with content length:", content.length);
+                          
                           const primaryImage = selectedMediaContent.primaryImage;
                           const isPage = form.getValues('articleType') === 'page';
                           const contentStartsWithImage = content.trim().startsWith('<img') || content.trim().startsWith('<p><img');
@@ -4157,7 +4183,10 @@ export default function AdminPanel() {
                             processedContent = featuredImageHtml + processedContent;
                           }
                           
-                          return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
+                          return <div 
+                            key={`content-${content.length}-${contentUpdateCounter}`} 
+                            dangerouslySetInnerHTML={{ __html: processedContent }} 
+                          />;
                         })()}
                       </div>
                       <div className="text-xs text-gray-500 text-right mt-2">
