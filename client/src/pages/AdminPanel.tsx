@@ -1923,7 +1923,9 @@ export default function AdminPanel() {
 
         {/* Content Generation Tab */}
         <TabsContent value="generate" className="space-y-6">
+          {/* Main Content Grid - Selection and Content Preview side by side */}
           <div className="grid gap-6 lg:grid-cols-2">
+            {/* Selection Section - Left Column */}
             <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Content Generator</CardTitle>
@@ -4616,9 +4618,11 @@ export default function AdminPanel() {
                 )}
               </CardContent>
             </Card>
+          </div>
 
-            {/* Publication Settings - Moved below Content Preview */}
-            {generatedContent && (
+          {/* Publication Section - Appears below Content Preview only */}
+          {generatedContent && (
+            <div className="lg:ml-[calc(50%_+_0.75rem)]">
               <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Publication Settings</CardTitle>
@@ -4781,8 +4785,8 @@ export default function AdminPanel() {
                   </Form>
                 </CardContent>
               </Card>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Keyword Selector Dialog */}
           <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
