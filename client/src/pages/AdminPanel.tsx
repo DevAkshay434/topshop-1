@@ -113,7 +113,13 @@ import {
   Trash, 
   Type,
   X, 
-  XCircle 
+  XCircle,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Link,
+  Unlink
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -4078,8 +4084,9 @@ export default function AdminPanel() {
                     <div className="space-y-4">
                       <label className="text-sm font-medium text-gray-700">Content Body</label>
                       
-                      {/* Visual Editor Toolbar */}
+                      {/* Enhanced Rich Text Editor Toolbar */}
                       <div className="border border-gray-200 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-2">
+                        {/* Text Formatting */}
                         <button
                           type="button"
                           onClick={() => document.execCommand('bold', false)}
@@ -4104,7 +4111,85 @@ export default function AdminPanel() {
                         >
                           U
                         </button>
+                        
                         <div className="border-l border-gray-300 mx-1"></div>
+                        
+                        {/* Text Alignment */}
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('justifyLeft', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Align Left"
+                        >
+                          <AlignLeft className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('justifyCenter', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Center"
+                        >
+                          <AlignCenter className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('justifyRight', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Align Right"
+                        >
+                          <AlignRight className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('justifyFull', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Justify"
+                        >
+                          <AlignJustify className="h-3 w-3" />
+                        </button>
+                        
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        
+                        {/* Link Controls */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = prompt('Enter URL:');
+                            if (url) {
+                              const isExternal = !url.includes(window.location.hostname) && (url.startsWith('http') || url.startsWith('www'));
+                              document.execCommand('createLink', false, url);
+                              if (isExternal) {
+                                // Add target="_blank" and rel="noopener" to external links
+                                setTimeout(() => {
+                                  const selection = window.getSelection();
+                                  if (selection && selection.anchorNode) {
+                                    const link = selection.anchorNode.parentElement;
+                                    if (link && link.tagName === 'A') {
+                                      link.setAttribute('target', '_blank');
+                                      link.setAttribute('rel', 'noopener');
+                                    }
+                                  }
+                                }, 10);
+                              }
+                            }
+                          }}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Add Link"
+                        >
+                          <Link className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('unlink', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Remove Link"
+                        >
+                          <Unlink className="h-3 w-3" />
+                        </button>
+                        
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        
+                        {/* Headings */}
                         <button
                           type="button"
                           onClick={() => document.execCommand('formatBlock', false, 'h1')}
@@ -4148,66 +4233,165 @@ export default function AdminPanel() {
                         </button>
                       </div>
 
-                      {/* Content Editor with Inline Media */}
-                      <div
-                        key={contentEditorKey}
-                        ref={(el) => {
-                          // Only set content on initial load, never re-process during editing
-                          if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
-                            // Process content to render embedded images and videos properly
-                            let processedContent = generatedContent.content;
-                            
-                            // Ensure images have proper styling and are visible
-                            processedContent = processedContent.replace(
-                              /<img([^>]*?)>/gi,
-                              '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
-                            );
-                            
-                            // Ensure iframes (YouTube videos) have proper styling
-                            processedContent = processedContent.replace(
-                              /<iframe([^>]*?)>/gi,
-                              '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
-                            );
-                            
-                            // Close the wrapper div for iframes
-                            processedContent = processedContent.replace(
-                              /<\/iframe>/gi,
-                              '</iframe></div>'
-                            );
-                            
-                            // Set content once and mark as loaded
-                            el.innerHTML = processedContent;
-                            el.setAttribute('data-content-loaded', 'true');
-                          } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
-                            // Clear content and reset when no content
-                            el.removeAttribute('data-content-loaded');
-                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
-                          } else if (el && !generatedContent.content && !el.hasAttribute('data-content-loaded')) {
-                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
-                          }
-                        }}
-                        contentEditable
-                        suppressContentEditableWarning={true}
-                        className="min-h-[400px] max-h-[60vh] overflow-y-auto p-5 border border-gray-200 rounded-b-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent prose prose-blue max-w-none"
-                        style={{ 
-                          borderTop: 'none',
-                          lineHeight: '1.6',
-                          fontSize: '16px'
-                        }}
-                        onInput={(e) => {
-                          const target = e.target as HTMLDivElement;
-                          setGeneratedContent(prev => ({
-                            ...prev,
-                            content: target.innerHTML
-                          }));
-                        }}
-                      />
-                      
-                      {/* Word Count */}
-                      <div className="text-xs text-gray-500 text-right">
-                        Words: {generatedContent.content ? 
-                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
-                          : 0}
+                      {/* Structured Content Preview with Smart Image Handling */}
+                      <div className="space-y-6 border border-gray-200 rounded-b-md bg-white p-4">
+                        {/* Article/Page Title Section */}
+                        <div className="border-b border-gray-100 pb-4">
+                          <h4 className="text-sm font-semibold text-gray-600 mb-2">Article/Page Title</h4>
+                          <input
+                            type="text"
+                            value={generatedContent.title}
+                            onChange={(e) => {
+                              setGeneratedContent(prev => ({
+                                ...prev,
+                                title: e.target.value
+                              }));
+                            }}
+                            className="w-full text-xl font-semibold border-none outline-none bg-transparent resize-none p-2 focus:bg-gray-50 rounded"
+                            placeholder="Enter your article title..."
+                          />
+                        </div>
+
+                        {/* Content Body Section */}
+                        <div className="border-b border-gray-100 pb-4">
+                          <h4 className="text-sm font-semibold text-gray-600 mb-2">Content Body</h4>
+                          <div
+                            key={contentEditorKey}
+                            ref={(el) => {
+                              // Only set content on initial load, never re-process during editing
+                              if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                                // Smart image handling for pages
+                                let processedContent = generatedContent.content;
+                                
+                                // For Shopify Pages: Check if first image matches featured image
+                                if (form.getValues('articleType') === 'page' && selectedMediaContent?.primaryImage) {
+                                  const firstImgRegex = /<img[^>]*?src=["']([^"']+)["'][^>]*?>/i;
+                                  const firstImgMatch = processedContent.match(firstImgRegex);
+                                  
+                                  if (firstImgMatch) {
+                                    const firstImgSrc = firstImgMatch[1];
+                                    const primaryImageSrc = selectedMediaContent.primaryImage.url || selectedMediaContent.primaryImage.src?.medium;
+                                    
+                                    // Check if the first image matches the primary image - prevent duplication
+                                    if (primaryImageSrc && (firstImgSrc.includes(primaryImageSrc) || primaryImageSrc.includes(firstImgSrc))) {
+                                      // Remove product linking from first image to avoid confusion
+                                      const firstImgElement = firstImgMatch[0];
+                                      // Replace with non-linked version
+                                      processedContent = processedContent.replace(
+                                        firstImgElement,
+                                        firstImgElement.replace(/<img([^>]*?)>/gi, '<img$1 data-skip-product-link="true">')
+                                      );
+                                      el.setAttribute('data-skip-featured', 'true');
+                                    }
+                                  }
+                                }
+                                
+                                // Ensure images have proper styling and are visible
+                                processedContent = processedContent.replace(
+                                  /<img([^>]*?)>/gi,
+                                  '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
+                                );
+                                
+                                // Ensure iframes (YouTube videos) have proper styling
+                                processedContent = processedContent.replace(
+                                  /<iframe([^>]*?)>/gi,
+                                  '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
+                                );
+                                
+                                // Close the wrapper div for iframes
+                                processedContent = processedContent.replace(
+                                  /<\/iframe>/gi,
+                                  '</iframe></div>'
+                                );
+                                
+                                // Set content once and mark as loaded
+                                el.innerHTML = processedContent;
+                                el.setAttribute('data-content-loaded', 'true');
+                              } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
+                                // Clear content and reset when no content
+                                el.removeAttribute('data-content-loaded');
+                                el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
+                              } else if (el && !generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                                el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
+                              }
+                            }}
+                            contentEditable
+                            suppressContentEditableWarning={true}
+                            className="min-h-[300px] max-h-[50vh] overflow-y-auto p-4 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent prose prose-blue max-w-none"
+                            style={{ 
+                              lineHeight: '1.6',
+                              fontSize: '16px'
+                            }}
+                            onInput={(e) => {
+                              const target = e.target as HTMLDivElement;
+                              setGeneratedContent(prev => ({
+                                ...prev,
+                                content: target.innerHTML
+                              }));
+                            }}
+                          />
+                          <div className="text-xs text-gray-500 text-right mt-1">
+                            Words: {generatedContent.content ? 
+                              generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter((word: string) => word.length > 0).length 
+                              : 0}
+                          </div>
+                        </div>
+
+                        {/* Content Tags Section */}
+                        {generatedContent.tags && generatedContent.tags.length > 0 && (
+                          <div className="border-b border-gray-100 pb-4">
+                            <h4 className="text-sm font-semibold text-gray-600 mb-2">Content Tags</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {generatedContent.tags.map((tag: string, index: number) => (
+                                <Badge key={index} variant="secondary" className="text-sm">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Meta Title Section */}
+                        <div className="border-b border-gray-100 pb-4">
+                          <h4 className="text-sm font-semibold text-gray-600 mb-2">Meta Title</h4>
+                          <input
+                            type="text"
+                            value={generatedContent.title}
+                            onChange={(e) => {
+                              setGeneratedContent(prev => ({
+                                ...prev,
+                                title: e.target.value
+                              }));
+                            }}
+                            className="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            placeholder="SEO optimized title for search engines..."
+                          />
+                          <div className="text-xs text-gray-400 mt-1">
+                            {generatedContent.title?.length || 0}/60 characters recommended
+                          </div>
+                        </div>
+
+                        {/* Meta Description Section */}
+                        {generatedContent.metaDescription && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-600 mb-2">Meta Description</h4>
+                            <textarea
+                              value={generatedContent.metaDescription}
+                              onChange={(e) => {
+                                setGeneratedContent(prev => ({
+                                  ...prev,
+                                  metaDescription: e.target.value
+                                }));
+                              }}
+                              className="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                              rows={3}
+                              placeholder="Brief description for search engine results..."
+                            />
+                            <div className="text-xs text-gray-400 mt-1">
+                              {generatedContent.metaDescription?.length || 0}/160 characters recommended
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
