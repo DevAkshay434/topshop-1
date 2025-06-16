@@ -81,6 +81,7 @@ import {
   Copy,
   Cpu,
   Download,
+  Edit,
   ExternalLink, 
   FileImage,
   FileText,
