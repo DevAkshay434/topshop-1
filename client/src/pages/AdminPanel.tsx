@@ -98,6 +98,7 @@ import {
   Leaf,
   Loader2,
   Package,
+  Zap,
   PiggyBank,
   Plus, 
   RefreshCw,
@@ -108,7 +109,6 @@ import {
   Upload,
   User,
   Users,
-  Zap,
   ShoppingCart,
   Sparkles, 
   Trash, 
@@ -4103,7 +4103,7 @@ export default function AdminPanel() {
                           </Button>
                         </div>
                       </div>
-                      <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border">
+                      <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border h-96 overflow-y-auto">
                         {(() => {
                           const content = generatedContent.content || '';
                           const primaryImage = selectedMediaContent.primaryImage;
@@ -4181,30 +4181,88 @@ export default function AdminPanel() {
                     <div className="border-b border-gray-200 pb-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">Meta Title</h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const newMetaTitle = prompt("Edit meta title:", generatedContent.metaTitle || generatedContent.title || "");
-                            if (newMetaTitle !== null) {
-                              setGeneratedContent(prev => ({ ...prev, metaTitle: newMetaTitle }));
-                            }
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Auto-optimize meta title from main title
+                              const originalTitle = generatedContent.title || "";
+                              let optimizedTitle = originalTitle;
+                              
+                              // If too long, truncate smartly
+                              if (originalTitle.length > 60) {
+                                // Find good break points (after words, before colons/dashes)
+                                const breakPoints = [': ', ' - ', ' | ', '. '];
+                                let bestBreak = -1;
+                                
+                                for (const breakPoint of breakPoints) {
+                                  const index = originalTitle.indexOf(breakPoint);
+                                  if (index > 0 && index < 55) {
+                                    bestBreak = index;
+                                    break;
+                                  }
+                                }
+                                
+                                if (bestBreak > 0) {
+                                  optimizedTitle = originalTitle.substring(0, bestBreak);
+                                } else {
+                                  // Truncate at last complete word before 60 chars
+                                  const truncated = originalTitle.substring(0, 57);
+                                  const lastSpace = truncated.lastIndexOf(' ');
+                                  optimizedTitle = lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
+                                }
+                              }
+                              
+                              setGeneratedContent(prev => ({ ...prev, metaTitle: optimizedTitle }));
+                            }}
+                          >
+                            <Zap className="h-4 w-4 mr-1" />
+                            Auto-Optimize
+                          </Button>
+                        </div>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <p className="text-sm font-medium text-gray-900">
-                          {generatedContent.metaTitle || generatedContent.title || "No meta title set"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Length: {(generatedContent.metaTitle || generatedContent.title || "").length} characters
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Input
+                            value={generatedContent.metaTitle || generatedContent.title || ""}
+                            onChange={(e) => {
+                              const value = e.target.value.slice(0, 70); // Hard limit at 70 chars
+                              setGeneratedContent(prev => ({ ...prev, metaTitle: value }));
+                            }}
+                            placeholder="Enter SEO-optimized meta title..."
+                            className={`pr-16 ${
+                              (generatedContent.metaTitle || generatedContent.title || "").length > 60 
+                                ? 'border-red-300 focus:border-red-500' 
+                                : (generatedContent.metaTitle || generatedContent.title || "").length > 50
+                                ? 'border-yellow-300 focus:border-yellow-500'
+                                : 'border-green-300 focus:border-green-500'
+                            }`}
+                          />
+                          <div className={`absolute right-3 top-2.5 text-xs font-medium ${
+                            (generatedContent.metaTitle || generatedContent.title || "").length > 60 
+                              ? 'text-red-500' 
+                              : (generatedContent.metaTitle || generatedContent.title || "").length > 50
+                              ? 'text-yellow-600'
+                              : 'text-green-600'
+                          }`}>
+                            {(generatedContent.metaTitle || generatedContent.title || "").length}/60
+                          </div>
+                        </div>
+                        <div className="text-xs space-y-1">
                           {(generatedContent.metaTitle || generatedContent.title || "").length > 60 && (
-                            <span className="text-red-500 ml-2">• Too long (recommended: under 60 chars)</span>
+                            <p className="text-red-600 flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Too long for optimal SEO display
+                            </p>
                           )}
-                        </p>
+                          {(generatedContent.metaTitle || generatedContent.title || "").length >= 50 && (generatedContent.metaTitle || generatedContent.title || "").length <= 60 && (
+                            <p className="text-green-600 flex items-center">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Perfect length for SEO
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -4212,33 +4270,106 @@ export default function AdminPanel() {
                     <div className="border-b border-gray-200 pb-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">Meta Description</h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const newMetaDescription = prompt("Edit meta description:", generatedContent.metaDescription || "");
-                            if (newMetaDescription !== null) {
-                              setGeneratedContent(prev => ({ ...prev, metaDescription: newMetaDescription }));
-                            }
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Auto-generate meta description from content
+                              const content = generatedContent.content || "";
+                              const title = generatedContent.title || "";
+                              
+                              // Extract first meaningful paragraph
+                              const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                              const sentences = textContent.split('. ').filter(s => s.length > 20);
+                              
+                              let description = "";
+                              if (sentences.length > 0) {
+                                // Create description from first few sentences
+                                description = sentences.slice(0, 2).join('. ');
+                                if (!description.endsWith('.')) description += '.';
+                                
+                                // Add call to action if space allows
+                                if (description.length < 120) {
+                                  const keywords = form.getValues('keywords') || [];
+                                  if (keywords.length > 0) {
+                                    description += ` Learn about ${keywords[0]} and more.`;
+                                  }
+                                }
+                                
+                                // Ensure within limit
+                                if (description.length > 160) {
+                                  description = description.substring(0, 157) + '...';
+                                }
+                              } else {
+                                // Fallback: use title-based description
+                                description = `Discover everything about ${title}. Expert insights, tips, and comprehensive guide.`.substring(0, 160);
+                              }
+                              
+                              setGeneratedContent(prev => ({ ...prev, metaDescription: description }));
+                            }}
+                          >
+                            <Zap className="h-4 w-4 mr-1" />
+                            Auto-Generate
+                          </Button>
+                        </div>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <p className="text-sm text-gray-700">
-                          {generatedContent.metaDescription || "No meta description set"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Length: {(generatedContent.metaDescription || "").length} characters
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Textarea
+                            value={generatedContent.metaDescription || ""}
+                            onChange={(e) => {
+                              const value = e.target.value.slice(0, 170); // Hard limit at 170 chars
+                              setGeneratedContent(prev => ({ ...prev, metaDescription: value }));
+                            }}
+                            placeholder="Enter compelling meta description to improve click-through rates..."
+                            rows={3}
+                            className={`pr-16 resize-none ${
+                              (generatedContent.metaDescription || "").length > 160 
+                                ? 'border-red-300 focus:border-red-500' 
+                                : (generatedContent.metaDescription || "").length > 120
+                                ? 'border-green-300 focus:border-green-500'
+                                : (generatedContent.metaDescription || "").length > 0
+                                ? 'border-yellow-300 focus:border-yellow-500'
+                                : 'border-gray-300'
+                            }`}
+                          />
+                          <div className={`absolute right-3 bottom-3 text-xs font-medium ${
+                            (generatedContent.metaDescription || "").length > 160 
+                              ? 'text-red-500' 
+                              : (generatedContent.metaDescription || "").length > 120
+                              ? 'text-green-600'
+                              : 'text-yellow-600'
+                          }`}>
+                            {(generatedContent.metaDescription || "").length}/160
+                          </div>
+                        </div>
+                        <div className="text-xs space-y-1">
+                          {(generatedContent.metaDescription || "").length === 0 && (
+                            <p className="text-gray-500 flex items-center">
+                              <Info className="h-3 w-3 mr-1" />
+                              Meta description helps improve search visibility
+                            </p>
+                          )}
+                          {(generatedContent.metaDescription || "").length > 0 && (generatedContent.metaDescription || "").length < 120 && (
+                            <p className="text-yellow-600 flex items-center">
+                              <Info className="h-3 w-3 mr-1" />
+                              Consider adding more detail (120-160 chars optimal)
+                            </p>
+                          )}
+                          {(generatedContent.metaDescription || "").length >= 120 && (generatedContent.metaDescription || "").length <= 160 && (
+                            <p className="text-green-600 flex items-center">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Perfect length for search engines
+                            </p>
+                          )}
                           {(generatedContent.metaDescription || "").length > 160 && (
-                            <span className="text-red-500 ml-2">• Too long (recommended: under 160 chars)</span>
+                            <p className="text-red-600 flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Too long - will be truncated in search results
+                            </p>
                           )}
-                          {(generatedContent.metaDescription || "").length < 120 && (generatedContent.metaDescription || "").length > 0 && (
-                            <span className="text-yellow-600 ml-2">• Could be longer (recommended: 120-160 chars)</span>
-                          )}
-                        </p>
+                        </div>
                       </div>
                     </div>
 
@@ -4744,167 +4875,7 @@ export default function AdminPanel() {
                       </div>
                     )}
 
-                    {/* Publication Settings - Appears right after meta description */}
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <div className="mb-4">
-                        <h4 className="text-lg font-semibold">Publication Settings</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Choose how to publish your content
-                        </p>
-                      </div>
-                      <Form {...form}>
-                        <div className="space-y-6">
-                          {/* Publication Status */}
-                          <FormField
-                            control={form.control}
-                            name="postStatus"
-                            render={({ field }) => (
-                              <FormItem>
-                                <div className="flex items-center gap-2">
-                                  <FormLabel>Publish Status</FormLabel>
-                                  {form.getValues('scheduledPublishDate') && (
-                                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                                      <CalendarCheck className="h-3 w-3 mr-1" />
-                                      Scheduled
-                                    </Badge>
-                                  )}
-                                </div>
-                                <Select 
-                                  onValueChange={(value) => {
-                                    field.onChange(value);
-                                    form.setValue('publicationType', value === 'publish' ? 'publish' : 'draft');
-                                    if (form.getValues('scheduledPublishDate')) {
-                                      form.setValue('publicationType', 'schedule');
-                                    }
-                                  }} 
-                                  defaultValue={field.value}
-                                  disabled={!!form.getValues('scheduledPublishDate')}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select status" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="draft">Save as Draft</SelectItem>
-                                    <SelectItem value="publish">Publish Immediately</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormDescription>
-                                  Choose whether to publish immediately or save as draft. 
-                                  <strong>Note:</strong> If "Schedule for later" is checked below, this post will be saved as a draft and published at the scheduled time.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
 
-                          {/* Schedule for Later */}
-                          <FormField
-                            control={form.control}
-                            name="scheduledPublishDate"
-                            render={({ field }) => (
-                              <FormItem className="rounded-md border border-slate-200 p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center">
-                                    <CalendarCheck className="h-5 w-5 text-blue-500 mr-2" />
-                                    <FormLabel className="text-lg font-medium">
-                                      Schedule for later
-                                    </FormLabel>
-                                  </div>
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={!!field.value}
-                                      onCheckedChange={(checked) => {
-                                        if (checked) {
-                                          const tomorrow = new Date();
-                                          tomorrow.setDate(tomorrow.getDate() + 1);
-                                          tomorrow.setHours(9, 0, 0, 0);
-                                          field.onChange(tomorrow.toISOString().split('T')[0]);
-                                          form.setValue('publicationType', 'schedule');
-                                        } else {
-                                          field.onChange(null);
-                                          form.setValue('publicationType', 'draft');
-                                        }
-                                      }}
-                                    />
-                                  </FormControl>
-                                </div>
-                                
-                                {field.value && (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                    <FormField
-                                      control={form.control}
-                                      name="scheduledPublishDate"
-                                      render={({ field: dateField }) => (
-                                        <FormItem>
-                                          <FormLabel>Publication Date</FormLabel>
-                                          <FormControl>
-                                            <Input 
-                                              type="date" 
-                                              {...dateField}
-                                              value={dateField.value || ''}
-                                              min={new Date().toISOString().split('T')[0]}
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                    
-                                    <FormField
-                                      control={form.control}
-                                      name="scheduledPublishTime"
-                                      render={({ field: timeField }) => (
-                                        <FormItem>
-                                          <FormLabel>Publication Time</FormLabel>
-                                          <FormControl>
-                                            <Input 
-                                              type="time" 
-                                              {...timeField}
-                                              value={timeField.value || '09:00'}
-                                            />
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-                                )}
-                                
-                                <FormDescription>
-                                  Schedule this content to be published automatically at a specific date and time
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          {/* Submit Button */}
-                          <div className="flex justify-end pt-4 border-t">
-                            {isPublishing ? (
-                              <Button disabled className="flex items-center">
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Publishing...
-                              </Button>
-                            ) : (
-                              <Button
-                                type="submit"
-                                onClick={async () => {
-                                  const values = form.getValues();
-                                  await handleSubmit(values);
-                                }}
-                                className="flex items-center"
-                              >
-                                <Send className="mr-2 h-4 w-4" />
-                                {form.getValues('scheduledPublishDate') ? 'Schedule Post' : 
-                                 form.getValues('postStatus') === 'publish' ? 'Publish Now' : 'Save as Draft'}
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </Form>
-                    </div>
                     
                     {(generatedContent.contentUrl || generatedContent.shopifyUrl) && (
                       <div className="grid grid-cols-2 gap-2 mt-4">
