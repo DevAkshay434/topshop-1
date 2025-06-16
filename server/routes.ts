@@ -3,6 +3,7 @@ import { Server } from 'http';
 import { z } from 'zod';
 import axios from 'axios';
 import crypto from 'crypto';
+import multer from 'multer';
 import {
   insertContentGenRequestSchema,
   insertBlogPostSchema,
@@ -34,6 +35,21 @@ import {
 } from './services/oauth';
 import { generateBlogContentWithHF } from './services/huggingface';
 import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
+
+// Configure multer for image uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
 
 // Helper function to get store from request
 async function getStoreFromRequest(req: Request): Promise<any | null> {
@@ -70,6 +86,66 @@ async function getStoreFromRequest(req: Request): Promise<any | null> {
 export async function registerRoutes(app: Express): Promise<void> {
   // API router for authenticated endpoints
   const apiRouter = Router();
+  
+  // Image upload endpoint for rich text editor
+  apiRouter.post("/upload-image", upload.single('image'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      // Get store connection for Shopify file upload
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: 'Store not connected' });
+      }
+
+      try {
+        // Upload to Shopify Files API
+        const shopifyResponse = await axios.post(
+          `https://${store.shopName}/admin/api/2023-10/files.json`,
+          {
+            file: {
+              attachment: req.file.buffer.toString('base64'),
+              filename: req.file.originalname,
+              content_type: req.file.mimetype,
+            }
+          },
+          {
+            headers: {
+              'X-Shopify-Access-Token': store.accessToken,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        const fileUrl = shopifyResponse.data.file?.url;
+        if (fileUrl) {
+          res.json({ 
+            success: true, 
+            url: fileUrl,
+            filename: req.file.originalname 
+          });
+        } else {
+          throw new Error('No file URL returned from Shopify');
+        }
+      } catch (shopifyError) {
+        console.error('Shopify upload error:', shopifyError);
+        
+        // Fallback: Return a data URL for immediate display
+        const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        res.json({ 
+          success: true, 
+          url: dataUrl,
+          filename: req.file.originalname,
+          note: 'Image uploaded as data URL - may not persist in published content' 
+        });
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      res.status(500).json({ error: 'Failed to upload image' });
+    }
+  });
   
   // Health check endpoint for server monitoring and keep-alive
   apiRouter.get("/health", async (req: Request, res: Response) => {
