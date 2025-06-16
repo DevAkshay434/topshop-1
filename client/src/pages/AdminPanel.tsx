@@ -3994,88 +3994,254 @@ export default function AdminPanel() {
                   </div>
                 ) : generatedContent ? (
                   <div className="space-y-6">
-                    {/* Editable Meta Title */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Meta Title</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={generatedContent.title}
-                          onChange={(e) => {
-                            setGeneratedContent(prev => ({
-                              ...prev,
-                              title: e.target.value
-                            }));
+                    {/* Article/Page Title Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Article Title</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newTitle = prompt("Edit title:", generatedContent.title || "");
+                            if (newTitle !== null) {
+                              setGeneratedContent(prev => ({ ...prev, title: newTitle }));
+                            }
                           }}
-                          className="w-full p-3 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter your meta title..."
-                        />
-                        <div className="absolute right-3 top-3 text-xs text-gray-500">
-                          {generatedContent.title?.length || 0}/60
-                        </div>
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
                       </div>
-                      <p className="text-xs text-gray-500">Optimal length: 50-60 characters for SEO</p>
+                      <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                        {generatedContent.title || "Untitled"}
+                      </h1>
                     </div>
 
-                    {/* Editable Meta Description */}
-                    {generatedContent.metaDescription && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Meta Description</label>
-                        <div className="relative">
-                          <textarea
-                            value={generatedContent.metaDescription}
-                            onChange={(e) => {
-                              setGeneratedContent(prev => ({
-                                ...prev,
-                                metaDescription: e.target.value
-                              }));
+                    {/* Content Body Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Content Body</h3>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Rich text editing functionality
+                              const editor = document.createElement('div');
+                              editor.contentEditable = 'true';
+                              editor.innerHTML = generatedContent.content || '';
+                              editor.style.cssText = 'border: 1px solid #ccc; padding: 15px; min-height: 300px; max-height: 500px; overflow-y: auto; font-family: inherit; line-height: 1.6;';
+                              
+                              const dialog = document.createElement('div');
+                              dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #ccc; padding: 20px; z-index: 1000; width: 85%; max-width: 900px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); border-radius: 8px;';
+                              
+                              const toolbar = document.createElement('div');
+                              toolbar.style.cssText = 'margin-bottom: 15px; padding: 12px; border-bottom: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 8px;';
+                              toolbar.innerHTML = `
+                                <button onclick="document.execCommand('bold')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Bold">B</button>
+                                <button onclick="document.execCommand('italic')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Italic">I</button>
+                                <button onclick="document.execCommand('underline')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Underline">U</button>
+                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
+                                <button onclick="document.execCommand('justifyLeft')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Left">⬅</button>
+                                <button onclick="document.execCommand('justifyCenter')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Center">⬌</button>
+                                <button onclick="document.execCommand('justifyRight')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Right">➡</button>
+                                <button onclick="document.execCommand('justifyFull')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Justify">⬌⬌</button>
+                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
+                                <button onclick="
+                                  const url = prompt('Enter URL:');
+                                  if (url) {
+                                    const isExternal = !url.startsWith('/') && !url.includes(window.location.hostname) && !url.startsWith('#');
+                                    document.execCommand('createLink', false, url);
+                                    setTimeout(() => {
+                                      const selection = window.getSelection();
+                                      if (selection.rangeCount > 0) {
+                                        const range = selection.getRangeAt(0);
+                                        const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE ? 
+                                                        range.commonAncestorContainer.parentElement : range.commonAncestorContainer;
+                                        const links = container.querySelectorAll ? container.querySelectorAll('a') : [];
+                                        for (let link of links) {
+                                          if (link.href === url && isExternal) {
+                                            link.setAttribute('target', '_blank');
+                                            link.setAttribute('rel', 'noopener');
+                                          }
+                                        }
+                                      }
+                                    }, 100);
+                                  }
+                                " style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Add Link">🔗</button>
+                              `;
+                              
+                              const buttons = document.createElement('div');
+                              buttons.style.cssText = 'margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;';
+                              buttons.innerHTML = `
+                                <button onclick="
+                                  const content = document.querySelector('[contenteditable]').innerHTML;
+                                  window.updateGeneratedContent(content);
+                                  document.body.removeChild(document.querySelector('[data-rich-editor]'));
+                                " style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Save Changes</button>
+                                <button onclick="document.body.removeChild(document.querySelector('[data-rich-editor]'))" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                              `;
+                              
+                              dialog.setAttribute('data-rich-editor', 'true');
+                              dialog.appendChild(toolbar);
+                              dialog.appendChild(editor);
+                              dialog.appendChild(buttons);
+                              document.body.appendChild(dialog);
+                              
+                              editor.focus();
+                              
+                              // Add global function to update content
+                              (window as any).updateGeneratedContent = (content: string) => {
+                                setGeneratedContent(prev => ({ ...prev, content }));
+                              };
                             }}
-                            rows={3}
-                            className="w-full p-3 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                            placeholder="Enter your meta description..."
-                          />
-                          <div className="absolute right-3 bottom-3 text-xs text-gray-500">
-                            {generatedContent.metaDescription?.length || 0}/160
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-500">Optimal length: 150-160 characters for SEO</p>
-                      </div>
-                    )}
-
-                    {/* Featured Image with Badge */}
-                    {generatedContent.featuredImage && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Featured Image</label>
-                        <div className="relative mb-6">
-                          <div className="absolute top-2 left-2 z-10">
-                            <Badge className="bg-blue-600 text-white">Featured Image</Badge>
-                          </div>
-                          <ShopifyImageViewer 
-                            src={generatedContent.featuredImage.src?.medium || generatedContent.featuredImage.url} 
-                            alt={generatedContent.featuredImage.alt || generatedContent.title} 
-                            className="w-full h-auto rounded-md shadow-md"
-                          />
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Rich Edit
+                          </Button>
                         </div>
                       </div>
-                    )}
-
-                    {/* Tags with Clear Label */}
-                    {generatedContent.tags && generatedContent.tags.length > 0 && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Content Tags</label>
-                        <div className="flex flex-wrap gap-2">
-                          {generatedContent.tags.map((tag: string, index: number) => (
-                            <Badge key={index} variant="outline" className="text-sm">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        <p className="text-xs text-gray-500">These tags will be applied to your {form.watch('articleType') === 'blog' ? 'blog post' : 'page'}</p>
+                      <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border">
+                        {(() => {
+                          const content = generatedContent.content || '';
+                          const primaryImage = selectedMediaContent.primaryImage;
+                          const isPage = form.getValues('articleType') === 'page';
+                          const contentStartsWithImage = content.trim().startsWith('<img') || content.trim().startsWith('<p><img');
+                          const shouldSkipFeaturedImage = isPage && contentStartsWithImage && primaryImage;
+                          
+                          let processedContent = content
+                            .replace(
+                              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                              '<img$1src="https://$2"$3>'
+                            )
+                            .replace(
+                              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                              '<img$1src="https://$3"$4>'
+                            )
+                            .replace(
+                              /<img([^>]*?)>/gi, 
+                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; border-radius: 8px;">'
+                            );
+                          
+                          if (primaryImage && !shouldSkipFeaturedImage) {
+                            const featuredImageHtml = `<div class="featured-image mb-6">
+                              <img src="${primaryImage.url || primaryImage.src?.large}" 
+                                   alt="${primaryImage.alt || 'Featured image'}" 
+                                   style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;" />
+                            </div>`;
+                            processedContent = featuredImageHtml + processedContent;
+                          }
+                          
+                          return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
+                        })()}
                       </div>
-                    )}
+                      <div className="text-xs text-gray-500 text-right mt-2">
+                        Words: {generatedContent.content ? 
+                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
+                          : 0}
+                      </div>
+                    </div>
 
-                    {/* Editable Content Section */}
-                    <div className="space-y-4">
+                    {/* Content Tags Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Content Tags</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newTags = prompt("Edit tags (comma-separated):", (generatedContent.tags || []).join(", "));
+                            if (newTags !== null) {
+                              setGeneratedContent(prev => ({ 
+                                ...prev, 
+                                tags: newTags.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0)
+                              }));
+                            }
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {(generatedContent.tags || []).map((tag, index) => (
+                          <Badge key={index} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {(!generatedContent.tags || generatedContent.tags.length === 0) && (
+                          <p className="text-sm text-muted-foreground">No tags assigned</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Meta Title Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Meta Title</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newMetaTitle = prompt("Edit meta title:", generatedContent.metaTitle || generatedContent.title || "");
+                            if (newMetaTitle !== null) {
+                              setGeneratedContent(prev => ({ ...prev, metaTitle: newMetaTitle }));
+                            }
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <p className="text-sm font-medium text-gray-900">
+                          {generatedContent.metaTitle || generatedContent.title || "No meta title set"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Length: {(generatedContent.metaTitle || generatedContent.title || "").length} characters
+                          {(generatedContent.metaTitle || generatedContent.title || "").length > 60 && (
+                            <span className="text-red-500 ml-2">• Too long (recommended: under 60 chars)</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Meta Description Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Meta Description</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newMetaDescription = prompt("Edit meta description:", generatedContent.metaDescription || "");
+                            if (newMetaDescription !== null) {
+                              setGeneratedContent(prev => ({ ...prev, metaDescription: newMetaDescription }));
+                            }
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <p className="text-sm text-gray-700">
+                          {generatedContent.metaDescription || "No meta description set"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Length: {(generatedContent.metaDescription || "").length} characters
+                          {(generatedContent.metaDescription || "").length > 160 && (
+                            <span className="text-red-500 ml-2">• Too long (recommended: under 160 chars)</span>
+                          )}
+                          {(generatedContent.metaDescription || "").length < 120 && (generatedContent.metaDescription || "").length > 0 && (
+                            <span className="text-yellow-600 ml-2">• Could be longer (recommended: 120-160 chars)</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Legacy Content Editor Section - Hidden for Rich Editing */}
+                    <div className="space-y-4" style={{display: 'none'}}>
                       <label className="text-sm font-medium text-gray-700">Content Body</label>
                       
                       {/* Visual Editor Toolbar */}
