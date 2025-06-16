@@ -4787,30 +4787,31 @@ export default function AdminPanel() {
               </Card>
             </div>
           )}
+        </TabsContent>
 
-          {/* Keyword Selector Dialog */}
-          <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Select Keywords</DialogTitle>
-                <DialogDescription>
-                  Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
-                </DialogDescription>
-              </DialogHeader>
-              <KeywordSelector
-                initialKeywords={selectedKeywords}
-                onKeywordsSelected={handleKeywordsSelected}
-                onClose={() => setShowKeywordSelector(false)}
-                title="Select Keywords for SEO Optimization"
-                productTitle={productTitle}
-                selectedProducts={selectedProducts}
-                selectedCollections={selectedCollections}
-              />
-            </DialogContent>
-          </Dialog>
-          
-          {/* Title Selector Dialog */}
-          <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
+        {/* Keyword Selector Dialog */}
+        <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Select Keywords</DialogTitle>
+              <DialogDescription>
+                Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
+              </DialogDescription>
+            </DialogHeader>
+            <KeywordSelector
+              initialKeywords={selectedKeywords}
+              onKeywordsSelected={handleKeywordsSelected}
+              onClose={() => setShowKeywordSelector(false)}
+              title="Select Keywords for SEO Optimization"
+              productTitle={productTitle}
+              selectedProducts={selectedProducts}
+              selectedCollections={selectedCollections}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Title Selector Dialog */}
+        <Dialog open={showTitleSelector} onOpenChange={setShowTitleSelector}>
             <DialogContent className="sm:max-w-[700px]">
               <DialogHeader>
                 <DialogTitle>Choose a Title</DialogTitle>
@@ -5026,9 +5027,8 @@ export default function AdminPanel() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </TabsContent>
 
-        {/* Connections Tab */}
+        {/* Services Tab */}
         <TabsContent value="connections" className="space-y-6">
           <Card>
             <CardHeader>
