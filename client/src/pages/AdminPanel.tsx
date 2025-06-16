@@ -284,6 +284,7 @@ export default function AdminPanel() {
   const [selectedContentToneId, setSelectedContentToneId] = useState<string>("");
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [contentEditorKey, setContentEditorKey] = useState(0); // Force re-render of editor
   const [isSearchingImages, setIsSearchingImages] = useState(false);
@@ -4889,9 +4890,10 @@ export default function AdminPanel() {
                             ) : (
                               <Button
                                 type="submit"
-                                onClick={handleSubmit(async (values) => {
-                                  await onSubmit(values);
-                                })}
+                                onClick={async () => {
+                                  const values = form.getValues();
+                                  await handleSubmit(values);
+                                }}
                                 className="flex items-center"
                               >
                                 <Send className="mr-2 h-4 w-4" />
