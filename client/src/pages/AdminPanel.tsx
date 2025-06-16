@@ -1603,6 +1603,71 @@ export default function AdminPanel() {
   };
   
   // Handle publication actions
+  // Function to handle image uploads in rich text editor
+  const handleImageUpload = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('source', 'rich_editor');
+
+      // Upload image to server
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const result = await response.json();
+      const imageUrl = result.url;
+
+      // Insert image into editor at cursor position
+      const editorElement = document.querySelector('[contenteditable="true"]') as HTMLDivElement;
+      if (editorElement) {
+        const selection = window.getSelection();
+        const range = selection?.getRangeAt(0);
+        
+        if (range) {
+          const imgElement = document.createElement('img');
+          imgElement.src = imageUrl;
+          imgElement.style.maxWidth = '100%';
+          imgElement.style.height = 'auto';
+          imgElement.style.margin = '20px 0';
+          imgElement.style.borderRadius = '8px';
+          imgElement.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+          imgElement.alt = file.name;
+
+          range.deleteContents();
+          range.insertNode(imgElement);
+          
+          // Update content state
+          setGeneratedContent(prev => ({
+            ...prev,
+            content: editorElement.innerHTML
+          }));
+          
+          // Force preview re-render
+          setContentUpdateCounter(prev => prev + 1);
+        }
+      }
+
+      toast({
+        title: "Image uploaded",
+        description: "Image has been inserted into your content",
+      });
+
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handlePublishContent = async (publicationType: 'publish' | 'draft' | 'schedule') => {
     if (!generatedContent) {
       toast({
@@ -1618,16 +1683,30 @@ export default function AdminPanel() {
       
       const formValues = form.getValues();
       
-      // CRITICAL FIX: Ensure we're using the latest content from rich text editor
-      const currentContent = generatedContent.content;
-      console.log("Rich text editor content being published:", {
-        contentLength: currentContent?.length || 0,
-        contentPreview: currentContent?.substring(0, 200) + "..."
+      // CRITICAL FIX: Capture the latest content directly from the editor DOM element
+      const editorElement = document.querySelector('[contenteditable="true"]') as HTMLDivElement;
+      const latestContent = editorElement ? editorElement.innerHTML : generatedContent.content;
+      
+      // Update the state to ensure consistency
+      if (editorElement && latestContent !== generatedContent.content) {
+        setGeneratedContent(prev => ({
+          ...prev,
+          content: latestContent
+        }));
+      }
+      
+      console.log("Publishing content with latest editor state:", {
+        contentLength: latestContent?.length || 0,
+        contentPreview: latestContent?.substring(0, 200) + "...",
+        hasImages: latestContent?.includes('<img') || false,
+        hasIframes: latestContent?.includes('<iframe') || false,
+        editorFound: !!editorElement,
+        stateContentLength: generatedContent.content?.length || 0
       });
       
       const publishData = {
         title: generatedContent.title,
-        content: currentContent, // Use the content from generatedContent state (updated by rich editor)
+        content: latestContent, // Use the latest content captured directly from the editor
         metaTitle: generatedContent.metaTitle,
         metaDescription: generatedContent.metaDescription,
         tags: Array.isArray(generatedContent.tags) 
@@ -4649,6 +4728,26 @@ export default function AdminPanel() {
                         >
                           1. List
                         </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = async (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (file) {
+                                await handleImageUpload(file);
+                              }
+                            };
+                            input.click();
+                          }}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Insert Image"
+                        >
+                          📷 Image
+                        </button>
                       </div>
 
                       {/* Content Editor with Inline Media */}
@@ -4699,10 +4798,20 @@ export default function AdminPanel() {
                         }}
                         onInput={(e) => {
                           const target = e.target as HTMLDivElement;
+                          const newContent = target.innerHTML;
+                          console.log("Rich text editor content updated:", {
+                            contentLength: newContent?.length || 0,
+                            hasImages: newContent.includes('<img'),
+                            hasIframes: newContent.includes('<iframe')
+                          });
+                          
                           setGeneratedContent(prev => ({
                             ...prev,
-                            content: target.innerHTML
+                            content: newContent
                           }));
+                          
+                          // Force preview re-render
+                          setContentUpdateCounter(prev => prev + 1);
                         }}
                       />
                       
