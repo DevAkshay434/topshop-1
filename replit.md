@@ -110,6 +110,9 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 17, 2025. CRITICAL FIX: Fixed TOC internal anchor links - removed target="_blank" attributes to ensure proper internal page scrolling behavior instead of opening new tabs
+- June 17, 2025. CRITICAL FIX: Enhanced timezone scheduling - improved createDateInTimezone function to properly handle store timezone conversion for accurate scheduled publication
+- June 17, 2025. CRITICAL FIX: Added timezone context to UI - scheduling forms now clearly indicate time will be in store's timezone with visual confirmation
 - June 17, 2025. CRITICAL FIX: Fixed invalid HTML structure in rich text editor - configured TipTap to prevent nested <p> tags inside <li> elements
 - June 17, 2025. CRITICAL FIX: Cleaned up deprecated template UI - removed Save/Load Template buttons and related dialog components
 - June 17, 2025. CRITICAL FIX: Implemented professional TipTap rich text editor - replaced contentEditable with full-featured WYSIWYG editor including formatting, links, images, lists, and character count
