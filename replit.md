@@ -110,6 +110,7 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 17, 2025. Enhanced content generation to include 3-5 external authoritative links from .edu, .gov, .wikipedia, and other trusted domains for improved SEO and credibility
 - June 17, 2025. Implemented Shopify-compatible content editor with real-time syncing, alignment tools (left, center, right, justify), enhanced toolbar with visual icons, and WYSIWYG preview functionality
 - June 17, 2025. Enhanced title suggestion system to provide 12 titles instead of 8, with improved audience targeting
 - June 16, 2025. Initial setup

@@ -258,6 +258,21 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     6. Lists and tables where appropriate to improve readability
     7. A conclusion with a clear call to action
     
+    EXTERNAL AUTHORITATIVE LINK REQUIREMENTS:
+    - Include 3-5 external links to authoritative sources throughout the content
+    - Prioritize links to: .edu (universities/research), .gov (government agencies), .wikipedia.org (Wikipedia articles), .org (established organizations)
+    - High-authority domains to use when relevant:
+      * Government: cdc.gov, epa.gov, nih.gov, fda.gov, usda.gov, energy.gov, ftc.gov, hhs.gov
+      * Universities: harvard.edu, mit.edu, stanford.edu, berkeley.edu, cornell.edu, yale.edu
+      * Organizations: wikipedia.org, who.int, un.org, redcross.org, acs.org, ieee.org
+      * Research: ncbi.nlm.nih.gov, nature.com, sciencedirect.com, jstor.org
+    - Place these links naturally within the content where they support specific claims, statistics, or provide additional credible information
+    - Use proper link formatting: <a href="URL" target="_blank" rel="noopener noreferrer">descriptive anchor text</a>
+    - Make anchor text descriptive and specific (e.g., "EPA water quality standards" not "click here")
+    - Distribute links across different sections of the content for better SEO value
+    - Links should enhance credibility and provide readers with additional authoritative information
+    - When mentioning statistics, studies, or facts, link to the authoritative source when possible
+    
     MEDIA PLACEMENT RULES:
     - Selected YouTube video MUST be placed under the SECOND H2 heading only
     - Secondary images MUST be placed under H2 headings that come AFTER the video
