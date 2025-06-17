@@ -1250,17 +1250,29 @@ export class ShopifyService {
         '<a$1 href="#$2"$3$4>'
       );
       
-      // Ensure product image links remain clickable with proper cursor styling
-      processedContent = processedContent.replace(
-        /class="product-image-link"/g,
-        'class="product-image-link" style="cursor: pointer; display: block;"'
-      );
+      // Remove all JavaScript event handlers that don't work in Shopify
+      processedContent = processedContent.replace(/\s*onmouseover="[^"]*"/gi, '');
+      processedContent = processedContent.replace(/\s*onmouseout="[^"]*"/gi, '');
+      processedContent = processedContent.replace(/\s*onclick="[^"]*"/gi, '');
       
-      // Ensure product CTA buttons remain properly styled and clickable
-      processedContent = processedContent.replace(
-        /class="product-cta-button"/g,
-        'class="product-cta-button" style="cursor: pointer; display: inline-block;"'
-      );
+      // Remove CSS classes and keep only inline styles for Shopify compatibility
+      processedContent = processedContent.replace(/\s*class="[^"]*"/gi, '');
+      
+      // CRITICAL DEBUG: Log the final processed content being sent to Shopify
+      console.log('=== SHOPIFY CONTENT DEBUG ===');
+      console.log('Content length:', processedContent.length);
+      console.log('Content sample (first 500 chars):', processedContent.substring(0, 500));
+      if (processedContent.includes('href="#')) {
+        console.log('✓ Found TOC links in content');
+        const tocMatches = processedContent.match(/<a[^>]*href="#[^"]*"[^>]*>/g);
+        console.log('TOC link examples:', tocMatches?.slice(0, 3));
+      }
+      if (processedContent.includes('/products/')) {
+        console.log('✓ Found product links in content');
+        const productMatches = processedContent.match(/<a[^>]*href="\/products\/[^"]*"[^>]*>/g);
+        console.log('Product link examples:', productMatches?.slice(0, 3));
+      }
+      console.log('=== END DEBUG ===');
       
       if (post && (post as any).categories && Array.isArray((post as any).categories) && (post as any).categories.length > 0) {
         const categoryTags = (post as any).categories.join(', ');

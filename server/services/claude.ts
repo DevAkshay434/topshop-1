@@ -66,15 +66,15 @@ function addTableOfContents(content: string): string {
     return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate TOC HTML with Shopify-compatible internal links (no JavaScript)
+  // Generate Shopify-compatible TOC HTML with pure inline styles (no CSS classes or JavaScript)
   const tocHtml = `
-<div class="table-of-contents" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-  <h3 style="margin-top: 0; color: #495057; font-size: 18px; font-weight: 600; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-bottom: 15px;">
-    📋 Table of Contents
+<div style="background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; padding: 20px; margin: 20px auto; max-width: 600px;">
+  <h3 style="margin: 0 0 15px 0; color: #495057; font-size: 18px; font-weight: bold; border-bottom: 2px solid #007bff; padding-bottom: 8px;">
+    Table of Contents
   </h3>
-  <ol style="margin: 0; padding: 0 0 0 20px; line-height: 1.6;">
+  <ol style="margin: 0; padding: 0 0 0 25px; line-height: 1.8; list-style-type: decimal;">
     ${headings.map(heading => 
-      `<li style="margin: 8px 0;"><a href="#${heading.id}" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease; cursor: pointer;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
+      `<li style="margin: 10px 0; font-size: 16px;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline; font-weight: 500;">${heading.title}</a></li>`
     ).join('')}
   </ol>
 </div>`;
@@ -168,23 +168,19 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
           productUrl = `/products/${productInfo.handle}`;
         }
         
-        // Create robust product-linked image HTML that survives editor processing
+        // Create Shopify-compatible product-linked image HTML with inline styles only
         imageHtml = `
-<div style="margin: 20px 0; text-align: center; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; background: #f9fafb;">
-  <a href="${productUrl}" title="Shop ${productTitle}" style="text-decoration: none; display: block; border-radius: 8px; overflow: hidden; transition: all 0.3s ease;" class="product-image-link">
+<div style="margin: 20px auto; text-align: center; border: 2px solid #ddd; border-radius: 10px; padding: 20px; background: #f8f9fa; max-width: 500px;">
+  <a href="${productUrl}" style="display: block; text-decoration: none; margin-bottom: 15px;">
     <img src="${image.url}" alt="${image.alt || productTitle}" 
-      style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.3s ease;" 
-      class="product-linked-image" />
+      style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
   </a>
-  ${image.alt ? `<p style="margin: 12px 0 8px 0; font-style: italic; color: #6b7280; font-size: 14px;">${image.alt}</p>` : ''}
-  <div style="margin-top: 12px;">
-    <a href="${productUrl}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; font-weight: 600; padding: 10px 20px; border-radius: 6px; transition: background 0.2s ease; font-size: 14px;" 
-       class="product-cta-button" 
-       onmouseover="this.style.background='#1d4ed8';" 
-       onmouseout="this.style.background='#2563eb';">
-      🛒 Shop ${productTitle}
+  ${image.alt ? `<p style="margin: 10px 0; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
+  <p style="margin: 15px 0 5px 0;">
+    <a href="${productUrl}" style="display: inline-block; background: #007bff; color: white; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 5px; font-size: 16px; border: none;">
+      Shop ${productTitle} →
     </a>
-  </div>
+  </p>
 </div>`;
       } else {
         // Fallback without product link if no products available
