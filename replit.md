@@ -110,6 +110,8 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 17, 2025. CRITICAL FIX: Fixed invalid HTML structure in rich text editor - configured TipTap to prevent nested <p> tags inside <li> elements
+- June 17, 2025. CRITICAL FIX: Cleaned up deprecated template UI - removed Save/Load Template buttons and related dialog components
 - June 17, 2025. CRITICAL FIX: Implemented professional TipTap rich text editor - replaced contentEditable with full-featured WYSIWYG editor including formatting, links, images, lists, and character count
 - June 17, 2025. CRITICAL FIX: Resolved Meta Title vs Page Title distinction - Meta Title now properly stored as SEO metafield while Page Title remains visible headline
 - June 17, 2025. CRITICAL FIX: Implemented AI-powered Auto Optimize functionality for meta title and description using Claude with audience targeting, keywords, and tone

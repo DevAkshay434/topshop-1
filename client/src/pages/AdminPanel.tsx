@@ -2032,17 +2032,7 @@ export default function AdminPanel() {
                     {/* Step guidance */}
                     {/* Top button for Load Template */}
                     <div className="flex justify-end mb-4">
-                      <Button
-                        type="button" 
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowLoadTemplateDialog(true)}
-                        disabled={templates.length === 0}
-                        className="flex items-center gap-1"
-                      >
-                        <FileText className="h-4 w-4" />
-                        Load Template
-                      </Button>
+
                     </div>
                     
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
