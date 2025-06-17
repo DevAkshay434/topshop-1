@@ -4116,7 +4116,7 @@ export default function AdminPanel() {
                       </h1>
                     </div>
 
-                    {/* Content Body Section */}
+                    {/* Shopify-Compatible Content Editor Section */}
                     <div className="border-b border-gray-200 pb-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">Content Body</h3>
@@ -4125,156 +4125,287 @@ export default function AdminPanel() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Rich text editing functionality
-                              const editor = document.createElement('div');
-                              editor.contentEditable = 'true';
-                              editor.innerHTML = generatedContent.content || '';
-                              editor.style.cssText = 'border: 1px solid #ccc; padding: 15px; min-height: 300px; max-height: 500px; overflow-y: auto; font-family: inherit; line-height: 1.6;';
-                              
-                              const dialog = document.createElement('div');
-                              dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #ccc; padding: 20px; z-index: 1000; width: 85%; max-width: 900px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); border-radius: 8px;';
-                              
-                              const toolbar = document.createElement('div');
-                              toolbar.style.cssText = 'margin-bottom: 15px; padding: 12px; border-bottom: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 8px;';
-                              toolbar.innerHTML = `
-                                <button onclick="document.execCommand('bold')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Bold">B</button>
-                                <button onclick="document.execCommand('italic')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Italic">I</button>
-                                <button onclick="document.execCommand('underline')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Underline">U</button>
-                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
-                                <button onclick="document.execCommand('justifyLeft')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Left">⬅</button>
-                                <button onclick="document.execCommand('justifyCenter')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Center">⬌</button>
-                                <button onclick="document.execCommand('justifyRight')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Right">➡</button>
-                                <button onclick="document.execCommand('justifyFull')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Justify">⬌⬌</button>
-                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
-                                <button onclick="
-                                  const url = prompt('Enter URL:');
-                                  if (url) {
-                                    const isExternal = !url.startsWith('/') && !url.includes(window.location.hostname) && !url.startsWith('#');
-                                    document.execCommand('createLink', false, url);
-                                    setTimeout(() => {
-                                      const selection = window.getSelection();
-                                      if (selection.rangeCount > 0) {
-                                        const range = selection.getRangeAt(0);
-                                        const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE ? 
-                                                        range.commonAncestorContainer.parentElement : range.commonAncestorContainer;
-                                        const links = container.querySelectorAll ? container.querySelectorAll('a') : [];
-                                        for (let link of links) {
-                                          if (link.href === url && isExternal) {
-                                            link.setAttribute('target', '_blank');
-                                            link.setAttribute('rel', 'noopener');
-                                          }
-                                        }
-                                      }
-                                    }, 100);
-                                  }
-                                " style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Add Link">🔗</button>
-                              `;
-                              
-                              const buttons = document.createElement('div');
-                              buttons.style.cssText = 'margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;';
-                              buttons.innerHTML = `
-                                <button onclick="
-                                  const content = document.querySelector('[contenteditable]').innerHTML;
-                                  window.updateGeneratedContent(content);
-                                  document.body.removeChild(document.querySelector('[data-rich-editor]'));
-                                  window.showSaveConfirmation && window.showSaveConfirmation();
-                                " style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Save Changes</button>
-                                <button onclick="document.body.removeChild(document.querySelector('[data-rich-editor]'))" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                              `;
-                              
-                              dialog.setAttribute('data-rich-editor', 'true');
-                              dialog.appendChild(toolbar);
-                              dialog.appendChild(editor);
-                              dialog.appendChild(buttons);
-                              document.body.appendChild(dialog);
-                              
-                              editor.focus();
-                              
-                              // Add global functions to update content and show confirmation
-                              (window as any).updateGeneratedContent = (content: string) => {
-                                console.log("Rich editor updating content:", {
-                                  contentLength: content?.length || 0,
-                                  contentPreview: content?.substring(0, 100) + "..."
-                                });
-                                setGeneratedContent(prev => {
-                                  const updated = { ...prev, content };
-                                  console.log("Content state updated:", {
-                                    previousLength: prev.content?.length || 0,
-                                    newLength: content?.length || 0
-                                  });
-                                  return updated;
-                                });
-                                
-                                // Force re-render by updating the counter
-                                setContentUpdateCounter(prev => prev + 1);
-                                
-                                // Force re-render of preview to show updated content
-                                setTimeout(() => {
-                                  const previewElement = document.querySelector('.prose');
-                                  if (previewElement) {
-                                    previewElement.scrollTop = 0; // Trigger visual update
-                                  }
-                                }, 100);
-                              };
-                              
-                              (window as any).showSaveConfirmation = () => {
-                                toast({
-                                  title: "Content updated",
-                                  description: "Your content changes have been saved. They will be included when you publish.",
-                                  variant: "default"
-                                });
-                              };
+                              // Copy HTML to clipboard for Shopify compatibility
+                              navigator.clipboard.writeText(generatedContent.content || '');
+                              toast({
+                                title: "Content copied",
+                                description: "Shopify-compatible HTML copied to clipboard",
+                              });
                             }}
                           >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Rich Edit
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy HTML
                           </Button>
                         </div>
                       </div>
-                      <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border h-96 overflow-y-auto">
-                        {(() => {
-                          // Force re-render when content changes by using a key
-                          const content = generatedContent.content || '';
-                          console.log("Preview rendering with content length:", content.length);
-                          
-                          const primaryImage = selectedMediaContent.primaryImage;
-                          const isPage = form.getValues('articleType') === 'page';
-                          const contentStartsWithImage = content.trim().startsWith('<img') || content.trim().startsWith('<p><img');
-                          const shouldSkipFeaturedImage = isPage && contentStartsWithImage && primaryImage;
-                          
-                          let processedContent = content
-                            .replace(
-                              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                              '<img$1src="https://$2"$3>'
-                            )
-                            .replace(
-                              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                              '<img$1src="https://$3"$4>'
-                            )
-                            .replace(
-                              /<img([^>]*?)>/gi, 
-                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; border-radius: 8px;">'
-                            );
-                          
-                          if (primaryImage && !shouldSkipFeaturedImage) {
-                            const featuredImageHtml = `<div class="featured-image mb-6">
-                              <img src="${primaryImage.url || primaryImage.src?.large}" 
-                                   alt="${primaryImage.alt || 'Featured image'}" 
-                                   style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;" />
-                            </div>`;
-                            processedContent = featuredImageHtml + processedContent;
-                          }
-                          
-                          return <div 
-                            key={`content-${content.length}-${contentUpdateCounter}`} 
-                            dangerouslySetInnerHTML={{ __html: processedContent }} 
-                          />;
-                        })()}
+
+                      {/* Shopify-Style Rich Text Editor Toolbar */}
+                      <div className="border border-gray-200 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('bold', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 font-bold transition-colors"
+                          title="Bold"
+                        >
+                          <strong>B</strong>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('italic', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 italic transition-colors"
+                          title="Italic"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('underline', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 underline transition-colors"
+                          title="Underline"
+                        >
+                          U
+                        </button>
+                        <div className="w-px h-6 bg-gray-300"></div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('formatBlock', false, 'h2');
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 font-semibold transition-colors"
+                          title="Heading 2"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('formatBlock', false, 'h3');
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 font-medium transition-colors"
+                          title="Heading 3"
+                        >
+                          H3
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('formatBlock', false, 'p');
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          title="Paragraph"
+                        >
+                          P
+                        </button>
+                        <div className="w-px h-6 bg-gray-300"></div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('insertUnorderedList', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          title="Bullet List"
+                        >
+                          • List
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('insertOrderedList', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          title="Numbered List"
+                        >
+                          1. List
+                        </button>
+                        <div className="w-px h-6 bg-gray-300"></div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = prompt('Enter URL:');
+                            if (url) {
+                              document.execCommand('createLink', false, url);
+                              document.querySelector('[data-shopify-editor]')?.focus();
+                            }
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          title="Insert Link"
+                        >
+                          🔗 Link
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('removeFormat', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          title="Clear Formatting"
+                        >
+                          Clear
+                        </button>
                       </div>
-                      <div className="text-xs text-gray-500 text-right mt-2">
-                        Words: {generatedContent.content ? 
-                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
-                          : 0}
+
+                      {/* Shopify-Compatible Content Editor */}
+                      <div
+                        key={contentEditorKey}
+                        data-shopify-editor="true"
+                        ref={(el) => {
+                          if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                            // Clean and process content for Shopify compatibility
+                            let shopifyContent = generatedContent.content;
+                            
+                            // Ensure proper Shopify-compatible HTML structure
+                            shopifyContent = shopifyContent
+                              // Fix image URLs to be absolute
+                              .replace(/<img([^>]*?)src=["'](?!https?:\/\/)([^"']+)["']([^>]*?)>/gi, '<img$1src="https://$2"$3>')
+                              // Ensure images have proper Shopify styling
+                              .replace(/<img([^>]*?)>/gi, '<img$1 style="max-width: 100%; height: auto; display: block; margin: 20px auto;">')
+                              // Clean up any double protocols
+                              .replace(/src="https:\/\/https:\/\//gi, 'src="https://')
+                              // Ensure proper paragraph structure
+                              .replace(/\n\n/g, '</p><p>')
+                              // Clean up any malformed tags
+                              .replace(/<p><\/p>/g, '')
+                              .replace(/<p>\s*<\/p>/g, '');
+
+                            el.innerHTML = shopifyContent;
+                            el.setAttribute('data-content-loaded', 'true');
+                          } else if (el && !generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                            el.innerHTML = '<p>Your generated content will appear here for editing. This editor produces Shopify-compatible HTML.</p>';
+                          }
+                        }}
+                        contentEditable
+                        suppressContentEditableWarning={true}
+                        className="min-h-[400px] max-h-[60vh] overflow-y-auto p-5 border border-gray-200 rounded-b-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        style={{ 
+                          borderTop: 'none',
+                          lineHeight: '1.6',
+                          fontSize: '16px',
+                          fontFamily: 'system-ui, -apple-system, sans-serif'
+                        }}
+                        onInput={(e) => {
+                          const target = e.target as HTMLDivElement;
+                          let newContent = target.innerHTML;
+                          
+                          // Clean content for Shopify compatibility
+                          newContent = newContent
+                            // Remove any style attributes that might interfere with Shopify themes
+                            .replace(/style="[^"]*"/gi, (match) => {
+                              // Keep only essential styles that Shopify supports
+                              const essentialStyles = match.match(/(max-width|width|height|margin|padding|text-align|display):[^;]*/gi);
+                              if (essentialStyles && essentialStyles.length > 0) {
+                                return `style="${essentialStyles.join('; ')}"`;
+                              }
+                              return '';
+                            })
+                            // Ensure proper image formatting for Shopify
+                            .replace(/<img([^>]*?)>/gi, '<img$1>')
+                            // Clean up empty paragraphs
+                            .replace(/<p><br><\/p>/gi, '<p></p>')
+                            .replace(/<p>\s*<\/p>/gi, '')
+                            // Ensure proper list formatting
+                            .replace(/<div><br><\/div>/gi, '<p></p>');
+
+                          console.log("Shopify editor content updated:", {
+                            contentLength: newContent?.length || 0,
+                            hasImages: newContent.includes('<img'),
+                            hasLists: newContent.includes('<ul>') || newContent.includes('<ol>'),
+                            hasHeadings: newContent.includes('<h2>') || newContent.includes('<h3>')
+                          });
+                          
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            content: newContent
+                          }));
+                          
+                          // Trigger real-time preview update
+                          setContentUpdateCounter(prev => prev + 1);
+                        }}
+                        onPaste={(e) => {
+                          // Handle paste events to maintain Shopify compatibility
+                          e.preventDefault();
+                          const paste = e.clipboardData?.getData('text/html') || e.clipboardData?.getData('text/plain') || '';
+                          
+                          // Clean pasted content
+                          let cleanPaste = paste
+                            .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                            .replace(/<style[^>]*>.*?<\/style>/gi, '')
+                            .replace(/style="[^"]*"/gi, '')
+                            .replace(/class="[^"]*"/gi, '')
+                            .replace(/id="[^"]*"/gi, '');
+                          
+                          document.execCommand('insertHTML', false, cleanPaste);
+                        }}
+                      />
+                      
+                      {/* Word Count and Status */}
+                      <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+                        <span>
+                          Words: {generatedContent.content ? 
+                            generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
+                            : 0}
+                        </span>
+                        <span className="text-green-600">
+                          ✓ Shopify-compatible HTML
+                        </span>
+                      </div>
+
+                      {/* Real-Time Preview Section */}
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Live Preview</h4>
+                        <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border h-64 overflow-y-auto">
+                          {(() => {
+                            // Real-time preview that mirrors the editor content
+                            const content = generatedContent.content || '';
+                            
+                            const primaryImage = selectedMediaContent.primaryImage;
+                            const isPage = form.getValues('articleType') === 'page';
+                            const contentStartsWithImage = content.trim().startsWith('<img') || content.trim().startsWith('<p><img');
+                            const shouldSkipFeaturedImage = isPage && contentStartsWithImage && primaryImage;
+                            
+                            let processedContent = content
+                              .replace(
+                                /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$2"$3>'
+                              )
+                              .replace(
+                                /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$3"$4>'
+                              )
+                              .replace(
+                                /<img([^>]*?)>/gi, 
+                                '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; border-radius: 8px;">'
+                              );
+                            
+                            if (primaryImage && !shouldSkipFeaturedImage) {
+                              const featuredImageHtml = `<div class="featured-image mb-6">
+                                <img src="${primaryImage.url || primaryImage.src?.large}" 
+                                     alt="${primaryImage.alt || 'Featured image'}" 
+                                     style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;" />
+                              </div>`;
+                              processedContent = featuredImageHtml + processedContent;
+                            }
+                            
+                            return <div 
+                              key={`content-${content.length}-${contentUpdateCounter}`} 
+                              dangerouslySetInnerHTML={{ __html: processedContent }} 
+                            />;
+                          })()}
+                        </div>
                       </div>
                     </div>
 
