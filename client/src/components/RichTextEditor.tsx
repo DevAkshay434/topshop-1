@@ -48,6 +48,15 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         HTMLAttributes: {
           class: 'text-blue-600 underline',
         },
+        validate: href => /^https?:\/\//.test(href) || /^#/.test(href),
+        renderHTML({ HTMLAttributes }) {
+          // Remove target="_blank" for internal anchor links (TOC)
+          if (HTMLAttributes.href && HTMLAttributes.href.startsWith('#')) {
+            delete HTMLAttributes.target;
+            delete HTMLAttributes.rel;
+          }
+          return ['a', HTMLAttributes, 0];
+        },
       }),
       Image.configure({
         HTMLAttributes: {
@@ -66,6 +75,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       // Fix invalid HTML: Remove paragraph tags from within list items
       html = html.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       html = html.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+      
+      // Fix TOC links: Remove target="_blank" and rel attributes from internal anchor links
+      html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
+      html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
       
       onChange(html);
     },
