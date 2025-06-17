@@ -1238,16 +1238,24 @@ export class ShopifyService {
       processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       
-      // CRITICAL FIX: Remove target="_blank" ONLY from internal anchor links (TOC), preserve for product links
+      // CRITICAL FIX: Remove target="_blank" from TOC links (internal anchors) in all possible orders
       processedContent = processedContent.replace(
         /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/gi,
         '<a$1 href="#$2"$3$4>'
       );
+      processedContent = processedContent.replace(
+        /<a([^>]*)\s+target=["']_blank["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi,
+        '<a$1$2 href="#$3"$4>'
+      );
       
-      // Remove rel attributes from internal anchor links only
+      // Remove rel attributes from TOC links only 
       processedContent = processedContent.replace(
         /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
         '<a$1 href="#$2"$3$4>'
+      );
+      processedContent = processedContent.replace(
+        /<a([^>]*)\s+rel=["'][^"']*["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi,
+        '<a$1$2 href="#$3"$4>'
       );
       
       // Remove JavaScript event handlers that don't work in Shopify
@@ -1260,6 +1268,19 @@ export class ShopifyService {
       
       // Remove CSS classes and keep only inline styles for Shopify compatibility
       processedContent = processedContent.replace(/\s*class="[^"]*"/gi, '');
+      
+      // FINAL FIX: Ensure all product links have target="_blank"
+      processedContent = processedContent.replace(
+        /<a([^>]*?)href=["'](\/products\/[^"']+)["']([^>]*?)>/gi,
+        (match, beforeHref, productPath, afterHref) => {
+          // Check if target="_blank" already exists
+          if (match.includes('target="_blank"')) {
+            return match;
+          }
+          // Add target="_blank" to product links
+          return `<a${beforeHref}href="${productPath}"${afterHref} target="_blank" rel="noopener noreferrer">`;
+        }
+      );
       
       // CRITICAL DEBUG: Verify TOC and product link processing
       console.log('=== SHOPIFY CONTENT DEBUG ===');
@@ -1286,10 +1307,14 @@ export class ShopifyService {
         
         // Check if product links have target="_blank" (SHOULD have this)
         const productWithTarget = processedContent.match(/<a[^>]*href="\/products\/[^"]*"[^>]*target="_blank"[^>]*>/g);
-        if (productWithTarget) {
+        const productWithTargetAnyOrder = processedContent.match(/<a[^>]*target="_blank"[^>]*href="\/products\/[^"]*"[^>]*>/g);
+        
+        if (productWithTarget || productWithTargetAnyOrder) {
           console.log('✅ Product links properly have target="_blank"');
         } else {
           console.log('❌ ERROR: Product links missing target="_blank"');
+          // Show the actual product links found
+          console.log('Actual product links found:', productMatches?.slice(0, 2));
         }
       }
       console.log('=== END DEBUG ===');
