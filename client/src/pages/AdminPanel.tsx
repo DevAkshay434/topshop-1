@@ -11,6 +11,7 @@ import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSele
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { AuthorSelector } from '../components/AuthorSelector';
+import RichTextEditor from '../components/RichTextEditor';
 import { 
   Card, 
   CardContent, 
