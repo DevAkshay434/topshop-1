@@ -4117,166 +4117,33 @@ export default function AdminPanel() {
                       </h1>
                     </div>
 
-                    {/* Content Body Section */}
+                    {/* Content Body Section with Rich Text Editor */}
                     <div className="border-b border-gray-200 pb-4">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">Content Body</h3>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // Rich text editing functionality
-                              const editor = document.createElement('div');
-                              editor.contentEditable = 'true';
-                              editor.innerHTML = generatedContent.content || '';
-                              editor.style.cssText = 'border: 1px solid #ccc; padding: 15px; min-height: 300px; max-height: 500px; overflow-y: auto; font-family: inherit; line-height: 1.6;';
-                              
-                              const dialog = document.createElement('div');
-                              dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #ccc; padding: 20px; z-index: 1000; width: 85%; max-width: 900px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); border-radius: 8px;';
-                              
-                              const toolbar = document.createElement('div');
-                              toolbar.style.cssText = 'margin-bottom: 15px; padding: 12px; border-bottom: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 8px;';
-                              toolbar.innerHTML = `
-                                <button onclick="document.execCommand('bold')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Bold">B</button>
-                                <button onclick="document.execCommand('italic')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Italic">I</button>
-                                <button onclick="document.execCommand('underline')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Underline">U</button>
-                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
-                                <button onclick="document.execCommand('justifyLeft')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Left">⬅</button>
-                                <button onclick="document.execCommand('justifyCenter')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Center">⬌</button>
-                                <button onclick="document.execCommand('justifyRight')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Right">➡</button>
-                                <button onclick="document.execCommand('justifyFull')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Justify">⬌⬌</button>
-                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
-                                <button onclick="
-                                  const url = prompt('Enter URL:');
-                                  if (url) {
-                                    const isExternal = !url.startsWith('/') && !url.includes(window.location.hostname) && !url.startsWith('#');
-                                    document.execCommand('createLink', false, url);
-                                    setTimeout(() => {
-                                      const selection = window.getSelection();
-                                      if (selection.rangeCount > 0) {
-                                        const range = selection.getRangeAt(0);
-                                        const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE ? 
-                                                        range.commonAncestorContainer.parentElement : range.commonAncestorContainer;
-                                        const links = container.querySelectorAll ? container.querySelectorAll('a') : [];
-                                        for (let link of links) {
-                                          if (link.href === url && isExternal) {
-                                            link.setAttribute('target', '_blank');
-                                            link.setAttribute('rel', 'noopener');
-                                          }
-                                        }
-                                      }
-                                    }, 100);
-                                  }
-                                " style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Add Link">🔗</button>
-                              `;
-                              
-                              const buttons = document.createElement('div');
-                              buttons.style.cssText = 'margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;';
-                              buttons.innerHTML = `
-                                <button onclick="
-                                  const content = document.querySelector('[contenteditable]').innerHTML;
-                                  window.updateGeneratedContent(content);
-                                  document.body.removeChild(document.querySelector('[data-rich-editor]'));
-                                  window.showSaveConfirmation && window.showSaveConfirmation();
-                                " style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Save Changes</button>
-                                <button onclick="document.body.removeChild(document.querySelector('[data-rich-editor]'))" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                              `;
-                              
-                              dialog.setAttribute('data-rich-editor', 'true');
-                              dialog.appendChild(toolbar);
-                              dialog.appendChild(editor);
-                              dialog.appendChild(buttons);
-                              document.body.appendChild(dialog);
-                              
-                              editor.focus();
-                              
-                              // Add global functions to update content and show confirmation
-                              (window as any).updateGeneratedContent = (content: string) => {
-                                console.log("Rich editor updating content:", {
-                                  contentLength: content?.length || 0,
-                                  contentPreview: content?.substring(0, 100) + "..."
-                                });
-                                setGeneratedContent(prev => {
-                                  const updated = { ...prev, content };
-                                  console.log("Content state updated:", {
-                                    previousLength: prev.content?.length || 0,
-                                    newLength: content?.length || 0
-                                  });
-                                  return updated;
-                                });
-                                
-                                // Force re-render by updating the counter
-                                setContentUpdateCounter(prev => prev + 1);
-                                
-                                // Force re-render of preview to show updated content
-                                setTimeout(() => {
-                                  const previewElement = document.querySelector('.prose');
-                                  if (previewElement) {
-                                    previewElement.scrollTop = 0; // Trigger visual update
-                                  }
-                                }, 100);
-                              };
-                              
-                              (window as any).showSaveConfirmation = () => {
-                                toast({
-                                  title: "Content updated",
-                                  description: "Your content changes have been saved. They will be included when you publish.",
-                                  variant: "default"
-                                });
-                              };
-                            }}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Rich Edit
-                          </Button>
-                        </div>
+                        <span className="text-sm text-gray-500">Edit content with full formatting support</span>
                       </div>
-                      <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border h-96 overflow-y-auto">
-                        {(() => {
-                          // Force re-render when content changes by using a key
-                          const content = generatedContent.content || '';
-                          console.log("Preview rendering with content length:", content.length);
+                      
+                      <RichTextEditor
+                        content={generatedContent.content || ''}
+                        onChange={(content) => {
+                          console.log("Rich text editor content updated:", {
+                            contentLength: content?.length || 0,
+                            hasImages: content.includes('<img'),
+                            hasIframes: content.includes('<iframe')
+                          });
                           
-                          const primaryImage = selectedMediaContent.primaryImage;
-                          const isPage = form.getValues('articleType') === 'page';
-                          const contentStartsWithImage = content.trim().startsWith('<img') || content.trim().startsWith('<p><img');
-                          const shouldSkipFeaturedImage = isPage && contentStartsWithImage && primaryImage;
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            content
+                          }));
                           
-                          let processedContent = content
-                            .replace(
-                              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                              '<img$1src="https://$2"$3>'
-                            )
-                            .replace(
-                              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                              '<img$1src="https://$3"$4>'
-                            )
-                            .replace(
-                              /<img([^>]*?)>/gi, 
-                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; border-radius: 8px;">'
-                            );
-                          
-                          if (primaryImage && !shouldSkipFeaturedImage) {
-                            const featuredImageHtml = `<div class="featured-image mb-6">
-                              <img src="${primaryImage.url || primaryImage.src?.large}" 
-                                   alt="${primaryImage.alt || 'Featured image'}" 
-                                   style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;" />
-                            </div>`;
-                            processedContent = featuredImageHtml + processedContent;
-                          }
-                          
-                          return <div 
-                            key={`content-${content.length}-${contentUpdateCounter}`} 
-                            dangerouslySetInnerHTML={{ __html: processedContent }} 
-                          />;
-                        })()}
-                      </div>
-                      <div className="text-xs text-gray-500 text-right mt-2">
-                        Words: {generatedContent.content ? 
-                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
-                          : 0}
-                      </div>
+                          // Force preview re-render
+                          setContentUpdateCounter(prev => prev + 1);
+                        }}
+                        placeholder="Your generated content will appear here for editing..."
+                        className="mb-4"
+                      />
                     </div>
 
                     {/* Content Tags Section */}

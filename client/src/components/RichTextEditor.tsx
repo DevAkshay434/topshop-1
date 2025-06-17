@@ -5,7 +5,7 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import CharacterCount from '@tiptap/extension-character-count';
-import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3 } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Heading3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface RichTextEditorProps {
@@ -104,14 +104,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Italic className="h-4 w-4" />
         </Button>
 
-        <Button
-          variant={editor.isActive('underline') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          title="Underline"
-        >
-          <Underline className="h-4 w-4" />
-        </Button>
+
 
         <div className="w-px h-6 bg-gray-300 mx-1" />
 
