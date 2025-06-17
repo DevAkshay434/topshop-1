@@ -110,6 +110,10 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 17, 2025. CRITICAL FIX: Resolved Meta Title vs Page Title distinction - Meta Title now properly stored as SEO metafield while Page Title remains visible headline
+- June 17, 2025. CRITICAL FIX: Implemented AI-powered Auto Optimize functionality for meta title and description using Claude with audience targeting, keywords, and tone
+- June 17, 2025. CRITICAL FIX: Fixed image upload bug - improved image processing to preserve secondary images while avoiding Shopify's 25MP limit
+- June 17, 2025. CRITICAL FIX: Fixed meta description bug - removed Table of Contents content from Claude-generated descriptions
 - June 17, 2025. Enhanced title suggestion system to provide 12 titles instead of 8, with improved audience targeting
 - June 16, 2025. Initial setup
 ```
