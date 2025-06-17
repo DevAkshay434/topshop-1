@@ -1854,6 +1854,9 @@ export default function AdminPanel() {
         categories: Array.isArray(values.categories) ? values.categories : [],
         // Include buyer personas to target specific customer types
         buyerPersonas: values.buyerPersonas || '',
+        // Map to backend expected fields for audience-aware content generation
+        targetAudience: values.buyerPersonas || '',
+        buyerPersona: values.buyerPersonas || '',
         // Ensure we have these required fields
         articleType: values.articleType || "blog",
         title: values.title || "",
@@ -5274,6 +5277,8 @@ export default function AdminPanel() {
                 onTitleSelected={handleTitleSelected}
                 selectedKeywords={selectedKeywords}
                 productTitle={productTitle}
+                targetAudience={form.watch('buyerPersonas')}
+                buyerPersona={form.watch('buyerPersonas')}
               />
             </DialogContent>
           </Dialog>

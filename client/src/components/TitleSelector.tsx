@@ -11,6 +11,8 @@ export interface TitleSelectionProps {
   onTitleSelected: (title: string) => void;
   selectedKeywords: any[];
   productTitle?: string;
+  targetAudience?: string;
+  buyerPersona?: string;
 }
 
 export default function TitleSelector({
@@ -18,7 +20,9 @@ export default function TitleSelector({
   onOpenChange,
   onTitleSelected,
   selectedKeywords,
-  productTitle
+  productTitle,
+  targetAudience,
+  buyerPersona
 }: TitleSelectionProps) {
   const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +44,9 @@ export default function TitleSelector({
     const requestData = {
       keywords: selectedKeywords.map(k => k.keyword),
       keywordData: selectedKeywords,
-      productTitle: productTitle
+      productTitle: productTitle,
+      targetAudience: targetAudience,
+      buyerPersona: buyerPersona
     };
     
     console.log("Generating title suggestions with data:", requestData);
