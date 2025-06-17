@@ -1432,7 +1432,8 @@ Place this at a logical position in the content, typically after introducing a c
         secondaryImages: requestData.secondaryImages,
         youtubeEmbed: requestData.youtubeEmbed,
         // Add product information for secondary image linking
-        productIds: productsInfo.map(p => p.handle || String(p.id)),
+        productIds: productsInfo.map(p => String(p.id)),
+        productHandles: productsInfo.map(p => p.handle),
         productsInfo: productsInfo,
         // Add audience targeting fields
         targetAudience: requestData.targetAudience,

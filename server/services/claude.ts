@@ -18,6 +18,7 @@ interface BlogContentRequest {
   youtubeEmbed?: string;
   // Product linking fields
   productIds?: string[];
+  productHandles?: string[];
   productsInfo?: any[];
   // Audience targeting fields
   targetAudience?: string;
@@ -122,8 +123,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     // Create a set to track used image URLs to prevent duplicates
     const usedImages = new Set<string>();
     
-    // Get products information for linking (from request or from secondary image metadata)
-    const availableProducts = request.productIds || [];
+    // Get products information for linking (need full product data for handles)
+    const availableProductIds = request.productIds || [];
+    const productHandles = request.productHandles || [];
     
     // Process each marker location with a unique image
     for (let i = 0; i < availableMarkers && i < request.secondaryImages.length; i++) {
@@ -138,28 +140,40 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       let imageHtml = '';
       
-      // Try to link the image to a product
-      if (availableProducts.length > 0) {
+      // Try to link the image to a product using handle (preferred) or ID
+      if (productHandles.length > 0 || availableProductIds.length > 0) {
         // Cycle through available products to ensure each secondary image links to a product
-        const productIndex = i % availableProducts.length;
-        const productId = availableProducts[productIndex];
+        const productIndex = i % Math.max(productHandles.length, availableProductIds.length);
+        
+        let productUrl = '';
+        let productTitle = 'View Product Details';
+        
+        if (productHandles.length > 0) {
+          // Use product handle for proper Shopify URL
+          const productHandle = productHandles[productIndex];
+          productUrl = `/products/${productHandle}`;
+          console.log(`Secondary image ${i + 1} linked to product handle: ${productHandle}`);
+        } else {
+          // Fallback to product ID (may not work on Shopify frontend)
+          const productId = availableProductIds[productIndex];
+          productUrl = `/products/${productId}`;
+          console.log(`Secondary image ${i + 1} linked to product ID: ${productId} (warning: may need handle)`);
+        }
         
         // Create product-linked image HTML
         imageHtml = `
 <div style="margin: 20px 0; text-align: center;">
-  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
+  <a href="${productUrl}" title="${productTitle}" style="text-decoration: none;">
     <img src="${image.url}" alt="${image.alt || ''}" 
-      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease;" 
+      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease; cursor: pointer;" 
       onmouseover="this.style.transform='scale(1.02)'" 
       onmouseout="this.style.transform='scale(1)'" />
   </a>
   ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
   <p style="margin-top: 4px; font-size: 12px;">
-    <a href="/products/${productId}" style="color: #2563eb; text-decoration: none; font-weight: 500;">View Product Details →</a>
+    <a href="${productUrl}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${productTitle} →</a>
   </p>
 </div>`;
-        
-        console.log(`Secondary image ${i + 1} linked to product ID: ${productId}`);
       } else {
         // Fallback without product link if no products available
         imageHtml = `
