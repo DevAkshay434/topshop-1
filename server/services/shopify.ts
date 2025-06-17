@@ -478,9 +478,13 @@ export class ShopifyService {
         console.log(`✗ No meta title found, using regular title: ${post.title}`);
       }
       
-      // Only add image if it exists and is properly formatted
+      // CRITICAL FIX: Add featured image if it exists and is properly formatted
       if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
-        articleData.image = { src: post.featuredImage.trim() };
+        const featuredImageUrl = post.featuredImage.trim();
+        articleData.image = { src: featuredImageUrl };
+        console.log(`✓ Added featured image to article: ${featuredImageUrl}`);
+      } else {
+        console.log(`✗ No featured image found or invalid format`);
       }
 
       // Add author information - prioritize selected author from database
@@ -583,69 +587,85 @@ export class ShopifyService {
         status: post.status
       });
       
-      // Optimize images in content to meet Shopify's 25 megapixel limit
+      // CRITICAL FIX: Properly handle images for Shopify while avoiding 25MP limit issues
       if (articleData.body_html) {
-        console.log('Optimizing images for Shopify 25MP limit...');
+        console.log('Processing content for Shopify compatibility...');
         
-        // Replace all images with heavily optimized versions and center alignment
-        articleData.body_html = articleData.body_html.replace(
-          /<img[^>]*src="([^"]*?\.(?:jpg|jpeg|png|webp)[^"]*?)"[^>]*>/gi,
+        // First, handle secondary image placement markers by temporarily removing them from optimization
+        const imageMarkers: string[] = [];
+        let tempContent = articleData.body_html;
+        
+        // Extract and preserve existing secondary images with their alt text
+        tempContent = tempContent.replace(
+          /<div[^>]*secondary[^>]*>[\s\S]*?<img[^>]*src="([^"]*?)"[^>]*alt="([^"]*?)"[^>]*>[\s\S]*?<\/div>/gi,
+          (match: string, url: string, altText: string) => {
+            const placeholder = `<!-- SECONDARY_IMAGE_PRESERVED_${imageMarkers.length} -->`;
+            imageMarkers.push(match);
+            console.log(`✓ Preserved secondary image: ${altText || 'No alt text'} (${url.substring(0, 50)}...)`);
+            return placeholder;
+          }
+        );
+        
+        // Now optimize remaining images with size constraints
+        tempContent = tempContent.replace(
+          /<img[^>]*src="([^"]*?)"[^>]*>/gi,
           (match: string, url: string) => {
+            // Extract alt text from original image tag
+            const altMatch = match.match(/alt="([^"]*)"/i);
+            const altText = altMatch ? altMatch[1] : '';
+            
             let optimizedUrl = url;
             
-            // Pexels images - use small sizes to avoid 25MP limit
+            // Optimize image URLs for different sources
             if (url.includes('images.pexels.com')) {
-              // Use small size (typically 640x427 = 0.27MP) - well under 25MP limit
-              optimizedUrl = url.replace('/original/', '/small/');
-              optimizedUrl = optimizedUrl.replace('/large/', '/small/');
-              optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
-              optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
+              // Use medium size for Pexels (balanced quality vs size)
+              optimizedUrl = url.replace('/original/', '/medium/');
+              optimizedUrl = optimizedUrl.replace('/large2x/', '/medium/');
+              optimizedUrl = optimizedUrl.replace('/large/', '/medium/');
               
-              // For URLs without size specifier, add very conservative parameters
-              if (!optimizedUrl.includes('/small/') && !optimizedUrl.includes('w=')) {
+              if (!optimizedUrl.includes('/medium/') && !optimizedUrl.includes('w=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=480&h=320&fit=crop&auto=compress&cs=tinysrgb`;
+                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb`;
               }
             }
-            // Shopify CDN images - use much smaller variants
             else if (url.includes('cdn.shopify.com')) {
-              optimizedUrl = url.replace('_master', '_480x480');
-              optimizedUrl = optimizedUrl.replace('_original', '_480x480');
-              optimizedUrl = optimizedUrl.replace('_large', '_480x480');
-              optimizedUrl = optimizedUrl.replace('_medium', '_480x480');
-              optimizedUrl = optimizedUrl.replace('_2048x2048', '_480x480');
-              optimizedUrl = optimizedUrl.replace('_1024x1024', '_480x480');
+              // Use reasonable Shopify image sizes
+              optimizedUrl = url.replace('_master', '_800x800');
+              optimizedUrl = optimizedUrl.replace('_original', '_800x800');
+              optimizedUrl = optimizedUrl.replace('_2048x2048', '_800x800');
+              optimizedUrl = optimizedUrl.replace('_1024x1024', '_800x800');
             }
-            // Other external images - use very conservative sizing
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
-              // Force small dimensions for all external images
+              // Add size constraints for external images
               const separator = optimizedUrl.includes('?') ? '&' : '?';
               if (!url.includes('w=') && !url.includes('width=') && !url.includes('h=') && !url.includes('height=')) {
-                optimizedUrl = optimizedUrl + `${separator}w=480&h=320&fit=crop&q=75&auto=compress`;
+                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&q=80&auto=compress`;
               }
             }
             
-            // Force smaller dimensions for ALL images to avoid 25MP limit
+            // Reduce extreme dimensions to avoid 25MP limit
             optimizedUrl = optimizedUrl.replace(/(\?|&)(w|width)=(\d+)/g, (match, prefix, param, value) => {
               const numValue = parseInt(value);
-              return numValue > 480 ? `${prefix}${param}=480` : match;
+              return numValue > 1200 ? `${prefix}${param}=1200` : match;
             });
             
             optimizedUrl = optimizedUrl.replace(/(\?|&)(h|height)=(\d+)/g, (match, prefix, param, value) => {
               const numValue = parseInt(value);
-              return numValue > 320 ? `${prefix}${param}=320` : match;
+              return numValue > 800 ? `${prefix}${param}=800` : match;
             });
             
-            if (optimizedUrl !== url) {
-              console.log(`Optimized image: ${url.substring(0, 60)}... -> ${optimizedUrl.substring(0, 60)}...`);
-            }
-            
-            // Return centered image with proper styling and guaranteed small dimensions
-            return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="" style="max-width: 480px; max-height: 320px; width: auto; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            // Return properly formatted image
+            return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
           }
         );
         
-        console.log(`Image optimization complete. Content length: ${articleData.body_html.length}`);
+        // Restore preserved secondary images
+        imageMarkers.forEach((marker, index) => {
+          tempContent = tempContent.replace(`<!-- SECONDARY_IMAGE_PRESERVED_${index} -->`, marker);
+        });
+        
+        articleData.body_html = tempContent;
+        console.log(`✓ Content processing complete. Preserved ${imageMarkers.length} secondary images. Content length: ${articleData.body_html.length}`);
       }
 
       // Add author information with avatar at the very beginning if author is specified
@@ -1181,7 +1201,7 @@ export class ShopifyService {
         processedContent = categoryMeta + '\n' + content;
       }
       
-      // Set up the basic page data
+      // Set up the basic page data with SEO meta fields
       const pageData: any = {
         page: {
           title,
@@ -1189,6 +1209,32 @@ export class ShopifyService {
           image: featuredImage ? { src: featuredImage } : undefined
         }
       };
+
+      // CRITICAL FIX: Add SEO meta fields for pages
+      if (post) {
+        // Use meta title if available (this becomes the page title for SEO)
+        if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
+          pageData.page.title = (post as any).metaTitle;
+          console.log(`✓ Using meta title for page: ${(post as any).metaTitle}`);
+        } else {
+          console.log(`✗ No meta title found for page, using regular title: ${title}`);
+        }
+        
+        // Add meta description to page metafields (Shopify Pages use metafields for SEO)
+        if ((post as any).metaDescription && (post as any).metaDescription.trim()) {
+          pageData.page.metafields = [
+            {
+              namespace: 'seo',
+              key: 'description',
+              value: (post as any).metaDescription,
+              type: 'single_line_text_field'
+            }
+          ];
+          console.log(`✓ Added meta description to page metafields: ${(post as any).metaDescription}`);
+        } else {
+          console.log(`✗ No meta description found for page`);
+        }
+      }
 
       // CRITICAL FIX: Shopify Pages API requires specific handling for each publishing type
       
