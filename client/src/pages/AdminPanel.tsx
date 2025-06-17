@@ -4480,6 +4480,11 @@ export default function AdminPanel() {
                                   <FormDescription className="mb-4 text-sm text-gray-600">
                                     Set a future date and time to automatically publish your content. 
                                     Leave blank to publish based on the status above.
+                                    <br />
+                                    <span className="inline-flex items-center mt-1 text-xs text-blue-600 font-medium">
+                                      <Clock className="mr-1 h-3 w-3" />
+                                      Time will be scheduled in your store's timezone
+                                    </span>
                                   </FormDescription>
                                   
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

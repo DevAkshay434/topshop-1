@@ -609,6 +609,18 @@ export class ShopifyService {
         articleData.body_html = articleData.body_html.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
         articleData.body_html = articleData.body_html.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
         
+        // Fix TOC links: Remove target="_blank" and external link attributes from internal anchor links
+        articleData.body_html = articleData.body_html.replace(
+          /<a([^>]*href="#[^"]*"[^>]*)(?:\s+target="_blank"|\s+rel="[^"]*noopener[^"]*"|\s+class="[^"]*")([^>]*)>/gi,
+          '<a$1$2>'
+        );
+        
+        // Clean up any remaining external attributes on internal links
+        articleData.body_html = articleData.body_html.replace(
+          /<a([^>]*)href="#([^"]*)"([^>]*?)(?:target="[^"]*"|rel="[^"]*")([^>]*)>/gi,
+          '<a$1href="#$2"$3$4>'
+        );
+        
         // First, handle secondary image placement markers by temporarily removing them from optimization
         const imageMarkers: string[] = [];
         let tempContent = articleData.body_html;
@@ -1214,6 +1226,18 @@ export class ShopifyService {
       // Fix invalid HTML: Remove paragraph tags from within list items
       processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+      
+      // Fix TOC links: Remove target="_blank" and external link attributes from internal anchor links
+      processedContent = processedContent.replace(
+        /<a([^>]*href="#[^"]*"[^>]*)(?:\s+target="_blank"|\s+rel="[^"]*noopener[^"]*"|\s+class="[^"]*")([^>]*)>/gi,
+        '<a$1$2>'
+      );
+      
+      // Clean up any remaining external attributes on internal links
+      processedContent = processedContent.replace(
+        /<a([^>]*)href="#([^"]*)"([^>]*?)(?:target="[^"]*"|rel="[^"]*")([^>]*)>/gi,
+        '<a$1href="#$2"$3$4>'
+      );
       
       if (post && (post as any).categories && Array.isArray((post as any).categories) && (post as any).categories.length > 0) {
         const categoryTags = (post as any).categories.join(', ');
