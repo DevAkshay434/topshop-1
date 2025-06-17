@@ -1238,16 +1238,28 @@ export class ShopifyService {
       processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       
-      // Fix TOC links: Remove target="_blank" and external link attributes from internal anchor links
+      // CRITICAL FIX: Remove ALL target="_blank" from internal anchor links for proper scrolling
       processedContent = processedContent.replace(
-        /<a([^>]*href="#[^"]*"[^>]*)(?:\s+target="_blank"|\s+rel="[^"]*noopener[^"]*"|\s+class="[^"]*")([^>]*)>/gi,
-        '<a$1$2>'
+        /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/gi,
+        '<a$1 href="#$2"$3$4>'
       );
       
-      // Clean up any remaining external attributes on internal links
+      // Remove rel attributes from internal anchor links
       processedContent = processedContent.replace(
-        /<a([^>]*)href="#([^"]*)"([^>]*?)(?:target="[^"]*"|rel="[^"]*")([^>]*)>/gi,
-        '<a$1href="#$2"$3$4>'
+        /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
+        '<a$1 href="#$2"$3$4>'
+      );
+      
+      // Ensure product image links remain clickable with proper cursor styling
+      processedContent = processedContent.replace(
+        /class="product-image-link"/g,
+        'class="product-image-link" style="cursor: pointer; display: block;"'
+      );
+      
+      // Ensure product CTA buttons remain properly styled and clickable
+      processedContent = processedContent.replace(
+        /class="product-cta-button"/g,
+        'class="product-cta-button" style="cursor: pointer; display: inline-block;"'
       );
       
       if (post && (post as any).categories && Array.isArray((post as any).categories) && (post as any).categories.length > 0) {

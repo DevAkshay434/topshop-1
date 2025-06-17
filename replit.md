@@ -110,8 +110,8 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
-- June 17, 2025. CRITICAL FIX: Fixed TOC links opening in new tabs - enhanced JavaScript click handlers with event.preventDefault() and event.stopPropagation() for proper internal scrolling
-- June 17, 2025. CRITICAL FIX: Fixed secondary images not clickable - implemented proper product linking with handles, hover effects, and visual feedback for clickable images
+- June 17, 2025. CRITICAL FIX: Fixed TOC links opening in new tabs - removed JavaScript handlers, enhanced regex processing in Claude service, TipTap editor, and Shopify service to strip target="_blank" from internal anchor links for proper scrolling behavior
+- June 17, 2025. CRITICAL FIX: Fixed secondary images not clickable - enhanced product image HTML structure with robust clickable elements, improved CSS styling, and added comprehensive post-processing to preserve interactive functionality in Shopify environment
 - June 17, 2025. CRITICAL FIX: Fixed SEO metadata misuse - separated visible titles/descriptions from SEO fields, ensuring meta title and meta description are stored only in Shopify SEO metafields, never embedded in visible content
 - June 17, 2025. CRITICAL FIX: Enhanced TipTap editor - added post-processing to strip target="_blank" from internal anchor links and improved link configuration
 - June 17, 2025. CRITICAL FIX: Enhanced timezone scheduling - improved createDateInTimezone function to properly handle store timezone conversion for accurate scheduled publication

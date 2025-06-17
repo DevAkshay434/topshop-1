@@ -80,6 +80,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
       html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
       
+      // Preserve product image links and CTAs - ensure they remain clickable
+      html = html.replace(/class="product-image-link"/g, 'class="product-image-link" style="cursor: pointer;"');
+      html = html.replace(/class="product-cta-button"/g, 'class="product-cta-button" style="cursor: pointer;"');
+      
+      // Ensure anchor links work properly without external attributes
+      html = html.replace(/<a([^>]*href=["']#[^"']+["'][^>]*)\s+target=["'][^"']*["']([^>]*)>/g, '<a$1$2>');
+      
       onChange(html);
     },
     editorProps: {
