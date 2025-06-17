@@ -605,6 +605,10 @@ export class ShopifyService {
       if (articleData.body_html) {
         console.log('Processing content for Shopify compatibility...');
         
+        // Fix invalid HTML: Remove paragraph tags from within list items
+        articleData.body_html = articleData.body_html.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+        articleData.body_html = articleData.body_html.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+        
         // First, handle secondary image placement markers by temporarily removing them from optimization
         const imageMarkers: string[] = [];
         let tempContent = articleData.body_html;
@@ -1206,13 +1210,18 @@ export class ShopifyService {
       
       // Handle categories for pages - convert to metafields or add to content
       let processedContent = content;
+      
+      // Fix invalid HTML: Remove paragraph tags from within list items
+      processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+      processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+      
       if (post && (post as any).categories && Array.isArray((post as any).categories) && (post as any).categories.length > 0) {
         const categoryTags = (post as any).categories.join(', ');
         console.log(`Adding categories as metadata for page: ${categoryTags}`);
         
         // For pages, we can add categories as a hidden meta section in the content
         const categoryMeta = `<!-- Categories: ${categoryTags} -->`;
-        processedContent = categoryMeta + '\n' + content;
+        processedContent = categoryMeta + '\n' + processedContent;
       }
       
       // Set up the basic page data with SEO meta fields

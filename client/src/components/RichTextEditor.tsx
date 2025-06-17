@@ -61,7 +61,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     ],
     content: content,
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
+      let html = editor.getHTML();
+      
+      // Fix invalid HTML: Remove paragraph tags from within list items
+      html = html.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+      html = html.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
+      
       onChange(html);
     },
     editorProps: {
