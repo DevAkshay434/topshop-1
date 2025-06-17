@@ -1238,24 +1238,35 @@ export class ShopifyService {
       processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       
-      // CRITICAL FIX: Remove target="_blank" from TOC links (internal anchors) in all possible orders
+      // COMPREHENSIVE FIX: Clean all TOC links (internal anchors) - remove target and rel attributes
+      // This regex matches anchor links in any order of attributes
       processedContent = processedContent.replace(
-        /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/gi,
-        '<a$1 href="#$2"$3$4>'
-      );
-      processedContent = processedContent.replace(
-        /<a([^>]*)\s+target=["']_blank["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi,
-        '<a$1$2 href="#$3"$4>'
+        /<a\s+([^>]*?)href=["']#([^"']+)["']([^>]*?)>/gi,
+        (match, beforeHref, anchor, afterHref) => {
+          // Remove target="_blank" and rel attributes from TOC anchor links
+          let cleanAttrs = (beforeHref + afterHref)
+            .replace(/\s*target=["'][^"']*["']/gi, '')
+            .replace(/\s*rel=["'][^"']*["']/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          return `<a${cleanAttrs ? ' ' + cleanAttrs : ''} href="#${anchor}">`;
+        }
       );
       
-      // Remove rel attributes from TOC links only 
+      // Also handle cases where href comes after other attributes
       processedContent = processedContent.replace(
-        /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
-        '<a$1 href="#$2"$3$4>'
-      );
-      processedContent = processedContent.replace(
-        /<a([^>]*)\s+rel=["'][^"']*["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi,
-        '<a$1$2 href="#$3"$4>'
+        /<a\s+([^>]*?)target=["'][^"']*["']([^>]*?)href=["']#([^"']+)["']([^>]*?)>/gi,
+        (match, beforeTarget, betweenTargetHref, anchor, afterHref) => {
+          // Clean all attributes except href for TOC links
+          let cleanAttrs = (beforeTarget + betweenTargetHref + afterHref)
+            .replace(/\s*target=["'][^"']*["']/gi, '')
+            .replace(/\s*rel=["'][^"']*["']/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          
+          return `<a${cleanAttrs ? ' ' + cleanAttrs : ''} href="#${anchor}">`;
+        }
       );
       
       // Remove JavaScript event handlers that don't work in Shopify
