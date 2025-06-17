@@ -1693,8 +1693,7 @@ Return only a JSON object with "metaTitle" and "metaDescription" fields.`;
       res.json({
         success: true,
         metaTitle: optimizedFields.metaTitle,
-        metaDescription: optimizedFields.metaDescription,
-        context: optimizationContext
+        metaDescription: optimizedFields.metaDescription
       });
 
     } catch (error: any) {
