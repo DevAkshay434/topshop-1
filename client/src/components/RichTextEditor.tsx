@@ -27,6 +27,21 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         heading: {
           levels: [1, 2, 3],
         },
+        listItem: {
+          HTMLAttributes: {
+            class: 'list-item-no-p',
+          },
+        },
+        bulletList: {
+          HTMLAttributes: {
+            class: 'list-disc list-inside',
+          },
+        },
+        orderedList: {
+          HTMLAttributes: {
+            class: 'list-decimal list-inside',
+          },
+        },
       }),
       Link.configure({
         openOnClick: false,
@@ -83,6 +98,22 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className={`border border-gray-200 rounded-md ${className}`}>
+      {/* Custom CSS to prevent p tags in list items */}
+      <style>
+        {`
+          .ProseMirror li > p {
+            display: contents;
+          }
+          .ProseMirror li p:first-child {
+            margin: 0;
+            display: contents;
+          }
+          .ProseMirror li p:only-child {
+            display: contents;
+          }
+        `}
+      </style>
+      
       {/* Toolbar */}
       <div className="border-b border-gray-200 bg-gray-50 p-2 flex flex-wrap gap-1">
         {/* Text Formatting */}
