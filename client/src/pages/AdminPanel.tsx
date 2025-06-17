@@ -4141,6 +4141,7 @@ export default function AdminPanel() {
 
                       {/* Shopify-Style Rich Text Editor Toolbar */}
                       <div className="border border-gray-200 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-2">
+                        {/* Text Formatting Group */}
                         <button
                           type="button"
                           onClick={() => {
@@ -4174,7 +4175,66 @@ export default function AdminPanel() {
                         >
                           U
                         </button>
+
                         <div className="w-px h-6 bg-gray-300"></div>
+
+                        {/* Text Alignment Group */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('justifyLeft', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
+                          title="Align Left"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h18v2H3v-2z"/>
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('justifyCenter', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
+                          title="Center"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 6h18v2H3V6zm3 5h12v2H6v-2zm-3 5h18v2H3v-2z"/>
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('justifyRight', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
+                          title="Align Right"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 6h18v2H3V6zm6 5h12v2H9v-2zm-6 5h18v2H3v-2z"/>
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            document.execCommand('justifyFull', false);
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
+                          title="Justify"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+                          </svg>
+                        </button>
+
+                        <div className="w-px h-6 bg-gray-300"></div>
+
+                        {/* Heading Group */}
                         <button
                           type="button"
                           onClick={() => {
@@ -4208,17 +4268,23 @@ export default function AdminPanel() {
                         >
                           P
                         </button>
+
                         <div className="w-px h-6 bg-gray-300"></div>
+
+                        {/* List Group */}
                         <button
                           type="button"
                           onClick={() => {
                             document.execCommand('insertUnorderedList', false);
                             document.querySelector('[data-shopify-editor]')?.focus();
                           }}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
                           title="Bullet List"
                         >
-                          • List
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="5" cy="7" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="5" cy="17" r="2"/>
+                            <path d="M9 6h11v2H9V6zm0 5h11v2H9v-2zm0 5h11v2H9v-2z"/>
+                          </svg>
                         </button>
                         <button
                           type="button"
@@ -4226,36 +4292,113 @@ export default function AdminPanel() {
                             document.execCommand('insertOrderedList', false);
                             document.querySelector('[data-shopify-editor]')?.focus();
                           }}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
                           title="Numbered List"
                         >
-                          1. List
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm7-6v2h11V6H9zm0 5h11v2H9v-2zm0 5h11v2H9v-2z"/>
+                          </svg>
                         </button>
+
                         <div className="w-px h-6 bg-gray-300"></div>
+
+                        {/* Link and Media Group */}
                         <button
                           type="button"
                           onClick={() => {
-                            const url = prompt('Enter URL:');
-                            if (url) {
-                              document.execCommand('createLink', false, url);
-                              document.querySelector('[data-shopify-editor]')?.focus();
+                            const selection = window.getSelection();
+                            const selectedText = selection?.toString() || '';
+                            
+                            if (selectedText.trim() === '') {
+                              // No text selected, insert new link
+                              const linkText = prompt('Enter link text:');
+                              if (linkText) {
+                                const url = prompt('Enter URL:');
+                                if (url) {
+                                  const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+                                  document.execCommand('insertHTML', false, linkHtml);
+                                }
+                              }
+                            } else {
+                              // Text is selected, turn it into a link
+                              const url = prompt('Enter URL:');
+                              if (url) {
+                                document.execCommand('createLink', false, url);
+                                // Set target and rel attributes for external links
+                                setTimeout(() => {
+                                  const editor = document.querySelector('[data-shopify-editor]');
+                                  const links = editor?.querySelectorAll('a');
+                                  links?.forEach(link => {
+                                    if (link.href === url && !url.startsWith('/') && !url.includes(window.location.hostname)) {
+                                      link.setAttribute('target', '_blank');
+                                      link.setAttribute('rel', 'noopener noreferrer');
+                                    }
+                                  });
+                                }, 100);
+                              }
                             }
+                            document.querySelector('[data-shopify-editor]')?.focus();
                           }}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
                           title="Insert Link"
                         >
-                          🔗 Link
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3m0 5h6"/>
+                          </svg>
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const imageUrl = prompt('Enter image URL:');
+                            if (imageUrl) {
+                              const altText = prompt('Enter alt text (optional):') || '';
+                              const alignment = prompt('Enter alignment (left, center, right, or leave blank for default):') || '';
+                              
+                              let alignmentStyle = '';
+                              switch(alignment.toLowerCase()) {
+                                case 'left':
+                                  alignmentStyle = 'float: left; margin: 0 20px 20px 0;';
+                                  break;
+                                case 'right':
+                                  alignmentStyle = 'float: right; margin: 0 0 20px 20px;';
+                                  break;
+                                case 'center':
+                                  alignmentStyle = 'display: block; margin: 20px auto;';
+                                  break;
+                                default:
+                                  alignmentStyle = 'display: block; margin: 20px auto;';
+                              }
+                              
+                              const imageHtml = `<img src="${imageUrl}" alt="${altText}" style="max-width: 100%; height: auto; ${alignmentStyle}">`;
+                              document.execCommand('insertHTML', false, imageHtml);
+                            }
+                            document.querySelector('[data-shopify-editor]')?.focus();
+                          }}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
+                          title="Insert Image"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21,15 16,10 5,21"/>
+                          </svg>
+                        </button>
+
+                        <div className="w-px h-6 bg-gray-300"></div>
+
+                        {/* Utility Group */}
                         <button
                           type="button"
                           onClick={() => {
                             document.execCommand('removeFormat', false);
                             document.querySelector('[data-shopify-editor]')?.focus();
                           }}
-                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center"
                           title="Clear Formatting"
                         >
-                          Clear
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 2l3 6 3-6h4l-5 10 5 10h-4l-3-6-3 6H2l5-10L2 2h4z"/>
+                          </svg>
                         </button>
                       </div>
 
@@ -4301,30 +4444,33 @@ export default function AdminPanel() {
                           const target = e.target as HTMLDivElement;
                           let newContent = target.innerHTML;
                           
-                          // Clean content for Shopify compatibility
+                          // Clean content for Shopify compatibility while preserving essential formatting
                           newContent = newContent
-                            // Remove any style attributes that might interfere with Shopify themes
+                            // Preserve alignment styles for text and images
                             .replace(/style="[^"]*"/gi, (match) => {
-                              // Keep only essential styles that Shopify supports
-                              const essentialStyles = match.match(/(max-width|width|height|margin|padding|text-align|display):[^;]*/gi);
+                              // Keep essential styles that Shopify supports
+                              const essentialStyles = match.match(/(max-width|width|height|margin|padding|text-align|display|float|clear):[^;]*/gi);
                               if (essentialStyles && essentialStyles.length > 0) {
                                 return `style="${essentialStyles.join('; ')}"`;
                               }
                               return '';
                             })
-                            // Ensure proper image formatting for Shopify
+                            // Ensure proper image formatting for Shopify with alignment support
                             .replace(/<img([^>]*?)>/gi, '<img$1>')
-                            // Clean up empty paragraphs
-                            .replace(/<p><br><\/p>/gi, '<p></p>')
+                            // Clean up empty paragraphs but preserve line breaks
+                            .replace(/<p><br><\/p>/gi, '<p>&nbsp;</p>')
                             .replace(/<p>\s*<\/p>/gi, '')
-                            // Ensure proper list formatting
+                            // Preserve div alignment structures
+                            .replace(/<div style="text-align:\s*(left|center|right|justify)[^"]*"([^>]*)>/gi, '<div style="text-align: $1"$2>')
+                            // Clean up nested formatting but preserve alignment
                             .replace(/<div><br><\/div>/gi, '<p></p>');
 
                           console.log("Shopify editor content updated:", {
                             contentLength: newContent?.length || 0,
                             hasImages: newContent.includes('<img'),
                             hasLists: newContent.includes('<ul>') || newContent.includes('<ol>'),
-                            hasHeadings: newContent.includes('<h2>') || newContent.includes('<h3>')
+                            hasHeadings: newContent.includes('<h2>') || newContent.includes('<h3>'),
+                            hasAlignment: newContent.includes('text-align') || newContent.includes('justify')
                           });
                           
                           setGeneratedContent(prev => ({
@@ -4332,7 +4478,7 @@ export default function AdminPanel() {
                             content: newContent
                           }));
                           
-                          // Trigger real-time preview update
+                          // Trigger immediate real-time preview update
                           setContentUpdateCounter(prev => prev + 1);
                         }}
                         onPaste={(e) => {
