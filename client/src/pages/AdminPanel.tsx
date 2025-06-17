@@ -4093,12 +4093,62 @@ export default function AdminPanel() {
                           console.log("Rich text editor content updated:", {
                             contentLength: content?.length || 0,
                             hasImages: content.includes('<img'),
-                            hasIframes: content.includes('<iframe')
+                            hasIframes: content.includes('<iframe'),
+                            hasTOCLinks: content.includes('href="#'),
+                            hasProductLinks: content.includes('/products/')
                           });
+                          
+                          // CRITICAL: Process content to ensure proper secondary image linking
+                          let processedContent = content;
+                          
+                          // Process secondary images to wrap them in product links
+                          if (secondaryImages.length > 0 && selectedProducts.length > 0) {
+                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+                            let imgMatches;
+                            const processedImages = new Set();
+                            
+                            while ((imgMatches = imgRegex.exec(processedContent)) !== null) {
+                              const fullMatch = imgMatches[0];
+                              const imgSrc = imgMatches[2];
+                              
+                              // Skip if already processed
+                              if (processedImages.has(imgSrc)) continue;
+                              processedImages.add(imgSrc);
+                              
+                              // Check if this image is already in a link
+                              const beforeMatch = processedContent.substring(0, imgMatches.index);
+                              const afterMatch = processedContent.substring(imgMatches.index + fullMatch.length);
+                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
+                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
+                              
+                              if (!isInLink) {
+                                // Find matching secondary image
+                                const matchingSecondaryImage = secondaryImages.find(img => {
+                                  const imgUrl = img.src?.medium || img.url || '';
+                                  return imgSrc.includes(imgUrl) || imgUrl.includes(imgSrc) || 
+                                         imgSrc.includes(img.id) || img.id.includes(imgSrc);
+                                });
+                                
+                                if (matchingSecondaryImage && selectedProducts.length > 0) {
+                                  // Link to first selected product
+                                  const product = selectedProducts[0];
+                                  const productUrl = product.admin_url || `/products/${product.handle || product.id}`;
+                                  const linkedImg = `<a href="${productUrl}" target="_blank" rel="noopener noreferrer">${fullMatch}</a>`;
+                                  processedContent = processedContent.replace(fullMatch, linkedImg);
+                                  
+                                  console.log('Linked secondary image to product:', {
+                                    imageId: matchingSecondaryImage.id,
+                                    productTitle: product.title,
+                                    productUrl
+                                  });
+                                }
+                              }
+                            }
+                          }
                           
                           setGeneratedContent(prev => ({
                             ...prev,
-                            content
+                            content: processedContent
                           }));
                           
                           // Force preview re-render

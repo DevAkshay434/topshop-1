@@ -48,12 +48,19 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         HTMLAttributes: {
           class: 'text-blue-600 underline',
         },
-        validate: href => /^https?:\/\//.test(href) || /^#/.test(href),
+        validate: href => /^https?:\/\//.test(href) || /^#/.test(href) || /^\/products\//.test(href),
         renderHTML({ HTMLAttributes }) {
-          // Remove target="_blank" for internal anchor links (TOC)
+          // CRITICAL FIX: Handle TOC links vs Product links differently
           if (HTMLAttributes.href && HTMLAttributes.href.startsWith('#')) {
+            // TOC links: Remove target="_blank" for internal navigation
             delete HTMLAttributes.target;
             delete HTMLAttributes.rel;
+            return ['a', HTMLAttributes, 0];
+          } else if (HTMLAttributes.href && HTMLAttributes.href.includes('/products/')) {
+            // Product links: Ensure target="_blank" for new tab opening
+            HTMLAttributes.target = '_blank';
+            HTMLAttributes.rel = 'noopener noreferrer';
+            return ['a', HTMLAttributes, 0];
           }
           return ['a', HTMLAttributes, 0];
         },
@@ -76,15 +83,33 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       html = html.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       html = html.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       
-      // CRITICAL FIX: Remove target="_blank" ONLY from TOC links (internal anchors starting with #)
-      html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
-      html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
+      // CRITICAL FIX: Handle TOC links vs Product links correctly
+      // Remove target="_blank" ONLY from TOC links (internal anchors starting with #)
+      html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/gi, '<a$1 href="#$2"$3$4>');
+      html = html.replace(/<a([^>]*)\s+target=["']_blank["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi, '<a$1$2 href="#$3"$4>');
+      html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi, '<a$1 href="#$2"$3$4>');
       
-      // PRESERVE product links with target="_blank" - these should open in new tabs
-      // Product links use href="/products/..." pattern and should keep target="_blank"
+      // ENSURE product links have target="_blank" - these should open in new tabs
+      html = html.replace(
+        /<a([^>]*?)href=["'](\/products\/[^"']+)["']([^>]*?)>/gi,
+        (match, beforeHref, productPath, afterHref) => {
+          // Check if target="_blank" already exists
+          if (match.includes('target="_blank"')) {
+            return match;
+          }
+          // Add target="_blank" to product links
+          return `<a${beforeHref}href="${productPath}"${afterHref} target="_blank" rel="noopener noreferrer">`;
+        }
+      );
       
       // Remove CSS classes for Shopify compatibility but preserve inline styles
       html = html.replace(/class="[^"]*"/g, '');
+      
+      console.log('TipTap editor processed content:', {
+        hasTOCLinks: html.includes('href="#'),
+        hasProductLinks: html.includes('/products/'),
+        contentLength: html.length
+      });
       
       onChange(html);
     },
