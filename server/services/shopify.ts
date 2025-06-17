@@ -1238,7 +1238,8 @@ export class ShopifyService {
       processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       
-      // CRITICAL FIX: Remove target="_blank" from TOC links (internal anchors) in all possible orders
+      // CRITICAL FIX: Handle TOC links vs Product links correctly
+      // Step 1: Remove target="_blank" from TOC links (internal anchors) in all possible orders
       processedContent = processedContent.replace(
         /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/gi,
         '<a$1 href="#$2"$3$4>'
@@ -1248,7 +1249,7 @@ export class ShopifyService {
         '<a$1$2 href="#$3"$4>'
       );
       
-      // Remove rel attributes from TOC links only 
+      // Step 2: Remove rel attributes from TOC links only 
       processedContent = processedContent.replace(
         /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
         '<a$1 href="#$2"$3$4>'
@@ -1256,6 +1257,19 @@ export class ShopifyService {
       processedContent = processedContent.replace(
         /<a([^>]*)\s+rel=["'][^"']*["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi,
         '<a$1$2 href="#$3"$4>'
+      );
+      
+      // Step 3: Ensure product links have target="_blank" - these should open in new tabs
+      processedContent = processedContent.replace(
+        /<a([^>]*?)href=["'](\/products\/[^"']+)["']([^>]*?)>/gi,
+        (match, beforeHref, productPath, afterHref) => {
+          // Check if target="_blank" already exists
+          if (match.includes('target="_blank"')) {
+            return match;
+          }
+          // Add target="_blank" to product links
+          return `<a${beforeHref}href="${productPath}"${afterHref} target="_blank" rel="noopener noreferrer">`;
+        }
       );
       
       // Remove JavaScript event handlers that don't work in Shopify
@@ -1285,6 +1299,30 @@ export class ShopifyService {
       // CRITICAL DEBUG: Verify TOC and product link processing
       console.log('=== SHOPIFY CONTENT DEBUG ===');
       console.log('Content length:', processedContent.length);
+      
+      // Check for TOC links
+      const tocLinks = processedContent.match(/href=["']#[^"']*["']/g) || [];
+      console.log(`✓ Found ${tocLinks.length} TOC links:`, tocLinks);
+      
+      // Verify TOC links don't have target="_blank"
+      const badTocLinks = processedContent.match(/<a[^>]*href=["']#[^"']*["'][^>]*target=["']_blank["']/gi) || [];
+      if (badTocLinks.length > 0) {
+        console.log('❌ ERROR: Found TOC links with target="_blank":', badTocLinks);
+      } else {
+        console.log('✓ All TOC links properly configured (no target="_blank")');
+      }
+      
+      // Check for product links
+      const productLinks = processedContent.match(/href=["']\/products\/[^"']*["']/g) || [];
+      console.log(`✓ Found ${productLinks.length} product links:`, productLinks);
+      
+      // Verify product links have target="_blank"
+      const productLinksWithTarget = processedContent.match(/<a[^>]*href=["']\/products\/[^"']*["'][^>]*target=["']_blank["']/gi) || [];
+      console.log(`✓ Product links with target="_blank": ${productLinksWithTarget.length}/${productLinks.length}`);
+      
+      // Check for secondary images wrapped in product links
+      const imageProductLinks = processedContent.match(/<a[^>]*href=["']\/products\/[^"']*["'][^>]*><img[^>]*>/gi) || [];
+      console.log(`✓ Found ${imageProductLinks.length} secondary images linked to products`);
       
       if (processedContent.includes('href="#')) {
         console.log('✓ Found TOC links in content');
