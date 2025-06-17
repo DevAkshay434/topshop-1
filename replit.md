@@ -110,7 +110,6 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
-- June 17, 2025. VERIFICATION COMPLETE: All functionality working correctly - TOC links navigate smoothly within pages, secondary images are clickable and open products in new tabs, SEO metadata properly separated from visible content, confirmed via debug logs and successful Shopify page creation
 - June 17, 2025. CRITICAL FIX: Fixed TOC and secondary image issues - TOC links now use pure anchor tags without target="_blank" for internal scrolling, secondary images include target="_blank" for product links opening in new tabs, enhanced content processing to preserve both link types correctly
 - June 17, 2025. CRITICAL FIX: Added comprehensive debug logging - implemented detailed content verification to track TOC vs product link processing in Shopify publishing pipeline
 - June 17, 2025. CRITICAL FIX: Fixed SEO metadata misuse - separated visible titles/descriptions from SEO fields, ensuring meta title and meta description are stored only in Shopify SEO metafields, never embedded in visible content
