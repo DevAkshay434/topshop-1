@@ -76,16 +76,15 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       html = html.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       html = html.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       
-      // Fix TOC links: Remove target="_blank" and rel attributes from internal anchor links
+      // CRITICAL FIX: Remove target="_blank" ONLY from TOC links (internal anchors starting with #)
       html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
       html = html.replace(/<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/g, '<a$1 href="#$2"$3$4>');
       
-      // Preserve product image links and CTAs - ensure they remain clickable
-      html = html.replace(/class="product-image-link"/g, 'class="product-image-link" style="cursor: pointer;"');
-      html = html.replace(/class="product-cta-button"/g, 'class="product-cta-button" style="cursor: pointer;"');
+      // PRESERVE product links with target="_blank" - these should open in new tabs
+      // Product links use href="/products/..." pattern and should keep target="_blank"
       
-      // Ensure anchor links work properly without external attributes
-      html = html.replace(/<a([^>]*href=["']#[^"']+["'][^>]*)\s+target=["'][^"']*["']([^>]*)>/g, '<a$1$2>');
+      // Remove CSS classes for Shopify compatibility but preserve inline styles
+      html = html.replace(/class="[^"]*"/g, '');
       
       onChange(html);
     },

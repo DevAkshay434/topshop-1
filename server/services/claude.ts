@@ -168,16 +168,16 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
           productUrl = `/products/${productInfo.handle}`;
         }
         
-        // Create Shopify-compatible product-linked image HTML with inline styles only
+        // CRITICAL FIX: Secondary images must be clickable with target="_blank" for product links
         imageHtml = `
 <div style="margin: 20px auto; text-align: center; border: 2px solid #ddd; border-radius: 10px; padding: 20px; background: #f8f9fa; max-width: 500px;">
-  <a href="${productUrl}" style="display: block; text-decoration: none; margin-bottom: 15px;">
+  <a href="${productUrl}" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none; margin-bottom: 15px; cursor: pointer;">
     <img src="${image.url}" alt="${image.alt || productTitle}" 
-      style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+      style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;" />
   </a>
   ${image.alt ? `<p style="margin: 10px 0; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
   <p style="margin: 15px 0 5px 0;">
-    <a href="${productUrl}" style="display: inline-block; background: #007bff; color: white; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 5px; font-size: 16px; border: none;">
+    <a href="${productUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #007bff; color: white; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 5px; font-size: 16px; border: none; cursor: pointer;">
       Shop ${productTitle} →
     </a>
   </p>

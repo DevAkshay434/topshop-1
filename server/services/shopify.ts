@@ -1238,39 +1238,59 @@ export class ShopifyService {
       processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
       
-      // CRITICAL FIX: Remove ALL target="_blank" from internal anchor links for proper scrolling
+      // CRITICAL FIX: Remove target="_blank" ONLY from internal anchor links (TOC), preserve for product links
       processedContent = processedContent.replace(
         /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/gi,
         '<a$1 href="#$2"$3$4>'
       );
       
-      // Remove rel attributes from internal anchor links
+      // Remove rel attributes from internal anchor links only
       processedContent = processedContent.replace(
         /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
         '<a$1 href="#$2"$3$4>'
       );
       
-      // Remove all JavaScript event handlers that don't work in Shopify
+      // Remove JavaScript event handlers that don't work in Shopify
       processedContent = processedContent.replace(/\s*onmouseover="[^"]*"/gi, '');
       processedContent = processedContent.replace(/\s*onmouseout="[^"]*"/gi, '');
       processedContent = processedContent.replace(/\s*onclick="[^"]*"/gi, '');
       
+      // PRESERVE secondary image product links with target="_blank" - DON'T remove these
+      // Product links should remain clickable and open in new tabs
+      
       // Remove CSS classes and keep only inline styles for Shopify compatibility
       processedContent = processedContent.replace(/\s*class="[^"]*"/gi, '');
       
-      // CRITICAL DEBUG: Log the final processed content being sent to Shopify
+      // CRITICAL DEBUG: Verify TOC and product link processing
       console.log('=== SHOPIFY CONTENT DEBUG ===');
       console.log('Content length:', processedContent.length);
-      console.log('Content sample (first 500 chars):', processedContent.substring(0, 500));
+      
       if (processedContent.includes('href="#')) {
         console.log('✓ Found TOC links in content');
         const tocMatches = processedContent.match(/<a[^>]*href="#[^"]*"[^>]*>/g);
-        console.log('TOC link examples:', tocMatches?.slice(0, 3));
+        console.log('TOC link examples:', tocMatches?.slice(0, 2));
+        
+        // Check if TOC links have target="_blank" (should NOT have this)
+        const tocWithTarget = processedContent.match(/<a[^>]*href="#[^"]*"[^>]*target="_blank"[^>]*>/g);
+        if (tocWithTarget) {
+          console.log('❌ ERROR: TOC links still have target="_blank":', tocWithTarget.slice(0, 2));
+        } else {
+          console.log('✅ TOC links properly formatted (no target="_blank")');
+        }
       }
+      
       if (processedContent.includes('/products/')) {
         console.log('✓ Found product links in content');
         const productMatches = processedContent.match(/<a[^>]*href="\/products\/[^"]*"[^>]*>/g);
-        console.log('Product link examples:', productMatches?.slice(0, 3));
+        console.log('Product link examples:', productMatches?.slice(0, 2));
+        
+        // Check if product links have target="_blank" (SHOULD have this)
+        const productWithTarget = processedContent.match(/<a[^>]*href="\/products\/[^"]*"[^>]*target="_blank"[^>]*>/g);
+        if (productWithTarget) {
+          console.log('✅ Product links properly have target="_blank"');
+        } else {
+          console.log('❌ ERROR: Product links missing target="_blank"');
+        }
       }
       console.log('=== END DEBUG ===');
       
