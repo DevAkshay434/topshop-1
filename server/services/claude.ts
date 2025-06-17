@@ -73,7 +73,7 @@ function addTableOfContents(content: string): string {
   </h3>
   <ol style="margin: 0; padding: 0 0 0 20px; line-height: 1.6;">
     ${headings.map(heading => 
-      `<li style="margin: 8px 0;"><a href="#${heading.id}" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
+      `<li style="margin: 8px 0;"><a href="#${heading.id}" onclick="event.preventDefault(); document.getElementById('${heading.id}').scrollIntoView({behavior: 'smooth'});" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease; cursor: pointer;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
     ).join('')}
   </ol>
 </div>`;

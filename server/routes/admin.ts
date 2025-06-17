@@ -1981,16 +1981,23 @@ Place this at a logical position in the content, typically after introducing a c
               // Schedule the post with our custom implementation
               // This will create a draft post and store scheduling info locally
               try {
+                // Ensure we have all required data before scheduling
+                const scheduleData = {
+                  ...post,
+                  scheduledPublishDate: requestData.scheduleDate,
+                  scheduledPublishTime: requestData.scheduleTime || "09:30"
+                };
+                
                 shopifyArticle = await schedulePost(
                   store,
                   blogId,
-                  post,
+                  scheduleData,
                   scheduledPublishDate
                 );
                 
                 console.log('Post scheduled successfully with custom scheduler:', {
-                  id: shopifyArticle.id,
-                  title: shopifyArticle.title,
+                  id: shopifyArticle?.id,
+                  title: shopifyArticle?.title,
                   scheduledDate: scheduledPublishDate.toISOString()
                 });
               } catch (schedulingError) {
