@@ -1180,7 +1180,10 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       })).optional(),
       youtubeEmbed: z.string().nullable().optional(),
       // Author selection field
-      authorId: z.union([z.string(), z.number()]).nullable().optional()
+      authorId: z.union([z.string(), z.number()]).nullable().optional(),
+      // Audience targeting fields
+      targetAudience: z.string().optional(),
+      buyerPersona: z.string().optional()
     });
     
     // Parse the request data to verify it matches the schema
@@ -1252,15 +1255,31 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       }
       
       // 2. Generate Claude prompt based on all parameters
-      let claudeSystemPrompt = `You are an expert SEO blog writer and content strategist specializing in keyword optimization. Your goal is to write high-quality, engaging, and SEO-optimized ${requestData.articleType === 'blog' ? 'blog posts' : 'pages'} that sound natural, helpful, and authoritative.
+      const audience = requestData.targetAudience || requestData.buyerPersona;
+      let claudeSystemPrompt = `You are an expert SEO blog writer and content strategist specializing in keyword optimization and audience-focused content creation. Your goal is to write high-quality, engaging, and SEO-optimized ${requestData.articleType === 'blog' ? 'blog posts' : 'pages'} that sound natural, helpful, and authoritative while specifically addressing your target audience.
       
-Your primary objective is to create content that ranks well on search engines by incorporating ALL provided keywords naturally throughout the content. Keywords should appear in strategic locations:
+Your primary objective is to create content that ranks well on search engines by incorporating ALL provided keywords naturally throughout the content while maintaining strong audience alignment. Keywords should appear in strategic locations:
 1. In the title (most important keywords)
 2. In H2 and H3 headings
 3. In the first and last paragraphs
 4. Throughout the body content in a natural, reader-friendly way
 
-When given keywords with search volume data, prioritize higher-volume keywords by giving them more prominence and using them more frequently.`;
+When given keywords with search volume data, prioritize higher-volume keywords by giving them more prominence and using them more frequently.
+
+${audience ? `
+AUDIENCE TARGETING: Your content must be specifically tailored for: ${audience}
+- Write with this audience's knowledge level, interests, and pain points in mind
+- Use language, examples, and references that resonate with this specific group
+- Address their unique challenges and provide solutions that match their context
+- Focus on conversion potential by speaking directly to their needs and desires
+- Include actionable advice that this audience can immediately implement
+` : ''}
+
+CONTENT STRATEGY:
+- Prioritize relevancy and conversion potential over generic information
+- Create content that builds trust and authority with the target audience
+- Use persuasive language that encourages engagement and action
+- Ensure every section provides value to the specific audience you're addressing`;
       
       // Get selected keyword data with volume information if available
       const selectedKeywordData = requestData.selectedKeywordData || [];
@@ -1410,7 +1429,13 @@ Place this at a logical position in the content, typically after introducing a c
         youtubeEmbed: requestData.youtubeEmbed,
         // Add product information for secondary image linking
         productIds: productsInfo.map(p => p.handle || String(p.id)),
-        productsInfo: productsInfo
+        productsInfo: productsInfo,
+        // Add audience targeting fields
+        targetAudience: requestData.targetAudience,
+        buyerPersona: requestData.buyerPersona,
+        // Add keyword data for alignment
+        keywords: requestData.keywords,
+        keywordData: selectedKeywordData
       });
       
       // 4. Update content generation request
