@@ -4319,36 +4319,66 @@ export default function AdminPanel() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              // Auto-optimize meta title from main title
-                              const originalTitle = generatedContent.title || "";
-                              let optimizedTitle = originalTitle;
-                              
-                              // If too long, truncate smartly
-                              if (originalTitle.length > 60) {
-                                // Find good break points (after words, before colons/dashes)
-                                const breakPoints = [': ', ' - ', ' | ', '. '];
-                                let bestBreak = -1;
-                                
-                                for (const breakPoint of breakPoints) {
-                                  const index = originalTitle.indexOf(breakPoint);
-                                  if (index > 0 && index < 55) {
-                                    bestBreak = index;
-                                    break;
-                                  }
+                            onClick={async () => {
+                              try {
+                                // Gather context for AI optimization
+                                const formData = form.getValues();
+                                const currentTitle = generatedContent.title || "";
+                                const currentContent = generatedContent.content || "";
+                                const keywords = formData.keywords || [];
+                                const targetAudience = formData.buyerPersonas || "";
+                                const tone = formData.toneOfVoice || "professional";
+                                const region = formData.region || "us";
+
+                                console.log('Triggering AI meta optimization...');
+
+                                // Call the AI optimization endpoint
+                                const response = await fetch('/api/optimize-meta-fields', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json'
+                                  },
+                                  body: JSON.stringify({
+                                    title: currentTitle,
+                                    content: currentContent,
+                                    keywords: keywords,
+                                    targetAudience: targetAudience,
+                                    tone: tone,
+                                    region: region
+                                  })
+                                });
+
+                                if (!response.ok) {
+                                  throw new Error('Failed to optimize meta fields');
                                 }
+
+                                const result = await response.json();
                                 
-                                if (bestBreak > 0) {
-                                  optimizedTitle = originalTitle.substring(0, bestBreak);
+                                if (result.success) {
+                                  // Update both meta title and description from AI response
+                                  setGeneratedContent(prev => ({
+                                    ...prev,
+                                    metaTitle: result.metaTitle,
+                                    metaDescription: result.metaDescription
+                                  }));
+                                  console.log('AI optimization successful');
                                 } else {
-                                  // Truncate at last complete word before 60 chars
+                                  throw new Error(result.error || 'Optimization failed');
+                                }
+                              } catch (error) {
+                                console.error('Meta optimization error:', error);
+                                // Fallback to simple truncation
+                                const originalTitle = generatedContent.title || "";
+                                let optimizedTitle = originalTitle;
+                                
+                                if (originalTitle.length > 60) {
                                   const truncated = originalTitle.substring(0, 57);
                                   const lastSpace = truncated.lastIndexOf(' ');
                                   optimizedTitle = lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
                                 }
+                                
+                                setGeneratedContent(prev => ({ ...prev, metaTitle: optimizedTitle }));
                               }
-                              
-                              setGeneratedContent(prev => ({ ...prev, metaTitle: optimizedTitle }));
                             }}
                           >
                             <Zap className="h-4 w-4 mr-1" />
@@ -4408,39 +4438,81 @@ export default function AdminPanel() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              // Auto-generate meta description from content
-                              const content = generatedContent.content || "";
-                              const title = generatedContent.title || "";
-                              
-                              // Extract first meaningful paragraph
-                              const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                              const sentences = textContent.split('. ').filter(s => s.length > 20);
-                              
-                              let description = "";
-                              if (sentences.length > 0) {
-                                // Create description from first few sentences
-                                description = sentences.slice(0, 2).join('. ');
-                                if (!description.endsWith('.')) description += '.';
+                            onClick={async () => {
+                              try {
+                                // Gather context for AI optimization
+                                const formData = form.getValues();
+                                const currentTitle = generatedContent.title || "";
+                                const currentContent = generatedContent.content || "";
+                                const keywords = formData.keywords || [];
+                                const targetAudience = formData.buyerPersonas || "";
+                                const tone = formData.toneOfVoice || "professional";
+                                const region = formData.region || "us";
+
+                                console.log('Triggering AI meta description optimization...');
+
+                                // Call the AI optimization endpoint
+                                const response = await fetch('/api/optimize-meta-fields', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json'
+                                  },
+                                  body: JSON.stringify({
+                                    title: currentTitle,
+                                    content: currentContent,
+                                    keywords: keywords,
+                                    targetAudience: targetAudience,
+                                    tone: tone,
+                                    region: region
+                                  })
+                                });
+
+                                if (!response.ok) {
+                                  throw new Error('Failed to optimize meta fields');
+                                }
+
+                                const result = await response.json();
                                 
-                                // Add call to action if space allows
-                                if (description.length < 120) {
-                                  const keywords = form.getValues('keywords') || [];
-                                  if (keywords.length > 0) {
-                                    description += ` Learn about ${keywords[0]} and more.`;
+                                if (result.success) {
+                                  // Update meta description from AI response
+                                  setGeneratedContent(prev => ({
+                                    ...prev,
+                                    metaDescription: result.metaDescription
+                                  }));
+                                  console.log('AI meta description optimization successful');
+                                } else {
+                                  throw new Error(result.error || 'Optimization failed');
+                                }
+                              } catch (error) {
+                                console.error('Meta description optimization error:', error);
+                                // Fallback to content-based generation
+                                const content = generatedContent.content || "";
+                                const title = generatedContent.title || "";
+                                
+                                const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                                const sentences = textContent.split('. ').filter(s => s.length > 20);
+                                
+                                let description = "";
+                                if (sentences.length > 0) {
+                                  description = sentences.slice(0, 2).join('. ');
+                                  if (!description.endsWith('.')) description += '.';
+                                  
+                                  if (description.length < 120) {
+                                    const keywords = form.getValues('keywords') || [];
+                                    if (keywords.length > 0) {
+                                      description += ` Learn about ${keywords[0]} and more.`;
+                                    }
                                   }
+                                  
+                                  if (description.length > 160) {
+                                    description = description.substring(0, 157) + '...';
+                                  }
+                                } else {
+                                  description = `Discover everything about ${title}. Expert insights, tips, and comprehensive guide.`.substring(0, 160);
                                 }
                                 
-                                // Ensure within limit
-                                if (description.length > 160) {
-                                  description = description.substring(0, 157) + '...';
-                                }
-                              } else {
-                                // Fallback: use title-based description
-                                description = `Discover everything about ${title}. Expert insights, tips, and comprehensive guide.`.substring(0, 160);
+                                setGeneratedContent(prev => ({ ...prev, metaDescription: description }));
                               }
-                              
-                              setGeneratedContent(prev => ({ ...prev, metaDescription: description }));
                             }}
                           >
                             <Zap className="h-4 w-4 mr-1" />

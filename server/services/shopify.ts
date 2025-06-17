@@ -461,8 +461,15 @@ export class ShopifyService {
         })()
       };
 
-      // CRITICAL FIX: Add SEO meta fields properly
-      // For Shopify blog articles, use summary_html for meta description directly
+      // CRITICAL FIX: Proper SEO handling - Meta Title ≠ Page Title
+      // Page Title (visible headline) = post.title
+      // Meta Title (SEO) = post.metaTitle -> goes to Shopify metafields
+      
+      // Always use the regular title as the visible page title
+      articleData.title = post.title;
+      console.log(`✓ Using page title (visible headline): ${post.title}`);
+      
+      // Add meta description to summary_html for SEO
       if ((post as any).metaDescription) {
         articleData.summary_html = (post as any).metaDescription;
         console.log(`✓ Added meta description to summary_html: ${(post as any).metaDescription}`);
@@ -470,12 +477,19 @@ export class ShopifyService {
         console.log(`✗ No meta description found in post object`);
       }
       
-      // CRITICAL FIX: Use meta title as the article title if available (this becomes the page title)
+      // Add meta title as metafield for SEO (separate from visible title)
       if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
-        articleData.title = (post as any).metaTitle;
-        console.log(`✓ Using meta title as article title: ${(post as any).metaTitle}`);
+        articleData.metafields = [
+          {
+            namespace: 'seo',
+            key: 'title_tag',
+            value: (post as any).metaTitle,
+            type: 'single_line_text_field'
+          }
+        ];
+        console.log(`✓ Added meta title to SEO metafield: ${(post as any).metaTitle}`);
       } else {
-        console.log(`✗ No meta title found, using regular title: ${post.title}`);
+        console.log(`✗ No meta title found for SEO metafield`);
       }
       
       // CRITICAL FIX: Add featured image if it exists and is properly formatted

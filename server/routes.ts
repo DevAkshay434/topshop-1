@@ -1589,6 +1589,131 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // AI-powered Auto Optimize for meta title and description
+  apiRouter.post("/optimize-meta-fields", async (req: Request, res: Response) => {
+    try {
+      const optimizeSchema = z.object({
+        title: z.string().min(1, "Title is required"),
+        content: z.string().optional(),
+        keywords: z.array(z.string()).optional(),
+        targetAudience: z.string().optional(),
+        tone: z.string().optional(),
+        region: z.string().optional()
+      });
+
+      const { title, content, keywords = [], targetAudience, tone, region } = optimizeSchema.parse(req.body);
+
+      console.log('Optimizing meta fields with AI:', {
+        title: title.substring(0, 50) + '...',
+        hasContent: !!content,
+        keywordCount: keywords.length,
+        targetAudience,
+        tone,
+        region
+      });
+
+      // Use Claude for AI-powered optimization
+      const { ClaudeService } = await import('./services/claude');
+      const claudeService = new ClaudeService();
+      
+      // Create context for optimization
+      const optimizationContext = {
+        mainTitle: title,
+        keywords: keywords.join(', '),
+        targetAudience: targetAudience || 'general audience',
+        tone: tone || 'professional',
+        region: region || 'US',
+        contentSnippet: content ? content.substring(0, 500) : ''
+      };
+
+      const prompt = `You are an SEO expert. Generate optimized meta title and meta description for this content:
+
+Title: ${optimizationContext.mainTitle}
+Keywords: ${optimizationContext.keywords}
+Target Audience: ${optimizationContext.targetAudience}
+Tone: ${optimizationContext.tone}
+Region: ${optimizationContext.region}
+${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}...` : ''}
+
+Requirements:
+- Meta Title: 50-60 characters, include primary keyword, compelling and clickable
+- Meta Description: 150-160 characters, include keywords naturally, compelling call-to-action
+- Optimize for search engines while remaining engaging for humans
+- Match the specified tone and target audience
+
+Return only a JSON object with "metaTitle" and "metaDescription" fields.`;
+
+      const response = await claudeService.generateContent(prompt, {
+        targetAudience: optimizationContext.targetAudience,
+        tone: optimizationContext.tone,
+        keywords: keywords
+      });
+
+      // Parse the AI response
+      let optimizedFields;
+      try {
+        // Extract JSON from response if it's wrapped in markdown or text
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : response;
+        optimizedFields = JSON.parse(jsonStr);
+      } catch (parseError) {
+        // Fallback: create structured response from text
+        const lines = response.split('\n').filter(line => line.trim());
+        optimizedFields = {
+          metaTitle: title.substring(0, 60), // Fallback to truncated original
+          metaDescription: `Discover ${title.toLowerCase()}. ${keywords.slice(0, 2).join(', ')} and more.`.substring(0, 160)
+        };
+        
+        // Try to extract from formatted text
+        for (const line of lines) {
+          if (line.toLowerCase().includes('meta title') || line.toLowerCase().includes('title:')) {
+            const titleMatch = line.match(/:\s*(.+)/);
+            if (titleMatch) optimizedFields.metaTitle = titleMatch[1].trim().replace(/"/g, '');
+          }
+          if (line.toLowerCase().includes('meta description') || line.toLowerCase().includes('description:')) {
+            const descMatch = line.match(/:\s*(.+)/);
+            if (descMatch) optimizedFields.metaDescription = descMatch[1].trim().replace(/"/g, '');
+          }
+        }
+      }
+
+      // Validate and clean the response
+      if (!optimizedFields.metaTitle || !optimizedFields.metaDescription) {
+        throw new Error('AI response missing required fields');
+      }
+
+      // Ensure proper length limits
+      if (optimizedFields.metaTitle.length > 60) {
+        optimizedFields.metaTitle = optimizedFields.metaTitle.substring(0, 57) + '...';
+      }
+      if (optimizedFields.metaDescription.length > 160) {
+        optimizedFields.metaDescription = optimizedFields.metaDescription.substring(0, 157) + '...';
+      }
+
+      console.log('AI optimization complete:', {
+        metaTitleLength: optimizedFields.metaTitle.length,
+        metaDescriptionLength: optimizedFields.metaDescription.length
+      });
+
+      res.json({
+        success: true,
+        metaTitle: optimizedFields.metaTitle,
+        metaDescription: optimizedFields.metaDescription,
+        context: optimizationContext
+      });
+
+    } catch (error: any) {
+      console.error("Error optimizing meta fields:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to optimize meta fields" 
+      });
+    }
+  });
+
   // Keywords endpoint for SEO keyword research
   apiRouter.get("/keywords", async (req: Request, res: Response) => {
     try {
