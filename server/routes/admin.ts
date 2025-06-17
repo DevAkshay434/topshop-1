@@ -256,7 +256,7 @@ adminRouter.get("/blogs", async (_req: Request, res: Response) => {
 adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
   try {
     console.log("Title suggestions requested with data:", req.body);
-    const { keywords, keywordData, productTitle } = req.body;
+    const { keywords, keywordData, productTitle, targetAudience, buyerPersona } = req.body;
     
     if (!Array.isArray(keywords) || keywords.length === 0) {
       return res.status(400).json({
@@ -299,7 +299,8 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         }
       }
       
-      // Enhanced Claude prompt for trending, Google-optimized titles
+      // Enhanced Claude prompt for trending, Google-optimized titles with audience awareness
+      const audience = targetAudience || buyerPersona;
       const claudeRequest = {
         prompt: `Generate 8 unique, highly SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that strategically incorporate these keywords: ${topKeywords.join(", ")}.
         
@@ -307,7 +308,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         - Primary product: ${cleanProductTitle || topKeywords[0]}
         - Primary keywords: ${topKeywords.slice(0, 3).join(", ")}
         - Secondary keywords: ${topKeywords.slice(3).join(", ") || "N/A"}
-        - Current year: ${new Date().getFullYear()}
+        - Current year: ${new Date().getFullYear()}${audience ? `\n        - Target Audience: ${audience}` : ''}
         
         IMPORTANT SEO GUIDELINES:
         - Each title MUST naturally include at least one of the provided keywords in full
@@ -330,14 +331,18 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         - Avoid ALL-CAPS words, excessive punctuation, or clickbait tactics
         
         Format your response as a JSON array of exactly 8 strings, with no additional text.`,
-        responseFormat: "json"
+        responseFormat: "json",
+        targetAudience: audience,
+        keywords: topKeywords,
+        keywordData: keywordData
       };
       
       // Log the Claude request for debugging
       console.log("Sending title generation request to Claude with data:", {
         productTitle: cleanProductTitle || topKeywords[0],
         keywords: topKeywords,
-        yearContext: new Date().getFullYear()
+        yearContext: new Date().getFullYear(),
+        targetAudience: audience
       });
       
       const claudeService = require("../services/claude");

@@ -19,6 +19,12 @@ interface BlogContentRequest {
   // Product linking fields
   productIds?: string[];
   productsInfo?: any[];
+  // Audience targeting fields
+  targetAudience?: string;
+  buyerPersona?: string;
+  // Keyword optimization fields
+  keywords?: string[];
+  keywordData?: any[];
 }
 
 interface BlogContent {
@@ -213,7 +219,37 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
       mediaContext += `\n    SELECTED YOUTUBE VIDEO: A relevant YouTube video has been selected to enhance the content. This will be placed under the second H2 heading.`;
     }
 
-let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}
+    // Build audience-aware context
+    let audienceContext = '';
+    if (request.targetAudience || request.buyerPersona) {
+      const audience = request.targetAudience || request.buyerPersona;
+      audienceContext = `
+    
+    TARGET AUDIENCE FOCUS: This article is intended for the following audience: ${audience}
+    - Tailor all content, tone, examples, and messaging specifically for this target audience
+    - Use language, terminology, and depth appropriate for this audience level
+    - Address their specific pain points, interests, and needs
+    - Include relevant examples and use cases that resonate with this audience
+    - Ensure the call-to-action appeals directly to this audience segment`;
+    }
+    
+    // Build keyword optimization context
+    let keywordContext = '';
+    if (request.keywords && request.keywords.length > 0) {
+      const keywordList = request.keywords.join(', ');
+      keywordContext = `
+    
+    KEYWORD OPTIMIZATION: Use these specific keywords naturally throughout the content:
+    Keywords: ${keywordList}
+    - Incorporate these keywords in the title (at least 1 primary keyword)
+    - Include keywords in H2 and H3 headings where natural
+    - Use keywords in the first and last paragraphs
+    - Distribute keywords naturally throughout the body content
+    - DO NOT generate new keywords - only use the provided ones
+    - Ensure keyword usage feels natural and not forced`;
+    }
+
+let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
     
     The blog post MUST follow this exact structure:
     1. A compelling title that includes the main topic and primary keywords (this will be used separately)
@@ -471,9 +507,43 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
 }
 
 // Function to generate title suggestions using Claude
-export async function generateTitles(request: { prompt: string, responseFormat: string }): Promise<{ titles: string[] }> {
+export async function generateTitles(request: { 
+  prompt: string, 
+  responseFormat: string,
+  targetAudience?: string,
+  keywords?: string[],
+  keywordData?: any[]
+}): Promise<{ titles: string[] }> {
   try {
     console.log("Generating title suggestions with Claude model:", CLAUDE_MODEL);
+    
+    // Build audience-aware and keyword-optimized prompt
+    let enhancedPrompt = request.prompt;
+    
+    // Add target audience context if provided
+    if (request.targetAudience) {
+      enhancedPrompt += `\n\nTARGET AUDIENCE FOCUS: These titles must clearly appeal to and engage the following audience: ${request.targetAudience}
+      - Use language, tone, and messaging that resonates specifically with this audience
+      - Address their pain points, interests, and needs in the titles
+      - Ensure titles are compelling and relevant to this audience segment`;
+    }
+    
+    // Add keyword optimization context if provided
+    if (request.keywords && request.keywords.length > 0) {
+      const keywordList = request.keywords.join(', ');
+      enhancedPrompt += `\n\nKEYWORD OPTIMIZATION: Use these specific keywords in the titles:
+      Keywords: ${keywordList}
+      - Incorporate at least 1 keyword per title when naturally possible
+      - DO NOT generate new keywords - only use the provided ones
+      - Ensure keyword usage feels natural and engaging
+      - Prioritize primary keywords in title suggestions`;
+    }
+    
+    enhancedPrompt += `\n\nTitle Requirements:
+    - Clear and engaging for the defined audience
+    - Incorporate keywords naturally when possible
+    - Focus on conversion potential and relevancy
+    - Avoid generic or overly promotional language`;
     
     // Make API call to Claude
     const response = await anthropic.messages.create({
@@ -482,7 +552,7 @@ export async function generateTitles(request: { prompt: string, responseFormat: 
       messages: [
         {
           role: 'user',
-          content: request.prompt
+          content: enhancedPrompt
         }
       ],
     });
