@@ -110,20 +110,6 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
-- June 17, 2025. VERIFICATION COMPLETE: All functionality working correctly - TOC links navigate smoothly within pages, secondary images are clickable and open products in new tabs, SEO metadata properly separated from visible content, confirmed via debug logs and successful Shopify page creation
-- June 17, 2025. CRITICAL FIX: Fixed TOC and secondary image issues - TOC links now use pure anchor tags without target="_blank" for internal scrolling, secondary images include target="_blank" for product links opening in new tabs, enhanced content processing to preserve both link types correctly
-- June 17, 2025. CRITICAL FIX: Added comprehensive debug logging - implemented detailed content verification to track TOC vs product link processing in Shopify publishing pipeline
-- June 17, 2025. CRITICAL FIX: Fixed SEO metadata misuse - separated visible titles/descriptions from SEO fields, ensuring meta title and meta description are stored only in Shopify SEO metafields, never embedded in visible content
-- June 17, 2025. CRITICAL FIX: Enhanced TipTap editor - added post-processing to strip target="_blank" from internal anchor links and improved link configuration
-- June 17, 2025. CRITICAL FIX: Enhanced timezone scheduling - improved createDateInTimezone function to properly handle store timezone conversion for accurate scheduled publication
-- June 17, 2025. CRITICAL FIX: Added timezone context to UI - scheduling forms now clearly indicate time will be in store's timezone with visual confirmation
-- June 17, 2025. CRITICAL FIX: Fixed invalid HTML structure in rich text editor - configured TipTap to prevent nested <p> tags inside <li> elements
-- June 17, 2025. CRITICAL FIX: Cleaned up deprecated template UI - removed Save/Load Template buttons and related dialog components
-- June 17, 2025. CRITICAL FIX: Implemented professional TipTap rich text editor - replaced contentEditable with full-featured WYSIWYG editor including formatting, links, images, lists, and character count
-- June 17, 2025. CRITICAL FIX: Resolved Meta Title vs Page Title distinction - Meta Title now properly stored as SEO metafield while Page Title remains visible headline
-- June 17, 2025. CRITICAL FIX: Implemented AI-powered Auto Optimize functionality for meta title and description using Claude with audience targeting, keywords, and tone
-- June 17, 2025. CRITICAL FIX: Fixed image upload bug - improved image processing to preserve secondary images while avoiding Shopify's 25MP limit
-- June 17, 2025. CRITICAL FIX: Fixed meta description bug - removed Table of Contents content from Claude-generated descriptions
 - June 17, 2025. Enhanced title suggestion system to provide 12 titles instead of 8, with improved audience targeting
 - June 16, 2025. Initial setup
 ```

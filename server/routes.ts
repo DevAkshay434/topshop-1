@@ -1612,21 +1612,28 @@ export async function registerRoutes(app: Express): Promise<void> {
         region
       });
 
-      // Use Claude API directly for optimization
-      const Anthropic = (await import('@anthropic-ai/sdk')).default;
-      const anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      });
+      // Use Claude for AI-powered optimization
+      const { ClaudeService } = await import('./services/claude');
+      const claudeService = new ClaudeService();
+      
+      // Create context for optimization
+      const optimizationContext = {
+        mainTitle: title,
+        keywords: keywords.join(', '),
+        targetAudience: targetAudience || 'general audience',
+        tone: tone || 'professional',
+        region: region || 'US',
+        contentSnippet: content ? content.substring(0, 500) : ''
+      };
 
-      // Create optimization prompt
       const prompt = `You are an SEO expert. Generate optimized meta title and meta description for this content:
 
-Title: ${title}
-Keywords: ${keywords.join(', ')}
-Target Audience: ${targetAudience || 'general audience'}
-Tone: ${tone || 'professional'}
-Region: ${region || 'US'}
-${content ? `Content Preview: ${content.substring(0, 500)}...` : ''}
+Title: ${optimizationContext.mainTitle}
+Keywords: ${optimizationContext.keywords}
+Target Audience: ${optimizationContext.targetAudience}
+Tone: ${optimizationContext.tone}
+Region: ${optimizationContext.region}
+${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}...` : ''}
 
 Requirements:
 - Meta Title: 50-60 characters, include primary keyword, compelling and clickable
@@ -1636,24 +1643,22 @@ Requirements:
 
 Return only a JSON object with "metaTitle" and "metaDescription" fields.`;
 
-      const response = await anthropic.messages.create({
-        model: 'claude-3-7-sonnet-20250219',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }]
+      const response = await claudeService.generateContent(prompt, {
+        targetAudience: optimizationContext.targetAudience,
+        tone: optimizationContext.tone,
+        keywords: keywords
       });
 
       // Parse the AI response
       let optimizedFields;
       try {
-        const responseText = response.content[0].text;
         // Extract JSON from response if it's wrapped in markdown or text
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : response;
         optimizedFields = JSON.parse(jsonStr);
       } catch (parseError) {
         // Fallback: create structured response from text
-        const responseText = response.content[0].text;
-        const lines = responseText.split('\n').filter(line => line.trim());
+        const lines = response.split('\n').filter(line => line.trim());
         optimizedFields = {
           metaTitle: title.substring(0, 60), // Fallback to truncated original
           metaDescription: `Discover ${title.toLowerCase()}. ${keywords.slice(0, 2).join(', ')} and more.`.substring(0, 160)
@@ -1693,7 +1698,8 @@ Return only a JSON object with "metaTitle" and "metaDescription" fields.`;
       res.json({
         success: true,
         metaTitle: optimizedFields.metaTitle,
-        metaDescription: optimizedFields.metaDescription
+        metaDescription: optimizedFields.metaDescription,
+        context: optimizationContext
       });
 
     } catch (error: any) {

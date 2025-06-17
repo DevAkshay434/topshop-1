@@ -35,61 +35,17 @@ export function createDateInTimezone(
       }
     }
     
-    // IMPORTANT: For scheduling to work in Shopify, we need to create a proper timezone-aware date
-    // Use a simpler, more reliable approach
-    
-    let futureDate: Date;
-    
-    try {
-      // Create a date object that represents the local time in the target timezone
-      // This approach uses the browser's built-in timezone handling
-      const isoString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
-      
-      if (cleanTimezone === 'UTC' || !cleanTimezone) {
-        // For UTC, create directly
-        futureDate = new Date(isoString + 'Z');
-      } else {
-        // For other timezones, we need to interpret the time as local time in that timezone
-        // and convert to UTC. We'll use a different approach:
-        
-        // Create the date as if it were in UTC first
-        const baseDate = new Date(isoString + 'Z');
-        
-        // Get the current offset for this timezone
-        const now = new Date();
-        const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-        
-        // Create a date formatter for the target timezone
-        const formatter = new Intl.DateTimeFormat('en-CA', {
-          timeZone: cleanTimezone,
-          year: 'numeric',
-          month: '2-digit', 
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        });
-        
-        // Format the current UTC time in the target timezone
-        const targetTzString = formatter.format(now);
-        const [tzDate, tzTime] = targetTzString.split(', ');
-        const [tzYear, tzMonth, tzDay] = tzDate.split('-').map(Number);
-        const [tzHour, tzMin] = tzTime.split(':').map(Number);
-        
-        // Calculate the offset between UTC and target timezone
-        const utcDate = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes());
-        const tzLocalDate = new Date(tzYear, tzMonth - 1, tzDay, tzHour, tzMin);
-        const offsetMinutes = (utcDate.getTime() - tzLocalDate.getTime()) / 60000;
-        
-        // Apply this offset to our target date
-        futureDate = new Date(baseDate.getTime() - (offsetMinutes * 60000));
-        
-        console.log(`Applied timezone offset for ${cleanTimezone}: ${offsetMinutes} minutes`);
-      }
-    } catch (timezoneError) {
-      console.warn(`Failed to create timezone-aware date for ${cleanTimezone}, using UTC:`, timezoneError);
-      futureDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
-    }
+    // IMPORTANT: For scheduling to work in Shopify, we need to create a date in the future
+    // We'll just set it directly to the provided date components in UTC
+    // This forces Shopify to treat it as a future date for scheduling
+    const futureDate = new Date(Date.UTC(
+      year,
+      month - 1,  // JS months are 0-indexed
+      day,
+      hour,
+      minute,
+      0
+    ));
     
     console.log(`Created future date in UTC: ${futureDate.toISOString()}`);
     

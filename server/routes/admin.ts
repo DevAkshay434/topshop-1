@@ -1432,8 +1432,7 @@ Place this at a logical position in the content, typically after introducing a c
         secondaryImages: requestData.secondaryImages,
         youtubeEmbed: requestData.youtubeEmbed,
         // Add product information for secondary image linking
-        productIds: productsInfo.map(p => String(p.id)),
-        productHandles: productsInfo.map(p => p.handle),
+        productIds: productsInfo.map(p => p.handle || String(p.id)),
         productsInfo: productsInfo,
         // Add audience targeting fields
         targetAudience: requestData.targetAudience,
@@ -1982,23 +1981,16 @@ Place this at a logical position in the content, typically after introducing a c
               // Schedule the post with our custom implementation
               // This will create a draft post and store scheduling info locally
               try {
-                // Ensure we have all required data before scheduling
-                const scheduleData = {
-                  ...post,
-                  scheduledPublishDate: requestData.scheduleDate,
-                  scheduledPublishTime: requestData.scheduleTime || "09:30"
-                };
-                
                 shopifyArticle = await schedulePost(
                   store,
                   blogId,
-                  scheduleData,
+                  post,
                   scheduledPublishDate
                 );
                 
                 console.log('Post scheduled successfully with custom scheduler:', {
-                  id: shopifyArticle?.id,
-                  title: shopifyArticle?.title,
+                  id: shopifyArticle.id,
+                  title: shopifyArticle.title,
                   scheduledDate: scheduledPublishDate.toISOString()
                 });
               } catch (schedulingError) {

@@ -11,7 +11,6 @@ import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSele
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { AuthorSelector } from '../components/AuthorSelector';
-import RichTextEditor from '../components/RichTextEditor';
 import { 
   Card, 
   CardContent, 
@@ -772,7 +771,14 @@ export default function AdminPanel() {
     const savedCategories = localStorage.getItem('topshop-custom-categories');
     return savedCategories ? JSON.parse(savedCategories) : [];
   });
-
+  const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
+    // Load templates from localStorage on initial render
+    const savedTemplates = localStorage.getItem('topshop-templates');
+    return savedTemplates ? JSON.parse(savedTemplates) : [];
+  });
+  const [templateName, setTemplateName] = useState<string>('');
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const { toast } = useToast();
@@ -2032,7 +2038,17 @@ export default function AdminPanel() {
                     {/* Step guidance */}
                     {/* Top button for Load Template */}
                     <div className="flex justify-end mb-4">
-
+                      <Button
+                        type="button" 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowLoadTemplateDialog(true)}
+                        disabled={templates.length === 0}
+                        className="flex items-center gap-1"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Load Template
+                      </Button>
                     </div>
                     
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
@@ -3961,7 +3977,27 @@ export default function AdminPanel() {
                       />
                     </div>
                     
-
+                    {/* Template Controls */}
+                    <div className="mt-6 grid grid-cols-2 gap-3">
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => {
+                          setTemplateName('');
+                          setShowSaveTemplateDialog(true);
+                        }}
+                      >
+                        Save as Template
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => setShowLoadTemplateDialog(true)}
+                        disabled={templates.length === 0}
+                      >
+                        Load Template
+                      </Button>
+                    </div>
                     
                     {/* Sticky Generate Content button fixed to bottom of screen */}
                     <div className="sticky bottom-6 left-0 right-0 mt-8 z-10">
@@ -4080,83 +4116,166 @@ export default function AdminPanel() {
                       </h1>
                     </div>
 
-                    {/* Content Body Section with Rich Text Editor */}
+                    {/* Content Body Section */}
                     <div className="border-b border-gray-200 pb-4">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">Content Body</h3>
-                        <span className="text-sm text-gray-500">Edit content with full formatting support</span>
-                      </div>
-                      
-                      <RichTextEditor
-                        content={generatedContent.content || ''}
-                        onChange={(content) => {
-                          console.log("Rich text editor content updated:", {
-                            contentLength: content?.length || 0,
-                            hasImages: content.includes('<img'),
-                            hasIframes: content.includes('<iframe'),
-                            hasTOCLinks: content.includes('href="#'),
-                            hasProductLinks: content.includes('/products/')
-                          });
-                          
-                          // CRITICAL: Process content to ensure proper secondary image linking
-                          let processedContent = content;
-                          
-                          // Process secondary images to wrap them in product links
-                          if (secondaryImages.length > 0 && selectedProducts.length > 0) {
-                            const imgRegex = /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
-                            let imgMatches;
-                            const processedImages = new Set();
-                            
-                            while ((imgMatches = imgRegex.exec(processedContent)) !== null) {
-                              const fullMatch = imgMatches[0];
-                              const imgSrc = imgMatches[2];
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Rich text editing functionality
+                              const editor = document.createElement('div');
+                              editor.contentEditable = 'true';
+                              editor.innerHTML = generatedContent.content || '';
+                              editor.style.cssText = 'border: 1px solid #ccc; padding: 15px; min-height: 300px; max-height: 500px; overflow-y: auto; font-family: inherit; line-height: 1.6;';
                               
-                              // Skip if already processed
-                              if (processedImages.has(imgSrc)) continue;
-                              processedImages.add(imgSrc);
+                              const dialog = document.createElement('div');
+                              dialog.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 1px solid #ccc; padding: 20px; z-index: 1000; width: 85%; max-width: 900px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); border-radius: 8px;';
                               
-                              // Check if this image is already in a link
-                              const beforeMatch = processedContent.substring(0, imgMatches.index);
-                              const afterMatch = processedContent.substring(imgMatches.index + fullMatch.length);
-                              const isInLink = (beforeMatch.lastIndexOf('<a') > beforeMatch.lastIndexOf('</a>')) && 
-                                             (afterMatch.indexOf('</a>') < afterMatch.indexOf('<a') || afterMatch.indexOf('<a') === -1);
+                              const toolbar = document.createElement('div');
+                              toolbar.style.cssText = 'margin-bottom: 15px; padding: 12px; border-bottom: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 8px;';
+                              toolbar.innerHTML = `
+                                <button onclick="document.execCommand('bold')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Bold">B</button>
+                                <button onclick="document.execCommand('italic')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Italic">I</button>
+                                <button onclick="document.execCommand('underline')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Underline">U</button>
+                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
+                                <button onclick="document.execCommand('justifyLeft')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Left">⬅</button>
+                                <button onclick="document.execCommand('justifyCenter')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Center">⬌</button>
+                                <button onclick="document.execCommand('justifyRight')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Align Right">➡</button>
+                                <button onclick="document.execCommand('justifyFull')" style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Justify">⬌⬌</button>
+                                <span style="border-left: 1px solid #ddd; margin: 0 4px;"></span>
+                                <button onclick="
+                                  const url = prompt('Enter URL:');
+                                  if (url) {
+                                    const isExternal = !url.startsWith('/') && !url.includes(window.location.hostname) && !url.startsWith('#');
+                                    document.execCommand('createLink', false, url);
+                                    setTimeout(() => {
+                                      const selection = window.getSelection();
+                                      if (selection.rangeCount > 0) {
+                                        const range = selection.getRangeAt(0);
+                                        const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE ? 
+                                                        range.commonAncestorContainer.parentElement : range.commonAncestorContainer;
+                                        const links = container.querySelectorAll ? container.querySelectorAll('a') : [];
+                                        for (let link of links) {
+                                          if (link.href === url && isExternal) {
+                                            link.setAttribute('target', '_blank');
+                                            link.setAttribute('rel', 'noopener');
+                                          }
+                                        }
+                                      }
+                                    }, 100);
+                                  }
+                                " style="padding: 6px 12px; border: 1px solid #ddd; background: #f8f9fa; border-radius: 4px; cursor: pointer;" title="Add Link">🔗</button>
+                              `;
                               
-                              if (!isInLink) {
-                                // Find matching secondary image
-                                const matchingSecondaryImage = secondaryImages.find(img => {
-                                  const imgUrl = img.src?.medium || img.url || '';
-                                  return imgSrc.includes(imgUrl) || imgUrl.includes(imgSrc) || 
-                                         imgSrc.includes(img.id) || img.id.includes(imgSrc);
+                              const buttons = document.createElement('div');
+                              buttons.style.cssText = 'margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;';
+                              buttons.innerHTML = `
+                                <button onclick="
+                                  const content = document.querySelector('[contenteditable]').innerHTML;
+                                  window.updateGeneratedContent(content);
+                                  document.body.removeChild(document.querySelector('[data-rich-editor]'));
+                                  window.showSaveConfirmation && window.showSaveConfirmation();
+                                " style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Save Changes</button>
+                                <button onclick="document.body.removeChild(document.querySelector('[data-rich-editor]'))" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                              `;
+                              
+                              dialog.setAttribute('data-rich-editor', 'true');
+                              dialog.appendChild(toolbar);
+                              dialog.appendChild(editor);
+                              dialog.appendChild(buttons);
+                              document.body.appendChild(dialog);
+                              
+                              editor.focus();
+                              
+                              // Add global functions to update content and show confirmation
+                              (window as any).updateGeneratedContent = (content: string) => {
+                                console.log("Rich editor updating content:", {
+                                  contentLength: content?.length || 0,
+                                  contentPreview: content?.substring(0, 100) + "..."
+                                });
+                                setGeneratedContent(prev => {
+                                  const updated = { ...prev, content };
+                                  console.log("Content state updated:", {
+                                    previousLength: prev.content?.length || 0,
+                                    newLength: content?.length || 0
+                                  });
+                                  return updated;
                                 });
                                 
-                                if (matchingSecondaryImage && selectedProducts.length > 0) {
-                                  // Link to first selected product
-                                  const product = selectedProducts[0];
-                                  const productUrl = product.admin_url || `/products/${product.handle || product.id}`;
-                                  const linkedImg = `<a href="${productUrl}" target="_blank" rel="noopener noreferrer">${fullMatch}</a>`;
-                                  processedContent = processedContent.replace(fullMatch, linkedImg);
-                                  
-                                  console.log('Linked secondary image to product:', {
-                                    imageId: matchingSecondaryImage.id,
-                                    productTitle: product.title,
-                                    productUrl
-                                  });
-                                }
-                              }
-                            }
+                                // Force re-render by updating the counter
+                                setContentUpdateCounter(prev => prev + 1);
+                                
+                                // Force re-render of preview to show updated content
+                                setTimeout(() => {
+                                  const previewElement = document.querySelector('.prose');
+                                  if (previewElement) {
+                                    previewElement.scrollTop = 0; // Trigger visual update
+                                  }
+                                }, 100);
+                              };
+                              
+                              (window as any).showSaveConfirmation = () => {
+                                toast({
+                                  title: "Content updated",
+                                  description: "Your content changes have been saved. They will be included when you publish.",
+                                  variant: "default"
+                                });
+                              };
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Rich Edit
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="prose prose-blue max-w-none bg-gray-50 p-4 rounded-md border h-96 overflow-y-auto">
+                        {(() => {
+                          // Force re-render when content changes by using a key
+                          const content = generatedContent.content || '';
+                          console.log("Preview rendering with content length:", content.length);
+                          
+                          const primaryImage = selectedMediaContent.primaryImage;
+                          const isPage = form.getValues('articleType') === 'page';
+                          const contentStartsWithImage = content.trim().startsWith('<img') || content.trim().startsWith('<p><img');
+                          const shouldSkipFeaturedImage = isPage && contentStartsWithImage && primaryImage;
+                          
+                          let processedContent = content
+                            .replace(
+                              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                              '<img$1src="https://$2"$3>'
+                            )
+                            .replace(
+                              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                              '<img$1src="https://$3"$4>'
+                            )
+                            .replace(
+                              /<img([^>]*?)>/gi, 
+                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; border-radius: 8px;">'
+                            );
+                          
+                          if (primaryImage && !shouldSkipFeaturedImage) {
+                            const featuredImageHtml = `<div class="featured-image mb-6">
+                              <img src="${primaryImage.url || primaryImage.src?.large}" 
+                                   alt="${primaryImage.alt || 'Featured image'}" 
+                                   style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;" />
+                            </div>`;
+                            processedContent = featuredImageHtml + processedContent;
                           }
                           
-                          setGeneratedContent(prev => ({
-                            ...prev,
-                            content: processedContent
-                          }));
-                          
-                          // Force preview re-render
-                          setContentUpdateCounter(prev => prev + 1);
-                        }}
-                        placeholder="Your generated content will appear here for editing..."
-                        className="mb-4"
-                      />
+                          return <div 
+                            key={`content-${content.length}-${contentUpdateCounter}`} 
+                            dangerouslySetInnerHTML={{ __html: processedContent }} 
+                          />;
+                        })()}
+                      </div>
+                      <div className="text-xs text-gray-500 text-right mt-2">
+                        Words: {generatedContent.content ? 
+                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
+                          : 0}
+                      </div>
                     </div>
 
                     {/* Content Tags Section */}
@@ -4530,11 +4649,6 @@ export default function AdminPanel() {
                                   <FormDescription className="mb-4 text-sm text-gray-600">
                                     Set a future date and time to automatically publish your content. 
                                     Leave blank to publish based on the status above.
-                                    <br />
-                                    <span className="inline-flex items-center mt-1 text-xs text-blue-600 font-medium">
-                                      <Clock className="mr-1 h-3 w-3" />
-                                      Time will be scheduled in your store's timezone
-                                    </span>
                                   </FormDescription>
                                   
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -4617,7 +4731,172 @@ export default function AdminPanel() {
                       </CardContent>
                     </Card>
 
+                    {/* Legacy Content Editor Section - Hidden for Rich Editing */}
+                    <div className="space-y-4" style={{display: 'none'}}>
+                      <label className="text-sm font-medium text-gray-700">Content Body</label>
+                      
+                      {/* Visual Editor Toolbar */}
+                      <div className="border border-gray-200 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('bold', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 font-bold"
+                          title="Bold"
+                        >
+                          B
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('italic', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 italic"
+                          title="Italic"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('underline', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 underline"
+                          title="Underline"
+                        >
+                          U
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h1')}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 1"
+                        >
+                          H1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h2')}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 2"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('formatBlock', false, 'h3')}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 3"
+                        >
+                          H3
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('insertUnorderedList', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Bullet List"
+                        >
+                          • List
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand('insertOrderedList', false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Numbered List"
+                        >
+                          1. List
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = async (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (file) {
+                                await handleImageUpload(file);
+                              }
+                            };
+                            input.click();
+                          }}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Insert Image"
+                        >
+                          📷 Image
+                        </button>
+                      </div>
 
+                      {/* Content Editor with Inline Media */}
+                      <div
+                        key={contentEditorKey}
+                        ref={(el) => {
+                          // Only set content on initial load, never re-process during editing
+                          if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                            // Process content to render embedded images and videos properly
+                            let processedContent = generatedContent.content;
+                            
+                            // Ensure images have proper styling and are visible
+                            processedContent = processedContent.replace(
+                              /<img([^>]*?)>/gi,
+                              '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
+                            );
+                            
+                            // Ensure iframes (YouTube videos) have proper styling
+                            processedContent = processedContent.replace(
+                              /<iframe([^>]*?)>/gi,
+                              '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
+                            );
+                            
+                            // Close the wrapper div for iframes
+                            processedContent = processedContent.replace(
+                              /<\/iframe>/gi,
+                              '</iframe></div>'
+                            );
+                            
+                            // Set content once and mark as loaded
+                            el.innerHTML = processedContent;
+                            el.setAttribute('data-content-loaded', 'true');
+                          } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
+                            // Clear content and reset when no content
+                            el.removeAttribute('data-content-loaded');
+                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
+                          } else if (el && !generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
+                          }
+                        }}
+                        contentEditable
+                        suppressContentEditableWarning={true}
+                        className="min-h-[400px] max-h-[60vh] overflow-y-auto p-5 border border-gray-200 rounded-b-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent prose prose-blue max-w-none"
+                        style={{ 
+                          borderTop: 'none',
+                          lineHeight: '1.6',
+                          fontSize: '16px'
+                        }}
+                        onInput={(e) => {
+                          const target = e.target as HTMLDivElement;
+                          const newContent = target.innerHTML;
+                          console.log("Rich text editor content updated:", {
+                            contentLength: newContent?.length || 0,
+                            hasImages: newContent.includes('<img'),
+                            hasIframes: newContent.includes('<iframe')
+                          });
+                          
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            content: newContent
+                          }));
+                          
+                          // Force preview re-render
+                          setContentUpdateCounter(prev => prev + 1);
+                        }}
+                      />
+                      
+                      {/* Word Count */}
+                      <div className="text-xs text-gray-500 text-right">
+                        Words: {generatedContent.content ? 
+                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
+                          : 0}
+                      </div>
+                    </div>
 
 
 
@@ -5076,7 +5355,203 @@ export default function AdminPanel() {
             </DialogContent>
           </Dialog>
           
-
+          {/* Save Template Dialog */}
+          <Dialog 
+            open={showSaveTemplateDialog} 
+            onOpenChange={(open) => {
+              if (!open) {
+                setTemplateName('');
+              }
+              setShowSaveTemplateDialog(open);
+            }}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Save as Template</DialogTitle>
+                <DialogDescription>
+                  Save your current settings as a template for future use
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="templateName" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="templateName"
+                    value={templateName || ''}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    className="col-span-3"
+                    placeholder="My Template"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSaveTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // Save current form values as template
+                    if (!templateName) {
+                      toast({
+                        title: "Template name required",
+                        description: "Please enter a name for your template",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    const templateData = {
+                      ...form.getValues(),
+                      selectedKeywords,
+                      selectedProducts,
+                      selectedCollections,
+                      contentStyleToneId: selectedContentToneId,
+                      contentStyleDisplayName: selectedContentDisplayName
+                    };
+                    
+                    const updatedTemplates = [...templates, {
+                      name: templateName,
+                      data: templateData
+                    }];
+                    
+                    setTemplates(updatedTemplates);
+                    
+                    // Save to localStorage
+                    localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
+                    
+                    setTemplateName('');
+                    setShowSaveTemplateDialog(false);
+                    
+                    toast({
+                      title: "Template saved",
+                      description: "Your template has been saved successfully",
+                      variant: "default"
+                    });
+                  }}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Template
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Load Template Dialog */}
+          <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+            <DialogContent className="sm:max-w-[525px]">
+              <DialogHeader>
+                <DialogTitle>Load Template</DialogTitle>
+                <DialogDescription>
+                  Select a saved template to load its settings
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[300px] overflow-y-auto">
+                {templates.length > 0 ? (
+                  <div className="space-y-2">
+                    {templates.map((template, index) => (
+                      <Card key={index} className="p-3">
+                        <div className="flex justify-between items-center">
+                          <div className="font-medium">{template.name}</div>
+                          <div className="flex space-x-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                // Ensure all array values are properly initialized
+                                const formDataWithArrays = {
+                                  ...template.data,
+                                  // Initialize required arrays
+                                  productIds: Array.isArray(template.data.productIds) ? template.data.productIds : [],
+                                  collectionIds: Array.isArray(template.data.collectionIds) ? template.data.collectionIds : [],
+                                  keywords: Array.isArray(template.data.keywords) ? template.data.keywords : []
+                                };
+                                
+                                // Load template data into form
+                                form.reset(formDataWithArrays);
+                                
+                                // Update selected states
+                                if (template.data.selectedKeywords) {
+                                  setSelectedKeywords(template.data.selectedKeywords);
+                                }
+                                
+                                if (template.data.selectedProducts) {
+                                  setSelectedProducts(Array.isArray(template.data.selectedProducts) ? template.data.selectedProducts : []);
+                                }
+                                
+                                if (template.data.selectedCollections) {
+                                  setSelectedCollections(Array.isArray(template.data.selectedCollections) ? template.data.selectedCollections : []);
+                                }
+                                
+                                // Set content style if available in the template
+                                if (template.data.contentStyleToneId) {
+                                  setSelectedContentToneId(template.data.contentStyleToneId);
+                                }
+                                
+                                if (template.data.contentStyleDisplayName) {
+                                  setSelectedContentDisplayName(template.data.contentStyleDisplayName);
+                                }
+                                
+                                setShowLoadTemplateDialog(false);
+                                
+                                toast({
+                                  title: "Template loaded",
+                                  description: "Template settings have been applied",
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Load
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                // Remove this template
+                                const updatedTemplates = templates.filter((_, i) => i !== index);
+                                setTemplates(updatedTemplates);
+                                
+                                // Update localStorage
+                                localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
+                                
+                                toast({
+                                  title: "Template deleted",
+                                  description: `"${template.name}" has been removed`,
+                                  variant: "default"
+                                });
+                              }}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No saved templates. Save a template first.
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowLoadTemplateDialog(false)}
+                >
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
         {/* Services Tab */}
         <TabsContent value="connections" className="space-y-6">

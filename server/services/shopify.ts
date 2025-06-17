@@ -461,46 +461,35 @@ export class ShopifyService {
         })()
       };
 
-      // CRITICAL FIX: Proper SEO handling - Separate visible content from SEO metadata
-      // Visible Page Title = post.title (never overwritten by SEO data)
-      // SEO Meta Title = post.metaTitle -> stored in metafields only
-      // SEO Meta Description = post.metaDescription -> stored in metafields only
+      // CRITICAL FIX: Proper SEO handling - Meta Title ≠ Page Title
+      // Page Title (visible headline) = post.title
+      // Meta Title (SEO) = post.metaTitle -> goes to Shopify metafields
       
-      // Always use the content title as the visible article title
+      // Always use the regular title as the visible page title
       articleData.title = post.title;
-      console.log(`✓ Using content title as visible article title: ${post.title}`);
+      console.log(`✓ Using page title (visible headline): ${post.title}`);
       
-      // CRITICAL: Do NOT put meta description in summary_html or body content
-      // Meta description goes ONLY to SEO metafields, never embedded in content
+      // Add meta description to summary_html for SEO
+      if ((post as any).metaDescription) {
+        articleData.summary_html = (post as any).metaDescription;
+        console.log(`✓ Added meta description to summary_html: ${(post as any).metaDescription}`);
+      } else {
+        console.log(`✗ No meta description found in post object`);
+      }
       
-      // Add SEO metafields array for meta title and description
-      const metafields = [];
-      
-      // Add meta title as SEO metafield (for search engines only)
+      // Add meta title as metafield for SEO (separate from visible title)
       if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
-        metafields.push({
-          namespace: 'seo',
-          key: 'title_tag',
-          value: (post as any).metaTitle,
-          type: 'single_line_text_field'
-        });
-        console.log(`✓ Added meta title to SEO metafields (not visible title): ${(post as any).metaTitle}`);
-      }
-      
-      // Add meta description as SEO metafield (never in content body)
-      if ((post as any).metaDescription && (post as any).metaDescription.trim()) {
-        metafields.push({
-          namespace: 'seo',
-          key: 'description',
-          value: (post as any).metaDescription,
-          type: 'single_line_text_field'
-        });
-        console.log(`✓ Added meta description to SEO metafields (not content body): ${(post as any).metaDescription}`);
-      }
-      
-      // Only add metafields if we have any SEO data
-      if (metafields.length > 0) {
-        articleData.metafields = metafields;
+        articleData.metafields = [
+          {
+            namespace: 'seo',
+            key: 'title_tag',
+            value: (post as any).metaTitle,
+            type: 'single_line_text_field'
+          }
+        ];
+        console.log(`✓ Added meta title to SEO metafield: ${(post as any).metaTitle}`);
+      } else {
+        console.log(`✗ No meta title found for SEO metafield`);
       }
       
       // CRITICAL FIX: Add featured image if it exists and is properly formatted
@@ -615,22 +604,6 @@ export class ShopifyService {
       // CRITICAL FIX: Properly handle images for Shopify while avoiding 25MP limit issues
       if (articleData.body_html) {
         console.log('Processing content for Shopify compatibility...');
-        
-        // Fix invalid HTML: Remove paragraph tags from within list items
-        articleData.body_html = articleData.body_html.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
-        articleData.body_html = articleData.body_html.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
-        
-        // Fix TOC links: Remove target="_blank" and external link attributes from internal anchor links
-        articleData.body_html = articleData.body_html.replace(
-          /<a([^>]*href="#[^"]*"[^>]*)(?:\s+target="_blank"|\s+rel="[^"]*noopener[^"]*"|\s+class="[^"]*")([^>]*)>/gi,
-          '<a$1$2>'
-        );
-        
-        // Clean up any remaining external attributes on internal links
-        articleData.body_html = articleData.body_html.replace(
-          /<a([^>]*)href="#([^"]*)"([^>]*?)(?:target="[^"]*"|rel="[^"]*")([^>]*)>/gi,
-          '<a$1href="#$2"$3$4>'
-        );
         
         // First, handle secondary image placement markers by temporarily removing them from optimization
         const imageMarkers: string[] = [];
@@ -1233,137 +1206,13 @@ export class ShopifyService {
       
       // Handle categories for pages - convert to metafields or add to content
       let processedContent = content;
-      
-      // Fix invalid HTML: Remove paragraph tags from within list items
-      processedContent = processedContent.replace(/<li[^>]*><p[^>]*>(.*?)<\/p><\/li>/g, '<li>$1</li>');
-      processedContent = processedContent.replace(/<li[^>]*><p>(.*?)<\/p><\/li>/g, '<li>$1</li>');
-      
-      // CRITICAL FIX: Handle TOC links vs Product links correctly
-      // Step 1: Remove target="_blank" from TOC links (internal anchors) in all possible orders
-      processedContent = processedContent.replace(
-        /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+target=["']_blank["']([^>]*)>/gi,
-        '<a$1 href="#$2"$3$4>'
-      );
-      processedContent = processedContent.replace(
-        /<a([^>]*)\s+target=["']_blank["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi,
-        '<a$1$2 href="#$3"$4>'
-      );
-      
-      // Step 2: Remove rel attributes from TOC links only 
-      processedContent = processedContent.replace(
-        /<a([^>]*)\s+href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
-        '<a$1 href="#$2"$3$4>'
-      );
-      processedContent = processedContent.replace(
-        /<a([^>]*)\s+rel=["'][^"']*["']([^>]*)\s+href=["']#([^"']+)["']([^>]*)>/gi,
-        '<a$1$2 href="#$3"$4>'
-      );
-      
-      // Step 3: Ensure product links have target="_blank" - these should open in new tabs
-      processedContent = processedContent.replace(
-        /<a([^>]*?)href=["'](\/products\/[^"']+)["']([^>]*?)>/gi,
-        (match, beforeHref, productPath, afterHref) => {
-          // Check if target="_blank" already exists
-          if (match.includes('target="_blank"')) {
-            return match;
-          }
-          // Add target="_blank" to product links
-          return `<a${beforeHref}href="${productPath}"${afterHref} target="_blank" rel="noopener noreferrer">`;
-        }
-      );
-      
-      // Remove JavaScript event handlers that don't work in Shopify
-      processedContent = processedContent.replace(/\s*onmouseover="[^"]*"/gi, '');
-      processedContent = processedContent.replace(/\s*onmouseout="[^"]*"/gi, '');
-      processedContent = processedContent.replace(/\s*onclick="[^"]*"/gi, '');
-      
-      // PRESERVE secondary image product links with target="_blank" - DON'T remove these
-      // Product links should remain clickable and open in new tabs
-      
-      // Remove CSS classes and keep only inline styles for Shopify compatibility
-      processedContent = processedContent.replace(/\s*class="[^"]*"/gi, '');
-      
-      // FINAL FIX: Ensure all product links have target="_blank"
-      processedContent = processedContent.replace(
-        /<a([^>]*?)href=["'](\/products\/[^"']+)["']([^>]*?)>/gi,
-        (match, beforeHref, productPath, afterHref) => {
-          // Check if target="_blank" already exists
-          if (match.includes('target="_blank"')) {
-            return match;
-          }
-          // Add target="_blank" to product links
-          return `<a${beforeHref}href="${productPath}"${afterHref} target="_blank" rel="noopener noreferrer">`;
-        }
-      );
-      
-      // CRITICAL DEBUG: Verify TOC and product link processing
-      console.log('=== SHOPIFY CONTENT DEBUG ===');
-      console.log('Content length:', processedContent.length);
-      
-      // Check for TOC links
-      const tocLinks = processedContent.match(/href=["']#[^"']*["']/g) || [];
-      console.log(`✓ Found ${tocLinks.length} TOC links:`, tocLinks);
-      
-      // Verify TOC links don't have target="_blank"
-      const badTocLinks = processedContent.match(/<a[^>]*href=["']#[^"']*["'][^>]*target=["']_blank["']/gi) || [];
-      if (badTocLinks.length > 0) {
-        console.log('❌ ERROR: Found TOC links with target="_blank":', badTocLinks);
-      } else {
-        console.log('✓ All TOC links properly configured (no target="_blank")');
-      }
-      
-      // Check for product links
-      const productLinks = processedContent.match(/href=["']\/products\/[^"']*["']/g) || [];
-      console.log(`✓ Found ${productLinks.length} product links:`, productLinks);
-      
-      // Verify product links have target="_blank"
-      const productLinksWithTarget = processedContent.match(/<a[^>]*href=["']\/products\/[^"']*["'][^>]*target=["']_blank["']/gi) || [];
-      console.log(`✓ Product links with target="_blank": ${productLinksWithTarget.length}/${productLinks.length}`);
-      
-      // Check for secondary images wrapped in product links
-      const imageProductLinks = processedContent.match(/<a[^>]*href=["']\/products\/[^"']*["'][^>]*><img[^>]*>/gi) || [];
-      console.log(`✓ Found ${imageProductLinks.length} secondary images linked to products`);
-      
-      if (processedContent.includes('href="#')) {
-        console.log('✓ Found TOC links in content');
-        const tocMatches = processedContent.match(/<a[^>]*href="#[^"]*"[^>]*>/g);
-        console.log('TOC link examples:', tocMatches?.slice(0, 2));
-        
-        // Check if TOC links have target="_blank" (should NOT have this)
-        const tocWithTarget = processedContent.match(/<a[^>]*href="#[^"]*"[^>]*target="_blank"[^>]*>/g);
-        if (tocWithTarget) {
-          console.log('❌ ERROR: TOC links still have target="_blank":', tocWithTarget.slice(0, 2));
-        } else {
-          console.log('✅ TOC links properly formatted (no target="_blank")');
-        }
-      }
-      
-      if (processedContent.includes('/products/')) {
-        console.log('✓ Found product links in content');
-        const productMatches = processedContent.match(/<a[^>]*href="\/products\/[^"]*"[^>]*>/g);
-        console.log('Product link examples:', productMatches?.slice(0, 2));
-        
-        // Check if product links have target="_blank" (SHOULD have this)
-        const productWithTarget = processedContent.match(/<a[^>]*href="\/products\/[^"]*"[^>]*target="_blank"[^>]*>/g);
-        const productWithTargetAnyOrder = processedContent.match(/<a[^>]*target="_blank"[^>]*href="\/products\/[^"]*"[^>]*>/g);
-        
-        if (productWithTarget || productWithTargetAnyOrder) {
-          console.log('✅ Product links properly have target="_blank"');
-        } else {
-          console.log('❌ ERROR: Product links missing target="_blank"');
-          // Show the actual product links found
-          console.log('Actual product links found:', productMatches?.slice(0, 2));
-        }
-      }
-      console.log('=== END DEBUG ===');
-      
       if (post && (post as any).categories && Array.isArray((post as any).categories) && (post as any).categories.length > 0) {
         const categoryTags = (post as any).categories.join(', ');
         console.log(`Adding categories as metadata for page: ${categoryTags}`);
         
         // For pages, we can add categories as a hidden meta section in the content
         const categoryMeta = `<!-- Categories: ${categoryTags} -->`;
-        processedContent = categoryMeta + '\n' + processedContent;
+        processedContent = categoryMeta + '\n' + content;
       }
       
       // Set up the basic page data with SEO meta fields
@@ -1375,39 +1224,29 @@ export class ShopifyService {
         }
       };
 
-      // CRITICAL FIX: Keep page title and meta title separate
+      // CRITICAL FIX: Add SEO meta fields for pages
       if (post) {
-        // Page title remains the actual content title (visible to users)
-        console.log(`✓ Using content title for page: ${title}`);
-        
-        // Add SEO metafields for both meta title and meta description
-        const metafields = [];
-        
-        // Add meta title as SEO metafield (for search engines, not visible title)
+        // Use meta title if available (this becomes the page title for SEO)
         if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
-          metafields.push({
-            namespace: 'seo',
-            key: 'title',
-            value: (post as any).metaTitle,
-            type: 'single_line_text_field'
-          });
-          console.log(`✓ Added meta title to SEO metafields: ${(post as any).metaTitle}`);
+          pageData.page.title = (post as any).metaTitle;
+          console.log(`✓ Using meta title for page: ${(post as any).metaTitle}`);
+        } else {
+          console.log(`✗ No meta title found for page, using regular title: ${title}`);
         }
         
-        // Add meta description to SEO metafields
+        // Add meta description to page metafields (Shopify Pages use metafields for SEO)
         if ((post as any).metaDescription && (post as any).metaDescription.trim()) {
-          metafields.push({
-            namespace: 'seo',
-            key: 'description',
-            value: (post as any).metaDescription,
-            type: 'single_line_text_field'
-          });
-          console.log(`✓ Added meta description to SEO metafields: ${(post as any).metaDescription}`);
-        }
-        
-        // Only add metafields if we have any
-        if (metafields.length > 0) {
-          pageData.page.metafields = metafields;
+          pageData.page.metafields = [
+            {
+              namespace: 'seo',
+              key: 'description',
+              value: (post as any).metaDescription,
+              type: 'single_line_text_field'
+            }
+          ];
+          console.log(`✓ Added meta description to page metafields: ${(post as any).metaDescription}`);
+        } else {
+          console.log(`✗ No meta description found for page`);
         }
       }
 

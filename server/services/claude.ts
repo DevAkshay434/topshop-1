@@ -18,7 +18,6 @@ interface BlogContentRequest {
   youtubeEmbed?: string;
   // Product linking fields
   productIds?: string[];
-  productHandles?: string[];
   productsInfo?: any[];
   // Audience targeting fields
   targetAudience?: string;
@@ -66,15 +65,15 @@ function addTableOfContents(content: string): string {
     return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate Shopify-compatible TOC HTML with pure inline styles (no CSS classes or JavaScript)
+  // Generate TOC HTML
   const tocHtml = `
-<div style="background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; padding: 20px; margin: 20px auto; max-width: 600px;">
-  <h3 style="margin: 0 0 15px 0; color: #495057; font-size: 18px; font-weight: bold; border-bottom: 2px solid #007bff; padding-bottom: 8px;">
-    Table of Contents
+<div class="table-of-contents" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; color: #495057; font-size: 18px; font-weight: 600; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-bottom: 15px;">
+    📋 Table of Contents
   </h3>
-  <ol style="margin: 0; padding: 0 0 0 25px; line-height: 1.8; list-style-type: decimal;">
+  <ol style="margin: 0; padding: 0 0 0 20px; line-height: 1.6;">
     ${headings.map(heading => 
-      `<li style="margin: 10px 0; font-size: 16px;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline; font-weight: 500;">${heading.title}</a></li>`
+      `<li style="margin: 8px 0;"><a href="#${heading.id}" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
     ).join('')}
   </ol>
 </div>`;
@@ -123,9 +122,8 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     // Create a set to track used image URLs to prevent duplicates
     const usedImages = new Set<string>();
     
-    // Get products information for linking (need full product data for handles)
-    const availableProductIds = request.productIds || [];
-    const productHandles = request.productHandles || [];
+    // Get products information for linking (from request or from secondary image metadata)
+    const availableProducts = request.productIds || [];
     
     // Process each marker location with a unique image
     for (let i = 0; i < availableMarkers && i < request.secondaryImages.length; i++) {
@@ -140,48 +138,28 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       let imageHtml = '';
       
-      // Try to link the image to a product using handle (preferred) or ID
-      if (productHandles.length > 0 || availableProductIds.length > 0) {
+      // Try to link the image to a product
+      if (availableProducts.length > 0) {
         // Cycle through available products to ensure each secondary image links to a product
-        const productIndex = i % Math.max(productHandles.length, availableProductIds.length);
+        const productIndex = i % availableProducts.length;
+        const productId = availableProducts[productIndex];
         
-        let productUrl = '';
-        let productTitle = 'View Product Details';
-        
-        if (productHandles.length > 0) {
-          // Use product handle for proper Shopify URL
-          const productHandle = productHandles[productIndex];
-          productUrl = `/products/${productHandle}`;
-          console.log(`Secondary image ${i + 1} linked to product handle: ${productHandle}`);
-        } else {
-          // Fallback to product ID (may not work on Shopify frontend)
-          const productId = availableProductIds[productIndex];
-          productUrl = `/products/${productId}`;
-          console.log(`Secondary image ${i + 1} linked to product ID: ${productId} (warning: may need handle)`);
-        }
-        
-        // Get product info for better linking
-        let productInfo = null;
-        if (request.productsInfo && request.productsInfo.length > 0) {
-          productInfo = request.productsInfo[productIndex];
-          productTitle = productInfo.title || 'View Product Details';
-          productUrl = `/products/${productInfo.handle}`;
-        }
-        
-        // CRITICAL FIX: Secondary images must be clickable with target="_blank" for product links
+        // Create product-linked image HTML
         imageHtml = `
-<div style="margin: 20px auto; text-align: center; border: 2px solid #ddd; border-radius: 10px; padding: 20px; background: #f8f9fa; max-width: 500px;">
-  <a href="${productUrl}" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none; margin-bottom: 15px; cursor: pointer;">
-    <img src="${image.url}" alt="${image.alt || productTitle}" 
-      style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;" />
+<div style="margin: 20px 0; text-align: center;">
+  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
+    <img src="${image.url}" alt="${image.alt || ''}" 
+      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease;" 
+      onmouseover="this.style.transform='scale(1.02)'" 
+      onmouseout="this.style.transform='scale(1)'" />
   </a>
-  ${image.alt ? `<p style="margin: 10px 0; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
-  <p style="margin: 15px 0 5px 0;">
-    <a href="${productUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #007bff; color: white; text-decoration: none; font-weight: bold; padding: 12px 24px; border-radius: 5px; font-size: 16px; border: none; cursor: pointer;">
-      Shop ${productTitle} →
-    </a>
+  ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
+  <p style="margin-top: 4px; font-size: 12px;">
+    <a href="/products/${productId}" style="color: #2563eb; text-decoration: none; font-weight: 500;">View Product Details →</a>
   </p>
 </div>`;
+        
+        console.log(`Secondary image ${i + 1} linked to product ID: ${productId}`);
       } else {
         // Fallback without product link if no products available
         imageHtml = `
