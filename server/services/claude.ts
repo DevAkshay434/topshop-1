@@ -66,7 +66,7 @@ function addTableOfContents(content: string): string {
     return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate TOC HTML
+  // Generate TOC HTML with proper internal link behavior
   const tocHtml = `
 <div class="table-of-contents" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
   <h3 style="margin-top: 0; color: #495057; font-size: 18px; font-weight: 600; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-bottom: 15px;">
@@ -74,7 +74,7 @@ function addTableOfContents(content: string): string {
   </h3>
   <ol style="margin: 0; padding: 0 0 0 20px; line-height: 1.6;">
     ${headings.map(heading => 
-      `<li style="margin: 8px 0;"><a href="#${heading.id}" onclick="event.preventDefault(); document.getElementById('${heading.id}').scrollIntoView({behavior: 'smooth'});" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease; cursor: pointer;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
+      `<li style="margin: 8px 0;"><a href="#${heading.id}" onclick="event.preventDefault(); event.stopPropagation(); const target = document.getElementById('${heading.id}'); if(target) target.scrollIntoView({behavior: 'smooth'}); return false;" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease; cursor: pointer;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
     ).join('')}
   </ol>
 </div>`;
@@ -160,18 +160,30 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
           console.log(`Secondary image ${i + 1} linked to product ID: ${productId} (warning: may need handle)`);
         }
         
-        // Create product-linked image HTML
+        // Get product info for better linking
+        let productInfo = null;
+        if (request.productsInfo && request.productsInfo.length > 0) {
+          productInfo = request.productsInfo[productIndex];
+          productTitle = productInfo.title || 'View Product Details';
+          productUrl = `/products/${productInfo.handle}`;
+        }
+        
+        // Create product-linked image HTML with proper clickable behavior
         imageHtml = `
 <div style="margin: 20px 0; text-align: center;">
-  <a href="${productUrl}" title="${productTitle}" style="text-decoration: none;">
-    <img src="${image.url}" alt="${image.alt || ''}" 
-      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease; cursor: pointer;" 
-      onmouseover="this.style.transform='scale(1.02)'" 
-      onmouseout="this.style.transform='scale(1)'" />
+  <a href="${productUrl}" title="Click to view ${productTitle}" style="text-decoration: none; display: inline-block;">
+    <img src="${image.url}" alt="${image.alt || productTitle}" 
+      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease; cursor: pointer; display: block;" 
+      onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 12px rgba(0,0,0,0.15)';" 
+      onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" />
   </a>
   ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
-  <p style="margin-top: 4px; font-size: 12px;">
-    <a href="${productUrl}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${productTitle} →</a>
+  <p style="margin-top: 8px; font-size: 14px;">
+    <a href="${productUrl}" style="color: #2563eb; text-decoration: none; font-weight: 500; padding: 4px 8px; border: 1px solid #2563eb; border-radius: 4px; display: inline-block; transition: all 0.2s ease;" 
+       onmouseover="this.style.backgroundColor='#2563eb'; this.style.color='white';" 
+       onmouseout="this.style.backgroundColor='transparent'; this.style.color='#2563eb';">
+      ${productTitle} →
+    </a>
   </p>
 </div>`;
       } else {

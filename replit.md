@@ -110,7 +110,10 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
-- June 17, 2025. CRITICAL FIX: Fixed TOC internal anchor links - removed target="_blank" attributes to ensure proper internal page scrolling behavior instead of opening new tabs
+- June 17, 2025. CRITICAL FIX: Fixed TOC links opening in new tabs - enhanced JavaScript click handlers with event.preventDefault() and event.stopPropagation() for proper internal scrolling
+- June 17, 2025. CRITICAL FIX: Fixed secondary images not clickable - implemented proper product linking with handles, hover effects, and visual feedback for clickable images
+- June 17, 2025. CRITICAL FIX: Fixed meta title misuse as page title - separated page title (visible) from meta title (SEO) in Shopify page creation, storing meta title in SEO metafields
+- June 17, 2025. CRITICAL FIX: Enhanced TipTap editor - added post-processing to strip target="_blank" from internal anchor links and improved link configuration
 - June 17, 2025. CRITICAL FIX: Enhanced timezone scheduling - improved createDateInTimezone function to properly handle store timezone conversion for accurate scheduled publication
 - June 17, 2025. CRITICAL FIX: Added timezone context to UI - scheduling forms now clearly indicate time will be in store's timezone with visual confirmation
 - June 17, 2025. CRITICAL FIX: Fixed invalid HTML structure in rich text editor - configured TipTap to prevent nested <p> tags inside <li> elements

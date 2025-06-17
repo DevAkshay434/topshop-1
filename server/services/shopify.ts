@@ -1257,29 +1257,39 @@ export class ShopifyService {
         }
       };
 
-      // CRITICAL FIX: Add SEO meta fields for pages
+      // CRITICAL FIX: Keep page title and meta title separate
       if (post) {
-        // Use meta title if available (this becomes the page title for SEO)
+        // Page title remains the actual content title (visible to users)
+        console.log(`✓ Using content title for page: ${title}`);
+        
+        // Add SEO metafields for both meta title and meta description
+        const metafields = [];
+        
+        // Add meta title as SEO metafield (for search engines, not visible title)
         if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
-          pageData.page.title = (post as any).metaTitle;
-          console.log(`✓ Using meta title for page: ${(post as any).metaTitle}`);
-        } else {
-          console.log(`✗ No meta title found for page, using regular title: ${title}`);
+          metafields.push({
+            namespace: 'seo',
+            key: 'title',
+            value: (post as any).metaTitle,
+            type: 'single_line_text_field'
+          });
+          console.log(`✓ Added meta title to SEO metafields: ${(post as any).metaTitle}`);
         }
         
-        // Add meta description to page metafields (Shopify Pages use metafields for SEO)
+        // Add meta description to SEO metafields
         if ((post as any).metaDescription && (post as any).metaDescription.trim()) {
-          pageData.page.metafields = [
-            {
-              namespace: 'seo',
-              key: 'description',
-              value: (post as any).metaDescription,
-              type: 'single_line_text_field'
-            }
-          ];
-          console.log(`✓ Added meta description to page metafields: ${(post as any).metaDescription}`);
-        } else {
-          console.log(`✗ No meta description found for page`);
+          metafields.push({
+            namespace: 'seo',
+            key: 'description',
+            value: (post as any).metaDescription,
+            type: 'single_line_text_field'
+          });
+          console.log(`✓ Added meta description to SEO metafields: ${(post as any).metaDescription}`);
+        }
+        
+        // Only add metafields if we have any
+        if (metafields.length > 0) {
+          pageData.page.metafields = metafields;
         }
       }
 
