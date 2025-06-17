@@ -1613,8 +1613,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
 
       // Use Claude for AI-powered optimization
-      const { ClaudeService } = await import('./services/claude');
-      const claudeService = new ClaudeService();
+      const claudeModule = await import('./services/claude');
+      const claudeService = new claudeModule.ClaudeService();
       
       // Create context for optimization
       const optimizationContext = {

@@ -153,7 +153,6 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       onmouseover="this.style.transform='scale(1.02)'" 
       onmouseout="this.style.transform='scale(1)'" />
   </a>
-  ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
   <p style="margin-top: 4px; font-size: 12px;">
     <a href="/products/${productId}" style="color: #2563eb; text-decoration: none; font-weight: 500;">View Product Details →</a>
   </p>
@@ -166,7 +165,6 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
 <div style="margin: 20px 0; text-align: center;">
   <img src="${image.url}" alt="${image.alt || ''}" 
     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
-  ${image.alt ? `<p style="margin-top: 8px; font-style: italic; color: #666; font-size: 14px;">${image.alt}</p>` : ''}
 </div>`;
         
         console.log(`Secondary image ${i + 1} added without product link (no products selected)`);
