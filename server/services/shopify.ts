@@ -461,35 +461,46 @@ export class ShopifyService {
         })()
       };
 
-      // CRITICAL FIX: Proper SEO handling - Meta Title ≠ Page Title
-      // Page Title (visible headline) = post.title
-      // Meta Title (SEO) = post.metaTitle -> goes to Shopify metafields
+      // CRITICAL FIX: Proper SEO handling - Separate visible content from SEO metadata
+      // Visible Page Title = post.title (never overwritten by SEO data)
+      // SEO Meta Title = post.metaTitle -> stored in metafields only
+      // SEO Meta Description = post.metaDescription -> stored in metafields only
       
-      // Always use the regular title as the visible page title
+      // Always use the content title as the visible article title
       articleData.title = post.title;
-      console.log(`✓ Using page title (visible headline): ${post.title}`);
+      console.log(`✓ Using content title as visible article title: ${post.title}`);
       
-      // Add meta description to summary_html for SEO
-      if ((post as any).metaDescription) {
-        articleData.summary_html = (post as any).metaDescription;
-        console.log(`✓ Added meta description to summary_html: ${(post as any).metaDescription}`);
-      } else {
-        console.log(`✗ No meta description found in post object`);
+      // CRITICAL: Do NOT put meta description in summary_html or body content
+      // Meta description goes ONLY to SEO metafields, never embedded in content
+      
+      // Add SEO metafields array for meta title and description
+      const metafields = [];
+      
+      // Add meta title as SEO metafield (for search engines only)
+      if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
+        metafields.push({
+          namespace: 'seo',
+          key: 'title_tag',
+          value: (post as any).metaTitle,
+          type: 'single_line_text_field'
+        });
+        console.log(`✓ Added meta title to SEO metafields (not visible title): ${(post as any).metaTitle}`);
       }
       
-      // Add meta title as metafield for SEO (separate from visible title)
-      if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
-        articleData.metafields = [
-          {
-            namespace: 'seo',
-            key: 'title_tag',
-            value: (post as any).metaTitle,
-            type: 'single_line_text_field'
-          }
-        ];
-        console.log(`✓ Added meta title to SEO metafield: ${(post as any).metaTitle}`);
-      } else {
-        console.log(`✗ No meta title found for SEO metafield`);
+      // Add meta description as SEO metafield (never in content body)
+      if ((post as any).metaDescription && (post as any).metaDescription.trim()) {
+        metafields.push({
+          namespace: 'seo',
+          key: 'description',
+          value: (post as any).metaDescription,
+          type: 'single_line_text_field'
+        });
+        console.log(`✓ Added meta description to SEO metafields (not content body): ${(post as any).metaDescription}`);
+      }
+      
+      // Only add metafields if we have any SEO data
+      if (metafields.length > 0) {
+        articleData.metafields = metafields;
       }
       
       // CRITICAL FIX: Add featured image if it exists and is properly formatted
