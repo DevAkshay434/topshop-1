@@ -302,7 +302,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       // Enhanced Claude prompt for trending, Google-optimized titles with audience awareness
       const audience = targetAudience || buyerPersona;
       const claudeRequest = {
-        prompt: `Generate 8 unique, highly SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that strategically incorporate these keywords: ${topKeywords.join(", ")}.
+        prompt: `Generate 12 unique, highly SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that strategically incorporate these keywords: ${topKeywords.join(", ")}.
         
         IMPORTANT CONTEXT: 
         - Primary product: ${cleanProductTitle || topKeywords[0]}
@@ -330,7 +330,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         - Keep titles between 50-65 characters for optimal SEO click-through rates
         - Avoid ALL-CAPS words, excessive punctuation, or clickbait tactics
         
-        Format your response as a JSON array of exactly 8 strings, with no additional text.`,
+        Format your response as a JSON array of exactly 12 strings, with no additional text.`,
         responseFormat: "json",
         targetAudience: audience,
         keywords: topKeywords,
@@ -388,7 +388,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       const keyword3 = topKeywords[2] || keyword1;
       
       titles = [
-        // SEO-optimized titles as fallbacks
+        // SEO-optimized titles as fallbacks (12 titles)
         `${keyword1}: The Ultimate Guide for ${currentYear}`,
         `10 Best ${keyword1} Features You Need to Know (${currentYear})`,
         `How to Choose the Perfect ${keyword2} in ${currentYear}`,
@@ -396,7 +396,11 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         `What is ${keyword1}? Complete ${currentYear} Buyer's Guide`,
         `Why ${keyword1} is Essential for Modern Homes`,
         `7 Reasons ${keyword2} Outperforms the Competition`,
-        `${currentYear} ${keyword1} Review: Everything You Need to Know`
+        `${currentYear} ${keyword1} Review: Everything You Need to Know`,
+        `Best ${keyword3} Options: Expert Recommendations ${currentYear}`,
+        `${keyword1} Benefits: Transform Your Home Today`,
+        `Top ${keyword2} Mistakes to Avoid in ${currentYear}`,
+        `${keyword1} Installation: Step-by-Step Guide`
       ];
     }
     

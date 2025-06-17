@@ -461,7 +461,7 @@ export class ShopifyService {
         })()
       };
 
-      // Add SEO meta fields if available
+      // CRITICAL FIX: Add SEO meta fields properly
       // For Shopify blog articles, use summary_html for meta description directly
       if ((post as any).metaDescription) {
         articleData.summary_html = (post as any).metaDescription;
@@ -470,14 +470,12 @@ export class ShopifyService {
         console.log(`✗ No meta description found in post object`);
       }
       
-      // Note: Shopify blog articles don't have a direct meta title field in the API
-      // The article title serves as the meta title, but we'll log it for debugging
-      if ((post as any).metaTitle) {
-        console.log(`✓ Meta title available: ${(post as any).metaTitle}`);
-        // For blog articles, we could override the title if different from meta title
-        // articleData.title = (post as any).metaTitle;
+      // CRITICAL FIX: Use meta title as the article title if available (this becomes the page title)
+      if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
+        articleData.title = (post as any).metaTitle;
+        console.log(`✓ Using meta title as article title: ${(post as any).metaTitle}`);
       } else {
-        console.log(`✗ No meta title found in post object`);
+        console.log(`✗ No meta title found, using regular title: ${post.title}`);
       }
       
       // Only add image if it exists and is properly formatted

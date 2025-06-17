@@ -110,6 +110,7 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 17, 2025. Enhanced title suggestion system to provide 12 titles instead of 8, with improved audience targeting
 - June 16, 2025. Initial setup
 ```
 

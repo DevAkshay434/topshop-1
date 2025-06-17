@@ -491,11 +491,30 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     processedContent = addTableOfContents(processedContent);
     processedContent = processMediaPlacementsHandler(processedContent, request);
     
+    // CRITICAL FIX: Clean meta description to remove Table of Contents content
+    let cleanMetaDescription = jsonContent.metaDescription || '';
+    if (cleanMetaDescription) {
+      // Remove any TOC-related content from meta description
+      cleanMetaDescription = cleanMetaDescription
+        .replace(/table of contents/gi, '')
+        .replace(/toc/gi, '')
+        .replace(/📋/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      // Ensure meta description is within 155-160 character limit
+      if (cleanMetaDescription.length > 160) {
+        cleanMetaDescription = cleanMetaDescription.substring(0, 157) + '...';
+      }
+      
+      console.log(`✓ Cleaned meta description: "${cleanMetaDescription}"`);
+    }
+    
     return {
       title: jsonContent.title,
       content: processedContent,
       tags: jsonContent.tags,
-      metaDescription: jsonContent.metaDescription || ''
+      metaDescription: cleanMetaDescription
     };
   } catch (error: any) {
     console.error("Error generating content with Claude:", error);
