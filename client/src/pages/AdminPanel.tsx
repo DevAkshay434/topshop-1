@@ -12,6 +12,7 @@ import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { AuthorSelector } from '../components/AuthorSelector';
 import { StoreSelector } from '../components/StoreSelector';
+import { useStore } from '../contexts/StoreContext';
 import { 
   Card, 
   CardContent, 

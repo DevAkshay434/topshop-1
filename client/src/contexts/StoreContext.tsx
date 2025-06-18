@@ -1,90 +1,111 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { apiRequest } from '@/lib/queryClient';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
-interface StoreInfo {
-  name: string;
-  domain: string;
-  email: string;
-  country: string;
-  currency: string;
-  timezone: string;
-  iana_timezone: string;
-  timezone_abbreviation?: string; // Optional timezone abbreviation (e.g., EST, PST)
+interface ShopifyStore {
+  id: number;
+  shopName: string;
+  accessToken: string;
+  scope: string;
+  defaultBlogId: string | null;
+  isConnected: boolean;
+  lastSynced: Date | null;
+  installedAt: Date;
+  uninstalledAt: Date | null;
+  planName: string | null;
+  chargeId: string | null;
+  trialEndsAt: Date | null;
 }
 
 interface StoreContextType {
-  storeInfo: StoreInfo | null;
+  currentStore: ShopifyStore | null;
+  selectedStoreId: number | null;
+  stores: ShopifyStore[];
   isLoading: boolean;
-  error: Error | null;
-  refreshStoreInfo: () => Promise<void>;
+  selectStore: (storeId: number) => void;
+  refreshStores: () => void;
 }
 
-// Default context value
-const initialContext: StoreContextType = {
-  storeInfo: null,
-  isLoading: true,
-  error: null,
-  refreshStoreInfo: async () => {}
-};
+const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-// Create context
-const StoreContext = createContext<StoreContextType>(initialContext);
-
-// Provider component
-export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  // Function to fetch store info
-  const fetchStoreInfo = async () => {
-    setIsLoading(true);
-    try {
-      const response = await apiRequest('GET', '/api/shopify/store-info');
-      
-      if (response.success && response.shopInfo) {
-        setStoreInfo(response.shopInfo);
-      } else {
-        // No error but also no store info
-        setStoreInfo(null);
-        if (!response.success) {
-          throw new Error(response.error || 'Failed to fetch store information');
-        }
-      }
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching store info:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error fetching store info'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fetch store info on mount
-  useEffect(() => {
-    fetchStoreInfo();
-  }, []);
-
-  // Context value
-  const contextValue: StoreContextType = {
-    storeInfo,
-    isLoading,
-    error,
-    refreshStoreInfo: fetchStoreInfo
-  };
-
-  return (
-    <StoreContext.Provider value={contextValue}>
-      {children}
-    </StoreContext.Provider>
-  );
-}
-
-// Hook for consuming context
 export function useStore() {
   const context = useContext(StoreContext);
   if (context === undefined) {
     throw new Error('useStore must be used within a StoreProvider');
   }
   return context;
+}
+
+interface StoreProviderProps {
+  children: React.ReactNode;
+}
+
+export function StoreProvider({ children }: StoreProviderProps) {
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+
+  // Fetch all stores
+  const { 
+    data: storesData, 
+    isLoading: storesLoading, 
+    refetch: refetchStores 
+  } = useQuery({
+    queryKey: ['/api/shopify/stores'],
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch current store info (fallback for initial load)
+  const { data: currentStoreData } = useQuery({
+    queryKey: ['/api/shopify/store-info'],
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+
+  const stores: ShopifyStore[] = storesData?.stores || [];
+  
+  // Determine current store based on selection or fallback
+  const currentStore = selectedStoreId 
+    ? stores.find(store => store.id === selectedStoreId) || null
+    : stores.find(store => 
+        currentStoreData?.shopInfo?.domain?.includes(store.shopName.replace('.myshopify.com', ''))
+      ) || stores[0] || null;
+
+  // Auto-select the first available store if none selected
+  useEffect(() => {
+    if (!selectedStoreId && stores.length > 0 && currentStore) {
+      setSelectedStoreId(currentStore.id);
+    }
+  }, [stores, currentStore, selectedStoreId]);
+
+  const selectStore = (storeId: number) => {
+    setSelectedStoreId(storeId);
+    // Store selection in localStorage for persistence
+    localStorage.setItem('selectedStoreId', storeId.toString());
+  };
+
+  const refreshStores = () => {
+    refetchStores();
+  };
+
+  // Load stored selection on mount
+  useEffect(() => {
+    const storedStoreId = localStorage.getItem('selectedStoreId');
+    if (storedStoreId && !selectedStoreId) {
+      setSelectedStoreId(parseInt(storedStoreId));
+    }
+  }, [selectedStoreId]);
+
+  const value: StoreContextType = {
+    currentStore,
+    selectedStoreId,
+    stores,
+    isLoading: storesLoading,
+    selectStore,
+    refreshStores,
+  };
+
+  return (
+    <StoreContext.Provider value={value}>
+      {children}
+    </StoreContext.Provider>
+  );
 }

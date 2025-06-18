@@ -1,54 +1,33 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Store, ExternalLink, Settings } from 'lucide-react';
+import { Store, ExternalLink, Settings, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface ShopifyStore {
-  id: number;
-  shopName: string;
-  isConnected: boolean;
-  lastSynced: string;
-  planName: string | null;
-  installedAt: string;
-}
+import { useStore } from '../contexts/StoreContext';
 
 interface StoreSelectorProps {
   onStoreChange?: (storeId: number) => void;
-  currentStoreId?: number;
 }
 
-export function StoreSelector({ onStoreChange, currentStoreId }: StoreSelectorProps) {
-  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>(currentStoreId);
-
-  // Fetch all connected stores
-  const { data: storesData, isLoading } = useQuery({
-    queryKey: ['/api/shopify/stores'],
-    enabled: true,
-  });
-
-  // Fetch current store info
-  const { data: currentStoreData } = useQuery({
-    queryKey: ['/api/shopify/store-info'],
-    enabled: true,
-  });
-
-  const stores: ShopifyStore[] = storesData?.stores || [];
-  const currentStore = currentStoreData?.shopInfo;
+export function StoreSelector({ onStoreChange }: StoreSelectorProps) {
+  const queryClient = useQueryClient();
+  const { currentStore, selectedStoreId, stores, isLoading, selectStore, refreshStores } = useStore();
 
   const handleStoreChange = (storeId: string) => {
     const id = parseInt(storeId);
-    setSelectedStoreId(id);
+    selectStore(id);
     onStoreChange?.(id);
+    
+    // Clear all cache when switching stores to ensure fresh data
+    queryClient.invalidateQueries();
   };
 
   const getStoreName = (shopName: string) => {
     return shopName.replace('.myshopify.com', '');
   };
 
-  const getStoreStatus = (store: ShopifyStore) => {
+  const getStoreStatus = (store: any) => {
     if (!store.isConnected) return { label: 'Disconnected', variant: 'destructive' as const };
     if (store.planName) return { label: store.planName, variant: 'default' as const };
     return { label: 'Connected', variant: 'secondary' as const };
@@ -73,6 +52,14 @@ export function StoreSelector({ onStoreChange, currentStoreId }: StoreSelectorPr
         <CardTitle className="flex items-center gap-2">
           <Store className="h-5 w-5" />
           Store Management
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refreshStores}
+            className="ml-auto"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -82,9 +69,9 @@ export function StoreSelector({ onStoreChange, currentStoreId }: StoreSelectorPr
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-blue-900">Currently Active Store</h3>
-                <p className="text-blue-700">{getStoreName(currentStore.domain || currentStore.name)}</p>
+                <p className="text-blue-700">{getStoreName(currentStore.shopName)}</p>
                 <p className="text-sm text-blue-600">
-                  Timezone: {currentStore.timezone || 'N/A'}
+                  Store ID: {currentStore.id} • Connected: {currentStore.isConnected ? 'Yes' : 'No'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -92,7 +79,7 @@ export function StoreSelector({ onStoreChange, currentStoreId }: StoreSelectorPr
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(`https://${currentStore.domain || currentStore.name}/admin`, '_blank')}
+                  onClick={() => window.open(`https://${currentStore.shopName}/admin`, '_blank')}
                 >
                   <ExternalLink className="h-4 w-4 mr-1" />
                   Admin
@@ -132,15 +119,19 @@ export function StoreSelector({ onStoreChange, currentStoreId }: StoreSelectorPr
           <div className="space-y-2">
             {stores.map((store) => {
               const status = getStoreStatus(store);
+              const isSelected = store.id === selectedStoreId;
               return (
-                <div key={store.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={store.id} className={`flex items-center justify-between p-3 rounded-lg ${
+                  isSelected ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'
+                }`}>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{getStoreName(store.shopName)}</span>
                       <Badge variant={status.variant}>{status.label}</Badge>
+                      {isSelected && <Badge variant="outline">Selected</Badge>}
                     </div>
                     <p className="text-sm text-gray-600">
-                      Installed: {new Date(store.installedAt).toLocaleDateString()}
+                      ID: {store.id} • Installed: {new Date(store.installedAt).toLocaleDateString()}
                       {store.lastSynced && (
                         <span className="ml-2">
                           • Last sync: {new Date(store.lastSynced).toLocaleString()}
@@ -157,14 +148,16 @@ export function StoreSelector({ onStoreChange, currentStoreId }: StoreSelectorPr
                       <ExternalLink className="h-4 w-4 mr-1" />
                       Admin
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStoreChange(store.id.toString())}
-                    >
-                      <Settings className="h-4 w-4 mr-1" />
-                      Select
-                    </Button>
+                    {!isSelected && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStoreChange(store.id.toString())}
+                      >
+                        <Settings className="h-4 w-4 mr-1" />
+                        Select
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
