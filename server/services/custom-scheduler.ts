@@ -152,14 +152,14 @@ export async function schedulePost(
 /**
  * Format a date as YYYY-MM-DD
  */
-function formatDate(date: Date): string {
+export function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
 /**
  * Format a time as HH:MM
  */
-function formatTime(date: Date): string {
+export function formatTime(date: Date): string {
   return date.toISOString().split('T')[1].substring(0, 5);
 }
 

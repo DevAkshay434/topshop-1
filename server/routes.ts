@@ -1204,12 +1204,27 @@ export async function registerRoutes(app: Express): Promise<void> {
                 console.error("Error adding author information:", authorError);
               }
               
-              shopifyArticle = await shopifyService.createArticle(
-                tempStore, 
-                connection.defaultBlogId, 
-                completePost || post,
-                scheduledPublishDate // This will trigger the scheduling logic in createArticle
-              );
+              // Use custom scheduler for scheduled posts instead of Shopify's built-in scheduling
+              if (post.status === 'scheduled' && scheduledPublishDate) {
+                console.log('Creating scheduled post using custom scheduler approach');
+                
+                const { schedulePost } = await import('./services/custom-scheduler');
+                
+                shopifyArticle = await schedulePost(
+                  tempStore,
+                  connection.defaultBlogId,
+                  completePost || post,
+                  scheduledPublishDate
+                );
+              } else {
+                // For immediate publishing or drafts
+                shopifyArticle = await shopifyService.createArticle(
+                  tempStore, 
+                  connection.defaultBlogId, 
+                  completePost || post,
+                  undefined // No scheduling date for immediate publish/draft
+                );
+              }
             }
             
             // Update post with Shopify ID and handle for URL generation
