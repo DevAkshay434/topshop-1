@@ -78,19 +78,21 @@ export function StoreProvider({ children }: StoreProviderProps) {
   }, [stores, currentStore, selectedStoreId]);
 
   const selectStore = (storeId: number) => {
-    console.log(`Switching to store ID: ${storeId}`);
+    console.log(`StoreContext: Switching to store ID: ${storeId}`);
+    
+    // Store selection in localStorage FIRST for persistence
+    localStorage.setItem('selectedStoreId', storeId.toString());
+    console.log(`StoreContext: Saved to localStorage: ${localStorage.getItem('selectedStoreId')}`);
     
     // Clear all cached queries to prevent data leakage between stores
     queryClient.clear();
     
-    // Set the new store ID
+    // Set the new store ID in state
     setSelectedStoreId(storeId);
     
-    // Store selection in localStorage for persistence
-    localStorage.setItem('selectedStoreId', storeId.toString());
-    
-    // Force re-fetch of store-dependent data after a short delay
+    // Force re-fetch of store-dependent data after clearing cache
     setTimeout(() => {
+      console.log(`StoreContext: Invalidating queries after store switch to ${storeId}`);
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: ['/api/authors'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
@@ -100,7 +102,7 @@ export function StoreProvider({ children }: StoreProviderProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/shopify/store-info'] });
     }, 100);
     
-    console.log(`Store switched to: ${storeId}, cache cleared`);
+    console.log(`StoreContext: Store switched to: ${storeId}, localStorage value: ${localStorage.getItem('selectedStoreId')}`);
   };
 
   const refreshStores = () => {

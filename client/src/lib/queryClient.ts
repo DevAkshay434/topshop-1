@@ -44,8 +44,11 @@ export async function apiRequest<T = any>(
   const headers: Record<string, string> = requestData ? { "Content-Type": "application/json" } : {};
   
   // Add store ID to headers for backend routing
-  if (selectedStoreId) {
+  if (selectedStoreId && selectedStoreId !== 'null' && selectedStoreId !== 'undefined') {
     headers['X-Store-ID'] = selectedStoreId;
+    console.log(`Query client: Adding X-Store-ID header: ${selectedStoreId} for URL: ${url}`);
+  } else {
+    console.log(`Query client: No valid store ID found in localStorage for URL: ${url}. Value: ${selectedStoreId}`);
   }
   
   const res = await fetch(url, {
@@ -70,8 +73,11 @@ export const getQueryFn: <T>(options: {
     const headers: Record<string, string> = {};
     
     // Add store ID to headers for backend routing
-    if (selectedStoreId) {
+    if (selectedStoreId && selectedStoreId !== 'null' && selectedStoreId !== 'undefined') {
       headers['X-Store-ID'] = selectedStoreId;
+      console.log(`Query function: Adding X-Store-ID header: ${selectedStoreId} for query: ${queryKey[0]}`);
+    } else {
+      console.log(`Query function: No valid store ID found in localStorage for query: ${queryKey[0]}. Value: ${selectedStoreId}`);
     }
     
     const res = await fetch(queryKey[0] as string, {
