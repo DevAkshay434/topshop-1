@@ -1,0 +1,58 @@
+Replit-Optimized Prompt (Aligned with Replit’s Prompting Guidelines)
+Prompt Title: Refactor App for Shopify Multi-Store Support & App Store Compatibility
+
+🟡 What I want:
+Refactor my existing Shopify app to support multiple store installations, where each store's data, settings, and sessions are fully isolated. The goal is to make the app Shopify App Store-ready and multi-tenant so any Shopify merchant can use it independently without any data leakage.
+
+🔵 Why I want it:
+I plan to publish this application on the Shopify App Store. It needs to scale for multiple stores while isolating each merchant's data. This will also reduce bugs, increase reliability, and ensure trust when used by many Shopify store owners.
+
+🔷 Current Behavior:
+The app is currently working for only one Shopify store.
+
+All data is stored globally or not scoped by the shop domain.
+
+Sessions and tokens are not separated per store.
+
+There’s no proper tenant isolation or OAuth re-authentication logic.
+
+🟢 Expected Behavior:
+Each Shopify store installs the app via OAuth 2.0 (offline access scope).
+
+After install, store-specific access tokens are securely saved.
+
+All content, projects, and data should be scoped per store using the shop domain.
+
+The UI shows and loads only the current store’s data.
+
+No store can access or affect another store's content.
+
+Webhooks handle app uninstall and store cleanup.
+
+Shopify App Bridge integration is enabled for embedded experience.
+
+The app passes all Shopify App Store requirements.
+
+Optional: Add billing logic to support plans per store.
+
+🧩 Tech Notes:
+Use a relational DB with store_id or shop foreign keys on every table.
+
+Protect all backend routes using middleware to scope requests by the shop session.
+
+Use Shopify’s /admin/oauth/access_token flow for token exchange.
+
+Clean up any store-specific data on app/uninstalled webhook.
+
+Do not hardcode store-specific logic.
+
+🛑 What not to do:
+Don’t make assumptions about the current store.
+
+Don’t use a single token/session for all stores.
+
+Don’t include UI redesigns or feature changes not related to multi-store setup.
+
+✅ Final Deliverable:
+A scalable, secure, multi-tenant Shopify app that supports many stores independently, passes Shopify App Store standards, and works reliably for public launch.
+Remember while doing don't disturb current sturcture or feautre of the app

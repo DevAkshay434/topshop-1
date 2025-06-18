@@ -1737,7 +1737,8 @@ export default function AdminPanel() {
       });
 
       if (response?.post) {
-        // Check if content was successfully published to Shopify
+        // Check if content was successfully sent to Shopify (published or scheduled)
+        const isSentToShopify = response.post.shopifyPostId && (publicationType === 'publish' || publicationType === 'schedule');
         const isPublishedToShopify = response.post.shopifyPostId && publicationType === 'publish';
         
         setGeneratedContent({
@@ -1752,6 +1753,8 @@ export default function AdminPanel() {
         let description = `Your content has been ${actionText} successfully`;
         if (isPublishedToShopify) {
           description = `Your content has been published to Shopify successfully (Article ID: ${response.post.shopifyPostId})`;
+        } else if (publicationType === 'schedule' && response.post.shopifyPostId) {
+          description = `Your content has been scheduled in Shopify successfully (Article ID: ${response.post.shopifyPostId})`;
         }
         
         toast({
@@ -1760,8 +1763,8 @@ export default function AdminPanel() {
           variant: "default"
         });
         
-        // Update generated content with Shopify information if published
-        if (isPublishedToShopify) {
+        // Update generated content with Shopify information if sent to Shopify (published or scheduled)
+        if (isSentToShopify) {
           setGeneratedContent(prev => prev ? {
             ...prev,
             shopifyPostId: response.post.shopifyPostId,

@@ -110,6 +110,8 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 18, 2025. Fixed scheduled posts to display "View in Shopify" and "Copy Link" buttons same as published posts by ensuring shopifyUrl is set for both publication types
+- June 18, 2025. Completed comprehensive scheduling system overhaul with proper timezone handling, custom scheduler service, and reliable background publishing
 - June 17, 2025. Enhanced content generation to include 3-5 external authoritative links from .edu, .gov, .wikipedia, and other trusted domains for improved SEO and credibility
 - June 17, 2025. Implemented Shopify-compatible content editor with real-time syncing, alignment tools (left, center, right, justify), enhanced toolbar with visual icons, and WYSIWYG preview functionality
 - June 17, 2025. Enhanced title suggestion system to provide 12 titles instead of 8, with improved audience targeting
