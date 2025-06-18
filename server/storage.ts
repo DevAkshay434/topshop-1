@@ -495,6 +495,10 @@ export class MemStorage implements IStorage {
     this.shopifyStores.set(id, updatedStore);
     return updatedStore;
   }
+
+  async deleteShopifyStore(id: number): Promise<boolean> {
+    return this.shopifyStores.delete(id);
+  }
   
   // User-store relationship operations
   async getUserStores(userId: number): Promise<ShopifyStore[]> {

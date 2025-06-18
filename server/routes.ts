@@ -2780,18 +2780,18 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     }
   });
 
-  // Register OAuth routes (not prefixed with /api)
+  // Register OAuth routes (not prefixed with /api) - these handle multi-store authentication
   app.use('/oauth', oauthRouter);
   
-  // Add direct callback route to match Partner Dashboard configuration
-  app.use('/', oauthRouter);
+  // Apply authentication middleware to all API routes for multi-store support
+  app.use('/api', shopifyAuthOptional);
   
-  // Register feature-specific routers
+  // Register feature-specific routers with authentication
   app.use('/api/content', contentRouter);
   app.use('/api/claude', claudeRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/media', mediaRouter);
 
-  // Mount API routes with /api prefix
+  // Mount API routes with /api prefix and store context
   app.use('/api', apiRouter);
 }

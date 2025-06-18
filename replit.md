@@ -110,6 +110,10 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 18, 2025. MAJOR REFACTOR: Successfully implemented multi-store support with OAuth authentication system, enabling the app to handle multiple Shopify stores simultaneously while maintaining all existing SEO and content generation features
+- June 18, 2025. Added comprehensive multi-store database schema with proper store isolation, user-store relationships, and fallback storage system for reliability
+- June 18, 2025. Implemented Shopify OAuth 2.0 authentication middleware with proper scope validation, webhook handling, and App Store compatibility
+- June 18, 2025. Enhanced storage layer with multi-tenant support while preserving backward compatibility with existing single-store installations
 - June 18, 2025. Fixed scheduled posts to display "View in Shopify" and "Copy Link" buttons same as published posts by ensuring shopifyUrl is set for both publication types
 - June 18, 2025. Completed comprehensive scheduling system overhaul with proper timezone handling, custom scheduler service, and reliable background publishing
 - June 17, 2025. Enhanced content generation to include 3-5 external authoritative links from .edu, .gov, .wikipedia, and other trusted domains for improved SEO and credibility
