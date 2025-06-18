@@ -1881,6 +1881,7 @@ Place this at a logical position in the content, typically after introducing a c
 
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
+          storeId: store.id, // CRITICAL: Associate post with the correct store
           title: generatedContent.title || requestData.title,
           content: finalContent,
           status: postStatus,
