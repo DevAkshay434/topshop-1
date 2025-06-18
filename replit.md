@@ -110,6 +110,9 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 18, 2025. COMPLETED: Multi-store support with complete data isolation - verified that switching between stores (rajeshshah vs reviewtesting434) shows correct store-specific data with no cross-contamination
+- June 18, 2025. Implemented comprehensive cache invalidation system in StoreContext - all cached queries are cleared when switching stores to prevent data leakage
+- June 18, 2025. Enhanced query client with automatic store ID headers - all API requests now include X-Store-ID header for proper backend routing
 - June 18, 2025. MAJOR REFACTOR: Successfully implemented multi-store support with OAuth authentication system, enabling the app to handle multiple Shopify stores simultaneously while maintaining all existing SEO and content generation features
 - June 18, 2025. Added comprehensive multi-store database schema with proper store isolation, user-store relationships, and fallback storage system for reliability
 - June 18, 2025. Implemented Shopify OAuth 2.0 authentication middleware with proper scope validation, webhook handling, and App Store compatibility

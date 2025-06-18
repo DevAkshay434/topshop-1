@@ -16,11 +16,15 @@ export function StoreSelector({ onStoreChange }: StoreSelectorProps) {
 
   const handleStoreChange = (storeId: string) => {
     const id = parseInt(storeId);
+    console.log(`StoreSelector: Switching to store ID ${id}`);
+    
+    // Clear all cache completely before switching
+    queryClient.clear();
+    
     selectStore(id);
     onStoreChange?.(id);
     
-    // Clear all cache when switching stores to ensure fresh data
-    queryClient.invalidateQueries();
+    console.log(`StoreSelector: Store switched to ${id}, cache cleared`);
   };
 
   const getStoreName = (shopName: string) => {

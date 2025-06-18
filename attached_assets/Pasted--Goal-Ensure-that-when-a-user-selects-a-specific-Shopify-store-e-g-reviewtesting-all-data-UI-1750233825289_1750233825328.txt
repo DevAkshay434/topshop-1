@@ -1,0 +1,53 @@
+🎯 Goal:
+Ensure that when a user selects a specific Shopify store (e.g. reviewtesting), all data, UI options, and API interactions update to reflect that store only — and not fallback to the default store (e.g. rajeshshah).
+
+🔍 Problem Summary:
+I have connected multiple stores to the app.
+
+When I switch from the default store (rajeshshah) to another store (reviewtesting):
+
+The AdminPanel still loads data (like categories, buyer personas, etc.) from the default store.
+
+UI fields and dropdowns are not updated to reflect the selected store.
+
+This causes the wrong data to be created or edited under the wrong store, which is critical and unacceptable for a public Shopify app.
+
+🧪 Expected Behavior (Step-by-Step):
+I select a new store (e.g., reviewtesting) via the store selector.
+
+The application must:
+
+Clear any cached/default store data.
+
+Update the global app context/state with the selected store.
+
+Re-fetch data (like featured products, buyer personas, categories, media, etc.) scoped to the selected store.
+
+The AdminPanel and content editor should:
+
+Only show and allow actions on data from the selected store.
+
+Never load or leak data from previously selected or default store.
+
+📦 Additional Requirements:
+Make sure shop context is updated on both frontend (React state/context) and backend (API calls, session tokens).
+
+All API requests must dynamically use the correct shop or store ID (e.g., as shop, store_id, or via headers/session).
+
+Ensure store switching properly resets all cached queries (React Query, Redux, etc.).
+
+Prevent any hardcoded fallback to default store in backend routes, session handlers, or GraphQL/REST queries.
+
+❌ What NOT to Do:
+❌ Don’t default back to the original store once another is selected.
+
+❌ Don’t carry over data between stores.
+
+✅ Deliverables:
+✅ Store switching must update UI, content options, and API state consistently.
+
+✅ AdminPanel should correctly reflect and fetch only the selected store's data.
+
+✅ All saved/edited content must be created under the correct store.
+
+✅ Confirmed via test: switching from rajeshshah → reviewtesting results in all correct data loading and persisting for reviewtesting.

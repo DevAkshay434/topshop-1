@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 
 interface ShopifyStore {
   id: number;
@@ -77,9 +78,29 @@ export function StoreProvider({ children }: StoreProviderProps) {
   }, [stores, currentStore, selectedStoreId]);
 
   const selectStore = (storeId: number) => {
+    console.log(`Switching to store ID: ${storeId}`);
+    
+    // Clear all cached queries to prevent data leakage between stores
+    queryClient.clear();
+    
+    // Set the new store ID
     setSelectedStoreId(storeId);
+    
     // Store selection in localStorage for persistence
     localStorage.setItem('selectedStoreId', storeId.toString());
+    
+    // Force re-fetch of store-dependent data after a short delay
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/authors'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/collections'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/shopify/check-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/shopify/store-info'] });
+    }, 100);
+    
+    console.log(`Store switched to: ${storeId}, cache cleared`);
   };
 
   const refreshStores = () => {
