@@ -39,9 +39,18 @@ export async function apiRequest<T = any>(
     requestData = data;
   }
   
+  // Get store ID from localStorage if available
+  const selectedStoreId = localStorage.getItem('selectedStoreId');
+  const headers: Record<string, string> = requestData ? { "Content-Type": "application/json" } : {};
+  
+  // Add store ID to headers for backend routing
+  if (selectedStoreId) {
+    headers['X-Store-ID'] = selectedStoreId;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: requestData ? { "Content-Type": "application/json" } : {},
+    headers,
     body: requestData ? JSON.stringify(requestData) : undefined,
     credentials: "include",
   });

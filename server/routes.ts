@@ -53,29 +53,42 @@ const upload = multer({
   }
 });
 
-// Helper function to get store from request
+// Helper function to get store from request with multi-store support
 async function getStoreFromRequest(req: Request): Promise<any | null> {
   try {
-    const connection = await storage.getShopifyConnection();
+    // Check if X-Store-ID header is provided (from frontend store selection)
+    const requestedStoreId = req.headers['x-store-id'] as string;
     
-    if (!connection || !connection.isConnected) {
-      return null;
+    if (requestedStoreId) {
+      const storeId = parseInt(requestedStoreId);
+      const store = await storage.getStoreById(storeId);
+      
+      if (store && store.isConnected) {
+        console.log(`Using store from X-Store-ID header: ${store.shopName} (ID: ${store.id})`);
+        return store;
+      }
     }
 
-    return {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || '',
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
+    // Fallback: Get store from shopify auth session
+    const shopifyAuth = req.session?.shopifyAuth;
+    if (shopifyAuth?.shop) {
+      const store = await storage.getStoreByShopName(shopifyAuth.shop);
+      if (store && store.isConnected) {
+        console.log(`Using store from session: ${store.shopName} (ID: ${store.id})`);
+        return store;
+      }
+    }
+
+    // Final fallback: Get any connected store (legacy behavior)
+    const stores = await storage.getAllStores();
+    const connectedStore = stores.find(store => store.isConnected);
+    
+    if (connectedStore) {
+      console.log(`Using fallback store: ${connectedStore.shopName} (ID: ${connectedStore.id})`);
+      return connectedStore;
+    }
+
+    return null;
   } catch (error) {
     console.error('Error getting store from request:', error);
     return null;
