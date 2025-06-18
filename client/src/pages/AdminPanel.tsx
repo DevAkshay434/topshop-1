@@ -11,6 +11,7 @@ import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSele
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { AuthorSelector } from '../components/AuthorSelector';
+import { StoreSelector } from '../components/StoreSelector';
 import { 
   Card, 
   CardContent, 
@@ -1987,6 +1988,11 @@ export default function AdminPanel() {
 
   return (
     <div className="container max-w-7xl mx-auto py-10">
+      {/* Store Management Section */}
+      <div className="mb-6">
+        <StoreSelector />
+      </div>
+
       {/* Show scheduling permission notice if needed */}
       {permissionsData?.success && !permissionsData.hasPermission && (
         <div className="mb-4">
