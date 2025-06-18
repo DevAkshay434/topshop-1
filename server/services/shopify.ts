@@ -551,33 +551,18 @@ export class ShopifyService {
       //    (this is different from Shopify Admin UI which shows published=true)
       
       if (isScheduledPublishing && futurePublishDate) {
-        console.log(`Setting up scheduled publishing for future date: ${futurePublishDate.toISOString()}`);
+        console.log(`Setting up custom scheduled publishing for future date: ${futurePublishDate.toISOString()}`);
         
-        // CRITICAL FIX - UPDATED: For Shopify API v2023-07 and above:
-        // When scheduling content, we need TWO parameters:
-        // 1. published: false - to keep it as a draft until the scheduled date
-        // 2. published_at: future date - when it should be published
+        // FIXED: For scheduled posts, create as draft WITHOUT published_at
+        // Our custom scheduler will publish it at the right time
         articleData.published = false;
+        articleData.published_at = null; // Don't set this - keeps it as true draft
         
-        // Make sure the date is in the future (at least tomorrow)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Store scheduling metadata for our custom scheduler
+        articleData.customScheduled = true;
+        articleData.scheduledForDate = futurePublishDate.toISOString();
         
-        // Use the future date (ensuring it's actually future)
-        const scheduledTime = futurePublishDate.getTime();
-        const tomorrowTime = tomorrow.getTime();
-        if (scheduledTime <= tomorrowTime) {
-          console.log(`WARNING: Schedule date not far enough in future, adjusting to tomorrow`);
-          articleData.published_at = tomorrow.toISOString();
-        } else {
-          articleData.published_at = futurePublishDate.toISOString();
-        }
-        
-        // For debugging
-        console.log(`CRITICAL SCHEDULING UPDATE: Article will publish at ${articleData.published_at}`);
-        
-        // Add a custom property for tracking in the response
-        articleData.isScheduledPost = true;
+        console.log(`DRAFT CREATED: Article will remain unpublished until custom scheduler activates at ${futurePublishDate.toISOString()}`);
       } else if (post.status === 'published' || 
                 (post as any).publicationType === 'publish' || 
                 (post as any).postStatus === 'published') {
