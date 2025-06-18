@@ -594,6 +594,29 @@ export class MemStorage implements IStorage {
   async deleteProject(id: number): Promise<boolean> {
     return this.projects.delete(id);
   }
+
+  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+    const stores = Array.from(this.shopifyStores.values());
+    return stores.find(store => store.shopName === shopDomain);
+  }
+
+  async getAuthors(): Promise<Author[]> {
+    // Return mock authors for development
+    return [
+      {
+        id: 1,
+        storeId: 1,
+        shopifyMetaobjectId: "5",
+        name: "Craig \"The Wizard\" Thompson",
+        description: "AI and SEO expert with 10+ years of experience in digital marketing automation.",
+        avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
+        linkedinUrl: "https://linkedin.com/in/craig-thompson-seo",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+  }
 }
 
 // Database implementation of the storage interface
@@ -1076,6 +1099,10 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
     return result.length > 0;
   }
+
+  async getAuthors(): Promise<Author[]> {
+    return db.select().from(authors).where(eq(authors.isActive, true));
+  }
 }
 
 // Use MemStorage as the database connection is having issues
@@ -1337,6 +1364,13 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.deleteProject(id),
       () => memStorage.deleteProject(id)
+    );
+  }
+
+  async getAuthors(): Promise<Author[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getAuthors(),
+      () => memStorage.getAuthors()
     );
   }
 }
