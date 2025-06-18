@@ -720,7 +720,14 @@ export async function registerRoutes(app: Express): Promise<void> {
   apiRouter.get("/posts/recent", async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
-      const posts = await storage.getRecentPosts(limit);
+      
+      // Get store from request context for proper isolation
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
+      
+      const posts = await storage.getRecentPostsByStore(store.id, limit);
       
       // Populate author names for posts that have authorId but no author name
       const postsWithAuthors = await Promise.all(

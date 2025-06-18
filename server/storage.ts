@@ -855,7 +855,7 @@ export class DatabaseStorage implements IStorage {
     // Get posts sorted by published date or scheduled date in descending order
     return db.select()
       .from(blogPosts)
-      .orderBy(desc(blogPosts.publishedDate))
+      .orderBy(desc(blogPosts.createdAt))
       .limit(limit);
   }
   
@@ -1103,6 +1103,14 @@ export class DatabaseStorage implements IStorage {
   async getAuthors(): Promise<Author[]> {
     return db.select().from(authors).where(eq(authors.isActive, true));
   }
+
+  async getRecentPostsByStore(storeId: number, limit: number): Promise<BlogPost[]> {
+    return db.select()
+      .from(blogPosts)
+      .where(eq(blogPosts.storeId, storeId))
+      .orderBy(desc(blogPosts.createdAt))
+      .limit(limit);
+  }
 }
 
 // Use MemStorage as the database connection is having issues
@@ -1279,6 +1287,15 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getRecentPosts(limit),
       () => memStorage.getRecentPosts(limit)
+    );
+  }
+
+  async getRecentPostsByStore(storeId: number, limit: number): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getRecentPostsByStore(storeId, limit),
+      () => memStorage.getRecentPosts(limit).then(posts => 
+        posts.filter(post => post.storeId === storeId).slice(0, limit)
+      )
     );
   }
 
