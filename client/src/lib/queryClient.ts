@@ -65,8 +65,18 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // Get store ID from localStorage for store-aware queries
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    const headers: Record<string, string> = {};
+    
+    // Add store ID to headers for backend routing
+    if (selectedStoreId) {
+      headers['X-Store-ID'] = selectedStoreId;
+    }
+    
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

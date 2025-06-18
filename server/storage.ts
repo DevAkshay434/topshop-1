@@ -41,6 +41,8 @@ export interface IStorage {
   
   // Multi-store Shopify operations (for public app)
   getShopifyStores(): Promise<ShopifyStore[]>;
+  getAllStores(): Promise<ShopifyStore[]>;
+  getStoreById(id: number): Promise<ShopifyStore | undefined>;
   getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined>;
   getShopifyStore(id: number): Promise<ShopifyStore | undefined>;
   createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore>;
@@ -456,6 +458,14 @@ export class MemStorage implements IStorage {
   async getShopifyStores(): Promise<ShopifyStore[]> {
     return Array.from(this.shopifyStores.values());
   }
+
+  async getAllStores(): Promise<ShopifyStore[]> {
+    return Array.from(this.shopifyStores.values());
+  }
+
+  async getStoreById(id: number): Promise<ShopifyStore | undefined> {
+    return this.shopifyStores.get(id);
+  }
   
   async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
     return Array.from(this.shopifyStores.values()).find(
@@ -652,6 +662,15 @@ export class DatabaseStorage implements IStorage {
   // Multi-store Shopify operations
   async getShopifyStores(): Promise<ShopifyStore[]> {
     return db.select().from(shopifyStores);
+  }
+
+  async getAllStores(): Promise<ShopifyStore[]> {
+    return db.select().from(shopifyStores);
+  }
+
+  async getStoreById(id: number): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select().from(shopifyStores).where(eq(shopifyStores.id, id));
+    return store;
   }
 
   async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
