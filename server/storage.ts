@@ -45,9 +45,13 @@ export interface IStorage {
   getStoreById(id: number): Promise<ShopifyStore | undefined>;
   getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined>;
   getShopifyStore(id: number): Promise<ShopifyStore | undefined>;
+  getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined>;
   createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore>;
   updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore>;
   deleteShopifyStore(id: number): Promise<boolean>;
+  
+  // Author operations
+  getAuthors(): Promise<Author[]>;
   
   // User-store relationship
   getUserStores(userId: number): Promise<ShopifyStore[]>;
@@ -919,6 +923,24 @@ export class DatabaseStorage implements IStorage {
     return store;
   }
 
+  async getAllStores(): Promise<ShopifyStore[]> {
+    return db.select().from(shopifyStores);
+  }
+
+  async getStoreById(id: number): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select()
+      .from(shopifyStores)
+      .where(eq(shopifyStores.id, id));
+    return store;
+  }
+
+  async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select()
+      .from(shopifyStores)
+      .where(eq(shopifyStores.shopName, shopName));
+    return store;
+  }
+
   async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
     const [store] = await db.select()
       .from(shopifyStores)
@@ -1079,6 +1101,20 @@ class FallbackStorage implements IStorage {
     );
   }
 
+  async getAllStores(): Promise<ShopifyStore[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getAllStores(),
+      () => memStorage.getAllStores()
+    );
+  }
+
+  async getStoreById(id: number): Promise<ShopifyStore | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getStoreById(id),
+      () => memStorage.getStoreById(id)
+    );
+  }
+
   async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
     return this.tryOrFallback(
       () => dbStorage.getStoreByShopName(shopName),
@@ -1170,52 +1206,10 @@ class FallbackStorage implements IStorage {
     );
   }
 
-  async getShopifyStores(): Promise<ShopifyStore[]> {
-    return this.tryOrFallback(
-      () => dbStorage.getShopifyStores(),
-      () => memStorage.getShopifyStores()
-    );
-  }
-
   async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
     return this.tryOrFallback(
       () => dbStorage.getShopifyStoreByDomain(shopDomain),
       () => memStorage.getShopifyStoreByDomain(shopDomain)
-    );
-  }
-
-  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
-    return this.tryOrFallback(
-      () => dbStorage.getShopifyStore(id),
-      () => memStorage.getShopifyStore(id)
-    );
-  }
-
-  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
-    return this.tryOrFallback(
-      () => dbStorage.createShopifyStore(store),
-      () => memStorage.createShopifyStore(store)
-    );
-  }
-
-  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
-    return this.tryOrFallback(
-      () => dbStorage.updateShopifyStore(id, store),
-      () => memStorage.updateShopifyStore(id, store)
-    );
-  }
-
-  async getUserStores(userId: number): Promise<ShopifyStore[]> {
-    return this.tryOrFallback(
-      () => dbStorage.getUserStores(userId),
-      () => memStorage.getUserStores(userId)
-    );
-  }
-
-  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
-    return this.tryOrFallback(
-      () => dbStorage.createUserStore(userStore),
-      () => memStorage.createUserStore(userStore)
     );
   }
 

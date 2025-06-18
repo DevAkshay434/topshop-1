@@ -69,10 +69,10 @@ async function getStoreFromRequest(req: Request): Promise<any | null> {
       }
     }
 
-    // Fallback: Get store from shopify auth session
-    const shopifyAuth = req.session?.shopifyAuth;
-    if (shopifyAuth?.shop) {
-      const store = await storage.getStoreByShopName(shopifyAuth.shop);
+    // Fallback: Get store from shopify auth session  
+    const session = req.session as any;
+    if (session?.shopifyAuth?.shop) {
+      const store = await storage.getStoreByShopName(session.shopifyAuth.shop);
       if (store && store.isConnected) {
         console.log(`Using store from session: ${store.shopName} (ID: ${store.id})`);
         return store;
