@@ -1612,10 +1612,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         region
       });
 
-      // Use Claude for AI-powered optimization
-      const claudeModule = await import('./services/claude');
-      const claudeService = new claudeModule.ClaudeService();
-      
+      // Use Claude AI for meta optimization
+      const Anthropic = await import('@anthropic-ai/sdk');
+      const anthropic = new Anthropic.default({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+
       // Create context for optimization
       const optimizationContext = {
         mainTitle: title,
@@ -1626,8 +1628,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         contentSnippet: content ? content.substring(0, 500) : ''
       };
 
-      const prompt = `You are an SEO expert. Generate optimized meta title and meta description for this content:
+      const prompt = `You are an SEO expert specializing in meta optimization. Generate an optimized meta title and meta description for this content:
 
+CONTENT DETAILS:
 Title: ${optimizationContext.mainTitle}
 Keywords: ${optimizationContext.keywords}
 Target Audience: ${optimizationContext.targetAudience}
@@ -1635,30 +1638,48 @@ Tone: ${optimizationContext.tone}
 Region: ${optimizationContext.region}
 ${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}...` : ''}
 
-Requirements:
-- Meta Title: 50-60 characters, include primary keyword, compelling and clickable
-- Meta Description: 150-160 characters, include keywords naturally, compelling call-to-action
+REQUIREMENTS:
+- Meta Title: 50-60 characters maximum, include primary keyword, compelling and clickable
+- Meta Description: 150-160 characters maximum, include keywords naturally, compelling call-to-action
 - Optimize for search engines while remaining engaging for humans
 - Match the specified tone and target audience
+- Use action words and emotional triggers appropriate for the audience
+- Include location-specific terms if relevant to the region
 
-Return only a JSON object with "metaTitle" and "metaDescription" fields.`;
+Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. No additional text or formatting.`;
 
-      const response = await claudeService.generateContent(prompt, {
-        targetAudience: optimizationContext.targetAudience,
-        tone: optimizationContext.tone,
-        keywords: keywords
+      console.log('Sending meta optimization request to Claude AI');
+      
+      const response = await anthropic.messages.create({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }],
       });
+
+      // Extract content from Claude's response
+      const aiResponseContent = response.content[0];
+      let aiResponseText = '';
+      
+      if (aiResponseContent && aiResponseContent.type === 'text') {
+        aiResponseText = aiResponseContent.text;
+      }
+      
+      console.log('Claude AI response:', aiResponseText);
 
       // Parse the AI response
       let optimizedFields;
       try {
         // Extract JSON from response if it's wrapped in markdown or text
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        const jsonStr = jsonMatch ? jsonMatch[0] : response;
+        const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : aiResponseText;
         optimizedFields = JSON.parse(jsonStr);
+        
+        console.log('Successfully parsed AI response:', optimizedFields);
       } catch (parseError) {
+        console.log('Failed to parse JSON, using text extraction fallback:', parseError);
+        
         // Fallback: create structured response from text
-        const lines = response.split('\n').filter(line => line.trim());
+        const lines = aiResponseText.split('\n').filter((line: string) => line.trim());
         optimizedFields = {
           metaTitle: title.substring(0, 60), // Fallback to truncated original
           metaDescription: `Discover ${title.toLowerCase()}. ${keywords.slice(0, 2).join(', ')} and more.`.substring(0, 160)

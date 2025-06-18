@@ -1,0 +1,77 @@
+Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+    
+    The blog post MUST follow this exact structure:
+    1. A compelling title that includes the main topic and primary keywords (this will be used separately)
+    2. Multiple clearly defined sections with H2 headings that incorporate important keywords
+    3. Appropriate H3 subheadings within each section where needed
+    4. Well-organized paragraphs (2-4 paragraphs per section)
+    5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
+    6. Lists and tables where appropriate to improve readability
+    7. A conclusion with a clear call to action
+    
+    EXTERNAL AUTHORITATIVE LINK REQUIREMENTS:
+    - Include 3-5 external links to authoritative sources throughout the content
+    - Prioritize links to: .edu (universities/research), .gov (government agencies), .wikipedia.org (Wikipedia articles), .org (established organizations)
+    - High-authority domains to use when relevant:
+      * Government: cdc.gov, epa.gov, nih.gov, fda.gov, usda.gov, energy.gov, ftc.gov, hhs.gov
+      * Universities: harvard.edu, mit.edu, stanford.edu, berkeley.edu, cornell.edu, yale.edu
+      * Organizations: wikipedia.org, who.int, un.org, redcross.org, acs.org, ieee.org
+      * Research: ncbi.nlm.nih.gov, nature.com, sciencedirect.com, jstor.org
+    - Place these links naturally within the content where they support specific claims, statistics, or provide additional credible information
+    - Use proper link formatting: <a href="URL" target="_blank" rel="noopener noreferrer">descriptive anchor text</a>
+    - Make anchor text descriptive and specific (e.g., "EPA water quality standards" not "click here")
+    - Distribute links across different sections of the content for better SEO value
+    - Links should enhance credibility and provide readers with additional authoritative information
+    - When mentioning statistics, studies, or facts, link to the authoritative source when possible
+    
+    MEDIA PLACEMENT RULES:
+    - Selected YouTube video MUST be placed under the SECOND H2 heading only
+    - Secondary images MUST be placed under H2 headings that come AFTER the video
+    - Each secondary image should be placed under a different H2 heading
+    - Never repeat the same secondary image multiple times
+    - Distribute secondary images evenly across remaining H2 sections
+    
+    IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
+    - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
+    - Start the content directly with the Table of Contents placement marker, then the introduction
+    - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
+    - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
+    - Make sure sections flow logically and coherently
+    - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
+    - Include a meta description of 155-160 characters that includes at least 2 primary keywords
+    - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
+    - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
+    
+    SPECIFIC MEDIA PLACEMENT INSTRUCTIONS:
+    - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
+    - Under each subsequent H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+    - Use unique placement markers - each secondary image will be automatically assigned to different H2 sections
+    - DO NOT repeat the same secondary image placement marker multiple times
+    - The system will automatically prevent duplicate images and distribute them evenly
+    
+    TABLE OF CONTENTS REQUIREMENTS:
+    - AUTOMATICALLY include a Table of Contents at the very beginning of the content
+    - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
+    - The system will automatically generate a TOC using all H2 headings in your content
+    - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
+    - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
+    - Include an id="faq" on your FAQ section if present
+    - The TOC will be styled with a clean, professional appearance and will improve user navigation
+    
+    FAQ SECTION FORMATTING (if FAQ is enabled):
+    - Format all FAQ questions with "Q:" prefix (colon, not period)
+    - Format all FAQ answers with "A:" prefix (colon, not period) 
+    - Use proper HTML structure: <h3>Q: Question here?</h3><p>A: Answer here.</p>
+    - Make FAQ section engaging and helpful for readers
+    
+    IMPORTANT IMAGE AND LINK GUIDELINES:
+    - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
+    - NEVER reference competitor websites or external commercial domains in any links or image sources
+    - DO NOT include ANY external links except to trusted reference sites like .gov, .edu, or wikipedia.org
+    - DO NOT include external images from third-party domains - the system will automatically insert optimized images
+    - All images will be center-aligned and properly linked to product pages
+    - Do not include any image placeholders or special markup except for the placement markers mentioned above
+    - The system will handle image insertion automatically at the marked locations
+    - Each image will include a caption with a link back to the relevant product to enhance SEO value
+    
+    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.
