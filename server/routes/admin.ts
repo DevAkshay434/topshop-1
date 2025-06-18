@@ -10,29 +10,39 @@ import OpenAI from "openai";
 import { ShopifyStore } from "../../shared/schema";
 import { MediaService } from "../services/media";
 
-// Import the getStoreFromRequest function from routes.ts
+// Store retrieval function that respects X-Store-ID header
 async function getStoreFromRequest(req: Request): Promise<any | null> {
   try {
     const storeId = req.headers['x-store-id'];
+    console.log(`Admin route: X-Store-ID header = ${storeId}`);
+    
     if (storeId && typeof storeId === 'string' && storeId !== 'undefined' && storeId !== 'null') {
       const numericStoreId = parseInt(storeId, 10);
       if (!isNaN(numericStoreId)) {
-        console.log(`Using store from X-Store-ID header: ${storeId}`);
-        const store = await storage.getShopifyStoreById(numericStoreId);
+        console.log(`Admin route: Looking for store ID ${numericStoreId}`);
+        const store = await storage.getStoreById(numericStoreId);
         if (store) {
+          console.log(`Admin route: Found store ${store.shopName}`);
           return store;
+        } else {
+          console.log(`Admin route: Store ID ${numericStoreId} not found`);
         }
       }
     }
     
-    console.log(`Using fallback store`);
-    const fallbackStore = await storage.getDefaultShopifyStore();
-    if (fallbackStore) {
-      console.log(`Using fallback store: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
+    console.log(`Admin route: Using fallback store`);
+    // Get the first available store as fallback
+    const stores = await storage.getShopifyStores();
+    if (stores && stores.length > 0) {
+      const fallbackStore = stores[0];
+      console.log(`Admin route: Using fallback store: ${fallbackStore.shopName} (ID: ${fallbackStore.id})`);
+      return fallbackStore;
     }
-    return fallbackStore;
+    
+    console.log(`Admin route: No stores available`);
+    return null;
   } catch (error) {
-    console.error('Error getting store from request:', error);
+    console.error('Admin route: Error getting store from request:', error);
     return null;
   }
 }
@@ -204,32 +214,16 @@ adminRouter.get("/collections", async (req: Request, res: Response) => {
 });
 
 // Get blogs from Shopify
-adminRouter.get("/blogs", async (_req: Request, res: Response) => {
+adminRouter.get("/blogs", async (req: Request, res: Response) => {
   try {
-    // Get the Shopify connection
-    const connection = await storage.getShopifyConnection();
-    if (!connection || !connection.isConnected) {
+    // Get store from request context (respects X-Store-ID header)
+    const store = await getStoreFromRequest(req);
+    if (!store) {
       return res.status(400).json({
         success: false,
-        error: "No active Shopify connection found"
+        error: "No active Shopify store found"
       });
     }
-    
-    // Create temporary store object
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || '',
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
     
     // Get blogs
     const blogs = await shopifyService.getBlogs(store);
