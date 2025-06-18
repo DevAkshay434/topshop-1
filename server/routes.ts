@@ -23,7 +23,9 @@ import contentRouter from './routes/content';
 import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
 import { mediaRouter } from './routes/media';
+import oauthRouter from './routes/oauth';
 import { pexelsService } from './services/pexels';
+import { shopifyAuthMiddleware, shopifyAuthOptional } from './middleware/shopify-auth';
 import { 
   validateShopDomain, 
   generateNonce, 

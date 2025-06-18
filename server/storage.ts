@@ -41,10 +41,11 @@ export interface IStorage {
   
   // Multi-store Shopify operations (for public app)
   getShopifyStores(): Promise<ShopifyStore[]>;
-  getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined>;
+  getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined>;
   getShopifyStore(id: number): Promise<ShopifyStore | undefined>;
   createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore>;
   updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore>;
+  deleteShopifyStore(id: number): Promise<boolean>;
   
   // User-store relationship
   getUserStores(userId: number): Promise<ShopifyStore[]>;
@@ -456,9 +457,9 @@ export class MemStorage implements IStorage {
     return Array.from(this.shopifyStores.values());
   }
   
-  async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
+  async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
     return Array.from(this.shopifyStores.values()).find(
-      (store) => store.shopName === shopDomain
+      (store) => store.shopName === shopName
     );
   }
   
@@ -642,6 +643,88 @@ export class DatabaseStorage implements IStorage {
       .returning();
       
     return updatedConnection;
+  }
+
+  // Multi-store Shopify operations
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return db.select().from(shopifyStores);
+  }
+
+  async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select().from(shopifyStores).where(eq(shopifyStores.shopName, shopName));
+    return store;
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    const [store] = await db.select().from(shopifyStores).where(eq(shopifyStores.id, id));
+    return store;
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    const [newStore] = await db.insert(shopifyStores)
+      .values({
+        shopName: store.shopName,
+        accessToken: store.accessToken,
+        scope: store.scope,
+        defaultBlogId: store.defaultBlogId || null,
+        isConnected: store.isConnected !== undefined ? store.isConnected : true,
+        planName: store.planName || null,
+        chargeId: store.chargeId || null,
+        trialEndsAt: store.trialEndsAt || null,
+        installedAt: new Date(),
+        uninstalledAt: null,
+        lastSynced: new Date()
+      })
+      .returning();
+    return newStore;
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    const updateData: Record<string, any> = {};
+    
+    if (store.shopName !== undefined) updateData.shopName = store.shopName;
+    if (store.accessToken !== undefined) updateData.accessToken = store.accessToken;
+    if (store.scope !== undefined) updateData.scope = store.scope;
+    if (store.defaultBlogId !== undefined) updateData.defaultBlogId = store.defaultBlogId;
+    if (store.isConnected !== undefined) updateData.isConnected = store.isConnected;
+    if (store.planName !== undefined) updateData.planName = store.planName;
+    if (store.chargeId !== undefined) updateData.chargeId = store.chargeId;
+    if (store.trialEndsAt !== undefined) updateData.trialEndsAt = store.trialEndsAt;
+    if (store.uninstalledAt !== undefined) updateData.uninstalledAt = store.uninstalledAt;
+    if (store.lastSynced !== undefined) updateData.lastSynced = store.lastSynced;
+
+    const [updatedStore] = await db.update(shopifyStores)
+      .set(updateData)
+      .where(eq(shopifyStores.id, id))
+      .returning();
+    return updatedStore;
+  }
+
+  async deleteShopifyStore(id: number): Promise<boolean> {
+    const result = await db.delete(shopifyStores).where(eq(shopifyStores.id, id));
+    return result.rowCount > 0;
+  }
+
+  // User-store relationship operations
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    const userStoreRels = await db.select().from(userStores).where(eq(userStores.userId, userId));
+    const storeIds = userStoreRels.map(rel => rel.storeId);
+    
+    if (storeIds.length === 0) return [];
+    
+    const stores = await db.select().from(shopifyStores).where(sql`${shopifyStores.id} = ANY(${storeIds})`);
+    return stores;
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    const [newUserStore] = await db.insert(userStores)
+      .values({
+        userId: userStore.userId,
+        storeId: userStore.storeId,
+        role: userStore.role || 'member'
+      })
+      .returning();
+    return newUserStore;
   }
   
   // Blog post operations
@@ -963,6 +1046,63 @@ class FallbackStorage implements IStorage {
       console.warn("Database operation failed, falling back to in-memory storage:", error);
       return await memOperation();
     }
+  }
+
+  // Multi-store operations
+  async getShopifyStores(): Promise<ShopifyStore[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStores(),
+      () => memStorage.getShopifyStores()
+    );
+  }
+
+  async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getStoreByShopName(shopName),
+      () => memStorage.getStoreByShopName(shopName)
+    );
+  }
+
+  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.getShopifyStore(id),
+      () => memStorage.getShopifyStore(id)
+    );
+  }
+
+  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
+    return this.tryOrFallback(
+      () => dbStorage.createShopifyStore(store),
+      () => memStorage.createShopifyStore(store)
+    );
+  }
+
+  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
+    return this.tryOrFallback(
+      () => dbStorage.updateShopifyStore(id, store),
+      () => memStorage.updateShopifyStore(id, store)
+    );
+  }
+
+  async deleteShopifyStore(id: number): Promise<boolean> {
+    return this.tryOrFallback(
+      () => dbStorage.deleteShopifyStore(id),
+      () => memStorage.deleteShopifyStore(id)
+    );
+  }
+
+  async getUserStores(userId: number): Promise<ShopifyStore[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getUserStores(userId),
+      () => memStorage.getUserStores(userId)
+    );
+  }
+
+  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
+    return this.tryOrFallback(
+      () => dbStorage.createUserStore(userStore),
+      () => memStorage.createUserStore(userStore)
+    );
   }
 
   async getUser(id: number): Promise<User | undefined> {
