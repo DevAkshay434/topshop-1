@@ -1069,40 +1069,40 @@ export default function AdminPanel() {
     connections: ServiceStatus;
   }
 
-  // Query for regions
+  // Get current store context
+  const { currentStore } = useStore();
+
+  // Query for regions (store-aware)
   const regionsQuery = useQuery<RegionsResponse>({
-    queryKey: ['/api/admin/regions'],
-    enabled: selectedTab === "generate"
+    queryKey: ['/api/admin/regions', currentStore?.id],
+    enabled: selectedTab === "generate" && !!currentStore
   });
 
-  // Query for products
+  // Query for products (store-aware)
   const productsQuery = useQuery<ProductsResponse>({
-    queryKey: ['/api/admin/products'],
-    enabled: selectedTab === "generate"
+    queryKey: ['/api/admin/products', currentStore?.id],
+    enabled: selectedTab === "generate" && !!currentStore
   });
 
-  // Query for collections
+  // Query for collections (store-aware)
   const collectionsQuery = useQuery<CollectionsResponse>({
-    queryKey: ['/api/admin/collections'],
-    enabled: selectedTab === "generate"
+    queryKey: ['/api/admin/collections', currentStore?.id],
+    enabled: selectedTab === "generate" && !!currentStore
   });
   
-  // Check if the store has the scheduling permission
+  // Check if the store has the scheduling permission (store-aware)
   const { data: permissionsData } = useQuery<{ 
     success: boolean; 
     hasPermission: boolean;
     store: { name: string; }
   }>({
-    queryKey: ['/api/shopify/check-permissions'],
-    enabled: true,
-    onSuccess: (data) => {
-      console.log('Permissions check result:', data);
-    }
+    queryKey: ['/api/shopify/check-permissions', currentStore?.id],
+    enabled: !!currentStore
   });
 
-  // Query for blogs
+  // Query for blogs (store-aware)
   const blogsQuery = useQuery<BlogsResponse>({
-    queryKey: ['/api/admin/blogs'],
+    queryKey: ['/api/admin/blogs', currentStore?.id],
     enabled: selectedTab === "generate" && form.watch('articleType') === "blog"
   });
   
