@@ -1191,33 +1191,19 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       });
     }
     
-    // Get the Shopify connection to check if it exists
-    const connection = await storage.getShopifyConnection();
-    if (!connection || !connection.isConnected) {
+    // Get the store from request context (respects X-Store-ID header)
+    const store = await getStoreFromRequest(req);
+    if (!store || !store.isConnected) {
       return res.status(400).json({
         success: false,
-        error: "No active Shopify connection found"
+        error: "No active Shopify store found"
       });
     }
     
+    console.log(`Admin route: Content generation using store: ${store.shopName} (ID: ${store.id})`);
+    
     // Parse request data for easier access
     const requestData = req.body;
-    
-    // Create temporary store object
-    const store = {
-      id: connection.id,
-      shopName: connection.storeName,
-      accessToken: connection.accessToken,
-      scope: '',
-      defaultBlogId: connection.defaultBlogId || (requestData.blogId || ''),
-      isConnected: connection.isConnected,
-      lastSynced: connection.lastSynced,
-      installedAt: new Date(),
-      uninstalledAt: null,
-      planName: null,
-      chargeId: null,
-      trialEndsAt: null
-    };
     
     // Create a record of the content generation request
     const contentRequest = await storage.createContentGenRequest({
