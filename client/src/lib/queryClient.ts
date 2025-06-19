@@ -68,16 +68,16 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Get store ID from localStorage for store-aware queries
-    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    // Get auto-detected store ID from window global (set by StoreContext)
+    const autoDetectedStoreId = (window as any).__autoDetectedStoreId;
     const headers: Record<string, string> = {};
     
     // Add store ID to headers for backend routing
-    if (selectedStoreId && selectedStoreId !== 'null' && selectedStoreId !== 'undefined') {
-      headers['X-Store-ID'] = selectedStoreId;
-      console.log(`Query function: Adding X-Store-ID header: ${selectedStoreId} for query: ${queryKey[0]}`);
+    if (autoDetectedStoreId && autoDetectedStoreId !== 'null' && autoDetectedStoreId !== 'undefined') {
+      headers['X-Store-ID'] = autoDetectedStoreId.toString();
+      console.log(`Query function: Adding X-Store-ID header: ${autoDetectedStoreId} for query: ${queryKey[0]}`);
     } else {
-      console.log(`Query function: No valid store ID found in localStorage for query: ${queryKey[0]}. Value: ${selectedStoreId}`);
+      console.log(`Query function: No auto-detected store ID available for query: ${queryKey[0]}. Value: ${autoDetectedStoreId}`);
     }
     
     const res = await fetch(queryKey[0] as string, {
