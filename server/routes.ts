@@ -2128,14 +2128,10 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     try {
       console.log("POST /api/projects - Request body:", JSON.stringify(req.body));
       
-      const { name, formData } = req.body;
+      const { name, description, status, isTemplate, formData } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: "Project name is required" });
-      }
-      
-      if (!formData) {
-        return res.status(400).json({ error: "Form data is required" });
       }
 
       // Get store info for storeId
@@ -2149,7 +2145,10 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       const projectData = {
         name,
-        formData: JSON.stringify(formData),
+        description: description || null,
+        status: status || 'draft',
+        isTemplate: isTemplate || false,
+        formData: formData ? JSON.stringify(formData) : null,
         userId,
         storeId: store.id
       };
