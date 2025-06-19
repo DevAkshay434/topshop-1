@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import ProjectCreationDialog from '../components/ProjectCreationDialog';
+import CreateProjectModal from '../components/CreateProjectModal';
 import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
@@ -345,6 +346,15 @@ export default function AdminPanel() {
   
   // Add logging to track state changes
   console.log('Current selectedMediaContent state:', selectedMediaContent);
+  
+  // Project management state
+  const [currentProject, setCurrentProject] = useState<string>('');
+  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
+  const [autoSaveInterval, setAutoSaveInterval] = useState(30000); // 30 seconds default
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   
   // Workflow step state
   const [currentStep, setCurrentStep] = useState<string>("product");
@@ -708,8 +718,6 @@ export default function AdminPanel() {
   
   // Project Creation Dialog state
   const [projectDialogOpen, setProjectDialogOpen] = useState(true); // Set to true to show by default
-  const [currentProject, setCurrentProject] = useState<string>('');
-  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
 
   // Handle project selection from dialog and load project data
   const handleProjectSelected = async (projectId: number, projectName: string) => {
@@ -762,7 +770,7 @@ export default function AdminPanel() {
       });
     }
   };
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
     // Load custom categories from localStorage
     const savedCategories = localStorage.getItem('topshop-custom-categories');
