@@ -56,7 +56,7 @@ export function StoreProvider({ children }: StoreProviderProps) {
           // Fetch stores and find matching store
           const response = await fetch('/api/shopify/stores');
           const data = await response.json();
-          const stores = data?.stores || [];
+          const stores = data.stores || [];
           
           const matchedStore = stores.find((store: ShopifyStore) => 
             store.shopName === shopParam || 
@@ -82,7 +82,7 @@ export function StoreProvider({ children }: StoreProviderProps) {
           
           const storesResponse = await fetch('/api/shopify/stores');
           const storesData = await storesResponse.json();
-          const stores = storesData?.stores || [];
+          const stores = storesData.stores || [];
           
           const matchedStore = stores.find((store: ShopifyStore) => 
             currentShopDomain.includes(store.shopName.replace('.myshopify.com', ''))
@@ -90,6 +90,7 @@ export function StoreProvider({ children }: StoreProviderProps) {
           
           if (matchedStore) {
             setAutoDetectedStoreId(matchedStore.id);
+            (window as any).__autoDetectedStoreId = matchedStore.id;
             console.log(`Auto-detected store from API: ${matchedStore.shopName} (ID: ${matchedStore.id})`);
             return;
           }
@@ -98,11 +99,12 @@ export function StoreProvider({ children }: StoreProviderProps) {
         // Method 3: Fallback to first connected store
         const storesResponse = await fetch('/api/shopify/stores');
         const storesData = await storesResponse.json();
-        const stores = storesData?.stores || [];
+        const stores = storesData.stores || [];
         
         if (stores.length > 0) {
           const firstConnectedStore = stores.find((store: ShopifyStore) => store.isConnected) || stores[0];
           setAutoDetectedStoreId(firstConnectedStore.id);
+          (window as any).__autoDetectedStoreId = firstConnectedStore.id;
           console.log(`Fallback to first connected store: ${firstConnectedStore.shopName} (ID: ${firstConnectedStore.id})`);
         }
       } catch (error) {
