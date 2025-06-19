@@ -110,6 +110,10 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 19, 2025. CRITICAL FIX COMPLETED: Multi-store Shopify publishing now works correctly - articles publish to selected store instead of defaulting to fallback store, with proper store-aware routing using X-Store-ID headers
+- June 19, 2025. Fixed database configuration for multi-store publishing - updated defaultBlogId for all stores to enable successful article publishing to correct Shopify blogs
+- June 19, 2025. Resolved POST /api/posts endpoint routing issues - replaced legacy connection fallback with proper tempStore context from multi-store routing system
+- June 19, 2025. Verified complete end-to-end multi-store functionality - articles successfully create on Shopify with proper URLs (e.g., reviewtesting434.myshopify.com) and maintain data isolation
 - June 18, 2025. COMPLETED: Multi-store support with complete data isolation - verified that switching between stores (rajeshshah vs reviewtesting434) shows correct store-specific data with no cross-contamination
 - June 18, 2025. Implemented comprehensive cache invalidation system in StoreContext - all cached queries are cleared when switching stores to prevent data leakage
 - June 18, 2025. Enhanced query client with automatic store ID headers - all API requests now include X-Store-ID header for proper backend routing
