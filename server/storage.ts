@@ -7,6 +7,7 @@ import {
   syncActivities,
   contentGenRequests,
   projects,
+  authors,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -22,7 +23,8 @@ import {
   type ContentGenRequest,
   type InsertContentGenRequest,
   type Project,
-  type InsertProject
+  type InsertProject,
+  type Author
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
@@ -82,6 +84,10 @@ export interface IStorage {
   getProject(id: number): Promise<Project | undefined>;
   getUserProjects(userId?: number, storeId?: number): Promise<Project[]>;
   deleteProject(id: number): Promise<boolean>;
+  // Auto-save project data during workflow
+  autoSaveProject(id: number, formData: any): Promise<Project | undefined>;
+  // Get template projects
+  getTemplateProjects(storeId?: number): Promise<Project[]>;
 }
 
 // In-memory implementation of the storage interface
@@ -1050,9 +1056,16 @@ export class DatabaseStorage implements IStorage {
     const [newProject] = await db.insert(projects)
       .values({
         name: project.name,
-        formData: project.formData,
-        userId: project.userId,
-        storeId: project.storeId
+        formData: project.formData || null,
+        userId: project.userId || null,
+        storeId: project.storeId || null,
+        isTemplate: project.isTemplate || false,
+        templateCategory: project.templateCategory || null,
+        status: project.status || 'draft',
+        description: project.description || null,
+        lastModified: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
       })
       .returning();
     return newProject;
@@ -1065,7 +1078,12 @@ export class DatabaseStorage implements IStorage {
     if (project.formData !== undefined) updateData.formData = project.formData;
     if (project.userId !== undefined) updateData.userId = project.userId;
     if (project.storeId !== undefined) updateData.storeId = project.storeId;
+    if (project.isTemplate !== undefined) updateData.isTemplate = project.isTemplate;
+    if (project.templateCategory !== undefined) updateData.templateCategory = project.templateCategory;
+    if (project.status !== undefined) updateData.status = project.status;
+    if (project.description !== undefined) updateData.description = project.description;
     
+    updateData.lastModified = new Date();
     updateData.updatedAt = new Date();
     
     const [updatedProject] = await db.update(projects)
@@ -1082,22 +1100,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
-    let query = db.select().from(projects);
+    let conditions = [eq(projects.isTemplate, false)];
     
-    if (userId && storeId) {
-      query = query.where(sql`${projects.userId} = ${userId} AND ${projects.storeId} = ${storeId}`);
-    } else if (userId) {
-      query = query.where(eq(projects.userId, userId));
-    } else if (storeId) {
-      query = query.where(eq(projects.storeId, storeId));
+    if (userId) {
+      conditions.push(eq(projects.userId, userId));
+    }
+    if (storeId) {
+      conditions.push(eq(projects.storeId, storeId));
     }
     
-    return query.orderBy(desc(projects.updatedAt));
+    return db.select()
+      .from(projects)
+      .where(sql`${conditions.map(() => '?').join(' AND ')}`)
+      .orderBy(desc(projects.lastModified));
   }
 
   async deleteProject(id: number): Promise<boolean> {
     const result = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
     return result.length > 0;
+  }
+
+  async autoSaveProject(id: number, formData: any): Promise<Project | undefined> {
+    const updateData = {
+      formData: JSON.stringify(formData),
+      lastModified: new Date(),
+      updatedAt: new Date()
+    };
+
+    const [updatedProject] = await db.update(projects)
+      .set(updateData)
+      .where(eq(projects.id, id))
+      .returning();
+      
+    return updatedProject;
+  }
+
+  async getTemplateProjects(storeId?: number): Promise<Project[]> {
+    let query = db.select().from(projects).where(eq(projects.isTemplate, true));
+    
+    if (storeId) {
+      query = query.where(sql`${projects.isTemplate} = true AND (${projects.storeId} = ${storeId} OR ${projects.storeId} IS NULL)`);
+    } else {
+      query = query.where(sql`${projects.isTemplate} = true AND ${projects.storeId} IS NULL`);
+    }
+    
+    return query.orderBy(asc(projects.name));
   }
 
   async getAuthors(): Promise<Author[]> {
