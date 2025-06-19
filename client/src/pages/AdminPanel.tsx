@@ -138,7 +138,6 @@ import { ImageUpload } from '@/components/ImageUpload';
 // Define the form schema for content generation
 const contentFormSchema = z.object({
   title: z.string().min(5, { message: "Title must be at least 5 characters" }),
-  region: z.string().optional(),
   productIds: z.array(z.string()).optional(),
   collectionIds: z.array(z.string()).optional(),
   articleType: z.enum(["blog", "page"]),
@@ -173,10 +172,7 @@ const contentFormSchema = z.object({
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
 
-interface Region {
-  id: string;
-  name: string;
-}
+
 
 interface ProductVariant {
   id: string;
@@ -797,7 +793,7 @@ export default function AdminPanel() {
     toneOfVoice: "friendly",
     postStatus: "draft",
     generateImages: true,
-    region: "us", // Default to US region for store
+
     keywords: [],
     productIds: [], // This needs to be initialized as an empty array
     collectionIds: [], // This needs to be initialized as an empty array
@@ -1044,9 +1040,7 @@ export default function AdminPanel() {
   };
 
   // Define response types
-  interface RegionsResponse {
-    regions: Array<Region>;
-  }
+
   
   interface ProductsResponse {
     success: boolean;
@@ -1071,11 +1065,7 @@ export default function AdminPanel() {
   // Get current store context
   const { currentStore } = useStore();
 
-  // Query for regions (store-aware)
-  const regionsQuery = useQuery<RegionsResponse>({
-    queryKey: ['/api/admin/regions', currentStore?.id],
-    enabled: selectedTab === "generate" && !!currentStore
-  });
+
 
   // Query for products (store-aware)
   const productsQuery = useQuery<ProductsResponse>({
@@ -1865,7 +1855,7 @@ export default function AdminPanel() {
         articleType: values.articleType || "blog",
         title: values.title || "",
         introType: values.introType || "search_intent",
-        region: values.region || "us",
+        region: "us",
         // Make sure blogId is a string if it exists
         blogId: values.blogId ? String(values.blogId) : undefined,
         
@@ -2119,38 +2109,7 @@ export default function AdminPanel() {
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Basic Information</h3>
 
-                      {/* Region selection - always visible regardless of step */}
-                      <FormField
-                        control={form.control}
-                        name="region"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Region</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              value={field.value || "us"}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select region" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">No specific region</SelectItem>
-                                {regionsQuery.data?.regions.map((region: Region) => (
-                                  <SelectItem key={region.id} value={region.id}>
-                                    {region.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Target region for content localization
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+
                       
                       {/* Content type selection - always visible regardless of step */}
                       <FormField
