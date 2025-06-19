@@ -110,7 +110,8 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
-- June 19, 2025. PUBLISHING FIX: Fixed Shopify publishing connection for rajeshshah store by setting correct default_blog_id (11677633772) - resolved "No valid Shopify connection available" error
+- June 19, 2025. MULTI-STORE PUBLISHING VERIFIED: Fixed and tested publishing for both rajeshshah and reviewtesting stores - articles and pages publish successfully to correct stores with proper blog IDs (116776337722 and 90708934890)
+- June 19, 2025. PUBLISHING FIX: Fixed Shopify publishing connection for rajeshshah store by setting correct default_blog_id - resolved "No valid Shopify connection available" error
 - June 19, 2025. AUTOMATIC STORE DETECTION COMPLETED: Implemented seamless automatic store detection from Shopify Admin context, removing need for manual store selection
 - June 19, 2025. Removed Store Management component from admin panel - system now automatically detects and routes to correct store based on Shopify Admin context
 - June 19, 2025. Enhanced query client to use auto-detected store IDs for all API requests with proper X-Store-ID header propagation
