@@ -390,8 +390,6 @@ export const projects = pgTable("projects", {
   formData: text("form_data"), // JSON string of complete form state
   isTemplate: boolean("is_template").default(false),
   templateCategory: text("template_category"),
-  status: text("status").default("draft"), // draft, active, completed
-  description: text("description"),
   lastModified: timestamp("last_modified").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -404,8 +402,6 @@ export const insertProjectSchema = createInsertSchema(projects).pick({
   formData: true,
   isTemplate: true,
   templateCategory: true,
-  status: true,
-  description: true,
 });
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
