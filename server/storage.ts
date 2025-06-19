@@ -601,6 +601,32 @@ export class MemStorage implements IStorage {
     return this.projects.delete(id);
   }
 
+  async autoSaveProject(id: number, formData: any): Promise<Project | undefined> {
+    const existingProject = this.projects.get(id);
+    if (!existingProject) {
+      return undefined;
+    }
+    
+    const updatedProject = { 
+      ...existingProject, 
+      formData: JSON.stringify(formData),
+      lastModified: new Date(),
+      updatedAt: new Date() 
+    };
+    this.projects.set(id, updatedProject);
+    return updatedProject;
+  }
+
+  async getTemplateProjects(storeId?: number): Promise<Project[]> {
+    const allProjects = Array.from(this.projects.values());
+    
+    return allProjects.filter(project => {
+      if (!project.isTemplate) return false;
+      if (storeId && project.storeId !== storeId && project.storeId !== null) return false;
+      return true;
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
     const stores = Array.from(this.shopifyStores.values());
     return stores.find(store => store.shopName === shopDomain);
@@ -1100,19 +1126,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
-    let conditions = [eq(projects.isTemplate, false)];
+    let query = db.select().from(projects);
     
-    if (userId) {
-      conditions.push(eq(projects.userId, userId));
-    }
-    if (storeId) {
-      conditions.push(eq(projects.storeId, storeId));
+    if (userId && storeId) {
+      query = query.where(sql`${projects.userId} = ${userId} AND ${projects.storeId} = ${storeId}`);
+    } else if (userId) {
+      query = query.where(eq(projects.userId, userId));
+    } else if (storeId) {
+      query = query.where(eq(projects.storeId, storeId));
     }
     
-    return db.select()
-      .from(projects)
-      .where(sql`${conditions.map(() => '?').join(' AND ')}`)
-      .orderBy(desc(projects.lastModified));
+    return query.orderBy(desc(projects.updatedAt));
   }
 
   async deleteProject(id: number): Promise<boolean> {
@@ -1136,7 +1160,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTemplateProjects(storeId?: number): Promise<Project[]> {
-    let query = db.select().from(projects).where(eq(projects.isTemplate, true));
+    let query = db.select().from(projects);
     
     if (storeId) {
       query = query.where(sql`${projects.isTemplate} = true AND (${projects.storeId} = ${storeId} OR ${projects.storeId} IS NULL)`);
@@ -1435,6 +1459,20 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getAuthors(),
       () => memStorage.getAuthors()
+    );
+  }
+
+  async autoSaveProject(id: number, formData: any): Promise<Project | undefined> {
+    return this.tryOrFallback(
+      () => dbStorage.autoSaveProject(id, formData),
+      () => memStorage.autoSaveProject(id, formData)
+    );
+  }
+
+  async getTemplateProjects(storeId?: number): Promise<Project[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getTemplateProjects(storeId),
+      () => memStorage.getTemplateProjects(storeId)
     );
   }
 }
