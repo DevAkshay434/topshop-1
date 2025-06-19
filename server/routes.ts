@@ -961,25 +961,22 @@ export async function registerRoutes(app: Express): Promise<void> {
       const shouldPushToShopify = (post.status === 'published' || post.status === 'scheduled') && !isContentGeneration;
       
       if (shouldPushToShopify) {
-        const connection = await storage.getShopifyConnection();
+        // CRITICAL FIX: Use proper multi-store routing instead of legacy connection fallback
+        const store = await getStoreFromRequest(req);
+        if (!store) {
+          console.error("No store context found for publishing - cannot publish to Shopify");
+          return res.status(400).json({ error: "Store context required for publishing" });
+        }
         
-        if (connection && connection.isConnected && connection.defaultBlogId) {
+        console.log(`Publishing to store: ${store.shopName} (ID: ${store.id})`);
+        
+        if (store && store.isConnected && store.defaultBlogId) {
           try {
-            // Create a temporary store object for using with the new API
-            const tempStore = {
-              id: connection.id,
-              shopName: connection.storeName,
-              accessToken: connection.accessToken,
-              scope: '', // Not available in legacy connection
-              defaultBlogId: connection.defaultBlogId,
-              isConnected: connection.isConnected || true,
-              lastSynced: connection.lastSynced,
-              installedAt: new Date(),
-              uninstalledAt: null,
-              planName: null,
-              chargeId: null,
-              trialEndsAt: null
-            };
+            // Use the actual store from multi-store context, not legacy connection
+            const tempStore = store;
+            
+            // Initialize the Shopify service with the correct store
+            shopifyService.initializeClient(tempStore);
             
             // Use the complete post object, including all scheduling fields
             console.log("Sending to Shopify API:", {
@@ -1234,7 +1231,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 
                 shopifyArticle = await schedulePost(
                   tempStore,
-                  connection.defaultBlogId,
+                  tempStore.defaultBlogId,
                   completePost || post,
                   scheduledPublishDate
                 );
@@ -1286,8 +1283,8 @@ export async function registerRoutes(app: Express): Promise<void> {
             return res.json({ 
               post: updatedPost,
               shopifyUrl: isPage 
-                ? `https://${connection.storeName}/pages/${shopifyArticle.handle || shopifyArticle.id}`
-                : `https://${connection.storeName}/blogs/${connection.defaultBlogId ? 'news' : 'blog'}/${shopifyArticle.handle || shopifyArticle.id}`,
+                ? `https://${tempStore.shopName}/pages/${shopifyArticle.handle || shopifyArticle.id}`
+                : `https://${tempStore.shopName}/blogs/${tempStore.defaultBlogId ? 'news' : 'blog'}/${shopifyArticle.handle || shopifyArticle.id}`,
               success: true
             });
           } catch (shopifyError: any) {
