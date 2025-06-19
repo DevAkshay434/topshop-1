@@ -357,7 +357,8 @@ export default function AdminPanel() {
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   
   // Workflow step state
-  const [currentStep, setCurrentStep] = useState<string>("product");
+  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
+  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   
   // Author selection state
   const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
@@ -712,8 +713,6 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
-  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
   // Project Creation Dialog state
