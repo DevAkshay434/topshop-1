@@ -39,16 +39,16 @@ export async function apiRequest<T = any>(
     requestData = data;
   }
   
-  // Get store ID from localStorage if available
-  const selectedStoreId = localStorage.getItem('selectedStoreId');
+  // Get auto-detected store ID from window global (set by StoreContext)
+  const autoDetectedStoreId = (window as any).__autoDetectedStoreId;
   const headers: Record<string, string> = requestData ? { "Content-Type": "application/json" } : {};
   
   // Add store ID to headers for backend routing
-  if (selectedStoreId && selectedStoreId !== 'null' && selectedStoreId !== 'undefined') {
-    headers['X-Store-ID'] = selectedStoreId;
-    console.log(`Query client: Adding X-Store-ID header: ${selectedStoreId} for URL: ${url}`);
+  if (autoDetectedStoreId && autoDetectedStoreId !== 'null' && autoDetectedStoreId !== 'undefined') {
+    headers['X-Store-ID'] = autoDetectedStoreId.toString();
+    console.log(`Query client: Adding X-Store-ID header: ${autoDetectedStoreId} for URL: ${url}`);
   } else {
-    console.log(`Query client: No valid store ID found in localStorage for URL: ${url}. Value: ${selectedStoreId}`);
+    console.log(`Query client: No auto-detected store ID available for URL: ${url}. Value: ${autoDetectedStoreId}`);
   }
   
   const res = await fetch(url, {
