@@ -1239,7 +1239,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 // For immediate publishing or drafts
                 shopifyArticle = await shopifyService.createArticle(
                   tempStore, 
-                  connection.defaultBlogId, 
+                  tempStore.defaultBlogId, 
                   completePost || post,
                   undefined // No scheduling date for immediate publish/draft
                 );
@@ -1251,7 +1251,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             try {
               updatedPost = await storage.updateBlogPost(post.id, {
                 shopifyPostId: shopifyArticle.id,
-                shopifyBlogId: isPage ? null : connection.defaultBlogId
+                shopifyBlogId: isPage ? null : tempStore.defaultBlogId
               });
             } catch (dbError) {
               console.log('Database update failed, using in-memory post data with Shopify info');
@@ -1259,7 +1259,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               updatedPost = {
                 ...post,
                 shopifyPostId: shopifyArticle.id,
-                shopifyBlogId: isPage ? null : connection.defaultBlogId,
+                shopifyBlogId: isPage ? null : tempStore.defaultBlogId,
                 shopifyHandle: shopifyArticle.handle // Add handle for URL generation
               };
             }
