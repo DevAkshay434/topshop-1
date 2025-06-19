@@ -1913,10 +1913,24 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     try {
       const store = await getStoreFromRequest(req);
       if (!store) {
-        return res.status(401).json({ error: "Store not found or not connected" });
+        // In standalone mode, try to get authors from all stores for backward compatibility
+        console.log("No store context found for authors - loading from all stores for standalone mode");
+        const authorsList = await db.select().from(authors).orderBy(desc(authors.createdAt));
+        
+        // Convert database authors to expected format
+        const formattedAuthors = authorsList.map((author) => ({
+          id: author.id.toString(),
+          handle: author.name.toLowerCase().replace(/\s+/g, '-'), // Generate handle from name
+          name: author.name,
+          description: author.description || '',
+          profileImage: author.avatarUrl || null,
+          linkedinUrl: author.linkedinUrl || null
+        }));
+
+        return res.json({ authors: formattedAuthors });
       }
 
-      // Get authors using Drizzle ORM with correct schema
+      // Get authors using Drizzle ORM with correct schema for specific store
       const authorsList = await db.select().from(authors).where(eq(authors.storeId, store.id)).orderBy(desc(authors.createdAt));
 
       // Convert database authors to expected format
@@ -1946,37 +1960,51 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         return res.status(400).json({ error: "Author name is required" });
       }
 
-      const connection = await storage.getShopifyConnection();
-      
-      if (!connection || !connection.isConnected) {
-        return res.status(400).json({ error: "Not connected to Shopify" });
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        console.log("No store context found for creating author - using fallback store");
+        // In standalone mode, use the first available store or create with default store ID
+        const stores = await storage.getAllStores();
+        const fallbackStore = stores.length > 0 ? stores[0] : null;
+        if (!fallbackStore) {
+          return res.status(400).json({ error: "No stores available for author creation" });
+        }
+        
+        // Use fallback store for author creation
+        const authorData = {
+          name: name.trim(),
+          description: description?.trim() || null,
+          avatarUrl: profileImage?.trim() || null,
+          linkedinUrl: linkedinUrl?.trim() || null,
+          storeId: fallbackStore.id,
+          isActive: true
+        };
+
+        const [newAuthor] = await db.insert(authors).values(authorData).returning();
+        
+        const formattedAuthor = {
+          id: newAuthor.id.toString(),
+          handle: newAuthor.name.toLowerCase().replace(/\s+/g, '-'),
+          name: newAuthor.name,
+          description: newAuthor.description || '',
+          profileImage: newAuthor.avatarUrl || null,
+          linkedinUrl: newAuthor.linkedinUrl || null
+        };
+
+        return res.json({ author: formattedAuthor });
       }
 
-      // Create temporary store object
-      const store = {
-        id: connection.id,
-        shopName: connection.storeName,
-        accessToken: connection.accessToken,
-        scope: '',
-        defaultBlogId: connection.defaultBlogId || '',
-        isConnected: connection.isConnected,
-        lastSynced: connection.lastSynced,
-        installedAt: new Date(),
-        uninstalledAt: null,
-        planName: null,
-        chargeId: null,
-        trialEndsAt: null
+      // Insert author using Drizzle ORM with correct schema
+      const authorData = {
+        name: name.trim(),
+        description: description?.trim() || null,
+        avatarUrl: profileImage?.trim() || null,
+        linkedinUrl: linkedinUrl?.trim() || null,
+        storeId: store.id,
+        isActive: true
       };
 
-      // Insert author using Drizzle ORM with correct schema
-      const [newAuthor] = await db.insert(authors).values({
-        storeId: store.id,
-        name,
-        description: description || '',
-        avatarUrl: profileImage || null,
-        linkedinUrl: linkedinUrl || null,
-        isActive: true
-      }).returning();
+      const [newAuthor] = await db.insert(authors).values(authorData).returning();
       
       // Format response to match expected structure
       const formattedAuthor = {
