@@ -101,7 +101,7 @@ export class CleanDataForSEOService {
       }];
 
       const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keyword/live`,
+        `${this.apiUrl}/v3/keywords_data/google_ads/keywords_for_keywords/live`,
         requestData,
         { 
           auth,
@@ -169,7 +169,7 @@ export class CleanDataForSEOService {
       }];
 
       const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keyword/live`,
+        `${this.apiUrl}/v3/keywords_data/google_ads/keywords_for_keywords/live`,
         requestData,
         { 
           auth,
@@ -238,7 +238,7 @@ export class CleanDataForSEOService {
       }];
 
       const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keyword/live`,
+        `${this.apiUrl}/v3/keywords_data/google_ads/keywords_for_keywords/live`,
         requestData,
         { 
           auth,
