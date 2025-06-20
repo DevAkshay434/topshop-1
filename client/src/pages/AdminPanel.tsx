@@ -755,36 +755,66 @@ export default function AdminPanel() {
     
     // Load project data from backend and hydrate form
     try {
-      const response = await fetch(`/api/projects/${projectId}`);
-      const projectData = await response.json();
+      const projectData = await apiRequest(`/api/projects/${projectId}`);
       
       if (projectData.success && projectData.project) {
-        const { formData } = projectData.project;
-        console.log('Loading form data:', formData);
+        let formData = projectData.project.formData;
         
-        // Reset form with loaded data
-        form.reset(formData);
-        
-        // Update state variables that aren't part of the form
-        if (formData.productIds && formData.productIds.length > 0) {
-          // Load selected products based on IDs
-          const selectedProds = productsQuery.data?.products?.filter((p: Product) => 
-            formData.productIds.includes(p.id)
-          ) || [];
-          setSelectedProducts(selectedProds);
+        // Parse formData if it's a string (from database storage)
+        if (typeof formData === 'string') {
+          try {
+            formData = JSON.parse(formData);
+          } catch (error) {
+            console.error('Failed to parse saved form data:', error);
+            return;
+          }
         }
         
-        if (formData.collectionIds && formData.collectionIds.length > 0) {
-          // Load selected collections based on IDs
-          const selectedColls = collectionsQuery.data?.collections?.filter((c: Collection) => 
-            formData.collectionIds.includes(c.id)
-          ) || [];
-          setSelectedCollections(selectedColls);
+        console.log('Loading comprehensive project data:', formData);
+        
+        // Reset form with loaded data
+        form.reset({
+          ...defaultValues,
+          ...formData
+        });
+        
+        // Restore all state variables from saved project data
+        if (formData.selectedProducts) {
+          setSelectedProducts(formData.selectedProducts);
+        }
+        
+        if (formData.selectedCollections) {
+          setSelectedCollections(formData.selectedCollections);
+        }
+        
+        if (formData.selectedKeywords) {
+          setSelectedKeywords(formData.selectedKeywords);
+        }
+        
+        if (formData.selectedMediaContent) {
+          setSelectedMediaContent(formData.selectedMediaContent);
+        }
+        
+        if (formData.primaryImages) {
+          setPrimaryImages(formData.primaryImages);
+        }
+        
+        if (formData.secondaryImages) {
+          setSecondaryImages(formData.secondaryImages);
+        }
+        
+        if (formData.workflowStep) {
+          setWorkflowStep(formData.workflowStep);
+        }
+        
+        // Set author selection if available
+        if (formData.selectedAuthorId) {
+          setSelectedAuthorId(formData.selectedAuthorId);
         }
         
         toast({
-          title: "Project loaded",
-          description: `"${projectName}" data has been loaded into the form`
+          title: "Project loaded successfully",
+          description: `"${projectName}" with all settings restored including products, collections, keywords, media, and workflow progress`
         });
       }
     } catch (error) {
