@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { shopifyService } from "../services/shopify";
-import { cleanDataForSEOService, KeywordData } from "../services/dataforseo-clean";
+import { dataForSEOService, KeywordData } from "../services/dataforseo";
 import { pexelsService, type PexelsImage } from "../services/pexels";
 import { pixabayService, type PixabayImage } from "../services/pixabay";
 import { generateBlogContentWithClaude } from "../services/claude";
@@ -468,47 +468,93 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     
     console.log(`Searching for keywords related to ${searchTerms.length} topics: ${searchTerms.join(', ')}`);
     
-    // Use clean DataForSEO service - no fallbacks, only authentic data
-    console.log(`Getting authentic keywords from DataForSEO for: ${searchTerm}`);
-    let keywords = await cleanDataForSEOService.getAuthenticKeywords(searchTerm);
+    // Start with the main search term
+    let keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
     
-    // If we have selected products, get keywords for them too
-    if (selectedProducts && Array.isArray(selectedProducts) && selectedProducts.length > 0) {
-      console.log(`Getting keywords for ${selectedProducts.length} selected products`);
-      const productKeywords = await cleanDataForSEOService.getKeywordsForProducts(selectedProducts);
+    // If we have additional search terms, process them and merge unique keywords
+    if (searchTerms.length > 1) {
+      // Use a Set to track keywords we've already processed
+      const processedKeywords = new Set(keywords.map(k => k.keyword.toLowerCase()));
       
-      // Merge unique keywords only
-      const existingKeywords = new Set(keywords.map(k => k.keyword.toLowerCase()));
-      productKeywords.forEach(kw => {
-        if (!existingKeywords.has(kw.keyword.toLowerCase())) {
-          keywords.push(kw);
+      // Process the remaining search terms (limit to 3 to avoid hitting API limits)
+      const additionalTerms = searchTerms.slice(1, 4);
+      
+      for (const term of additionalTerms) {
+        // Skip if the term is too similar to the main search term
+        if (term.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            searchTerm.toLowerCase().includes(term.toLowerCase())) {
+          continue;
         }
+        
+        console.log(`Generating additional keywords for: ${term}`);
+        const additionalKeywords = await dataForSEOService.getKeywordsForProduct(term);
+        
+        // Add only unique keywords to our result set
+        additionalKeywords.forEach(kw => {
+          if (!processedKeywords.has(kw.keyword.toLowerCase())) {
+            processedKeywords.add(kw.keyword.toLowerCase());
+            keywords.push(kw);
+          }
+        });
+      }
+      
+      // Sort combined results by search volume
+      keywords.sort((a, b) => {
+        const volumeA = a.searchVolume || 0;
+        const volumeB = b.searchVolume || 0;
+        return volumeB - volumeA; // Descending order
       });
+      
+      console.log(`Generated a total of ${keywords.length} keywords from ${searchTerms.length} search terms`);
     }
     
-    // Sort by search volume (highest first)
-    keywords.sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0));
-    
-    console.log(`DataForSEO returned ${keywords.length} authentic keywords (no fallbacks used)`);
-    
-    // If no keywords found, return empty array - no fallbacks
-    if (keywords.length === 0) {
-      console.log('No authentic keywords found from DataForSEO API');
-      return res.json({
-        success: true,
-        productId,
-        topic: searchTerm,
-        keywords: [],
-        message: 'No keywords found for this search term. Try a different product or topic.'
-      });
-    }
-    
-    // Clean keywords from trademark symbols only (no other processing)
+    // Process keywords to ensure they're not just showing the product name
     if (keywords.length > 0) {
-      keywords = keywords.map(kw => ({
-        ...kw,
-        keyword: kw.keyword.replace(/®|™|©/g, '').trim()
-      }));
+      // Clean up helper function
+      const cleanKeyword = (keyword: string): string => {
+        return keyword
+          .replace(/®|™|©/g, '') // Remove trademark symbols
+          .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets/parentheses
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .trim();
+      };
+      
+      // Process each keyword
+      keywords = keywords.map(kw => {
+        let processedKeyword = cleanKeyword(kw.keyword);
+        
+        // If the keyword is still just the full product name, try to extract a more meaningful term
+        if (searchTerm && processedKeyword.length > 30 && 
+            processedKeyword.toLowerCase() === cleanKeyword(searchTerm).toLowerCase()) {
+          // Extract meaningful part (e.g., "water softener" from "SoftPro Elite Salt Free Water Conditioner")
+          const parts = processedKeyword.split(' ');
+          if (parts.length > 3) {
+            // Try to find meaningful pairs of words for specific categories
+            const categoryKeywords = [
+              'water softener', 'water conditioner', 'water filter', 
+              'salt free', 'water treatment', 'softener system',
+              'jacket', 'smartphone', 'laptop', 'camera', 'headphones'
+            ];
+            
+            for (const catKeyword of categoryKeywords) {
+              if (processedKeyword.toLowerCase().includes(catKeyword)) {
+                processedKeyword = catKeyword;
+                break;
+              }
+            }
+            
+            // If still using full product name, use the last 2-3 words which often contain the product category
+            if (processedKeyword.length > 30) {
+              processedKeyword = parts.slice(-Math.min(3, parts.length)).join(' ');
+            }
+          }
+        }
+        
+        return {
+          ...kw,
+          keyword: processedKeyword
+        };
+      });
     }
     
     res.json({
