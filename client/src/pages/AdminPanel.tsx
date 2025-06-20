@@ -104,7 +104,7 @@ import {
   PiggyBank,
   Plus, 
   RefreshCw,
-  Save, 
+  Save,
   Search,
   Send,
   Store,
@@ -4032,46 +4032,99 @@ export default function AdminPanel() {
                           </div>
                         )}
                         
-                        {/* Generate Content Button with conditional styling */}
-                        <Button 
-                          type="button" 
-                          className={cn(
-                            "w-full transition-all duration-200",
-                            !isReadyToGenerateContent() && !isGenerating 
-                              ? "opacity-50 cursor-not-allowed" 
-                              : "opacity-100"
-                          )}
-                          disabled={isGenerating || !isReadyToGenerateContent()}
-                          onClick={() => {
-                            if (isReadyToGenerateContent()) {
-                              // Manually trigger form submission
-                              const values = form.getValues();
-                              console.log("Manual form submission triggered with values:", values);
-                              handleSubmit(values);
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          {/* Save Project Button */}
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            className="flex-1 transition-all duration-200"
+                            disabled={!currentProject || updateProjectMutation.isPending}
+                            onClick={() => {
+                              if (currentProject) {
+                                const formData = form.getValues();
+                                const projectData = {
+                                  ...formData,
+                                  selectedProducts,
+                                  selectedCollections,
+                                  selectedKeywords,
+                                  selectedMediaContent,
+                                  primaryImages,
+                                  secondaryImages,
+                                  buyerPersonas: formData.buyerPersonas || '',
+                                  workflowStep,
+                                  lastUpdated: new Date().toISOString()
+                                };
+
+                                if (currentProjectId) {
+                                  updateProjectMutation.mutate({
+                                    id: currentProjectId,
+                                    formData: projectData
+                                  });
+                                } else {
+                                  createProjectMutation.mutate({
+                                    name: currentProject,
+                                    formData: projectData
+                                  });
+                                }
+                              }
+                            }}
+                            title={!currentProject ? "Create a project first" : "Save current project settings"}
+                          >
+                            {updateProjectMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="mr-2 h-4 w-4" />
+                                Save Project
+                              </>
+                            )}
+                          </Button>
+
+                          {/* Generate Content Button */}
+                          <Button 
+                            type="button" 
+                            className={cn(
+                              "flex-1 transition-all duration-200",
+                              !isReadyToGenerateContent() && !isGenerating 
+                                ? "opacity-50 cursor-not-allowed" 
+                                : "opacity-100"
+                            )}
+                            disabled={isGenerating || !isReadyToGenerateContent()}
+                            onClick={() => {
+                              if (isReadyToGenerateContent()) {
+                                // Manually trigger form submission
+                                const values = form.getValues();
+                                console.log("Manual form submission triggered with values:", values);
+                                handleSubmit(values);
+                              }
+                            }}
+                            title={!isReadyToGenerateContent() 
+                              ? `Please complete: ${getIncompleteSteps().join(', ')}` 
+                              : "Generate content with current settings"
                             }
-                          }}
-                          title={!isReadyToGenerateContent() 
-                            ? `Please complete: ${getIncompleteSteps().join(', ')}` 
-                            : "Generate content with current settings"
-                          }
-                        >
-                          {isGenerating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Generating Content...
-                            </>
-                          ) : isReadyToGenerateContent() ? (
-                            <>
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Generate Content
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="mr-2 h-4 w-4" />
-                              Complete All Steps
-                            </>
-                          )}
-                        </Button>
+                          >
+                            {isGenerating ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating Content...
+                              </>
+                            ) : isReadyToGenerateContent() ? (
+                              <>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate Content
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="mr-2 h-4 w-4" />
+                                Complete All Steps
+                              </>
+                            )}
+                          </Button>
+                        </div>
                         
                         {/* Completion checklist for ready state */}
                         {isReadyToGenerateContent() && (
