@@ -14,6 +14,7 @@ import { AuthorSelector } from '../components/AuthorSelector';
 import { useStore } from '../contexts/StoreContext';
 import { useProject } from '../contexts/ProjectContext';
 import { ProjectSelector } from '../components/ProjectSelector';
+import { AutoSaveIndicator } from '../components/AutoSaveIndicator';
 import { 
   Card, 
   CardContent, 
@@ -714,7 +715,7 @@ export default function AdminPanel() {
 
   // Handle project selection from dialog and load project data
   const handleProjectSelected = async (projectId: number, projectName: string) => {
-    setCurrentProject(projectName);
+    setCurrentProjectName(projectName);
     setCurrentProjectId(projectId);
     setProjectDialogOpen(false);
     
@@ -883,7 +884,7 @@ export default function AdminPanel() {
       });
     } else {
       createProjectMutation.mutate({
-        name: currentProject,
+        name: currentProjectName,
         formData: projectData
       });
     }
@@ -898,7 +899,7 @@ export default function AdminPanel() {
 
   // Auto-save effect - triggers when form data changes
   useEffect(() => {
-    if (!currentProject) return;
+    if (!currentProjectName) return;
 
     const subscription = form.watch((data) => {
       // Debounce auto-save to avoid too frequent saves
@@ -910,7 +911,7 @@ export default function AdminPanel() {
     });
 
     return () => subscription.unsubscribe();
-  }, [currentProject, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, form.watch('buyerPersonas')]);
+  }, [currentProjectName, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, form.watch('buyerPersonas')]);
 
   // Project data loading and form hydration effect
   useEffect(() => {
@@ -1997,6 +1998,29 @@ export default function AdminPanel() {
     <div className="container max-w-7xl mx-auto py-10">
 
 
+      {/* Project Selector Modal */}
+      <ProjectSelector
+        isOpen={showProjectSelector}
+        onClose={() => setShowProjectSelector(false)}
+        onProjectSelect={(project) => {
+          if (project) {
+            setCurrentProject(project);
+            setCurrentProjectName(project.name);
+            setCurrentProjectId(project.id);
+            // Load project data
+            const formData = loadFormData();
+            if (formData) {
+              form.reset(formData);
+            }
+          }
+          setShowProjectSelector(false);
+        }}
+        onNewProject={(projectName) => {
+          createNewProject(projectName);
+          setShowProjectSelector(false);
+        }}
+      />
+
       {/* Show scheduling permission notice if needed */}
       {permissionsData?.success && !permissionsData.hasPermission && (
         <div className="mb-4">
@@ -2015,10 +2039,10 @@ export default function AdminPanel() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          {currentProject && (
+          {currentProjectName && (
             <div className="text-right">
               <div className="text-sm font-medium text-gray-900">
-                Project: {currentProject}
+                Project: {currentProjectName}
               </div>
               <AutoSaveIndicator />
             </div>
