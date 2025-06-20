@@ -4119,18 +4119,58 @@ export default function AdminPanel() {
                             disabled={updateProjectMutation.isPending || createProjectMutation.isPending}
                             onClick={() => {
                               const formData = form.getValues();
-                              const projectData = {
-                                ...formData,
+                              console.log('Current form data:', formData);
+                              console.log('Current state variables:', {
                                 selectedProducts,
                                 selectedCollections,
                                 selectedKeywords,
                                 selectedMediaContent,
                                 primaryImages,
                                 secondaryImages,
-                                buyerPersonas: formData.buyerPersonas || '',
                                 workflowStep,
+                                selectedAuthorId
+                              });
+                              
+                              const projectData = {
+                                ...formData,
+                                // State variables that aren't part of the form
+                                selectedProducts,
+                                selectedCollections,
+                                selectedKeywords,
+                                selectedMediaContent,
+                                primaryImages,
+                                secondaryImages,
+                                selectedAuthorId,
+                                workflowStep,
+                                // Ensure we capture all form fields explicitly
+                                title: formData.title || '',
+                                articleType: formData.articleType || 'blog',
+                                blogId: formData.blogId || '',
+                                writingPerspective: formData.writingPerspective || 'first_person_plural',
+                                enableTables: formData.enableTables || true,
+                                enableLists: formData.enableLists || true,
+                                enableH3s: formData.enableH3s || true,
+                                introType: formData.introType || 'search_intent',
+                                faqType: formData.faqType || 'short',
+                                enableCitations: formData.enableCitations || true,
+                                toneOfVoice: formData.toneOfVoice || 'friendly',
+                                postStatus: formData.postStatus || 'draft',
+                                generateImages: formData.generateImages || true,
+                                keywords: formData.keywords || [],
+                                productIds: formData.productIds || [],
+                                collectionIds: formData.collectionIds || [],
+                                scheduledPublishTime: formData.scheduledPublishTime || '09:30',
+                                publicationType: formData.publicationType || 'draft',
+                                scheduleTime: formData.scheduleTime || '09:30',
+                                articleLength: formData.articleLength || 'long',
+                                headingsCount: formData.headingsCount || '3',
+                                categories: formData.categories || [],
+                                customCategory: formData.customCategory || '',
+                                buyerPersonas: formData.buyerPersonas || '',
                                 lastUpdated: new Date().toISOString()
                               };
+                              
+                              console.log('Complete project data to save:', projectData);
 
                               if (currentProject && currentProjectId) {
                                 // Update existing project
