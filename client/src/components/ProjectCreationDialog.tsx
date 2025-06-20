@@ -56,6 +56,8 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [showSavedProjects, setShowSavedProjects] = useState(false);
+  const [selectedSavedProject, setSelectedSavedProject] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
