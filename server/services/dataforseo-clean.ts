@@ -60,13 +60,10 @@ export class CleanDataForSEOService {
       const allKeywords: KeywordData[] = [];
       const processedKeywords = new Set<string>();
 
-      // Make multiple API calls to get comprehensive results
-      await Promise.all([
-        // Direct search volume call
-        this.fetchDirectFromAPI(searchTerm, auth, allKeywords, processedKeywords),
-        // Keyword suggestions call
-        this.fetchKeywordSuggestions(searchTerm, auth, allKeywords, processedKeywords)
-      ]);
+      // Make multiple API calls sequentially to get comprehensive results
+      await this.fetchDirectFromAPI(searchTerm, auth, allKeywords, processedKeywords);
+      await this.fetchKeywordSuggestions(searchTerm, auth, allKeywords, processedKeywords);
+      await this.fetchRelatedKeywords(searchTerm, auth, allKeywords, processedKeywords);
 
       console.log(`DataForSEO: Retrieved ${allKeywords.length} authentic keywords`);
       return allKeywords.sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0));
@@ -209,6 +206,73 @@ export class CleanDataForSEOService {
       }
     } catch (error: any) {
       console.error(`DataForSEO: Suggestions API call failed for "${searchTerm}": ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch related keywords using keywords_for_site endpoint
+   */
+  private async fetchRelatedKeywords(
+    searchTerm: string,
+    auth: any,
+    allKeywords: KeywordData[],
+    processedKeywords: Set<string>
+  ): Promise<void> {
+    try {
+      console.log(`DataForSEO: Getting related keywords for "${searchTerm}"`);
+      
+      const requestData = [{
+        target: searchTerm,
+        language_code: "en",
+        location_code: 2840,
+        limit: 20
+      }];
+
+      const response = await axios.post(
+        `${this.apiUrl}/v3/keywords_data/google/keyword_ideas/live`,
+        requestData,
+        { 
+          auth,
+          timeout: 20000,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+
+      if (response.data?.tasks?.[0]?.result) {
+        const results = response.data.tasks[0].result;
+        console.log(`DataForSEO: Got ${results.length} related keywords`);
+
+        for (const result of results) {
+          if (result.keyword && result.search_volume >= 0) {
+            const keywordLower = result.keyword.toLowerCase();
+            if (!processedKeywords.has(keywordLower)) {
+              processedKeywords.add(keywordLower);
+
+              const trend = result.monthly_searches
+                ? result.monthly_searches.map((monthData: any) => monthData.search_volume || 0)
+                : [];
+
+              allKeywords.push({
+                keyword: result.keyword,
+                searchVolume: result.search_volume || 0,
+                cpc: result.cpc || 0,
+                competition: result.competition || 0,
+                competitionLevel: this.getCompetitionLevel(result.competition || 0),
+                intent: this.determineIntent(result.keyword),
+                trend,
+                difficulty: this.calculateDifficulty(result),
+                selected: false
+              });
+
+              console.log(`DataForSEO: Added related "${result.keyword}" (${result.search_volume} searches)`);
+            }
+          }
+        }
+      } else {
+        console.log(`DataForSEO: No related keywords found for "${searchTerm}"`);
+      }
+    } catch (error: any) {
+      console.error(`DataForSEO: Related keywords API call failed for "${searchTerm}": ${error.message}`);
     }
   }
 
