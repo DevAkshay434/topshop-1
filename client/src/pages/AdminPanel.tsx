@@ -879,7 +879,8 @@ export default function AdminPanel() {
       selectedKeywords,
       selectedMediaContent,
       buyerPersonas: formData.buyerPersonas || '',
-      workflowStep
+      workflowStep,
+      lastUpdated: new Date().toISOString()
     };
 
     if (currentProjectId) {
@@ -894,6 +895,26 @@ export default function AdminPanel() {
       });
     }
   };
+
+  // Trigger auto-save when workflow step changes or when key data changes
+  useEffect(() => {
+    if (currentProject) {
+      const formData = form.getValues();
+      autoSaveProject(formData);
+    }
+  }, [workflowStep, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent]);
+
+  // Auto-save when form values change (debounced)
+  useEffect(() => {
+    if (!currentProject) return;
+    
+    const timeoutId = setTimeout(() => {
+      const formData = form.getValues();
+      autoSaveProject(formData);
+    }, 2000); // 2 second delay to avoid excessive saves
+
+    return () => clearTimeout(timeoutId);
+  }, [form.watch()]);
 
   // Query for loading saved project data
   const { data: savedProjectData } = useQuery({
@@ -4599,7 +4620,7 @@ export default function AdminPanel() {
                                 const keywords = formData.keywords || [];
                                 const targetAudience = formData.buyerPersonas || "";
                                 const tone = formData.toneOfVoice || "professional";
-                                const region = formData.region || "us";
+                                const region = "us"; // Default region
 
                                 console.log('Triggering AI meta optimization...');
 
@@ -4718,7 +4739,7 @@ export default function AdminPanel() {
                                 const keywords = formData.keywords || [];
                                 const targetAudience = formData.buyerPersonas || "";
                                 const tone = formData.toneOfVoice || "professional";
-                                const region = formData.region || "us";
+                                const region = "us"; // Default region
 
                                 console.log('Triggering AI meta description optimization...');
 
