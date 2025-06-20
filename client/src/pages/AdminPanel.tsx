@@ -1008,6 +1008,17 @@ export default function AdminPanel() {
 
     const timeoutId = setTimeout(() => {
       console.log('Auto-saving project...');
+      console.log('Current selections:', {
+        selectedProducts: selectedProducts.length,
+        selectedCollections: selectedCollections.length,
+        selectedKeywords: selectedKeywords.length,
+        selectedMediaContent,
+        primaryImages: primaryImages.length,
+        secondaryImages: secondaryImages.length,
+        selectedAuthorId,
+        workflowStep
+      });
+      
       setAutoSaveStatus('saving');
       
       const formData = form.getValues();
@@ -1023,6 +1034,8 @@ export default function AdminPanel() {
         workflowStep,
         lastUpdated: new Date().toISOString()
       };
+
+      console.log('Saving project data:', projectData);
 
       updateProjectMutation.mutate({
         id: currentProjectId,
