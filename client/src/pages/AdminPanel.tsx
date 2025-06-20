@@ -12,6 +12,8 @@ import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { AuthorSelector } from '../components/AuthorSelector';
 import { useStore } from '../contexts/StoreContext';
+import { useProject } from '../contexts/ProjectContext';
+import { ProjectSelector } from '../components/ProjectSelector';
 import { 
   Card, 
   CardContent, 
@@ -708,7 +710,6 @@ export default function AdminPanel() {
   
   // Project Creation Dialog state
   const [projectDialogOpen, setProjectDialogOpen] = useState(true); // Set to true to show by default
-  const [currentProject, setCurrentProject] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
 
   // Handle project selection from dialog and load project data
@@ -1064,6 +1065,22 @@ export default function AdminPanel() {
 
   // Get current store context
   const { currentStore } = useStore();
+  
+  // Get project context for saving and loading project data
+  const { 
+    currentProject, 
+    currentProjectName,
+    setCurrentProject,
+    setCurrentProjectName,
+    saveFormData,
+    loadFormData,
+    autoSaveFormData,
+    isAutoSaving,
+    createNewProject
+  } = useProject();
+
+  // Project selector state
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
 
 
 
