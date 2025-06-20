@@ -60,8 +60,14 @@ export class CleanDataForSEOService {
       const allKeywords: KeywordData[] = [];
       const processedKeywords = new Set<string>();
 
-      // Use keywords_for_keyword endpoint which provides comprehensive related keywords
-      await this.fetchComprehensiveKeywords(searchTerm, auth, allKeywords, processedKeywords);
+      // Use the single comprehensive endpoint that returns multiple related keywords
+      await this.fetchDirectFromAPI(searchTerm, auth, allKeywords, processedKeywords);
+      
+      // Try additional variations to get more comprehensive results
+      const variations = this.generateKeywordVariations(searchTerm);
+      for (const variation of variations) {
+        await this.fetchDirectFromAPI(variation, auth, allKeywords, processedKeywords);
+      }
 
       console.log(`DataForSEO: Retrieved ${allKeywords.length} authentic keywords`);
       return allKeywords.sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0));
@@ -208,22 +214,24 @@ export class CleanDataForSEOService {
   }
 
   /**
-   * Fetch related keywords using keywords_for_site endpoint
+   * Comprehensive keyword fetch using keywords_for_keyword endpoint
    */
-  private async fetchRelatedKeywords(
+  private async fetchComprehensiveKeywords(
     searchTerm: string,
     auth: any,
     allKeywords: KeywordData[],
     processedKeywords: Set<string>
   ): Promise<void> {
     try {
-      console.log(`DataForSEO: Getting related keywords for "${searchTerm}"`);
+      console.log(`DataForSEO: Getting comprehensive keywords for "${searchTerm}"`);
       
       const requestData = [{
-        target: searchTerm,
+        keyword: searchTerm.trim(),
         language_code: "en",
         location_code: 2840,
-        limit: 20
+        limit: 100,
+        include_serp_info: true,
+        sort_by: "search_volume"
       }];
 
       const response = await axios.post(
@@ -231,14 +239,14 @@ export class CleanDataForSEOService {
         requestData,
         { 
           auth,
-          timeout: 20000,
+          timeout: 30000,
           headers: { 'Content-Type': 'application/json' }
         }
       );
 
       if (response.data?.tasks?.[0]?.result) {
         const results = response.data.tasks[0].result;
-        console.log(`DataForSEO: Got ${results.length} related keywords`);
+        console.log(`DataForSEO: API returned ${results.length} comprehensive keywords`);
 
         for (const result of results) {
           if (result.keyword && result.search_volume >= 0) {
@@ -262,15 +270,15 @@ export class CleanDataForSEOService {
                 selected: false
               });
 
-              console.log(`DataForSEO: Added related "${result.keyword}" (${result.search_volume} searches)`);
+              console.log(`DataForSEO: Added comprehensive "${result.keyword}" (${result.search_volume} searches)`);
             }
           }
         }
       } else {
-        console.log(`DataForSEO: No related keywords found for "${searchTerm}"`);
+        console.log(`DataForSEO: No comprehensive keywords found for "${searchTerm}"`);
       }
     } catch (error: any) {
-      console.error(`DataForSEO: Related keywords API call failed for "${searchTerm}": ${error.message}`);
+      console.error(`DataForSEO: Comprehensive keywords API call failed for "${searchTerm}": ${error.message}`);
     }
   }
 
@@ -522,6 +530,37 @@ export class CleanDataForSEOService {
     const cpcScore = Math.min(cpc / 5, 1) * 20;
 
     return Math.round(volumeScore + competitionScore + cpcScore);
+  }
+
+  /**
+   * Generate keyword variations to get more comprehensive results
+   */
+  private generateKeywordVariations(searchTerm: string): string[] {
+    const variations: string[] = [];
+    const words = searchTerm.split(' ').filter(word => word.length > 0);
+    
+    if (words.length > 1) {
+      // Add singular/plural variations
+      const lastWord = words[words.length - 1];
+      if (lastWord.endsWith('s') && lastWord.length > 3) {
+        const singular = lastWord.slice(0, -1);
+        variations.push([...words.slice(0, -1), singular].join(' '));
+      } else {
+        variations.push([...words.slice(0, -1), lastWord + 's'].join(' '));
+      }
+      
+      // Add "best" prefix
+      variations.push(`best ${searchTerm}`);
+      
+      // Add "buy" prefix
+      variations.push(`buy ${searchTerm}`);
+      
+      // Add "cheap" prefix
+      variations.push(`cheap ${searchTerm}`);
+    }
+    
+    // Limit to 3 variations to avoid API overuse
+    return variations.slice(0, 3);
   }
 }
 
