@@ -81,6 +81,7 @@ export interface IStorage {
   updateProject(id: number, project: Partial<Project>): Promise<Project | undefined>;
   getProject(id: number): Promise<Project | undefined>;
   getUserProjects(userId?: number, storeId?: number): Promise<Project[]>;
+  getProjectsByStore(storeId: number): Promise<Project[]>;
   deleteProject(id: number): Promise<boolean>;
 }
 

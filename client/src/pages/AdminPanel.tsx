@@ -105,6 +105,7 @@ import {
   Plus, 
   RefreshCw,
   Save,
+  SaveAll,
   Search,
   Send,
   Store,
@@ -2214,7 +2215,7 @@ export default function AdminPanel() {
                 disabled={autoSaveStatus === 'saving'}
                 className="flex items-center gap-2"
               >
-                <SaveAll className="h-4 w-4" />
+                <Save className="h-4 w-4" />
                 {autoSaveStatus === 'saving' ? 'Saving...' : 'Save Project'}
               </Button>
             )}

@@ -2147,6 +2147,17 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       // For now, use a default userId (1) - in a real app, this would come from authentication
       const userId = 1;
       
+      // Check for duplicate project names within the same store
+      const existingProjects = await storage.getProjectsByStore(store.id);
+      const duplicateProject = existingProjects.find(p => p.name.toLowerCase() === name.toLowerCase());
+      
+      if (duplicateProject) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "A project with this name already exists. Please choose a different name." 
+        });
+      }
+      
       const projectData = {
         name,
         formData: JSON.stringify(formData),
