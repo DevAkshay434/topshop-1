@@ -41,7 +41,7 @@ export class CleanDataForSEOService {
 
   /**
    * Get authentic keywords from DataForSEO API only
-   * No fallbacks, no dummy data - returns empty array if API fails
+   * Direct API call without any term extraction or fallback logic
    */
   public async getAuthenticKeywords(searchTerm: string): Promise<KeywordData[]> {
     if (!this.hasValidCredentials()) {
@@ -50,17 +50,7 @@ export class CleanDataForSEOService {
     }
 
     try {
-      console.log(`DataForSEO: Getting authentic keywords for "${searchTerm}"`);
-      
-      // Extract searchable terms from product names
-      const searchableTerms = this.extractSearchableTerms(searchTerm);
-      console.log(`DataForSEO: Extracted searchable terms: [${searchableTerms.join(', ')}]`);
-      
-      // If no searchable terms found, return empty array
-      if (searchableTerms.length === 0) {
-        console.log('DataForSEO: No searchable terms extracted from product name');
-        return [];
-      }
+      console.log(`DataForSEO: Direct API call for keywords "${searchTerm}"`);
       
       const auth = {
         username: this.username,
@@ -70,83 +60,155 @@ export class CleanDataForSEOService {
       const allKeywords: KeywordData[] = [];
       const processedKeywords = new Set<string>();
 
-      // Try each searchable term
-      for (const term of searchableTerms) {
-        console.log(`DataForSEO: Trying term "${term}"`);
-        
-        if (!term || term.trim().length < 2) {
-          console.log(`DataForSEO: Skipping invalid term "${term}"`);
-          continue;
-        }
-        try {
-          const requestData = [{
-            keywords: [term],
-            language_code: "en",
-            location_code: 2840,
-            limit: 10
-          }];
+      // Make multiple API calls to get comprehensive results
+      await Promise.all([
+        // Direct search volume call
+        this.fetchDirectFromAPI(searchTerm, auth, allKeywords, processedKeywords),
+        // Keyword suggestions call
+        this.fetchKeywordSuggestions(searchTerm, auth, allKeywords, processedKeywords)
+      ]);
 
-          const response = await axios.post(
-            `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
-            requestData,
-            { 
-              auth,
-              timeout: 15000,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
-
-          if (response.data?.tasks?.[0]?.result) {
-            const results = response.data.tasks[0].result;
-
-            for (const result of results) {
-              if (result.search_volume && result.search_volume > 0) {
-                const keywordLower = result.keyword.toLowerCase();
-                if (!processedKeywords.has(keywordLower)) {
-                  processedKeywords.add(keywordLower);
-
-                  const trend = result.monthly_searches
-                    ? result.monthly_searches.map((monthData: any) => monthData.search_volume)
-                    : [];
-
-                  allKeywords.push({
-                    keyword: result.keyword,
-                    searchVolume: result.search_volume,
-                    cpc: result.cpc || 0,
-                    competition: result.competition || 0,
-                    competitionLevel: this.getCompetitionLevel(result.competition || 0),
-                    intent: this.determineIntent(result.keyword),
-                    trend,
-                    difficulty: this.calculateDifficulty(result),
-                    selected: false
-                  });
-                }
-              }
-            }
-
-            // Get suggestions for terms that returned results
-            if (results.length > 0) {
-              const suggestions = await this.getKeywordSuggestions(term);
-              suggestions.forEach(suggestion => {
-                const keywordLower = suggestion.keyword.toLowerCase();
-                if (!processedKeywords.has(keywordLower)) {
-                  processedKeywords.add(keywordLower);
-                  allKeywords.push(suggestion);
-                }
-              });
-            }
-          }
-        } catch (termError: any) {
-          console.log(`DataForSEO: No results for term "${term}"`);
-        }
-      }
-
-      console.log(`DataForSEO: Returned ${allKeywords.length} authentic keywords`);
+      console.log(`DataForSEO: Retrieved ${allKeywords.length} authentic keywords`);
       return allKeywords.sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0));
 
     } catch (error: any) {
       console.error(`DataForSEO API error: ${error.message}`);
       return [];
+    }
+  }
+
+  /**
+   * Direct fetch from DataForSEO API without any term modification
+   */
+  private async fetchDirectFromAPI(
+    searchTerm: string,
+    auth: any,
+    allKeywords: KeywordData[],
+    processedKeywords: Set<string>
+  ): Promise<void> {
+    try {
+      console.log(`DataForSEO: Direct API call for "${searchTerm}"`);
+      
+      const requestData = [{
+        keywords: [searchTerm.trim()],
+        language_code: "en",
+        location_code: 2840,
+        limit: 25 // Increased limit for more comprehensive results
+      }];
+
+      const response = await axios.post(
+        `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
+        requestData,
+        { 
+          auth,
+          timeout: 20000,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+
+      if (response.data?.tasks?.[0]?.result) {
+        const results = response.data.tasks[0].result;
+        console.log(`DataForSEO: API returned ${results.length} keyword results`);
+
+        for (const result of results) {
+          // Include keywords even with low search volume to get comprehensive data
+          if (result.keyword && result.search_volume >= 0) {
+            const keywordLower = result.keyword.toLowerCase();
+            if (!processedKeywords.has(keywordLower)) {
+              processedKeywords.add(keywordLower);
+
+              const trend = result.monthly_searches
+                ? result.monthly_searches.map((monthData: any) => monthData.search_volume || 0)
+                : [];
+
+              allKeywords.push({
+                keyword: result.keyword,
+                searchVolume: result.search_volume || 0,
+                cpc: result.cpc || 0,
+                competition: result.competition || 0,
+                competitionLevel: this.getCompetitionLevel(result.competition || 0),
+                intent: this.determineIntent(result.keyword),
+                trend,
+                difficulty: this.calculateDifficulty(result),
+                selected: false
+              });
+
+              console.log(`DataForSEO: Added "${result.keyword}" (${result.search_volume} searches)`);
+            }
+          }
+        }
+      } else {
+        console.log(`DataForSEO: No results from API for "${searchTerm}"`);
+      }
+    } catch (error: any) {
+      console.error(`DataForSEO: API call failed for "${searchTerm}": ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch keyword suggestions from DataForSEO API
+   */
+  private async fetchKeywordSuggestions(
+    searchTerm: string,
+    auth: any,
+    allKeywords: KeywordData[],
+    processedKeywords: Set<string>
+  ): Promise<void> {
+    try {
+      console.log(`DataForSEO: Getting suggestions for "${searchTerm}"`);
+      
+      const requestData = [{
+        keyword: searchTerm,
+        language_code: "en",
+        location_code: 2840,
+        limit: 30
+      }];
+
+      const response = await axios.post(
+        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keywords/live`,
+        requestData,
+        { 
+          auth,
+          timeout: 20000,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+
+      if (response.data?.tasks?.[0]?.result) {
+        const results = response.data.tasks[0].result;
+        console.log(`DataForSEO: Got ${results.length} keyword suggestions`);
+
+        for (const result of results) {
+          if (result.keyword && result.search_volume >= 0) {
+            const keywordLower = result.keyword.toLowerCase();
+            if (!processedKeywords.has(keywordLower)) {
+              processedKeywords.add(keywordLower);
+
+              const trend = result.monthly_searches
+                ? result.monthly_searches.map((monthData: any) => monthData.search_volume || 0)
+                : [];
+
+              allKeywords.push({
+                keyword: result.keyword,
+                searchVolume: result.search_volume || 0,
+                cpc: result.cpc || 0,
+                competition: result.competition || 0,
+                competitionLevel: this.getCompetitionLevel(result.competition || 0),
+                intent: this.determineIntent(result.keyword),
+                trend,
+                difficulty: this.calculateDifficulty(result),
+                selected: false
+              });
+
+              console.log(`DataForSEO: Added suggestion "${result.keyword}" (${result.search_volume} searches)`);
+            }
+          }
+        }
+      } else {
+        console.log(`DataForSEO: No suggestions found for "${searchTerm}"`);
+      }
+    } catch (error: any) {
+      console.error(`DataForSEO: Suggestions API call failed for "${searchTerm}": ${error.message}`);
     }
   }
 
@@ -196,7 +258,7 @@ export class CleanDataForSEOService {
       }
     }
 
-    // Add water-related terms if applicable
+    // Add water-related terms only if explicitly water-related
     if (cleanName.includes('water') || cleanName.includes('ph') || cleanName.includes('mineral')) {
       if (!terms.includes('water treatment')) {
         terms.push('water treatment');
@@ -211,29 +273,54 @@ export class CleanDataForSEOService {
     // Extract meaningful product terms
     const words = cleanName.split(/\s+/).filter(word => 
       word.length > 3 && 
-      !['with', 'for', 'and', 'the', 'this', 'that', 'imerys', 'from'].includes(word)
+      !['with', 'for', 'and', 'the', 'this', 'that', 'imerys', 'from', 'by'].includes(word)
     );
 
-    // Add specific searchable terms based on common water treatment keywords
+    // Add specific searchable terms based on product categories
     const searchableTerms = [
-      { word: 'media', term: 'filter media' },
-      { word: 'calcite', term: 'calcite media' },
-      { word: 'carbon', term: 'carbon filter' },
-      { word: 'filter', term: 'water filter' },
-      { word: 'softener', term: 'water softener' },
-      { word: 'treatment', term: 'water treatment' },
-      { word: 'purification', term: 'water purification' },
-      { word: 'conditioner', term: 'water conditioner' }
+      // Water treatment terms
+      { word: 'media', term: 'filter media', category: 'water' },
+      { word: 'calcite', term: 'calcite media', category: 'water' },
+      { word: 'carbon', term: 'carbon filter', category: 'water' },
+      { word: 'filter', term: 'water filter', category: 'water' },
+      { word: 'softener', term: 'water softener', category: 'water' },
+      { word: 'treatment', term: 'water treatment', category: 'water' },
+      { word: 'purification', term: 'water purification', category: 'water' },
+      { word: 'conditioner', term: 'water conditioner', category: 'water' },
+      
+      // Gardening terms
+      { word: 'raised', term: 'raised beds', category: 'garden' },
+      { word: 'beds', term: 'raised beds', category: 'garden' },
+      { word: 'gardening', term: 'raised garden beds', category: 'garden' },
+      { word: 'fabric', term: 'fabric raised beds', category: 'garden' },
+      { word: 'planting', term: 'garden beds', category: 'garden' },
+      { word: 'soil', term: 'garden soil', category: 'garden' },
+      { word: 'grow', term: 'grow bags', category: 'garden' },
+      { word: 'container', term: 'container gardening', category: 'garden' }
     ];
+
+    // Determine if this is a water-related product
+    const isWaterProduct = cleanName.includes('water') || cleanName.includes('ph') || 
+                          cleanName.includes('filter') || cleanName.includes('softener') ||
+                          cleanName.includes('calcite') || cleanName.includes('treatment');
+
+    // Determine if this is a gardening product
+    const isGardenProduct = cleanName.includes('garden') || cleanName.includes('raised') ||
+                           cleanName.includes('bed') || cleanName.includes('soil') ||
+                           cleanName.includes('plant') || cleanName.includes('grow');
 
     for (const mapping of searchableTerms) {
       if (words.includes(mapping.word) && !terms.includes(mapping.term)) {
-        terms.push(mapping.term);
-        console.log(`DataForSEO: Added "${mapping.term}" from word "${mapping.word}"`);
+        // Only add terms that match the product category
+        if ((mapping.category === 'water' && isWaterProduct) ||
+            (mapping.category === 'garden' && isGardenProduct)) {
+          terms.push(mapping.term);
+          console.log(`DataForSEO: Added "${mapping.term}" from word "${mapping.word}"`);
+        }
       }
     }
 
-    // If still no terms found, add generic water industry terms
+    // If no specific terms found, add generic water treatment fallbacks
     if (terms.length === 0) {
       console.log('DataForSEO: No specific terms found, adding generic water treatment terms');
       terms.push('water treatment');
