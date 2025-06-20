@@ -98,8 +98,17 @@ export default function ProjectCreationDialog({
 
   // Create project mutation
   const createProjectMutation = useMutation({
-    mutationFn: (data: { name: string; formData: any }) => 
-      apiRequest('POST', '/api/projects', data),
+    mutationFn: async (data: { name: string; formData: any }) => {
+      console.log('Mutation function called with:', data);
+      try {
+        const result = await apiRequest('POST', '/api/projects', data);
+        console.log('API request successful, result:', result);
+        return result;
+      } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+      }
+    },
     onSuccess: (data) => {
       console.log('Project creation success response:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
