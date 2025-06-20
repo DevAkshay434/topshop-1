@@ -890,82 +890,8 @@ export default function AdminPanel() {
     }
   };
 
-  // Query for loading saved project data
-  const { data: savedProjectData } = useQuery({
-    queryKey: ['/api/projects', currentProject?.id],
-    queryFn: () => currentProject?.id ? apiRequest(`/api/projects/${currentProject.id}`) : null,
-    enabled: !!currentProject?.id
-  });
-
-  // Project data loading and form hydration effect
-  useEffect(() => {
-    if (savedProjectData?.success && savedProjectData.project) {
-      const projectData = savedProjectData.project;
-      let formData = projectData.formData;
-      
-      // Parse formData if it's a string (from database storage)
-      if (typeof formData === 'string') {
-        try {
-          formData = JSON.parse(formData);
-        } catch (error) {
-          console.error('Failed to parse saved form data:', error);
-          return;
-        }
-      }
-      
-      console.log('Loading saved project data:', projectData);
-      console.log('Parsed form data:', formData);
-      
-      if (formData) {
-        // Reset the form with saved data
-        form.reset({
-          ...defaultValues,
-          ...formData
-        });
-
-        // Load additional state data
-        if (formData.selectedProducts) {
-          console.log('Setting selected products:', formData.selectedProducts);
-          setSelectedProducts(formData.selectedProducts);
-        }
-        
-        if (formData.selectedCollections) {
-          console.log('Setting selected collections:', formData.selectedCollections);
-          setSelectedCollections(formData.selectedCollections);
-        }
-        
-        if (formData.selectedKeywords) {
-          console.log('Setting selected keywords:', formData.selectedKeywords);
-          setSelectedKeywords(formData.selectedKeywords);
-        }
-        
-        if (formData.selectedMediaContent) {
-          console.log('Setting selected media content:', formData.selectedMediaContent);
-          setSelectedMediaContent(formData.selectedMediaContent);
-          
-          // Also update primary and secondary images
-          if (formData.selectedMediaContent.primaryImage) {
-            setPrimaryImages([formData.selectedMediaContent.primaryImage]);
-          }
-          
-          if (formData.selectedMediaContent.secondaryImages) {
-            setSecondaryImages(formData.selectedMediaContent.secondaryImages);
-          }
-        }
-        
-        if (formData.buyerPersonas) {
-          console.log('Setting buyer personas:', formData.buyerPersonas);
-          form.setValue('buyerPersonas', formData.buyerPersonas);
-        }
-
-        // Update workflow step if saved
-        if (formData.workflowStep) {
-          console.log('Setting workflow step:', formData.workflowStep);
-          setWorkflowStep(formData.workflowStep);
-        }
-      }
-    }
-  }, [savedProjectData, form]);
+  // Project data loading will be handled by the ProjectContext
+  // This ensures proper initialization order and avoids undefined variable issues
 
   // Auto-save status indicator component
   const AutoSaveIndicator = () => {
