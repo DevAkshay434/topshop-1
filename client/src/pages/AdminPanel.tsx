@@ -913,43 +913,81 @@ export default function AdminPanel() {
   // Project mutations for auto-save functionality
   const createProjectMutation = useMutation({
     mutationFn: async (data: { name: string; formData: any }) => {
-      return apiRequest('/api/projects', {
+      console.log('Creating project with data:', data);
+      const result = await apiRequest('/api/projects', {
         method: 'POST',
         body: data
       });
+      console.log('Create project API response:', result);
+      return result;
     },
     onMutate: () => {
+      console.log('Create project mutation started');
       setAutoSaveStatus('saving');
     },
     onSuccess: (data: any) => {
+      console.log('Create project success:', data);
       if (data.success && data.project) {
         setCurrentProjectId(data.project.id);
         setAutoSaveStatus('saved');
+        toast({
+          title: "Project saved successfully",
+          description: `"${data.project.name}" has been saved`,
+        });
         setTimeout(() => setAutoSaveStatus('idle'), 2000);
+      } else {
+        console.error('Create project success but invalid response:', data);
+        setAutoSaveStatus('error');
+        toast({
+          title: "Save failed",
+          description: "Project creation returned invalid response",
+          variant: "destructive"
+        });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Create project error:', error);
       setAutoSaveStatus('error');
+      toast({
+        title: "Failed to save project",
+        description: error?.message || "An error occurred while saving the project",
+        variant: "destructive"
+      });
       setTimeout(() => setAutoSaveStatus('idle'), 3000);
     }
   });
 
   const updateProjectMutation = useMutation({
     mutationFn: async (data: { id: number; formData: any }) => {
-      return apiRequest(`/api/projects/${data.id}`, {
+      console.log('Updating project with data:', data);
+      const result = await apiRequest(`/api/projects/${data.id}`, {
         method: 'PUT',
         body: { formData: data.formData }
       });
+      console.log('Update project API response:', result);
+      return result;
     },
     onMutate: () => {
+      console.log('Update project mutation started');
       setAutoSaveStatus('saving');
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      console.log('Update project success:', data);
       setAutoSaveStatus('saved');
+      toast({
+        title: "Project updated successfully",
+        description: "Your changes have been saved",
+      });
       setTimeout(() => setAutoSaveStatus('idle'), 2000);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Update project error:', error);
       setAutoSaveStatus('error');
+      toast({
+        title: "Failed to update project",
+        description: error?.message || "An error occurred while updating the project",
+        variant: "destructive"
+      });
       setTimeout(() => setAutoSaveStatus('idle'), 3000);
     }
   });
