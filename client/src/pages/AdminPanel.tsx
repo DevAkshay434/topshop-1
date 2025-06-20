@@ -4254,10 +4254,9 @@ export default function AdminPanel() {
                                   formData: projectData
                                 });
                               } else {
-                                // Create new project with auto-generated name
-                                const timestamp = new Date().toLocaleString();
-                                const projectName = `Project ${timestamp}`;
-                                setCurrentProject(projectName);
+                                // Create new project - use current project name if available, otherwise generate one
+                                const projectName = currentProject || `Project ${new Date().toLocaleString()}`;
+                                console.log('Creating new project with name:', projectName);
                                 createProjectMutation.mutate({
                                   name: projectName,
                                   formData: projectData
