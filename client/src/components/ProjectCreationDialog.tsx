@@ -46,12 +46,16 @@ const TEMPLATE_PROJECTS = [
 ];
 
 interface ProjectCreationDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onProjectSelected?: (projectId: number, projectName: string) => void;
 }
 
-// This component adds a standalone project creation dialog that appears immediately
-export default function ProjectCreationDialog({ onProjectSelected }: ProjectCreationDialogProps) {
-  const [open, setOpen] = useState(true);
+// This component adds a standalone project creation dialog that is triggered by user action
+export default function ProjectCreationDialog({ open = false, onOpenChange, onProjectSelected }: ProjectCreationDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = open !== undefined ? open : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [projectName, setProjectName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -173,7 +177,7 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
