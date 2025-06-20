@@ -121,76 +121,7 @@ export class DataForSEOService {
           `${baseKeyword} guide`,
           `how to choose ${genericTerms[0] || baseKeyword}`
         ].filter(Boolean);
-                                
-        // Create suffix-based variations (e.g., "water softener reviews")
-        const commonSuffixes = ['review', 'reviews', 'comparison', 'vs', 'guide', 'tips', 
-                              'problems', 'installation', 'maintenance', 'cost', 'price',
-                              'near me', 'for home', 'for business', 'system', 'model',
-                              'best brands', 'alternative', 'replacement', 'repair', 'service',
-                              'warranty', 'for sale', 'discount', 'online', 'parts', 'manual',
-                              'setup', 'troubleshooting', 'benefits', 'advantages'];
-        
-        // Add prefix variations for the main keyword and generic terms - use more terms
-        [...keywordVariations, ...genericTerms.slice(0, 5)].forEach(term => {
-          commonPrefixes.slice(0, 10).forEach(prefix => {
-            productVariations.push(`${prefix} ${term}`);
-          });
-        });
-        
-        // Add question-based variations for generic terms only (more natural) - use more terms
-        genericTerms.slice(0, 3).forEach(term => {
-          questionPrefixes.slice(0, 10).forEach(prefix => {
-            productVariations.push(`${prefix} ${term}`);
-          });
-        });
-        
-        // Add suffix variations for main keyword and generic terms - use more terms
-        [...keywordVariations, ...genericTerms.slice(0, 5)].forEach(term => {
-          commonSuffixes.slice(0, 10).forEach(suffix => {
-            productVariations.push(`${term} ${suffix}`);
-          });
-        });
-        
-        // Add year-based variations for trending/current searches
-        const currentYear = new Date().getFullYear();
-        const nextYear = currentYear + 1;
-        [...keywordVariations, ...genericTerms.slice(0, 3)].forEach(term => {
-          productVariations.push(`${term} ${currentYear}`);
-          productVariations.push(`${term} ${nextYear}`);
-          productVariations.push(`best ${term} ${currentYear}`);
-          productVariations.push(`top ${term} ${currentYear}`);
-        });
-        
-        // Combine common phrases with terms to create more variations
-        const commonPhrases = ['how to choose', 'best brands of', 'top rated', 'price comparison'];
-        genericTerms.slice(0, 3).forEach(term => {
-          commonPhrases.forEach(phrase => {
-            productVariations.push(`${phrase} ${term}`);
-          });
-        });
-        
-        // Combine all variations - use all keywords from all sources
-        const combinedKeywords = [
-          ...keywordVariations,
-          ...genericTerms,
-          ...productVariations
-        ];
-        
-        // Create multiple batches of keywords to make multiple API calls
-        // This will significantly increase our keyword count
-        const allUniqueKeywords = Array.from(new Set(combinedKeywords));
-        
-        // Split into batches of 50 keywords each (DataForSEO's recommended batch size)
-        // We'll use these to make multiple API calls
-        const keywordBatches = [];
-        for (let i = 0; i < allUniqueKeywords.length; i += 50) {
-          keywordBatches.push(allUniqueKeywords.slice(i, i + 50));
-        }
-        
-        // Make sure we have at least one batch, even if it's small
-        if (keywordBatches.length === 0) {
-          keywordBatches.push(allUniqueKeywords);
-        }
+
         
         // Use the focused keywords directly - no batching needed for smaller sets
         const uniqueKeywords = Array.from(new Set(focusedKeywords));
@@ -251,54 +182,8 @@ export class DataForSEOService {
         const keywordData: KeywordData[] = [];
         const results = response.data.tasks[0]?.result || [];
         
-        // Now, let's process additional batches - Make API requests for other batches if they exist
-        // This is the key to getting hundreds of keywords
-        if (keywordBatches.length > 1) {
-          console.log(`Processing ${keywordBatches.length - 1} additional batches of keywords`);
-          
-          // Process each additional batch (skip the first as we already did it)
-          for (let batchIndex = 1; batchIndex < keywordBatches.length && batchIndex < 4; batchIndex++) {
-            try {
-              const batch = keywordBatches[batchIndex];
-              console.log(`Processing batch ${batchIndex} with ${batch.length} keywords`);
-              
-              // Create request for this batch
-              const batchRequestData = [{
-                keywords: batch,
-                language_code: "en",
-                location_code: 2840, // United States
-                limit: 200 // Maximum allowed
-              }];
-              
-              // Make API call for this batch
-              const batchResponse = await axios.post(
-                `${this.apiUrl}${endpoint}`,
-                batchRequestData,
-                { 
-                  auth,
-                  timeout: 15000,
-                  headers: {
-                    'Content-Type': 'application/json'
-                  }
-                }
-              );
-              
-              // Process the batch results and add to keyword data
-              if (batchResponse.data?.tasks?.[0]?.result) {
-                const batchResults = batchResponse.data.tasks[0].result;
-                console.log(`Batch ${batchIndex} returned ${batchResults.length} keywords`);
-                
-                // We'll merge these with the main results array for processing below
-                results.push(...batchResults);
-              }
-            } catch (err: any) {
-              console.error(`Error processing batch ${batchIndex}: ${err.message}`);
-              // Continue with next batch even if one fails
-            }
-          }
-          
-          console.log(`Total results after processing all batches: ${results.length} keywords`);
-        }
+        // Using focused keywords approach - no additional batch processing needed
+        console.log(`Processing single focused API call with ${results.length} results`);
         
         if (results.length === 0) {
           console.error("DataForSEO API returned no keyword results");
