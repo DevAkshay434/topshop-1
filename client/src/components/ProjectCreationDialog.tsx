@@ -99,12 +99,33 @@ export default function ProjectCreationDialog({
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: { name: string; formData: any }) => 
-      apiRequest('POST', '/api/projects', data),
+      apiRequest('/api/projects', {
+        method: 'POST',
+        body: data
+      }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       if (data.success && onProjectSelected) {
+        // Set the project as current without triggering immediate load
         onProjectSelected(data.project.id, data.project.name);
       }
+      
+      toast({
+        title: "Project created successfully",
+        description: `"${projectName}" has been created with all your current selections`
+      });
+      
+      setIsSubmitting(false);
+      setOpen(false);
+    },
+    onError: (error) => {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error creating project",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive"
+      });
+      setIsSubmitting(false);
     }
   });
 
@@ -196,16 +217,6 @@ export default function ProjectCreationDialog({
       name: projectName,
       formData: comprehensiveProjectData
     });
-    
-    setTimeout(() => {
-      toast({
-        title: "Project created successfully",
-        description: `"${projectName}" has been created and set as your current project`
-      });
-      
-      setIsSubmitting(false);
-      setOpen(false);
-    }, 500);
   };
   
   // Handle template selection
