@@ -217,18 +217,21 @@ export default function ProjectCreationDialog({
       return;
     }
     
-    // Create new project via API with comprehensive data
-    const comprehensiveProjectData = buildComprehensiveProjectData();
-    console.log('Creating project with comprehensive data:', comprehensiveProjectData);
-    console.log('About to call mutation with:', {
-      name: projectName,
-      formData: comprehensiveProjectData
+    // Only store project name locally - do NOT save to backend yet
+    console.log('Creating project locally only:', projectName);
+    
+    if (onProjectSelected) {
+      // Pass null as projectId to indicate this is a new unsaved project
+      onProjectSelected(null, projectName);
+    }
+    
+    toast({
+      title: "Project created",
+      description: `"${projectName}" is ready. Use "Save Project" to save your work.`
     });
     
-    createProjectMutation.mutate({
-      name: projectName,
-      formData: comprehensiveProjectData
-    });
+    setIsSubmitting(false);
+    setOpen(false);
   };
   
   // Handle template selection

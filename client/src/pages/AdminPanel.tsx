@@ -744,7 +744,7 @@ export default function AdminPanel() {
   const [projectDialogOpen, setProjectDialogOpen] = useState(false); // Changed to false for manual triggering
 
   // Handle project selection from dialog and load project data
-  const handleProjectSelected = async (projectId: number, projectName: string) => {
+  const handleProjectSelected = async (projectId: number | null, projectName: string) => {
     setCurrentProject(projectName);
     setCurrentProjectId(projectId);
     setProjectDialogOpen(false);
@@ -752,6 +752,12 @@ export default function AdminPanel() {
     setShowLoadProjectDialog(false);
     
     console.log('Project selected:', { projectId, projectName });
+    
+    // If projectId is null, this is a new unsaved project - don't load data
+    if (projectId === null) {
+      console.log('New unsaved project created:', projectName);
+      return;
+    }
     
     // Load project data from backend and hydrate form
     try {
@@ -1002,72 +1008,86 @@ export default function AdminPanel() {
     enabled: !!currentProjectId
   });
 
-  // Auto-save effect - triggers when form data or selections change
-  useEffect(() => {
-    if (!currentProject || !currentProjectId) return;
-
-    const timeoutId = setTimeout(() => {
-      console.log('Auto-saving project...');
-      console.log('Current selections:', {
-        selectedProducts: selectedProducts.length,
-        selectedCollections: selectedCollections.length,
-        selectedKeywords: selectedKeywords.length,
-        selectedMediaContent,
-        primaryImages: primaryImages.length,
-        secondaryImages: secondaryImages.length,
-        selectedAuthorId,
-        workflowStep
+  // Manual save project function
+  const handleManualSave = () => {
+    if (!currentProject) {
+      toast({
+        title: "No project selected",
+        description: "Please create or select a project first",
+        variant: "destructive"
       });
-      
-      setAutoSaveStatus('saving');
-      
-      const formData = form.getValues();
-      const projectData = {
-        ...formData,
-        selectedProducts,
-        selectedCollections,
-        selectedKeywords,
-        selectedMediaContent,
-        primaryImages,
-        secondaryImages,
-        selectedAuthorId,
-        workflowStep,
-        lastUpdated: new Date().toISOString()
-      };
+      return;
+    }
 
-      console.log('Saving project data:', projectData);
+    console.log('Manual save triggered');
+    console.log('Current selections:', {
+      selectedProducts: selectedProducts.length,
+      selectedCollections: selectedCollections.length,
+      selectedKeywords: selectedKeywords.length,
+      selectedMediaContent,
+      primaryImages: primaryImages.length,
+      secondaryImages: secondaryImages.length,
+      selectedAuthorId,
+      workflowStep
+    });
+    
+    setAutoSaveStatus('saving');
+    
+    const formData = form.getValues();
+    const projectData = {
+      ...formData,
+      selectedProducts,
+      selectedCollections,
+      selectedKeywords,
+      selectedMediaContent,
+      primaryImages,
+      secondaryImages,
+      selectedAuthorId,
+      workflowStep,
+      lastUpdated: new Date().toISOString()
+    };
 
+    console.log('Saving project data:', projectData);
+
+    if (currentProjectId) {
+      // Update existing project
       updateProjectMutation.mutate({
         id: currentProjectId,
         formData: projectData
       }, {
         onSuccess: () => {
           setAutoSaveStatus('saved');
-          console.log('Auto-save successful');
+          console.log('Project update successful');
           setTimeout(() => setAutoSaveStatus('idle'), 2000);
         },
         onError: (error) => {
           setAutoSaveStatus('error');
-          console.error('Auto-save failed:', error);
+          console.error('Project update failed:', error);
           setTimeout(() => setAutoSaveStatus('idle'), 5000);
         }
       });
-    }, 3000); // Save after 3 seconds of inactivity
-
-    return () => clearTimeout(timeoutId);
-  }, [
-    currentProject, 
-    currentProjectId, 
-    selectedProducts, 
-    selectedCollections, 
-    selectedKeywords, 
-    selectedMediaContent,
-    primaryImages,
-    secondaryImages,
-    selectedAuthorId,
-    workflowStep,
-    form.watch() // Watch all form changes
-  ]);
+    } else {
+      // Create new project
+      createProjectMutation.mutate({
+        name: currentProject,
+        formData: projectData
+      }, {
+        onSuccess: (data) => {
+          if (data.success) {
+            setCurrentProjectId(data.project.id);
+            setAutoSaveStatus('saved');
+            console.log('Project creation successful');
+            setTimeout(() => setAutoSaveStatus('idle'), 2000);
+          }
+        },
+        onError: (error) => {
+          setAutoSaveStatus('error');
+          console.error('Project creation failed:', error);
+          setTimeout(() => setAutoSaveStatus('idle'), 5000);
+        }
+      });
+    }
+  };
 
   // Project data loading and form hydration effect
   useEffect(() => {
@@ -2185,6 +2205,19 @@ export default function AdminPanel() {
               <FolderOpen className="h-4 w-4" />
               Load Project
             </Button>
+            {currentProject && (
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={handleManualSave}
+                disabled={autoSaveStatus === 'saving'}
+                className="flex items-center gap-2"
+              >
+                <SaveAll className="h-4 w-4" />
+                {autoSaveStatus === 'saving' ? 'Saving...' : 'Save Project'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
