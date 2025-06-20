@@ -99,11 +99,9 @@ export default function ProjectCreationDialog({
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: { name: string; formData: any }) => 
-      apiRequest('/api/projects', {
-        method: 'POST',
-        body: data
-      }),
+      apiRequest('POST', '/api/projects', data),
     onSuccess: (data) => {
+      console.log('Project creation success response:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       if (data.success && onProjectSelected) {
         // Set the project as current without triggering immediate load
@@ -119,7 +117,8 @@ export default function ProjectCreationDialog({
       setOpen(false);
     },
     onError: (error) => {
-      console.error('Error creating project:', error);
+      console.error('Detailed project creation error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       toast({
         title: "Error creating project",
         description: "Failed to create project. Please try again.",
@@ -212,6 +211,10 @@ export default function ProjectCreationDialog({
     // Create new project via API with comprehensive data
     const comprehensiveProjectData = buildComprehensiveProjectData();
     console.log('Creating project with comprehensive data:', comprehensiveProjectData);
+    console.log('About to call mutation with:', {
+      name: projectName,
+      formData: comprehensiveProjectData
+    });
     
     createProjectMutation.mutate({
       name: projectName,
