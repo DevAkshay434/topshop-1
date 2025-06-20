@@ -80,7 +80,7 @@ export default function ProjectNameDialog({
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
-              <Label htmlFor="projectName" className="text-base font-medium">Project Name</Label>
+              <Label htmlFor="projectName" className="text-base font-medium">Project Names</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

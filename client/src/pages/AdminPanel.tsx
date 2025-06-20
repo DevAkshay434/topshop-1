@@ -2206,19 +2206,7 @@ export default function AdminPanel() {
               <FolderOpen className="h-4 w-4" />
               Load Project
             </Button>
-            {currentProject && (
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={handleManualSave}
-                disabled={autoSaveStatus === 'saving'}
-                className="flex items-center gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {autoSaveStatus === 'saving' ? 'Saving...' : 'Save Project'}
-              </Button>
-            )}
+
           </div>
         </div>
       </div>

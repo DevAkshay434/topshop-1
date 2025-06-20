@@ -120,7 +120,7 @@ export default function CreateProjectDialog({
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center space-x-2">
-                    <FormLabel className="text-base">Project Name</FormLabel>
+                    <FormLabel className="text-base">Project Names</FormLabel>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger type="button">
