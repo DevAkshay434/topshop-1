@@ -865,7 +865,7 @@ export default function AdminPanel() {
 
   // Auto-save function
   const autoSaveProject = (formData: any) => {
-    if (!currentProject) return;
+    if (!currentProject?.id) return;
 
     const projectData = {
       ...formData,
@@ -877,12 +877,12 @@ export default function AdminPanel() {
       workflowStep
     };
 
-    if (currentProjectId) {
+    if (currentProject?.id) {
       updateProjectMutation.mutate({
-        id: currentProjectId,
+        id: currentProject.id,
         formData: projectData
       });
-    } else {
+    } else if (currentProjectName) {
       createProjectMutation.mutate({
         name: currentProjectName,
         formData: projectData
@@ -890,7 +890,12 @@ export default function AdminPanel() {
     }
   };
 
-
+  // Query for loading saved project data
+  const { data: savedProjectData } = useQuery({
+    queryKey: ['/api/projects', currentProject?.id],
+    queryFn: () => currentProject?.id ? apiRequest(`/api/projects/${currentProject.id}`) : null,
+    enabled: !!currentProject?.id
+  });
 
   // Project data loading and form hydration effect
   useEffect(() => {
@@ -1042,6 +1047,41 @@ export default function AdminPanel() {
     success: boolean;
     connections: ServiceStatus;
   }
+
+  // Get current store context
+  const { currentStore } = useStore();
+  
+  // Get project context for saving and loading project data
+  const { 
+    currentProject, 
+    currentProjectName,
+    setCurrentProject,
+    setCurrentProjectName,
+    saveFormData,
+    loadFormData,
+    autoSaveFormData,
+    isAutoSaving,
+    createNewProject
+  } = useProject();
+
+  // Project selector state
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
+
+  // Auto-save effect - triggers when form data changes
+  useEffect(() => {
+    if (!currentProjectName) return;
+
+    const subscription = form.watch((data) => {
+      // Debounce auto-save to avoid too frequent saves
+      const timeoutId = setTimeout(() => {
+        autoSaveFormData(data);
+      }, 2000); // Save after 2 seconds of inactivity
+
+      return () => clearTimeout(timeoutId);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [currentProjectName, autoSaveFormData]);
 
 
 
