@@ -2128,14 +2128,10 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     try {
       console.log("POST /api/projects - Request body:", JSON.stringify(req.body));
       
-      const { name, formData } = req.body;
+      const { name, description, status, isTemplate, formData } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: "Project name is required" });
-      }
-      
-      if (!formData) {
-        return res.status(400).json({ error: "Form data is required" });
       }
 
       // Get store info for storeId
@@ -2149,7 +2145,10 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       const projectData = {
         name,
-        formData: JSON.stringify(formData),
+        description: description || null,
+        status: status || 'draft',
+        isTemplate: isTemplate || false,
+        formData: formData ? JSON.stringify(formData) : null,
         userId,
         storeId: store.id
       };
@@ -2243,6 +2242,86 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.json({ success: true, projects: responseProjects });
     } catch (error: any) {
       console.error("Error getting projects:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Auto-save project data during workflow
+  apiRouter.post("/projects/:id/auto-save", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+      
+      const { formData } = req.body;
+      if (!formData) {
+        return res.status(400).json({ error: "Form data is required" });
+      }
+      
+      const updatedProject = await storage.autoSaveProject(id, formData);
+      
+      if (!updatedProject) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      res.json({ 
+        success: true, 
+        project: {
+          ...updatedProject,
+          formData: updatedProject.formData ? JSON.parse(updatedProject.formData) : null
+        }
+      });
+    } catch (error: any) {
+      console.error("Error auto-saving project:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get template projects
+  apiRouter.get("/projects/templates", async (req: Request, res: Response) => {
+    try {
+      const store = await getStoreFromRequest(req);
+      const storeId = store?.id;
+      
+      const templates = await storage.getTemplateProjects(storeId);
+      
+      // Parse formData for each template
+      const responseTemplates = templates.map(template => ({
+        ...template,
+        formData: template.formData ? JSON.parse(template.formData) : null
+      }));
+      
+      res.json({ success: true, templates: responseTemplates });
+    } catch (error: any) {
+      console.error("Error getting template projects:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get a specific project by ID
+  apiRouter.get("/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+      
+      const project = await storage.getProject(id);
+      
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      res.json({ 
+        success: true, 
+        project: {
+          ...project,
+          formData: project.formData ? JSON.parse(project.formData) : null
+        }
+      });
+    } catch (error: any) {
+      console.error("Error getting project:", error);
       res.status(500).json({ success: false, error: error.message });
     }
   });

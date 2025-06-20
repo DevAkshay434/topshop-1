@@ -1,0 +1,70 @@
+✅ Feature Enhancement Request – Project Creation, Saving, and Auto-Loading
+Current Behavior:
+The application currently features a "Create New Project" popup where users can enter a project name. However, this project is not being saved to the backend, which restricts the user from reusing or continuing the project later for content generation.
+
+Proposed Enhancements:
+1. Save Project to Backend (on Final Step):
+Once a user enters the project name and proceeds through the workflow, the project should be initialized and saved to the backend when the user clicks the "Generate Content" button at the final step.
+
+The following data should be saved along with the project:
+
+Blog or Page Type
+
+Selected Products
+
+Selected Collections
+
+Selected Buyer Avatars
+
+Selected Keywords
+
+Project Title
+
+Uploaded/Selected Media
+
+Style & Formatting options (e.g., Author Name, Tone of Voice, Content Style, etc.)
+
+This ensures the entire context of the project is stored and reusable.
+
+2. Auto-Launch "Create Project" Popup:
+The "Create New Project" popup should not open automatically. Instead, it should be triggered by clicking a "New Project" button.
+
+In the 'Create New Project' popup, display previously saved projects so users can reuse them.
+
+Move the 'Template Project' to the style and Formating from 'create new project'  
+
+
+
+This helps in organizing user sessions and saves content under distinct project IDs.
+
+3. Auto-Save Step-by-Step Data:
+As users proceed through different content generation steps, all input fields and selections should be auto-saved with the project data.
+
+Data to be saved includes:
+
+Selected Products
+
+Selected Collections
+
+Buyer Avatars
+
+Keywords
+
+Titles
+
+Images or Media
+
+Content Style & Formatting choices
+
+4. Auto-Load Saved Data on Project Resume:
+When a user reopens a previously saved project, all relevant data should automatically preload into the corresponding steps and fields.
+
+This eliminates the need for the user to re-enter any data.
+
+5. Editable Workflow:
+All steps of the project (products, collections, keywords, avatars, title, formatting, etc.) should be fully editable, even after data is preloaded.
+
+The UI should allow users to navigate back and forth across steps and make updates before finalizing or regenerating content.
+
+Note:
+The "Create New Project" popup is already present in the application, but project data is not currently being saved. The saving mechanism and auto-load features need to be implemented to complete this workflow.
