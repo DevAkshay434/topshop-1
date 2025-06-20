@@ -52,70 +52,200 @@ export class CleanDataForSEOService {
     try {
       console.log(`DataForSEO: Getting authentic keywords for "${searchTerm}"`);
       
+      // Extract searchable terms from product names
+      const searchableTerms = this.extractSearchableTerms(searchTerm);
+      console.log(`DataForSEO: Extracted searchable terms: [${searchableTerms.join(', ')}]`);
+      
+      // If no searchable terms found, return empty array
+      if (searchableTerms.length === 0) {
+        console.log('DataForSEO: No searchable terms extracted from product name');
+        return [];
+      }
+      
       const auth = {
         username: this.username,
         password: this.password
       };
 
-      // Primary API call for keyword data
-      const requestData = [{
-        keywords: [searchTerm],
-        language_code: "en",
-        location_code: 2840,
-        limit: 10
-      }];
+      const allKeywords: KeywordData[] = [];
+      const processedKeywords = new Set<string>();
 
-      const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
-        requestData,
-        { 
-          auth,
-          timeout: 15000,
-          headers: { 'Content-Type': 'application/json' }
+      // Try each searchable term
+      for (const term of searchableTerms) {
+        console.log(`DataForSEO: Trying term "${term}"`);
+        
+        if (!term || term.trim().length < 2) {
+          console.log(`DataForSEO: Skipping invalid term "${term}"`);
+          continue;
         }
-      );
+        try {
+          const requestData = [{
+            keywords: [term],
+            language_code: "en",
+            location_code: 2840,
+            limit: 10
+          }];
 
-      if (!response.data?.tasks?.[0]?.result) {
-        console.log('DataForSEO: No results from API');
-        return [];
-      }
+          const response = await axios.post(
+            `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
+            requestData,
+            { 
+              auth,
+              timeout: 15000,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
 
-      const results = response.data.tasks[0].result;
-      const keywords: KeywordData[] = [];
+          if (response.data?.tasks?.[0]?.result) {
+            const results = response.data.tasks[0].result;
 
-      for (const result of results) {
-        if (result.search_volume && result.search_volume > 0) {
-          const trend = result.monthly_searches
-            ? result.monthly_searches.map((monthData: any) => monthData.search_volume)
-            : [];
+            for (const result of results) {
+              if (result.search_volume && result.search_volume > 0) {
+                const keywordLower = result.keyword.toLowerCase();
+                if (!processedKeywords.has(keywordLower)) {
+                  processedKeywords.add(keywordLower);
 
-          keywords.push({
-            keyword: result.keyword,
-            searchVolume: result.search_volume,
-            cpc: result.cpc || 0,
-            competition: result.competition || 0,
-            competitionLevel: this.getCompetitionLevel(result.competition || 0),
-            intent: this.determineIntent(result.keyword),
-            trend,
-            difficulty: this.calculateDifficulty(result),
-            selected: false
-          });
+                  const trend = result.monthly_searches
+                    ? result.monthly_searches.map((monthData: any) => monthData.search_volume)
+                    : [];
+
+                  allKeywords.push({
+                    keyword: result.keyword,
+                    searchVolume: result.search_volume,
+                    cpc: result.cpc || 0,
+                    competition: result.competition || 0,
+                    competitionLevel: this.getCompetitionLevel(result.competition || 0),
+                    intent: this.determineIntent(result.keyword),
+                    trend,
+                    difficulty: this.calculateDifficulty(result),
+                    selected: false
+                  });
+                }
+              }
+            }
+
+            // Get suggestions for terms that returned results
+            if (results.length > 0) {
+              const suggestions = await this.getKeywordSuggestions(term);
+              suggestions.forEach(suggestion => {
+                const keywordLower = suggestion.keyword.toLowerCase();
+                if (!processedKeywords.has(keywordLower)) {
+                  processedKeywords.add(keywordLower);
+                  allKeywords.push(suggestion);
+                }
+              });
+            }
+          }
+        } catch (termError: any) {
+          console.log(`DataForSEO: No results for term "${term}"`);
         }
       }
 
-      // Get keyword suggestions only if we have valid initial results
-      if (keywords.length > 0) {
-        const suggestions = await this.getKeywordSuggestions(keywords[0].keyword);
-        keywords.push(...suggestions);
-      }
-
-      console.log(`DataForSEO: Returned ${keywords.length} authentic keywords`);
-      return keywords;
+      console.log(`DataForSEO: Returned ${allKeywords.length} authentic keywords`);
+      return allKeywords.sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0));
 
     } catch (error: any) {
       console.error(`DataForSEO API error: ${error.message}`);
       return [];
     }
+  }
+
+  /**
+   * Extract searchable terms from product names
+   */
+  private extractSearchableTerms(productName: string): string[] {
+    console.log(`DataForSEO: Extracting terms from "${productName}"`);
+    
+    const terms: string[] = [];
+    const originalName = productName.toLowerCase();
+    
+    // Clean the product name
+    const cleanName = originalName
+      .replace(/®|™|©/g, '')
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/\[[^\]]*\]/g, ' ')
+      .replace(/\d+\s*(lbs?|oz|gallon|gal|kg|mg|ml|l)\b/gi, ' ')
+      .replace(/\b\d+[\s-]*\d*\b/g, ' ')
+      .replace(/[-_]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    console.log(`DataForSEO: Cleaned name "${cleanName}"`);
+
+    // Primary category mapping - identifies main product categories
+    const categoryMappings = [
+      { keywords: ['calcite', 'calcium carbonate'], category: 'calcite media' },
+      { keywords: ['ph correction', 'ph control'], category: 'ph correction' },
+      { keywords: ['water softener', 'softener'], category: 'water softener' },
+      { keywords: ['water filter', 'filtration'], category: 'water filter' },
+      { keywords: ['water treatment', 'water conditioner'], category: 'water treatment' },
+      { keywords: ['carbon filter', 'activated carbon'], category: 'carbon filter' },
+      { keywords: ['reverse osmosis', 'ro system'], category: 'reverse osmosis' },
+      { keywords: ['sediment filter'], category: 'sediment filter' },
+      { keywords: ['filter media', 'filtration media'], category: 'filter media' }
+    ];
+
+    // Find matching categories
+    for (const mapping of categoryMappings) {
+      for (const keyword of mapping.keywords) {
+        if (cleanName.includes(keyword)) {
+          terms.push(mapping.category);
+          console.log(`DataForSEO: Found category "${mapping.category}" from keyword "${keyword}"`);
+          break;
+        }
+      }
+    }
+
+    // Add water-related terms if applicable
+    if (cleanName.includes('water') || cleanName.includes('ph') || cleanName.includes('mineral')) {
+      if (!terms.includes('water treatment')) {
+        terms.push('water treatment');
+        console.log('DataForSEO: Added "water treatment" - water-related product');
+      }
+      if (!terms.includes('water filtration')) {
+        terms.push('water filtration');
+        console.log('DataForSEO: Added "water filtration" - water-related product');
+      }
+    }
+
+    // Extract meaningful product terms
+    const words = cleanName.split(/\s+/).filter(word => 
+      word.length > 3 && 
+      !['with', 'for', 'and', 'the', 'this', 'that', 'imerys', 'from'].includes(word)
+    );
+
+    // Add specific searchable terms based on common water treatment keywords
+    const searchableTerms = [
+      { word: 'media', term: 'filter media' },
+      { word: 'calcite', term: 'calcite media' },
+      { word: 'carbon', term: 'carbon filter' },
+      { word: 'filter', term: 'water filter' },
+      { word: 'softener', term: 'water softener' },
+      { word: 'treatment', term: 'water treatment' },
+      { word: 'purification', term: 'water purification' },
+      { word: 'conditioner', term: 'water conditioner' }
+    ];
+
+    for (const mapping of searchableTerms) {
+      if (words.includes(mapping.word) && !terms.includes(mapping.term)) {
+        terms.push(mapping.term);
+        console.log(`DataForSEO: Added "${mapping.term}" from word "${mapping.word}"`);
+      }
+    }
+
+    // If still no terms found, add generic water industry terms
+    if (terms.length === 0) {
+      console.log('DataForSEO: No specific terms found, adding generic water treatment terms');
+      terms.push('water treatment');
+      terms.push('water filtration');
+    }
+
+    // Remove duplicates and limit to top 3
+    const uniqueTerms = [...new Set(terms)];
+    const finalTerms = uniqueTerms.slice(0, 3);
+    
+    console.log(`DataForSEO: Final extracted terms: [${finalTerms.join(', ')}]`);
+    return finalTerms;
   }
 
   /**
