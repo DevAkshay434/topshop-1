@@ -701,8 +701,19 @@ export default function AdminPanel() {
   
   // Legacy function for backward compatibility
   const fetchShopifyFiles = async () => {
-    // By default, fetch from media library only
-    await fetchShopifyMediaFiles();
+    // Fetch from media library
+    try {
+      setIsLoadingMedia(true);
+      const response = await fetch('/api/admin/files');
+      const data = await response.json();
+      if (data.success && data.files) {
+        setShopifyFiles(data.files);
+      }
+    } catch (error) {
+      console.error('Error fetching Shopify files:', error);
+    } finally {
+      setIsLoadingMedia(false);
+    }
   };
   const [productImages, setProductImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
