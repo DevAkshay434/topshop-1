@@ -1858,9 +1858,21 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
     } catch (error: any) {
       console.error('Error fetching keywords:', error);
+      
+      // Provide specific error messages for DataForSEO API issues
+      let userMessage = error.message;
+      if (error.message.includes('DataForSEO API credentials not configured')) {
+        userMessage = 'DataForSEO API credentials are not configured. Please contact support to set up keyword research functionality.';
+      } else if (error.message.includes('DataForSEO API error')) {
+        userMessage = 'DataForSEO API is currently unavailable. This could be due to API limits or service issues. Please try again later or contact support.';
+      } else if (error.message.includes('No keyword data available')) {
+        userMessage = 'No keyword data found for your selected products. Try selecting different products or check your DataForSEO API limits.';
+      }
+      
       res.status(500).json({ 
         error: 'Failed to fetch keywords',
-        message: error.message 
+        message: userMessage,
+        originalError: error.message
       });
     }
   });

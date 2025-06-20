@@ -1623,62 +1623,7 @@ export class DataForSEOService {
     ];
   }
 
-  /**
-   * Generate fallback keywords for a given input 
-   * This simulates API data when the real API call fails
-   * @param input The keyword/topic to generate fallback data for
-   * @returns Array of simulated keyword data
-   */
-  /**
-   * Minimal fallback method - ONLY used when DataForSEO completely fails
-   * We now try to avoid using fallback data and instead make multiple API attempts
-   */
-  private generateFallbackKeywords(input: string): KeywordData[] {
-    console.error(`Critical: DataForSEO failed to return any keywords for "${input}"`);
-    console.error(`This should not happen if API credentials are valid. Please check your DataForSEO connection and credentials.`);
-    
-    // We will attempt to use simpler, more generic versions of the input term
-    // to query DataForSEO again instead of generating fake data
-    const simplifiedTerms = this.extractGenericTerms(input);
-    
-    // Sanitize the input keyword and create a minimal fallback
-    const sanitizedInput = this.sanitizeKeywordForSEO(input);
-    
-    // Return sanitized keyword with zero metrics to indicate API failure
-    const result: KeywordData[] = [{
-      keyword: sanitizedInput,
-      searchVolume: 0,
-      cpc: 0,
-      competition: 0,
-      competitionLevel: "Low",
-      intent: "Navigational",
-      trend: Array(12).fill(0),
-      difficulty: 0,
-      selected: false
-    }];
-    
-    // Add sanitized generic keywords for better search alternatives
-    if (simplifiedTerms.length > 0) {
-      simplifiedTerms.slice(0, 2).forEach(term => {
-        const sanitizedTerm = this.sanitizeKeywordForSEO(term);
-        if (this.isValidSEOKeyword(sanitizedTerm)) {
-          result.push({
-            keyword: sanitizedTerm,
-            searchVolume: 0,
-            cpc: 0,
-            competition: 0,
-            competitionLevel: "Low",
-            intent: "Informational",
-            trend: Array(12).fill(0),
-            difficulty: 0,
-            selected: false
-          });
-        }
-      });
-    }
-    
-    return result;
-  }
+
 
   /**
    * Test the connection to DataForSEO API
