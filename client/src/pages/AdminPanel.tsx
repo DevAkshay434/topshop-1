@@ -300,6 +300,24 @@ export default function AdminPanel() {
   // Project management state
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [showLoadProjectDialog, setShowLoadProjectDialog] = useState(false);
+  const [currentProject, setCurrentProject] = useState<string | null>(null);
+  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+  
+  // Additional state variables that were misplaced
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
+    const savedCategories = localStorage.getItem('topshop-custom-categories');
+    return savedCategories ? JSON.parse(savedCategories) : [];
+  });
+  const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
+    const savedTemplates = localStorage.getItem('topshop-templates');
+    return savedTemplates ? JSON.parse(savedTemplates) : [];
+  });
+  const [templateName, setTemplateName] = useState<string>('');
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
+  const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
+  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
 
   // Buyer persona suggestions for the flexible text input
   const buyerPersonaSuggestions = [
@@ -713,8 +731,6 @@ export default function AdminPanel() {
   
   // Project Creation Dialog state
   const [projectDialogOpen, setProjectDialogOpen] = useState(false); // Changed to false for manual triggering
-  const [currentProject, setCurrentProject] = useState<string>('');
-  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
 
   // Handle project selection from dialog and load project data
   const handleProjectSelected = async (projectId: number, projectName: string) => {
@@ -769,22 +785,6 @@ export default function AdminPanel() {
       });
     }
   };
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
-    // Load custom categories from localStorage
-    const savedCategories = localStorage.getItem('topshop-custom-categories');
-    return savedCategories ? JSON.parse(savedCategories) : [];
-  });
-  const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
-    // Load templates from localStorage on initial render
-    const savedTemplates = localStorage.getItem('topshop-templates');
-    return savedTemplates ? JSON.parse(savedTemplates) : [];
-  });
-  const [templateName, setTemplateName] = useState<string>('');
-  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
-  const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
-  const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
-  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const { toast } = useToast();
 
   // Default form values
