@@ -8439,6 +8439,15 @@ export default function AdminPanel() {
         open={showCreateProjectDialog}
         onOpenChange={setShowCreateProjectDialog}
         onProjectSelected={handleProjectSelected}
+        formData={form.getValues()}
+        selectedProducts={selectedProducts}
+        selectedCollections={selectedCollections}
+        selectedKeywords={selectedKeywords}
+        selectedMediaContent={selectedMediaContent}
+        primaryImages={primaryImages}
+        secondaryImages={secondaryImages}
+        workflowStep={workflowStep}
+        selectedAuthorId={selectedAuthorId}
       />
 
       <LoadProjectDialog

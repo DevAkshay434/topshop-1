@@ -49,10 +49,32 @@ interface ProjectCreationDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onProjectSelected?: (projectId: number, projectName: string) => void;
+  formData?: any; // Pass current form data from AdminPanel
+  selectedProducts?: any[];
+  selectedCollections?: any[];
+  selectedKeywords?: any[];
+  selectedMediaContent?: any;
+  primaryImages?: any[];
+  secondaryImages?: any[];
+  workflowStep?: string;
+  selectedAuthorId?: string | null;
 }
 
 // This component adds a standalone project creation dialog that is triggered by user action
-export default function ProjectCreationDialog({ open = false, onOpenChange, onProjectSelected }: ProjectCreationDialogProps) {
+export default function ProjectCreationDialog({ 
+  open = false, 
+  onOpenChange, 
+  onProjectSelected,
+  formData,
+  selectedProducts = [],
+  selectedCollections = [],
+  selectedKeywords = [],
+  selectedMediaContent,
+  primaryImages = [],
+  secondaryImages = [],
+  workflowStep = 'form',
+  selectedAuthorId
+}: ProjectCreationDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open !== undefined ? open : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
@@ -86,11 +108,52 @@ export default function ProjectCreationDialog({ open = false, onOpenChange, onPr
     }
   });
 
-  // Default content style settings
-  const contentStyleSettings = {
-    tone: "friendly",
-    perspective: "first_person_plural",
-    structure: "informational"
+  // Build comprehensive project data from all admin panel selections
+  const buildComprehensiveProjectData = () => {
+    const baseFormData = formData || {
+      tone: "friendly",
+      perspective: "first_person_plural",
+      structure: "informational"
+    };
+
+    return {
+      ...baseFormData,
+      // State variables that aren't part of the form
+      selectedProducts,
+      selectedCollections,
+      selectedKeywords,
+      selectedMediaContent,
+      primaryImages,
+      secondaryImages,
+      selectedAuthorId,
+      workflowStep,
+      // Ensure we capture all form fields explicitly
+      title: baseFormData.title || '',
+      articleType: baseFormData.articleType || 'blog',
+      blogId: baseFormData.blogId || '',
+      writingPerspective: baseFormData.writingPerspective || 'first_person_plural',
+      enableTables: baseFormData.enableTables || true,
+      enableLists: baseFormData.enableLists || true,
+      enableH3s: baseFormData.enableH3s || true,
+      introType: baseFormData.introType || 'search_intent',
+      faqType: baseFormData.faqType || 'short',
+      enableCitations: baseFormData.enableCitations || true,
+      toneOfVoice: baseFormData.toneOfVoice || 'friendly',
+      postStatus: baseFormData.postStatus || 'draft',
+      generateImages: baseFormData.generateImages || true,
+      keywords: baseFormData.keywords || [],
+      productIds: baseFormData.productIds || [],
+      collectionIds: baseFormData.collectionIds || [],
+      scheduledPublishTime: baseFormData.scheduledPublishTime || '09:30',
+      publicationType: baseFormData.publicationType || 'draft',
+      scheduleTime: baseFormData.scheduleTime || '09:30',
+      articleLength: baseFormData.articleLength || 'long',
+      headingsCount: baseFormData.headingsCount || '3',
+      categories: baseFormData.categories || [],
+      customCategory: baseFormData.customCategory || '',
+      buyerPersonas: baseFormData.buyerPersonas || '',
+      lastUpdated: new Date().toISOString()
+    };
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,10 +188,13 @@ export default function ProjectCreationDialog({ open = false, onOpenChange, onPr
       return;
     }
     
-    // Create new project via API
+    // Create new project via API with comprehensive data
+    const comprehensiveProjectData = buildComprehensiveProjectData();
+    console.log('Creating project with comprehensive data:', comprehensiveProjectData);
+    
     createProjectMutation.mutate({
       name: projectName,
-      formData: contentStyleSettings
+      formData: comprehensiveProjectData
     });
     
     setTimeout(() => {
