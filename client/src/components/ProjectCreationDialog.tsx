@@ -56,7 +56,6 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [showSavedProjects, setShowSavedProjects] = useState(false);
   const [selectedSavedProject, setSelectedSavedProject] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -69,8 +68,6 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
   });
 
   const savedProjects = savedProjectsData?.success ? savedProjectsData.projects : [];
-  
-
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -180,18 +177,75 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             <FolderPlus className="h-5 w-5 text-primary" />
-            Create New Project
+            Project Manager
           </DialogTitle>
           <DialogDescription>
-            Configure your content generation project settings.
+            Create a new project or load an existing one to continue your content generation work.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <div className="w-full space-y-4">
+        <div className="space-y-6 py-4">
+          {/* Load Saved Project Section */}
+          {savedProjects.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <FileDown className="h-4 w-4 text-primary" />
+                <Label className="text-base font-medium">Load Saved Project</Label>
+              </div>
+              <Select value={selectedSavedProject} onValueChange={setSelectedSavedProject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose from your saved projects..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Your Projects</SelectLabel>
+                    {savedProjects.map((project: any) => (
+                      <SelectItem key={project.id} value={project.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <SaveAll className="h-4 w-4" />
+                          <span>{project.name}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {new Date(project.updatedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              
+              {selectedSavedProject && (
+                <Button
+                  type="button"
+                  onClick={() => handleSavedProjectSelect(selectedSavedProject)}
+                  className="w-full flex items-center gap-2"
+                >
+                  <FileDown className="h-4 w-4" />
+                  Load Selected Project
+                </Button>
+              )}
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Create New Project Section */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-center gap-2">
+              <FolderPlus className="h-4 w-4 text-primary" />
+              <Label className="text-base font-medium">Create New Project</Label>
+            </div>
+            
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
-                <Label htmlFor="projectName" className="text-base font-medium">Project Name</Label>
+                <Label htmlFor="projectName" className="text-sm font-medium">Project Name</Label>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -249,32 +303,6 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
                 </div>
               )}
               
-              {/* Saved Projects - Only show if there are saved projects */}
-              {!showTemplates && savedProjects.length > 0 && (
-                <div className="space-y-3 pt-2 border-t">
-                  <Label htmlFor="savedProjectSelect" className="flex items-center gap-1.5">
-                    <SaveAll className="h-4 w-4 text-primary" />
-                    Your Projects
-                  </Label>
-                  
-                  <Select onValueChange={handleSavedProjectSelect}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a saved project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Saved Projects</SelectLabel>
-                        {savedProjects.map(project => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              
               <div className="pt-4 flex justify-end">
                 <Button 
                   type="submit" 
@@ -285,7 +313,7 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
                 </Button>
               </div>
             </div>
-          </div>
+          </form>
           
           <div className="flex items-center justify-between pt-2 border-t">
             <Button 
@@ -308,7 +336,7 @@ export default function ProjectCreationDialog({ onProjectSelected }: ProjectCrea
               Cancel
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
