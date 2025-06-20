@@ -8239,6 +8239,19 @@ export default function AdminPanel() {
           ? "Select emotionally compelling images for the top of your content" 
           : "Select product images to appear throughout your article body"}
       />
+
+      {/* Project Management Dialogs */}
+      <ProjectCreationDialog
+        open={showCreateProjectDialog}
+        onOpenChange={setShowCreateProjectDialog}
+        onProjectSelected={handleProjectSelected}
+      />
+
+      <LoadProjectDialog
+        open={showLoadProjectDialog}
+        onOpenChange={setShowLoadProjectDialog}
+        onProjectSelected={handleProjectSelected}
+      />
     </div>
   );
 }
