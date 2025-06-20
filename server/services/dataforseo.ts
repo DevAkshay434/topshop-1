@@ -71,10 +71,10 @@ export class DataForSEOService {
       const keyword = this.extractKeywordFromUrl(productUrl);
       console.log(`DataForSEO search for keyword: "${keyword}"`);
 
-      // Check if we should use API or fallback directly
+      // Check if we have valid credentials
       if (!this.hasValidCredentials()) {
-        console.log("No valid DataForSEO credentials, using fallback keyword generation");
-        return this.generateFallbackKeywords(keyword);
+        console.error("No valid DataForSEO credentials provided");
+        throw new Error("DataForSEO API credentials not configured. Please provide valid credentials.");
       }
 
       try {
@@ -239,20 +239,17 @@ export class DataForSEOService {
         // Full response logging for debugging
         console.log("DataForSEO API full response:", JSON.stringify(response.data));
         
-        // Return fallback data if the API response doesn't have the expected format
+        // Check if the API response has the expected format
         if (!response.data?.tasks || !Array.isArray(response.data.tasks) || response.data.tasks.length === 0) {
-          console.log("No tasks in response, generating fallback keywords for:", keyword);
-          
-          // Generate related keywords based on the input
-          return this.generateFallbackKeywords(keyword);
+          console.error("DataForSEO API returned no tasks in response");
+          throw new Error("DataForSEO API returned invalid response format. Please check your API configuration.");
         }
 
         // Check if the response is successful
         if (response.data.tasks[0]?.status_code !== 20000) {
-          console.log(`API error: ${response.data.tasks[0]?.status_message || 'Unknown error'}`);
-          
-          // If API error, use fallback data
-          return this.generateFallbackKeywords(keyword);
+          const errorMessage = response.data.tasks[0]?.status_message || 'Unknown error';
+          console.error(`DataForSEO API error: ${errorMessage}`);
+          throw new Error(`DataForSEO API error: ${errorMessage}`);
         }
 
         // Extract keyword data from response
@@ -309,8 +306,8 @@ export class DataForSEOService {
         }
         
         if (results.length === 0) {
-          console.log("No results in response, generating fallback keywords");
-          return this.generateFallbackKeywords(keyword);
+          console.error("DataForSEO API returned no keyword results");
+          throw new Error("No keyword data available from DataForSEO API. Please try different search terms or check your API limits.");
         }
         
         // For search_volume endpoint, results is a direct array of keyword data
@@ -668,10 +665,10 @@ export class DataForSEOService {
           }
         }
         
-        // If no keywords were found, return fallback data
+        // If no keywords were found, throw error
         if (keywordData.length === 0) {
-          console.log("No keywords found in results, generating fallback keywords");
-          return this.generateFallbackKeywords(keyword);
+          console.error("No keywords found in DataForSEO API results");
+          throw new Error("DataForSEO API returned no valid keyword data. Please try different search terms or check your API limits.");
         }
 
         // Sort keywords by relevance and search volume
@@ -787,8 +784,8 @@ export class DataForSEOService {
           console.error('DataForSEO API error during request setup:', apiError.message);
         }
         
-        console.log('Using fallback keyword generation due to API error');
-        return this.generateFallbackKeywords(keyword);
+        console.error('DataForSEO API request failed');
+        throw new Error(`DataForSEO API error: ${apiError.message}`);
       }
     } catch (error: any) {
       console.error('Error in keyword processing:', error);
