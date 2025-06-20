@@ -1002,21 +1002,59 @@ export default function AdminPanel() {
     enabled: !!currentProjectId
   });
 
-  // Auto-save effect - triggers when form data changes
+  // Auto-save effect - triggers when form data or selections change
   useEffect(() => {
-    if (!currentProject) return;
+    if (!currentProject || !currentProjectId) return;
 
-    const subscription = form.watch((data) => {
-      // Debounce auto-save to avoid too frequent saves
-      const timeoutId = setTimeout(() => {
-        autoSaveProject(data);
-      }, 2000); // Save after 2 seconds of inactivity
+    const timeoutId = setTimeout(() => {
+      console.log('Auto-saving project...');
+      setAutoSaveStatus('saving');
+      
+      const formData = form.getValues();
+      const projectData = {
+        ...formData,
+        selectedProducts,
+        selectedCollections,
+        selectedKeywords,
+        selectedMediaContent,
+        primaryImages,
+        secondaryImages,
+        selectedAuthorId,
+        workflowStep,
+        lastUpdated: new Date().toISOString()
+      };
 
-      return () => clearTimeout(timeoutId);
-    });
+      updateProjectMutation.mutate({
+        id: currentProjectId,
+        formData: projectData
+      }, {
+        onSuccess: () => {
+          setAutoSaveStatus('saved');
+          console.log('Auto-save successful');
+          setTimeout(() => setAutoSaveStatus('idle'), 2000);
+        },
+        onError: (error) => {
+          setAutoSaveStatus('error');
+          console.error('Auto-save failed:', error);
+          setTimeout(() => setAutoSaveStatus('idle'), 5000);
+        }
+      });
+    }, 3000); // Save after 3 seconds of inactivity
 
-    return () => subscription.unsubscribe();
-  }, [currentProject, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, form.watch('buyerPersonas')]);
+    return () => clearTimeout(timeoutId);
+  }, [
+    currentProject, 
+    currentProjectId, 
+    selectedProducts, 
+    selectedCollections, 
+    selectedKeywords, 
+    selectedMediaContent,
+    primaryImages,
+    secondaryImages,
+    selectedAuthorId,
+    workflowStep,
+    form.watch() // Watch all form changes
+  ]);
 
   // Project data loading and form hydration effect
   useEffect(() => {
