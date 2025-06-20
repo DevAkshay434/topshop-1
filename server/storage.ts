@@ -7,6 +7,7 @@ import {
   syncActivities,
   contentGenRequests,
   projects,
+  authors,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -22,7 +23,8 @@ import {
   type ContentGenRequest,
   type InsertContentGenRequest,
   type Project,
-  type InsertProject
+  type InsertProject,
+  type Author
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
@@ -592,6 +594,11 @@ export class MemStorage implements IStorage {
     });
   }
 
+  async getProjectsByStore(storeId: number): Promise<Project[]> {
+    const allProjects = Array.from(this.projects.values());
+    return allProjects.filter(project => project.storeId === storeId);
+  }
+
   async deleteProject(id: number): Promise<boolean> {
     return this.projects.delete(id);
   }
@@ -1096,6 +1103,13 @@ export class DatabaseStorage implements IStorage {
     return query.orderBy(desc(projects.updatedAt));
   }
 
+  async getProjectsByStore(storeId: number): Promise<Project[]> {
+    return db.select()
+      .from(projects)
+      .where(eq(projects.storeId, storeId))
+      .orderBy(desc(projects.updatedAt));
+  }
+
   async deleteProject(id: number): Promise<boolean> {
     const result = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
     return result.length > 0;
@@ -1375,6 +1389,13 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getUserProjects(userId, storeId),
       () => memStorage.getUserProjects(userId, storeId)
+    );
+  }
+
+  async getProjectsByStore(storeId: number): Promise<Project[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getProjectsByStore(storeId),
+      () => memStorage.getProjectsByStore(storeId)
     );
   }
 
