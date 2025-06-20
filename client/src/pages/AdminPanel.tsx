@@ -776,6 +776,7 @@ export default function AdminPanel() {
         }
         
         console.log('Loading project data:', formData);
+        console.log('Default values:', defaultValues);
         
         // Ensure formData exists and has valid structure
         if (!formData || typeof formData !== 'object') {
@@ -790,24 +791,36 @@ export default function AdminPanel() {
         };
         
         console.log('Merged form data:', mergedFormData);
+        console.log('About to reset form with merged data');
         form.reset(mergedFormData);
+        console.log('Form reset completed');
         
         // Restore all state variables from saved project data with safety checks
+        console.log('Restoring state variables from project data...');
+        console.log('formData.selectedProducts:', formData.selectedProducts);
         if (formData.selectedProducts && Array.isArray(formData.selectedProducts)) {
+          console.log(`Setting selectedProducts to ${formData.selectedProducts.length} items`);
           setSelectedProducts(formData.selectedProducts);
         } else {
+          console.log('No selectedProducts found, setting to empty array');
           setSelectedProducts([]);
         }
         
+        console.log('formData.selectedCollections:', formData.selectedCollections);
         if (formData.selectedCollections && Array.isArray(formData.selectedCollections)) {
+          console.log(`Setting selectedCollections to ${formData.selectedCollections.length} items`);
           setSelectedCollections(formData.selectedCollections);
         } else {
+          console.log('No selectedCollections found, setting to empty array');
           setSelectedCollections([]);
         }
         
+        console.log('formData.selectedKeywords:', formData.selectedKeywords);
         if (formData.selectedKeywords && Array.isArray(formData.selectedKeywords)) {
+          console.log(`Setting selectedKeywords to ${formData.selectedKeywords.length} items`);
           setSelectedKeywords(formData.selectedKeywords);
         } else {
+          console.log('No selectedKeywords found, setting to empty array');
           setSelectedKeywords([]);
         }
         
