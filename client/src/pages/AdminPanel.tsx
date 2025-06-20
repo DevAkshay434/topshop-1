@@ -296,6 +296,10 @@ export default function AdminPanel() {
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
+  
+  // Project management state
+  const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
+  const [showLoadProjectDialog, setShowLoadProjectDialog] = useState(false);
 
   // Buyer persona suggestions for the flexible text input
   const buyerPersonaSuggestions = [
@@ -708,7 +712,7 @@ export default function AdminPanel() {
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
   
   // Project Creation Dialog state
-  const [projectDialogOpen, setProjectDialogOpen] = useState(true); // Set to true to show by default
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false); // Changed to false for manual triggering
   const [currentProject, setCurrentProject] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
 
@@ -717,6 +721,8 @@ export default function AdminPanel() {
     setCurrentProject(projectName);
     setCurrentProjectId(projectId);
     setProjectDialogOpen(false);
+    setShowCreateProjectDialog(false);
+    setShowLoadProjectDialog(false);
     
     console.log('Project selected:', { projectId, projectName });
     
@@ -881,7 +887,7 @@ export default function AdminPanel() {
         id: currentProjectId,
         formData: projectData
       });
-    } else {
+    } else if (currentProject) {
       createProjectMutation.mutate({
         name: currentProject,
         formData: projectData
@@ -2007,6 +2013,28 @@ export default function AdminPanel() {
               <AutoSaveIndicator />
             </div>
           )}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCreateProjectDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Project
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowLoadProjectDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <FolderOpen className="h-4 w-4" />
+              Load Project
+            </Button>
+          </div>
         </div>
       </div>
 
