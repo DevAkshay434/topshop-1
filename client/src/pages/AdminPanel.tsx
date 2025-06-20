@@ -766,62 +766,98 @@ export default function AdminPanel() {
             formData = JSON.parse(formData);
           } catch (error) {
             console.error('Failed to parse saved form data:', error);
+            toast({
+              title: "Error parsing project data",
+              description: "The saved project data is corrupted. Please create a new project.",
+              variant: "destructive"
+            });
             return;
           }
         }
         
-        console.log('Loading comprehensive project data:', formData);
+        console.log('Loading project data:', formData);
         
-        // Reset form with loaded data
-        form.reset({
+        // Ensure formData exists and has valid structure
+        if (!formData || typeof formData !== 'object') {
+          console.warn('Project has minimal data, initializing with defaults');
+          formData = {};
+        }
+        
+        // Reset form with loaded data, merging with defaults
+        const mergedFormData = {
           ...defaultValues,
           ...formData
-        });
+        };
         
-        // Restore all state variables from saved project data
-        if (formData.selectedProducts) {
+        console.log('Merged form data:', mergedFormData);
+        form.reset(mergedFormData);
+        
+        // Restore all state variables from saved project data with safety checks
+        if (formData.selectedProducts && Array.isArray(formData.selectedProducts)) {
           setSelectedProducts(formData.selectedProducts);
+        } else {
+          setSelectedProducts([]);
         }
         
-        if (formData.selectedCollections) {
+        if (formData.selectedCollections && Array.isArray(formData.selectedCollections)) {
           setSelectedCollections(formData.selectedCollections);
+        } else {
+          setSelectedCollections([]);
         }
         
-        if (formData.selectedKeywords) {
+        if (formData.selectedKeywords && Array.isArray(formData.selectedKeywords)) {
           setSelectedKeywords(formData.selectedKeywords);
+        } else {
+          setSelectedKeywords([]);
         }
         
-        if (formData.selectedMediaContent) {
+        if (formData.selectedMediaContent && typeof formData.selectedMediaContent === 'object') {
           setSelectedMediaContent(formData.selectedMediaContent);
+        } else {
+          setSelectedMediaContent({
+            primaryImage: null,
+            secondaryImages: [],
+            youtubeEmbed: null
+          });
         }
         
-        if (formData.primaryImages) {
+        if (formData.primaryImages && Array.isArray(formData.primaryImages)) {
           setPrimaryImages(formData.primaryImages);
+        } else {
+          setPrimaryImages([]);
         }
         
-        if (formData.secondaryImages) {
+        if (formData.secondaryImages && Array.isArray(formData.secondaryImages)) {
           setSecondaryImages(formData.secondaryImages);
+        } else {
+          setSecondaryImages([]);
         }
         
-        if (formData.workflowStep) {
+        if (formData.workflowStep && typeof formData.workflowStep === 'string') {
           setWorkflowStep(formData.workflowStep);
+        } else {
+          setWorkflowStep('form');
         }
         
         // Set author selection if available
         if (formData.selectedAuthorId) {
           setSelectedAuthorId(formData.selectedAuthorId);
+        } else {
+          setSelectedAuthorId(null);
         }
         
         toast({
           title: "Project loaded successfully",
-          description: `"${projectName}" with all settings restored including products, collections, keywords, media, and workflow progress`
+          description: `"${projectName}" loaded. Configure any missing settings as needed.`
         });
+      } else {
+        throw new Error('Invalid project data structure');
       }
     } catch (error) {
       console.error('Error loading project data:', error);
       toast({
-        title: "Error loading project",
-        description: "Failed to load project data. Please try again.",
+        title: "Failed to load project",
+        description: "Unable to load project data. Please try again or contact support.",
         variant: "destructive"
       });
     }
