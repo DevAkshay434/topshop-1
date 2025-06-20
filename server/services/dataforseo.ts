@@ -96,36 +96,31 @@ export class DataForSEOService {
         // Extract some common variations to include in the API request to get more data
         const baseKeyword = cleanedKeyword;
         
-        // Generate keyword variations for the API request
-        // This helps us get actual data for multiple related terms instead of just the main keyword
-        const keywordVariations = [
+        // Create a focused set of diverse keywords for DataForSEO API
+        const mainKeywords = [baseKeyword];
+        
+        // Extract generic terms (limit to most relevant)
+        const genericTerms = this.extractGenericTerms(baseKeyword).slice(0, 2);
+        
+        // Create focused keyword set with high-value variations
+        const focusedKeywords = [
+          // Main keyword
           baseKeyword,
+          // Generic category terms
+          ...genericTerms,
+          // High-value modifiers
           `best ${baseKeyword}`,
-          `${baseKeyword} review`,
+          `${baseKeyword} reviews`,
+          // Generic term variations
+          ...genericTerms.map(term => `best ${term}`),
+          ...genericTerms.map(term => `${term} reviews`),
+          // Purchase-intent keywords
+          `buy ${baseKeyword}`,
+          `${baseKeyword} price`,
+          // Information-seeking keywords  
           `${baseKeyword} guide`,
-          `buy ${baseKeyword}`
-        ];
-        
-        // Extract generic terms to add to the request
-        const genericTerms = this.extractGenericTerms(baseKeyword);
-        
-        // Generate many more keyword variations based on common patterns
-        // These will all be real API requests, not synthetic data
-        const productVariations: string[] = [];
-        
-        // Create prefix-based variations (e.g., "best water softener")
-        const commonPrefixes = ['best', 'top', 'affordable', 'cheap', 'quality', 'premium', 
-                              'professional', 'commercial', 'residential', 'high-end', 
-                              'budget', 'luxury', 'efficient', 'modern', 'eco-friendly',
-                              'latest', 'newest', 'popular', 'recommended', 'reliable', 
-                              'durable', 'leading', 'trusted', 'advanced', 'high quality'];
-                              
-        // Create question-based variations (e.g., "how to install water softener")
-        const questionPrefixes = ['how to', 'what is', 'why use', 'when to', 'where to buy',
-                                'which', 'how much', 'how long', 'how does', 'who sells', 
-                                'is a', 'can a', 'best way to', 'benefits of', 'reviews for',
-                                'do i need', 'are', 'how to choose', 'installation of', 'how to fix',
-                                'how to maintain', 'is it worth', 'what size', 'when to replace', 'troubleshooting'];
+          `how to choose ${genericTerms[0] || baseKeyword}`
+        ].filter(Boolean);
                                 
         // Create suffix-based variations (e.g., "water softener reviews")
         const commonSuffixes = ['review', 'reviews', 'comparison', 'vs', 'guide', 'tips', 
@@ -197,10 +192,10 @@ export class DataForSEOService {
           keywordBatches.push(allUniqueKeywords);
         }
         
-        // For the first API call, use just the first batch
-        const uniqueKeywords = keywordBatches[0];
+        // Use the focused keywords directly - no batching needed for smaller sets
+        const uniqueKeywords = Array.from(new Set(focusedKeywords));
         
-        console.log(`Sending ${uniqueKeywords.length} keyword variations to DataForSEO API:`, uniqueKeywords);
+        console.log(`Sending ${uniqueKeywords.length} focused keywords to DataForSEO API:`, uniqueKeywords);
         
         const requestData = [{
           keywords: uniqueKeywords,
@@ -322,46 +317,47 @@ export class DataForSEOService {
         for (const result of results) {
           // Extract keyword data based on the search_volume endpoint structure
           const keywordText = result.keyword || '';
-          const searchVolume = result.search_volume || 0;
-          const competition = result.competition || 0;
-          const competitionLevel = this.getCompetitionLevel(competition);
-          const cpc = result.cpc || 0;
+          const searchVolume = result.search_volume;
+          const competition = result.competition;
+          const cpc = result.cpc;
           
-          // Check if we have valid search data - sometimes very specific product names return null data
-          const hasSearchData = result.search_volume !== null && result.monthly_searches !== null;
+          // Only process keywords that have actual search data from DataForSEO
+          // Skip keywords with null values as they don't provide useful SEO insights
+          if (searchVolume === null || searchVolume === undefined || searchVolume === 0) {
+            continue;
+          }
+          
+          const competitionLevel = this.getCompetitionLevel(competition || 0);
           
           // Process monthly_searches data which is directly in the result object
           const trend = result.monthly_searches
             ? result.monthly_searches.map((monthData: any) => monthData.search_volume)
-            : Array(12).fill(Math.round(searchVolume * 0.8 + Math.random() * searchVolume * 0.4)); // Approximate if not available
+            : Array(12).fill(searchVolume); // Use actual search volume if monthly data unavailable
             
           // Calculate keyword difficulty
           const difficulty = this.calculateKeywordDifficulty({
             search_volume: searchVolume,
-            competition: competition,
-            cpc: cpc
+            competition: competition || 0,
+            cpc: cpc || 0
           });
           
           // Sanitize and format the keyword properly
           const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
           
-          // Only add keywords that pass quality checks
-          if (this.isValidSEOKeyword(sanitizedKeyword)) {
+          // Only add keywords that pass quality checks and have meaningful search volume
+          if (this.isValidSEOKeyword(sanitizedKeyword) && searchVolume > 0) {
             keywordData.push({
               keyword: sanitizedKeyword,
               searchVolume,
-              cpc,
-              competition,
+              cpc: cpc || 0,
+              competition: competition || 0,
               competitionLevel,
               intent: this.determineIntent({ keyword: sanitizedKeyword }),
               trend,
               difficulty,
               selected: false // Default to not selected
             });
-          }
-          
-          // Flag whether we got valid data
-          if (hasSearchData) {
+            
             hasValidData = true;
           }
         }
