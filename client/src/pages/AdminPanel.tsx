@@ -4050,37 +4050,40 @@ export default function AdminPanel() {
                             type="button" 
                             variant="outline"
                             className="flex-1 transition-all duration-200"
-                            disabled={!currentProject || updateProjectMutation.isPending}
+                            disabled={updateProjectMutation.isPending || createProjectMutation.isPending}
                             onClick={() => {
-                              if (currentProject) {
-                                const formData = form.getValues();
-                                const projectData = {
-                                  ...formData,
-                                  selectedProducts,
-                                  selectedCollections,
-                                  selectedKeywords,
-                                  selectedMediaContent,
-                                  primaryImages,
-                                  secondaryImages,
-                                  buyerPersonas: formData.buyerPersonas || '',
-                                  workflowStep,
-                                  lastUpdated: new Date().toISOString()
-                                };
+                              const formData = form.getValues();
+                              const projectData = {
+                                ...formData,
+                                selectedProducts,
+                                selectedCollections,
+                                selectedKeywords,
+                                selectedMediaContent,
+                                primaryImages,
+                                secondaryImages,
+                                buyerPersonas: formData.buyerPersonas || '',
+                                workflowStep,
+                                lastUpdated: new Date().toISOString()
+                              };
 
-                                if (currentProjectId) {
-                                  updateProjectMutation.mutate({
-                                    id: currentProjectId,
-                                    formData: projectData
-                                  });
-                                } else {
-                                  createProjectMutation.mutate({
-                                    name: currentProject,
-                                    formData: projectData
-                                  });
-                                }
+                              if (currentProject && currentProjectId) {
+                                // Update existing project
+                                updateProjectMutation.mutate({
+                                  id: currentProjectId,
+                                  formData: projectData
+                                });
+                              } else {
+                                // Create new project with auto-generated name
+                                const timestamp = new Date().toLocaleString();
+                                const projectName = `Project ${timestamp}`;
+                                setCurrentProject(projectName);
+                                createProjectMutation.mutate({
+                                  name: projectName,
+                                  formData: projectData
+                                });
                               }
                             }}
-                            title={!currentProject ? "Create a project first" : "Save current project settings"}
+                            title={currentProject ? "Save current project settings" : "Create and save new project"}
                           >
                             {updateProjectMutation.isPending ? (
                               <>
