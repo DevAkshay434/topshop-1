@@ -760,20 +760,9 @@ export default function AdminPanel() {
       if (projectData.success && projectData.project) {
         let formData = projectData.project.formData;
         
-        // Parse formData if it's a string (from database storage)
-        if (typeof formData === 'string') {
-          try {
-            formData = JSON.parse(formData);
-          } catch (error) {
-            console.error('Failed to parse saved form data:', error);
-            toast({
-              title: "Error parsing project data",
-              description: "The saved project data is corrupted. Please create a new project.",
-              variant: "destructive"
-            });
-            return;
-          }
-        }
+        // Backend now returns formData as a parsed object, no parsing needed
+        console.log('Raw formData from backend:', formData);
+        console.log('formData type:', typeof formData);
         
         console.log('Loading project data:', formData);
         console.log('Default values:', defaultValues);
