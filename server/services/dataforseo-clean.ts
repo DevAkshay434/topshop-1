@@ -60,8 +60,11 @@ export class CleanDataForSEOService {
       const allKeywords: KeywordData[] = [];
       const processedKeywords = new Set<string>();
 
-      // Use the single comprehensive endpoint that returns multiple related keywords
-      await this.fetchDirectFromAPI(searchTerm, auth, allKeywords, processedKeywords);
+      // Use multiple DataForSEO endpoints for comprehensive keyword data
+      await Promise.allSettled([
+        this.fetchDirectFromAPI(searchTerm, auth, allKeywords, processedKeywords),
+        this.fetchKeywordSuggestions(searchTerm, auth, allKeywords, processedKeywords)
+      ]);
       
       // Try additional variations to get more comprehensive results
       const variations = this.generateKeywordVariations(searchTerm);
