@@ -60,10 +60,8 @@ export class CleanDataForSEOService {
       const allKeywords: KeywordData[] = [];
       const processedKeywords = new Set<string>();
 
-      // Make multiple API calls sequentially to get comprehensive results
-      await this.fetchDirectFromAPI(searchTerm, auth, allKeywords, processedKeywords);
-      await this.fetchKeywordSuggestions(searchTerm, auth, allKeywords, processedKeywords);
-      await this.fetchRelatedKeywords(searchTerm, auth, allKeywords, processedKeywords);
+      // Use keywords_for_keyword endpoint which provides comprehensive related keywords
+      await this.fetchComprehensiveKeywords(searchTerm, auth, allKeywords, processedKeywords);
 
       console.log(`DataForSEO: Retrieved ${allKeywords.length} authentic keywords`);
       return allKeywords.sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0));
@@ -87,14 +85,14 @@ export class CleanDataForSEOService {
       console.log(`DataForSEO: Direct API call for "${searchTerm}"`);
       
       const requestData = [{
-        keywords: [searchTerm.trim()],
+        keyword: searchTerm.trim(),
         language_code: "en",
         location_code: 2840,
-        limit: 25 // Increased limit for more comprehensive results
+        limit: 50
       }];
 
       const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
+        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keyword/live`,
         requestData,
         { 
           auth,
@@ -162,7 +160,7 @@ export class CleanDataForSEOService {
       }];
 
       const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keywords/live`,
+        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keyword/live`,
         requestData,
         { 
           auth,
@@ -229,7 +227,7 @@ export class CleanDataForSEOService {
       }];
 
       const response = await axios.post(
-        `${this.apiUrl}/v3/keywords_data/google/keyword_ideas/live`,
+        `${this.apiUrl}/v3/keywords_data/google/keywords_for_keyword/live`,
         requestData,
         { 
           auth,
