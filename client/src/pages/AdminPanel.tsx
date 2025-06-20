@@ -755,7 +755,7 @@ export default function AdminPanel() {
     
     // Load project data from backend and hydrate form
     try {
-      const projectData = await apiRequest(`/api/projects/${projectId}`);
+      const projectData = await apiRequest('GET', `/api/projects/${projectId}`);
       
       if (projectData.success && projectData.project) {
         let formData = projectData.project.formData;
