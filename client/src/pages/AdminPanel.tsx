@@ -890,28 +890,7 @@ export default function AdminPanel() {
     }
   };
 
-  // Query for loading saved project data
-  const { data: savedProjectData } = useQuery({
-    queryKey: ['/api/projects', currentProjectId],
-    queryFn: () => currentProjectId ? apiRequest(`/api/projects/${currentProjectId}`) : null,
-    enabled: !!currentProjectId
-  });
 
-  // Auto-save effect - triggers when form data changes
-  useEffect(() => {
-    if (!currentProjectName) return;
-
-    const subscription = form.watch((data) => {
-      // Debounce auto-save to avoid too frequent saves
-      const timeoutId = setTimeout(() => {
-        autoSaveProject(data);
-      }, 2000); // Save after 2 seconds of inactivity
-
-      return () => clearTimeout(timeoutId);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [currentProjectName, currentProjectId, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent, form.watch('buyerPersonas')]);
 
   // Project data loading and form hydration effect
   useEffect(() => {
@@ -1064,24 +1043,7 @@ export default function AdminPanel() {
     connections: ServiceStatus;
   }
 
-  // Get current store context
-  const { currentStore } = useStore();
-  
-  // Get project context for saving and loading project data
-  const { 
-    currentProject, 
-    currentProjectName,
-    setCurrentProject,
-    setCurrentProjectName,
-    saveFormData,
-    loadFormData,
-    autoSaveFormData,
-    isAutoSaving,
-    createNewProject
-  } = useProject();
 
-  // Project selector state
-  const [showProjectSelector, setShowProjectSelector] = useState(false);
 
 
 
