@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { useStore } from "@/contexts/StoreContext";
 
 interface LoadProjectDialogProps {
   open?: boolean;
@@ -41,11 +42,12 @@ export default function LoadProjectDialog({
 }: LoadProjectDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const { currentStore } = useStore();
 
-  // Fetch saved projects from backend API
+  // Fetch saved projects from backend API with store context
   const { data: projectsData, isLoading, error } = useQuery({
-    queryKey: ['/api/projects'],
-    enabled: open
+    queryKey: ['/api/projects', currentStore?.id],
+    enabled: open && !!currentStore
   });
 
   const projects: Project[] = projectsData?.success ? projectsData.projects : [];
