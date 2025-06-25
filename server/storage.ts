@@ -551,57 +551,7 @@ export class MemStorage implements IStorage {
     return newUserStore;
   }
 
-  // Project operations
-  async createProject(project: InsertProject): Promise<Project> {
-    const id = this.currentProjectId++;
-    const newProject: Project = {
-      ...project,
-      id,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.projects.set(id, newProject);
-    return newProject;
-  }
 
-  async updateProject(id: number, project: Partial<Project>): Promise<Project | undefined> {
-    const existingProject = this.projects.get(id);
-    if (!existingProject) {
-      return undefined;
-    }
-    
-    const updatedProject = { 
-      ...existingProject, 
-      ...project, 
-      id,
-      updatedAt: new Date() 
-    };
-    this.projects.set(id, updatedProject);
-    return updatedProject;
-  }
-
-  async getProject(id: number): Promise<Project | undefined> {
-    return this.projects.get(id);
-  }
-
-  async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
-    const allProjects = Array.from(this.projects.values());
-    
-    return allProjects.filter(project => {
-      if (userId && project.userId !== userId) return false;
-      if (storeId && project.storeId !== storeId) return false;
-      return true;
-    });
-  }
-
-  async getProjectsByStore(storeId: number): Promise<Project[]> {
-    const allProjects = Array.from(this.projects.values());
-    return allProjects.filter(project => project.storeId === storeId);
-  }
-
-  async deleteProject(id: number): Promise<boolean> {
-    return this.projects.delete(id);
-  }
 
   async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
     const stores = Array.from(this.shopifyStores.values());
@@ -1363,48 +1313,7 @@ class FallbackStorage implements IStorage {
     );
   }
 
-  // Project operations
-  async createProject(project: InsertProject): Promise<Project> {
-    return this.tryOrFallback(
-      () => dbStorage.createProject(project),
-      () => memStorage.createProject(project)
-    );
-  }
 
-  async updateProject(id: number, project: Partial<Project>): Promise<Project | undefined> {
-    return this.tryOrFallback(
-      () => dbStorage.updateProject(id, project),
-      () => memStorage.updateProject(id, project)
-    );
-  }
-
-  async getProject(id: number): Promise<Project | undefined> {
-    return this.tryOrFallback(
-      () => dbStorage.getProject(id),
-      () => memStorage.getProject(id)
-    );
-  }
-
-  async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
-    return this.tryOrFallback(
-      () => dbStorage.getUserProjects(userId, storeId),
-      () => memStorage.getUserProjects(userId, storeId)
-    );
-  }
-
-  async getProjectsByStore(storeId: number): Promise<Project[]> {
-    return this.tryOrFallback(
-      () => dbStorage.getProjectsByStore(storeId),
-      () => memStorage.getProjectsByStore(storeId)
-    );
-  }
-
-  async deleteProject(id: number): Promise<boolean> {
-    return this.tryOrFallback(
-      () => dbStorage.deleteProject(id),
-      () => memStorage.deleteProject(id)
-    );
-  }
 
   async getAuthors(): Promise<Author[]> {
     return this.tryOrFallback(
