@@ -891,7 +891,7 @@ export default function AdminPanel() {
         
         // Update project metadata
         setCurrentProjectId(projectId);
-        setCurrentProjectName(projectName);
+        setCurrentProject(projectName);
         
         toast({
           title: "Project loaded successfully",
