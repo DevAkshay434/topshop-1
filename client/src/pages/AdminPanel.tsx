@@ -546,6 +546,8 @@ export default function AdminPanel() {
       if (projectData.enableH3s !== undefined) setEnableH3s(projectData.enableH3s);
       if (projectData.enableCitations !== undefined) setEnableCitations(projectData.enableCitations);
       if (projectData.generateImages !== undefined) setGenerateImages(projectData.generateImages);
+      if (projectData.selectedContentToneId) setSelectedContentToneId(projectData.selectedContentToneId);
+      if (projectData.selectedContentDisplayName) setSelectedContentDisplayName(projectData.selectedContentDisplayName);
       
       // Also update the form fields to ensure UI synchronization
       if (projectData.articleLength) form.setValue('articleLength', projectData.articleLength);
@@ -622,7 +624,9 @@ export default function AdminPanel() {
       enableLists,
       enableH3s,
       enableCitations,
-      generateImages
+      generateImages,
+      selectedContentToneId,
+      selectedContentDisplayName
     };
   };
 
