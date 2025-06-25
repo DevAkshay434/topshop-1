@@ -4,8 +4,7 @@ import ShopifyImageViewer from '../components/ShopifyImageViewer';
 import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
-import ProjectCreationDialog from '../components/ProjectCreationDialog';
-import LoadProjectDialog from '../components/LoadProjectDialog';
+
 import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
@@ -298,11 +297,7 @@ export default function AdminPanel() {
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
   
-  // Project management state
-  const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
-  const [showLoadProjectDialog, setShowLoadProjectDialog] = useState(false);
-  const [currentProject, setCurrentProject] = useState<string | null>(null);
-  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+
   
   // Additional state variables that were misplaced
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -744,25 +739,7 @@ export default function AdminPanel() {
   // Project Creation Dialog state
   const [projectDialogOpen, setProjectDialogOpen] = useState(false); // Changed to false for manual triggering
 
-  // Handle project selection from dialog and load project data
-  const handleProjectSelected = async (projectId: number | null, projectName: string) => {
-    setCurrentProject(projectName);
-    setCurrentProjectId(projectId);
-    setProjectDialogOpen(false);
-    setShowCreateProjectDialog(false);
-    setShowLoadProjectDialog(false);
-    
-    console.log('Project selected:', { projectId, projectName });
-    
-    // If projectId is null, this is a new unsaved project - don't load data
-    if (projectId === null) {
-      console.log('New unsaved project created:', projectName);
-      return;
-    }
-    
-    // Load project data from backend and hydrate form
-    try {
-      console.log('Loading project with ID:', projectId);
+
       const projectData = await apiRequest('GET', `/api/projects/${projectId}`);
       
       console.log('Project API response:', projectData);
@@ -981,17 +958,7 @@ export default function AdminPanel() {
     defaultValues
   });
 
-  // Project mutations for auto-save functionality
-  const createProjectMutation = useMutation({
-    mutationFn: async (data: { name: string; formData: any }) => {
-      console.log('Creating project with data:', data);
-      const result = await apiRequest('/api/projects', {
-        method: 'POST',
-        body: data
-      });
-      console.log('Create project API response:', result);
-      return result;
-    },
+
     onMutate: () => {
       console.log('Create project mutation started');
       setAutoSaveStatus('saving');
@@ -2200,37 +2167,7 @@ export default function AdminPanel() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          {currentProject && (
-            <div className="text-right">
-              <div className="text-sm font-medium text-gray-900">
-                Project: {currentProject}
-              </div>
-              <AutoSaveIndicator />
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCreateProjectDialog(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Project
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowLoadProjectDialog(true)}
-              className="flex items-center gap-2"
-            >
-              <FolderOpen className="h-4 w-4" />
-              Load Project
-            </Button>
-
-          </div>
+  
         </div>
       </div>
 
@@ -8379,21 +8316,7 @@ export default function AdminPanel() {
         </DialogContent>
       </Dialog>
       
-      {/* Add the standalone project creation dialog that shows automatically */}
-      <ProjectCreationDialog 
-        open={showCreateProjectDialog}
-        onOpenChange={setShowCreateProjectDialog}
-        onProjectSelected={handleProjectSelected}
-        formData={form.getValues()}
-        selectedProducts={selectedProducts}
-        selectedCollections={selectedCollections}
-        selectedKeywords={selectedKeywords}
-        selectedMediaContent={selectedMediaContent}
-        primaryImages={primaryImages}
-        secondaryImages={secondaryImages}
-        workflowStep={workflowStep}
-        selectedAuthorId={selectedAuthorId}
-      />
+
       {/* Choose Media Dialog - New improved component */}
       <ChooseMediaDialog
         open={showChooseMediaDialog && !showImageDialog} 
@@ -8572,27 +8495,7 @@ export default function AdminPanel() {
           : "Select product images to appear throughout your article body"}
       />
 
-      {/* Project Management Dialogs */}
-      <ProjectCreationDialog
-        open={showCreateProjectDialog}
-        onOpenChange={setShowCreateProjectDialog}
-        onProjectSelected={handleProjectSelected}
-        formData={form.getValues()}
-        selectedProducts={selectedProducts}
-        selectedCollections={selectedCollections}
-        selectedKeywords={selectedKeywords}
-        selectedMediaContent={selectedMediaContent}
-        primaryImages={primaryImages}
-        secondaryImages={secondaryImages}
-        workflowStep={workflowStep}
-        selectedAuthorId={selectedAuthorId}
-      />
 
-      <LoadProjectDialog
-        open={showLoadProjectDialog}
-        onOpenChange={setShowLoadProjectDialog}
-        onProjectSelected={handleProjectSelected}
-      />
     </div>
   );
 }
