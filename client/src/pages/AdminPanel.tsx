@@ -1016,59 +1016,19 @@ export default function AdminPanel() {
     }
   });
 
-  // Auto-save function
-  const autoSaveProject = (formData: any) => {
-    if (!currentProject) return;
+  // REMOVED AUTO-SAVE FUNCTION - replaced with manual save only
 
-    const projectData = {
-      ...formData,
-      selectedProducts,
-      selectedCollections,
-      selectedKeywords,
-      selectedMediaContent,
-      buyerPersonas: formData.buyerPersonas || '',
-      workflowStep,
-      lastUpdated: new Date().toISOString()
-    };
+  // REMOVED AUTO-SAVE TRIGGERS - Only manual save now
 
-    if (currentProjectId) {
-      updateProjectMutation.mutate({
-        id: currentProjectId,
-        formData: projectData
-      });
-    } else if (currentProject) {
-      createProjectMutation.mutate({
-        name: currentProject,
-        formData: projectData
-      });
-    }
-  };
-
-  // Trigger auto-save when workflow step changes or when key data changes
-  useEffect(() => {
-    if (currentProject) {
-      const formData = form.getValues();
-      autoSaveProject(formData);
-    }
-  }, [workflowStep, selectedProducts, selectedCollections, selectedKeywords, selectedMediaContent]);
-
-  // Auto-save when form values change (debounced)
-  useEffect(() => {
-    if (!currentProject) return;
-    
-    const timeoutId = setTimeout(() => {
-      const formData = form.getValues();
-      autoSaveProject(formData);
-    }, 2000); // 2 second delay to avoid excessive saves
-
-    return () => clearTimeout(timeoutId);
-  }, [form.watch()]);
-
-  // Query for loading saved project data
+  // Query for loading saved project data - DISABLED AUTO-REFETCH
   const { data: savedProjectData } = useQuery({
     queryKey: ['/api/projects', currentProjectId],
-    queryFn: () => currentProjectId ? apiRequest(`/api/projects/${currentProjectId}`) : null,
-    enabled: !!currentProjectId
+    queryFn: () => currentProjectId ? apiRequest('GET', `/api/projects/${currentProjectId}`) : null,
+    enabled: false, // DISABLED - only load manually
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false
   });
 
   // Manual save project function
@@ -1183,21 +1143,7 @@ export default function AdminPanel() {
     }
   };
 
-  // Project data loading and form hydration effect
-  useEffect(() => {
-    if (savedProjectData?.success && savedProjectData.project) {
-      const projectData = savedProjectData.project;
-      let formData = projectData.formData;
-      
-      // Parse formData if it's a string (from database storage)
-      if (typeof formData === 'string') {
-        try {
-          formData = JSON.parse(formData);
-        } catch (error) {
-          console.error('Failed to parse saved form data:', error);
-          return;
-        }
-      }
+  // REMOVED AUTO-LOADING EFFECT - project loading now only happens in handleProjectSelected
       
       console.log('Loading saved project data:', projectData);
       console.log('Parsed form data:', formData);
