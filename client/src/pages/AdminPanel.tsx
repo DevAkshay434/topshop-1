@@ -561,7 +561,6 @@ export default function AdminPanel() {
         setSelectedMediaContent(projectData.mediaContent);
       }
 
-      setCurrentProject(project);
       toast({
         title: "Project loaded",
         description: `"${project.name}" has been loaded successfully.`,
