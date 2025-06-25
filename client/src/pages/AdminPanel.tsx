@@ -762,22 +762,36 @@ export default function AdminPanel() {
     
     // Load project data from backend and hydrate form
     try {
+      console.log('Loading project with ID:', projectId);
       const projectData = await apiRequest('GET', `/api/projects/${projectId}`);
+      
+      console.log('Project API response:', projectData);
       
       if (projectData.success && projectData.project) {
         let formData = projectData.project.formData;
         
-        // Backend now returns formData as a parsed object, no parsing needed
-        console.log('Raw formData from backend:', formData);
+        // Parse formData if it's a string (from database storage)
+        if (typeof formData === 'string') {
+          try {
+            formData = JSON.parse(formData);
+            console.log('Parsed formData from JSON string:', formData);
+          } catch (parseError) {
+            console.error('Failed to parse formData JSON:', parseError);
+            console.log('Raw formData string:', formData);
+            throw new Error('Invalid project data format');
+          }
+        }
+        
+        console.log('Final formData for loading:', formData);
         console.log('formData type:', typeof formData);
         
-        console.log('Loading project data:', formData);
-        console.log('Default values:', defaultValues);
-        
         // Ensure formData exists and has valid structure
-        if (!formData || typeof formData !== 'object') {
-          console.warn('Project has minimal data, initializing with defaults');
+        if (!formData) {
+          console.warn('No formData found, initializing with defaults');
           formData = {};
+        } else if (typeof formData !== 'object') {
+          console.error('FormData is not an object:', formData);
+          throw new Error('Invalid project data structure - formData must be an object');
         }
         
         // Reset form with loaded data, merging with defaults
@@ -884,13 +898,20 @@ export default function AdminPanel() {
           description: `"${projectName}" loaded. Configure any missing settings as needed.`
         });
       } else {
-        throw new Error('Invalid project data structure');
+        console.error('Project API response missing success or project data:', projectData);
+        throw new Error('Invalid API response structure');
       }
     } catch (error) {
       console.error('Error loading project data:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        projectId,
+        projectName
+      });
       toast({
         title: "Failed to load project",
-        description: "Unable to load project data. Please try again or contact support.",
+        description: `Error: ${error?.message || 'Unknown error'}. Please try again or contact support.`,
         variant: "destructive"
       });
     }
