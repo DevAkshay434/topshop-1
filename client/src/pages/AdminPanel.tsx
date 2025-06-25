@@ -536,6 +536,14 @@ export default function AdminPanel() {
       if (projectData.categories) setCategories(projectData.categories);
       if (projectData.postStatus) setPostStatus(projectData.postStatus);
       if (projectData.publicationType) setPublicationType(projectData.publicationType);
+      if (projectData.scheduledPublishTime) setScheduledPublishTime(projectData.scheduledPublishTime);
+      if (projectData.blogId) setBlogId(projectData.blogId);
+      if (projectData.customCategory) setCustomCategory(projectData.customCategory);
+      if (projectData.enableTables !== undefined) setEnableTables(projectData.enableTables);
+      if (projectData.enableLists !== undefined) setEnableLists(projectData.enableLists);
+      if (projectData.enableH3s !== undefined) setEnableH3s(projectData.enableH3s);
+      if (projectData.enableCitations !== undefined) setEnableCitations(projectData.enableCitations);
+      if (projectData.generateImages !== undefined) setGenerateImages(projectData.generateImages);
       
       // Restore media content
       if (projectData.mediaContent) {
@@ -588,7 +596,15 @@ export default function AdminPanel() {
       faqType,
       categories,
       postStatus,
-      publicationType
+      publicationType,
+      scheduledPublishTime,
+      blogId,
+      customCategory,
+      enableTables,
+      enableLists,
+      enableH3s,
+      enableCitations,
+      generateImages
     };
   };
 
@@ -1949,18 +1965,7 @@ export default function AdminPanel() {
               <FolderOpen className="h-4 w-4" />
               Load Project
             </Button>
-            <Button
-              onClick={handleSaveProject}
-              disabled={!currentProject || saveProjectMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              {saveProjectMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4" />
-              )}
-              Save Project
-            </Button>
+
           </div>
         </div>
       </div>
@@ -3960,6 +3965,21 @@ export default function AdminPanel() {
                           </div>
                         )}
                         <div className="flex gap-3">
+                          {/* Save Project Button */}
+                          <Button
+                            variant="outline"
+                            onClick={handleSaveProject}
+                            disabled={!currentProject || saveProjectMutation.isPending}
+                            className="flex items-center gap-2"
+                          >
+                            {saveProjectMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4" />
+                            )}
+                            Save Project
+                          </Button>
+                          
                           {/* Generate Content Button */}
                           <Button 
                             type="button" 

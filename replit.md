@@ -110,6 +110,8 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- June 25, 2025. COMPREHENSIVE PROJECT SAVE/LOAD TESTING COMPLETED: Verified end-to-end functionality with complex projects containing products, collections, keywords, media content, form fields, and state variables - all data saves and loads correctly with proper JSON serialization
+- June 25, 2025. API REQUEST FIX: Fixed "Failed to execute 'fetch' on 'Window': '/api/projects/24' is not a valid HTTP method" error by correcting API request format in handleProjectSelected function - project creation and loading now works seamlessly without fetch errors
 - June 25, 2025. PROJECT MANAGEMENT SYSTEM FULLY IMPLEMENTED: Complete Create and Save Project functionality deployed with comprehensive form state tracking (20+ fields), multi-store data isolation, React Query integration, and robust error handling - users can now create named projects, save all admin panel configurations, and load projects to restore complete form state
 - June 25, 2025. CRITICAL AUTO-SAVE LOGIC FIX: Completely resolved unwanted automatic project saves by removing useEffect auto-triggers, disabling React Query auto-refetch polling (every 3 seconds), and separating project loading from saving logic - projects now only save when "Save Project" button is manually clicked
 - June 25, 2025. API REQUEST FIX: Fixed "Failed to execute 'fetch' on 'Window': '/api/projects/24' is not a valid HTTP method" error by correcting API request format in handleProjectSelected function - project creation and loading now works seamlessly without fetch errors
