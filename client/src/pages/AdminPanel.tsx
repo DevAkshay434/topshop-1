@@ -516,6 +516,8 @@ export default function AdminPanel() {
 
   const handleLoadProject = (project: any) => {
     try {
+      setCurrentProject(project);
+      
       // Parse project data and populate form
       const projectData = JSON.parse(project.projectData);
       
@@ -612,7 +614,7 @@ export default function AdminPanel() {
   const saveProjectMutation = useMutation({
     mutationFn: (projectData: any) => {
       if (currentProject) {
-        return apiRequest('PUT', `/api/projects/${currentProject.id}`, {
+        return apiRequest(`/api/projects/${currentProject.id}`, 'PUT', {
           projectData: JSON.stringify(projectData)
         });
       } else {
