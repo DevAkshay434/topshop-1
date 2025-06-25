@@ -874,6 +874,7 @@ export default function AdminPanel() {
   const [imageTab, setImageTab] = useState<'primary' | 'secondary'>('primary');
   const [youtubeUrl, setYoutubeUrl] = useState<string>('');
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>('');
+  const [youtubeEmbed, setYoutubeEmbed] = useState<string | null>(null);
   const [showKeywordSelector, setShowKeywordSelector] = useState(false);
   const [showTitleSelector, setShowTitleSelector] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
