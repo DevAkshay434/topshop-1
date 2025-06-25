@@ -803,9 +803,20 @@ export default function AdminPanel() {
         console.log('Merged form data:', mergedFormData);
         console.log('About to reset form with merged data');
         
-        // Reset form fields
+        // Reset form fields - MUST include title and other missing fields
         form.reset(mergedFormData);
         console.log('Form reset completed');
+        
+        // Set specific form fields that might not be bound properly
+        if (formData.title) {
+          form.setValue('title', formData.title);
+          console.log('Set title field to:', formData.title);
+        }
+        
+        if (formData.blogId) {
+          form.setValue('blogId', formData.blogId);
+          console.log('Set blogId field to:', formData.blogId);
+        }
         
         // Restore all state variables from saved project data with safety checks
         console.log('Restoring state variables from project data...');
@@ -4200,8 +4211,8 @@ export default function AdminPanel() {
                             disabled={updateProjectMutation.isPending || createProjectMutation.isPending}
                             onClick={() => {
                               const formData = form.getValues();
-                              console.log('Current form data:', formData);
-                              console.log('Current state variables:', {
+                              console.log('Save Project Button - Current form data:', formData);
+                              console.log('Save Project Button - Current state variables:', {
                                 selectedProducts,
                                 selectedCollections,
                                 selectedKeywords,
@@ -4212,9 +4223,37 @@ export default function AdminPanel() {
                                 selectedAuthorId
                               });
                               
+                              // COMPREHENSIVE PROJECT DATA COLLECTION
                               const projectData = {
-                                ...formData,
-                                // State variables that aren't part of the form
+                                // ALL form fields - including title
+                                title: formData.title || '',
+                                blogId: formData.blogId || '',
+                                articleType: formData.articleType || 'blog',
+                                writingPerspective: formData.writingPerspective || 'first_person_plural',
+                                enableTables: formData.enableTables !== undefined ? formData.enableTables : true,
+                                enableLists: formData.enableLists !== undefined ? formData.enableLists : true,
+                                enableH3s: formData.enableH3s !== undefined ? formData.enableH3s : true,
+                                introType: formData.introType || 'search_intent',
+                                faqType: formData.faqType || 'short',
+                                enableCitations: formData.enableCitations !== undefined ? formData.enableCitations : true,
+                                toneOfVoice: formData.toneOfVoice || 'friendly',
+                                postStatus: formData.postStatus || 'draft',
+                                generateImages: formData.generateImages !== undefined ? formData.generateImages : true,
+                                keywords: formData.keywords || [],
+                                productIds: formData.productIds || [],
+                                collectionIds: formData.collectionIds || [],
+                                scheduledPublishTime: formData.scheduledPublishTime || '09:30',
+                                scheduledPublishDate: formData.scheduledPublishDate || undefined,
+                                publicationType: formData.publicationType || 'draft',
+                                scheduleDate: formData.scheduleDate || undefined,
+                                scheduleTime: formData.scheduleTime || '09:30',
+                                articleLength: formData.articleLength || 'long',
+                                headingsCount: formData.headingsCount || '3',
+                                categories: formData.categories || [],
+                                customCategory: formData.customCategory || '',
+                                buyerPersonas: formData.buyerPersonas || '',
+                                
+                                // Critical state variables that aren't in the form
                                 selectedProducts,
                                 selectedCollections,
                                 selectedKeywords,
