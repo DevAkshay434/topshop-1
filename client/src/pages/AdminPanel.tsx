@@ -875,6 +875,10 @@ export default function AdminPanel() {
         // Force UI update to reflect loaded data
         setForceUpdate(prev => prev + 1);
         
+        // Update project metadata
+        setCurrentProjectId(projectId);
+        setCurrentProjectName(projectName);
+        
         toast({
           title: "Project loaded successfully",
           description: `"${projectName}" loaded. Configure any missing settings as needed.`
@@ -8418,7 +8422,20 @@ export default function AdminPanel() {
       </Dialog>
       
       {/* Add the standalone project creation dialog that shows automatically */}
-      <ProjectCreationDialog onProjectSelected={handleProjectSelected} />
+      <ProjectCreationDialog 
+        open={showCreateProjectDialog}
+        onOpenChange={setShowCreateProjectDialog}
+        onProjectSelected={handleProjectSelected}
+        formData={form.getValues()}
+        selectedProducts={selectedProducts}
+        selectedCollections={selectedCollections}
+        selectedKeywords={selectedKeywords}
+        selectedMediaContent={selectedMediaContent}
+        primaryImages={primaryImages}
+        secondaryImages={secondaryImages}
+        workflowStep={workflowStep}
+        selectedAuthorId={selectedAuthorId}
+      />
       {/* Choose Media Dialog - New improved component */}
       <ChooseMediaDialog
         open={showChooseMediaDialog && !showImageDialog} 
