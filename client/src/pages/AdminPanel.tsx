@@ -818,6 +818,11 @@ export default function AdminPanel() {
           console.log('Set blogId field to:', formData.blogId);
         }
         
+        if (formData.buyerPersonas) {
+          form.setValue('buyerPersonas', formData.buyerPersonas);
+          console.log('Set buyerPersonas field to:', formData.buyerPersonas);
+        }
+        
         // Restore all state variables from saved project data with safety checks
         console.log('Restoring state variables from project data...');
         
@@ -1089,22 +1094,13 @@ export default function AdminPanel() {
     setAutoSaveStatus('saving');
     
     const formData = form.getValues();
+    
+    // COMPREHENSIVE PROJECT DATA - NO DUPLICATES
     const projectData = {
-      ...formData,
-      // State variables that aren't part of the form
-      selectedProducts,
-      selectedCollections,
-      selectedKeywords,
-      selectedMediaContent,
-      primaryImages,
-      secondaryImages,
-      selectedAuthorId,
-      workflowStep,
-      
-      // Ensure all form fields are captured
+      // Core form fields
       title: formData.title || '',
-      articleType: formData.articleType || 'blog',
       blogId: formData.blogId || '',
+      articleType: formData.articleType || 'blog',
       writingPerspective: formData.writingPerspective || 'first_person_plural',
       enableTables: formData.enableTables !== undefined ? formData.enableTables : true,
       enableLists: formData.enableLists !== undefined ? formData.enableLists : true,
