@@ -6,7 +6,6 @@ import {
   blogPosts,
   syncActivities,
   contentGenRequests,
-  projects,
   authors,
   type User, 
   type InsertUser, 
@@ -22,8 +21,6 @@ import {
   type InsertSyncActivity,
   type ContentGenRequest,
   type InsertContentGenRequest,
-  type Project,
-  type InsertProject,
   type Author
 } from "@shared/schema";
 import { db } from "./db";
@@ -78,13 +75,7 @@ export interface IStorage {
   updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined>;
   getContentGenRequest(id: number): Promise<ContentGenRequest | undefined>;
   
-  // Project operations
-  createProject(project: InsertProject): Promise<Project>;
-  updateProject(id: number, project: Partial<Project>): Promise<Project | undefined>;
-  getProject(id: number): Promise<Project | undefined>;
-  getUserProjects(userId?: number, storeId?: number): Promise<Project[]>;
-  getProjectsByStore(storeId: number): Promise<Project[]>;
-  deleteProject(id: number): Promise<boolean>;
+
 }
 
 // In-memory implementation of the storage interface
@@ -96,14 +87,14 @@ export class MemStorage implements IStorage {
   private blogPosts: Map<number, BlogPost>;
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
-  private projects: Map<number, Project>;
+
   
   private currentUserId: number;
   private currentStoreId: number;
   private currentBlogPostId: number;
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
-  private currentProjectId: number;
+
 
   constructor() {
     this.users = new Map();
@@ -112,14 +103,14 @@ export class MemStorage implements IStorage {
     this.blogPosts = new Map();
     this.syncActivities = [];
     this.contentGenRequests = new Map();
-    this.projects = new Map();
+
     
     this.currentUserId = 1;
     this.currentStoreId = 1;
     this.currentBlogPostId = 1;
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
-    this.currentProjectId = 1;
+
     
     // Add some initial data for testing
     const now = new Date();
@@ -1003,67 +994,7 @@ export class DatabaseStorage implements IStorage {
     return newUserStore;
   }
 
-  // Project operations
-  async createProject(project: InsertProject): Promise<Project> {
-    const [newProject] = await db.insert(projects)
-      .values({
-        name: project.name,
-        formData: project.formData,
-        userId: project.userId,
-        storeId: project.storeId
-      })
-      .returning();
-    return newProject;
-  }
 
-  async updateProject(id: number, project: Partial<Project>): Promise<Project | undefined> {
-    const updateData: Record<string, any> = {};
-    
-    if (project.name !== undefined) updateData.name = project.name;
-    if (project.formData !== undefined) updateData.formData = project.formData;
-    if (project.userId !== undefined) updateData.userId = project.userId;
-    if (project.storeId !== undefined) updateData.storeId = project.storeId;
-    
-    updateData.updatedAt = new Date();
-    
-    const [updatedProject] = await db.update(projects)
-      .set(updateData)
-      .where(eq(projects.id, id))
-      .returning();
-      
-    return updatedProject;
-  }
-
-  async getProject(id: number): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
-    return project;
-  }
-
-  async getUserProjects(userId?: number, storeId?: number): Promise<Project[]> {
-    let query = db.select().from(projects);
-    
-    if (userId && storeId) {
-      query = query.where(sql`${projects.userId} = ${userId} AND ${projects.storeId} = ${storeId}`);
-    } else if (userId) {
-      query = query.where(eq(projects.userId, userId));
-    } else if (storeId) {
-      query = query.where(eq(projects.storeId, storeId));
-    }
-    
-    return query.orderBy(desc(projects.updatedAt));
-  }
-
-  async getProjectsByStore(storeId: number): Promise<Project[]> {
-    return db.select()
-      .from(projects)
-      .where(eq(projects.storeId, storeId))
-      .orderBy(desc(projects.updatedAt));
-  }
-
-  async deleteProject(id: number): Promise<boolean> {
-    const result = await db.delete(projects).where(eq(projects.id, id)).returning({ id: projects.id });
-    return result.length > 0;
-  }
 
   async getAuthors(): Promise<Author[]> {
     return db.select().from(authors).where(eq(authors.isActive, true));
