@@ -547,6 +547,23 @@ export default function AdminPanel() {
       if (projectData.enableCitations !== undefined) setEnableCitations(projectData.enableCitations);
       if (projectData.generateImages !== undefined) setGenerateImages(projectData.generateImages);
       
+      // Also update the form fields to ensure UI synchronization
+      if (projectData.articleLength) form.setValue('articleLength', projectData.articleLength);
+      if (projectData.headingsCount) form.setValue('headingsCount', projectData.headingsCount);
+      if (projectData.writingPerspective) form.setValue('writingPerspective', projectData.writingPerspective);
+      if (projectData.toneOfVoice) form.setValue('toneOfVoice', projectData.toneOfVoice);
+      if (projectData.introType) form.setValue('introType', projectData.introType);
+      if (projectData.faqType) form.setValue('faqType', projectData.faqType);
+      if (projectData.postStatus) form.setValue('postStatus', projectData.postStatus);
+      if (projectData.scheduledPublishTime) form.setValue('scheduledPublishTime', projectData.scheduledPublishTime);
+      if (projectData.blogId) form.setValue('blogId', projectData.blogId);
+      if (projectData.customCategory) form.setValue('customCategory', projectData.customCategory);
+      if (projectData.enableTables !== undefined) form.setValue('enableTables', projectData.enableTables);
+      if (projectData.enableLists !== undefined) form.setValue('enableLists', projectData.enableLists);
+      if (projectData.enableH3s !== undefined) form.setValue('enableH3s', projectData.enableH3s);
+      if (projectData.enableCitations !== undefined) form.setValue('enableCitations', projectData.enableCitations);
+      if (projectData.generateImages !== undefined) form.setValue('generateImages', projectData.generateImages);
+      
       // Restore media content
       if (projectData.mediaContent) {
         if (projectData.mediaContent.primaryImage) {
