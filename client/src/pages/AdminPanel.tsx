@@ -788,12 +788,15 @@ export default function AdminPanel() {
         
         console.log('Merged form data:', mergedFormData);
         console.log('About to reset form with merged data');
+        
+        // Reset form fields
         form.reset(mergedFormData);
         console.log('Form reset completed');
         
         // Restore all state variables from saved project data with safety checks
         console.log('Restoring state variables from project data...');
-        console.log('formData.selectedProducts:', formData.selectedProducts);
+        
+        // Selected Products
         if (formData.selectedProducts && Array.isArray(formData.selectedProducts)) {
           console.log(`Setting selectedProducts to ${formData.selectedProducts.length} items`);
           setSelectedProducts(formData.selectedProducts);
@@ -802,7 +805,7 @@ export default function AdminPanel() {
           setSelectedProducts([]);
         }
         
-        console.log('formData.selectedCollections:', formData.selectedCollections);
+        // Selected Collections
         if (formData.selectedCollections && Array.isArray(formData.selectedCollections)) {
           console.log(`Setting selectedCollections to ${formData.selectedCollections.length} items`);
           setSelectedCollections(formData.selectedCollections);
@@ -811,7 +814,7 @@ export default function AdminPanel() {
           setSelectedCollections([]);
         }
         
-        console.log('formData.selectedKeywords:', formData.selectedKeywords);
+        // Selected Keywords
         if (formData.selectedKeywords && Array.isArray(formData.selectedKeywords)) {
           console.log(`Setting selectedKeywords to ${formData.selectedKeywords.length} items`);
           setSelectedKeywords(formData.selectedKeywords);
@@ -820,9 +823,12 @@ export default function AdminPanel() {
           setSelectedKeywords([]);
         }
         
+        // Media Content
         if (formData.selectedMediaContent && typeof formData.selectedMediaContent === 'object') {
+          console.log('Setting selectedMediaContent:', formData.selectedMediaContent);
           setSelectedMediaContent(formData.selectedMediaContent);
         } else {
+          console.log('No selectedMediaContent found, setting to default');
           setSelectedMediaContent({
             primaryImage: null,
             secondaryImages: [],
@@ -830,30 +836,44 @@ export default function AdminPanel() {
           });
         }
         
+        // Primary Images
         if (formData.primaryImages && Array.isArray(formData.primaryImages)) {
+          console.log(`Setting primaryImages to ${formData.primaryImages.length} items`);
           setPrimaryImages(formData.primaryImages);
         } else {
+          console.log('No primaryImages found, setting to empty array');
           setPrimaryImages([]);
         }
         
+        // Secondary Images
         if (formData.secondaryImages && Array.isArray(formData.secondaryImages)) {
+          console.log(`Setting secondaryImages to ${formData.secondaryImages.length} items`);
           setSecondaryImages(formData.secondaryImages);
         } else {
+          console.log('No secondaryImages found, setting to empty array');
           setSecondaryImages([]);
         }
         
+        // Workflow Step
         if (formData.workflowStep && typeof formData.workflowStep === 'string') {
+          console.log('Setting workflowStep to:', formData.workflowStep);
           setWorkflowStep(formData.workflowStep);
         } else {
-          setWorkflowStep('form');
+          console.log('No workflowStep found, setting to default');
+          setWorkflowStep('product');
         }
         
-        // Set author selection if available
+        // Author Selection
         if (formData.selectedAuthorId) {
+          console.log('Setting selectedAuthorId to:', formData.selectedAuthorId);
           setSelectedAuthorId(formData.selectedAuthorId);
         } else {
+          console.log('No selectedAuthorId found, setting to null');
           setSelectedAuthorId(null);
         }
+        
+        // Force UI update to reflect loaded data
+        setForceUpdate(prev => prev + 1);
         
         toast({
           title: "Project loaded successfully",
@@ -1075,6 +1095,7 @@ export default function AdminPanel() {
     const formData = form.getValues();
     const projectData = {
       ...formData,
+      // State variables that aren't part of the form
       selectedProducts,
       selectedCollections,
       selectedKeywords,
@@ -1083,6 +1104,36 @@ export default function AdminPanel() {
       secondaryImages,
       selectedAuthorId,
       workflowStep,
+      
+      // Ensure all form fields are captured
+      title: formData.title || '',
+      articleType: formData.articleType || 'blog',
+      blogId: formData.blogId || '',
+      writingPerspective: formData.writingPerspective || 'first_person_plural',
+      enableTables: formData.enableTables !== undefined ? formData.enableTables : true,
+      enableLists: formData.enableLists !== undefined ? formData.enableLists : true,
+      enableH3s: formData.enableH3s !== undefined ? formData.enableH3s : true,
+      introType: formData.introType || 'search_intent',
+      faqType: formData.faqType || 'short',
+      enableCitations: formData.enableCitations !== undefined ? formData.enableCitations : true,
+      toneOfVoice: formData.toneOfVoice || 'friendly',
+      postStatus: formData.postStatus || 'draft',
+      generateImages: formData.generateImages !== undefined ? formData.generateImages : true,
+      keywords: formData.keywords || [],
+      productIds: formData.productIds || [],
+      collectionIds: formData.collectionIds || [],
+      scheduledPublishTime: formData.scheduledPublishTime || '09:30',
+      scheduledPublishDate: formData.scheduledPublishDate || undefined,
+      publicationType: formData.publicationType || 'draft',
+      scheduleDate: formData.scheduleDate || undefined,
+      scheduleTime: formData.scheduleTime || '09:30',
+      articleLength: formData.articleLength || 'long',
+      headingsCount: formData.headingsCount || '3',
+      categories: formData.categories || [],
+      customCategory: formData.customCategory || '',
+      buyerPersonas: formData.buyerPersonas || '',
+      
+      // Metadata
       lastUpdated: new Date().toISOString()
     };
 

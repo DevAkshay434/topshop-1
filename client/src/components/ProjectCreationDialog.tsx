@@ -139,49 +139,60 @@ export default function ProjectCreationDialog({
 
   // Build comprehensive project data from all admin panel selections
   const buildComprehensiveProjectData = () => {
-    const baseFormData = formData || {
-      tone: "friendly",
-      perspective: "first_person_plural",
-      structure: "informational"
-    };
+    const baseFormData = formData || {};
 
     return {
       ...baseFormData,
       // State variables that aren't part of the form
-      selectedProducts,
-      selectedCollections,
-      selectedKeywords,
-      selectedMediaContent,
-      primaryImages,
-      secondaryImages,
-      selectedAuthorId,
-      workflowStep,
-      // Ensure we capture all form fields explicitly
+      selectedProducts: selectedProducts || [],
+      selectedCollections: selectedCollections || [],
+      selectedKeywords: selectedKeywords || [],
+      selectedMediaContent: selectedMediaContent || {
+        primaryImage: null,
+        secondaryImages: [],
+        youtubeEmbed: null
+      },
+      primaryImages: primaryImages || [],
+      secondaryImages: secondaryImages || [],
+      selectedAuthorId: selectedAuthorId || null,
+      workflowStep: workflowStep || 'product',
+      
+      // Template information
+      selectedTemplate: selectedTemplate || null,
+      templateApplied: !!selectedTemplate,
+      
+      // Ensure we capture all form fields explicitly with proper defaults
       title: baseFormData.title || '',
       articleType: baseFormData.articleType || 'blog',
       blogId: baseFormData.blogId || '',
       writingPerspective: baseFormData.writingPerspective || 'first_person_plural',
-      enableTables: baseFormData.enableTables || true,
-      enableLists: baseFormData.enableLists || true,
-      enableH3s: baseFormData.enableH3s || true,
+      enableTables: baseFormData.enableTables !== undefined ? baseFormData.enableTables : true,
+      enableLists: baseFormData.enableLists !== undefined ? baseFormData.enableLists : true,
+      enableH3s: baseFormData.enableH3s !== undefined ? baseFormData.enableH3s : true,
       introType: baseFormData.introType || 'search_intent',
       faqType: baseFormData.faqType || 'short',
-      enableCitations: baseFormData.enableCitations || true,
+      enableCitations: baseFormData.enableCitations !== undefined ? baseFormData.enableCitations : true,
       toneOfVoice: baseFormData.toneOfVoice || 'friendly',
       postStatus: baseFormData.postStatus || 'draft',
-      generateImages: baseFormData.generateImages || true,
+      generateImages: baseFormData.generateImages !== undefined ? baseFormData.generateImages : true,
       keywords: baseFormData.keywords || [],
       productIds: baseFormData.productIds || [],
       collectionIds: baseFormData.collectionIds || [],
       scheduledPublishTime: baseFormData.scheduledPublishTime || '09:30',
+      scheduledPublishDate: baseFormData.scheduledPublishDate || undefined,
       publicationType: baseFormData.publicationType || 'draft',
+      scheduleDate: baseFormData.scheduleDate || undefined,
       scheduleTime: baseFormData.scheduleTime || '09:30',
       articleLength: baseFormData.articleLength || 'long',
       headingsCount: baseFormData.headingsCount || '3',
       categories: baseFormData.categories || [],
       customCategory: baseFormData.customCategory || '',
       buyerPersonas: baseFormData.buyerPersonas || '',
-      lastUpdated: new Date().toISOString()
+      
+      // Metadata
+      lastUpdated: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      projectVersion: '1.0'
     };
   };
 
@@ -217,21 +228,17 @@ export default function ProjectCreationDialog({
       return;
     }
     
-    // Only store project name locally - do NOT save to backend yet
-    console.log('Creating project locally only:', projectName);
+    // Create project with current admin panel data
+    console.log('Creating project with current admin panel data:', projectName);
     
-    if (onProjectSelected) {
-      // Pass null as projectId to indicate this is a new unsaved project
-      onProjectSelected(null, projectName);
-    }
+    const comprehensiveProjectData = buildComprehensiveProjectData();
+    console.log('Comprehensive project data:', comprehensiveProjectData);
     
-    toast({
-      title: "Project created",
-      description: `"${projectName}" is ready. Use "Save Project" to save your work.`
+    // Save to backend with all current selections
+    createProjectMutation.mutate({
+      name: projectName,
+      formData: comprehensiveProjectData
     });
-    
-    setIsSubmitting(false);
-    setOpen(false);
   };
   
   // Handle template selection
