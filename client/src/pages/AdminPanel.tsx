@@ -734,64 +734,7 @@ export default function AdminPanel() {
   type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
-        } else {
-          console.log('No selectedCollections found, setting to empty array');
-          setSelectedCollections([]);
-        }
-        
-        // Selected Keywords
-        if (formData.selectedKeywords && Array.isArray(formData.selectedKeywords)) {
-          console.log(`Setting selectedKeywords to ${formData.selectedKeywords.length} items`);
-          setSelectedKeywords(formData.selectedKeywords);
-        } else {
-          console.log('No selectedKeywords found, setting to empty array');
-          setSelectedKeywords([]);
-        }
-        
-        // Media Content
-        if (formData.selectedMediaContent && typeof formData.selectedMediaContent === 'object') {
-          console.log('Setting selectedMediaContent:', formData.selectedMediaContent);
-          setSelectedMediaContent(formData.selectedMediaContent);
-        } else {
-          console.log('No selectedMediaContent found, setting to default');
-          setSelectedMediaContent({
-            primaryImage: null,
-            secondaryImages: [],
-            youtubeEmbed: null
-          });
-        }
-        
-        // Primary Images
-        if (formData.primaryImages && Array.isArray(formData.primaryImages)) {
-          console.log(`Setting primaryImages to ${formData.primaryImages.length} items`);
-          setPrimaryImages(formData.primaryImages);
-        } else {
-          console.log('No primaryImages found, setting to empty array');
-          setPrimaryImages([]);
-        }
-        
-        // Secondary Images
-        if (formData.secondaryImages && Array.isArray(formData.secondaryImages)) {
-          console.log(`Setting secondaryImages to ${formData.secondaryImages.length} items`);
-          setSecondaryImages(formData.secondaryImages);
-        } else {
-          console.log('No secondaryImages found, setting to empty array');
-          setSecondaryImages([]);
-        }
-        
-        // Workflow Step
-        if (formData.workflowStep && typeof formData.workflowStep === 'string') {
-          console.log('Setting workflowStep to:', formData.workflowStep);
-          setWorkflowStep(formData.workflowStep);
-        } else {
-          console.log('No workflowStep found, setting to default');
-          setWorkflowStep('product');
-        }
-        
-        // Author Selection
-        if (formData.selectedAuthorId) {
-          console.log('Setting selectedAuthorId to:', formData.selectedAuthorId);
-          setSelectedAuthorId(formData.selectedAuthorId);
+
   const { toast } = useToast();
 
   // Default form values
@@ -885,7 +828,7 @@ export default function AdminPanel() {
       }, {
         onSuccess: (data) => {
           if (data.success) {
-            setCurrentProjectId(data.project.id);
+  
             console.log('Project creation successful');
           }
         },
