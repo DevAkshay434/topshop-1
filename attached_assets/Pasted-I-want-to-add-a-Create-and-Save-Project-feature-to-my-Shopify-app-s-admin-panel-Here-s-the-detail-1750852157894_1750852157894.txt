@@ -1,0 +1,83 @@
+I want to add a “Create and Save Project” feature to my Shopify app’s admin panel. Here’s the detailed plan:
+
+---
+
+### OBJECTIVE:
+Allow users to create named content projects that store the full form state (product selections, formatting options, media, etc.) so they can reload and continue working without re-entering data.
+
+---
+
+### FRONTEND FEATURES:
+
+1. **Create New Project**
+- Button: "Create New Project"
+- Shows popup with:
+  - Project Name (required)
+  - Description (optional)
+  - "Create Project" button
+
+2. **Load Saved Projects**
+- Button: "Load Saved Project"
+- Shows dropdown/modal of user’s saved projects
+- Loads selected project and auto-fills admin form
+
+3. **Save Project**
+- Button at bottom of admin form labeled “Save Project”
+- When clicked:
+  - Validates if a project is open
+  - Saves current form state to DB under that project
+
+4. **Form Autofill**
+- When loading a project:
+  - All fields listed below are auto-filled
+  - All fields remain editable
+
+---
+
+### FORM FIELDS TO TRACK:
+
+- selectedProducts
+- selectedCollections
+- buyerPersonas
+- selectedKeywords
+- selectedTitle
+- mediaContent:
+  - primaryImage
+  - secondaryImages
+  - youtubeEmbed
+- selectedAuthorId
+- articleLength
+- headingsCount
+- writingPerspective
+- toneOfVoice
+- contentStyle
+- introType
+- faqType
+- categories
+- postStatus
+- publicationType
+
+---
+
+### BACKEND REQUIREMENTS:
+
+- DB Table: `projects` with:
+  - id, name, description, userId, createdAt, lastUpdated
+  - `projectData` field (JSON) for storing form state
+
+- API Endpoints:
+  - `POST /api/projects` → Create project
+  - `PUT /api/projects/:id` → Update project
+  - `GET /api/projects/:id` → Load project
+  - `GET /api/projects` → List user’s projects
+
+---
+
+### EXTRA NOTES:
+- Make sure project is only saved when user clicks “Save Project” button.
+- Project auto-fill logic must be safe and not override user edits unless loading a new project.
+- Form should still work even if no project is active (i.e., manual entry still allowed).
+
+---
+
+Please generate a full implementation plan and save it to Instructions.md for review.
