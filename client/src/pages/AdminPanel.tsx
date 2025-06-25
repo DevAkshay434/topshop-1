@@ -612,7 +612,7 @@ export default function AdminPanel() {
   const saveProjectMutation = useMutation({
     mutationFn: (projectData: any) => {
       if (currentProject) {
-        return apiRequest(`/api/projects/${currentProject.id}`, 'PUT', {
+        return apiRequest('PUT', `/api/projects/${currentProject.id}`, {
           projectData: JSON.stringify(projectData)
         });
       } else {
