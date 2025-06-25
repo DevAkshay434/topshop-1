@@ -878,6 +878,7 @@ export default function AdminPanel() {
   const [selectedKeywords, setSelectedKeywords] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Collection[]>([]);
+  const [selectedTitle, setSelectedTitle] = useState<string>('');
   // Removed selectedBuyerPersonas state - now using form field buyerPersonas
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
