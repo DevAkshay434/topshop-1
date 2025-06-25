@@ -823,6 +823,16 @@ export default function AdminPanel() {
           console.log('Set buyerPersonas field to:', formData.buyerPersonas);
         }
         
+        // Set all other critical form fields
+        Object.keys(formData).forEach(key => {
+          if (key !== 'selectedProducts' && key !== 'selectedCollections' && key !== 'selectedKeywords' && 
+              key !== 'selectedMediaContent' && key !== 'primaryImages' && key !== 'secondaryImages' && 
+              key !== 'selectedAuthorId' && key !== 'workflowStep' && key !== 'selectedTemplate' && 
+              key !== 'templateApplied' && key !== 'lastUpdated' && key !== 'createdAt' && key !== 'projectVersion') {
+            form.setValue(key, formData[key]);
+          }
+        });
+        
         // Restore all state variables from saved project data with safety checks
         console.log('Restoring state variables from project data...');
         
@@ -4250,8 +4260,8 @@ export default function AdminPanel() {
                                 buyerPersonas: formData.buyerPersonas || '',
                                 
                                 // Critical state variables that aren't in the form
-                                selectedProducts,
-                                selectedCollections,
+                                selectedProducts: selectedProducts || [],
+                                selectedCollections: selectedCollections || [],
                                 selectedKeywords,
                                 selectedMediaContent,
                                 primaryImages,
