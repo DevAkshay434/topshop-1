@@ -37,7 +37,7 @@ export function ProjectLoadDialog({ isOpen, onClose, onProjectSelected }: Projec
 
   const { data: projects, isLoading, error } = useQuery({
     queryKey: ['/api/projects'],
-    enabled: isOpen && !!autoDetectedStoreId,
+    enabled: isOpen,
   });
 
   const filteredProjects = projects?.projects?.filter((project: Project) =>

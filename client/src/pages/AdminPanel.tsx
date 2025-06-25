@@ -1949,20 +1949,18 @@ export default function AdminPanel() {
               <FolderOpen className="h-4 w-4" />
               Load Project
             </Button>
-            {currentProject && (
-              <Button
-                onClick={handleSaveProject}
-                disabled={saveProjectMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                {saveProjectMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                Save Project
-              </Button>
-            )}
+            <Button
+              onClick={handleSaveProject}
+              disabled={!currentProject || saveProjectMutation.isPending}
+              className="flex items-center gap-2"
+            >
+              {saveProjectMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4" />
+              )}
+              Save Project
+            </Button>
           </div>
         </div>
       </div>
