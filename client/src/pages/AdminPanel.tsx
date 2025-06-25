@@ -299,7 +299,7 @@ export default function AdminPanel() {
   
 
   
-  // Additional state variables that were misplaced
+  // Additional state variables
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
     const savedCategories = localStorage.getItem('topshop-custom-categories');
     return savedCategories ? JSON.parse(savedCategories) : [];
@@ -734,33 +734,6 @@ export default function AdminPanel() {
   type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
-        if (formData.title) {
-          form.setValue('title', formData.title);
-          console.log('Set title field to:', formData.title);
-        }
-        
-        if (formData.blogId) {
-          form.setValue('blogId', formData.blogId);
-          console.log('Set blogId field to:', formData.blogId);
-        }
-        
-        if (formData.buyerPersonas) {
-          form.setValue('buyerPersonas', formData.buyerPersonas);
-          console.log('Set buyerPersonas field to:', formData.buyerPersonas);
-        }
-        
-        // Set all other critical form fields
-        Object.keys(formData).forEach(key => {
-          if (key !== 'selectedProducts' && key !== 'selectedCollections' && key !== 'selectedKeywords' && 
-              key !== 'selectedMediaContent' && key !== 'primaryImages' && key !== 'secondaryImages' && 
-              key !== 'selectedAuthorId' && key !== 'workflowStep' && key !== 'selectedTemplate' && 
-              key !== 'templateApplied' && key !== 'lastUpdated' && key !== 'createdAt' && key !== 'projectVersion') {
-            form.setValue(key, formData[key]);
-          }
-        });
-        
-        // Restore all state variables from saved project data with safety checks
-        console.log('Restoring state variables from project data...');
         
         // Selected Products
         if (formData.selectedProducts && Array.isArray(formData.selectedProducts)) {
@@ -833,41 +806,6 @@ export default function AdminPanel() {
         if (formData.selectedAuthorId) {
           console.log('Setting selectedAuthorId to:', formData.selectedAuthorId);
           setSelectedAuthorId(formData.selectedAuthorId);
-        } else {
-          console.log('No selectedAuthorId found, setting to null');
-          setSelectedAuthorId(null);
-        }
-        
-        // Force UI update to reflect loaded data
-        setForceUpdate(prev => prev + 1);
-        
-        // Update project metadata
-        setCurrentProjectId(projectId);
-        setCurrentProject(projectName);
-        
-        toast({
-          title: "Project loaded successfully",
-          description: `"${projectName}" loaded. Configure any missing settings as needed.`
-        });
-      } else {
-        console.error('Project API response missing success or project data:', projectData);
-        throw new Error('Invalid API response structure');
-      }
-    } catch (error) {
-      console.error('Error loading project data:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        stack: error?.stack,
-        projectId,
-        projectName
-      });
-      toast({
-        title: "Failed to load project",
-        description: `Error: ${error?.message || 'Unknown error'}. Please try again or contact support.`,
-        variant: "destructive"
-      });
-    }
-  };
   const { toast } = useToast();
 
   // Default form values
@@ -906,52 +844,6 @@ export default function AdminPanel() {
     resolver: zodResolver(contentFormSchema),
     defaultValues
   });
-        setAutoSaveStatus('saved');
-        toast({
-          title: "Project saved successfully",
-          description: `"${data.project.name}" has been saved`,
-        });
-        setTimeout(() => setAutoSaveStatus('idle'), 2000);
-      } else {
-        console.error('Create project success but invalid response:', data);
-        setAutoSaveStatus('error');
-        toast({
-          title: "Save failed",
-          description: "Project creation returned invalid response",
-          variant: "destructive"
-        });
-      }
-    },
-    onError: (error: any) => {
-      console.error('Create project error:', error);
-      setAutoSaveStatus('error');
-      toast({
-        title: "Failed to save project",
-        description: error?.message || "An error occurred while saving the project",
-        variant: "destructive"
-      });
-      setTimeout(() => setAutoSaveStatus('idle'), 3000);
-    }
-  });
-
-
-    mutationFn: async (data: { id: number; formData: any }) => {
-      console.log('Updating project with data:', data);
-      const result = await apiRequest(`/api/projects/${data.id}`, {
-        method: 'PUT',
-        body: { formData: data.formData }
-      });
-      console.log('Update project API response:', result);
-      return result;
-    },
-    onMutate: () => {
-      console.log('Update project mutation started');
-      setAutoSaveStatus('saving');
-    },
-    onSuccess: (data: any) => {
-      console.log('Update project success:', data);
-      setAutoSaveStatus('saved');
-      toast({
         title: "Project updated successfully",
         description: "Your changes have been saved",
       });
@@ -4056,78 +3948,6 @@ export default function AdminPanel() {
                             </div>
                           </div>
                         )}
-                        
-
-                                
-                                // Critical state variables that aren't in the form
-                                selectedProducts: selectedProducts || [],
-                                selectedCollections: selectedCollections || [],
-                                selectedKeywords,
-                                selectedMediaContent,
-                                primaryImages,
-                                secondaryImages,
-                                selectedAuthorId,
-                                workflowStep,
-                                // Ensure we capture all form fields explicitly
-                                title: formData.title || '',
-                                articleType: formData.articleType || 'blog',
-                                blogId: formData.blogId || '',
-                                writingPerspective: formData.writingPerspective || 'first_person_plural',
-                                enableTables: formData.enableTables || true,
-                                enableLists: formData.enableLists || true,
-                                enableH3s: formData.enableH3s || true,
-                                introType: formData.introType || 'search_intent',
-                                faqType: formData.faqType || 'short',
-                                enableCitations: formData.enableCitations || true,
-                                toneOfVoice: formData.toneOfVoice || 'friendly',
-                                postStatus: formData.postStatus || 'draft',
-                                generateImages: formData.generateImages || true,
-                                keywords: formData.keywords || [],
-                                productIds: formData.productIds || [],
-                                collectionIds: formData.collectionIds || [],
-                                scheduledPublishTime: formData.scheduledPublishTime || '09:30',
-                                publicationType: formData.publicationType || 'draft',
-                                scheduleTime: formData.scheduleTime || '09:30',
-                                articleLength: formData.articleLength || 'long',
-                                headingsCount: formData.headingsCount || '3',
-                                categories: formData.categories || [],
-                                customCategory: formData.customCategory || '',
-                                buyerPersonas: formData.buyerPersonas || '',
-                                lastUpdated: new Date().toISOString()
-                              };
-                              
-                              console.log('Complete project data to save:', projectData);
-
-                              if (currentProject && currentProjectId) {
-                                // Update existing project
-                                updateProjectMutation.mutate({
-                                  id: currentProjectId,
-                                  formData: projectData
-                                });
-                              } else {
-                                // Create new project - use current project name if available, otherwise generate one
-                                const projectName = currentProject || `Project ${new Date().toLocaleString()}`;
-                                console.log('Creating new project with name:', projectName);
-                                createProjectMutation.mutate({
-                                  name: projectName,
-                                  formData: projectData
-                                });
-                              }
-                            }}
-                            title={currentProject ? "Save current project settings" : "Create and save new project"}
-                          >
-                            {updateProjectMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                              </>
-                            ) : (
-                              <>
-                                <Save className="mr-2 h-4 w-4" />
-                                Save Project
-                              </>
-                            )}
-                          </Button>
 
                           {/* Generate Content Button */}
                           <Button 
