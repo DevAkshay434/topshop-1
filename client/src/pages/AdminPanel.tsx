@@ -1196,8 +1196,7 @@ export default function AdminPanel() {
           setWorkflowStep(formData.workflowStep);
         }
       }
-    }
-  }, [savedProjectData, form]);
+    } // REMOVED useEffect dependency - no auto-loading
 
   // Auto-save status indicator component
   const AutoSaveIndicator = () => {
