@@ -381,4 +381,33 @@ export const authorsRelations = relations(authors, ({ one, many }) => ({
   posts: many(blogPosts),
 }));
 
+// Projects schema for saving and loading form state
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").references(() => shopifyStores.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  projectData: text("project_data").notNull(), // JSON string of form state
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertProjectSchema = createInsertSchema(projects).pick({
+  storeId: true,
+  name: true,
+  description: true,
+  projectData: true,
+});
+
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projects.$inferSelect;
+
+// Define project relations
+export const projectsRelations = relations(projects, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [projects.storeId],
+    references: [shopifyStores.id],
+  }),
+}));
+
 

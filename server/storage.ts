@@ -7,6 +7,7 @@ import {
   syncActivities,
   contentGenRequests,
   authors,
+  projects,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -21,7 +22,9 @@ import {
   type InsertSyncActivity,
   type ContentGenRequest,
   type InsertContentGenRequest,
-  type Author
+  type Author,
+  type Project,
+  type InsertProject
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
@@ -75,6 +78,12 @@ export interface IStorage {
   updateContentGenRequest(id: number, request: Partial<ContentGenRequest>): Promise<ContentGenRequest | undefined>;
   getContentGenRequest(id: number): Promise<ContentGenRequest | undefined>;
   
+  // Project management operations
+  createProject(project: InsertProject): Promise<Project>;
+  getProjects(storeId: number): Promise<Project[]>;
+  getProject(id: number, storeId: number): Promise<Project | null>;
+  updateProject(id: number, project: Partial<InsertProject>, storeId: number): Promise<Project>;
+  deleteProject(id: number, storeId: number): Promise<void>;
 
 }
 
@@ -87,6 +96,7 @@ export class MemStorage implements IStorage {
   private blogPosts: Map<number, BlogPost>;
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
+  private projects: Map<number, Project>;
 
   
   private currentUserId: number;
@@ -94,6 +104,7 @@ export class MemStorage implements IStorage {
   private currentBlogPostId: number;
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
+  private currentProjectId: number;
 
 
   constructor() {
@@ -103,6 +114,7 @@ export class MemStorage implements IStorage {
     this.blogPosts = new Map();
     this.syncActivities = [];
     this.contentGenRequests = new Map();
+    this.projects = new Map();
 
     
     this.currentUserId = 1;
@@ -110,6 +122,7 @@ export class MemStorage implements IStorage {
     this.currentBlogPostId = 1;
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
+    this.currentProjectId = 1;
 
     
     // Add some initial data for testing
@@ -565,6 +578,59 @@ export class MemStorage implements IStorage {
         updatedAt: new Date()
       }
     ];
+  }
+
+  // Project management operations
+  async createProject(project: InsertProject): Promise<Project> {
+    const id = this.currentProjectId++;
+    const newProject: Project = {
+      id,
+      storeId: project.storeId,
+      name: project.name,
+      description: project.description || null,
+      projectData: project.projectData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.projects.set(id, newProject);
+    return newProject;
+  }
+
+  async getProjects(storeId: number): Promise<Project[]> {
+    return Array.from(this.projects.values()).filter(project => project.storeId === storeId);
+  }
+
+  async getProject(id: number, storeId: number): Promise<Project | null> {
+    const project = this.projects.get(id);
+    if (!project || project.storeId !== storeId) {
+      return null;
+    }
+    return project;
+  }
+
+  async updateProject(id: number, projectUpdate: Partial<InsertProject>, storeId: number): Promise<Project> {
+    const existingProject = this.projects.get(id);
+    if (!existingProject || existingProject.storeId !== storeId) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+    
+    const updatedProject: Project = {
+      ...existingProject,
+      ...projectUpdate,
+      id,
+      storeId,
+      updatedAt: new Date()
+    };
+    this.projects.set(id, updatedProject);
+    return updatedProject;
+  }
+
+  async deleteProject(id: number, storeId: number): Promise<void> {
+    const project = this.projects.get(id);
+    if (!project || project.storeId !== storeId) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+    this.projects.delete(id);
   }
 }
 
