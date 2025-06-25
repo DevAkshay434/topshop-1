@@ -300,7 +300,6 @@ export default function AdminPanel() {
 
   
   // Additional state variables that were misplaced
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [customCategories, setCustomCategories] = useState<{id: string, name: string}[]>(() => {
     const savedCategories = localStorage.getItem('topshop-custom-categories');
     return savedCategories ? JSON.parse(savedCategories) : [];
@@ -735,56 +734,6 @@ export default function AdminPanel() {
   type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
-  
-  // Project Creation Dialog state
-  const [projectDialogOpen, setProjectDialogOpen] = useState(false); // Changed to false for manual triggering
-
-
-      const projectData = await apiRequest('GET', `/api/projects/${projectId}`);
-      
-      console.log('Project API response:', projectData);
-      
-      if (projectData.success && projectData.project) {
-        let formData = projectData.project.formData;
-        
-        // Parse formData if it's a string (from database storage)
-        if (typeof formData === 'string') {
-          try {
-            formData = JSON.parse(formData);
-            console.log('Parsed formData from JSON string:', formData);
-          } catch (parseError) {
-            console.error('Failed to parse formData JSON:', parseError);
-            console.log('Raw formData string:', formData);
-            throw new Error('Invalid project data format');
-          }
-        }
-        
-        console.log('Final formData for loading:', formData);
-        console.log('formData type:', typeof formData);
-        
-        // Ensure formData exists and has valid structure
-        if (!formData) {
-          console.warn('No formData found, initializing with defaults');
-          formData = {};
-        } else if (typeof formData !== 'object') {
-          console.error('FormData is not an object:', formData);
-          throw new Error('Invalid project data structure - formData must be an object');
-        }
-        
-        // Reset form with loaded data, merging with defaults
-        const mergedFormData = {
-          ...defaultValues,
-          ...formData
-        };
-        
-        console.log('Merged form data:', mergedFormData);
-        console.log('About to reset form with merged data');
-        
-        // Reset form fields - MUST include title and other missing fields
-        form.reset(mergedFormData);
-        console.log('Form reset completed');
-        
-        // Set specific form fields that might not be bound properly
         if (formData.title) {
           form.setValue('title', formData.title);
           console.log('Set title field to:', formData.title);
@@ -957,16 +906,6 @@ export default function AdminPanel() {
     resolver: zodResolver(contentFormSchema),
     defaultValues
   });
-
-
-    onMutate: () => {
-      console.log('Create project mutation started');
-      setAutoSaveStatus('saving');
-    },
-    onSuccess: (data: any) => {
-      console.log('Create project success:', data);
-      if (data.success && data.project) {
-        setCurrentProjectId(data.project.id);
         setAutoSaveStatus('saved');
         toast({
           title: "Project saved successfully",
@@ -995,7 +934,7 @@ export default function AdminPanel() {
     }
   });
 
-  const updateProjectMutation = useMutation({
+
     mutationFn: async (data: { id: number; formData: any }) => {
       console.log('Updating project with data:', data);
       const result = await apiRequest(`/api/projects/${data.id}`, {
@@ -1150,33 +1089,7 @@ export default function AdminPanel() {
 
   // REMOVED AUTO-LOADING EFFECT - project loading now only happens in handleProjectSelected
 
-  // Auto-save status indicator component
-  const AutoSaveIndicator = () => {
-    if (!currentProject) return null;
-    
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        {autoSaveStatus === 'saving' && (
-          <>
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Saving...
-          </>
-        )}
-        {autoSaveStatus === 'saved' && (
-          <>
-            <CheckCircle className="h-3 w-3 text-green-500" />
-            Saved
-          </>
-        )}
-        {autoSaveStatus === 'error' && (
-          <>
-            <AlertCircle className="h-3 w-3 text-red-500" />
-            Save failed
-          </>
-        )}
-      </div>
-    );
-  };
+
 
   // Content generation readiness validation
   const isReadyToGenerateContent = () => {
@@ -4144,57 +4057,7 @@ export default function AdminPanel() {
                           </div>
                         )}
                         
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          {/* Save Project Button */}
-                          <Button 
-                            type="button" 
-                            variant="outline"
-                            className="flex-1 transition-all duration-200"
-                            disabled={updateProjectMutation.isPending || createProjectMutation.isPending}
-                            onClick={() => {
-                              const formData = form.getValues();
-                              console.log('Save Project Button - Current form data:', formData);
-                              console.log('Save Project Button - Current state variables:', {
-                                selectedProducts,
-                                selectedCollections,
-                                selectedKeywords,
-                                selectedMediaContent,
-                                primaryImages,
-                                secondaryImages,
-                                workflowStep,
-                                selectedAuthorId
-                              });
-                              
-                              // COMPREHENSIVE PROJECT DATA COLLECTION
-                              const projectData = {
-                                // ALL form fields - including title
-                                title: formData.title || '',
-                                blogId: formData.blogId || '',
-                                articleType: formData.articleType || 'blog',
-                                writingPerspective: formData.writingPerspective || 'first_person_plural',
-                                enableTables: formData.enableTables !== undefined ? formData.enableTables : true,
-                                enableLists: formData.enableLists !== undefined ? formData.enableLists : true,
-                                enableH3s: formData.enableH3s !== undefined ? formData.enableH3s : true,
-                                introType: formData.introType || 'search_intent',
-                                faqType: formData.faqType || 'short',
-                                enableCitations: formData.enableCitations !== undefined ? formData.enableCitations : true,
-                                toneOfVoice: formData.toneOfVoice || 'friendly',
-                                postStatus: formData.postStatus || 'draft',
-                                generateImages: formData.generateImages !== undefined ? formData.generateImages : true,
-                                keywords: formData.keywords || [],
-                                productIds: formData.productIds || [],
-                                collectionIds: formData.collectionIds || [],
-                                scheduledPublishTime: formData.scheduledPublishTime || '09:30',
-                                scheduledPublishDate: formData.scheduledPublishDate || undefined,
-                                publicationType: formData.publicationType || 'draft',
-                                scheduleDate: formData.scheduleDate || undefined,
-                                scheduleTime: formData.scheduleTime || '09:30',
-                                articleLength: formData.articleLength || 'long',
-                                headingsCount: formData.headingsCount || '3',
-                                categories: formData.categories || [],
-                                customCategory: formData.customCategory || '',
-                                buyerPersonas: formData.buyerPersonas || '',
+
                                 
                                 // Critical state variables that aren't in the form
                                 selectedProducts: selectedProducts || [],
