@@ -734,20 +734,6 @@ export default function AdminPanel() {
   type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
-        
-        // Selected Products
-        if (formData.selectedProducts && Array.isArray(formData.selectedProducts)) {
-          console.log(`Setting selectedProducts to ${formData.selectedProducts.length} items`);
-          setSelectedProducts(formData.selectedProducts);
-        } else {
-          console.log('No selectedProducts found, setting to empty array');
-          setSelectedProducts([]);
-        }
-        
-        // Selected Collections
-        if (formData.selectedCollections && Array.isArray(formData.selectedCollections)) {
-          console.log(`Setting selectedCollections to ${formData.selectedCollections.length} items`);
-          setSelectedCollections(formData.selectedCollections);
         } else {
           console.log('No selectedCollections found, setting to empty array');
           setSelectedCollections([]);
@@ -844,62 +830,6 @@ export default function AdminPanel() {
     resolver: zodResolver(contentFormSchema),
     defaultValues
   });
-        title: "Project updated successfully",
-        description: "Your changes have been saved",
-      });
-      setTimeout(() => setAutoSaveStatus('idle'), 2000);
-    },
-    onError: (error: any) => {
-      console.error('Update project error:', error);
-      setAutoSaveStatus('error');
-      toast({
-        title: "Failed to update project",
-        description: error?.message || "An error occurred while updating the project",
-        variant: "destructive"
-      });
-      setTimeout(() => setAutoSaveStatus('idle'), 3000);
-    }
-  });
-
-  // REMOVED AUTO-SAVE FUNCTION - replaced with manual save only
-
-  // REMOVED AUTO-SAVE TRIGGERS - Only manual save now
-
-  // Query for loading saved project data - DISABLED AUTO-REFETCH
-  const { data: savedProjectData } = useQuery({
-    queryKey: ['/api/projects', currentProjectId],
-    queryFn: () => currentProjectId ? apiRequest('GET', `/api/projects/${currentProjectId}`) : null,
-    enabled: false, // DISABLED - only load manually
-    refetchInterval: false,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false
-  });
-
-  // Manual save project function
-  const handleManualSave = () => {
-    if (!currentProject) {
-      toast({
-        title: "No project selected",
-        description: "Please create or select a project first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('Manual save triggered');
-    console.log('Current selections:', {
-      selectedProducts: selectedProducts.length,
-      selectedCollections: selectedCollections.length,
-      selectedKeywords: selectedKeywords.length,
-      selectedMediaContent,
-      primaryImages: primaryImages.length,
-      secondaryImages: secondaryImages.length,
-      selectedAuthorId,
-      workflowStep
-    });
-    
-    setAutoSaveStatus('saving');
     
     const formData = form.getValues();
     
@@ -939,41 +869,28 @@ export default function AdminPanel() {
 
     console.log('Saving project data:', projectData);
 
-    if (currentProjectId) {
       // Update existing project
-      updateProjectMutation.mutate({
-        id: currentProjectId,
         formData: projectData
       }, {
         onSuccess: () => {
-          setAutoSaveStatus('saved');
           console.log('Project update successful');
-          setTimeout(() => setAutoSaveStatus('idle'), 2000);
         },
         onError: (error) => {
-          setAutoSaveStatus('error');
           console.error('Project update failed:', error);
-          setTimeout(() => setAutoSaveStatus('idle'), 5000);
         }
       });
     } else {
       // Create new project
-      createProjectMutation.mutate({
-        name: currentProject,
         formData: projectData
       }, {
         onSuccess: (data) => {
           if (data.success) {
             setCurrentProjectId(data.project.id);
-            setAutoSaveStatus('saved');
             console.log('Project creation successful');
-            setTimeout(() => setAutoSaveStatus('idle'), 2000);
           }
         },
         onError: (error) => {
-          setAutoSaveStatus('error');
           console.error('Project creation failed:', error);
-          setTimeout(() => setAutoSaveStatus('idle'), 5000);
         }
       });
     }
