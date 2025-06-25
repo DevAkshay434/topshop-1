@@ -810,37 +810,6 @@ export default function AdminPanel() {
       lastUpdated: new Date().toISOString()
     };
 
-    console.log('Saving project data:', projectData);
-
-      // Update existing project
-        formData: projectData
-      }, {
-        onSuccess: () => {
-          console.log('Project update successful');
-        },
-        onError: (error) => {
-          console.error('Project update failed:', error);
-        }
-      });
-    } else {
-      // Create new project
-        formData: projectData
-      }, {
-        onSuccess: (data) => {
-          if (data.success) {
-  
-            console.log('Project creation successful');
-          }
-        },
-        onError: (error) => {
-          console.error('Project creation failed:', error);
-        }
-      });
-    }
-  };
-
-  // REMOVED AUTO-LOADING EFFECT - project loading now only happens in handleProjectSelected
-
 
 
   // Content generation readiness validation
@@ -3808,7 +3777,7 @@ export default function AdminPanel() {
                             </div>
                           </div>
                         )}
-
+                        <div className="flex gap-3">
                           {/* Generate Content Button */}
                           <Button 
                             type="button" 
