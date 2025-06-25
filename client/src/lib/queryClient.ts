@@ -32,11 +32,16 @@ export async function apiRequest<T = any>(
     url = methodOrOptions.url;
     method = methodOrOptions.method;
     requestData = methodOrOptions.data;
-  } else {
+  } else if (typeof urlOrData === 'string') {
     // Old style: separate arguments
     method = methodOrOptions;
-    url = urlOrData as string;
+    url = urlOrData;
     requestData = data;
+  } else {
+    // Single URL argument - default to GET
+    method = 'GET';
+    url = methodOrOptions;
+    requestData = undefined;
   }
   
   // Get auto-detected store ID from window global (set by StoreContext)
