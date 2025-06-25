@@ -2133,6 +2133,163 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     }
   });
 
+  // --- PROJECT MANAGEMENT ROUTES ---
+  
+  // Get all projects for the current store
+  apiRouter.get("/projects", async (req: Request, res: Response) => {
+    try {
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      const projects = await storage.getProjects(store.id);
+      res.json({ projects });
+    } catch (error: any) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get a specific project
+  apiRouter.get("/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      const project = await storage.getProject(id, store.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      res.json({ project });
+    } catch (error: any) {
+      console.error("Error fetching project:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create a new project
+  apiRouter.post("/projects", async (req: Request, res: Response) => {
+    try {
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Validate request body
+      const validation = insertProjectSchema.safeParse({
+        ...req.body,
+        storeId: store.id
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid project data", 
+          details: validation.error.errors 
+        });
+      }
+
+      // Check for duplicate project names within the store
+      const existingProjects = await storage.getProjects(store.id);
+      const duplicateName = existingProjects.some(
+        project => project.name.toLowerCase() === validation.data.name.toLowerCase()
+      );
+
+      if (duplicateName) {
+        return res.status(400).json({ 
+          error: "A project with this name already exists. Please choose a different name." 
+        });
+      }
+
+      const project = await storage.createProject(validation.data);
+      res.status(201).json({ project });
+    } catch (error: any) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update a project
+  apiRouter.put("/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Validate request body (partial update)
+      const validation = insertProjectSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid project data", 
+          details: validation.error.errors 
+        });
+      }
+
+      // Check for duplicate names if name is being updated
+      if (validation.data.name) {
+        const existingProjects = await storage.getProjects(store.id);
+        const duplicateName = existingProjects.some(
+          project => project.id !== id && project.name.toLowerCase() === validation.data.name!.toLowerCase()
+        );
+
+        if (duplicateName) {
+          return res.status(400).json({ 
+            error: "A project with this name already exists. Please choose a different name." 
+          });
+        }
+      }
+
+      const project = await storage.updateProject(id, validation.data, store.id);
+      res.json({ project });
+    } catch (error: any) {
+      console.error("Error updating project:", error);
+      if (error.message.includes("not found")) {
+        res.status(404).json({ error: "Project not found" });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  // Delete a project
+  apiRouter.delete("/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      await storage.deleteProject(id, store.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      if (error.message.includes("not found")) {
+        res.status(404).json({ error: "Project not found" });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
 
   
   // --- OAUTH ROUTES ---

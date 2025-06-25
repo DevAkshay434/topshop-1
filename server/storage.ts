@@ -1073,6 +1073,68 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(blogPosts.createdAt))
       .limit(limit);
   }
+
+  // Project management operations
+  async createProject(project: InsertProject): Promise<Project> {
+    const [newProject] = await db.insert(projects)
+      .values({
+        storeId: project.storeId,
+        name: project.name,
+        description: project.description || null,
+        projectData: project.projectData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newProject;
+  }
+
+  async getProjects(storeId: number): Promise<Project[]> {
+    return db.select()
+      .from(projects)
+      .where(eq(projects.storeId, storeId))
+      .orderBy(desc(projects.updatedAt));
+  }
+
+  async getProject(id: number, storeId: number): Promise<Project | null> {
+    const [project] = await db.select()
+      .from(projects)
+      .where(eq(projects.id, id))
+      .where(eq(projects.storeId, storeId));
+    return project || null;
+  }
+
+  async updateProject(id: number, projectUpdate: Partial<InsertProject>, storeId: number): Promise<Project> {
+    const updateData: Record<string, any> = {};
+    
+    if (projectUpdate.name !== undefined) updateData.name = projectUpdate.name;
+    if (projectUpdate.description !== undefined) updateData.description = projectUpdate.description;
+    if (projectUpdate.projectData !== undefined) updateData.projectData = projectUpdate.projectData;
+    updateData.updatedAt = new Date();
+    
+    const [updatedProject] = await db.update(projects)
+      .set(updateData)
+      .where(eq(projects.id, id))
+      .where(eq(projects.storeId, storeId))
+      .returning();
+      
+    if (!updatedProject) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+    
+    return updatedProject;
+  }
+
+  async deleteProject(id: number, storeId: number): Promise<void> {
+    const result = await db.delete(projects)
+      .where(eq(projects.id, id))
+      .where(eq(projects.storeId, storeId))
+      .returning({ id: projects.id });
+    
+    if (result.length === 0) {
+      throw new Error(`Project with ID ${id} not found`);
+    }
+  }
 }
 
 // Use MemStorage as the database connection is having issues
@@ -1316,6 +1378,42 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getAuthors(),
       () => memStorage.getAuthors()
+    );
+  }
+
+  // Project management operations
+  async createProject(project: InsertProject): Promise<Project> {
+    return this.tryOrFallback(
+      () => dbStorage.createProject(project),
+      () => memStorage.createProject(project)
+    );
+  }
+
+  async getProjects(storeId: number): Promise<Project[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getProjects(storeId),
+      () => memStorage.getProjects(storeId)
+    );
+  }
+
+  async getProject(id: number, storeId: number): Promise<Project | null> {
+    return this.tryOrFallback(
+      () => dbStorage.getProject(id, storeId),
+      () => memStorage.getProject(id, storeId)
+    );
+  }
+
+  async updateProject(id: number, project: Partial<InsertProject>, storeId: number): Promise<Project> {
+    return this.tryOrFallback(
+      () => dbStorage.updateProject(id, project, storeId),
+      () => memStorage.updateProject(id, project, storeId)
+    );
+  }
+
+  async deleteProject(id: number, storeId: number): Promise<void> {
+    return this.tryOrFallback(
+      () => dbStorage.deleteProject(id, storeId),
+      () => memStorage.deleteProject(id, storeId)
     );
   }
 }
