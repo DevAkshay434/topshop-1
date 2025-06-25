@@ -31,7 +31,7 @@ export function ProjectCreationDialog({ isOpen, onClose, onProjectCreated }: Pro
 
   const createProjectMutation = useMutation({
     mutationFn: (data: { name: string; description?: string; projectData: string }) =>
-      apiRequest('/api/projects', 'POST', data),
+      apiRequest('POST', '/api/projects', data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       onProjectCreated(response.project);
