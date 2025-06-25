@@ -12,6 +12,8 @@ import { ProductMultiSelect } from '../components/ProductMultiSelect';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { AuthorSelector } from '../components/AuthorSelector';
 import { useStore } from '../contexts/StoreContext';
+import { ProjectCreationDialog } from '../components/ProjectCreationDialog';
+import { ProjectLoadDialog } from '../components/ProjectLoadDialog';
 import { 
   Card, 
   CardContent, 
@@ -371,6 +373,11 @@ export default function AdminPanel() {
   const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
   
   const [shopifyMediaType, setShopifyMediaType] = useState<'products' | 'variants' | 'media'>('products');
+
+  // Project management state
+  const [currentProject, setCurrentProject] = useState<any | null>(null);
+  const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
+  const [showLoadProjectDialog, setShowLoadProjectDialog] = useState(false);
   
   // Function to fetch product images for selected products
   const fetchProductImages = async (includeVariants: boolean = false) => {
@@ -496,6 +503,134 @@ export default function AdminPanel() {
     } finally {
       setIsLoadingMedia(false);
     }
+  };
+
+  // Project management functions
+  const handleCreateProject = (project: any) => {
+    setCurrentProject(project);
+    toast({
+      title: "Project created",
+      description: `"${project.name}" is now your active project.`,
+    });
+  };
+
+  const handleLoadProject = (project: any) => {
+    try {
+      // Parse project data and populate form
+      const projectData = JSON.parse(project.projectData);
+      
+      // Restore form state from project data
+      if (projectData.selectedProducts) setSelectedProducts(projectData.selectedProducts);
+      if (projectData.selectedCollections) setSelectedCollections(projectData.selectedCollections);
+      if (projectData.buyerPersonas) setBuyerPersonas(projectData.buyerPersonas);
+      if (projectData.selectedKeywords) setSelectedKeywords(projectData.selectedKeywords);
+      if (projectData.selectedTitle) setSelectedTitle(projectData.selectedTitle);
+      if (projectData.selectedAuthorId) setSelectedAuthorId(projectData.selectedAuthorId);
+      if (projectData.articleLength) setArticleLength(projectData.articleLength);
+      if (projectData.headingsCount) setHeadingsCount(projectData.headingsCount);
+      if (projectData.writingPerspective) setWritingPerspective(projectData.writingPerspective);
+      if (projectData.toneOfVoice) setToneOfVoice(projectData.toneOfVoice);
+      if (projectData.contentStyle) setContentStyle(projectData.contentStyle);
+      if (projectData.introType) setIntroType(projectData.introType);
+      if (projectData.faqType) setFaqType(projectData.faqType);
+      if (projectData.categories) setCategories(projectData.categories);
+      if (projectData.postStatus) setPostStatus(projectData.postStatus);
+      if (projectData.publicationType) setPublicationType(projectData.publicationType);
+      
+      // Restore media content
+      if (projectData.mediaContent) {
+        if (projectData.mediaContent.primaryImage) {
+          setPrimaryImages([projectData.mediaContent.primaryImage]);
+        }
+        if (projectData.mediaContent.secondaryImages) {
+          setSecondaryImages(projectData.mediaContent.secondaryImages);
+        }
+        if (projectData.mediaContent.youtubeEmbed) {
+          setYoutubeEmbed(projectData.mediaContent.youtubeEmbed);
+        }
+        setSelectedMediaContent(projectData.mediaContent);
+      }
+
+      setCurrentProject(project);
+      toast({
+        title: "Project loaded",
+        description: `"${project.name}" has been loaded successfully.`,
+      });
+    } catch (error) {
+      console.error("Error loading project:", error);
+      toast({
+        title: "Error loading project",
+        description: "Failed to load project data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const extractFormStateForSaving = () => {
+    return {
+      selectedProducts,
+      selectedCollections,
+      buyerPersonas,
+      selectedKeywords,
+      selectedTitle,
+      mediaContent: {
+        primaryImage: primaryImages[0] || null,
+        secondaryImages,
+        youtubeEmbed
+      },
+      selectedAuthorId,
+      articleLength,
+      headingsCount,
+      writingPerspective,
+      toneOfVoice,
+      contentStyle,
+      introType,
+      faqType,
+      categories,
+      postStatus,
+      publicationType
+    };
+  };
+
+  // Save project mutation
+  const saveProjectMutation = useMutation({
+    mutationFn: (projectData: any) => {
+      if (currentProject) {
+        return apiRequest(`/api/projects/${currentProject.id}`, 'PUT', {
+          projectData: JSON.stringify(projectData)
+        });
+      } else {
+        throw new Error("No active project to save");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      toast({
+        title: "Project saved",
+        description: "Your project has been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error saving project",
+        description: error.message || "Failed to save project",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveProject = () => {
+    if (!currentProject) {
+      toast({
+        title: "No active project",
+        description: "Please create or load a project first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formState = extractFormStateForSaving();
+    saveProjectMutation.mutate(formState);
   };
 
   // Function to fetch product and variant images from selected products
@@ -1782,6 +1917,55 @@ export default function AdminPanel() {
   return (
     <div className="container max-w-7xl mx-auto py-10">
 
+      {/* Project Management Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold">Content Admin Panel</h1>
+            {currentProject ? (
+              <p className="text-sm text-muted-foreground mt-1">
+                Active Project: <span className="font-medium">{currentProject.name}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-1">
+                No active project - create or load a project to save your work
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateProjectDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              New Project
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowLoadProjectDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <FolderOpen className="h-4 w-4" />
+              Load Project
+            </Button>
+            {currentProject && (
+              <Button
+                onClick={handleSaveProject}
+                disabled={saveProjectMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                {saveProjectMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                Save Project
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Show scheduling permission notice if needed */}
       {permissionsData?.success && !permissionsData.hasPermission && (
@@ -8007,6 +8191,18 @@ export default function AdminPanel() {
           : "Select product images to appear throughout your article body"}
       />
 
+      {/* Project Management Dialogs */}
+      <ProjectCreationDialog
+        isOpen={showCreateProjectDialog}
+        onClose={() => setShowCreateProjectDialog(false)}
+        onProjectCreated={handleCreateProject}
+      />
+
+      <ProjectLoadDialog
+        isOpen={showLoadProjectDialog}
+        onClose={() => setShowLoadProjectDialog(false)}
+        onProjectSelected={handleLoadProject}
+      />
 
     </div>
   );
