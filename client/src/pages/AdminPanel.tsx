@@ -522,7 +522,7 @@ export default function AdminPanel() {
       // Restore form state from project data
       if (projectData.selectedProducts) setSelectedProducts(projectData.selectedProducts);
       if (projectData.selectedCollections) setSelectedCollections(projectData.selectedCollections);
-      if (projectData.buyerPersonas) setBuyerPersonas(projectData.buyerPersonas);
+      if (projectData.buyerPersonas) form.setValue('buyerPersonas', projectData.buyerPersonas);
       if (projectData.selectedKeywords) setSelectedKeywords(projectData.selectedKeywords);
       if (projectData.selectedTitle) setSelectedTitle(projectData.selectedTitle);
       if (projectData.selectedAuthorId) setSelectedAuthorId(projectData.selectedAuthorId);
@@ -578,7 +578,7 @@ export default function AdminPanel() {
     return {
       selectedProducts,
       selectedCollections,
-      buyerPersonas,
+      buyerPersonas: form.getValues('buyerPersonas') || '',
       selectedKeywords,
       selectedTitle,
       mediaContent: {
