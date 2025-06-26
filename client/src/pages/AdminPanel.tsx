@@ -520,6 +520,7 @@ export default function AdminPanel() {
       
       // Parse project data and populate form
       const projectData = JSON.parse(project.projectData);
+      console.log("Loading project data:", projectData);
       
       // Restore form state from project data
       if (projectData.selectedProducts) setSelectedProducts(projectData.selectedProducts);
@@ -546,7 +547,10 @@ export default function AdminPanel() {
       if (projectData.enableH3s !== undefined) setEnableH3s(projectData.enableH3s);
       if (projectData.enableCitations !== undefined) setEnableCitations(projectData.enableCitations);
       if (projectData.generateImages !== undefined) setGenerateImages(projectData.generateImages);
-      if (projectData.selectedContentToneId) setSelectedContentToneId(projectData.selectedContentToneId);
+      if (projectData.selectedContentToneId) {
+        console.log("Loading Content Style data:", { selectedContentToneId: projectData.selectedContentToneId, selectedContentDisplayName: projectData.selectedContentDisplayName });
+        setSelectedContentToneId(projectData.selectedContentToneId);
+      }
       if (projectData.selectedContentDisplayName) setSelectedContentDisplayName(projectData.selectedContentDisplayName);
       
       // Also update the form fields to ensure UI synchronization
@@ -596,7 +600,7 @@ export default function AdminPanel() {
   };
 
   const extractFormStateForSaving = () => {
-    return {
+    const extractedData = {
       selectedProducts,
       selectedCollections,
       buyerPersonas: form.getValues('buyerPersonas') || '',
@@ -629,6 +633,8 @@ export default function AdminPanel() {
       selectedContentToneId,
       selectedContentDisplayName
     };
+    console.log("Extracting project data for saving:", extractedData);
+    return extractedData;
   };
 
   // Save project mutation
@@ -3632,11 +3638,15 @@ export default function AdminPanel() {
                         <ContentStyleSelector 
                           initialToneId={selectedContentToneId}
                           onSelectionChange={(toneId, displayName) => {
+                            console.log("ContentStyleSelector selection changed:", { toneId, displayName });
                             setSelectedContentToneId(toneId);
                             setSelectedContentDisplayName(displayName);
                           }}
                           className="mt-2"
                         />
+                        <div className="text-xs text-gray-500 mt-2">
+                          Debug: selectedContentToneId = {selectedContentToneId || 'null'}, selectedContentDisplayName = {selectedContentDisplayName || 'null'}
+                        </div>
 
                       </div>
                       

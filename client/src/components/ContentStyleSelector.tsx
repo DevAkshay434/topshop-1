@@ -39,6 +39,7 @@ export function ContentStyleSelector({
 
   // Initialize based on initial values
   useEffect(() => {
+    console.log("ContentStyleSelector useEffect triggered:", { initialGenderId, initialStyleId, initialToneId });
     if (initialToneId) {
       // Find the tone and derive gender and style from it
       const tone = findToneById(initialToneId);
