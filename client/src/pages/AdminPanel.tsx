@@ -3645,7 +3645,7 @@ export default function AdminPanel() {
                         <FormLabel className="mb-2 block">Content Style</FormLabel>
                         <ContentStyleSelector 
                           key={`content-style-${selectedContentToneId || 'empty'}`}
-                          initialToneId={selectedContentToneId}
+                          initialToneId={selectedContentToneId || ''}
                           onSelectionChange={(toneId, displayName) => {
                             console.log("ContentStyleSelector selection changed:", { toneId, displayName });
                             setSelectedContentToneId(toneId);

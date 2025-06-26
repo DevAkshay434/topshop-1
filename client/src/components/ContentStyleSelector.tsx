@@ -30,9 +30,9 @@ export function ContentStyleSelector({
   initialToneId = '',
   className = ''
 }: ContentStyleSelectorProps) {
-  const [selectedGender, setSelectedGender] = useState<string>(initialGenderId);
-  const [selectedStyle, setSelectedStyle] = useState<string>(initialStyleId);
-  const [selectedTone, setSelectedTone] = useState<string>(initialToneId);
+  const [selectedGender, setSelectedGender] = useState<string>(initialGenderId || '');
+  const [selectedStyle, setSelectedStyle] = useState<string>(initialStyleId || '');
+  const [selectedTone, setSelectedTone] = useState<string>(initialToneId || '');
   
   const [availableStyles, setAvailableStyles] = useState(selectedGender ? getStylesByGender(selectedGender) : []);
   const [availableTones, setAvailableTones] = useState(selectedStyle ? getTonesByStyle(selectedStyle) : []);
