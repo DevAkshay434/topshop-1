@@ -37,7 +37,7 @@ export function ContentStyleSelector({
   const [availableStyles, setAvailableStyles] = useState(selectedGender ? getStylesByGender(selectedGender) : []);
   const [availableTones, setAvailableTones] = useState(selectedStyle ? getTonesByStyle(selectedStyle) : []);
 
-  // Initialize based on initial values
+  // Initialize based on initial values - trigger when any initial prop changes
   useEffect(() => {
     console.log("ContentStyleSelector useEffect triggered:", { initialGenderId, initialStyleId, initialToneId });
     if (initialToneId) {
@@ -81,6 +81,28 @@ export function ContentStyleSelector({
       setAvailableTones([]);
     }
   }, [initialGenderId, initialStyleId, initialToneId]);
+
+  // Separate useEffect to handle prop changes after initial mount
+  useEffect(() => {
+    if (initialToneId && initialToneId !== selectedTone) {
+      console.log("ContentStyleSelector: Initial tone changed, updating:", { initialToneId, currentSelectedTone: selectedTone });
+      const tone = findToneById(initialToneId);
+      if (tone) {
+        const style = styles.find(s => s.id === tone.styleId);
+        if (style) {
+          setSelectedGender(style.genderId);
+          setSelectedStyle(style.id);
+          setSelectedTone(initialToneId);
+          setAvailableStyles(getStylesByGender(style.genderId));
+          setAvailableTones(getTonesByStyle(style.id));
+          
+          // Notify parent of the loaded selection
+          const displayName = `${tone.name} (${style.name} ${tone.description})`;
+          onSelectionChange(initialToneId, displayName);
+        }
+      }
+    }
+  }, [initialToneId, selectedTone, onSelectionChange]);
 
   // When gender changes, update styles and reset tone
   const handleGenderChange = (value: string) => {
