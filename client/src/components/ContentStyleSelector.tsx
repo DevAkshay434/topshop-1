@@ -37,23 +37,35 @@ export function ContentStyleSelector({
   const [availableStyles, setAvailableStyles] = useState(selectedGender ? getStylesByGender(selectedGender) : []);
   const [availableTones, setAvailableTones] = useState(selectedStyle ? getTonesByStyle(selectedStyle) : []);
 
-  // Initialize based on initial values - trigger when any initial prop changes
+  // Initialize component based on initial props
   useEffect(() => {
     console.log("ContentStyleSelector useEffect triggered:", { initialGenderId, initialStyleId, initialToneId });
+    
+    // Reset state first
+    setSelectedGender('');
+    setSelectedStyle('');
+    setSelectedTone('');
+    setAvailableStyles([]);
+    setAvailableTones([]);
+    
     if (initialToneId) {
       // Find the tone and derive gender and style from it
       const tone = findToneById(initialToneId);
       if (tone) {
         const style = styles.find(s => s.id === tone.styleId);
         if (style) {
+          console.log("ContentStyleSelector: Setting up from tone:", { toneId: initialToneId, styleName: style.name, genderName: style.genderId });
+          
           setSelectedGender(style.genderId);
           setSelectedStyle(style.id);
           setSelectedTone(initialToneId);
           setAvailableStyles(getStylesByGender(style.genderId));
           setAvailableTones(getTonesByStyle(style.id));
           
-          // Notify parent component
-          onSelectionChange(initialToneId, tone.displayName);
+          // Construct proper display name
+          const displayName = `${tone.name} (${style.name} ${tone.description || ''})`.trim();
+          console.log("ContentStyleSelector: Notifying parent with displayName:", displayName);
+          onSelectionChange(initialToneId, displayName);
         }
       }
     } else if (initialGenderId) {
@@ -72,15 +84,8 @@ export function ContentStyleSelector({
           }
         }
       }
-    } else {
-      // Clear all selections if no initial values
-      setSelectedGender('');
-      setSelectedStyle('');
-      setSelectedTone('');
-      setAvailableStyles([]);
-      setAvailableTones([]);
     }
-  }, [initialGenderId, initialStyleId, initialToneId]);
+  }, [initialGenderId, initialStyleId, initialToneId, onSelectionChange]);
 
   // Separate useEffect to handle prop changes after initial mount
   useEffect(() => {
@@ -97,7 +102,7 @@ export function ContentStyleSelector({
           setAvailableTones(getTonesByStyle(style.id));
           
           // Notify parent of the loaded selection
-          const displayName = `${tone.name} (${style.name} ${tone.description})`;
+          const displayName = `${tone.name} (${style.name} ${tone.description || ''})`.trim();
           onSelectionChange(initialToneId, displayName);
         }
       }
