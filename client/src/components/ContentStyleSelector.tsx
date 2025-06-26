@@ -39,7 +39,7 @@ export function ContentStyleSelector({
 
   // Initialize based on initial values
   useEffect(() => {
-    if (initialToneId && initialToneId !== selectedTone) {
+    if (initialToneId) {
       // Find the tone and derive gender and style from it
       const tone = findToneById(initialToneId);
       if (tone) {
@@ -71,6 +71,13 @@ export function ContentStyleSelector({
           }
         }
       }
+    } else {
+      // Clear all selections if no initial values
+      setSelectedGender('');
+      setSelectedStyle('');
+      setSelectedTone('');
+      setAvailableStyles([]);
+      setAvailableTones([]);
     }
   }, [initialGenderId, initialStyleId, initialToneId]);
 

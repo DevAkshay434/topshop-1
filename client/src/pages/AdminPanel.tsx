@@ -554,6 +554,7 @@ export default function AdminPanel() {
       if (projectData.headingsCount) form.setValue('headingsCount', projectData.headingsCount);
       if (projectData.writingPerspective) form.setValue('writingPerspective', projectData.writingPerspective);
       if (projectData.toneOfVoice) form.setValue('toneOfVoice', projectData.toneOfVoice);
+
       if (projectData.introType) form.setValue('introType', projectData.introType);
       if (projectData.faqType) form.setValue('faqType', projectData.faqType);
       if (projectData.postStatus) form.setValue('postStatus', projectData.postStatus);
