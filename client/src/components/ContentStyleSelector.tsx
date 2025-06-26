@@ -72,7 +72,7 @@ export function ContentStyleSelector({
         }
       }
     }
-  }, [initialGenderId, initialStyleId, initialToneId, onSelectionChange]);
+  }, [initialGenderId, initialStyleId, initialToneId]);
 
   // When gender changes, update styles and reset tone
   const handleGenderChange = (value: string) => {
@@ -85,8 +85,8 @@ export function ContentStyleSelector({
     setSelectedTone('');
     setAvailableTones([]);
     
-    // Notify parent that selection has been reset
-    onSelectionChange('', '');
+    // Don't notify parent until complete selection is made
+    // onSelectionChange('', '');
   };
 
   // When style changes, update tones
@@ -98,8 +98,8 @@ export function ContentStyleSelector({
     // Reset tone when style changes
     setSelectedTone('');
     
-    // Notify parent that selection has been reset
-    onSelectionChange('', '');
+    // Don't notify parent until tone is selected
+    // onSelectionChange('', '');
   };
 
   // When tone changes, notify parent
