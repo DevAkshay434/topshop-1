@@ -550,8 +550,16 @@ export default function AdminPanel() {
       if (projectData.selectedContentToneId) {
         console.log("Loading Content Style data:", { selectedContentToneId: projectData.selectedContentToneId, selectedContentDisplayName: projectData.selectedContentDisplayName });
         setSelectedContentToneId(projectData.selectedContentToneId);
+      } else {
+        console.log("No Content Style tone ID found in project data");
+        setSelectedContentToneId('');
       }
-      if (projectData.selectedContentDisplayName) setSelectedContentDisplayName(projectData.selectedContentDisplayName);
+      if (projectData.selectedContentDisplayName) {
+        setSelectedContentDisplayName(projectData.selectedContentDisplayName);
+      } else {
+        console.log("No Content Style display name found in project data");
+        setSelectedContentDisplayName('');
+      }
       
       // Also update the form fields to ensure UI synchronization
       if (projectData.articleLength) form.setValue('articleLength', projectData.articleLength);
