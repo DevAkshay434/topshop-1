@@ -39,7 +39,23 @@ export function ContentStyleSelector({
 
   // Initialize based on initial values
   useEffect(() => {
-    if (initialGenderId) {
+    if (initialToneId && initialToneId !== selectedTone) {
+      // Find the tone and derive gender and style from it
+      const tone = findToneById(initialToneId);
+      if (tone) {
+        const style = styles.find(s => s.id === tone.styleId);
+        if (style) {
+          setSelectedGender(style.genderId);
+          setSelectedStyle(style.id);
+          setSelectedTone(initialToneId);
+          setAvailableStyles(getStylesByGender(style.genderId));
+          setAvailableTones(getTonesByStyle(style.id));
+          
+          // Notify parent component
+          onSelectionChange(initialToneId, tone.displayName);
+        }
+      }
+    } else if (initialGenderId) {
       setSelectedGender(initialGenderId);
       setAvailableStyles(getStylesByGender(initialGenderId));
       

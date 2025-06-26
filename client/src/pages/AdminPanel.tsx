@@ -3629,6 +3629,8 @@ export default function AdminPanel() {
                       <div className="mb-6">
                         <FormLabel className="mb-2 block">Content Style</FormLabel>
                         <ContentStyleSelector 
+                          key={`content-style-${selectedContentToneId}`}
+                          initialToneId={selectedContentToneId}
                           onSelectionChange={(toneId, displayName) => {
                             setSelectedContentToneId(toneId);
                             setSelectedContentDisplayName(displayName);
