@@ -4940,7 +4940,7 @@ export default function AdminPanel() {
                                         form.setValue('publicationType', 'schedule');
                                       }
                                     }}
-                                    defaultValue={field.value}
+                                    value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger>
