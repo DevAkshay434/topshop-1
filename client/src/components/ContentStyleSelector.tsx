@@ -188,7 +188,8 @@ export function ContentStyleSelector({
           <FormItem>
             <FormLabel>Content Style</FormLabel>
             <Select 
-              value={selectedStyle} 
+              value={isSelectControlled ? selectedStyle : undefined}
+              defaultValue={!isSelectControlled ? selectedStyle : undefined}
               onValueChange={handleStyleChange}
               disabled={!selectedGender}
             >
@@ -215,7 +216,8 @@ export function ContentStyleSelector({
           <FormItem>
             <FormLabel>Tone</FormLabel>
             <Select 
-              value={selectedTone} 
+              value={isSelectControlled ? selectedTone : undefined}
+              defaultValue={!isSelectControlled ? selectedTone : undefined}
               onValueChange={handleToneChange}
               disabled={!selectedStyle}
             >
