@@ -530,21 +530,21 @@ export default function AdminPanel() {
       if (projectData.selectedTitle) setSelectedTitle(projectData.selectedTitle);
       if (projectData.selectedAuthorId) setSelectedAuthorId(projectData.selectedAuthorId);
       
-      // Fix Style Formatting section - update both state and form values
+      // Fix Style Formatting section - use form.reset() approach
+      console.log("DEBUGGING: Before setting values - form.getValues():", form.getValues());
+      
+      // First set state variables for component sync
       if (projectData.articleLength) {
+        console.log("DEBUGGING: Setting articleLength from", form.getValues('articleLength'), "to", projectData.articleLength);
         setArticleLength(projectData.articleLength);
-        form.setValue('articleLength', projectData.articleLength);
-        console.log("Loading project: Setting articleLength to", projectData.articleLength);
       }
       if (projectData.headingsCount) {
+        console.log("DEBUGGING: Setting headingsCount from", form.getValues('headingsCount'), "to", projectData.headingsCount);
         setHeadingsCount(projectData.headingsCount);
-        form.setValue('headingsCount', projectData.headingsCount);
-        console.log("Loading project: Setting headingsCount to", projectData.headingsCount);
       }
       if (projectData.writingPerspective) {
+        console.log("DEBUGGING: Setting writingPerspective from", form.getValues('writingPerspective'), "to", projectData.writingPerspective);
         setWritingPerspective(projectData.writingPerspective);
-        form.setValue('writingPerspective', projectData.writingPerspective);
-        console.log("Loading project: Setting writingPerspective to", projectData.writingPerspective);
       }
       
       if (projectData.toneOfVoice) {
@@ -615,6 +615,31 @@ export default function AdminPanel() {
         }
         setSelectedMediaContent(projectData.mediaContent);
       }
+
+      // COMPLETE FORM RESET to ensure all Select components update properly
+      const currentFormValues = form.getValues();
+      const updatedFormValues = {
+        ...currentFormValues,
+        // Specifically set the problematic fields
+        articleLength: projectData.articleLength || currentFormValues.articleLength,
+        headingsCount: projectData.headingsCount || currentFormValues.headingsCount,
+        writingPerspective: projectData.writingPerspective || currentFormValues.writingPerspective,
+        toneOfVoice: projectData.toneOfVoice || currentFormValues.toneOfVoice,
+        introType: projectData.introType || currentFormValues.introType,
+        faqType: projectData.faqType || currentFormValues.faqType,
+        postStatus: projectData.postStatus || currentFormValues.postStatus
+      };
+      
+      console.log("DEBUGGING: Resetting form with updated values:", updatedFormValues);
+      form.reset(updatedFormValues);
+      
+      // Final debugging check
+      setTimeout(() => {
+        console.log("DEBUGGING: Final form state after form.reset():");
+        console.log("articleLength:", form.getValues('articleLength'));
+        console.log("headingsCount:", form.getValues('headingsCount'));
+        console.log("writingPerspective:", form.getValues('writingPerspective'));
+      }, 100);
 
       toast({
         title: "Project loaded",
