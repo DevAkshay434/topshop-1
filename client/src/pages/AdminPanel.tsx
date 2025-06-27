@@ -616,8 +616,20 @@ export default function AdminPanel() {
         setSelectedMediaContent(projectData.mediaContent);
       }
 
-      // COMPLETE FORM RESET to ensure all Select components update properly
+      // DETAILED DEBUGGING - Let's see exactly what's in the project data
+      console.log("=== DEBUGGING PROJECT LOAD ===");
+      console.log("RAW PROJECT DATA:", projectData);
+      console.log("articleLength from project:", projectData.articleLength);
+      console.log("headingsCount from project:", projectData.headingsCount);
+      console.log("writingPerspective from project:", projectData.writingPerspective);
+      console.log("toneOfVoice from project:", projectData.toneOfVoice);
+      console.log("introType from project:", projectData.introType);
+      
+      // Current form state before reset
       const currentFormValues = form.getValues();
+      console.log("CURRENT FORM VALUES BEFORE RESET:", currentFormValues);
+      
+      // COMPLETE FORM RESET to ensure all Select components update properly
       const updatedFormValues = {
         ...currentFormValues,
         // Specifically set the problematic fields
@@ -630,15 +642,18 @@ export default function AdminPanel() {
         postStatus: projectData.postStatus || currentFormValues.postStatus
       };
       
-      console.log("DEBUGGING: Resetting form with updated values:", updatedFormValues);
+      console.log("UPDATED FORM VALUES FOR RESET:", updatedFormValues);
       form.reset(updatedFormValues);
       
       // Final debugging check
       setTimeout(() => {
-        console.log("DEBUGGING: Final form state after form.reset():");
+        console.log("FINAL FORM STATE AFTER RESET:");
         console.log("articleLength:", form.getValues('articleLength'));
         console.log("headingsCount:", form.getValues('headingsCount'));
         console.log("writingPerspective:", form.getValues('writingPerspective'));
+        console.log("toneOfVoice:", form.getValues('toneOfVoice'));
+        console.log("introType:", form.getValues('introType'));
+        console.log("=== END DEBUGGING ===");
       }, 100);
 
       toast({
