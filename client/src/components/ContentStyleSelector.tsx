@@ -87,14 +87,16 @@ export function ContentStyleSelector({
     }
   }, [initialGenderId, initialStyleId, initialToneId, onSelectionChange]);
 
-  // Separate useEffect to handle prop changes after initial mount
+  // Additional effect to handle late-loading props (when project data loads after component mount)
   useEffect(() => {
     if (initialToneId && initialToneId !== selectedTone) {
-      console.log("ContentStyleSelector: Initial tone changed, updating:", { initialToneId, currentSelectedTone: selectedTone });
+      console.log("ContentStyleSelector: Initial tone prop changed after mount:", { initialToneId, currentSelectedTone: selectedTone });
       const tone = findToneById(initialToneId);
       if (tone) {
         const style = styles.find(s => s.id === tone.styleId);
         if (style) {
+          console.log("ContentStyleSelector: Updating from late-loading prop:", { toneId: initialToneId, styleName: style.name, genderName: style.genderId });
+          
           setSelectedGender(style.genderId);
           setSelectedStyle(style.id);
           setSelectedTone(initialToneId);
@@ -103,6 +105,7 @@ export function ContentStyleSelector({
           
           // Notify parent of the loaded selection
           const displayName = `${tone.name} (${style.name} ${tone.description || ''})`.trim();
+          console.log("ContentStyleSelector: Notifying parent from late-loading prop with displayName:", displayName);
           onSelectionChange(initialToneId, displayName);
         }
       }
