@@ -315,6 +315,9 @@ export default function AdminPanel() {
   const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
   const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+  
+  // Form key to force re-render of all form components when loading a project
+  const [formKey, setFormKey] = useState(0);
 
   // Buyer persona suggestions for the flexible text input
   const buyerPersonaSuggestions = [
@@ -644,6 +647,10 @@ export default function AdminPanel() {
       
       console.log("UPDATED FORM VALUES FOR RESET:", updatedFormValues);
       form.reset(updatedFormValues);
+      
+      // Force complete re-render of all form components by updating the form key
+      setFormKey(prev => prev + 1);
+      console.log("FORCING FORM RE-RENDER with new key:", formKey + 1);
       
       // Final debugging check
       setTimeout(() => {
@@ -2132,7 +2139,7 @@ export default function AdminPanel() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Form {...form}>
+                <Form {...form} key={formKey}>
                   <form onSubmit={(e) => { e.preventDefault(); }} className="space-y-4">
                     {/* Step guidance */}
                     {/* Top button for Load Template */}

@@ -1,0 +1,86 @@
+e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/:85 The Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element.
+chunk-RPCDYKBN.js?v=5bb373d2:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+queryClient.ts:85 Query function: No auto-detected store ID available for query: /api/admin/blogs. Value: undefined
+queryClient.ts:85 Query function: No auto-detected store ID available for query: /api/shopify/stores. Value: undefined
+ShopifyProvider.tsx:75 Not in Shopify embedded mode - App Bridge not initialized
+AdminPanel.tsx:2259 Blog changed to: 
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:2272 Current form state: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+StoreContext.tsx:81 Detected shop from store-info API: rajeshshah.myshopify.com
+StoreContext.tsx:94 Auto-detected store from API: rajeshshah.myshopify.com (ID: 1)
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+queryClient.ts:83 Query function: Adding X-Store-ID header: 1 for query: /api/admin/products
+queryClient.ts:83 Query function: Adding X-Store-ID header: 1 for query: /api/admin/collections
+queryClient.ts:83 Query function: Adding X-Store-ID header: 1 for query: /api/shopify/check-permissions
+queryClient.ts:83 Query function: Adding X-Store-ID header: 1 for query: /api/admin/blogs
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+queryClient.ts:83 Query function: Adding X-Store-ID header: 1 for query: /api/projects
+AdminPanel.tsx:523 Loading project data: Object
+AdminPanel.tsx:534 DEBUGGING: Before setting values - form.getValues(): Object
+AdminPanel.tsx:538 DEBUGGING: Setting articleLength from long to long
+AdminPanel.tsx:542 DEBUGGING: Setting headingsCount from 3 to 3
+AdminPanel.tsx:546 DEBUGGING: Setting writingPerspective from first_person_plural to first_person_plural
+AdminPanel.tsx:553 Loading project: Setting toneOfVoice to friendly
+AdminPanel.tsx:559 Loading project: Setting introType to search_intent
+AdminPanel.tsx:564 Loading project: Setting faqType to short
+AdminPanel.tsx:578 Loading Content Style data: Object
+AdminPanel.tsx:620 === DEBUGGING PROJECT LOAD ===
+AdminPanel.tsx:621 RAW PROJECT DATA: Object
+AdminPanel.tsx:622 articleLength from project: long
+AdminPanel.tsx:623 headingsCount from project: 3
+AdminPanel.tsx:624 writingPerspective from project: first_person_plural
+AdminPanel.tsx:625 toneOfVoice from project: friendly
+AdminPanel.tsx:626 introType from project: search_intent
+AdminPanel.tsx:630 CURRENT FORM VALUES BEFORE RESET: Object
+AdminPanel.tsx:645 UPDATED FORM VALUES FOR RESET: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ShopifyImageViewer.tsx:44 Processing image URL: https://images.pexels.com/photos/4474047/pexels-photo-4474047.jpeg?auto=compress&cs=tinysrgb&h=350 → https://images.pexels.com/photos/4474047/pexels-photo-4474047.jpeg?auto=compress&cs=tinysrgb&h=350
+ShopifyImageViewer.tsx:44 Processing image URL: https://cdn.shopify.com/s/files/1/0938/4158/8538/files/Pura_5_Micron_filter.jpg?v=1750154702 → https://cdn.shopify.com/s/files/1/0938/4158/8538/files/Pura_5_Micron_filter.jpg?v=1750154702
+ShopifyImageViewer.tsx:44 Processing image URL: https://cdn.shopify.com/s/files/1/0938/4158/8538/files/LSE-Lighting-Quartz-Sleeve-for-Pura-UV-20.webp?v=1750154638 → https://cdn.shopify.com/s/files/1/0938/4158/8538/files/LSE-Lighting-Quartz-Sleeve-for-Pura-UV-20.webp?v=1750154638
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+ContentStyleSelector.tsx:57 ContentStyleSelector: Setting up from tone: Object
+ContentStyleSelector.tsx:67 ContentStyleSelector: Notifying parent with displayName: Direct, Punchy (Direct-Response )
+AdminPanel.tsx:3713 ContentStyleSelector selection changed: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:93 ContentStyleSelector: Initial tone prop changed after mount: Object
+ContentStyleSelector.tsx:98 ContentStyleSelector: Updating from late-loading prop: Object
+ContentStyleSelector.tsx:108 ContentStyleSelector: Notifying parent from late-loading prop with displayName: Direct, Punchy (Direct-Response )
+AdminPanel.tsx:3713 ContentStyleSelector selection changed: Object
+AdminPanel.tsx:650 FINAL FORM STATE AFTER RESET:
+AdminPanel.tsx:651 articleLength: long
+AdminPanel.tsx:652 headingsCount: 3
+AdminPanel.tsx:653 writingPerspective: first_person_plural
+AdminPanel.tsx:654 toneOfVoice: friendly
+AdminPanel.tsx:655 introType: search_intent
+AdminPanel.tsx:656 === END DEBUGGING ===
+ContentStyleSelector.tsx:93 ContentStyleSelector: Initial tone prop changed after mount: Object
+ContentStyleSelector.tsx:98 ContentStyleSelector: Updating from late-loading prop: Object
+ContentStyleSelector.tsx:108 ContentStyleSelector: Notifying parent from late-loading prop with displayName: Direct, Punchy (Direct-Response )
+AdminPanel.tsx:3713 ContentStyleSelector selection changed: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+ContentStyleSelector.tsx:57 ContentStyleSelector: Setting up from tone: Object
+ContentStyleSelector.tsx:67 ContentStyleSelector: Notifying parent with displayName: Direct, Punchy (Direct-Response )
+AdminPanel.tsx:3713 ContentStyleSelector selection changed: Object
+AdminPanel.tsx:367 Current selectedMediaContent state: Object

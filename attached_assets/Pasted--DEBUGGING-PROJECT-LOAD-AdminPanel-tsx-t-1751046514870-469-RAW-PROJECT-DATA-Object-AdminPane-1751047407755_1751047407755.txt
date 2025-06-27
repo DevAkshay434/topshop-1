@@ -1,0 +1,28 @@
+=== DEBUGGING PROJECT LOAD ===
+AdminPanel.tsx?t=1751046514870:469 RAW PROJECT DATA: Object
+AdminPanel.tsx?t=1751046514870:470 articleLength from project: long
+AdminPanel.tsx?t=1751046514870:471 headingsCount from project: 3
+AdminPanel.tsx?t=1751046514870:472 writingPerspective from project: first_person_plural
+AdminPanel.tsx?t=1751046514870:473 toneOfVoice from project: friendly
+AdminPanel.tsx?t=1751046514870:474 introType from project: search_intent
+AdminPanel.tsx?t=1751046514870:476 CURRENT FORM VALUES BEFORE RESET: Object
+AdminPanel.tsx?t=1751046514870:488 UPDATED FORM VALUES FOR RESET: Object
+AdminPanel.tsx?t=1751046514870:258 Current selectedMediaContent state: Object
+ShopifyImageViewer.tsx:44 Processing image URL: https://images.pexels.com/photos/4474047/pexels-photo-4474047.jpeg?auto=compress&cs=tinysrgb&h=350 → https://images.pexels.com/photos/4474047/pexels-photo-4474047.jpeg?auto=compress&cs=tinysrgb&h=350
+ShopifyImageViewer.tsx:44 Processing image URL: https://cdn.shopify.com/s/files/1/0938/4158/8538/files/Pura_5_Micron_filter.jpg?v=1750154702 → https://cdn.shopify.com/s/files/1/0938/4158/8538/files/Pura_5_Micron_filter.jpg?v=1750154702
+ShopifyImageViewer.tsx:44 Processing image URL: https://cdn.shopify.com/s/files/1/0938/4158/8538/files/LSE-Lighting-Quartz-Sleeve-for-Pura-UV-20.webp?v=1750154638 → https://cdn.shopify.com/s/files/1/0938/4158/8538/files/LSE-Lighting-Quartz-Sleeve-for-Pura-UV-20.webp?v=1750154638
+ContentStyleSelector.tsx:42 ContentStyleSelector useEffect triggered: Object
+ContentStyleSelector.tsx:57 ContentStyleSelector: Setting up from tone: Object
+ContentStyleSelector.tsx:67 ContentStyleSelector: Notifying parent with displayName: Direct, Punchy (Direct-Response )
+AdminPanel.tsx?t=1751046514870:5214 ContentStyleSelector selection changed: Object
+AdminPanel.tsx?t=1751046514870:258 Current selectedMediaContent state: Object
+ContentStyleSelector.tsx:93 ContentStyleSelector: Initial tone prop changed after mount: Object
+ContentStyleSelector.tsx:98 ContentStyleSelector: Updating from late-loading prop: Object
+ContentStyleSelector.tsx:108 ContentStyleSelector: Notifying parent from late-loading prop with displayName: Direct, Punchy (Direct-Response )
+AdminPanel.tsx?t=1751046514870:5214 ContentStyleSelector selection changed: Object
+AdminPanel.tsx?t=1751046514870:491 FINAL FORM STATE AFTER RESET:
+AdminPanel.tsx?t=1751046514870:492 articleLength: long
+AdminPanel.tsx?t=1751046514870:493 headingsCount: 3
+AdminPanel.tsx?t=1751046514870:494 writingPerspective: first_person_plural
+AdminPanel.tsx?t=1751046514870:495 toneOfVoice: friendly
+AdminPanel.tsx?t=1751046514870:496 introType: search_intent
