@@ -24,7 +24,7 @@ function generateFallbackKeywords(searchTerm: string): KeywordData[] {
   // Add base term
   keywords.push({
     keyword: searchTerm,
-    search_volume: 1000,
+    searchVolume: 1000,
     competition: 0.5,
     cpc: 1.50
   });
@@ -33,7 +33,7 @@ function generateFallbackKeywords(searchTerm: string): KeywordData[] {
   modifiers.forEach(modifier => {
     keywords.push({
       keyword: `${modifier} ${searchTerm}`,
-      search_volume: Math.floor(Math.random() * 800) + 200,
+      searchVolume: Math.floor(Math.random() * 800) + 200,
       competition: Math.random() * 0.8 + 0.1,
       cpc: Math.random() * 3 + 0.5
     });
@@ -46,7 +46,7 @@ function generateFallbackKeywords(searchTerm: string): KeywordData[] {
       if (word.length > 3) { // Only use words longer than 3 characters
         keywords.push({
           keyword: word,
-          search_volume: Math.floor(Math.random() * 500) + 100,
+          searchVolume: Math.floor(Math.random() * 500) + 100,
           competition: Math.random() * 0.6 + 0.2,
           cpc: Math.random() * 2 + 0.3
         });

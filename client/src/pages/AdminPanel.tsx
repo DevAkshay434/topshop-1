@@ -547,10 +547,22 @@ export default function AdminPanel() {
         console.log("Loading project: Setting writingPerspective to", projectData.writingPerspective);
       }
       
-      if (projectData.toneOfVoice) setToneOfVoice(projectData.toneOfVoice);
+      if (projectData.toneOfVoice) {
+        setToneOfVoice(projectData.toneOfVoice);
+        form.setValue('toneOfVoice', projectData.toneOfVoice);
+        console.log("Loading project: Setting toneOfVoice to", projectData.toneOfVoice);
+      }
       if (projectData.contentStyle) setContentStyle(projectData.contentStyle);
-      if (projectData.introType) setIntroType(projectData.introType);
-      if (projectData.faqType) setFaqType(projectData.faqType);
+      if (projectData.introType) {
+        setIntroType(projectData.introType);
+        form.setValue('introType', projectData.introType);
+        console.log("Loading project: Setting introType to", projectData.introType);
+      }
+      if (projectData.faqType) {
+        setFaqType(projectData.faqType);
+        form.setValue('faqType', projectData.faqType);
+        console.log("Loading project: Setting faqType to", projectData.faqType);
+      }
       if (projectData.categories) setCategories(projectData.categories);
       if (projectData.postStatus) setPostStatus(projectData.postStatus);
       if (projectData.publicationType) setPublicationType(projectData.publicationType);
