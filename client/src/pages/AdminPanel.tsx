@@ -318,6 +318,9 @@ export default function AdminPanel() {
   
   // Form key to force re-render of all form components when loading a project
   const [formKey, setFormKey] = useState(0);
+  
+  // State to control whether Select components should use controlled mode
+  const [isSelectControlled, setIsSelectControlled] = useState(true);
 
   // Buyer persona suggestions for the flexible text input
   const buyerPersonaSuggestions = [
@@ -648,29 +651,17 @@ export default function AdminPanel() {
       console.log("UPDATED FORM VALUES FOR RESET:", updatedFormValues);
       form.reset(updatedFormValues);
       
+      // Temporarily make Select components uncontrolled
+      setIsSelectControlled(false);
+      
       // Force complete re-render of all form components by updating the form key
       setFormKey(prev => prev + 1);
       console.log("FORCING FORM RE-RENDER with new key:", formKey + 1);
       
-      // Additional force update for specific problematic fields
+      // Wait for re-render then make them controlled again with the correct values
       setTimeout(() => {
-        // Force trigger field updates individually with more aggressive approach
-        const fieldsToUpdate = ['articleLength', 'headingsCount', 'writingPerspective', 'toneOfVoice', 'introType'];
-        fieldsToUpdate.forEach(fieldName => {
-          const value = form.getValues(fieldName as any);
-          if (value) {
-            // Triple-set approach: clear, set empty, then set correct value
-            form.setValue(fieldName as any, '', { shouldValidate: false, shouldDirty: true });
-            setTimeout(() => {
-              form.setValue(fieldName as any, 'temp', { shouldValidate: false, shouldDirty: true });
-              setTimeout(() => {
-                form.setValue(fieldName as any, value, { shouldValidate: false, shouldDirty: true });
-                // Trigger field change event to ensure UI updates
-                form.trigger(fieldName as any);
-              }, 10);
-            }, 10);
-          }
-        });
+        setIsSelectControlled(true);
+        console.log("Re-enabled controlled Select components");
       }, 100);
       
       // Final debugging check
@@ -3572,9 +3563,9 @@ export default function AdminPanel() {
                               <FormLabel>Article Length</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
-                                value={field.value}
-                                defaultValue={field.value}
-                                key={`articleLength-${formKey}-${field.value}`}
+                                value={isSelectControlled ? field.value : undefined}
+                                defaultValue={!isSelectControlled ? field.value : undefined}
+                                key={`articleLength-${formKey}-${field.value}-${isSelectControlled}`}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -3604,7 +3595,9 @@ export default function AdminPanel() {
                               <FormLabel>Number of Sections</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
-                                value={field.value}
+                                value={isSelectControlled ? field.value : undefined}
+                                defaultValue={!isSelectControlled ? field.value : undefined}
+                                key={`headingsCount-${formKey}-${field.value}-${isSelectControlled}`}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -3714,7 +3707,9 @@ export default function AdminPanel() {
                             <FormLabel>Writing Perspective</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              value={field.value}
+                              value={isSelectControlled ? field.value : undefined}
+                              defaultValue={!isSelectControlled ? field.value : undefined}
+                              key={`writingPerspective-${formKey}-${field.value}-${isSelectControlled}`}
                             >
                               <FormControl>
                                 <SelectTrigger>
