@@ -652,16 +652,38 @@ export default function AdminPanel() {
       setFormKey(prev => prev + 1);
       console.log("FORCING FORM RE-RENDER with new key:", formKey + 1);
       
+      // Additional force update for specific problematic fields
+      setTimeout(() => {
+        // Force trigger field updates individually with more aggressive approach
+        const fieldsToUpdate = ['articleLength', 'headingsCount', 'writingPerspective', 'toneOfVoice', 'introType'];
+        fieldsToUpdate.forEach(fieldName => {
+          const value = form.getValues(fieldName as any);
+          if (value) {
+            // Triple-set approach: clear, set empty, then set correct value
+            form.setValue(fieldName as any, '', { shouldValidate: false, shouldDirty: true });
+            setTimeout(() => {
+              form.setValue(fieldName as any, 'temp', { shouldValidate: false, shouldDirty: true });
+              setTimeout(() => {
+                form.setValue(fieldName as any, value, { shouldValidate: false, shouldDirty: true });
+                // Trigger field change event to ensure UI updates
+                form.trigger(fieldName as any);
+              }, 10);
+            }, 10);
+          }
+        });
+      }, 100);
+      
       // Final debugging check
       setTimeout(() => {
-        console.log("FINAL FORM STATE AFTER RESET:");
+        console.log("FINAL FORM STATE AFTER ALL UPDATES:");
         console.log("articleLength:", form.getValues('articleLength'));
         console.log("headingsCount:", form.getValues('headingsCount'));
         console.log("writingPerspective:", form.getValues('writingPerspective'));
         console.log("toneOfVoice:", form.getValues('toneOfVoice'));
         console.log("introType:", form.getValues('introType'));
+        console.log("Form errors:", form.formState.errors);
         console.log("=== END DEBUGGING ===");
-      }, 100);
+      }, 200);
 
       toast({
         title: "Project loaded",
@@ -3551,6 +3573,8 @@ export default function AdminPanel() {
                               <Select 
                                 onValueChange={field.onChange} 
                                 value={field.value}
+                                defaultValue={field.value}
+                                key={`articleLength-${formKey}-${field.value}`}
                               >
                                 <FormControl>
                                   <SelectTrigger>
