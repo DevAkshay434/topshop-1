@@ -529,9 +529,24 @@ export default function AdminPanel() {
       if (projectData.selectedKeywords) setSelectedKeywords(projectData.selectedKeywords);
       if (projectData.selectedTitle) setSelectedTitle(projectData.selectedTitle);
       if (projectData.selectedAuthorId) setSelectedAuthorId(projectData.selectedAuthorId);
-      if (projectData.articleLength) setArticleLength(projectData.articleLength);
-      if (projectData.headingsCount) setHeadingsCount(projectData.headingsCount);
-      if (projectData.writingPerspective) setWritingPerspective(projectData.writingPerspective);
+      
+      // Fix Style Formatting section - update both state and form values
+      if (projectData.articleLength) {
+        setArticleLength(projectData.articleLength);
+        form.setValue('articleLength', projectData.articleLength);
+        console.log("Loading project: Setting articleLength to", projectData.articleLength);
+      }
+      if (projectData.headingsCount) {
+        setHeadingsCount(projectData.headingsCount);
+        form.setValue('headingsCount', projectData.headingsCount);
+        console.log("Loading project: Setting headingsCount to", projectData.headingsCount);
+      }
+      if (projectData.writingPerspective) {
+        setWritingPerspective(projectData.writingPerspective);
+        form.setValue('writingPerspective', projectData.writingPerspective);
+        console.log("Loading project: Setting writingPerspective to", projectData.writingPerspective);
+      }
+      
       if (projectData.toneOfVoice) setToneOfVoice(projectData.toneOfVoice);
       if (projectData.contentStyle) setContentStyle(projectData.contentStyle);
       if (projectData.introType) setIntroType(projectData.introType);
@@ -561,12 +576,8 @@ export default function AdminPanel() {
         setSelectedContentDisplayName('');
       }
       
-      // Also update the form fields to ensure UI synchronization
-      if (projectData.articleLength) form.setValue('articleLength', projectData.articleLength);
-      if (projectData.headingsCount) form.setValue('headingsCount', projectData.headingsCount);
-      if (projectData.writingPerspective) form.setValue('writingPerspective', projectData.writingPerspective);
+      // Update additional form fields to ensure UI synchronization
       if (projectData.toneOfVoice) form.setValue('toneOfVoice', projectData.toneOfVoice);
-
       if (projectData.introType) form.setValue('introType', projectData.introType);
       if (projectData.faqType) form.setValue('faqType', projectData.faqType);
       if (projectData.postStatus) form.setValue('postStatus', projectData.postStatus);
