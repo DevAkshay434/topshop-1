@@ -3503,7 +3503,7 @@ export default function AdminPanel() {
                               <FormLabel>Article Length</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
-                                defaultValue={field.value}
+                                value={field.value}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -3533,7 +3533,7 @@ export default function AdminPanel() {
                               <FormLabel>Number of Sections</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
-                                defaultValue={field.value}
+                                value={field.value}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -3643,7 +3643,7 @@ export default function AdminPanel() {
                             <FormLabel>Writing Perspective</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -3690,7 +3690,7 @@ export default function AdminPanel() {
                             <FormLabel>Tone of Voice</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -3747,7 +3747,7 @@ export default function AdminPanel() {
                             <FormLabel>FAQ Section</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
