@@ -21,6 +21,7 @@ interface ContentStyleSelectorProps {
   initialStyleId?: string;
   initialToneId?: string;
   className?: string;
+  isSelectControlled?: boolean;
 }
 
 export function ContentStyleSelector({
@@ -28,6 +29,7 @@ export function ContentStyleSelector({
   initialGenderId = '',
   initialStyleId = '',
   initialToneId = '',
+  isSelectControlled = true,
   className = ''
 }: ContentStyleSelectorProps) {
   const [selectedGender, setSelectedGender] = useState<string>(initialGenderId || '');
@@ -158,7 +160,11 @@ export function ContentStyleSelector({
         <div className="space-y-2">
           <FormItem>
             <FormLabel>Gender</FormLabel>
-            <Select value={selectedGender} onValueChange={handleGenderChange}>
+            <Select 
+              value={isSelectControlled ? selectedGender : undefined}
+              defaultValue={!isSelectControlled ? selectedGender : undefined}
+              onValueChange={handleGenderChange}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select gender" />

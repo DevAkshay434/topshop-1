@@ -3733,7 +3733,7 @@ export default function AdminPanel() {
                       <div className="mb-6">
                         <FormLabel className="mb-2 block">Content Style</FormLabel>
                         <ContentStyleSelector 
-                          key={`content-style-${selectedContentToneId || 'empty'}`}
+                          key={`content-style-${selectedContentToneId || 'empty'}-${formKey}-${isSelectControlled}`}
                           initialToneId={selectedContentToneId || ''}
                           onSelectionChange={(toneId, displayName) => {
                             console.log("ContentStyleSelector selection changed:", { toneId, displayName });
@@ -3741,6 +3741,7 @@ export default function AdminPanel() {
                             setSelectedContentDisplayName(displayName);
                           }}
                           className="mt-2"
+                          isSelectControlled={isSelectControlled}
                         />
                         <div className="text-xs text-gray-500 mt-2">
                           Debug: selectedContentToneId = {selectedContentToneId || 'null'}, selectedContentDisplayName = {selectedContentDisplayName || 'null'}
@@ -3756,7 +3757,9 @@ export default function AdminPanel() {
                             <FormLabel>Tone of Voice</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              value={field.value}
+                              value={isSelectControlled ? field.value : undefined}
+                              defaultValue={!isSelectControlled ? field.value : undefined}
+                              key={`toneOfVoice-${formKey}-${field.value}-${isSelectControlled}`}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -3787,7 +3790,9 @@ export default function AdminPanel() {
                             <FormLabel>Introduction Style</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              value={field.value || "search_intent"}
+                              value={isSelectControlled ? (field.value || "search_intent") : undefined}
+                              defaultValue={!isSelectControlled ? (field.value || "search_intent") : undefined}
+                              key={`introType-${formKey}-${field.value}-${isSelectControlled}`}
                             >
                               <FormControl>
                                 <SelectTrigger>
