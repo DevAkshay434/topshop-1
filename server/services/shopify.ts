@@ -159,7 +159,7 @@ export class ShopifyService {
     
     // Create a reusable axios client for this store
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      baseURL: `https://${store.shopName}/admin/api/2024-10`,
       headers: {
         'X-Shopify-Access-Token': store.accessToken,
         'Content-Type': 'application/json'
@@ -615,42 +615,44 @@ export class ShopifyService {
             
             let optimizedUrl = url;
             
-            // Optimize image URLs for different sources
+            // Optimize image URLs for different sources - use smaller sizes to avoid 25MP limit
             if (url.includes('images.pexels.com')) {
-              // Use medium size for Pexels (balanced quality vs size)
-              optimizedUrl = url.replace('/original/', '/medium/');
-              optimizedUrl = optimizedUrl.replace('/large2x/', '/medium/');
-              optimizedUrl = optimizedUrl.replace('/large/', '/medium/');
+              // Use small size for Pexels to avoid 25MP limit
+              optimizedUrl = url.replace('/original/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/large/', '/small/');
+              optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
               
-              if (!optimizedUrl.includes('/medium/') && !optimizedUrl.includes('w=')) {
+              if (!optimizedUrl.includes('/small/') && !optimizedUrl.includes('w=')) {
                 const separator = optimizedUrl.includes('?') ? '&' : '?';
-                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb`;
+                optimizedUrl = optimizedUrl + `${separator}w=600&h=400&fit=crop&auto=compress&cs=tinysrgb&q=70`;
               }
             }
             else if (url.includes('cdn.shopify.com')) {
-              // Use reasonable Shopify image sizes
-              optimizedUrl = url.replace('_master', '_800x800');
-              optimizedUrl = optimizedUrl.replace('_original', '_800x800');
-              optimizedUrl = optimizedUrl.replace('_2048x2048', '_800x800');
-              optimizedUrl = optimizedUrl.replace('_1024x1024', '_800x800');
+              // Use smaller Shopify image sizes to avoid 25MP limit
+              optimizedUrl = url.replace('_master', '_600x600');
+              optimizedUrl = optimizedUrl.replace('_original', '_600x600');
+              optimizedUrl = optimizedUrl.replace('_2048x2048', '_600x600');
+              optimizedUrl = optimizedUrl.replace('_1024x1024', '_600x600');
+              optimizedUrl = optimizedUrl.replace('_800x800', '_600x600');
             }
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
               // Add size constraints for external images
               const separator = optimizedUrl.includes('?') ? '&' : '?';
               if (!url.includes('w=') && !url.includes('width=') && !url.includes('h=') && !url.includes('height=')) {
-                optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&q=80&auto=compress`;
+                optimizedUrl = optimizedUrl + `${separator}w=600&h=400&fit=crop&q=70&auto=compress`;
               }
             }
             
-            // Reduce extreme dimensions to avoid 25MP limit
+            // Reduce extreme dimensions to avoid 25MP limit (more aggressive)
             optimizedUrl = optimizedUrl.replace(/(\?|&)(w|width)=(\d+)/g, (match, prefix, param, value) => {
               const numValue = parseInt(value);
-              return numValue > 1200 ? `${prefix}${param}=1200` : match;
+              return numValue > 600 ? `${prefix}${param}=600` : match;
             });
             
             optimizedUrl = optimizedUrl.replace(/(\?|&)(h|height)=(\d+)/g, (match, prefix, param, value) => {
               const numValue = parseInt(value);
-              return numValue > 800 ? `${prefix}${param}=800` : match;
+              return numValue > 400 ? `${prefix}${param}=400` : match;
             });
             
             // Return properly formatted image
@@ -846,13 +848,56 @@ export class ShopifyService {
         );
         
         if (hasImageError) {
-          console.log('Retrying article creation without images due to 25MP limit...');
+          console.log('Retrying article creation with optimized images due to 25MP limit...');
           
           try {
-            // Create fallback article data without images
+            // Create optimized article data with smaller images
+            let optimizedContent = post.content || '';
+            
+            // Apply aggressive image optimization to stay under 25MP limit
+            optimizedContent = optimizedContent.replace(
+              /<img[^>]*src="([^"]*?)"[^>]*>/gi,
+              (match: string, url: string) => {
+                // Extract alt text from original image tag
+                const altMatch = match.match(/alt="([^"]*)"/i);
+                const altText = altMatch ? altMatch[1] : 'Article image';
+                
+                let optimizedUrl = url;
+                
+                // Apply aggressive size limits for Shopify compatibility
+                if (url.includes('images.pexels.com')) {
+                  // Use small size for Pexels to stay under 25MP
+                  optimizedUrl = url.replace('/original/', '/small/');
+                  optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
+                  optimizedUrl = optimizedUrl.replace('/large/', '/small/');
+                  optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
+                  
+                  // Add aggressive size constraints
+                  const separator = optimizedUrl.includes('?') ? '&' : '?';
+                  optimizedUrl = optimizedUrl + `${separator}w=400&h=300&fit=crop&auto=compress&cs=tinysrgb&q=60`;
+                }
+                else if (url.includes('cdn.shopify.com')) {
+                  // Use smaller Shopify image sizes
+                  optimizedUrl = url.replace('_master', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_original', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_2048x2048', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_1024x1024', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_800x800', '_400x400');
+                }
+                else if (url.startsWith('http') && !url.includes('youtube.com')) {
+                  // Add aggressive size constraints for external images
+                  const separator = optimizedUrl.includes('?') ? '&' : '?';
+                  optimizedUrl = optimizedUrl + `${separator}w=400&h=300&fit=crop&q=60&auto=compress`;
+                }
+                
+                // Return properly formatted optimized image
+                return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 100%; height: auto; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+              }
+            );
+            
             const fallbackData: any = {
               title: post.title,
-              body_html: post.content?.replace(/<img[^>]*>/g, '') || '',
+              body_html: optimizedContent,
               published: post.status === 'published',
               tags: post.tags || '',
               handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || ''
@@ -868,12 +913,16 @@ export class ShopifyService {
               fallbackData.author = (post as any).author;
             }
             
+            // Count images in optimized content
+            const imageCount = (optimizedContent.match(/<img[^>]*>/g) || []).length;
+            console.log(`✓ Optimized content contains ${imageCount} images with smaller dimensions`);
+            
             const fallbackClient = this.getClient(store);
             const fallbackResponse = await fallbackClient.post(`/blogs/${blogId}/articles.json`, {
               article: fallbackData
             });
             
-            console.log('✓ Article created successfully without images to avoid 25MP limit');
+            console.log(`✓ Article created successfully with ${imageCount} optimized images to avoid 25MP limit`);
             const article = fallbackResponse.data.article;
             
             // Generate handle if not provided
