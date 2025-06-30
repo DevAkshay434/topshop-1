@@ -514,6 +514,13 @@ export async function publishScheduledArticle(
       });
     } catch (getError: any) {
       console.error(`Error retrieving article before publishing:`, getError);
+      
+      // If article is not found (404), it might have been deleted from Shopify
+      if (getError.response?.status === 404) {
+        console.log(`Article ${articleId} not found on Shopify (404) - may have been deleted. Marking as failed.`);
+        throw new Error(`Article ${articleId} not found or deleted from Shopify`);
+      }
+      
       throw new Error(`Article ${articleId} not found or inaccessible`);
     }
 
@@ -788,8 +795,24 @@ export async function checkScheduledPosts(): Promise<void> {
               console.log(`Successfully published scheduled post ${post.id} - "${post.title}"`);
               console.log(`Published at ${publishedArticle.published_at}`);
             }
-          } catch (publishError) {
+          } catch (publishError: any) {
             console.error(`Error publishing ${isPage ? 'page' : 'post'} ${post.id}:`, publishError.message);
+            
+            // If the article was deleted from Shopify, mark it as failed in our database
+            if (publishError.message?.includes('not found or deleted from Shopify')) {
+              try {
+                await storage.updateBlogPost(post.id, {
+                  status: 'failed',
+                  updatedAt: new Date()
+                });
+                console.log(`Marked post ${post.id} as failed due to Shopify deletion`);
+              } catch (updateError) {
+                console.error(`Failed to update post status for ${post.id}:`, updateError);
+              }
+            } else {
+              // For other errors, log but don't change status (might be temporary)
+              console.log(`Post ${post.id} will be retried in next scheduling cycle`);
+            }
           }
         } else {
           // Calculate minutes until publishing
