@@ -1402,63 +1402,17 @@ export class ShopifyService {
       console.log(`Fetching content files from ${store.shopName} using assets API`);
       const client = this.getClient(store.shopName, store.accessToken);
 
-      // Try a new approach that's more reliable - get product images directly
+      // Use GraphQL Admin API instead of deprecated REST API
       try {
-        console.log("Fetching product images as content files - more reliable method");
-        const productsResponse = await client.get('/products.json?limit=20&fields=id,title,image,images,variants');
-      
-        if (productsResponse.data && productsResponse.data.products) {
-          const products = productsResponse.data.products;
-          const productImages = [];
-          
-          // Process all product images
-          products.forEach(product => {
-            if (product.image && product.image.src) {
-              productImages.push({
-                id: `product-${product.id}-main`,
-                url: product.image.src,
-                filename: `${product.title} (main)`,
-                content_type: 'image/jpeg',
-                alt: product.title
-              });
-            }
-            
-            if (product.images && Array.isArray(product.images) && product.images.length > 0) {
-              product.images.forEach((image, index) => {
-                if (image && image.src) {
-                  productImages.push({
-                    id: `product-${product.id}-image-${image.id || index}`,
-                    url: image.src,
-                    filename: `${product.title} (${index + 1})`,
-                    content_type: 'image/jpeg',
-                    alt: image.alt || `${product.title} image ${index + 1}`
-                  });
-                }
-              });
-            }
-            
-            // Add variant images
-            if (product.variants && Array.isArray(product.variants)) {
-              product.variants.forEach((variant, index) => {
-                if (variant.image && variant.image.src) {
-                  productImages.push({
-                    id: `variant-${variant.id}`,
-                    url: variant.image.src,
-                    filename: `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
-                    content_type: 'image/jpeg',
-                    alt: `${product.title} - ${variant.title || `Variant ${index + 1}`}`
-                  });
-                }
-              });
-            }
-          });
-          
-          console.log(`Found ${productImages.length} product images to use as content files`);
-          if (productImages.length > 0) {
-            return productImages;
-          }
+        console.log("Fetching product images as content files using GraphQL");
+        const { graphqlShopifyService } = await import('./graphql-shopify');
+        const productImages = await graphqlShopifyService.getProductImages(store, 20);
+        
+        console.log(`Found ${productImages.length} product images to use as content files`);
+        if (productImages.length > 0) {
+          return productImages;
         }
-      } catch (productsError) {
+      } catch (productsError: any) {
         console.error("Error fetching product images:", productsError.message);
       }
       
@@ -1560,45 +1514,9 @@ export class ShopifyService {
   
   public async getProducts(store: ShopifyStore, limit: number = 50): Promise<any[]> {
     try {
-      // Get store client
-      const client = this.getClient(store);
-      
-      // Try with current API version first
-      try {
-        console.log(`Fetching products from ${store.shopName} with limit ${limit}`);
-        const response = await client.get(`/products.json?limit=${limit}`);
-        console.log(`Successfully fetched ${response.data.products.length} products`);
-        return response.data.products;
-      } catch (firstError: any) {
-        // Log first attempt error
-        console.error(`Error in first attempt to fetch products from ${store.shopName}:`, firstError.message);
-        
-        // If it's a 404 error, try with the stable 2023-07 API version
-        if (firstError.response && firstError.response.status === 404) {
-          console.log(`Retrying with 2023-07 API version`);
-          
-          // Create a client with explicit API version
-          const fallbackClient = axios.create({
-            baseURL: `https://${store.shopName}/admin/api/2023-07`,
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Shopify-Access-Token': store.accessToken
-            }
-          });
-          
-          try {
-            const fallbackResponse = await fallbackClient.get(`/products.json?limit=${limit}`);
-            console.log(`Fallback succeeded, fetched ${fallbackResponse.data.products.length} products`);
-            return fallbackResponse.data.products;
-          } catch (fallbackError: any) {
-            console.error(`Fallback attempt also failed:`, fallbackError.message);
-            throw fallbackError;
-          }
-        } else {
-          // Not a 404, rethrow original error
-          throw firstError;
-        }
-      }
+      // Use GraphQL Admin API instead of deprecated REST API
+      const { graphqlShopifyService } = await import('./graphql-shopify');
+      return await graphqlShopifyService.getProducts(store, limit);
     } catch (error: any) {
       console.error(`Error fetching products from Shopify store ${store.shopName}:`, error);
       
