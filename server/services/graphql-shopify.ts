@@ -13,7 +13,7 @@ export class GraphQLShopifyService {
    */
   private initializeGraphQLClient(store: ShopifyStore): void {
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2024-10/graphql.json`,
+      baseURL: `https://${store.shopName}/admin/api/2025-07/graphql.json`,
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': store.accessToken

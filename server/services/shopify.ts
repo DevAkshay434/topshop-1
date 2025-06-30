@@ -159,7 +159,7 @@ export class ShopifyService {
     
     // Create a reusable axios client for this store
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2024-10`,
+      baseURL: `https://${store.shopName}/admin/api/2025-07`,
       headers: {
         'X-Shopify-Access-Token': store.accessToken,
         'Content-Type': 'application/json'

@@ -118,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       try {
         // Upload to Shopify Files API
         const shopifyResponse = await axios.post(
-          `https://${store.shopName}/admin/api/2024-10/files.json`,
+          `https://${store.shopName}/admin/api/2025-07/files.json`,
           {
             file: {
               attachment: req.file.buffer.toString('base64'),

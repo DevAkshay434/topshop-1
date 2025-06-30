@@ -160,7 +160,7 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
     // APPROACH 1: Try to fetch theme assets first
     try {
       console.log('Trying to fetch Shopify theme assets');
-      const themesResponse = await axios.get(`https://${store.shopName}/admin/api/2024-10/themes.json`, {
+      const themesResponse = await axios.get(`https://${store.shopName}/admin/api/2025-07/themes.json`, {
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': store.accessToken
@@ -175,7 +175,7 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
           console.log(`Found main theme with ID ${mainTheme.id}`);
           
           const assetsResponse = await axios.get(
-            `https://${store.shopName}/admin/api/2024-10/themes/${mainTheme.id}/assets.json`,
+            `https://${store.shopName}/admin/api/2025-07/themes/${mainTheme.id}/assets.json`,
             {
               headers: {
                 'Content-Type': 'application/json',
@@ -223,7 +223,7 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
     try {
       console.log('Trying to fetch Shopify media files using Files API');
       // Note: Files API might not be available in all Shopify plans
-      const filesResponse = await axios.get(`https://${store.shopName}/admin/api/2024-10/files.json?limit=250`, {
+      const filesResponse = await axios.get(`https://${store.shopName}/admin/api/2025-07/files.json?limit=250`, {
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': store.accessToken
