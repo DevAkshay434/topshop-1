@@ -251,81 +251,15 @@ mediaRouter.get('/shopify-media-library', async (req: Request, res: Response) =>
       console.error('Error fetching from Files API:', filesError.message);
     }
     
-    // APPROACH 3: Always fetch product images as a reliable source
+    // APPROACH 3: Always fetch product images using GraphQL API instead of deprecated REST API
     try {
-      console.log('Fetching product images for media library');
-      const productsResponse = await axios.get(
-        `https://${store.shopName}/admin/api/2023-10/products.json?limit=50&fields=id,title,image,images,variants`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Shopify-Access-Token': store.accessToken
-          }
-        }
-      );
+      console.log('Fetching product images for media library using GraphQL');
+      const { graphqlShopifyService } = await import('../services/graphql-shopify');
+      const productImages = await graphqlShopifyService.getProductImages(store, 50);
       
-      if (productsResponse.data && productsResponse.data.products) {
-        const products = productsResponse.data.products;
-        console.log(`Processing images from ${products.length} products`);
-        
-        // Extract all product images (both main and variants)
-        const productImages: any[] = [];
-        
-        products.forEach((product: any) => {
-          if (product.images && Array.isArray(product.images)) {
-            product.images.forEach((image: any, index: number) => {
-              if (image && image.src) {
-                productImages.push({
-                  id: `product-${product.id}-image-${image.id}`,
-                  url: image.src,
-                  src: image.src,
-                  width: image.width || 800,
-                  height: image.height || 600,
-                  filename: `${product.title} - Image ${index + 1}`,
-                  content_type: 'image/jpeg',
-                  alt: image.alt || `${product.title} image`,
-                  source: 'shopify_media',
-                  assetType: 'product_image',
-                  productId: product.id,
-                  productTitle: product.title
-                });
-              }
-            });
-          }
-          
-          // Also add variant images if they're different from product images
-          if (product.variants && Array.isArray(product.variants)) {
-            product.variants.forEach((variant: any) => {
-              if (variant.image && variant.image.src) {
-                // Check if we already added this image from the product.images array
-                const isDuplicate = productImages.some(img => 
-                  img.url === variant.image.src || 
-                  (img.id.includes(product.id) && img.id.includes(variant.image.id))
-                );
-                
-                if (!isDuplicate) {
-                  productImages.push({
-                    id: `variant-${variant.id}-image-${variant.image.id}`,
-                    url: variant.image.src,
-                    src: variant.image.src,
-                    width: variant.image.width || 800,
-                    height: variant.image.height || 600,
-                    filename: `${product.title} - ${variant.title}`,
-                    content_type: 'image/jpeg',
-                    alt: variant.image.alt || `${product.title} - ${variant.title}`,
-                    source: 'shopify_media',
-                    assetType: 'variant_image',
-                    productId: product.id,
-                    productTitle: product.title,
-                    variantId: variant.id,
-                    variantTitle: variant.title
-                  });
-                }
-              }
-            });
-          }
-        });
-        
+      console.log(`Processing ${productImages.length} product images from GraphQL`);
+      
+      if (productImages && productImages.length > 0) {
         console.log(`Found ${productImages.length} product and variant images`);
         allMediaImages = allMediaImages.concat(productImages);
       }

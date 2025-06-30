@@ -737,14 +737,11 @@ adminRouter.get("/product-images-all", async (_req: Request, res: Response) => {
       trialEndsAt: null
     };
     
-    // Get products directly (which is more reliable than other APIs)
-    const productsResponse = await shopifyService.makeApiRequest(
-      store, 
-      'GET', 
-      '/products.json?limit=50&fields=id,title,image,images,variants'
-    );
+    // Use GraphQL Admin API instead of deprecated REST API
+    const { graphqlShopifyService } = await import('../services/graphql-shopify');
+    const productImages = await graphqlShopifyService.getProductImages(store, 50);
     
-    if (!productsResponse || !productsResponse.products || !Array.isArray(productsResponse.products)) {
+    if (!productImages || !Array.isArray(productImages)) {
       return res.json({
         success: false,
         message: "Failed to fetch products from Shopify",
@@ -752,10 +749,36 @@ adminRouter.get("/product-images-all", async (_req: Request, res: Response) => {
       });
     }
     
+    // Return the images directly from GraphQL service (already processed)
+    return res.json({
+      success: true,
+      images: productImages,
+      count: productImages.length
+    });
+  } catch (error: any) {
+    console.error("Error fetching product images:", error);
+    return res.json({
+      success: false,
+      message: "Error fetching product images",
+      images: []
+    });
+  }
+});
+
+// Skip the old REST API processing code
+adminRouter.get("/product-images-all-old", async (_req: Request, res: Response) => {
+  // This is the old method for reference but should not be used
+  try {
+    const store = {
+      id: 1,
+      shopName: 'example.myshopify.com',
+      accessToken: 'token'
+    } as any;
+    
     const allImages: any[] = [];
     
-    // Process each product and collect images
-    productsResponse.products.forEach((product: any) => {
+    // OLD CODE - Process each product and collect images (deprecated)
+    [].forEach((product: any) => {
       // Handle product's main image
       if (product.image && product.image.src) {
         allImages.push({

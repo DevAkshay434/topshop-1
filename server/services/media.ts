@@ -1,6 +1,5 @@
 import { ShopifyService } from './shopify';
-import { ShopifyStore } from '../models/shopify';
-import axios from 'axios';
+import { ShopifyStore } from '@shared/schema';
 
 interface MediaFile {
   id: string;
@@ -29,374 +28,229 @@ export class MediaService {
    */
   async getShopifyMediaFiles(store: ShopifyStore): Promise<MediaFile[]> {
     try {
-      console.log(`Fetching media files from ${store.shopName} using Files API`);
-      
-      // Try to use the Files API to get all media library files
-      const filesResponse = await this.shopifyService.makeApiRequest(
-        store,
-        'GET',
-        '/files.json?limit=250'
-      );
-      
-      if (filesResponse && filesResponse.files && filesResponse.files.length > 0) {
-        console.log(`Successfully fetched ${filesResponse.files.length} files from Shopify Files API`);
-        
-        // Convert to our standard format with careful validation
-        const mediaFiles = filesResponse.files.map((file: any) => {
-          // Ensure the file has a valid URL - essential for image display
-          const url = file.url && file.url.trim() !== '' 
-            ? file.url 
-            : `https://placehold.co/600x400?text=${encodeURIComponent(file.filename || 'Image')}`;
-            
-          return {
-            id: file.id ? file.id.toString() : `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-            url: url,
-            filename: file.filename || 'Unnamed file',
-            content_type: file.content_type || this.getContentTypeFromFilename(file.filename || 'image.jpg'),
-            alt: file.alt || file.filename || 'Shopify Media',
-            source: 'shopify_media'
-          };
-        });
-        
-        // Log a sample for debugging
-        if (mediaFiles.length > 0) {
-          console.log('Sample media file:', JSON.stringify(mediaFiles[0]));
-        }
-        
-        return mediaFiles;
-      }
-      
-      // If Files API fails or returns empty, get product images directly
-      console.log('Files API returned empty or failed, fetching product images directly');
-      
-      // Get product images directly from products as a fallback
-      const productImages = await this.getProductImagesFromAllProducts(store);
-      if (productImages.length > 0) {
-        console.log(`Found ${productImages.length} product images to use as media files`);
-        return productImages;
-      }
-      
-      // If both methods failed, try the Assets API as a last resort
-      console.log('Product images search returned empty, falling back to Assets API');
-      return this.getAllContentFiles(store);
-      
-    } catch (error) {
-      console.error('Error fetching Shopify media files:', error);
-      
-      try {
-        // Try to get product images if Files API fails
-        console.log('Trying to fetch product images as fallback after error');
-        const productImages = await this.getProductImagesFromAllProducts(store);
-        if (productImages.length > 0) {
-          console.log(`Found ${productImages.length} product images to use as media files`);
-          return productImages;
-        }
-      } catch (productError) {
-        console.error('Error fetching product images as fallback:', productError);
-      }
-      
-      // If all else fails, try Assets API
-      console.log('Falling back to Assets API due to error');
-      return this.getAllContentFiles(store);
-    }
-  }
-  
-  /**
-   * Get images from all products as a fallback method
-   */
-  async getProductImagesFromAllProducts(store: ShopifyStore): Promise<MediaFile[]> {
-    console.log('Fetching product images as content files - more reliable method');
-    
-    try {
-      // Get a list of products with their images
-      const productsResponse = await this.shopifyService.makeApiRequest(
-        store,
-        'GET',
-        '/products.json?limit=20&fields=id,title,image,images,variants'
-      );
-      
-      if (!productsResponse || !productsResponse.products || !Array.isArray(productsResponse.products)) {
-        console.log('No products found in the store, or invalid response format');
-        return [];
-      }
-      
-      console.log(`Processing images from ${productsResponse.products.length} products`);
-      
-      const allImages: MediaFile[] = [];
-      
-      // Process each product and its images
-      productsResponse.products.forEach((product: any) => {
-        // Handle main product images
-        if (product.images && Array.isArray(product.images)) {
-          console.log(`Product ${product.id} (${product.title}) has ${product.images.length} images`);
-          
-          product.images.forEach((image: any, index: number) => {
-            if (image && image.src) {
-              // Create a proper image object with all required fields
-              const imageObject: MediaFile = {
-                id: `product-${product.id}-image-${image.id || index}`,
-                url: image.src,
-                filename: `${product.title} - Image ${index + 1}`,
-                content_type: 'image/jpeg',
-                alt: image.alt || `${product.title} - Image ${index + 1}`,
-                source: 'product_image'
-              };
-              
-              allImages.push(imageObject);
-            }
-          });
-        } else {
-          console.log(`Product ${product.id} (${product.title}) has no images array`);
-        }
-        
-        // Handle single product image if images array isn't available
-        if (product.image && product.image.src && (!product.images || !Array.isArray(product.images))) {
-          console.log(`Adding single image for product ${product.id} (${product.title})`);
-          
-          // Create a proper image object with all required fields
-          const imageObject: MediaFile = {
-            id: `product-${product.id}-image-single`,
-            url: product.image.src,
-            filename: `${product.title} - Main Image`,
-            content_type: 'image/jpeg',
-            alt: product.image.alt || `${product.title} - Main Image`,
-            source: 'product_image'
-          };
-          
-          allImages.push(imageObject);
-        }
-      });
-      
-      console.log(`Found ${allImages.length} product images to use as content files`);
-      
-      // Log sample image to verify format
-      if (allImages.length > 0) {
-        console.log('Sample image object:', JSON.stringify(allImages[0]));
-      }
-      
-      return allImages;
-      
-    } catch (error) {
-      console.error('Error fetching product images as content files:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get product-specific images for a selected product
-   */
-  async getProductImages(store: ShopifyStore, productId: string): Promise<MediaFile[]> {
-    try {
-      console.log(`Fetching images for product ${productId} from ${store.shopName}`);
-      
-      // Get the product details including all images
-      const productResponse = await this.shopifyService.makeApiRequest(
-        store,
-        'GET',
-        `/products/${productId}.json`
-      );
-      
-      if (!productResponse || !productResponse.product) {
-        console.log(`Product ${productId} not found`);
-        return [];
-      }
-      
-      const product = productResponse.product;
-      const result: MediaFile[] = [];
-      
-      // Process the main product images
-      if (product.images && Array.isArray(product.images)) {
-        console.log(`Processing ${product.images.length} images for product ${product.title}`);
-        
-        product.images.forEach((image: any, index: number) => {
-          if (!image || !image.src) {
-            console.log(`Skipping invalid image at index ${index} for product ${product.id}`);
-            return; // Skip this iteration
-          }
-          
-          try {
-            // Ensure ID is a string
-            const imageId = image.id ? image.id.toString() : `product-${product.id}-image-${index}`;
-            
-            // Create a properly structured image object
-            const imageObject: MediaFile = {
-              id: imageId,
-              url: image.src,
-              filename: `${product.title} - Image ${index + 1}`,
-              content_type: 'image/jpeg',
-              alt: image.alt || `${product.title} - Image ${index + 1}`,
-              source: 'product_image',
-              position: image.position || index + 1
-            };
-            
-            result.push(imageObject);
-          } catch (err) {
-            console.error(`Error processing image at index ${index} for product ${product.id}:`, err);
-          }
-        });
-        
-        console.log(`Successfully processed ${result.length} product images`);
-      }
-      
-      // Process variant images if they exist and aren't duplicates
-      if (product.variants && Array.isArray(product.variants)) {
-        console.log(`Processing ${product.variants.length} variants for product ${product.title}`);
-        const existingUrls = new Set(result.map(img => img.url));
-        
-        product.variants.forEach((variant: any, index: number) => {
-          if (variant.image && variant.image.src && !existingUrls.has(variant.image.src)) {
-            try {
-              // Ensure ID is a string
-              const variantImageId = variant.image.id 
-                ? variant.image.id.toString() 
-                : `variant-${variant.id || product.id}-image-${index}`;
-              
-              // Create a properly structured variant image object
-              const variantImage: MediaFile = {
-                id: variantImageId,
-                url: variant.image.src,
-                filename: `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
-                content_type: 'image/jpeg',
-                alt: variant.image.alt || `${product.title} - ${variant.title || `Variant ${index + 1}`}`,
-                source: 'variant_image',
-                position: 1000 + index // Put variants at the end
-              };
-              
-              result.push(variantImage);
-              existingUrls.add(variant.image.src);
-              
-              console.log(`Added variant image for ${variant.title || `Variant ${index + 1}`}`);
-            } catch (err) {
-              console.error(`Error processing variant image at index ${index}:`, err);
-            }
-          }
-        });
-        
-        console.log(`Added ${result.length - product.images.length} variant images`);
-      }
-      
-      // Sort by position
-      return result.sort((a, b) => (a.position || 999) - (b.position || 999));
-      
-    } catch (error) {
-      console.error(`Error fetching images for product ${productId}:`, error);
-      return [];
-    }
-  }
-
-  /**
-   * Legacy compatibility method - get all content files
-   */
-  async getAllContentFiles(store: ShopifyStore): Promise<MediaFile[]> {
-    try {
-      console.log(`Fetching content files from ${store.shopName} using Assets API`);
-      
-      // Try to use the Assets API as a fallback
+      // Use themes/assets API for general media files
       const assetsResponse = await this.shopifyService.makeApiRequest(
         store,
         'GET',
-        '/themes/current.json'
+        '/themes.json'
       );
       
-      if (!assetsResponse || !assetsResponse.theme || !assetsResponse.theme.id) {
-        console.log('Could not get current theme');
+      if (!assetsResponse || !assetsResponse.themes || !Array.isArray(assetsResponse.themes)) {
+        console.log('No themes found in the store');
         return [];
       }
       
-      const themeId = assetsResponse.theme.id;
-      const assetsListResponse = await this.shopifyService.makeApiRequest(
+      // Get the main/published theme
+      const publishedTheme = assetsResponse.themes.find((theme: any) => theme.role === 'main' || theme.role === 'published');
+      
+      if (!publishedTheme) {
+        console.log('No published theme found');
+        return [];
+      }
+      
+      // Get assets from the theme
+      const themeAssetsResponse = await this.shopifyService.makeApiRequest(
         store,
         'GET',
-        `/themes/${themeId}/assets.json`
+        `/themes/${publishedTheme.id}/assets.json`
       );
       
-      if (!assetsListResponse || !assetsListResponse.assets) {
-        console.log('No assets found');
+      if (!themeAssetsResponse || !themeAssetsResponse.assets) {
+        console.log('No assets found in theme');
         return [];
       }
       
       // Filter for image assets only
-      const imageAssets = assetsListResponse.assets.filter((asset: any) => {
-        if (!asset.key || typeof asset.key !== 'string') return false;
-        const key = asset.key.toLowerCase();
-        return (
-          key.endsWith('.jpg') || 
-          key.endsWith('.jpeg') || 
-          key.endsWith('.png') || 
-          key.endsWith('.gif')
-        );
+      const imageAssets = themeAssetsResponse.assets.filter((asset: any) => {
+        const isImage = asset.content_type && asset.content_type.startsWith('image/');
+        const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(asset.key);
+        return isImage || hasImageExtension;
       });
       
-      console.log(`Found ${imageAssets.length} image assets in theme files`);
+      console.log(`Found ${imageAssets.length} image assets in theme`);
       
-      // Generate URLs for all assets and convert to our format with validation
-      const mediaFiles = imageAssets.map((asset: any, index: number) => {
-        try {
-          // Extract filename from key
-          const filename = asset.key && typeof asset.key === 'string' 
-            ? asset.key.split('/').pop() 
-            : `Asset ${index + 1}`;
-          
-          // Generate a consistent ID
-          const assetId = `theme-asset-${index}-${Date.now().toString().substring(8)}`;
-          
-          // Ensure we have a valid URL - critical for image display
-          let imageUrl = '';
-          if (asset.public_url && asset.public_url.trim() !== '') {
-            imageUrl = asset.public_url;
-          } else if (asset.key) {
-            imageUrl = `https://${store.shopName}/assets/${asset.key}`;
-          } else {
-            console.log(`Missing URL for asset ${index}, using placeholder`);
-            imageUrl = `https://placehold.co/600x400?text=${encodeURIComponent(filename)}`;
-          }
-          
-          // Create a valid media file object
-          return {
-            id: assetId,
-            url: imageUrl,
-            filename,
-            content_type: this.getContentTypeFromFilename(filename),
-            alt: filename,
-            source: 'theme_asset'
-          };
-        } catch (err) {
-          console.error(`Error processing theme asset at index ${index}:`, err);
-          
-          // Return a fallback asset with placeholder
-          return {
-            id: `asset-error-${index}`,
-            url: `https://placehold.co/600x400?text=Error+Loading+Image`,
-            filename: `Error Loading Asset ${index}`,
-            content_type: 'image/jpeg',
-            alt: `Error Loading Asset ${index}`,
-            source: 'theme_asset'
-          };
-        }
-      });
+      return imageAssets.map((asset: any) => ({
+        id: asset.key,
+        url: `https://${store.shopName}/files/${asset.key}`,
+        filename: asset.key,
+        content_type: asset.content_type || 'image/jpeg',
+        alt: asset.key.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
+        source: 'theme_asset'
+      }));
       
-      // Log a sample for debugging
-      if (mediaFiles.length > 0) {
-        console.log('Sample theme asset:', JSON.stringify(mediaFiles[0]));
-      }
-      
-      return mediaFiles;
-    } catch (error) {
-      console.error('Error fetching content files:', error);
+    } catch (error: any) {
+      console.error('Error fetching Shopify media files:', error.message);
       return [];
     }
   }
-  
+
   /**
-   * Helper to determine content type from filename
+   * Get product images from all products
+   */
+  async getProductImagesFromAllProducts(store: ShopifyStore): Promise<MediaFile[]> {
+    console.log('Fetching product images as content files using GraphQL');
+    
+    try {
+      // Use GraphQL Admin API instead of deprecated REST API
+      const { graphqlShopifyService } = await import('./graphql-shopify');
+      const productImages = await graphqlShopifyService.getProductImages(store, 20);
+      
+      if (!productImages || !Array.isArray(productImages)) {
+        console.log('No product images found in the store');
+        return [];
+      }
+      
+      console.log(`Processing ${productImages.length} product images from GraphQL`);
+      
+      // Convert to MediaFile format
+      const allImages: MediaFile[] = productImages.map((image: any) => ({
+        id: image.id,
+        url: image.url,
+        filename: image.filename,
+        content_type: image.content_type,
+        alt: image.alt,
+        source: image.source,
+        position: image.position
+      }));
+      
+      return allImages;
+    } catch (error: any) {
+      console.error('Error fetching product images:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get images from a specific product using GraphQL API
+   */
+  async getProductImages(store: ShopifyStore, productId: string): Promise<MediaFile[]> {
+    try {
+      // Get product details using GraphQL
+      const { graphqlShopifyService } = await import('./graphql-shopify');
+      const products = await graphqlShopifyService.getProducts(store, 1);
+      
+      if (!products || !Array.isArray(products)) {
+        console.log(`No product found with ID ${productId}`);
+        return [];
+      }
+      
+      const product = products.find(p => p.id === productId);
+      if (!product) {
+        console.log(`Product ${productId} not found`);
+        return [];
+      }
+      
+      // Convert product images to MediaFile format
+      const allImages: MediaFile[] = [];
+      
+      // Add featured image
+      if (product.image) {
+        allImages.push({
+          id: `product-${product.id}-featured`,
+          url: product.image.src,
+          filename: `${product.title} - Featured Image`,
+          content_type: 'image/jpeg',
+          alt: product.image.alt || `${product.title} featured image`,
+          source: 'product_image'
+        });
+      }
+      
+      // Add all product images
+      if (product.images && Array.isArray(product.images)) {
+        product.images.forEach((image: any, index: number) => {
+          if (image && image.src) {
+            allImages.push({
+              id: `product-${product.id}-image-${image.id || index}`,
+              url: image.src,
+              filename: `${product.title} - Image ${index + 1}`,
+              content_type: 'image/jpeg',
+              alt: image.alt || `${product.title} image ${index + 1}`,
+              source: 'product_image',
+              position: index
+            });
+          }
+        });
+      }
+      
+      // Add variant images
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach((variant: any, variantIndex: number) => {
+          if (variant.image && variant.image.src) {
+            allImages.push({
+              id: `variant-${variant.id}-image`,
+              url: variant.image.src,
+              filename: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
+              content_type: 'image/jpeg',
+              alt: `${product.title} - ${variant.title || `Variant ${variantIndex + 1}`}`,
+              source: 'variant_image',
+              position: variantIndex
+            });
+          }
+        });
+      }
+      
+      console.log(`Found ${allImages.length} images for product ${product.title}`);
+      return allImages;
+      
+    } catch (error: any) {
+      console.error(`Error fetching product images for ${productId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get all content files from multiple sources
+   */
+  async getAllContentFiles(store: ShopifyStore): Promise<MediaFile[]> {
+    try {
+      console.log('Fetching all content files from Shopify');
+      
+      const allFiles: MediaFile[] = [];
+      
+      // Get theme assets
+      const themeFiles = await this.getShopifyMediaFiles(store);
+      console.log(`Found ${themeFiles.length} theme assets`);
+      allFiles.push(...themeFiles);
+      
+      // Get product images
+      const productFiles = await this.getProductImagesFromAllProducts(store);
+      console.log(`Found ${productFiles.length} product images`);
+      allFiles.push(...productFiles);
+      
+      // Remove duplicates based on URL
+      const uniqueFiles = allFiles.filter((file, index, array) => 
+        array.findIndex(f => f.url === file.url) === index
+      );
+      
+      console.log(`Returning ${uniqueFiles.length} unique content files`);
+      return uniqueFiles;
+      
+    } catch (error: any) {
+      console.error('Error fetching all content files:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Helper function to determine content type from filename
    */
   private getContentTypeFromFilename(filename: string): string {
-    const lower = filename.toLowerCase();
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.gif')) return 'image/gif';
-    if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.svg')) return 'image/svg+xml';
-    return 'application/octet-stream';
+    const extension = filename.toLowerCase().split('.').pop();
+    
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'svg':
+        return 'image/svg+xml';
+      default:
+        return 'image/jpeg';
+    }
   }
 }

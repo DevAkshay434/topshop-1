@@ -1450,15 +1450,16 @@ export class ShopifyService {
         console.log('Could not get theme assets, trying product images instead:', themeError.message);
       }
       
-      // Fallback: If theme assets fail, use product images
-      // Get products and extract their images
-      const productsResponse = await client.get('/products.json?limit=50');
+      // Fallback: If theme assets fail, use GraphQL API for product images
+      const { graphqlShopifyService } = await import('./graphql-shopify');
+      const productImages = await graphqlShopifyService.getProductImages(store, 50);
       
-      if (productsResponse.data && productsResponse.data.products) {
-        const products = productsResponse.data.products;
-        const productImages: any[] = [];
-        
-        products.forEach((product: any) => {
+      if (productImages && productImages.length > 0) {
+        console.log(`Found ${productImages.length} product images to use as content files`);
+        return productImages;
+      } else {
+        console.log('No product images found as fallback');
+        productImages.forEach((product: any) => {
           // Add main product image
           if (product.image) {
             productImages.push({
