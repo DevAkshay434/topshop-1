@@ -1446,7 +1446,7 @@ export class ShopifyService {
             }));
           }
         }
-      } catch (themeError) {
+      } catch (themeError: any) {
         console.log('Could not get theme assets, trying product images instead:', themeError.message);
       }
       
@@ -1459,54 +1459,8 @@ export class ShopifyService {
         return productImages;
       } else {
         console.log('No product images found as fallback');
-        productImages.forEach((product: any) => {
-          // Add main product image
-          if (product.image) {
-            productImages.push({
-              id: `product-${product.id}-main`,
-              url: product.image.src,
-              filename: `${product.title.replace(/[^a-zA-Z0-9]/g, '-')}.jpg`,
-              content_type: 'image/jpeg',
-              created_at: product.created_at,
-              alt: product.title
-            });
-          }
-          
-          // Add additional product images
-          if (product.images && product.images.length > 0) {
-            product.images.forEach((image: any, index: number) => {
-              productImages.push({
-                id: `product-${product.id}-image-${index}`,
-                url: image.src,
-                filename: `${product.title.replace(/[^a-zA-Z0-9]/g, '-')}-${index+1}.jpg`,
-                content_type: 'image/jpeg',
-                created_at: product.created_at,
-                alt: image.alt || product.title
-              });
-            });
-          }
-          
-          // Add variant images
-          if (product.variants && product.variants.length > 0) {
-            product.variants.forEach((variant: any) => {
-              if (variant.image && variant.image.src) {
-                productImages.push({
-                  id: `variant-${variant.id}`,
-                  url: variant.image.src,
-                  filename: `${product.title.replace(/[^a-zA-Z0-9]/g, '-')}-${variant.title.replace(/[^a-zA-Z0-9]/g, '-')}.jpg`,
-                  content_type: 'image/jpeg',
-                  created_at: product.created_at,
-                  alt: `${product.title} - ${variant.title}`
-                });
-              }
-            });
-          }
-        });
-        
-        return productImages;
+        return [];
       }
-      
-      return [];
     } catch (error: any) {
       console.error("Error fetching content files:", error.message);
       return [];
