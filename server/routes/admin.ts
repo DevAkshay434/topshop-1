@@ -243,10 +243,8 @@ adminRouter.get("/collections", async (req: Request, res: Response) => {
     // Get limit from query params
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
     
-    // Get all collections (both smart and custom)
-    const customCollections = await shopifyService.getCollections(store, 'custom', limit);
-    const smartCollections = await shopifyService.getCollections(store, 'smart', limit);
-    const collections = [...customCollections, ...smartCollections];
+    // Get all collections (GraphQL returns all types, avoiding duplication)
+    const collections = await shopifyService.getCollections(store, 'custom', limit);
     
     res.json({
       success: true,

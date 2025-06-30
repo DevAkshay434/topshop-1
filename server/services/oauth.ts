@@ -114,7 +114,7 @@ export function verifyWebhook(headers: Record<string, string>, body: string, api
 export async function getShopData(shop: string, accessToken: string): Promise<any> {
   try {
     const response = await axios.get(
-      `https://${shop}/admin/api/2023-07/shop.json`,
+      `https://${shop}/admin/api/2025-07/shop.json`,
       {
         headers: {
           'X-Shopify-Access-Token': accessToken

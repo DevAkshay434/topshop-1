@@ -1534,23 +1534,22 @@ export class ShopifyService {
    * Get collections from a store using GraphQL API (migrated from deprecated REST API)
    * @param store The store to get collections from
    * @param limit The maximum number of collections to return
+   * @param collectionType For backward compatibility - GraphQL returns all collections regardless of type
    */
-  public async getCollections(store: ShopifyStore, collectionType: 'custom' | 'smart', limit: number = 50): Promise<any[]> {
+  public async getCollections(store: ShopifyStore, collectionType: 'custom' | 'smart' = 'custom', limit: number = 50): Promise<any[]> {
     try {
-      console.log(`Fetching ${collectionType} collections from ${store.shopName} using GraphQL to avoid deprecated REST API`);
+      console.log(`Fetching collections from ${store.shopName} using GraphQL API (2025-07)`);
       
       // Use GraphQL Admin API instead of deprecated REST API /custom_collections.json and /smart_collections.json
       const { graphqlShopifyService } = await import('./graphql-shopify');
       const allCollections = await graphqlShopifyService.getCollections(store, limit);
       
-      // Filter collections by type if needed (GraphQL returns all collections)
-      // Note: GraphQL doesn't distinguish between custom and smart collections in the same way as REST API
-      // For backward compatibility, we'll return all collections for both types
-      console.log(`✓ Fetched ${allCollections.length} collections using GraphQL (migrated from deprecated ${collectionType}_collections.json endpoint)`);
+      // GraphQL returns all collections regardless of type, preventing duplication
+      console.log(`✓ Fetched ${allCollections.length} collections using GraphQL (migrated from deprecated REST API)`);
       
       return allCollections;
     } catch (error: any) {
-      console.error(`Error fetching ${collectionType} collections from Shopify store ${store.shopName}:`, error);
+      console.error(`Error fetching collections from Shopify store ${store.shopName}:`, error);
       // Fallback to empty array instead of throwing to prevent app failure
       console.log(`Returning empty collections array due to GraphQL API error`);
       return [];
