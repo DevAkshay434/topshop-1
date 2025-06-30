@@ -35,7 +35,7 @@ export async function schedulePost(
     let shopInfo: any;
     try {
       const shopClient = axios.create({
-        baseURL: `https://${store.shopName}/admin/api/2023-10`,
+        baseURL: `https://${store.shopName}/admin/api/2024-10`,
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': store.accessToken
@@ -53,7 +53,7 @@ export async function schedulePost(
     
     // Create a client for the Shopify API
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      baseURL: `https://${store.shopName}/admin/api/2024-10`,
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': store.accessToken
@@ -181,7 +181,7 @@ export async function schedulePage(
     let shopInfo: any;
     try {
       const shopClient = axios.create({
-        baseURL: `https://${store.shopName}/admin/api/2023-10`,
+        baseURL: `https://${store.shopName}/admin/api/2024-10`,
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': store.accessToken
@@ -199,7 +199,7 @@ export async function schedulePage(
 
     // Create a client for the Shopify API
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      baseURL: `https://${store.shopName}/admin/api/2024-10`,
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': store.accessToken
@@ -337,7 +337,7 @@ export async function publishScheduledPage(
     let shopInfo: any;
     try {
       const shopClient = axios.create({
-        baseURL: `https://${store.shopName}/admin/api/2023-10`,
+        baseURL: `https://${store.shopName}/admin/api/2024-10`,
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': store.accessToken
@@ -366,7 +366,7 @@ export async function publishScheduledPage(
     
     // Create a client for the Shopify API
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      baseURL: `https://${store.shopName}/admin/api/2024-10`,
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': store.accessToken
@@ -473,7 +473,7 @@ export async function publishScheduledArticle(
     let shopInfo: any;
     try {
       const shopClient = axios.create({
-        baseURL: `https://${store.shopName}/admin/api/2023-10`,
+        baseURL: `https://${store.shopName}/admin/api/2024-10`,
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': store.accessToken
@@ -494,7 +494,7 @@ export async function publishScheduledArticle(
     
     // Create a client for the Shopify API
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      baseURL: `https://${store.shopName}/admin/api/2024-10`,
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': store.accessToken
@@ -638,7 +638,7 @@ export async function checkScheduledPosts(): Promise<void> {
         let shopInfo: any;
         try {
           const client = axios.create({
-            baseURL: `https://${store.shopName}/admin/api/2023-10`,
+            baseURL: `https://${store.shopName}/admin/api/2024-10`,
             headers: {
               'Content-Type': 'application/json',
               'X-Shopify-Access-Token': store.accessToken

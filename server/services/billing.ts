@@ -72,7 +72,7 @@ export async function createSubscription(
 
   try {
     // Create a GraphQL client for the store
-    const shopGraphQLUrl = `https://${store.shopName}/admin/api/2023-10/graphql.json`;
+    const shopGraphQLUrl = `https://${store.shopName}/admin/api/2024-10/graphql.json`;
     
     // Create a recurring application charge
     const response = await axios({
@@ -146,7 +146,7 @@ export async function getSubscriptionStatus(store: ShopifyStore): Promise<{
   
   try {
     // Create a GraphQL client for the store
-    const shopGraphQLUrl = `https://${store.shopName}/admin/api/2023-10/graphql.json`;
+    const shopGraphQLUrl = `https://${store.shopName}/admin/api/2024-10/graphql.json`;
     
     // Query the active subscriptions
     const response = await axios({
@@ -225,7 +225,7 @@ export async function cancelSubscription(store: ShopifyStore, subscriptionId: st
   
   try {
     // Create a GraphQL client for the store
-    const shopGraphQLUrl = `https://${store.shopName}/admin/api/2023-10/graphql.json`;
+    const shopGraphQLUrl = `https://${store.shopName}/admin/api/2024-10/graphql.json`;
     
     // Cancel the subscription
     const response = await axios({

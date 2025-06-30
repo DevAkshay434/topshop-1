@@ -23,7 +23,7 @@ interface ShopifyStore {
 import axios, { AxiosInstance } from "axios";
 
 /**
- * Creates a scheduled article in Shopify using 2023-10 API version explicitly
+ * Creates a scheduled article in Shopify using 2024-10 API version explicitly
  * which has better handling of scheduled content
  * @param store Shopify store details
  * @param blogId The blog ID to create the article in
@@ -43,9 +43,9 @@ export async function createScheduledArticle(
   featuredImage?: string
 ): Promise<any> {
   try {
-    // Create a specific client for 2023-10 API version (latest with better scheduling)
+    // Create a specific client for 2024-10 API version (latest with better scheduling)
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      baseURL: `https://${store.shopName}/admin/api/2024-10`,
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': store.accessToken
@@ -86,7 +86,7 @@ export async function createScheduledArticle(
       article.image = { src: featuredImage };
     }
 
-    console.log(`Creating scheduled article with explicit API version 2023-10 (better scheduling):`, {
+    console.log(`Creating scheduled article with explicit API version 2024-10 (better scheduling):`, {
       title,
       published: article.published,
       published_at: article.published_at
@@ -157,7 +157,7 @@ export async function createScheduledArticle(
 }
 
 /**
- * Creates a scheduled page in Shopify using 2023-10 API version explicitly
+ * Creates a scheduled page in Shopify using 2024-10 API version explicitly
  * which has better handling of scheduled content
  * @param store Shopify store details 
  * @param title Page title
@@ -171,9 +171,9 @@ export async function createScheduledPage(
   scheduledDate: Date
 ): Promise<any> {
   try {
-    // Create a specific client for 2023-10 API version (latest with better scheduling)
+    // Create a specific client for 2024-10 API version (latest with better scheduling)
     const client = axios.create({
-      baseURL: `https://${store.shopName}/admin/api/2023-10`,
+      baseURL: `https://${store.shopName}/admin/api/2024-10`,
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Access-Token': store.accessToken
@@ -206,7 +206,7 @@ export async function createScheduledPage(
       published_at: scheduledDate.toISOString()
     };
 
-    console.log(`Creating scheduled page with explicit API version 2023-10 (better scheduling):`, {
+    console.log(`Creating scheduled page with explicit API version 2024-10 (better scheduling):`, {
       title,
       published: page.published,
       published_at: page.published_at

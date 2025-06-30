@@ -131,7 +131,7 @@ router.get('/callback', shopifyAuthOptional, async (req: Request, res: Response)
 
     // Get shop information to set default blog
     try {
-      const shopInfoResponse = await fetch(`https://${shopDomain}/admin/api/2023-10/shop.json`, {
+      const shopInfoResponse = await fetch(`https://${shopDomain}/admin/api/2024-10/shop.json`, {
         headers: {
           'X-Shopify-Access-Token': access_token,
         },
@@ -143,7 +143,7 @@ router.get('/callback', shopifyAuthOptional, async (req: Request, res: Response)
       }
 
       // Get blogs to set default
-      const blogsResponse = await fetch(`https://${shopDomain}/admin/api/2023-10/blogs.json`, {
+      const blogsResponse = await fetch(`https://${shopDomain}/admin/api/2024-10/blogs.json`, {
         headers: {
           'X-Shopify-Access-Token': access_token,
         },
@@ -245,7 +245,7 @@ async function createUninstallWebhook(shop: string, accessToken: string): Promis
     }
   };
 
-  const response = await fetch(`https://${shop}/admin/api/2023-10/webhooks.json`, {
+  const response = await fetch(`https://${shop}/admin/api/2024-10/webhooks.json`, {
     method: 'POST',
     headers: {
       'X-Shopify-Access-Token': accessToken,
