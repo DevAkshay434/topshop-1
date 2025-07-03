@@ -557,7 +557,19 @@ export default function AdminPanel() {
         if (projectData.mediaContent.youtubeEmbed) {
           setYoutubeEmbed(projectData.mediaContent.youtubeEmbed);
         }
-        setSelectedMediaContent(projectData.mediaContent);
+        
+        // CRITICAL FIX: Ensure selectedMediaContent is properly synced with restored data
+        setSelectedMediaContent({
+          primaryImage: projectData.mediaContent.primaryImage || null,
+          secondaryImages: projectData.mediaContent.secondaryImages || [],
+          youtubeEmbed: projectData.mediaContent.youtubeEmbed || null
+        });
+        
+        console.log("Project load: Restored media content", {
+          primaryImage: !!projectData.mediaContent.primaryImage,
+          secondaryImagesCount: projectData.mediaContent.secondaryImages?.length || 0,
+          youtubeEmbed: !!projectData.mediaContent.youtubeEmbed
+        });
       }
       
       // 3. Build complete form data object with all saved values
