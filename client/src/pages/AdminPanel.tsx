@@ -320,7 +320,7 @@ export default function AdminPanel() {
   const [formKey, setFormKey] = useState(0);
   
   // State to control whether Select components should use controlled mode
-  const [isSelectControlled, setIsSelectControlled] = useState(true);
+  // const [isSelectControlled, setIsSelectControlled] = useState(true);
 
   // Buyer persona suggestions for the flexible text input
   const buyerPersonaSuggestions = [
@@ -528,87 +528,25 @@ export default function AdminPanel() {
       const projectData = JSON.parse(project.projectData);
       console.log("Loading project data:", projectData);
       
-      // Restore form state from project data
+      // 1. First restore non-form state variables (UI state that's not controlled by React Hook Form)
       if (projectData.selectedProducts) setSelectedProducts(projectData.selectedProducts);
       if (projectData.selectedCollections) setSelectedCollections(projectData.selectedCollections);
-      if (projectData.buyerPersonas) form.setValue('buyerPersonas', projectData.buyerPersonas);
       if (projectData.selectedKeywords) setSelectedKeywords(projectData.selectedKeywords);
       if (projectData.selectedTitle) setSelectedTitle(projectData.selectedTitle);
       if (projectData.selectedAuthorId) setSelectedAuthorId(projectData.selectedAuthorId);
-      
-      // Fix Style Formatting section - use form.reset() approach
-      console.log("DEBUGGING: Before setting values - form.getValues():", form.getValues());
-      
-      // First set state variables for component sync
-      if (projectData.articleLength) {
-        console.log("DEBUGGING: Setting articleLength from", form.getValues('articleLength'), "to", projectData.articleLength);
-        setArticleLength(projectData.articleLength);
-      }
-      if (projectData.headingsCount) {
-        console.log("DEBUGGING: Setting headingsCount from", form.getValues('headingsCount'), "to", projectData.headingsCount);
-        setHeadingsCount(projectData.headingsCount);
-      }
-      if (projectData.writingPerspective) {
-        console.log("DEBUGGING: Setting writingPerspective from", form.getValues('writingPerspective'), "to", projectData.writingPerspective);
-        setWritingPerspective(projectData.writingPerspective);
-      }
-      
-      if (projectData.toneOfVoice) {
-        setToneOfVoice(projectData.toneOfVoice);
-        form.setValue('toneOfVoice', projectData.toneOfVoice);
-        console.log("Loading project: Setting toneOfVoice to", projectData.toneOfVoice);
-      }
-      if (projectData.contentStyle) setContentStyle(projectData.contentStyle);
-      if (projectData.introType) {
-        setIntroType(projectData.introType);
-        form.setValue('introType', projectData.introType);
-        console.log("Loading project: Setting introType to", projectData.introType);
-      }
-      if (projectData.faqType) {
-        setFaqType(projectData.faqType);
-        form.setValue('faqType', projectData.faqType);
-        console.log("Loading project: Setting faqType to", projectData.faqType);
-      }
       if (projectData.categories) setCategories(projectData.categories);
-      if (projectData.postStatus) setPostStatus(projectData.postStatus);
-      if (projectData.publicationType) setPublicationType(projectData.publicationType);
-      if (projectData.scheduledPublishTime) setScheduledPublishTime(projectData.scheduledPublishTime);
-      if (projectData.blogId) setBlogId(projectData.blogId);
-      if (projectData.customCategory) setCustomCategory(projectData.customCategory);
-      if (projectData.enableTables !== undefined) setEnableTables(projectData.enableTables);
-      if (projectData.enableLists !== undefined) setEnableLists(projectData.enableLists);
-      if (projectData.enableH3s !== undefined) setEnableH3s(projectData.enableH3s);
-      if (projectData.enableCitations !== undefined) setEnableCitations(projectData.enableCitations);
-      if (projectData.generateImages !== undefined) setGenerateImages(projectData.generateImages);
+      if (projectData.contentStyle) setContentStyle(projectData.contentStyle);
+      
+      // Content Style Selector data
       if (projectData.selectedContentToneId) {
         console.log("Loading Content Style data:", { selectedContentToneId: projectData.selectedContentToneId, selectedContentDisplayName: projectData.selectedContentDisplayName });
         setSelectedContentToneId(projectData.selectedContentToneId);
-      } else {
-        console.log("No Content Style tone ID found in project data");
-        setSelectedContentToneId('');
       }
       if (projectData.selectedContentDisplayName) {
         setSelectedContentDisplayName(projectData.selectedContentDisplayName);
-      } else {
-        console.log("No Content Style display name found in project data");
-        setSelectedContentDisplayName('');
       }
       
-      // Update additional form fields to ensure UI synchronization
-      if (projectData.toneOfVoice) form.setValue('toneOfVoice', projectData.toneOfVoice);
-      if (projectData.introType) form.setValue('introType', projectData.introType);
-      if (projectData.faqType) form.setValue('faqType', projectData.faqType);
-      if (projectData.postStatus) form.setValue('postStatus', projectData.postStatus);
-      if (projectData.scheduledPublishTime) form.setValue('scheduledPublishTime', projectData.scheduledPublishTime);
-      if (projectData.blogId) form.setValue('blogId', projectData.blogId);
-      if (projectData.customCategory) form.setValue('customCategory', projectData.customCategory);
-      if (projectData.enableTables !== undefined) form.setValue('enableTables', projectData.enableTables);
-      if (projectData.enableLists !== undefined) form.setValue('enableLists', projectData.enableLists);
-      if (projectData.enableH3s !== undefined) form.setValue('enableH3s', projectData.enableH3s);
-      if (projectData.enableCitations !== undefined) form.setValue('enableCitations', projectData.enableCitations);
-      if (projectData.generateImages !== undefined) form.setValue('generateImages', projectData.generateImages);
-      
-      // Restore media content
+      // 2. Restore media content
       if (projectData.mediaContent) {
         if (projectData.mediaContent.primaryImage) {
           setPrimaryImages([projectData.mediaContent.primaryImage]);
@@ -621,71 +559,65 @@ export default function AdminPanel() {
         }
         setSelectedMediaContent(projectData.mediaContent);
       }
-
-      // DETAILED DEBUGGING - Let's see exactly what's in the project data
-      console.log("=== DEBUGGING PROJECT LOAD ===");
-      console.log("RAW PROJECT DATA:", projectData);
-      console.log("articleLength from project:", projectData.articleLength);
-      console.log("headingsCount from project:", projectData.headingsCount);
-      console.log("writingPerspective from project:", projectData.writingPerspective);
-      console.log("toneOfVoice from project:", projectData.toneOfVoice);
-      console.log("introType from project:", projectData.introType);
       
-      // Current form state before reset
+      // 3. Build complete form data object with all saved values
       const currentFormValues = form.getValues();
-      console.log("CURRENT FORM VALUES BEFORE RESET:", currentFormValues);
-      
-      // COMPLETE FORM RESET to ensure all Select components update properly
       const updatedFormValues = {
         ...currentFormValues,
-        // Specifically set the problematic fields
+        // Form fields that were problematic - ensure they get the saved values
         articleLength: projectData.articleLength || currentFormValues.articleLength,
         headingsCount: projectData.headingsCount || currentFormValues.headingsCount,
         writingPerspective: projectData.writingPerspective || currentFormValues.writingPerspective,
         toneOfVoice: projectData.toneOfVoice || currentFormValues.toneOfVoice,
         introType: projectData.introType || currentFormValues.introType,
         faqType: projectData.faqType || currentFormValues.faqType,
-        postStatus: projectData.postStatus || currentFormValues.postStatus
+        // Other form fields
+        buyerPersonas: projectData.buyerPersonas || currentFormValues.buyerPersonas,
+        postStatus: projectData.postStatus || currentFormValues.postStatus,
+        scheduledPublishTime: projectData.scheduledPublishTime || currentFormValues.scheduledPublishTime,
+        blogId: projectData.blogId || currentFormValues.blogId,
+        customCategory: projectData.customCategory || currentFormValues.customCategory,
+        enableTables: projectData.enableTables !== undefined ? projectData.enableTables : currentFormValues.enableTables,
+        enableLists: projectData.enableLists !== undefined ? projectData.enableLists : currentFormValues.enableLists,
+        enableH3s: projectData.enableH3s !== undefined ? projectData.enableH3s : currentFormValues.enableH3s,
+        enableCitations: projectData.enableCitations !== undefined ? projectData.enableCitations : currentFormValues.enableCitations,
+        generateImages: projectData.generateImages !== undefined ? projectData.generateImages : currentFormValues.generateImages
       };
       
-      console.log("UPDATED FORM VALUES FOR RESET:", updatedFormValues);
+      console.log("Project load: Setting form values", updatedFormValues);
       
-      // CRITICAL FIX: Set form values BEFORE any controlled/uncontrolled switching
-      // This ensures the field.value is correct when Select components render
-      Object.entries(updatedFormValues).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          form.setValue(key as any, value);
-        }
+      // 4. Use single form.reset() call to set all values at once
+      // This is the most reliable way to update React Hook Form controlled components
+      form.reset(updatedFormValues);
+      
+      // 5. Force component re-render to ensure all Select components display the new values
+      setFormKey(prev => prev + 1);
+      
+      // 6. Update any remaining state setters that are needed for non-form UI components
+      if (projectData.articleLength) setArticleLength(projectData.articleLength);
+      if (projectData.headingsCount) setHeadingsCount(projectData.headingsCount);
+      if (projectData.writingPerspective) setWritingPerspective(projectData.writingPerspective);
+      if (projectData.toneOfVoice) setToneOfVoice(projectData.toneOfVoice);
+      if (projectData.introType) setIntroType(projectData.introType);
+      if (projectData.faqType) setFaqType(projectData.faqType);
+      if (projectData.postStatus) setPostStatus(projectData.postStatus);
+      if (projectData.publicationType) setPublicationType(projectData.publicationType);
+      if (projectData.scheduledPublishTime) setScheduledPublishTime(projectData.scheduledPublishTime);
+      if (projectData.blogId) setBlogId(projectData.blogId);
+      if (projectData.customCategory) setCustomCategory(projectData.customCategory);
+      if (projectData.enableTables !== undefined) setEnableTables(projectData.enableTables);
+      if (projectData.enableLists !== undefined) setEnableLists(projectData.enableLists);
+      if (projectData.enableH3s !== undefined) setEnableH3s(projectData.enableH3s);
+      if (projectData.enableCitations !== undefined) setEnableCitations(projectData.enableCitations);
+      if (projectData.generateImages !== undefined) setGenerateImages(projectData.generateImages);
+      
+      console.log("Project loaded successfully with values:", {
+        articleLength: updatedFormValues.articleLength,
+        headingsCount: updatedFormValues.headingsCount,
+        toneOfVoice: updatedFormValues.toneOfVoice,
+        introType: updatedFormValues.introType,
+        faqType: updatedFormValues.faqType
       });
-      
-      // Wait for form values to be set, then do the controlled/uncontrolled switching
-      setTimeout(() => {
-        console.log("Form values set, now switching to uncontrolled mode");
-        // Temporarily make Select components uncontrolled
-        setIsSelectControlled(false);
-        
-        // Force complete re-render of all form components by updating the form key
-        setFormKey(prev => prev + 1);
-        console.log("FORCING FORM RE-RENDER with new key:", formKey + 1);
-        
-        // Wait for re-render then make them controlled again with the correct values
-        setTimeout(() => {
-          setIsSelectControlled(true);
-          console.log("Re-enabled controlled Select components");
-        }, 100);
-      }, 50);
-      
-      // Final debugging check
-      setTimeout(() => {
-        console.log("FINAL FORM STATE AFTER ALL UPDATES:");
-        console.log("articleLength:", form.getValues('articleLength'));
-        console.log("headingsCount:", form.getValues('headingsCount'));
-        console.log("writingPerspective:", form.getValues('writingPerspective'));
-        console.log("toneOfVoice:", form.getValues('toneOfVoice'));
-        console.log("introType:", form.getValues('introType'));
-        console.log("Form errors:", form.formState.errors);
-        console.log("=== END DEBUGGING ===");
-      }, 200);
 
       toast({
         title: "Project loaded",
@@ -3590,9 +3522,8 @@ export default function AdminPanel() {
                               <FormLabel>Article Length</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
-                                value={isSelectControlled ? field.value : undefined}
-                                defaultValue={!isSelectControlled ? field.value : undefined}
-                                key={`articleLength-${formKey}-${field.value}-${isSelectControlled}`}
+                                value={field.value}
+                                key={`articleLength-${formKey}-${field.value}`}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -3622,9 +3553,8 @@ export default function AdminPanel() {
                               <FormLabel>Number of Sections</FormLabel>
                               <Select 
                                 onValueChange={field.onChange} 
-                                value={isSelectControlled ? field.value : undefined}
-                                defaultValue={!isSelectControlled ? field.value : undefined}
-                                key={`headingsCount-${formKey}-${field.value}-${isSelectControlled}`}
+                                value={field.value}
+                                key={`headingsCount-${formKey}-${field.value}`}
                               >
                                 <FormControl>
                                   <SelectTrigger>
@@ -3734,9 +3664,8 @@ export default function AdminPanel() {
                             <FormLabel>Writing Perspective</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              value={isSelectControlled ? field.value : undefined}
-                              defaultValue={!isSelectControlled ? field.value : undefined}
-                              key={`writingPerspective-${formKey}-${field.value}-${isSelectControlled}`}
+                              value={field.value}
+                              key={`writingPerspective-${formKey}-${field.value}`}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -3760,7 +3689,7 @@ export default function AdminPanel() {
                       <div className="mb-6">
                         <FormLabel className="mb-2 block">Content Style</FormLabel>
                         <ContentStyleSelector 
-                          key={`content-style-${selectedContentToneId || 'empty'}-${formKey}-${isSelectControlled}`}
+                          key={`content-style-${selectedContentToneId || 'empty'}-${formKey}`}
                           initialToneId={selectedContentToneId || ''}
                           onSelectionChange={(toneId, displayName) => {
                             console.log("ContentStyleSelector selection changed:", { toneId, displayName });
@@ -3768,7 +3697,6 @@ export default function AdminPanel() {
                             setSelectedContentDisplayName(displayName);
                           }}
                           className="mt-2"
-                          isSelectControlled={isSelectControlled}
                         />
                         <div className="text-xs text-gray-500 mt-2">
                           Debug: selectedContentToneId = {selectedContentToneId || 'null'}, selectedContentDisplayName = {selectedContentDisplayName || 'null'}
@@ -3784,9 +3712,8 @@ export default function AdminPanel() {
                             <FormLabel>Tone of Voice</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              value={isSelectControlled ? field.value : undefined}
-                              defaultValue={!isSelectControlled ? field.value : undefined}
-                              key={`toneOfVoice-${formKey}-${field.value}-${isSelectControlled}`}
+                              value={field.value}
+                              key={`toneOfVoice-${formKey}-${field.value}`}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -3817,9 +3744,8 @@ export default function AdminPanel() {
                             <FormLabel>Introduction Style</FormLabel>
                             <Select 
                               onValueChange={field.onChange} 
-                              value={isSelectControlled ? (field.value || "search_intent") : undefined}
-                              defaultValue={!isSelectControlled ? (field.value || "search_intent") : undefined}
-                              key={`introType-${formKey}-${field.value}-${isSelectControlled}`}
+                              value={field.value || "search_intent"}
+                              key={`introType-${formKey}-${field.value}`}
                             >
                               <FormControl>
                                 <SelectTrigger>

@@ -21,7 +21,6 @@ interface ContentStyleSelectorProps {
   initialStyleId?: string;
   initialToneId?: string;
   className?: string;
-  isSelectControlled?: boolean;
 }
 
 export function ContentStyleSelector({
@@ -29,7 +28,6 @@ export function ContentStyleSelector({
   initialGenderId = '',
   initialStyleId = '',
   initialToneId = '',
-  isSelectControlled = true,
   className = ''
 }: ContentStyleSelectorProps) {
   const [selectedGender, setSelectedGender] = useState<string>(initialGenderId || '');
@@ -161,8 +159,7 @@ export function ContentStyleSelector({
           <FormItem>
             <FormLabel>Gender</FormLabel>
             <Select 
-              value={isSelectControlled ? selectedGender : undefined}
-              defaultValue={!isSelectControlled ? selectedGender : undefined}
+              value={selectedGender}
               onValueChange={handleGenderChange}
             >
               <FormControl>
@@ -188,8 +185,7 @@ export function ContentStyleSelector({
           <FormItem>
             <FormLabel>Content Style</FormLabel>
             <Select 
-              value={isSelectControlled ? selectedStyle : undefined}
-              defaultValue={!isSelectControlled ? selectedStyle : undefined}
+              value={selectedStyle}
               onValueChange={handleStyleChange}
               disabled={!selectedGender}
             >
@@ -216,8 +212,7 @@ export function ContentStyleSelector({
           <FormItem>
             <FormLabel>Tone</FormLabel>
             <Select 
-              value={isSelectControlled ? selectedTone : undefined}
-              defaultValue={!isSelectControlled ? selectedTone : undefined}
+              value={selectedTone}
               onValueChange={handleToneChange}
               disabled={!selectedStyle}
             >
