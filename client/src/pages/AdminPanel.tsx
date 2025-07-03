@@ -634,10 +634,13 @@ export default function AdminPanel() {
   };
 
   const extractFormStateForSaving = () => {
+    // Get all current form values directly from React Hook Form
+    const formValues = form.getValues();
+    
     const extractedData = {
       selectedProducts,
       selectedCollections,
-      buyerPersonas: form.getValues('buyerPersonas') || '',
+      buyerPersonas: formValues.buyerPersonas || '',
       selectedKeywords,
       selectedTitle,
       mediaContent: {
@@ -646,28 +649,40 @@ export default function AdminPanel() {
         youtubeEmbed
       },
       selectedAuthorId,
-      articleLength,
-      headingsCount,
-      writingPerspective,
-      toneOfVoice,
+      // CRITICAL FIX: Use form values instead of state variables
+      articleLength: formValues.articleLength || articleLength,
+      headingsCount: formValues.headingsCount || headingsCount,
+      writingPerspective: formValues.writingPerspective || writingPerspective,
+      toneOfVoice: formValues.toneOfVoice || toneOfVoice,
+      introType: formValues.introType || introType,
+      faqType: formValues.faqType || faqType,
+      // Continue with other form fields
       contentStyle,
-      introType,
-      faqType,
       categories,
-      postStatus,
+      postStatus: formValues.postStatus || postStatus,
       publicationType,
-      scheduledPublishTime,
-      blogId,
-      customCategory,
-      enableTables,
-      enableLists,
-      enableH3s,
-      enableCitations,
-      generateImages,
+      scheduledPublishTime: formValues.scheduledPublishTime || scheduledPublishTime,
+      blogId: formValues.blogId || blogId,
+      customCategory: formValues.customCategory || customCategory,
+      enableTables: formValues.enableTables !== undefined ? formValues.enableTables : enableTables,
+      enableLists: formValues.enableLists !== undefined ? formValues.enableLists : enableLists,
+      enableH3s: formValues.enableH3s !== undefined ? formValues.enableH3s : enableH3s,
+      enableCitations: formValues.enableCitations !== undefined ? formValues.enableCitations : enableCitations,
+      generateImages: formValues.generateImages !== undefined ? formValues.generateImages : generateImages,
       selectedContentToneId,
       selectedContentDisplayName
     };
+    
     console.log("Extracting project data for saving:", extractedData);
+    console.log("Form values being saved:", {
+      articleLength: extractedData.articleLength,
+      headingsCount: extractedData.headingsCount,
+      writingPerspective: extractedData.writingPerspective,
+      toneOfVoice: extractedData.toneOfVoice,
+      introType: extractedData.introType,
+      faqType: extractedData.faqType
+    });
+    
     return extractedData;
   };
 
