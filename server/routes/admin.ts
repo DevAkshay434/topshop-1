@@ -1175,6 +1175,11 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
 // Enhanced content generation endpoint with all new parameters
 adminRouter.post("/generate-content", async (req: Request, res: Response) => {
   console.log("Content generation request received with body:", JSON.stringify(req.body));
+  console.log("🔍 CRITICAL DEBUG: Secondary images in request:", {
+    hasSecondaryImages: !!req.body.secondaryImages,
+    secondaryImagesLength: req.body.secondaryImages?.length || 0,
+    secondaryImagesData: req.body.secondaryImages || []
+  });
   
   try {
     // Validate request body with all required fields
@@ -1522,7 +1527,6 @@ Place this at a logical position in the content, typically after introducing a c
         console.log(`✗ NO SECONDARY IMAGES RECEIVED: requestData.secondaryImages = ${JSON.stringify(requestData.secondaryImages)}`);
         console.log(`✗ This explains why no secondary images are being processed for content generation`);
         console.log(`✗ Check if frontend is properly sending secondaryImages in the request payload`);
-      }
       }
       
       // Fallback: If no media selected from Choose Media, try the legacy approach

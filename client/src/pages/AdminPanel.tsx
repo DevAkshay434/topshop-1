@@ -569,14 +569,20 @@ export default function AdminPanel() {
         
         // CRITICAL FIX: Sync the secondaryImages state with the restored data for proper UI display
         if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
+          console.log("🔄 RESTORING SECONDARY IMAGES: Found", projectData.mediaContent.secondaryImages.length, "secondary images in project");
           setSecondaryImages(projectData.mediaContent.secondaryImages);
           console.log("Project load: Synced secondaryImages state with restored data", projectData.mediaContent.secondaryImages);
+        } else {
+          console.log("⚠️ NO SECONDARY IMAGES IN PROJECT: mediaContent.secondaryImages =", projectData.mediaContent.secondaryImages);
+          setSecondaryImages([]); // Ensure clean state
         }
         
         // Also sync primary images if available
         if (projectData.mediaContent.primaryImage) {
           setPrimaryImages([projectData.mediaContent.primaryImage]);
           console.log("Project load: Synced primaryImages state with restored data", projectData.mediaContent.primaryImage);
+        } else {
+          setPrimaryImages([]); // Ensure clean state
         }
         
         console.log("Project load: Restored media content", {
