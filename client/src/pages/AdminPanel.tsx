@@ -567,6 +567,18 @@ export default function AdminPanel() {
         
         setSelectedMediaContent(restoredMediaContent);
         
+        // CRITICAL FIX: Sync the secondaryImages state with the restored data for proper UI display
+        if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
+          setSecondaryImages(projectData.mediaContent.secondaryImages);
+          console.log("Project load: Synced secondaryImages state with restored data", projectData.mediaContent.secondaryImages);
+        }
+        
+        // Also sync primary images if available
+        if (projectData.mediaContent.primaryImage) {
+          setPrimaryImages([projectData.mediaContent.primaryImage]);
+          console.log("Project load: Synced primaryImages state with restored data", projectData.mediaContent.primaryImage);
+        }
+        
         console.log("Project load: Restored media content", {
           primaryImage: !!projectData.mediaContent.primaryImage,
           secondaryImagesCount: projectData.mediaContent.secondaryImages?.length || 0,
@@ -2019,6 +2031,15 @@ export default function AdminPanel() {
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
+      console.log("CRITICAL DEBUG: Secondary images being sent:", {
+        count: submitData.secondaryImages.length,
+        images: submitData.secondaryImages.map(img => ({
+          id: img.id,
+          url: img.url,
+          source: img.source,
+          alt: img.alt
+        }))
+      });
       console.log("Selected media content state:", selectedMediaContent);
       console.log("Primary image in submit data:", submitData.primaryImage);
       console.log("Secondary images in submit data:", submitData.secondaryImages);

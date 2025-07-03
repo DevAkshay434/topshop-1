@@ -1511,13 +1511,18 @@ Place this at a logical position in the content, typically after introducing a c
       
       // Use secondary images from Choose Media step
       if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
-        console.log(`Using ${requestData.secondaryImages.length} selected secondary images`);
+        console.log(`✓ SECONDARY IMAGES RECEIVED: Using ${requestData.secondaryImages.length} selected secondary images`);
         additionalImages = requestData.secondaryImages;
         
         // Log each secondary image for debugging
         requestData.secondaryImages.forEach((img, idx) => {
-          console.log(`Secondary image ${idx + 1}: ${img.url} (source: ${img.source})`);
+          console.log(`✓ Secondary image ${idx + 1}: ${img.url} (source: ${img.source})`);
         });
+      } else {
+        console.log(`✗ NO SECONDARY IMAGES RECEIVED: requestData.secondaryImages = ${JSON.stringify(requestData.secondaryImages)}`);
+        console.log(`✗ This explains why no secondary images are being processed for content generation`);
+        console.log(`✗ Check if frontend is properly sending secondaryImages in the request payload`);
+      }
       }
       
       // Fallback: If no media selected from Choose Media, try the legacy approach
