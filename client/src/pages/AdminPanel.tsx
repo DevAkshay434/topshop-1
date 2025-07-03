@@ -574,9 +574,11 @@ export default function AdminPanel() {
           restoredSecondaryImages: restoredMediaContent.secondaryImages
         });
         
-        // Force state update verification
+        // Force state update verification after project load
         setTimeout(() => {
           console.log("Project load verification: selectedMediaContent after setState", selectedMediaContent);
+          console.log("Project load verification: secondaryImages state", secondaryImages);
+          console.log("Project load verification: primaryImages state", primaryImages);
         }, 100);
       }
       
@@ -2001,9 +2003,19 @@ export default function AdminPanel() {
         // CRITICAL: Include selected author ID from workflow
         authorId: selectedAuthorId ? parseInt(selectedAuthorId) : null,
         // Add selected media from selectedMediaContent state (the correct source)
-        primaryImage: selectedMediaContent.primaryImage,
-        secondaryImages: selectedMediaContent.secondaryImages || [],
-        youtubeEmbed: selectedMediaContent.youtubeEmbed
+        // CRITICAL FIX: Handle async state issue by using both selectedMediaContent and fallback state
+        primaryImage: selectedMediaContent.primaryImage || primaryImages[0] || null,
+        secondaryImages: selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0 
+          ? selectedMediaContent.secondaryImages 
+          : secondaryImages.map(img => ({
+              id: img.id,
+              url: img.url,
+              alt: img.alt || '',
+              width: img.width || 0,
+              height: img.height || 0,
+              source: img.source || 'pexels'
+            })),
+        youtubeEmbed: selectedMediaContent.youtubeEmbed || youtubeEmbed
       };
       
       console.log("Preparing API request to /api/admin/generate-content with data:", submitData);
@@ -2029,7 +2041,18 @@ export default function AdminPanel() {
       } else {
         console.log("SECONDARY IMAGES DEBUG: No secondary images in submit data");
         console.log("  selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages);
+        console.log("  selectedMediaContent.secondaryImages.length:", selectedMediaContent.secondaryImages?.length);
         console.log("  secondaryImages state:", secondaryImages);
+        console.log("  secondaryImages state length:", secondaryImages?.length);
+        console.log("  CRITICAL: Need to identify why selectedMediaContent.secondaryImages is empty after project load");
+        
+        // Check if this is a project load scenario
+        if (secondaryImages && secondaryImages.length > 0 && (!selectedMediaContent.secondaryImages || selectedMediaContent.secondaryImages.length === 0)) {
+          console.error("PROJECT LOAD BUG DETECTED: secondaryImages state has data but selectedMediaContent.secondaryImages is empty!");
+          console.log("  This indicates project loading didn't properly sync selectedMediaContent state");
+          console.log("  secondaryImages state:", secondaryImages);
+          console.log("  selectedMediaContent:", selectedMediaContent);
+        }
       }
       
       // Specific try-catch for the API request
