@@ -2007,6 +2007,23 @@ export default function AdminPanel() {
       console.log("AUTHOR SYNC DEBUG - Author ID in submit data:", submitData.authorId);
       console.log("Media data being sent to server - Primary:", !!submitData.primaryImage, "Secondary:", submitData.secondaryImages?.length || 0, "YouTube:", !!submitData.youtubeEmbed);
       
+      // CRITICAL DEBUG: Check if secondary images are properly formatted
+      if (submitData.secondaryImages && submitData.secondaryImages.length > 0) {
+        console.log("SECONDARY IMAGES DEBUG:");
+        submitData.secondaryImages.forEach((img, idx) => {
+          console.log(`  Secondary image ${idx + 1}:`, {
+            id: img.id,
+            url: img.url,
+            alt: img.alt,
+            source: img.source
+          });
+        });
+      } else {
+        console.log("SECONDARY IMAGES DEBUG: No secondary images in submit data");
+        console.log("  selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages);
+        console.log("  secondaryImages state:", secondaryImages);
+      }
+      
       // Specific try-catch for the API request
       try {
         const response = await apiRequest({
