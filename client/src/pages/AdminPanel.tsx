@@ -1097,6 +1097,22 @@ export default function AdminPanel() {
       customCategory: formData.customCategory || '',
       buyerPersonas: formData.buyerPersonas || '',
       
+      // Content Style fields - CRITICAL FOR PROJECT SAVE/LOAD
+      selectedContentToneId: selectedContentToneId || '',
+      selectedContentDisplayName: selectedContentDisplayName || '',
+      
+      // Additional state fields for comprehensive project save
+      selectedProducts: selectedProducts || [],
+      selectedCollections: selectedCollections || [],
+      selectedKeywords: selectedKeywords || [],
+      selectedTitle: selectedTitle || '',
+      selectedAuthorId: selectedAuthorId || '',
+      mediaContent: {
+        primaryImage: primaryImages?.[0] || null,
+        secondaryImages: secondaryImages || [],
+        youtubeEmbed: youtubeEmbed || ''
+      },
+      
       // Metadata
       lastUpdated: new Date().toISOString()
     };
