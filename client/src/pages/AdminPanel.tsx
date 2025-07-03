@@ -649,20 +649,31 @@ export default function AdminPanel() {
       };
       
       console.log("UPDATED FORM VALUES FOR RESET:", updatedFormValues);
-      form.reset(updatedFormValues);
       
-      // Temporarily make Select components uncontrolled
-      setIsSelectControlled(false);
+      // CRITICAL FIX: Set form values BEFORE any controlled/uncontrolled switching
+      // This ensures the field.value is correct when Select components render
+      Object.entries(updatedFormValues).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          form.setValue(key as any, value);
+        }
+      });
       
-      // Force complete re-render of all form components by updating the form key
-      setFormKey(prev => prev + 1);
-      console.log("FORCING FORM RE-RENDER with new key:", formKey + 1);
-      
-      // Wait for re-render then make them controlled again with the correct values
+      // Wait for form values to be set, then do the controlled/uncontrolled switching
       setTimeout(() => {
-        setIsSelectControlled(true);
-        console.log("Re-enabled controlled Select components");
-      }, 100);
+        console.log("Form values set, now switching to uncontrolled mode");
+        // Temporarily make Select components uncontrolled
+        setIsSelectControlled(false);
+        
+        // Force complete re-render of all form components by updating the form key
+        setFormKey(prev => prev + 1);
+        console.log("FORCING FORM RE-RENDER with new key:", formKey + 1);
+        
+        // Wait for re-render then make them controlled again with the correct values
+        setTimeout(() => {
+          setIsSelectControlled(true);
+          console.log("Re-enabled controlled Select components");
+        }, 100);
+      }, 50);
       
       // Final debugging check
       setTimeout(() => {
