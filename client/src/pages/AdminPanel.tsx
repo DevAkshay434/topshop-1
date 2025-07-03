@@ -684,9 +684,9 @@ export default function AdminPanel() {
       selectedKeywords,
       selectedTitle,
       mediaContent: {
-        primaryImage: primaryImages[0] || null,
-        secondaryImages,
-        youtubeEmbed
+        primaryImage: primaryImages[0] || selectedMediaContent.primaryImage || null,
+        secondaryImages: secondaryImages.length > 0 ? secondaryImages : selectedMediaContent.secondaryImages || [],
+        youtubeEmbed: youtubeEmbed || selectedMediaContent.youtubeEmbed || null
       },
       selectedAuthorId,
       // CRITICAL FIX: Use form values instead of state variables
@@ -714,6 +714,14 @@ export default function AdminPanel() {
     };
     
     console.log("Extracting project data for saving:", extractedData);
+    console.log("🔍 SECONDARY IMAGES SAVE DEBUG:", {
+      secondaryImagesStateLength: secondaryImages.length,
+      selectedMediaContentSecondaryImagesLength: selectedMediaContent.secondaryImages?.length || 0,
+      finalSecondaryImagesLength: extractedData.mediaContent.secondaryImages.length,
+      secondaryImagesState: secondaryImages,
+      selectedMediaContentSecondaryImages: selectedMediaContent.secondaryImages,
+      finalSecondaryImages: extractedData.mediaContent.secondaryImages
+    });
     console.log("Form values being saved:", {
       articleLength: extractedData.articleLength,
       headingsCount: extractedData.headingsCount,
@@ -2023,16 +2031,30 @@ export default function AdminPanel() {
         // Add selected media from selectedMediaContent state (the correct source)
         // CRITICAL FIX: Handle async state issue by using both selectedMediaContent and fallback state
         primaryImage: selectedMediaContent.primaryImage || primaryImages[0] || null,
-        secondaryImages: selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0 
-          ? selectedMediaContent.secondaryImages 
-          : secondaryImages.map(img => ({
+        secondaryImages: (() => {
+          // First priority: Use selectedMediaContent.secondaryImages if available
+          if (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0) {
+            console.log("🔄 Using selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages.length);
+            return selectedMediaContent.secondaryImages;
+          }
+          
+          // Second priority: Use secondaryImages state if available
+          if (secondaryImages && secondaryImages.length > 0) {
+            console.log("🔄 Using secondaryImages state:", secondaryImages.length);
+            return secondaryImages.map(img => ({
               id: img.id,
               url: img.url,
               alt: img.alt || '',
               width: img.width || 0,
               height: img.height || 0,
               source: img.source || 'pexels'
-            })),
+            }));
+          }
+          
+          // No secondary images available
+          console.log("⚠️ No secondary images available from either source");
+          return [];
+        })(),
         youtubeEmbed: selectedMediaContent.youtubeEmbed || youtubeEmbed
       };
       
