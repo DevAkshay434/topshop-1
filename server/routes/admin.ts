@@ -1477,6 +1477,20 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
+      // CRITICAL DEBUG: Check what secondary images data is actually being sent to Claude
+      console.log("🔍 ADMIN ROUTES - CLAUDE REQUEST PREPARATION:");
+      console.log("- Primary image:", !!requestData.primaryImage, requestData.primaryImage?.url?.substring(0, 50) + '...' || 'none');
+      console.log("- Secondary images count:", requestData.secondaryImages?.length || 0);
+      console.log("- Secondary images data:", requestData.secondaryImages?.map(img => ({
+        id: img.id,
+        url: img.url?.substring(0, 50) + '...',
+        alt: img.alt,
+        source: img.source
+      })) || []);
+      console.log("- YouTube embed:", requestData.youtubeEmbed || 'none');
+      console.log("- Products info count:", productsInfo.length);
+      console.log("- Products for interlinking:", productsInfo.map(p => ({ id: p.id, handle: p.handle, title: p.title })));
+      
       // 3. Generate content with Claude
       const generatedContent = await generateBlogContentWithClaude({
         topic: requestData.title,
