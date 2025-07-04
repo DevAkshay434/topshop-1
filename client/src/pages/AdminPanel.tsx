@@ -2075,6 +2075,17 @@ export default function AdminPanel() {
           console.log("🔄 FINAL secondary images count:", allSecondaryImages.length);
           console.log("🔄 FINAL secondary images data:", allSecondaryImages);
           
+          // CRITICAL DEBUG: Ensure we can track what's being sent to backend
+          if (allSecondaryImages.length > 0) {
+            console.log("✅ SENDING SECONDARY IMAGES TO BACKEND:");
+            allSecondaryImages.forEach((img, idx) => {
+              console.log(`  ${idx + 1}. ID: ${img.id}, URL: ${img.url}, Source: ${img.source}`);
+            });
+          } else {
+            console.log("❌ NO SECONDARY IMAGES TO SEND - will result in no product interlinking");
+            console.log("❌ Check if selectedMediaContent.secondaryImages or secondaryImages state contain data");
+          }
+          
           return allSecondaryImages;
         })(),
         youtubeEmbed: selectedMediaContent.youtubeEmbed || youtubeEmbed
@@ -5440,8 +5451,11 @@ export default function AdminPanel() {
                           );
                         } 
                         
-                        // Get secondary images
-                        const secondaryImages = generatedContent.secondaryImages || [];
+                        // Get secondary images, excluding any that match the primary image to prevent duplication
+                        const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
+                        const secondaryImages = (generatedContent.secondaryImages || []).filter(img => 
+                          img.id !== primaryImageId
+                        );
                         
                         // Check for image tags in content 
                         const hasImageTags = content.includes('<img');
