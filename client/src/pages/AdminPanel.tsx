@@ -567,6 +567,16 @@ export default function AdminPanel() {
         
         setSelectedMediaContent(restoredMediaContent);
         
+        // CRITICAL FIX: Force immediate state synchronization after project load
+        // This ensures that selectedMediaContent reflects the correct state for content generation
+        setTimeout(() => {
+          console.log("🔄 FORCED STATE SYNC: Re-setting selectedMediaContent to ensure proper state");
+          setSelectedMediaContent(prevState => ({
+            ...prevState,
+            secondaryImages: projectData.mediaContent.secondaryImages || []
+          }));
+        }, 50);
+        
         // CRITICAL FIX: Sync the secondaryImages state with the restored data for proper UI display
         if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
           console.log("🔄 RESTORING SECONDARY IMAGES: Found", projectData.mediaContent.secondaryImages.length, "secondary images in project");
@@ -2050,6 +2060,13 @@ export default function AdminPanel() {
             const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
             const filteredSecondaryImages = selectedMediaContent.secondaryImages.filter(img => img.id !== primaryImageId);
             allSecondaryImages = [...allSecondaryImages, ...filteredSecondaryImages];
+          } else if (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length === 0) {
+            console.log("⚠️ selectedMediaContent.secondaryImages is empty - checking if this is a project load timing issue");
+            // Check if secondaryImages state has data but selectedMediaContent doesn't
+            if (secondaryImages && secondaryImages.length > 0) {
+              console.log("🔄 PROJECT LOAD TIMING FIX: Using secondaryImages state as fallback");
+              console.log("   This suggests selectedMediaContent wasn't properly synced after project load");
+            }
           }
           
           // Add from secondaryImages state if available and not duplicates
@@ -2071,6 +2088,36 @@ export default function AdminPanel() {
                 allSecondaryImages.push(img);
               }
             });
+          }
+          
+          // CRITICAL PROJECT LOAD FIX: Additional safety check for project loading scenarios
+          // If we still have no secondary images but project was recently loaded, check one more time
+          if (allSecondaryImages.length === 0 && currentProject) {
+            console.log("🔍 PROJECT LOAD SAFETY CHECK: No secondary images found, re-checking project data");
+            try {
+              const projectData = JSON.parse(currentProject.projectData);
+              if (projectData.mediaContent?.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
+                console.log("🔄 EMERGENCY FALLBACK: Found secondary images in current project data, using as fallback");
+                const emergencySecondaryImages = projectData.mediaContent.secondaryImages.map((img: any) => ({
+                  id: img.id,
+                  url: img.url || img.src?.original || img.src?.large || img.src,
+                  alt: img.alt || '',
+                  width: img.width || 0,
+                  height: img.height || 0,
+                  source: img.source || 'pexels'
+                }));
+                
+                const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
+                emergencySecondaryImages.forEach((img: any) => {
+                  if (!allSecondaryImages.some(existing => existing.id === img.id) && img.id !== primaryImageId) {
+                    allSecondaryImages.push(img);
+                  }
+                });
+                console.log("✅ EMERGENCY FALLBACK: Added", allSecondaryImages.length, "secondary images from project data");
+              }
+            } catch (parseError) {
+              console.error("Failed to parse current project data for emergency fallback:", parseError);
+            }
           }
           
           console.log("🔄 FINAL secondary images count:", allSecondaryImages.length);
