@@ -1180,6 +1180,12 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     secondaryImagesLength: req.body.secondaryImages?.length || 0,
     secondaryImagesData: req.body.secondaryImages || []
   });
+  console.log("🔍 FULL REQUEST BODY STRUCTURE:", {
+    title: req.body.title,
+    primaryImage: !!req.body.primaryImage,
+    secondaryImages: req.body.secondaryImages,
+    hasMediaContent: !!req.body.mediaContent
+  });
   
   try {
     // Validate request body with all required fields
@@ -1244,6 +1250,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
         alt: z.string().optional(),
         width: z.number().optional(),
         height: z.number().optional(),
+        source: z.string().optional(),
         src: z.object({
           original: z.string(),
           large: z.string(),
