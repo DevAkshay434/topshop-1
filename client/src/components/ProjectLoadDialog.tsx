@@ -33,11 +33,11 @@ interface ProjectLoadDialogProps {
 export function ProjectLoadDialog({ isOpen, onClose, onProjectSelected }: ProjectLoadDialogProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
-  const { autoDetectedStoreId } = useStore();
+  const { currentStore } = useStore();
 
   const { data: projects, isLoading, error } = useQuery({
-    queryKey: ['/api/projects'],
-    enabled: isOpen,
+    queryKey: ['/api/projects', currentStore?.id],
+    enabled: isOpen && !!currentStore,
   });
 
   const filteredProjects = projects?.projects?.filter((project: Project) =>
