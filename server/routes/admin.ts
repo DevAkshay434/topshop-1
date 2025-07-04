@@ -1520,9 +1520,29 @@ Place this at a logical position in the content, typically after introducing a c
         additionalImages = requestData.secondaryImages;
         
         // Log each secondary image for debugging
-        requestData.secondaryImages.forEach((img, idx) => {
+        requestData.secondaryImages.forEach((img: any, idx: number) => {
           console.log(`✓ Secondary image ${idx + 1}: ${img.url} (source: ${img.source})`);
         });
+        
+        // CRITICAL FIX: Ensure secondary images are processed and linked to products
+        if (requestData.secondaryImages.length > 0 && productsInfo.length > 0) {
+          console.log(`🔗 PRODUCT INTERLINKING: Will link ${requestData.secondaryImages.length} secondary images to ${productsInfo.length} products`);
+          
+          // Enhance secondary images with product information for interlinking
+          additionalImages = requestData.secondaryImages.map((img: any, index: number) => {
+            const productIndex = index % productsInfo.length; // Cycle through products
+            const product = productsInfo[productIndex];
+            
+            return {
+              ...img,
+              productUrl: `https://${store.shopName}/products/${product.handle}`,
+              productTitle: product.title,
+              productId: product.id
+            };
+          });
+          
+          console.log(`🔗 Enhanced ${additionalImages.length} secondary images with product links`);
+        }
       } else {
         console.log(`✗ NO SECONDARY IMAGES RECEIVED: requestData.secondaryImages = ${JSON.stringify(requestData.secondaryImages)}`);
         console.log(`✗ This explains why no secondary images are being processed for content generation`);

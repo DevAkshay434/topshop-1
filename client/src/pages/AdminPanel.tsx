@@ -2032,28 +2032,50 @@ export default function AdminPanel() {
         // CRITICAL FIX: Handle async state issue by using both selectedMediaContent and fallback state
         primaryImage: selectedMediaContent.primaryImage || primaryImages[0] || null,
         secondaryImages: (() => {
-          // First priority: Use selectedMediaContent.secondaryImages if available
+          console.log("🔍 SECONDARY IMAGES PREPARATION DEBUG:", {
+            selectedMediaContentSecondaryImages: selectedMediaContent.secondaryImages,
+            selectedMediaContentSecondaryImagesLength: selectedMediaContent.secondaryImages?.length || 0,
+            secondaryImagesState: secondaryImages,
+            secondaryImagesStateLength: secondaryImages?.length || 0
+          });
+
+          // Combine all available secondary images from both sources
+          let allSecondaryImages: any[] = [];
+          
+          // Add from selectedMediaContent if available
           if (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0) {
-            console.log("🔄 Using selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages.length);
-            return selectedMediaContent.secondaryImages;
+            console.log("✓ Adding from selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages.length);
+            // Also prevent primary image duplication here
+            const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
+            const filteredSecondaryImages = selectedMediaContent.secondaryImages.filter(img => img.id !== primaryImageId);
+            allSecondaryImages = [...allSecondaryImages, ...filteredSecondaryImages];
           }
           
-          // Second priority: Use secondaryImages state if available
+          // Add from secondaryImages state if available and not duplicates
           if (secondaryImages && secondaryImages.length > 0) {
-            console.log("🔄 Using secondaryImages state:", secondaryImages.length);
-            return secondaryImages.map(img => ({
+            console.log("✓ Adding from secondaryImages state:", secondaryImages.length);
+            const formattedSecondaryImages = secondaryImages.map(img => ({
               id: img.id,
-              url: img.url,
+              url: img.url || img.src?.original || img.src?.large || img.src,
               alt: img.alt || '',
               width: img.width || 0,
               height: img.height || 0,
               source: img.source || 'pexels'
             }));
+            
+            // Avoid duplicates by checking IDs and avoid primary image duplication
+            const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
+            formattedSecondaryImages.forEach(img => {
+              if (!allSecondaryImages.some(existing => existing.id === img.id) && img.id !== primaryImageId) {
+                allSecondaryImages.push(img);
+              }
+            });
           }
           
-          // No secondary images available
-          console.log("⚠️ No secondary images available from either source");
-          return [];
+          console.log("🔄 FINAL secondary images count:", allSecondaryImages.length);
+          console.log("🔄 FINAL secondary images data:", allSecondaryImages);
+          
+          return allSecondaryImages;
         })(),
         youtubeEmbed: selectedMediaContent.youtubeEmbed || youtubeEmbed
       };
