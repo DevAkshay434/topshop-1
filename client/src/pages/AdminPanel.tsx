@@ -570,8 +570,9 @@ export default function AdminPanel() {
         // CRITICAL FIX: Sync the secondaryImages state with the restored data for proper UI display
         if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
           console.log("🔄 RESTORING SECONDARY IMAGES: Found", projectData.mediaContent.secondaryImages.length, "secondary images in project");
+          console.log("🔍 SECONDARY IMAGES DATA STRUCTURE:", projectData.mediaContent.secondaryImages);
           setSecondaryImages(projectData.mediaContent.secondaryImages);
-          console.log("Project load: Synced secondaryImages state with restored data", projectData.mediaContent.secondaryImages);
+          console.log("✅ Project load: Synced secondaryImages state with restored data", projectData.mediaContent.secondaryImages.length, "images");
         } else {
           console.log("⚠️ NO SECONDARY IMAGES IN PROJECT: mediaContent.secondaryImages =", projectData.mediaContent.secondaryImages);
           setSecondaryImages([]); // Ensure clean state
@@ -2077,6 +2078,13 @@ export default function AdminPanel() {
           
           // CRITICAL DEBUG: Ensure we can track what's being sent to backend
           if (allSecondaryImages.length > 0) {
+            console.log("✅ SECONDARY IMAGES READY FOR PRODUCT INTERLINKING");
+            console.log("🔗 Available products for interlinking:", selectedProducts.map((p: any) => ({ id: p.id, handle: p.handle, title: p.title })));
+            console.log("📊 Product interlinking data check:", {
+              secondaryImagesCount: allSecondaryImages.length,
+              selectedProductsCount: selectedProducts.length,
+              productHandles: selectedProducts.map((p: any) => p.handle).join(', ')
+            });
             console.log("✅ SENDING SECONDARY IMAGES TO BACKEND:");
             allSecondaryImages.forEach((img, idx) => {
               console.log(`  ${idx + 1}. ID: ${img.id}, URL: ${img.url}, Source: ${img.source}`);
