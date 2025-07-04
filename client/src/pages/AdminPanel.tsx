@@ -548,73 +548,57 @@ export default function AdminPanel() {
       
       // 2. Restore media content
       if (projectData.mediaContent) {
-        console.log("🔄 RESTORING MEDIA CONTENT FROM PROJECT:", projectData.mediaContent);
+        if (projectData.mediaContent.primaryImage) {
+          setPrimaryImages([projectData.mediaContent.primaryImage]);
+        }
+        if (projectData.mediaContent.secondaryImages) {
+          setSecondaryImages(projectData.mediaContent.secondaryImages);
+        }
+        if (projectData.mediaContent.youtubeEmbed) {
+          setYoutubeEmbed(projectData.mediaContent.youtubeEmbed);
+        }
         
-        // CRITICAL FIX: Create the restored media content object first
+        // CRITICAL FIX: Ensure selectedMediaContent is properly synced with restored data
         const restoredMediaContent = {
           primaryImage: projectData.mediaContent.primaryImage || null,
           secondaryImages: projectData.mediaContent.secondaryImages || [],
           youtubeEmbed: projectData.mediaContent.youtubeEmbed || null
         };
         
-        console.log("📦 RESTORED MEDIA CONTENT OBJECT:", restoredMediaContent);
+        setSelectedMediaContent(restoredMediaContent);
         
-        // Set all the individual state variables
-        if (projectData.mediaContent.primaryImage) {
-          setPrimaryImages([projectData.mediaContent.primaryImage]);
-          console.log("✅ Restored primary image:", projectData.mediaContent.primaryImage);
-        } else {
-          setPrimaryImages([]);
-        }
-        
+        // CRITICAL FIX: Sync the secondaryImages state with the restored data for proper UI display
         if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
           console.log("🔄 RESTORING SECONDARY IMAGES: Found", projectData.mediaContent.secondaryImages.length, "secondary images in project");
-          console.log("🔍 SECONDARY IMAGES DATA:", projectData.mediaContent.secondaryImages);
+          console.log("🔍 SECONDARY IMAGES DATA STRUCTURE:", projectData.mediaContent.secondaryImages);
           setSecondaryImages(projectData.mediaContent.secondaryImages);
           console.log("✅ Project load: Synced secondaryImages state with restored data", projectData.mediaContent.secondaryImages.length, "images");
         } else {
           console.log("⚠️ NO SECONDARY IMAGES IN PROJECT: mediaContent.secondaryImages =", projectData.mediaContent.secondaryImages);
-          setSecondaryImages([]);
+          setSecondaryImages([]); // Ensure clean state
         }
         
-        if (projectData.mediaContent.youtubeEmbed) {
-          setYoutubeEmbed(projectData.mediaContent.youtubeEmbed);
-          console.log("✅ Restored YouTube embed:", projectData.mediaContent.youtubeEmbed);
+        // Also sync primary images if available
+        if (projectData.mediaContent.primaryImage) {
+          setPrimaryImages([projectData.mediaContent.primaryImage]);
+          console.log("Project load: Synced primaryImages state with restored data", projectData.mediaContent.primaryImage);
         } else {
-          setYoutubeEmbed(null);
+          setPrimaryImages([]); // Ensure clean state
         }
         
-        // CRITICAL FIX: Set selectedMediaContent after all individual states are set
-        console.log("🎯 SETTING selectedMediaContent TO:", restoredMediaContent);
-        setSelectedMediaContent(restoredMediaContent);
+        console.log("Project load: Restored media content", {
+          primaryImage: !!projectData.mediaContent.primaryImage,
+          secondaryImagesCount: projectData.mediaContent.secondaryImages?.length || 0,
+          youtubeEmbed: !!projectData.mediaContent.youtubeEmbed,
+          restoredSecondaryImages: restoredMediaContent.secondaryImages
+        });
         
-        // CRITICAL DEBUG: Force async state verification
+        // Force state update verification after project load
         setTimeout(() => {
-          console.log("🔍 PROJECT LOAD VERIFICATION (100ms later):");
-          console.log("  selectedMediaContent:", selectedMediaContent);
-          console.log("  secondaryImages state:", secondaryImages);
-          console.log("  primaryImages state:", primaryImages);
-          console.log("  youtubeEmbed state:", youtubeEmbed);
+          console.log("Project load verification: selectedMediaContent after setState", selectedMediaContent);
+          console.log("Project load verification: secondaryImages state", secondaryImages);
+          console.log("Project load verification: primaryImages state", primaryImages);
         }, 100);
-        
-        // Additional verification after longer delay to catch async issues
-        setTimeout(() => {
-          console.log("🔍 PROJECT LOAD VERIFICATION (500ms later):");
-          console.log("  selectedMediaContent:", selectedMediaContent);
-          console.log("  selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages);
-          console.log("  selectedMediaContent.secondaryImages.length:", selectedMediaContent.secondaryImages?.length);
-          
-          // CRITICAL: If selectedMediaContent is still empty, force it again
-          if ((!selectedMediaContent.secondaryImages || selectedMediaContent.secondaryImages.length === 0) && 
-              projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
-            console.log("🚨 DETECTED ASYNC STATE ISSUE - Force setting selectedMediaContent again");
-            setSelectedMediaContent({
-              primaryImage: projectData.mediaContent.primaryImage || null,
-              secondaryImages: projectData.mediaContent.secondaryImages || [],
-              youtubeEmbed: projectData.mediaContent.youtubeEmbed || null
-            });
-          }
-        }, 500);
       }
       
       // 3. Build complete form data object with all saved values
@@ -2045,28 +2029,32 @@ export default function AdminPanel() {
         contentStyleDisplayName: selectedContentDisplayName || "",
         // CRITICAL: Include selected author ID from workflow
         authorId: selectedAuthorId ? parseInt(selectedAuthorId) : null,
-        // CRITICAL FIX: Handle async state issue by prioritizing fallback state for project loading scenarios
-        primaryImage: (() => {
-          const primary = selectedMediaContent.primaryImage || primaryImages[0] || null;
-          console.log("🖼️ PRIMARY IMAGE SELECTION:", primary ? `Found: ${primary.url}` : "None selected");
-          return primary;
-        })(),
+        // Add selected media from selectedMediaContent state (the correct source)
+        // CRITICAL FIX: Handle async state issue by using both selectedMediaContent and fallback state
+        primaryImage: selectedMediaContent.primaryImage || primaryImages[0] || null,
         secondaryImages: (() => {
           console.log("🔍 SECONDARY IMAGES PREPARATION DEBUG:", {
             selectedMediaContentSecondaryImages: selectedMediaContent.secondaryImages,
             selectedMediaContentSecondaryImagesLength: selectedMediaContent.secondaryImages?.length || 0,
             secondaryImagesState: secondaryImages,
-            secondaryImagesStateLength: secondaryImages?.length || 0,
-            currentProject: currentProject?.name || "none"
+            secondaryImagesStateLength: secondaryImages?.length || 0
           });
 
-          // CRITICAL FIX: Prioritize secondaryImages state for project loading scenarios
-          // This fixes the async state issue where selectedMediaContent hasn't updated yet after project load
+          // Combine all available secondary images from both sources
           let allSecondaryImages: any[] = [];
           
-          // Primary source: secondaryImages state (works for both fresh selection and project loading)
+          // Add from selectedMediaContent if available
+          if (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0) {
+            console.log("✓ Adding from selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages.length);
+            // Also prevent primary image duplication here
+            const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
+            const filteredSecondaryImages = selectedMediaContent.secondaryImages.filter(img => img.id !== primaryImageId);
+            allSecondaryImages = [...allSecondaryImages, ...filteredSecondaryImages];
+          }
+          
+          // Add from secondaryImages state if available and not duplicates
           if (secondaryImages && secondaryImages.length > 0) {
-            console.log("✅ USING secondaryImages state as primary source:", secondaryImages.length, "images");
+            console.log("✓ Adding from secondaryImages state:", secondaryImages.length);
             const formattedSecondaryImages = secondaryImages.map(img => ({
               id: img.id,
               url: img.url || img.src?.original || img.src?.large || img.src,
@@ -2076,41 +2064,34 @@ export default function AdminPanel() {
               source: img.source || 'pexels'
             }));
             
-            // Filter out primary image to prevent duplication
+            // Avoid duplicates by checking IDs and avoid primary image duplication
             const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
-            const filteredSecondaryImages = formattedSecondaryImages.filter(img => img.id !== primaryImageId);
-            allSecondaryImages = [...filteredSecondaryImages];
-            
-            console.log("✅ Formatted and filtered", allSecondaryImages.length, "secondary images from state");
-          }
-          
-          // Secondary source: selectedMediaContent (fallback for fresh selections)
-          if (allSecondaryImages.length === 0 && selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0) {
-            console.log("🔄 Fallback: Using selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages.length);
-            const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
-            const filteredSecondaryImages = selectedMediaContent.secondaryImages.filter(img => img.id !== primaryImageId);
-            allSecondaryImages = [...filteredSecondaryImages];
+            formattedSecondaryImages.forEach(img => {
+              if (!allSecondaryImages.some(existing => existing.id === img.id) && img.id !== primaryImageId) {
+                allSecondaryImages.push(img);
+              }
+            });
           }
           
           console.log("🔄 FINAL secondary images count:", allSecondaryImages.length);
-          console.log("🔄 FINAL secondary images data:", allSecondaryImages.map(img => ({ id: img.id, url: img.url })));
+          console.log("🔄 FINAL secondary images data:", allSecondaryImages);
           
-          // CRITICAL DEBUG: Product interlinking readiness check
+          // CRITICAL DEBUG: Ensure we can track what's being sent to backend
           if (allSecondaryImages.length > 0) {
             console.log("✅ SECONDARY IMAGES READY FOR PRODUCT INTERLINKING");
             console.log("🔗 Available products for interlinking:", selectedProducts.map((p: any) => ({ id: p.id, handle: p.handle, title: p.title })));
-            console.log("📊 Product interlinking readiness:", {
+            console.log("📊 Product interlinking data check:", {
               secondaryImagesCount: allSecondaryImages.length,
               selectedProductsCount: selectedProducts.length,
-              productHandles: selectedProducts.map((p: any) => p.handle).join(', '),
-              willInterlink: allSecondaryImages.length > 0 && selectedProducts.length > 0
+              productHandles: selectedProducts.map((p: any) => p.handle).join(', ')
+            });
+            console.log("✅ SENDING SECONDARY IMAGES TO BACKEND:");
+            allSecondaryImages.forEach((img, idx) => {
+              console.log(`  ${idx + 1}. ID: ${img.id}, URL: ${img.url}, Source: ${img.source}`);
             });
           } else {
-            console.log("❌ NO SECONDARY IMAGES TO SEND - no product interlinking will occur");
-            console.log("🔍 Debug data:");
-            console.log("  - selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages?.length || 0);
-            console.log("  - secondaryImages state:", secondaryImages?.length || 0);
-            console.log("  - Is this a project load scenario?", !!currentProject);
+            console.log("❌ NO SECONDARY IMAGES TO SEND - will result in no product interlinking");
+            console.log("❌ Check if selectedMediaContent.secondaryImages or secondaryImages state contain data");
           }
           
           return allSecondaryImages;

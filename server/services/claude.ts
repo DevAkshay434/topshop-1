@@ -537,45 +537,6 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     // Process the content to remove H1 tags, add automatic Table of Contents and handle media placement
     let processedContent = removeH1Tags(jsonContent.content);
     processedContent = addTableOfContents(processedContent);
-    
-    // CRITICAL DEBUG: Check content before media processing
-    console.log("🔍 CLAUDE CONTENT ANALYSIS BEFORE MEDIA PROCESSING:");
-    console.log("- Content length:", processedContent.length);
-    console.log("- Contains YOUTUBE markers:", processedContent.includes('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->'));
-    console.log("- Contains SECONDARY_IMAGE markers:", processedContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->'));
-    console.log("- Number of SECONDARY_IMAGE markers:", (processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g) || []).length);
-    console.log("- Number of H2 headings found:", (processedContent.match(/<h2[^>]*>/gi) || []).length);
-    
-    // If no secondary image markers found but we have secondary images, manually insert them
-    if (request.secondaryImages && request.secondaryImages.length > 0 && 
-        !processedContent.includes('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->')) {
-      console.log("🚨 NO SECONDARY IMAGE MARKERS FOUND - Claude didn't follow marker instructions");
-      console.log("📝 MANUALLY INSERTING MARKERS after H2 headings for secondary images");
-      
-      // Find all H2 headings and insert markers after them (starting from the 3rd H2 to skip intro sections)
-      const h2Pattern = /<\/h2>/gi;
-      const h2Matches = [...processedContent.matchAll(h2Pattern)];
-      
-      if (h2Matches.length >= 2) {
-        // Insert markers starting from the 3rd H2 heading (index 2) to avoid placing images too early
-        let insertOffset = 0;
-        const startFromH2 = Math.min(2, h2Matches.length - 1); // Start from 3rd H2 or last H2 if less than 3
-        
-        for (let i = startFromH2; i < h2Matches.length && i - startFromH2 < request.secondaryImages.length; i++) {
-          const marker = '\n<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->\n';
-          const insertPosition = h2Matches[i].index + h2Matches[i][0].length + insertOffset;
-          processedContent = processedContent.slice(0, insertPosition) + marker + processedContent.slice(insertPosition);
-          insertOffset += marker.length;
-          
-          console.log(`✓ Inserted SECONDARY_IMAGE_PLACEMENT_MARKER after H2 heading ${i + 1}`);
-        }
-        
-        console.log(`📍 Successfully inserted ${Math.min(h2Matches.length - startFromH2, request.secondaryImages.length)} secondary image markers`);
-      } else {
-        console.log("❌ Not enough H2 headings to place secondary images");
-      }
-    }
-    
     processedContent = processMediaPlacementsHandler(processedContent, request);
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
