@@ -119,8 +119,10 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     secondaryImagesCount: request.secondaryImages?.length || 0,
     hasProductIds: !!request.productIds,
     productIdsCount: request.productIds?.length || 0,
+    productIds: request.productIds || [],
     hasProductsInfo: !!request.productsInfo,
-    productsInfoCount: request.productsInfo?.length || 0
+    productsInfoCount: request.productsInfo?.length || 0,
+    productsInfo: request.productsInfo?.map(p => ({ id: p.id, handle: p.handle, title: p.title })) || []
   });
   
   if (request.secondaryImages && request.secondaryImages.length > 0) {
