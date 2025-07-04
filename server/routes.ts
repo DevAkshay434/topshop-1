@@ -2230,29 +2230,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         return res.status(401).json({ error: "Store not found or not connected" });
       }
 
-      // CRITICAL FIX: Parse projectData if it's a string
-      let projectData = req.body;
-      if (req.body.projectData && typeof req.body.projectData === 'string') {
-        try {
-          projectData = JSON.parse(req.body.projectData);
-        } catch (parseError) {
-          return res.status(400).json({ 
-            error: "Invalid project data format", 
-            details: "Failed to parse project data JSON" 
-          });
-        }
-      }
-
-      // Debug log to see what's being saved
-      console.log("🔍 PROJECT UPDATE - Received data:", {
-        hasMediaContent: !!projectData.mediaContent,
-        mediaContentKeys: projectData.mediaContent ? Object.keys(projectData.mediaContent) : [],
-        secondaryImagesCount: projectData.mediaContent?.secondaryImages?.length || 0,
-        projectDataKeys: Object.keys(projectData)
-      });
-
       // Validate request body (partial update)
-      const validation = insertProjectSchema.partial().safeParse(projectData);
+      const validation = insertProjectSchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Invalid project data", 
