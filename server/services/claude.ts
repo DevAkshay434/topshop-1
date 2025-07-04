@@ -148,6 +148,41 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     
     console.log(`Found ${availableMarkers} placement markers for ${request.secondaryImages.length} secondary images`);
     
+    // FALLBACK SYSTEM: If no markers found, automatically insert them after H2 headings
+    if (availableMarkers === 0) {
+      console.log("⚠️ No secondary image markers found in content - implementing fallback system");
+      
+      // Find all H2 headings and add markers after them (skip first 2 H2s for intro and video)
+      const h2Regex = /<h2[^>]*>.*?<\/h2>/gi;
+      const h2Matches = [...processedContent.matchAll(h2Regex)];
+      
+      if (h2Matches.length > 2) {
+        console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #3 and beyond`);
+        
+        // Start from the 3rd H2 (index 2) and add markers after each one
+        let insertOffset = 0;
+        for (let i = 2; i < h2Matches.length && i < 2 + request.secondaryImages.length; i++) {
+          const h2Match = h2Matches[i];
+          const insertPosition = h2Match.index + h2Match[0].length + insertOffset;
+          const marker = '\n<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->\n';
+          
+          processedContent = processedContent.slice(0, insertPosition) + marker + processedContent.slice(insertPosition);
+          insertOffset += marker.length;
+          
+          console.log(`Added fallback marker after H2 #${i + 1}`);
+        }
+        
+        // Update markers count after fallback insertion
+        const newMarkers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
+        const newAvailableMarkers = newMarkers ? newMarkers.length : 0;
+        console.log(`Fallback system added ${newAvailableMarkers} markers`);
+      }
+    }
+    
+    // Re-check markers after potential fallback
+    const finalMarkers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
+    const finalAvailableMarkers = finalMarkers ? finalMarkers.length : 0;
+    
     // Create a set to track used image URLs to prevent duplicates
     const usedImages = new Set<string>();
     
@@ -157,7 +192,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     console.log("Available products for interlinking:", availableProducts);
     
     // Process each marker location with a unique image
-    for (let i = 0; i < availableMarkers && i < request.secondaryImages.length; i++) {
+    for (let i = 0; i < finalAvailableMarkers && i < request.secondaryImages.length; i++) {
       const image = request.secondaryImages[i];
       
       // Skip if this image URL has already been used
@@ -326,12 +361,27 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
     
-    SPECIFIC MEDIA PLACEMENT INSTRUCTIONS:
+    CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
     - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
-    - Under each subsequent H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
-    - Use unique placement markers - each secondary image will be automatically assigned to different H2 sections
-    - DO NOT repeat the same secondary image placement marker multiple times
-    - The system will automatically prevent duplicate images and distribute them evenly
+    - Under EVERY OTHER H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+    - IMPORTANT: You MUST include at least 3-4 secondary image placement markers: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+    - Place one marker under each major H2 section to ensure even distribution
+    - These markers are REQUIRED for image functionality - do not skip them
+    - Example structure:
+      <h2>First Section</h2>
+      <p>Content...</p>
+      
+      <h2>Second Section</h2>
+      <p>Content...</p>
+      <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
+      
+      <h2>Third Section</h2>
+      <p>Content...</p>
+      <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+      
+      <h2>Fourth Section</h2>
+      <p>Content...</p>  
+      <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     
     TABLE OF CONTENTS REQUIREMENTS:
     - AUTOMATICALLY include a Table of Contents at the very beginning of the content
