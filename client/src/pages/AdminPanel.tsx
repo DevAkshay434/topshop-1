@@ -2078,12 +2078,27 @@ export default function AdminPanel() {
           // Combine all available secondary images from both sources
           let allSecondaryImages: any[] = [];
           
+          // CRITICAL FIX: Get ALL possible primary image IDs for comprehensive filtering
+          const getAllPrimaryImageIds = () => {
+            const ids = new Set();
+            if (selectedMediaContent.primaryImage?.id) ids.add(selectedMediaContent.primaryImage.id);
+            if (selectedMediaContent.primaryImage?.url) ids.add(selectedMediaContent.primaryImage.url);
+            if (primaryImages[0]?.id) ids.add(primaryImages[0].id);
+            if (primaryImages[0]?.url) ids.add(primaryImages[0].url);
+            return ids;
+          };
+          
+          const primaryImageIds = getAllPrimaryImageIds();
+          console.log("🔍 PRIMARY IMAGE IDS FOR FILTERING:", Array.from(primaryImageIds));
+
           // Add from selectedMediaContent if available
           if (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length > 0) {
             console.log("✓ Adding from selectedMediaContent.secondaryImages:", selectedMediaContent.secondaryImages.length);
-            // Also prevent primary image duplication here
-            const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
-            const filteredSecondaryImages = selectedMediaContent.secondaryImages.filter(img => img.id !== primaryImageId);
+            // Enhanced primary image duplication prevention
+            const filteredSecondaryImages = selectedMediaContent.secondaryImages.filter(img => 
+              !primaryImageIds.has(img.id) && !primaryImageIds.has(img.url)
+            );
+            console.log("🔍 FILTERED OUT", selectedMediaContent.secondaryImages.length - filteredSecondaryImages.length, "duplicate primary images");
             allSecondaryImages = [...allSecondaryImages, ...filteredSecondaryImages];
           } else if (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length === 0) {
             console.log("⚠️ selectedMediaContent.secondaryImages is empty - checking if this is a project load timing issue");
@@ -2106,13 +2121,16 @@ export default function AdminPanel() {
               source: img.source || 'pexels'
             }));
             
-            // Avoid duplicates by checking IDs and avoid primary image duplication
-            const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
+            // Enhanced duplicate and primary image filtering
             formattedSecondaryImages.forEach(img => {
-              if (!allSecondaryImages.some(existing => existing.id === img.id) && img.id !== primaryImageId) {
+              const isDuplicate = allSecondaryImages.some(existing => existing.id === img.id);
+              const isPrimaryImage = primaryImageIds.has(img.id) || primaryImageIds.has(img.url);
+              
+              if (!isDuplicate && !isPrimaryImage) {
                 allSecondaryImages.push(img);
               }
             });
+            console.log("🔍 SECONDARY IMAGES STATE: Added", formattedSecondaryImages.length - (formattedSecondaryImages.length - allSecondaryImages.length), "images after filtering");
           }
           
           // CRITICAL PROJECT LOAD FIX: Enhanced emergency fallback for project loading scenarios
@@ -2135,13 +2153,17 @@ export default function AdminPanel() {
                   source: img.source || 'product_image'
                 }));
                 
-                const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
+                // Enhanced primary image filtering for emergency fallback
                 emergencySecondaryImages.forEach((img: any) => {
-                  if (!allSecondaryImages.some(existing => existing.id === img.id) && img.id !== primaryImageId) {
+                  const isDuplicate = allSecondaryImages.some(existing => existing.id === img.id);
+                  const isPrimaryImage = primaryImageIds.has(img.id) || primaryImageIds.has(img.url);
+                  
+                  if (!isDuplicate && !isPrimaryImage) {
                     allSecondaryImages.push(img);
                   }
                 });
                 console.log("✅ EMERGENCY FALLBACK COMPLETE: Using", allSecondaryImages.length, "secondary images from project data");
+                console.log("🔍 EMERGENCY IMAGES DATA:", allSecondaryImages.map(img => ({id: img.id, source: img.source})));
               } else {
                 console.log("❌ EMERGENCY FALLBACK FAILED: No secondary images found in project data either");
                 console.log("🔍 Project mediaContent structure:", projectData.mediaContent);
