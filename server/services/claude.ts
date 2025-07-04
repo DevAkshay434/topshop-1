@@ -114,16 +114,31 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
   }
   
   // Handle secondary images placement - ensure no duplicates and proper distribution with product links
+  console.log("🔍 CLAUDE SERVICE - Secondary images processing:", {
+    hasSecondaryImages: !!request.secondaryImages,
+    secondaryImagesCount: request.secondaryImages?.length || 0,
+    hasProductIds: !!request.productIds,
+    productIdsCount: request.productIds?.length || 0,
+    hasProductsInfo: !!request.productsInfo,
+    productsInfoCount: request.productsInfo?.length || 0
+  });
+  
   if (request.secondaryImages && request.secondaryImages.length > 0) {
+    console.log("✅ SECONDARY IMAGES FOUND - Processing for product interlinking");
+    
     // Find all secondary image placement markers
     const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const availableMarkers = markers ? markers.length : 0;
+    
+    console.log(`Found ${availableMarkers} placement markers for ${request.secondaryImages.length} secondary images`);
     
     // Create a set to track used image URLs to prevent duplicates
     const usedImages = new Set<string>();
     
     // Get products information for linking (from request or from secondary image metadata)
     const availableProducts = request.productIds || [];
+    
+    console.log("Available products for interlinking:", availableProducts);
     
     // Process each marker location with a unique image
     for (let i = 0; i < availableMarkers && i < request.secondaryImages.length; i++) {
@@ -138,27 +153,25 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       let imageHtml = '';
       
-      // Try to link the image to a product
+      // Try to link the image to a product using product handle (preferred) or product ID
       if (availableProducts.length > 0) {
         // Cycle through available products to ensure each secondary image links to a product
         const productIndex = i % availableProducts.length;
-        const productId = availableProducts[productIndex];
+        const productIdentifier = availableProducts[productIndex];
         
-        // Create product-linked image HTML
-        imageHtml = `
-<div style="margin: 20px 0; text-align: center;">
-  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
-    <img src="${image.url}" alt="${image.alt || ''}" 
-      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease;" 
-      onmouseover="this.style.transform='scale(1.02)'" 
-      onmouseout="this.style.transform='scale(1)'" />
-  </a>
-  <p style="margin-top: 4px; font-size: 12px;">
-    <a href="/products/${productId}" style="color: #2563eb; text-decoration: none; font-weight: 500;">View Product Details →</a>
-  </p>
-</div>`;
+        // Try to get product info to use handle instead of ID for better URLs
+        let productHandle = productIdentifier;
+        if (request.productsInfo && request.productsInfo.length > 0) {
+          const productInfo = request.productsInfo[productIndex % request.productsInfo.length];
+          productHandle = productInfo.handle || productIdentifier;
+        }
         
-        console.log(`Secondary image ${i + 1} linked to product ID: ${productId}`);
+        // Create product-linked image HTML matching the user's required format
+        imageHtml = `  <a href="/products/${productHandle}" title="View Product Details" style="text-decoration: none;">
+    <div style="text-align: center; margin: 20px 0;"><img src="${image.url}" alt="${image.alt || ''}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"></div>
+  </a>`;
+        
+        console.log(`Secondary image ${i + 1} linked to product handle: ${productHandle} (${productIdentifier})`);
       } else {
         // Fallback without product link if no products available
         imageHtml = `
