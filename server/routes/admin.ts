@@ -1524,10 +1524,24 @@ Place this at a logical position in the content, typically after introducing a c
       // Use secondary images from Choose Media step
       if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
         console.log(`✓ SECONDARY IMAGES RECEIVED: Using ${requestData.secondaryImages.length} selected secondary images`);
-        additionalImages = requestData.secondaryImages;
+        
+        // CRITICAL FIX: Filter out primary image from secondary images to prevent duplication
+        const primaryImageUrl = featuredImage?.url || featuredImage?.src?.original;
+        if (primaryImageUrl) {
+          additionalImages = requestData.secondaryImages.filter((img: any) => {
+            const imgUrl = img.url || img.src?.original;
+            return imgUrl !== primaryImageUrl;
+          });
+          
+          if (additionalImages.length !== requestData.secondaryImages.length) {
+            console.log(`✓ DUPLICATE PREVENTION: Filtered out ${requestData.secondaryImages.length - additionalImages.length} duplicate primary images from secondary images`);
+          }
+        } else {
+          additionalImages = requestData.secondaryImages;
+        }
         
         // Log each secondary image for debugging
-        requestData.secondaryImages.forEach((img: any, idx: number) => {
+        additionalImages.forEach((img: any, idx: number) => {
           console.log(`✓ Secondary image ${idx + 1}: ${img.url} (source: ${img.source})`);
         });
         
