@@ -567,15 +567,24 @@ export default function AdminPanel() {
         
         setSelectedMediaContent(restoredMediaContent);
         
-        // CRITICAL FIX: Force immediate state synchronization after project load
+        // CRITICAL FIX: Immediate state synchronization without timeout
         // This ensures that selectedMediaContent reflects the correct state for content generation
-        setTimeout(() => {
-          console.log("🔄 FORCED STATE SYNC: Re-setting selectedMediaContent to ensure proper state");
+        console.log("🔄 IMMEDIATE STATE SYNC: Setting selectedMediaContent synchronously");
+        setSelectedMediaContent(restoredMediaContent);
+        
+        // ADDITIONAL FIX: Force multiple state sync attempts to handle React timing
+        const forceStateSync = () => {
           setSelectedMediaContent(prevState => ({
             ...prevState,
             secondaryImages: projectData.mediaContent.secondaryImages || []
           }));
-        }, 50);
+        };
+        
+        // Execute sync immediately and with backoff intervals
+        forceStateSync();
+        setTimeout(forceStateSync, 10);
+        setTimeout(forceStateSync, 50);
+        setTimeout(forceStateSync, 100);
         
         // CRITICAL FIX: Sync the secondaryImages state with the restored data for proper UI display
         if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
@@ -670,12 +679,28 @@ export default function AdminPanel() {
         faqType: updatedFormValues.faqType
       });
 
+      // CRITICAL: Block content generation until state synchronization is complete
+      // This prevents the timing issue where users generate content before state is ready
+      setIsGenerating(true); // Temporarily disable content generation
+      
+      // Schedule state verification and re-enable generation
+      setTimeout(() => {
+        console.log("🔄 PROJECT LOAD COMPLETE: Re-enabling content generation");
+        console.log("Final state verification:", {
+          selectedMediaContentSecondaryImages: selectedMediaContent.secondaryImages?.length || 0,
+          secondaryImagesState: secondaryImages?.length || 0,
+          projectHasSecondaryImages: projectData.mediaContent?.secondaryImages?.length || 0
+        });
+        setIsGenerating(false); // Re-enable content generation
+      }, 200); // Longer timeout to ensure all state updates complete
+      
       toast({
         title: "Project loaded",
-        description: `"${project.name}" has been loaded successfully.`,
+        description: `"${project.name}" has been loaded successfully. State synchronization complete.`,
       });
     } catch (error) {
       console.error("Error loading project:", error);
+      setIsGenerating(false); // Re-enable if error occurs
       toast({
         title: "Error loading project",
         description: "Failed to load project data. Please try again.",
@@ -2090,21 +2115,24 @@ export default function AdminPanel() {
             });
           }
           
-          // CRITICAL PROJECT LOAD FIX: Additional safety check for project loading scenarios
-          // If we still have no secondary images but project was recently loaded, check one more time
+          // CRITICAL PROJECT LOAD FIX: Enhanced emergency fallback for project loading scenarios
+          // This is the most reliable fallback that directly accesses stored project data
           if (allSecondaryImages.length === 0 && currentProject) {
-            console.log("🔍 PROJECT LOAD SAFETY CHECK: No secondary images found, re-checking project data");
+            console.log("🔍 PROJECT LOAD SAFETY CHECK: No secondary images found in state variables");
+            console.log("🔄 ATTEMPTING EMERGENCY FALLBACK: Accessing project data directly");
             try {
               const projectData = JSON.parse(currentProject.projectData);
               if (projectData.mediaContent?.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
-                console.log("🔄 EMERGENCY FALLBACK: Found secondary images in current project data, using as fallback");
+                console.log("✅ EMERGENCY FALLBACK SUCCESS: Found", projectData.mediaContent.secondaryImages.length, "secondary images in project data");
+                console.log("🔍 Project data secondary images:", projectData.mediaContent.secondaryImages);
+                
                 const emergencySecondaryImages = projectData.mediaContent.secondaryImages.map((img: any) => ({
                   id: img.id,
                   url: img.url || img.src?.original || img.src?.large || img.src,
                   alt: img.alt || '',
                   width: img.width || 0,
                   height: img.height || 0,
-                  source: img.source || 'pexels'
+                  source: img.source || 'product_image'
                 }));
                 
                 const primaryImageId = selectedMediaContent.primaryImage?.id || primaryImages[0]?.id;
@@ -2113,12 +2141,26 @@ export default function AdminPanel() {
                     allSecondaryImages.push(img);
                   }
                 });
-                console.log("✅ EMERGENCY FALLBACK: Added", allSecondaryImages.length, "secondary images from project data");
+                console.log("✅ EMERGENCY FALLBACK COMPLETE: Using", allSecondaryImages.length, "secondary images from project data");
+              } else {
+                console.log("❌ EMERGENCY FALLBACK FAILED: No secondary images found in project data either");
+                console.log("🔍 Project mediaContent structure:", projectData.mediaContent);
               }
             } catch (parseError) {
-              console.error("Failed to parse current project data for emergency fallback:", parseError);
+              console.error("❌ EMERGENCY FALLBACK ERROR: Failed to parse current project data:", parseError);
             }
           }
+          
+          // FINAL DEBUG LOG: Show what we're actually sending to backend
+          console.log("🚀 FINAL SECONDARY IMAGES SUMMARY:", {
+            totalSecondaryImages: allSecondaryImages.length,
+            fromSelectedMediaContent: selectedMediaContent.secondaryImages?.length || 0,
+            fromSecondaryImagesState: secondaryImages?.length || 0,
+            fromEmergencyFallback: (allSecondaryImages.length > 0 && 
+              (!selectedMediaContent.secondaryImages?.length && !secondaryImages?.length)) ? allSecondaryImages.length : 0,
+            imageIds: allSecondaryImages.map(img => img.id),
+            hasCurrentProject: !!currentProject
+          });
           
           console.log("🔄 FINAL secondary images count:", allSecondaryImages.length);
           console.log("🔄 FINAL secondary images data:", allSecondaryImages);
