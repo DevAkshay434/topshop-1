@@ -1307,10 +1307,15 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       let productsInfo: Array<any> = [];
       let collectionsInfo: Array<any> = [];
       
-      if (requestData.productIds && requestData.productIds.length > 0) {
+      // Extract product IDs from either productIds or selectedProducts
+      const effectiveProductIds = requestData.productIds && requestData.productIds.length > 0 
+        ? requestData.productIds 
+        : requestData.selectedProducts?.map(p => String(p.id)) || [];
+        
+      if (effectiveProductIds.length > 0) {
         // For simplicity, we'll use the product search API
         const allProducts = await shopifyService.getProducts(store, 100);
-        productsInfo = allProducts.filter(p => requestData.productIds?.includes(String(p.id)));
+        productsInfo = allProducts.filter(p => effectiveProductIds.includes(String(p.id)));
         console.log(`Loaded ${productsInfo.length} products for media interlinking:`, productsInfo.map(p => ({ id: p.id, title: p.title, handle: p.handle })));
       }
       
