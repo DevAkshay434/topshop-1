@@ -118,9 +118,10 @@ export default function PostList({
     if (!editingSchedule) return;
     
     try {
-      const scheduledDateTime = `${editingSchedule.date}T${editingSchedule.time}:00`;
+      // Create a local date/time and convert to ISO string for backend
+      const localDateTime = new Date(`${editingSchedule.date}T${editingSchedule.time}:00`);
       const response = await apiRequest('POST', `/api/posts/${editingSchedule.postId}/reschedule`, {
-        scheduledDate: scheduledDateTime,
+        scheduledDate: localDateTime.toISOString(),
         scheduledPublishDate: editingSchedule.date,
         scheduledPublishTime: editingSchedule.time
       });
@@ -154,6 +155,7 @@ export default function PostList({
     // If post has been rescheduled, use the updated scheduledDate
     if (post.scheduledDate) {
       const scheduledDateTime = new Date(post.scheduledDate);
+      // Convert UTC time to local time for editing
       currentDate = format(scheduledDateTime, 'yyyy-MM-dd');
       currentTime = format(scheduledDateTime, 'HH:mm');
     }
@@ -247,6 +249,8 @@ export default function PostList({
     // For scheduled posts, show the actual current scheduled time
     if (post.status === 'scheduled' && post.scheduledDate) {
       const scheduledDateTime = new Date(post.scheduledDate);
+      
+      // Display in local timezone - date-fns format automatically converts UTC to local
       return format(scheduledDateTime, "MMM d, yyyy 'at' HH:mm");
     }
     return null;
