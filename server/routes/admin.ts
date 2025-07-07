@@ -1330,16 +1330,37 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       let productsInfo: Array<any> = [];
       let collectionsInfo: Array<any> = [];
       
-      // Extract product IDs from either productIds or selectedProducts
-      const effectiveProductIds = requestData.productIds && requestData.productIds.length > 0 
+      // ENHANCED FIX: Extract product IDs from multiple sources including secondary images
+      let effectiveProductIds = requestData.productIds && requestData.productIds.length > 0 
         ? requestData.productIds 
         : requestData.selectedProducts?.map(p => String(p.id)) || [];
+      
+      // CRITICAL FIX: Also check if products can be derived from secondary images sources
+      if (effectiveProductIds.length === 0 && requestData.secondaryImages && requestData.secondaryImages.length > 0) {
+        const productIdsFromImages = new Set<string>();
+        requestData.secondaryImages.forEach(img => {
+          if (img.source === 'product_image' && img.id) {
+            // Extract product ID from image ID (format: product-{productId}-image-{imageId})
+            const match = img.id.match(/^product-(\d+)-/);
+            if (match) {
+              productIdsFromImages.add(match[1]);
+            }
+          }
+        });
+        effectiveProductIds = [...effectiveProductIds, ...Array.from(productIdsFromImages)];
+        console.log(`🔍 EXTRACTED PRODUCT IDS FROM SECONDARY IMAGES: ${Array.from(productIdsFromImages).join(', ')}`);
+      }
         
       if (effectiveProductIds.length > 0) {
         // For simplicity, we'll use the product search API
         const allProducts = await shopifyService.getProducts(store, 100);
         productsInfo = allProducts.filter(p => effectiveProductIds.includes(String(p.id)));
-        console.log(`Loaded ${productsInfo.length} products for media interlinking:`, productsInfo.map(p => ({ id: p.id, title: p.title, handle: p.handle })));
+        console.log(`✅ LOADED ${productsInfo.length} PRODUCTS FOR MEDIA INTERLINKING:`, productsInfo.map(p => ({ id: p.id, title: p.title, handle: p.handle })));
+      } else {
+        console.log(`❌ NO PRODUCT IDS FOUND - Secondary images will not be linked to products`);
+        console.log(`   - requestData.productIds:`, requestData.productIds);
+        console.log(`   - requestData.selectedProducts:`, requestData.selectedProducts);
+        console.log(`   - requestData.secondaryImages.length:`, requestData.secondaryImages?.length || 0);
       }
       
       if (requestData.collectionIds && requestData.collectionIds.length > 0) {
@@ -1558,6 +1579,12 @@ Place this at a logical position in the content, typically after introducing a c
       });
       
       console.log("✅ CLAUDE SERVICE COMPLETED - Generated content length:", generatedContent.content?.length || 0);
+      console.log("🔍 CLAUDE SERVICE DEBUGGING - Data sent to Claude:");
+      console.log("   - productsInfo passed to Claude:", {
+        hasProductsInfo: !!productsInfo,
+        productsInfoLength: productsInfo?.length || 0,
+        productsInfoSample: productsInfo?.slice(0, 2).map(p => ({ id: p.id, handle: p.handle, title: p.title })) || []
+      });
       
       // 4. Update content generation request
       await storage.updateContentGenRequest(contentRequest.id, {

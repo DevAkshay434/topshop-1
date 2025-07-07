@@ -4905,13 +4905,24 @@ export default function AdminPanel() {
                                 '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; border-radius: 8px;">'
                               );
                             
+                            // CRITICAL FIX: Only add featured image if it's not already embedded in the content
                             if (primaryImage && !shouldSkipFeaturedImage) {
-                              const featuredImageHtml = `<div class="featured-image mb-6">
-                                <img src="${primaryImage.url || primaryImage.src?.large}" 
-                                     alt="${primaryImage.alt || 'Featured image'}" 
-                                     style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;" />
-                              </div>`;
-                              processedContent = featuredImageHtml + processedContent;
+                              const primaryImageUrl = primaryImage.url || primaryImage.src?.large;
+                              const primaryImageId = primaryImage.id;
+                              
+                              // Check if the primary image is already embedded in the content
+                              const isPrimaryImageInContent = content.includes(primaryImageUrl) || 
+                                                            content.includes(primaryImageId) ||
+                                                            content.includes('featured-image');
+                              
+                              if (!isPrimaryImageInContent) {
+                                const featuredImageHtml = `<div class="featured-image mb-6">
+                                  <img src="${primaryImageUrl}" 
+                                       alt="${primaryImage.alt || 'Featured image'}" 
+                                       style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 8px;" />
+                                </div>`;
+                                processedContent = featuredImageHtml + processedContent;
+                              }
                             }
                             
                             return <div 
