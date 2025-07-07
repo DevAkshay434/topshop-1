@@ -2100,12 +2100,30 @@ export default function AdminPanel() {
             );
             console.log("🔍 FILTERED OUT", selectedMediaContent.secondaryImages.length - filteredSecondaryImages.length, "duplicate primary images");
             allSecondaryImages = [...allSecondaryImages, ...filteredSecondaryImages];
-          } else if (selectedMediaContent.secondaryImages && selectedMediaContent.secondaryImages.length === 0) {
-            console.log("⚠️ selectedMediaContent.secondaryImages is empty - checking if this is a project load timing issue");
+          } else if (!selectedMediaContent.secondaryImages || selectedMediaContent.secondaryImages.length === 0) {
+            console.log("⚠️ selectedMediaContent.secondaryImages is empty/null - checking if this is a project load timing issue");
             // Check if secondaryImages state has data but selectedMediaContent doesn't
             if (secondaryImages && secondaryImages.length > 0) {
               console.log("🔄 PROJECT LOAD TIMING FIX: Using secondaryImages state as fallback");
               console.log("   This suggests selectedMediaContent wasn't properly synced after project load");
+              
+              // CRITICAL FIX: Actually add the secondaryImages to allSecondaryImages
+              const formattedFallbackImages = secondaryImages.map(img => ({
+                id: img.id,
+                url: img.url || img.src?.original || img.src?.large || img.src,
+                alt: img.alt || '',
+                width: img.width || 0,
+                height: img.height || 0,
+                source: img.source || 'project_fallback'
+              }));
+              
+              // Filter out primary images from fallback
+              const filteredFallbackImages = formattedFallbackImages.filter(img => 
+                !primaryImageIds.has(img.id) && !primaryImageIds.has(img.url)
+              );
+              
+              allSecondaryImages = [...allSecondaryImages, ...filteredFallbackImages];
+              console.log("✅ PROJECT LOAD FALLBACK APPLIED: Added", filteredFallbackImages.length, "secondary images from state");
             }
           }
           
