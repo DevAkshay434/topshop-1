@@ -41,7 +41,7 @@ export function ProjectLoadDialog({ isOpen, onClose, onProjectSelected }: Projec
   });
 
   const filteredProjects = projects?.projects?.filter((project: Project) =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.description?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
