@@ -27,7 +27,7 @@ import {
   type InsertProject
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
+import { eq, desc, asc, and, lte, gte, sql } from "drizzle-orm";
 
 // Define the storage interface with all CRUD operations
 export interface IStorage {
@@ -66,7 +66,9 @@ export interface IStorage {
   updateBlogPost(id: number, post: Partial<BlogPost>): Promise<BlogPost | undefined>;
   deleteBlogPost(id: number): Promise<boolean>;
   getRecentPosts(limit: number): Promise<BlogPost[]>;
+  getRecentPostsByStore(storeId: number, limit: number): Promise<BlogPost[]>;
   getScheduledPosts(): Promise<BlogPost[]>;
+  getScheduledPostsByStore(storeId: number): Promise<BlogPost[]>;
   getPublishedPosts(): Promise<BlogPost[]>;
   
   // Sync activity operations
@@ -403,6 +405,16 @@ export class MemStorage implements IStorage {
   async getScheduledPosts(): Promise<BlogPost[]> {
     return Array.from(this.blogPosts.values())
       .filter(post => post.status === 'scheduled')
+      .sort((a, b) => {
+        const dateA = a.scheduledDate || new Date(0);
+        const dateB = b.scheduledDate || new Date(0);
+        return dateA.getTime() - dateB.getTime();
+      });
+  }
+  
+  async getScheduledPostsByStore(storeId: number): Promise<BlogPost[]> {
+    return Array.from(this.blogPosts.values())
+      .filter(post => post.status === 'scheduled' && post.storeId === storeId)
       .sort((a, b) => {
         const dateA = a.scheduledDate || new Date(0);
         const dateB = b.scheduledDate || new Date(0);
@@ -881,6 +893,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(blogPosts.scheduledDate));
   }
   
+  async getScheduledPostsByStore(storeId: number): Promise<BlogPost[]> {
+    return db.select()
+      .from(blogPosts)
+      .where(and(eq(blogPosts.status, 'scheduled'), eq(blogPosts.storeId, storeId)))
+      .orderBy(asc(blogPosts.scheduledDate));
+  }
+  
   async getPublishedPosts(): Promise<BlogPost[]> {
     return db.select()
       .from(blogPosts)
@@ -1327,6 +1346,13 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getScheduledPosts(),
       () => memStorage.getScheduledPosts()
+    );
+  }
+  
+  async getScheduledPostsByStore(storeId: number): Promise<BlogPost[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getScheduledPostsByStore(storeId),
+      () => memStorage.getScheduledPostsByStore(storeId)
     );
   }
 

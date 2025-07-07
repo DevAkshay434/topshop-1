@@ -752,10 +752,16 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Get scheduled blog posts with author names populated
+  // Get scheduled blog posts with author names populated and multi-store support
   apiRouter.get("/posts/scheduled", async (req: Request, res: Response) => {
     try {
-      const posts = await storage.getScheduledPosts();
+      // Get store from request context for proper isolation
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
+      
+      const posts = await storage.getScheduledPostsByStore(store.id);
       
       // Populate author names for posts that have authorId but no author name
       const postsWithAuthors = await Promise.all(
@@ -2296,6 +2302,97 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
   
   // Shopify OAuth routes (not prefixed with /api)
   const oauthRouter = Router();
+  
+  // Check if a scheduled post has been published in Shopify
+  apiRouter.get("/posts/:id/check-status", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      // Get store from request context for proper isolation
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
+      
+      const post = await storage.getBlogPost(id);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      
+      // Verify post belongs to current store
+      if (post.storeId !== store.id) {
+        return res.status(403).json({ error: "Post not accessible from current store" });
+      }
+      
+      // If post doesn't have a Shopify ID, it's not published
+      if (!post.shopifyPostId) {
+        return res.json({ 
+          status: post.status,
+          isLive: false,
+          lastChecked: new Date()
+        });
+      }
+      
+      // Check status in Shopify
+      const shopifyService = await import('./services/shopify').then(module => module.shopifyService);
+      let isLive = false;
+      let articleData = null;
+      
+      try {
+        // Check if the article exists and is published in Shopify
+        const blogs = await shopifyService.getBlogs(store);
+        
+        for (const blog of blogs) {
+          try {
+            const articles = await shopifyService.getArticles(store, blog.id);
+            const foundArticle = articles.find(article => 
+              String(article.id) === String(post.shopifyPostId)
+            );
+            
+            if (foundArticle) {
+              articleData = foundArticle;
+              isLive = foundArticle.published_at && new Date(foundArticle.published_at) <= new Date();
+              break;
+            }
+          } catch (error) {
+            console.error(`Error checking blog ${blog.id}:`, error);
+          }
+        }
+        
+        // If the post was found to be live but our database shows it as scheduled, update it
+        if (isLive && post.status === 'scheduled') {
+          await storage.updateBlogPost(id, {
+            status: 'published',
+            publishedDate: new Date(),
+            updatedAt: new Date()
+          });
+        }
+        
+        return res.json({
+          status: isLive ? 'published' : post.status,
+          isLive,
+          lastChecked: new Date(),
+          shopifyUrl: articleData ? `https://${store.shopName}/admin/blogs/${articleData.blog_id}/articles/${articleData.id}` : null
+        });
+        
+      } catch (error) {
+        console.error("Error checking post status in Shopify:", error);
+        return res.json({
+          status: post.status,
+          isLive: false,
+          lastChecked: new Date(),
+          error: "Could not verify status in Shopify"
+        });
+      }
+      
+    } catch (error) {
+      console.error("Error checking post status:", error);
+      res.status(500).json({ error: "Failed to check post status" });
+    }
+  });
   
   // Store the nonce in memory with type for host parameter
   interface NonceData {
