@@ -141,12 +141,37 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
   
   if (request.secondaryImages && request.secondaryImages.length > 0) {
     console.log("✅ SECONDARY IMAGES FOUND - Processing for product interlinking");
+    console.log("🔍 SECONDARY IMAGES DETAILS:", request.secondaryImages.map(img => ({
+      id: img.id,
+      url: img.url,
+      source: img.source,
+      alt: img.alt
+    })));
+    
+    // CRITICAL FIX: Filter out primary image from secondary images to prevent duplication
+    const primaryImageId = request.primaryImage?.id;
+    const primaryImageUrl = request.primaryImage?.url;
+    
+    const filteredSecondaryImages = request.secondaryImages.filter(img => {
+      const isDuplicatePrimary = (img.id === primaryImageId) || (img.url === primaryImageUrl);
+      if (isDuplicatePrimary) {
+        console.log(`🚫 FILTERED OUT PRIMARY IMAGE DUPLICATE: ${img.id} (${img.url})`);
+      }
+      return !isDuplicatePrimary;
+    });
+    
+    console.log(`🔧 PRIMARY IMAGE DUPLICATION FIX: Filtered ${request.secondaryImages.length} → ${filteredSecondaryImages.length} secondary images`);
+    
+    if (filteredSecondaryImages.length === 0) {
+      console.log("⚠️ No secondary images remaining after primary image filtering");
+      return processedContent;
+    }
     
     // Find all secondary image placement markers
     const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const availableMarkers = markers ? markers.length : 0;
     
-    console.log(`Found ${availableMarkers} placement markers for ${request.secondaryImages.length} secondary images`);
+    console.log(`Found ${availableMarkers} placement markers for ${filteredSecondaryImages.length} secondary images`);
     
     // FALLBACK SYSTEM: If no markers found, automatically insert them after H2 headings
     if (availableMarkers === 0) {
@@ -156,12 +181,12 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       const h2Regex = /<h2[^>]*>.*?<\/h2>/gi;
       const h2Matches = [...processedContent.matchAll(h2Regex)];
       
-      if (h2Matches.length > 2) {
-        console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #3 and beyond`);
+      if (h2Matches.length > 1) {
+        console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #2 and beyond`);
         
-        // Start from the 3rd H2 (index 2) and add markers after each one
+        // Start from the 2nd H2 (index 1) and add markers after each one
         let insertOffset = 0;
-        for (let i = 2; i < h2Matches.length && i < 2 + request.secondaryImages.length; i++) {
+        for (let i = 1; i < h2Matches.length && i < 1 + filteredSecondaryImages.length; i++) {
           const h2Match = h2Matches[i];
           const insertPosition = h2Match.index + h2Match[0].length + insertOffset;
           const marker = '\n<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->\n';
@@ -191,9 +216,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     
     console.log("Available products for interlinking:", availableProducts);
     
-    // Process each marker location with a unique image
-    for (let i = 0; i < finalAvailableMarkers && i < request.secondaryImages.length; i++) {
-      const image = request.secondaryImages[i];
+    // Process each marker location with a unique image (using filtered secondary images)
+    for (let i = 0; i < finalAvailableMarkers && i < filteredSecondaryImages.length; i++) {
+      const image = filteredSecondaryImages[i];
       
       // Skip if this image URL has already been used
       if (usedImages.has(image.url)) {
@@ -246,6 +271,13 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     
     // Remove any remaining unused markers
     processedContent = processedContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
+    
+    console.log(`✅ SECONDARY IMAGES PROCESSING COMPLETE:`);
+    console.log(`   - Original secondary images: ${request.secondaryImages.length}`);
+    console.log(`   - After primary image filtering: ${filteredSecondaryImages.length}`);
+    console.log(`   - Placement markers created: ${finalAvailableMarkers}`);
+    console.log(`   - Images successfully embedded: ${Math.min(finalAvailableMarkers, filteredSecondaryImages.length)}`);
+    console.log(`   - Content length after processing: ${processedContent.length} characters`);
   }
   
   return processedContent;
