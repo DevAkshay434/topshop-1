@@ -45,6 +45,7 @@ interface PostListProps {
   onPageChange?: (page: number) => void;
   totalPages?: number;
   onEditPost?: (post: BlogPost) => void;
+  storeId?: number | null;
 }
 
 export default function PostList({ 
@@ -55,7 +56,8 @@ export default function PostList({
   page = 1,
   onPageChange,
   totalPages = 1,
-  onEditPost
+  onEditPost,
+  storeId
 }: PostListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -65,7 +67,8 @@ export default function PostList({
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   
   const { data, isLoading, error } = useQuery<{ posts: BlogPost[] }>({
-    queryKey: [queryKey, limit, page],
+    queryKey: [queryKey, limit, page, storeId],
+    enabled: storeId !== null, // Only fetch when we have a valid store ID
   });
   
   const posts = data?.posts || [];

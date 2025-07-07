@@ -5,10 +5,12 @@ import PostList from "@/components/PostList";
 import CreatePostModal from "@/components/CreatePostModal";
 import { BlogPost } from "@shared/schema";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
+import { useStore } from "../contexts/StoreContext";
 
 export default function ScheduledPosts() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const { autoDetectedStoreId } = useStore();
   
   // Check if the store has the scheduling permission
   const { data: permissionsData } = useQuery<{ 
@@ -51,6 +53,7 @@ export default function ScheduledPosts() {
         queryKey="/api/posts/scheduled"
         title="Scheduled Posts"
         onEditPost={handleEditPost}
+        storeId={autoDetectedStoreId}
       />
       
       <CreatePostModal
