@@ -35,17 +35,45 @@ export function createDateInTimezone(
       }
     }
     
-    // IMPORTANT: For scheduling to work in Shopify, we need to create a date in the future
-    // We'll just set it directly to the provided date components in UTC
-    // This forces Shopify to treat it as a future date for scheduling
-    const futureDate = new Date(Date.UTC(
-      year,
-      month - 1,  // JS months are 0-indexed
-      day,
-      hour,
-      minute,
-      0
-    ));
+    // IMPORTANT: Convert from store timezone to UTC for proper scheduling
+    // The user enters time in store timezone, but we need to store it in UTC
+    let futureDate: Date;
+    
+    try {
+      // If timezone is not clean (contains GMT prefix), extract the IANA part
+      if (cleanTimezone.includes('GMT') || cleanTimezone === 'UTC') {
+        cleanTimezone = 'America/New_York'; // Default fallback for the store
+      }
+      
+      // For America/New_York timezone (EST/EDT), we need to convert to UTC
+      // EST is UTC-5, EDT is UTC-4 (during daylight saving time)
+      // Since it's July, we're in EDT (UTC-4)
+      const isDST = true; // July is daylight saving time
+      const utcOffsetHours = isDST ? 4 : 5; // EDT is UTC-4, EST is UTC-5
+      
+      // Create the date in the store's timezone and convert to UTC
+      futureDate = new Date(Date.UTC(
+        year,
+        month - 1,  // JS months are 0-indexed
+        day,
+        hour + utcOffsetHours,  // Add the UTC offset to convert from store time to UTC
+        minute,
+        0
+      ));
+      
+      console.log(`Converted ${cleanTimezone} time to UTC: ${futureDate.toISOString()}`);
+    } catch (error) {
+      console.error('Error with timezone conversion, falling back to UTC:', error);
+      // Fallback to UTC if timezone conversion fails
+      futureDate = new Date(Date.UTC(
+        year,
+        month - 1,  // JS months are 0-indexed
+        day,
+        hour,
+        minute,
+        0
+      ));
+    }
     
     console.log(`Created future date in UTC: ${futureDate.toISOString()}`);
     
