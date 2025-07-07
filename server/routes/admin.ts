@@ -1482,6 +1482,30 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
+      // CRITICAL DEBUGGING: Log secondary images data before sending to Claude
+      console.log("🔍 ADMIN ROUTE DEBUGGING - Data being sent to Claude service:");
+      console.log("   - Primary Image:", requestData.primaryImage ? "Present" : "Missing");
+      console.log("   - Secondary Images:", requestData.secondaryImages ? `${requestData.secondaryImages.length} images` : "Missing");
+      
+      if (requestData.secondaryImages && requestData.secondaryImages.length > 0) {
+        console.log("🔍 SECONDARY IMAGES DETAILS:");
+        requestData.secondaryImages.forEach((img, idx) => {
+          console.log(`   - Image ${idx + 1}: ${img.id} (${img.url}) [source: ${img.source}]`);
+        });
+      } else {
+        console.log("❌ NO SECONDARY IMAGES DETECTED in requestData");
+        console.log("   - This explains why secondary images aren't appearing in generated content");
+        console.log("   - requestData.secondaryImages =", requestData.secondaryImages);
+      }
+      
+      console.log("   - Products Info:", productsInfo.length > 0 ? `${productsInfo.length} products` : "No products");
+      if (productsInfo.length > 0) {
+        console.log("🔍 PRODUCTS FOR INTERLINKING:");
+        productsInfo.forEach((product, idx) => {
+          console.log(`   - Product ${idx + 1}: ${product.title} (handle: ${product.handle})`);
+        });
+      }
+      
       // 3. Generate content with Claude
       const generatedContent = await generateBlogContentWithClaude({
         topic: requestData.title,
@@ -1509,6 +1533,8 @@ Place this at a logical position in the content, typically after introducing a c
         keywords: requestData.keywords,
         keywordData: selectedKeywordData
       });
+      
+      console.log("✅ CLAUDE SERVICE COMPLETED - Generated content length:", generatedContent.content?.length || 0);
       
       // 4. Update content generation request
       await storage.updateContentGenRequest(contentRequest.id, {
