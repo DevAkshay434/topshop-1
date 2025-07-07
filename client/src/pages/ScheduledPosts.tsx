@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
-import PostList from "@/components/PostList";
+import { RescheduleModal } from "@/components/RescheduleModal";
 import CreatePostModal from "@/components/CreatePostModal";
 import { BlogPost } from "@shared/schema";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
+import { ScheduledPostList } from "@/components/ScheduledPostList";
 
 export default function ScheduledPosts() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const queryClient = useQueryClient();
   
   // Check if the store has the scheduling permission
   const { data: permissionsData } = useQuery<{ 
@@ -26,6 +29,17 @@ export default function ScheduledPosts() {
   const handleEditPost = (post: BlogPost) => {
     setSelectedPost(post);
     setCreatePostModalOpen(true);
+  };
+
+  const handleReschedulePost = (post: BlogPost) => {
+    setSelectedPost(post);
+    setRescheduleModalOpen(true);
+  };
+
+  const handleRescheduleSuccess = () => {
+    // Invalidate queries to refresh the scheduled posts list
+    queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
   };
   
   return (
@@ -47,16 +61,24 @@ export default function ScheduledPosts() {
         </div>
       </div>
       
-      <PostList
+      <ScheduledPostList
         queryKey="/api/posts/scheduled"
         title="Scheduled Posts"
         onEditPost={handleEditPost}
+        onReschedulePost={handleReschedulePost}
       />
       
       <CreatePostModal
         open={createPostModalOpen}
         onOpenChange={setCreatePostModalOpen}
         initialData={selectedPost}
+      />
+
+      <RescheduleModal
+        open={rescheduleModalOpen}
+        onOpenChange={setRescheduleModalOpen}
+        post={selectedPost}
+        onSuccess={handleRescheduleSuccess}
       />
     </Layout>
   );
