@@ -1293,6 +1293,29 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     // Parse request data for easier access
     const requestData = req.body;
     
+    // CRITICAL DEBUGGING: Log incoming request data before processing
+    console.log("🔍 ADMIN ROUTE ENTRY POINT - REQUEST RECEIVED");
+    console.log("   - Request method:", req.method);
+    console.log("   - Request URL:", req.url);
+    console.log("   - Content-Type:", req.headers['content-type']);
+    console.log("   - Store ID header:", req.headers['x-store-id']);
+    console.log("   - Request body keys:", Object.keys(requestData));
+    console.log("   - Title:", requestData.title);
+    console.log("   - Primary Image:", requestData.primaryImage ? "Present" : "Missing");
+    console.log("   - Secondary Images:", requestData.secondaryImages ? `${requestData.secondaryImages.length} images` : "Missing/Empty");
+    console.log("   - Products Info:", requestData.productsInfo ? `${requestData.productsInfo.length} products` : "Missing");
+    
+    if (requestData.secondaryImages) {
+      console.log("🔍 DETAILED SECONDARY IMAGES RECEIVED:");
+      requestData.secondaryImages.forEach((img, idx) => {
+        console.log(`   - Image ${idx + 1}: ${img.id} (${img.url}) [source: ${img.source}]`);
+      });
+    } else {
+      console.log("❌ NO SECONDARY IMAGES IN REQUEST BODY");
+      console.log("   - requestData.secondaryImages =", requestData.secondaryImages);
+      console.log("   - This confirms secondary images aren't being sent from frontend");
+    }
+    
     // Create a record of the content generation request
     const contentRequest = await storage.createContentGenRequest({
       topic: requestData.title,
