@@ -132,11 +132,8 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
   }
 
   if (!request.productsInfo || request.productsInfo.length === 0) {
-    console.log("❌ INTERLINKING BLOCKED: No products info provided to Claude service");
-    if (!request.productIds || request.productIds.length === 0) {
-      console.log("❌ INTERLINKING BLOCKED: No product IDs provided either");
-      return processedContent;
-    }
+    console.log("⚠️ NO PRODUCTS INFO: Secondary images will be embedded without product links");
+    // Continue processing secondary images even without products info
   }
   
   if (request.secondaryImages && request.secondaryImages.length > 0) {
@@ -171,7 +168,21 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const availableMarkers = markers ? markers.length : 0;
     
-    console.log(`Found ${availableMarkers} placement markers for ${filteredSecondaryImages.length} secondary images`);
+    console.log(`🔍 MARKER SEARCH RESULTS:`);
+    console.log(`   - Found ${availableMarkers} placement markers for ${filteredSecondaryImages.length} secondary images`);
+    console.log(`   - Content length: ${processedContent.length} characters`);
+    console.log(`   - Content preview (first 500 chars):`, processedContent.substring(0, 500));
+    
+    if (availableMarkers === 0) {
+      console.log(`🔍 SEARCHING FOR H2 HEADINGS IN CONTENT:`);
+      const h2Matches = processedContent.match(/<h2[^>]*>.*?<\/h2>/gi);
+      console.log(`   - Found ${h2Matches?.length || 0} H2 headings`);
+      if (h2Matches) {
+        h2Matches.forEach((h2, index) => {
+          console.log(`   - H2 ${index + 1}: ${h2.substring(0, 50)}...`);
+        });
+      }
+    }
     
     // FALLBACK SYSTEM: If no markers found, automatically insert them after H2 headings
     if (availableMarkers === 0) {
