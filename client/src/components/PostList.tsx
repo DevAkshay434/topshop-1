@@ -147,8 +147,16 @@ export default function PostList({
   };
   
   const openRescheduleDialog = (post: BlogPost) => {
-    const currentDate = post.scheduledPublishDate || format(new Date(), 'yyyy-MM-dd');
-    const currentTime = post.scheduledPublishTime || '09:30';
+    // Use the actual scheduled date/time from scheduledDate if available, otherwise fall back to original values
+    let currentDate = post.scheduledPublishDate || format(new Date(), 'yyyy-MM-dd');
+    let currentTime = post.scheduledPublishTime || '09:30';
+    
+    // If post has been rescheduled, use the updated scheduledDate
+    if (post.scheduledDate) {
+      const scheduledDateTime = new Date(post.scheduledDate);
+      currentDate = format(scheduledDateTime, 'yyyy-MM-dd');
+      currentTime = format(scheduledDateTime, 'HH:mm');
+    }
     
     setEditingSchedule({
       postId: post.id,
@@ -233,6 +241,15 @@ export default function PostList({
   const formatDate = (date: Date | null) => {
     if (!date) return "";
     return format(new Date(date), "MMM d, yyyy");
+  };
+
+  const getActualScheduledTime = (post: BlogPost) => {
+    // For scheduled posts, show the actual current scheduled time
+    if (post.status === 'scheduled' && post.scheduledDate) {
+      const scheduledDateTime = new Date(post.scheduledDate);
+      return format(scheduledDateTime, "MMM d, yyyy 'at' HH:mm");
+    }
+    return null;
   };
   
   if (isLoading) {
@@ -325,7 +342,7 @@ export default function PostList({
                             {post.status === "published" 
                               ? formatDate(post.publishedDate)
                               : post.status === "scheduled"
-                                ? formatDate(post.scheduledDate)
+                                ? getActualScheduledTime(post) || formatDate(post.scheduledDate)
                                 : "Draft"}
                           </span>
                         </p>
