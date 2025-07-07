@@ -24,6 +24,24 @@ export default function ScheduledPosts() {
       console.log('Scheduled Posts - Permissions check result:', data);
     }
   });
+
+  // Get store info including timezone
+  const { data: storeInfoData } = useQuery<{
+    success: boolean;
+    shopInfo: {
+      timezone: string;
+    };
+  }>({
+    queryKey: ['/api/shopify/store-info'],
+    enabled: true
+  });
+
+  // Extract timezone from format "(GMT-05:00) America/New_York"
+  const getStoreTimezone = () => {
+    if (!storeInfoData?.shopInfo?.timezone) return 'America/New_York';
+    const timezoneMatch = storeInfoData.shopInfo.timezone.match(/\) (.+)$/);
+    return timezoneMatch ? timezoneMatch[1] : 'America/New_York';
+  };
   
   const handleEditPost = (post: BlogPost) => {
     setSelectedPost(post);
@@ -54,6 +72,7 @@ export default function ScheduledPosts() {
         title="Scheduled Posts"
         onEditPost={handleEditPost}
         storeId={autoDetectedStoreId}
+        storeTimezone={getStoreTimezone()}
       />
       
       <CreatePostModal

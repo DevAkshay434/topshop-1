@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +47,7 @@ interface PostListProps {
   totalPages?: number;
   onEditPost?: (post: BlogPost) => void;
   storeId?: number | null;
+  storeTimezone?: string;
 }
 
 export default function PostList({ 
@@ -57,7 +59,8 @@ export default function PostList({
   onPageChange,
   totalPages = 1,
   onEditPost,
-  storeId
+  storeId,
+  storeTimezone = 'America/New_York'
 }: PostListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -118,10 +121,14 @@ export default function PostList({
     if (!editingSchedule) return;
     
     try {
-      // Create a local date/time and convert to ISO string for backend
-      const localDateTime = new Date(`${editingSchedule.date}T${editingSchedule.time}:00`);
+      // Create a date/time in the store's timezone and convert to UTC for backend
+      const { zonedTimeToUtc } = await import('date-fns-tz');
+      
+      // Parse date and time in store timezone and convert to UTC
+      const storeDateTime = zonedTimeToUtc(`${editingSchedule.date}T${editingSchedule.time}:00`, storeTimezone);
+      
       const response = await apiRequest('POST', `/api/posts/${editingSchedule.postId}/reschedule`, {
-        scheduledDate: localDateTime.toISOString(),
+        scheduledDate: storeDateTime.toISOString(),
         scheduledPublishDate: editingSchedule.date,
         scheduledPublishTime: editingSchedule.time
       });
@@ -155,9 +162,9 @@ export default function PostList({
     // If post has been rescheduled, use the updated scheduledDate
     if (post.scheduledDate) {
       const scheduledDateTime = new Date(post.scheduledDate);
-      // Convert UTC time to local time for editing
-      currentDate = format(scheduledDateTime, 'yyyy-MM-dd');
-      currentTime = format(scheduledDateTime, 'HH:mm');
+      // Convert UTC time to store timezone for editing
+      currentDate = formatInTimeZone(scheduledDateTime, storeTimezone, 'yyyy-MM-dd');
+      currentTime = formatInTimeZone(scheduledDateTime, storeTimezone, 'HH:mm');
     }
     
     setEditingSchedule({
@@ -250,8 +257,8 @@ export default function PostList({
     if (post.status === 'scheduled' && post.scheduledDate) {
       const scheduledDateTime = new Date(post.scheduledDate);
       
-      // Display in local timezone - date-fns format automatically converts UTC to local
-      return format(scheduledDateTime, "MMM d, yyyy 'at' HH:mm");
+      // Display in store timezone instead of user's local timezone
+      return formatInTimeZone(scheduledDateTime, storeTimezone, "MMM d, yyyy 'at' HH:mm");
     }
     return null;
   };
