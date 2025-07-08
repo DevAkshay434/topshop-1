@@ -3176,7 +3176,7 @@ export default function AdminPanel() {
                               }}
                               disabled={selectedKeywords.length === 0}
                             >
-                              Next: Choose Title
+                              Next
                             </Button>
                           </div>
                         </div>
@@ -3232,7 +3232,7 @@ export default function AdminPanel() {
                               }}
                               disabled={!form.watch('title')}
                             >
-                              Next: Choose Media
+                              Next
                             </Button>
                           </div>
                         </div>
@@ -3734,7 +3734,7 @@ export default function AdminPanel() {
                               scrollToCurrentStep();
                             }}
                           >
-                            Next: Choose Author
+                            Next
                           </Button>
                         </div>
                       </div>
@@ -3765,7 +3765,7 @@ export default function AdminPanel() {
                           type="button"
                           onClick={handleAuthorSelectionComplete}
                         >
-                          Next: Generate Content
+                          Next
                         </Button>
                       </div>
                     </div>
