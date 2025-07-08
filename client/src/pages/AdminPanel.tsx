@@ -8088,71 +8088,35 @@ export default function AdminPanel() {
                   
                   const files = e.dataTransfer.files;
                   if (files && files.length > 0) {
-                    const file = files[0];
-                    if (file.type.startsWith('image/')) {
-                      // Create a URL for the image file
-                      const localUrl = URL.createObjectURL(file);
-                      
-                      // Create a Pexels-compatible image object
-                      const uploadedImage: PexelsImage = {
-                        id: `upload-${new Date().getTime()}`,
-                        url: localUrl,
-                        width: 600,
-                        height: 400,
-                        alt: file.name,
-                        src: {
-                          original: localUrl,
-                          large: localUrl,
-                          medium: localUrl,
-                          small: localUrl,
-                          thumbnail: localUrl,
-                        }
-                      };
-                      
-                      // Add to appropriate images array
-                      if (workflowStep === 'media') {
-                        setPrimaryImages(prev => [...prev, uploadedImage]);
-                      } else {
-                        setSecondaryImages(prev => [...prev, uploadedImage]);
-                      }
-                      
-                      toast({
-                        title: "Image uploaded",
-                        description: "Your image has been added to the selected images",
-                      });
-                      
-                      // Close dialog
-                      setShowImageDialog(false);
-                    } else {
-                      toast({
-                        title: "Invalid file type",
-                        description: "Please upload an image file",
-                        variant: "destructive"
-                      });
-                    }
-                  }
-                }}
-              >
-                <Upload className="h-10 w-10 mx-auto text-slate-400 mb-2" />
-                <p className="text-sm text-slate-600 mb-4">
-                  Drag and drop image files here, or click to select files
-                </p>
-                <Input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  id="image-upload"
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) {
+                    try {
                       const file = files[0];
                       
+                      // Validate file type
+                      if (!file.type.startsWith('image/')) {
+                        toast({
+                          title: "Invalid file type",
+                          description: "Please drop an image file (PNG, JPG, GIF, etc.)",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+
+                      // Validate file size (max 10MB)
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast({
+                          title: "File too large",
+                          description: "Please drop an image smaller than 10MB",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      
                       // Create a URL for the image file
                       const localUrl = URL.createObjectURL(file);
                       
                       // Create a Pexels-compatible image object
                       const uploadedImage: PexelsImage = {
-                        id: `upload-${new Date().getTime()}`,
+                        id: `upload-${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`,
                         url: localUrl,
                         width: 600,
                         height: 400,
@@ -8175,11 +8139,101 @@ export default function AdminPanel() {
                       
                       toast({
                         title: "Image uploaded successfully",
-                        description: "Your image has been added to the selected images",
+                        description: `${file.name} has been added to your selected images`,
                       });
                       
-                      // Close dialog
-                      setShowImageDialog(false);
+                      console.log('Image dropped and uploaded successfully:', uploadedImage);
+                      
+                    } catch (error) {
+                      console.error('Drop upload error:', error);
+                      toast({
+                        title: "Upload failed",
+                        description: "There was an error uploading your image. Please try again.",
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                }}
+              >
+                <Upload className="h-10 w-10 mx-auto text-slate-400 mb-2" />
+                <p className="text-sm text-slate-600 mb-4">
+                  Drag and drop image files here, or click to select files
+                </p>
+                <Input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  id="image-upload"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      try {
+                        const file = files[0];
+                        
+                        // Validate file type
+                        if (!file.type.startsWith('image/')) {
+                          toast({
+                            title: "Invalid file type",
+                            description: "Please select an image file (PNG, JPG, GIF, etc.)",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+
+                        // Validate file size (max 10MB)
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast({
+                            title: "File too large",
+                            description: "Please select an image smaller than 10MB",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        
+                        // Create a URL for the image file
+                        const localUrl = URL.createObjectURL(file);
+                        
+                        // Create a Pexels-compatible image object
+                        const uploadedImage: PexelsImage = {
+                          id: `upload-${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`,
+                          url: localUrl,
+                          width: 600,
+                          height: 400,
+                          alt: file.name,
+                          src: {
+                            original: localUrl,
+                            large: localUrl,
+                            medium: localUrl,
+                            small: localUrl,
+                            thumbnail: localUrl,
+                          }
+                        };
+                        
+                        // Add to appropriate images array
+                        if (workflowStep === 'media') {
+                          setPrimaryImages(prev => [...prev, uploadedImage]);
+                        } else {
+                          setSecondaryImages(prev => [...prev, uploadedImage]);
+                        }
+                        
+                        toast({
+                          title: "Image uploaded successfully",
+                          description: `${file.name} has been added to your selected images`,
+                        });
+                        
+                        console.log('Image uploaded successfully:', uploadedImage);
+                        
+                        // Reset the input to allow uploading the same file again
+                        e.target.value = '';
+                        
+                      } catch (error) {
+                        console.error('Upload error:', error);
+                        toast({
+                          title: "Upload failed",
+                          description: "There was an error uploading your image. Please try again.",
+                          variant: "destructive"
+                        });
+                      }
                     }
                   }}
                 />

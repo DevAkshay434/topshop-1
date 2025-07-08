@@ -110,6 +110,7 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- July 8, 2025. MEDIA UPLOAD POPUP FIX COMPLETED: Fixed critical issue where media upload popup was closing immediately after file selection - removed automatic dialog closure after upload, added comprehensive file validation (type and 10MB size limit), enhanced error handling with try-catch blocks, improved drag-and-drop functionality with consistent validation, added input reset for multiple uploads
 - July 8, 2025. PEXELS FULL-SIZE IMAGE VIEW FIX COMPLETED: Fixed issue where clicking ZoomIn icons on Pexels images in 'Choose Media' step wasn't opening full-size images properly - improved URL selection logic to use image.src?.original first, then fallback to large size, with enhanced debug logging for troubleshooting
 - July 8, 2025. COMPREHENSIVE MEDIA UI ENHANCEMENT COMPLETED: Added full-size view ZoomIn icons to ALL image types in 'Choose Media' step (search results, product images, Shopify files) with hover functionality - improved spacing throughout media interface from gap-1 to gap-0.5 for professional appearance - enhanced user experience with consistent full-size image viewing across all media sources
 - July 8, 2025. WORKFLOW BUTTON TEXT STANDARDIZATION COMPLETED: Renamed all workflow navigation buttons to simply "Next" instead of descriptive text like "Next: Choose Media", "Next: Choose Author", "Continue", etc. - streamlined user interface for consistent navigation experience across all 8 workflow steps
