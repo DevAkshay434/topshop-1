@@ -110,6 +110,8 @@ The application follows a modern full-stack architecture with clear separation o
 
 ```
 Changelog:
+- July 8, 2025. PEXELS FULL-SIZE IMAGE VIEW FIX COMPLETED: Fixed issue where clicking ZoomIn icons on Pexels images in 'Choose Media' step wasn't opening full-size images properly - improved URL selection logic to use image.src?.original first, then fallback to large size, with enhanced debug logging for troubleshooting
+- July 8, 2025. COMPREHENSIVE MEDIA UI ENHANCEMENT COMPLETED: Added full-size view ZoomIn icons to ALL image types in 'Choose Media' step (search results, product images, Shopify files) with hover functionality - improved spacing throughout media interface from gap-1 to gap-0.5 for professional appearance - enhanced user experience with consistent full-size image viewing across all media sources
 - July 8, 2025. WORKFLOW BUTTON TEXT STANDARDIZATION COMPLETED: Renamed all workflow navigation buttons to simply "Next" instead of descriptive text like "Next: Choose Media", "Next: Choose Author", "Continue", etc. - streamlined user interface for consistent navigation experience across all 8 workflow steps
 - July 8, 2025. ENHANCED AUTO-SCROLL TO STEP SECTIONS: Improved scroll functionality to target specific step sections (e.g., "Step 3: Choose Related Collections") instead of scrolling to page top - added data-step attributes to all workflow sections for precise element targeting with smooth scrolling behavior
 - July 7, 2025. SCHEDULE NEW POST BUTTON REMOVED: Eliminated redundant "Schedule New Post" button from Scheduled Posts page as requested - cleaned up unused imports and functions, simplified page layout for better user experience

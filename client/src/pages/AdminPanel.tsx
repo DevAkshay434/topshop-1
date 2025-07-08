@@ -6744,7 +6744,10 @@ export default function AdminPanel() {
                           className="h-6 w-6 bg-white/90 shadow-sm hover:bg-white"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(image.src?.original || image.url, '_blank');
+                            // For Pexels images, use the original size, then fallback to large
+                            const fullSizeUrl = image.src?.original || image.src?.large || image.url;
+                            console.log('Opening full-size image:', fullSizeUrl, 'from image object:', image);
+                            window.open(fullSizeUrl, '_blank');
                           }}
                           title="View full size"
                         >
