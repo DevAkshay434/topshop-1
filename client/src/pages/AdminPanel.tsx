@@ -306,13 +306,7 @@ export default function AdminPanel() {
     const savedCategories = localStorage.getItem('topshop-custom-categories');
     return savedCategories ? JSON.parse(savedCategories) : [];
   });
-  const [templates, setTemplates] = useState<{name: string, data: any}[]>(() => {
-    const savedTemplates = localStorage.getItem('topshop-templates');
-    return savedTemplates ? JSON.parse(savedTemplates) : [];
-  });
-  const [templateName, setTemplateName] = useState<string>('');
-  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
-  const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
+
   const [imageSearchHistory, setImageSearchHistory] = useState<{query: string, images: PexelsImage[]}[]>([]);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   
@@ -2408,20 +2402,7 @@ export default function AdminPanel() {
                 <Form {...form} key={formKey}>
                   <form onSubmit={(e) => { e.preventDefault(); }} className="space-y-4">
                     {/* Step guidance */}
-                    {/* Top button for Load Template */}
-                    <div className="flex justify-end mb-4">
-                      <Button
-                        type="button" 
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowLoadTemplateDialog(true)}
-                        disabled={templates.length === 0}
-                        className="flex items-center gap-1"
-                      >
-                        <FileText className="h-4 w-4" />
-                        Load Template
-                      </Button>
-                    </div>
+
                     
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                       <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
@@ -4263,70 +4244,13 @@ export default function AdminPanel() {
                     </div>
                     */}
                     
-                    {/* Media Selection Section */}
+
                     <div className="space-y-4 pt-4">
-                      <FormField
-                        control={form.control}
-                        name="generateImages"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Generate Images
-                              </FormLabel>
-                              <FormDescription>
-                                Select images for your content from Pexels
-                              </FormDescription>
-                              {field.value && (
-                                <Button 
-                                  type="button" 
-                                  variant="outline" 
-                                  className="mt-2" 
-                                  onClick={() => {
-                                    // Close any existing dialogs first to prevent overlap
-                                    if (showChooseMediaDialog) {
-                                      setShowChooseMediaDialog(false);
-                                      setTimeout(() => setShowImageDialog(true), 300);
-                                    } else {
-                                      setShowImageDialog(true);
-                                    }
-                                  }}
-                                >
-                                  {Array.isArray(selectedImages) && selectedImages.length > 0 
-                                    ? `${selectedImages.length} Image(s) Selected` 
-                                    : "Search & Select Images"}
-                                </Button>
-                              )}
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+
                       
 
 
-                    {/* Image Selection Dialog */}
-                      <ImageSearchDialog
-                        open={showImageDialog}
-                        onOpenChange={setShowImageDialog}
-                        onImagesSelected={(images) => {
-                          setSelectedImages(images);
-                          toast({
-                            title: `${images.length} image(s) selected`,
-                            description: "Images will be included in your content",
-                          });
-                        }}
-                        initialSelectedImages={selectedImages}
-                        selectedKeywords={selectedKeywords.map(k => ({
-                          keyword: k.keyword,
-                          isMainKeyword: k === selectedKeywords[0] // First keyword is main
-                        }))}
-                      />
+                    {/* OLD: Removed - ImageSearchDialog moved to bottom */}
                     </div>
                     
 
@@ -4348,6 +4272,70 @@ export default function AdminPanel() {
                             </div>
                           </div>
                         )}
+                        {/* Generate Images Section - Moved to bottom */}
+                        <div className="mb-4">
+                          <FormField
+                            control={form.control}
+                            name="generateImages"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>
+                                    Generate Images
+                                  </FormLabel>
+                                  <FormDescription>
+                                    Select images for your content from Pexels
+                                  </FormDescription>
+                                  {field.value && (
+                                    <Button 
+                                      type="button" 
+                                      variant="outline" 
+                                      className="mt-2" 
+                                      onClick={() => {
+                                        // Close any existing dialogs first to prevent overlap
+                                        if (showChooseMediaDialog) {
+                                          setShowChooseMediaDialog(false);
+                                          setTimeout(() => setShowImageDialog(true), 300);
+                                        } else {
+                                          setShowImageDialog(true);
+                                        }
+                                      }}
+                                    >
+                                      {Array.isArray(selectedImages) && selectedImages.length > 0 
+                                        ? `${selectedImages.length} Image(s) Selected` 
+                                        : "Search & Select Images"}
+                                    </Button>
+                                  )}
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {/* Image Selection Dialog */}
+                        <ImageSearchDialog
+                          open={showImageDialog}
+                          onOpenChange={setShowImageDialog}
+                          onImagesSelected={(images) => {
+                            setSelectedImages(images);
+                            toast({
+                              title: `${images.length} image(s) selected`,
+                              description: "Images will be included in your content",
+                            });
+                          }}
+                          initialSelectedImages={selectedImages}
+                          selectedKeywords={selectedKeywords.map(k => ({
+                            keyword: k.keyword,
+                            isMainKeyword: k === selectedKeywords[0] // First keyword is main
+                          }))}
+                        />
+
                         <div className="flex gap-3">
                           {/* Save Project Button */}
                           <Button
@@ -5994,203 +5982,7 @@ export default function AdminPanel() {
             </DialogContent>
           </Dialog>
           
-          {/* Save Template Dialog */}
-          <Dialog 
-            open={showSaveTemplateDialog} 
-            onOpenChange={(open) => {
-              if (!open) {
-                setTemplateName('');
-              }
-              setShowSaveTemplateDialog(open);
-            }}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Save as Template</DialogTitle>
-                <DialogDescription>
-                  Save your current settings as a template for future use
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="templateName" className="text-right">
-                    Name
-                  </Label>
-                  <Input
-                    id="templateName"
-                    value={templateName || ''}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                    className="col-span-3"
-                    placeholder="My Template"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowSaveTemplateDialog(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    // Save current form values as template
-                    if (!templateName) {
-                      toast({
-                        title: "Template name required",
-                        description: "Please enter a name for your template",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    
-                    const templateData = {
-                      ...form.getValues(),
-                      selectedKeywords,
-                      selectedProducts,
-                      selectedCollections,
-                      contentStyleToneId: selectedContentToneId,
-                      contentStyleDisplayName: selectedContentDisplayName
-                    };
-                    
-                    const updatedTemplates = [...templates, {
-                      name: templateName,
-                      data: templateData
-                    }];
-                    
-                    setTemplates(updatedTemplates);
-                    
-                    // Save to localStorage
-                    localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
-                    
-                    setTemplateName('');
-                    setShowSaveTemplateDialog(false);
-                    
-                    toast({
-                      title: "Template saved",
-                      description: "Your template has been saved successfully",
-                      variant: "default"
-                    });
-                  }}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Template
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          {/* Load Template Dialog */}
-          <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
-            <DialogContent className="sm:max-w-[525px]">
-              <DialogHeader>
-                <DialogTitle>Load Template</DialogTitle>
-                <DialogDescription>
-                  Select a saved template to load its settings
-                </DialogDescription>
-              </DialogHeader>
-              <div className="max-h-[300px] overflow-y-auto">
-                {templates.length > 0 ? (
-                  <div className="space-y-2">
-                    {templates.map((template, index) => (
-                      <Card key={index} className="p-3">
-                        <div className="flex justify-between items-center">
-                          <div className="font-medium">{template.name}</div>
-                          <div className="flex space-x-2">
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => {
-                                // Ensure all array values are properly initialized
-                                const formDataWithArrays = {
-                                  ...template.data,
-                                  // Initialize required arrays
-                                  productIds: Array.isArray(template.data.productIds) ? template.data.productIds : [],
-                                  collectionIds: Array.isArray(template.data.collectionIds) ? template.data.collectionIds : [],
-                                  keywords: Array.isArray(template.data.keywords) ? template.data.keywords : []
-                                };
-                                
-                                // Load template data into form
-                                form.reset(formDataWithArrays);
-                                
-                                // Update selected states
-                                if (template.data.selectedKeywords) {
-                                  setSelectedKeywords(template.data.selectedKeywords);
-                                }
-                                
-                                if (template.data.selectedProducts) {
-                                  setSelectedProducts(Array.isArray(template.data.selectedProducts) ? template.data.selectedProducts : []);
-                                }
-                                
-                                if (template.data.selectedCollections) {
-                                  setSelectedCollections(Array.isArray(template.data.selectedCollections) ? template.data.selectedCollections : []);
-                                }
-                                
-                                // Set content style if available in the template
-                                if (template.data.contentStyleToneId) {
-                                  setSelectedContentToneId(template.data.contentStyleToneId);
-                                }
-                                
-                                if (template.data.contentStyleDisplayName) {
-                                  setSelectedContentDisplayName(template.data.contentStyleDisplayName);
-                                }
-                                
-                                setShowLoadTemplateDialog(false);
-                                
-                                toast({
-                                  title: "Template loaded",
-                                  description: "Template settings have been applied",
-                                  variant: "default"
-                                });
-                              }}
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              Load
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => {
-                                // Remove this template
-                                const updatedTemplates = templates.filter((_, i) => i !== index);
-                                setTemplates(updatedTemplates);
-                                
-                                // Update localStorage
-                                localStorage.setItem('topshop-templates', JSON.stringify(updatedTemplates));
-                                
-                                toast({
-                                  title: "Template deleted",
-                                  description: `"${template.name}" has been removed`,
-                                  variant: "default"
-                                });
-                              }}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center text-muted-foreground">
-                    No saved templates. Save a template first.
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowLoadTemplateDialog(false)}
-                >
-                  Cancel
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+
 
         {/* Services Tab */}
         <TabsContent value="connections" className="space-y-6">
