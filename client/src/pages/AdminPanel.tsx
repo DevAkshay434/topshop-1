@@ -1064,6 +1064,15 @@ export default function AdminPanel() {
 
   const { toast } = useToast();
 
+  // Utility function to scroll to top and ensure current step is visible
+  const scrollToCurrentStep = () => {
+    // Scroll to the top with smooth behavior
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   // Default form values
   const defaultValues: Partial<ContentFormValues> = {
     articleType: "blog",
@@ -1606,6 +1615,7 @@ export default function AdminPanel() {
   const handleAuthorSelectionComplete = () => {
     // Move to content generation step
     setWorkflowStep('content');
+    scrollToCurrentStep();
     
     toast({
       title: "Setup Complete",
@@ -1618,6 +1628,7 @@ export default function AdminPanel() {
   const handleAuthorSelectionBack = () => {
     // Go back to media selection
     setWorkflowStep('media');
+    scrollToCurrentStep();
   };
   
   // Handle product selection
@@ -1661,6 +1672,7 @@ export default function AdminPanel() {
     
     // Move to related products selection step after product selection
     setWorkflowStep('related-products');
+    scrollToCurrentStep();
     
     toast({
       title: "Product selected",
@@ -1672,6 +1684,7 @@ export default function AdminPanel() {
   const handleRelatedProductsContinue = () => {
     // Move to related collections step after related products selection
     setWorkflowStep('related-collections');
+    scrollToCurrentStep();
     
     toast({
       title: "Related products saved",
@@ -1683,6 +1696,7 @@ export default function AdminPanel() {
   const handleRelatedCollectionsContinue = () => {
     // Move to buying avatars step after collections selection
     setWorkflowStep('buying-avatars');
+    scrollToCurrentStep();
     
     toast({
       title: "Related collections saved",
@@ -1698,6 +1712,7 @@ export default function AdminPanel() {
     
     // Move to keyword selection step after buyer personas selection
     setWorkflowStep('keyword');
+    scrollToCurrentStep();
     
     const buyerPersonas = form.getValues('buyerPersonas');
     toast({
@@ -1711,6 +1726,7 @@ export default function AdminPanel() {
   // Handle back button from collections to products
   const handleBackToProducts = () => {
     setWorkflowStep('related-products');
+    scrollToCurrentStep();
   };
   
   // Handle collection selection
@@ -1735,6 +1751,7 @@ export default function AdminPanel() {
     if (productIds.length === 0 && collectionIds.length > 0) {
       // Just update the workflow step, don't auto-open keyword selector
       setWorkflowStep('keyword');
+      scrollToCurrentStep();
       // The user will need to click the button manually
     }
   };
@@ -3193,6 +3210,7 @@ export default function AdminPanel() {
                               onClick={() => {
                                 if (form.watch('title')) {
                                   setWorkflowStep('media');
+                                  scrollToCurrentStep();
                                 } else {
                                   toast({
                                     title: "Title Required",
@@ -3599,7 +3617,10 @@ export default function AdminPanel() {
                                       variant="outline"
                                       size="sm"
                                       className="mt-2"
-                                      onClick={() => setWorkflowStep('product')}
+                                      onClick={() => {
+                                        setWorkflowStep('product');
+                                        scrollToCurrentStep();
+                                      }}
                                     >
                                       <ArrowLeft className="mr-2 h-3 w-3" />
                                       Select Products
@@ -3686,7 +3707,10 @@ export default function AdminPanel() {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setWorkflowStep('title')}
+                            onClick={() => {
+                              setWorkflowStep('title');
+                              scrollToCurrentStep();
+                            }}
                           >
                             Back to Title
                           </Button>
@@ -3696,6 +3720,7 @@ export default function AdminPanel() {
                             onClick={() => {
                               // Continue to author selection step
                               setWorkflowStep('author');
+                              scrollToCurrentStep();
                             }}
                           >
                             Next: Choose Author
@@ -3750,7 +3775,10 @@ export default function AdminPanel() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setWorkflowStep('buying-avatars')}
+                            onClick={() => {
+                              setWorkflowStep('buying-avatars');
+                              scrollToCurrentStep();
+                            }}
                             className="h-8"
                           >
                             <User className="mr-2 h-4 w-4" />
@@ -3776,7 +3804,10 @@ export default function AdminPanel() {
                                 type="button"
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => setWorkflowStep('buying-avatars')}
+                                onClick={() => {
+                                  setWorkflowStep('buying-avatars');
+                                  scrollToCurrentStep();
+                                }}
                               >
                                 <Users className="mr-2 h-4 w-4" />
                                 Define Target Audience
