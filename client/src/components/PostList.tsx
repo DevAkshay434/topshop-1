@@ -115,6 +115,12 @@ export default function PostList({
         }
       });
       
+      // Clear specific query cache
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/published'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/recent'] });
+      
       // Force refetch current query immediately
       refetch();
       
