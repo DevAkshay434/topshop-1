@@ -2404,22 +2404,24 @@ export default function AdminPanel() {
                     {/* Step guidance */}
 
                     
-                    <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
+                    <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200 sticky top-0 z-20 shadow-sm">
                       <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
                       <div className="mb-3 text-sm font-medium text-blue-800">
                         Current: STEP {
                           workflowStep === 'product' ? '1' :
                           workflowStep === 'related-products' ? '2' :
                           workflowStep === 'related-collections' ? '3' :
-                          workflowStep === 'keyword' ? '4' :
-                          workflowStep === 'title' ? '5' :
-                          workflowStep === 'media' ? '6' :
-                          workflowStep === 'author' ? '7' :
-                          workflowStep === 'content' ? '8' : '1'
+                          workflowStep === 'buying-avatars' ? '4' :
+                          workflowStep === 'keyword' ? '5' :
+                          workflowStep === 'title' ? '6' :
+                          workflowStep === 'media' ? '7' :
+                          workflowStep === 'author' ? '8' :
+                          workflowStep === 'content' ? '9' : '1'
                         } - {
                           workflowStep === 'product' ? 'Select Main Product' :
                           workflowStep === 'related-products' ? 'Choose Related Products' :
                           workflowStep === 'related-collections' ? 'Choose Related Collections' :
+                          workflowStep === 'buying-avatars' ? 'Define Target Buyer Personas' :
                           workflowStep === 'keyword' ? 'Select Keywords' :
                           workflowStep === 'title' ? 'Choose Title' :
                           workflowStep === 'media' ? 'Select Media' :
@@ -2429,49 +2431,89 @@ export default function AdminPanel() {
                       </div>
                       <div className="flex items-center space-x-3">
                         {/* Step 1: Product Selection */}
-                        <Badge className={workflowStep === 'product' ? 'bg-blue-600' : 'bg-gray-300'}>1</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'product' ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'}`}
+                          onClick={() => setWorkflowStep('product')}
+                        >
+                          1
+                        </Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep !== 'product' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 2: Related Products */}
-                        <Badge className={workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300 hover:bg-gray-400')}`}
+                          onClick={() => setWorkflowStep('related-products')}
+                        >
+                          2
+                        </Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 3: Related Collections */}
-                        <Badge className={workflowStep === 'related-collections' ? 'bg-blue-600' : (workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'related-collections' ? 'bg-blue-600' : (workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300 hover:bg-gray-400')}`}
+                          onClick={() => setWorkflowStep('related-collections')}
+                        >
+                          3
+                        </Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 4: Keywords */}
-                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300 hover:bg-gray-400')}`}
+                          onClick={() => setWorkflowStep('keyword')}
+                        >
+                          4
+                        </Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 5: Title */}
-                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>5</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300 hover:bg-gray-400')}`}
+                          onClick={() => setWorkflowStep('title')}
+                        >
+                          5
+                        </Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 6: Media */}
-                        <Badge className={workflowStep === 'media' ? 'bg-blue-600' : (workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>6</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'media' ? 'bg-blue-600' : (workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300 hover:bg-gray-400')}`}
+                          onClick={() => setWorkflowStep('media')}
+                        >
+                          6
+                        </Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 7: Author */}
-                        <Badge className={workflowStep === 'author' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>7</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'author' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300 hover:bg-gray-400')}`}
+                          onClick={() => setWorkflowStep('author')}
+                        >
+                          7
+                        </Badge>
                         <div className="flex-1 h-1 bg-gray-200 rounded">
                           <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
                         </div>
                         
                         {/* Step 8: Content */}
-                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>8</Badge>
+                        <Badge 
+                          className={`cursor-pointer transition-colors ${workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'}`}
+                          onClick={() => setWorkflowStep('content')}
+                        >
+                          8
+                        </Badge>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-gray-600">
                         <span className={workflowStep === 'product' ? 'font-semibold text-blue-700' : ''}>STEP 1</span>
