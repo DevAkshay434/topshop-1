@@ -6758,14 +6758,16 @@ export default function AdminPanel() {
                       {/* Source badge */}
                       <div className="absolute top-1 right-1">
                         <Badge 
-                          variant={image.source === 'pixabay' ? 'default' : 'secondary'} 
+                          variant={image.source === 'uploaded' ? 'default' : 'secondary'} 
                           className={`text-xs px-1.5 py-0.5 ${
-                            image.source === 'pixabay' 
-                              ? 'bg-green-600 text-white' 
-                              : 'bg-blue-600 text-white'
+                            image.source === 'uploaded' 
+                              ? 'bg-purple-600 text-white' 
+                              : image.source === 'pixabay' 
+                                ? 'bg-green-600 text-white' 
+                                : 'bg-blue-600 text-white'
                           }`}
                         >
-                          {image.source === 'pixabay' ? 'Pixabay' : 'Pexels'}
+                          {image.source === 'uploaded' ? 'Uploaded' : image.source === 'pixabay' ? 'Pixabay' : 'Pexels'}
                         </Badge>
                       </div>
                       
@@ -8130,16 +8132,12 @@ export default function AdminPanel() {
                         }
                       };
                       
-                      // Add to appropriate images array
-                      if (workflowStep === 'media') {
-                        setPrimaryImages(prev => [...prev, uploadedImage]);
-                      } else {
-                        setSecondaryImages(prev => [...prev, uploadedImage]);
-                      }
+                      // Add to uploaded images array (user will choose primary/secondary)
+                      setSearchedImages(prev => [...prev, { ...uploadedImage, source: 'uploaded' }]);
                       
                       toast({
                         title: "Image uploaded successfully",
-                        description: `${file.name} has been added to your selected images`,
+                        description: `${file.name} has been added to the image grid. Click Primary or Secondary buttons to select it.`,
                       });
                       
                       console.log('Image dropped and uploaded successfully:', uploadedImage);
@@ -8209,16 +8207,12 @@ export default function AdminPanel() {
                           }
                         };
                         
-                        // Add to appropriate images array
-                        if (workflowStep === 'media') {
-                          setPrimaryImages(prev => [...prev, uploadedImage]);
-                        } else {
-                          setSecondaryImages(prev => [...prev, uploadedImage]);
-                        }
+                        // Add to uploaded images array (user will choose primary/secondary)
+                        setSearchedImages(prev => [...prev, { ...uploadedImage, source: 'uploaded' }]);
                         
                         toast({
                           title: "Image uploaded successfully",
-                          description: `${file.name} has been added to your selected images`,
+                          description: `${file.name} has been added to the image grid. Click Primary or Secondary buttons to select it.`,
                         });
                         
                         console.log('Image uploaded successfully:', uploadedImage);
@@ -8255,8 +8249,9 @@ export default function AdminPanel() {
                   <div>
                     <p className="text-sm text-yellow-700 mb-1 font-medium">About Image Uploads</p>
                     <p className="text-xs text-yellow-600">
-                      Make sure you have the rights to use any images you upload. For best results,
-                      use high-quality images at least 1200×800 pixels in size.
+                      After uploading, images will appear in the grid below with an "Uploaded" badge.
+                      Hover over any image and click "Primary" or "Secondary" to select it for your content.
+                      Make sure you have the rights to use any images you upload.
                     </p>
                   </div>
                 </div>
