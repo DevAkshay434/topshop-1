@@ -2406,6 +2406,27 @@ export default function AdminPanel() {
                     
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                       <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
+                      <div className="mb-3 text-sm font-medium text-blue-800">
+                        Current: STEP {
+                          workflowStep === 'product' ? '1' :
+                          workflowStep === 'related-products' ? '2' :
+                          workflowStep === 'related-collections' ? '3' :
+                          workflowStep === 'keyword' ? '4' :
+                          workflowStep === 'title' ? '5' :
+                          workflowStep === 'media' ? '6' :
+                          workflowStep === 'author' ? '7' :
+                          workflowStep === 'content' ? '8' : '1'
+                        } - {
+                          workflowStep === 'product' ? 'Select Main Product' :
+                          workflowStep === 'related-products' ? 'Choose Related Products' :
+                          workflowStep === 'related-collections' ? 'Choose Related Collections' :
+                          workflowStep === 'keyword' ? 'Select Keywords' :
+                          workflowStep === 'title' ? 'Choose Title' :
+                          workflowStep === 'media' ? 'Select Media' :
+                          workflowStep === 'author' ? 'Choose Author' :
+                          workflowStep === 'content' ? 'Generate Content' : 'Select Main Product'
+                        }
+                      </div>
                       <div className="flex items-center space-x-3">
                         {/* Step 1: Product Selection */}
                         <Badge className={workflowStep === 'product' ? 'bg-blue-600' : 'bg-gray-300'}>1</Badge>
@@ -2453,12 +2474,14 @@ export default function AdminPanel() {
                         <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>8</Badge>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-gray-600">
-                        <span>Main Product</span>
-                        <span>Related Products</span>
-                        <span>Collections</span>
-                        <span>Keywords</span>
-                        <span>Title</span>
-                        <span>Generate</span>
+                        <span className={workflowStep === 'product' ? 'font-semibold text-blue-700' : ''}>STEP 1</span>
+                        <span className={workflowStep === 'related-products' ? 'font-semibold text-blue-700' : ''}>STEP 2</span>
+                        <span className={workflowStep === 'related-collections' ? 'font-semibold text-blue-700' : ''}>STEP 3</span>
+                        <span className={workflowStep === 'keyword' ? 'font-semibold text-blue-700' : ''}>STEP 4</span>
+                        <span className={workflowStep === 'title' ? 'font-semibold text-blue-700' : ''}>STEP 5</span>
+                        <span className={workflowStep === 'media' ? 'font-semibold text-blue-700' : ''}>STEP 6</span>
+                        <span className={workflowStep === 'author' ? 'font-semibold text-blue-700' : ''}>STEP 7</span>
+                        <span className={workflowStep === 'content' ? 'font-semibold text-blue-700' : ''}>STEP 8</span>
                       </div>
                     </div>
                       
@@ -2752,7 +2775,7 @@ export default function AdminPanel() {
                       {/* Step 1: Product and Collection Selection */}
                       <div className={workflowStep === 'product' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 1: Select Products or Collections</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">STEP 1: Select Products or Collections</h4>
                           <p className="text-sm text-blue-600">Choose products or collections to feature in your content</p>
                         </div>
                         
@@ -2869,7 +2892,7 @@ export default function AdminPanel() {
                       {/* Step 2: Related Products Selection Section */}
                       <div className={workflowStep === 'related-products' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Related Products</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">STEP 2: Choose Related Products</h4>
                           <p className="text-sm text-blue-600 mb-4">
                             Select products related to your content to improve cross-selling opportunities
                           </p>
@@ -2905,7 +2928,7 @@ export default function AdminPanel() {
                       {/* Step 3: Related Collections Selection Section */}
                       <div className={workflowStep === 'related-collections' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Choose Related Collections</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">STEP 3: Choose Related Collections</h4>
                           <p className="text-sm text-blue-600 mb-4">
                             Select collections that are related to your content to group products and categories
                           </p>
@@ -2942,7 +2965,7 @@ export default function AdminPanel() {
                       {/* Step 4: Buyer Personas Input Section */}
                       <div className={workflowStep === 'buying-avatars' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Define Target Buyer Personas</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">STEP 4: Define Target Buyer Personas</h4>
                           <p className="text-sm text-blue-600 mb-2">
                             Describe your target audience in detail. You can type custom descriptions or use the suggestion buttons below.
                           </p>
@@ -3020,7 +3043,7 @@ export default function AdminPanel() {
                       {/* Step 5: Keyword Selection Section */}
                       <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Keywords</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">STEP 5: Choose Keywords</h4>
                           <p className="text-sm text-blue-600 mb-2">
                             Click the button below to select keywords for your content. The following selected items will be used for keyword generation:
                           </p>
@@ -3157,7 +3180,7 @@ export default function AdminPanel() {
                       {/* Step 3: Title Selection Section */}
                       <div className={workflowStep === 'title' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Select a Title</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">STEP 3: Select a Title</h4>
                           <p className="text-sm text-blue-600">Choose from AI-generated title suggestions based on your keywords</p>
                         </div>
                         
@@ -3212,7 +3235,7 @@ export default function AdminPanel() {
                       {/* Step 4: Media Selection Section */}
                       <div className={workflowStep === 'media' ? 'block' : 'hidden'}>
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Media</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">STEP 4: Choose Media</h4>
                           <p className="text-sm text-blue-600">Select compelling visuals to enhance your content and boost engagement</p>
                         </div>
                         
@@ -3707,7 +3730,7 @@ export default function AdminPanel() {
                     {/* Step 5: Author Selection Section */}
                     <div className={workflowStep === 'author' ? 'block' : 'hidden'}>
                       <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Author</h4>
+                        <h4 className="font-medium text-blue-700 mb-1">STEP 5: Choose Author</h4>
                         <p className="text-sm text-blue-600">Select an author for this content or create a new one</p>
                       </div>
                       
