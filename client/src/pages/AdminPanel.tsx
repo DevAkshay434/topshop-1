@@ -8139,7 +8139,7 @@ export default function AdminPanel() {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                onDrop={(e) => {
+                onDrop={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   
@@ -8168,22 +8168,37 @@ export default function AdminPanel() {
                         return;
                       }
                       
-                      // Create a URL for the image file
-                      const localUrl = URL.createObjectURL(file);
+                      // Upload to server instead of using blob URL
+                      const formData = new FormData();
+                      formData.append('image', file);
+                      
+                      const uploadResponse = await fetch('/api/upload-image', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                          'X-Store-ID': currentStore?.id?.toString() || '1'
+                        }
+                      });
+                      
+                      if (!uploadResponse.ok) {
+                        throw new Error('Upload failed');
+                      }
+                      
+                      const uploadData = await uploadResponse.json();
                       
                       // Create a Pexels-compatible image object
                       const uploadedImage: PexelsImage = {
                         id: `upload-${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`,
-                        url: localUrl,
+                        url: uploadData.url,
                         width: 600,
                         height: 400,
                         alt: file.name,
                         src: {
-                          original: localUrl,
-                          large: localUrl,
-                          medium: localUrl,
-                          small: localUrl,
-                          thumbnail: localUrl,
+                          original: uploadData.url,
+                          large: uploadData.url,
+                          medium: uploadData.url,
+                          small: uploadData.url,
+                          thumbnail: uploadData.url,
                         }
                       };
                       
@@ -8221,7 +8236,7 @@ export default function AdminPanel() {
                   accept="image/*" 
                   className="hidden" 
                   id="image-upload"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const files = e.target.files;
                     if (files && files.length > 0) {
                       try {
@@ -8247,22 +8262,37 @@ export default function AdminPanel() {
                           return;
                         }
                         
-                        // Create a URL for the image file
-                        const localUrl = URL.createObjectURL(file);
+                        // Upload to server instead of using blob URL
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        
+                        const uploadResponse = await fetch('/api/upload-image', {
+                          method: 'POST',
+                          body: formData,
+                          headers: {
+                            'X-Store-ID': currentStore?.id?.toString() || '1'
+                          }
+                        });
+                        
+                        if (!uploadResponse.ok) {
+                          throw new Error('Upload failed');
+                        }
+                        
+                        const uploadData = await uploadResponse.json();
                         
                         // Create a Pexels-compatible image object
                         const uploadedImage: PexelsImage = {
                           id: `upload-${new Date().getTime()}-${Math.random().toString(36).substr(2, 9)}`,
-                          url: localUrl,
+                          url: uploadData.url,
                           width: 600,
                           height: 400,
                           alt: file.name,
                           src: {
-                            original: localUrl,
-                            large: localUrl,
-                            medium: localUrl,
-                            small: localUrl,
-                            thumbnail: localUrl,
+                            original: uploadData.url,
+                            large: uploadData.url,
+                            medium: uploadData.url,
+                            small: uploadData.url,
+                            thumbnail: uploadData.url,
                           }
                         };
                         
@@ -8306,15 +8336,19 @@ export default function AdminPanel() {
                 </Button>
               </div>
               
-              <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
+              <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
                 <div className="flex">
-                  <Info className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0" />
+                  <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-yellow-700 mb-1 font-medium">About Image Uploads</p>
-                    <p className="text-xs text-yellow-600">
-                      After uploading, images will appear in the grid below with an "Uploaded" badge.
-                      Hover over any image and click "Primary" or "Secondary" to select it for your content.
-                      Make sure you have the rights to use any images you upload.
+                    <p className="text-sm text-blue-700 mb-1 font-medium">How to Use Uploaded Images</p>
+                    <p className="text-xs text-blue-600 mb-2">
+                      1. Images are uploaded to your Shopify store for permanent use in content
+                    </p>
+                    <p className="text-xs text-blue-600 mb-2">
+                      2. After upload, switch to "Uploaded Images" tab to see your images with purple "Uploaded" badges
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      3. Hover over any uploaded image and click "Primary" or "Secondary" to add it to your content
                     </p>
                   </div>
                 </div>

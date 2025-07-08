@@ -4,6 +4,8 @@ import { z } from 'zod';
 import axios from 'axios';
 import crypto from 'crypto';
 import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 import {
   insertContentGenRequestSchema,
   insertBlogPostSchema,
@@ -116,15 +118,39 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       try {
-        // Upload to Shopify Files API
-        const shopifyResponse = await axios.post(
-          `https://${store.shopName}/admin/api/2025-07/files.json`,
-          {
-            file: {
-              attachment: req.file.buffer.toString('base64'),
-              filename: req.file.originalname,
-              content_type: req.file.mimetype,
+        // Upload to Shopify Files API with proper GraphQL mutation
+        const mutation = `
+          mutation fileCreate($files: [FileCreateInput!]!) {
+            fileCreate(files: $files) {
+              files {
+                id
+                fileStatus
+                ... on GenericFile {
+                  url
+                  originalFileSize
+                  mimeType
+                }
+              }
+              userErrors {
+                field
+                message
+              }
             }
+          }
+        `;
+        
+        const variables = {
+          files: [{
+            contentType: "FILE",
+            originalSource: `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+          }]
+        };
+
+        const shopifyResponse = await axios.post(
+          `https://${store.shopName}/admin/api/2025-07/graphql.json`,
+          {
+            query: mutation,
+            variables: variables
           },
           {
             headers: {
@@ -134,26 +160,46 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
         );
 
-        const fileUrl = shopifyResponse.data.file?.url;
-        if (fileUrl) {
+        const fileData = shopifyResponse.data.data?.fileCreate?.files?.[0];
+        if (fileData && fileData.url) {
+          console.log('Successfully uploaded to Shopify Files:', fileData.url);
           res.json({ 
             success: true, 
-            url: fileUrl,
-            filename: req.file.originalname 
+            url: fileData.url,
+            filename: req.file.originalname,
+            shopifyFileId: fileData.id,
+            source: 'shopify' 
           });
         } else {
-          throw new Error('No file URL returned from Shopify');
+          const errors = shopifyResponse.data.data?.fileCreate?.userErrors || [];
+          throw new Error(`Shopify upload failed: ${errors.map(e => e.message).join(', ')}`);
         }
       } catch (shopifyError) {
         console.error('Shopify upload error:', shopifyError);
         
-        // Fallback: Return a data URL for immediate display
-        const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        // Create a unique filename for local storage
+        const timestamp = Date.now();
+        const uniqueFilename = `${timestamp}-${req.file.originalname}`;
+        const publicPath = path.join(process.cwd(), 'public', 'uploads', uniqueFilename);
+        
+        // Ensure uploads directory exists
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        
+        // Save file locally as fallback
+        fs.writeFileSync(publicPath, req.file.buffer);
+        
+        const localUrl = `/uploads/${uniqueFilename}`;
+        console.log('Shopify upload failed, saved locally:', localUrl);
+        
         res.json({ 
           success: true, 
-          url: dataUrl,
+          url: localUrl,
           filename: req.file.originalname,
-          note: 'Image uploaded as data URL - may not persist in published content' 
+          source: 'local',
+          note: 'Image uploaded locally - Shopify upload failed' 
         });
       }
     } catch (error) {
