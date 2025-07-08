@@ -37,6 +37,7 @@ import {
 } from './services/oauth';
 import { generateBlogContentWithHF } from './services/huggingface';
 import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
+import { createDateInTimezone } from '@shared/timezone';
 
 // Configure multer for image uploads
 const upload = multer({
@@ -859,7 +860,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           // Set scheduledDate for compatibility with old code
           if (postData.scheduledPublishDate && postData.scheduledPublishTime) {
             try {
-              const { createDateInTimezone } = await import('../shared/timezone');
+              // Using imported createDateInTimezone function
               // Get store timezone from Shopify
               const connection = await storage.getShopifyConnection();
               const shopifyService = await import('./services/shopify').then(module => module.shopifyService);
@@ -1009,8 +1010,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
                 console.log(`Using timezone: ${timezone} for scheduling`);
                 
-                // Import the timezone-aware date creation function
-                const { createDateInTimezone } = await import('@shared/timezone');
+                // Use timezone-aware date creation function
                 
                 // Create a proper Date object in the store's timezone
                 scheduledPublishDate = createDateInTimezone(
@@ -1432,7 +1432,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
                 
                 // Create a date in the shop's timezone
-                const { createDateInTimezone } = await import('@shared/timezone');
+                // Using imported createDateInTimezone function
                 scheduledPublishDate = createDateInTimezone(
                   post.scheduledPublishDate,
                   post.scheduledPublishTime,

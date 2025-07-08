@@ -69,12 +69,34 @@ export default function PostList({
   const [editingSchedule, setEditingSchedule] = useState<{ postId: number; date: string; time: string } | null>(null);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   
-  const { data, isLoading, error } = useQuery<{ posts: BlogPost[] }>({
+  const { data, isLoading, error, refetch } = useQuery<{ posts: BlogPost[] }>({
     queryKey: [queryKey, limit, page, storeId],
     enabled: storeId !== null, // Only fetch when we have a valid store ID
+    refetchInterval: 15000, // Refetch every 15 seconds for real-time updates
+    refetchIntervalInBackground: true
   });
   
   const posts = data?.posts || [];
+  
+  // Listen for post creation/updates to refresh list immediately
+  useEffect(() => {
+    const handlePostCreated = () => {
+      console.log('Post created/updated - refreshing list');
+      refetch();
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+    };
+
+    // Listen for custom events
+    window.addEventListener('postCreated', handlePostCreated);
+    window.addEventListener('postUpdated', handlePostCreated);
+    window.addEventListener('postDeleted', handlePostCreated);
+
+    return () => {
+      window.removeEventListener('postCreated', handlePostCreated);
+      window.removeEventListener('postUpdated', handlePostCreated);
+      window.removeEventListener('postDeleted', handlePostCreated);
+    };
+  }, [refetch, queryClient, queryKey]);
   
   // Check status for scheduled posts periodically
   useEffect(() => {

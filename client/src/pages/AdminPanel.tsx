@@ -2303,6 +2303,14 @@ export default function AdminPanel() {
           description: "Your content has been generated and is ready for review in the Content Preview section.",
           variant: "default"
         });
+
+        // Dispatch event to trigger real-time list updates
+        if (result.post) {
+          const eventType = result.post.status === 'scheduled' ? 'postCreated' : 'postUpdated';
+          const event = new CustomEvent(eventType, { detail: result.post });
+          window.dispatchEvent(event);
+          console.log(`Dispatched ${eventType} event for post:`, result.post.id);
+        }
       } catch (apiError: any) {
         console.error("API request failed:", apiError);
         toast({
