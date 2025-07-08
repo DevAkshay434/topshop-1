@@ -6737,11 +6737,11 @@ export default function AdminPanel() {
                       />
                       
                       {/* Full-size view icon */}
-                      <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute top-1 left-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="secondary"
                           size="icon"
-                          className="h-6 w-6 bg-white/90 shadow-sm hover:bg-white"
+                          className="h-6 w-6 bg-white/90 shadow-lg hover:bg-white hover:shadow-xl"
                           onClick={(e) => {
                             e.stopPropagation();
                             // For Pexels images, use the original size, then fallback to large
@@ -6983,11 +6983,11 @@ export default function AdminPanel() {
                           </div>
                           
                           {/* Full-size view icon */}
-                          <div className="absolute top-1 left-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute top-1 left-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               variant="secondary"
                               size="icon"
-                              className="h-6 w-6 bg-white/90 shadow-sm hover:bg-white"
+                              className="h-6 w-6 bg-white/90 shadow-lg hover:bg-white hover:shadow-xl"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 window.open(image.url, '_blank');
@@ -7528,11 +7528,11 @@ export default function AdminPanel() {
                                 />
                                 
                                 {/* Full-size view icon */}
-                                <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-1 left-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Button
                                     variant="secondary"
                                     size="icon"
-                                    className="h-6 w-6 bg-white/90 shadow-sm hover:bg-white"
+                                    className="h-6 w-6 bg-white/90 shadow-lg hover:bg-white hover:shadow-xl"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       window.open(productImage, '_blank');
