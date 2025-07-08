@@ -96,8 +96,9 @@ export default function PostList({
   // Delete mutation with optimistic updates
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await apiRequest(`/api/posts/${postId}`, {
+      const response = await apiRequest({
         method: 'DELETE',
+        url: `/api/posts/${postId}`
       });
       return response;
     },
@@ -253,10 +254,14 @@ export default function PostList({
         });
       }
       
-      const response = await apiRequest('POST', `/api/posts/${editingSchedule.postId}/reschedule`, {
-        scheduledDate: storeDateTime.toISOString(),
-        scheduledPublishDate: editingSchedule.date,
-        scheduledPublishTime: editingSchedule.time
+      const response = await apiRequest({
+        method: 'POST',
+        url: `/api/posts/${editingSchedule.postId}/reschedule`,
+        data: {
+          scheduledDate: storeDateTime.toISOString(),
+          scheduledPublishDate: editingSchedule.date,
+          scheduledPublishTime: editingSchedule.time
+        }
       });
       
       if (response?.status === 'success') {
