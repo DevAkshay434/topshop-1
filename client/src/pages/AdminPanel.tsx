@@ -1064,13 +1064,24 @@ export default function AdminPanel() {
 
   const { toast } = useToast();
 
-  // Utility function to scroll to top and ensure current step is visible
+  // Utility function to scroll to current step section
   const scrollToCurrentStep = () => {
-    // Scroll to the top with smooth behavior
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    // Find the current step section based on workflowStep
+    const currentStepElement = document.querySelector(`[data-step="${workflowStep}"]`);
+    
+    if (currentStepElement) {
+      // Scroll to the step section with smooth behavior
+      currentStepElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    } else {
+      // Fallback to scrolling to top if step element not found
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
   };
 
   // Default form values
@@ -2767,7 +2778,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step 1: Product and Collection Selection */}
-                      <div className={workflowStep === 'product' ? 'block' : 'hidden'}>
+                      <div className={workflowStep === 'product' ? 'block' : 'hidden'} data-step="product">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 1: Select Products or Collections</h4>
                           <p className="text-sm text-blue-600">Choose products or collections to feature in your content</p>
@@ -2884,7 +2895,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step 2: Related Products Selection Section */}
-                      <div className={workflowStep === 'related-products' ? 'block' : 'hidden'}>
+                      <div className={workflowStep === 'related-products' ? 'block' : 'hidden'} data-step="related-products">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Related Products</h4>
                           <p className="text-sm text-blue-600 mb-4">
@@ -2920,7 +2931,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step 3: Related Collections Selection Section */}
-                      <div className={workflowStep === 'related-collections' ? 'block' : 'hidden'}>
+                      <div className={workflowStep === 'related-collections' ? 'block' : 'hidden'} data-step="related-collections">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 3: Choose Related Collections</h4>
                           <p className="text-sm text-blue-600 mb-4">
@@ -2957,7 +2968,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step 4: Buyer Personas Input Section */}
-                      <div className={workflowStep === 'buying-avatars' ? 'block' : 'hidden'}>
+                      <div className={workflowStep === 'buying-avatars' ? 'block' : 'hidden'} data-step="buying-avatars">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 4: Define Target Buyer Personas</h4>
                           <p className="text-sm text-blue-600 mb-2">
@@ -3035,7 +3046,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step 5: Keyword Selection Section */}
-                      <div className={workflowStep === 'keyword' ? 'block' : 'hidden'}>
+                      <div className={workflowStep === 'keyword' ? 'block' : 'hidden'} data-step="keyword">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Keywords</h4>
                           <p className="text-sm text-blue-600 mb-2">
@@ -3172,7 +3183,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step 3: Title Selection Section */}
-                      <div className={workflowStep === 'title' ? 'block' : 'hidden'}>
+                      <div className={workflowStep === 'title' ? 'block' : 'hidden'} data-step="title">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 3: Select a Title</h4>
                           <p className="text-sm text-blue-600">Choose from AI-generated title suggestions based on your keywords</p>
@@ -3228,7 +3239,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step 4: Media Selection Section */}
-                      <div className={workflowStep === 'media' ? 'block' : 'hidden'}>
+                      <div className={workflowStep === 'media' ? 'block' : 'hidden'} data-step="media">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
                           <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Media</h4>
                           <p className="text-sm text-blue-600">Select compelling visuals to enhance your content and boost engagement</p>
@@ -3730,7 +3741,7 @@ export default function AdminPanel() {
                     </div>
 
                     {/* Step 5: Author Selection Section */}
-                    <div className={workflowStep === 'author' ? 'block' : 'hidden'}>
+                    <div className={workflowStep === 'author' ? 'block' : 'hidden'} data-step="author">
                       <div className="p-4 bg-blue-50 rounded-md mb-4">
                         <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Author</h4>
                         <p className="text-sm text-blue-600">Select an author for this content or create a new one</p>
@@ -3760,7 +3771,7 @@ export default function AdminPanel() {
                     </div>
                     
                     {/* Style and formatting section - Only shown in content step */}
-                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`}>
+                    <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`} data-step="content">
                       <h3 className="text-lg font-medium">Style & Formatting</h3>
                       
                       {/* Content Generation Options */}
