@@ -831,6 +831,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         console.log("POST /api/posts - Converted authorId to number:", req.body.authorId);
       }
       
+      // Map articleType to contentType before validation
+      if (req.body.articleType) {
+        req.body.contentType = req.body.articleType;
+        delete req.body.articleType;
+      }
+      
       // Validate request body
       let postData;
       try {

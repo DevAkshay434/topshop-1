@@ -178,6 +178,8 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts, {
     z.null(),
     z.undefined()
   ]).optional(),
+  // Accept articleType from frontend
+  articleType: z.string().optional(),
 });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
