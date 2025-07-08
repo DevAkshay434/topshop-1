@@ -86,7 +86,9 @@ export default function PostList({
     queryKey: [queryKey, limit, page, storeId],
     enabled: storeId !== null, // Only fetch when we have a valid store ID
     refetchInterval: 15000, // Refetch every 15 seconds for real-time updates
-    refetchIntervalInBackground: true
+    refetchIntervalInBackground: true,
+    gcTime: 0, // Disable garbage collection to prevent stale data
+    staleTime: 0 // Always consider data stale to force refetch
   });
   
   const posts = data?.posts || [];
@@ -105,8 +107,8 @@ export default function PostList({
         description: "Post deleted successfully",
       });
       
-      // Invalidate all post-related queries with broader pattern matching
-      queryClient.invalidateQueries({ 
+      // Clear all post-related queries from cache to force fresh data
+      queryClient.removeQueries({ 
         predicate: (query) => {
           const key = query.queryKey[0] as string;
           return key?.includes('/api/posts') || key?.includes('posts');
@@ -121,7 +123,12 @@ export default function PostList({
       setDeleteDialogOpen(false);
       setPostToDelete(null);
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      // Rollback optimistic update on error
+      if (context?.previousData) {
+        queryClient.setQueryData([queryKey, limit, page, storeId], context.previousData);
+      }
+      
       toast({
         title: "Error",
         description: error.message || "Failed to delete post",
@@ -257,8 +264,17 @@ export default function PostList({
     setDeleteDialogOpen(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (postToDelete) {
+      // Optimistically remove the post from the UI immediately
+      const previousData = queryClient.getQueryData([queryKey, limit, page, storeId]);
+      if (previousData?.posts) {
+        queryClient.setQueryData([queryKey, limit, page, storeId], {
+          posts: previousData.posts.filter((p: BlogPost) => p.id !== postToDelete.id)
+        });
+      }
+      
+      // Then perform the actual delete
       deleteMutation.mutate(postToDelete.id);
     }
   };
