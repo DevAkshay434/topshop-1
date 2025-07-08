@@ -108,7 +108,7 @@ export type InsertShopifyConnection = z.infer<typeof insertShopifyConnectionSche
 export type ShopifyConnection = typeof shopifyConnections.$inferSelect;
 
 // Blog post schema
-export const blogPosts = pgTable("posts", {
+export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
   storeId: integer("store_id").references(() => shopifyStores.id), // Add store reference for multi-store support
   title: text("title").notNull(),

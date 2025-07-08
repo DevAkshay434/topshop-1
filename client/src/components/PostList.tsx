@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   FileText, 
@@ -8,10 +8,7 @@ import {
   MoreVertical, 
   Calendar, 
   Eye,
-  Loader2,
-  Radio,
-  Edit3,
-  CheckCircle
+  Loader2
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
@@ -21,17 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -60,100 +46,10 @@ export default function PostList({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [publishingId, setPublishingId] = useState<number | null>(null);
-  const [postStatuses, setPostStatuses] = useState<Record<number, { isLive: boolean; lastChecked: Date; error?: string }>>({});
-  const [editingSchedule, setEditingSchedule] = useState<{ postId: number; date: string; time: string } | null>(null);
-  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   
   const { data, isLoading, error } = useQuery<{ posts: BlogPost[] }>({
     queryKey: [queryKey, limit, page],
   });
-  
-  const posts = data?.posts || [];
-  
-  // Check status for scheduled posts periodically
-  useEffect(() => {
-    const scheduledPosts = posts.filter(post => post.status === 'scheduled');
-    
-    if (scheduledPosts.length > 0) {
-      const checkStatuses = async () => {
-        for (const post of scheduledPosts) {
-          try {
-            const response = await apiRequest('GET', `/api/posts/${post.id}/check-status`);
-            if (response) {
-              setPostStatuses(prev => ({
-                ...prev,
-                [post.id]: {
-                  isLive: response.isLive,
-                  lastChecked: new Date(response.lastChecked),
-                  error: response.error
-                }
-              }));
-            }
-          } catch (error) {
-            console.error(`Error checking status for post ${post.id}:`, error);
-            setPostStatuses(prev => ({
-              ...prev,
-              [post.id]: {
-                isLive: false,
-                lastChecked: new Date(),
-                error: 'Failed to check status'
-              }
-            }));
-          }
-        }
-      };
-      
-      // Check immediately and then every 30 seconds
-      checkStatuses();
-      const interval = setInterval(checkStatuses, 30000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [posts]);
-  
-  const handleReschedule = async () => {
-    if (!editingSchedule) return;
-    
-    try {
-      const scheduledDateTime = `${editingSchedule.date}T${editingSchedule.time}:00`;
-      const response = await apiRequest('POST', `/api/posts/${editingSchedule.postId}/reschedule`, {
-        scheduledDate: scheduledDateTime,
-        scheduledPublishDate: editingSchedule.date,
-        scheduledPublishTime: editingSchedule.time
-      });
-      
-      if (response?.status === 'success') {
-        toast({
-          title: "Post Rescheduled",
-          description: response.message
-        });
-        
-        // Refresh data
-        queryClient.invalidateQueries({ queryKey: [queryKey] });
-        setRescheduleDialogOpen(false);
-        setEditingSchedule(null);
-      }
-    } catch (error) {
-      console.error('Error rescheduling post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reschedule post. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const openRescheduleDialog = (post: BlogPost) => {
-    const currentDate = post.scheduledPublishDate || format(new Date(), 'yyyy-MM-dd');
-    const currentTime = post.scheduledPublishTime || '09:30';
-    
-    setEditingSchedule({
-      postId: post.id,
-      date: currentDate,
-      time: currentTime
-    });
-    setRescheduleDialogOpen(true);
-  };
   
   const handleViewAnalytics = (post: BlogPost) => {
     toast({
@@ -270,6 +166,8 @@ export default function PostList({
     );
   }
   
+  const posts = data?.posts || [];
+  
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
@@ -301,14 +199,7 @@ export default function PostList({
                           {post.title}
                         </p>
                       </div>
-                      <div className="ml-2 flex-shrink-0 flex items-center space-x-2">
-                        {/* Live indicator for scheduled posts */}
-                        {post.status === 'scheduled' && postStatuses[post.id]?.isLive && (
-                          <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-200 flex items-center gap-1">
-                            <Radio className="h-3 w-3 animate-pulse" />
-                            Live
-                          </Badge>
-                        )}
+                      <div className="ml-2 flex-shrink-0 flex">
                         <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPostStatusColor(post.status)}`}>
                           {getStatusLabel(post.status)}
                         </p>
@@ -392,15 +283,6 @@ export default function PostList({
                               }}>
                                 View Analytics
                               </DropdownMenuItem>
-                              {post.status === "scheduled" && (
-                                <DropdownMenuItem onClick={(e) => {
-                                  e.stopPropagation();
-                                  openRescheduleDialog(post);
-                                }}>
-                                  <Edit3 className="mr-2 h-4 w-4" />
-                                  Change Time
-                                </DropdownMenuItem>
-                              )}
                               {post.status !== "published" && (
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
@@ -487,50 +369,6 @@ export default function PostList({
           </button>
         </div>
       )}
-      
-      {/* Reschedule Dialog */}
-      <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Change Scheduled Time</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="scheduleDate">Date</Label>
-              <Input
-                id="scheduleDate"
-                type="date"
-                value={editingSchedule?.date || ''}
-                onChange={(e) => setEditingSchedule(prev => prev ? {...prev, date: e.target.value} : null)}
-                min={format(new Date(), 'yyyy-MM-dd')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="scheduleTime">Time</Label>
-              <Input
-                id="scheduleTime"
-                type="time"
-                value={editingSchedule?.time || ''}
-                onChange={(e) => setEditingSchedule(prev => prev ? {...prev, time: e.target.value} : null)}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setRescheduleDialogOpen(false);
-                  setEditingSchedule(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleReschedule}>
-                Update Schedule
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
