@@ -2889,7 +2889,7 @@ export default function AdminPanel() {
                               }
                             }}
                           >
-                            Next: Related Products
+                            Next
                           </Button>
                         </div>
                       </div>

@@ -189,7 +189,7 @@ export function RelatedCollectionsSelector({
           Back
         </Button>
         <Button onClick={onContinue} className="flex items-center gap-1">
-          Continue <ArrowRight className="h-4 w-4 ml-1" />
+          Next <ArrowRight className="h-4 w-4 ml-1" />
         </Button>
       </CardFooter>
     </Card>
