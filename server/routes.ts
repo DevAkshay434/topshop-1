@@ -1490,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Delete a blog post
+  // Delete a blog post with multi-store support
   apiRouter.delete("/posts/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -1499,69 +1499,67 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "Invalid ID" });
       }
       
-      // Check if post exists
+      console.log(`DELETE /api/posts/${id} - Starting delete process`);
+      
+      // Get store context for multi-store support
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
+      
+      // Check if post exists and belongs to this store
       const post = await storage.getBlogPost(id);
       
       if (!post) {
         return res.status(404).json({ error: "Post not found" });
       }
       
-      // If post has a Shopify ID, delete from Shopify
-      if (post.shopifyPostId) {
-        const connection = await storage.getShopifyConnection();
-        
-        if (connection && connection.isConnected && connection.defaultBlogId) {
-          try {
-            // Get function references
-            const { setConnection, deleteArticle } = shopifyService;
-            
-            // Set connection first
-            setConnection(connection);
-            
-            // Create a temporary store object for using with the new API
-            const tempStore = {
-              id: connection.id,
-              shopName: connection.storeName,
-              accessToken: connection.accessToken,
-              scope: '', // Not available in legacy connection
-              defaultBlogId: connection.defaultBlogId,
-              isConnected: connection.isConnected || true,
-              lastSynced: connection.lastSynced,
-              installedAt: new Date(),
-              uninstalledAt: null,
-              planName: null,
-              chargeId: null,
-              trialEndsAt: null
-            };
-            
-            await deleteArticle(tempStore, connection.defaultBlogId, post.shopifyPostId);
-            
-            // Create sync activity
-            await storage.createSyncActivity({
-              activity: `Deleted "${post.title}" from Shopify`,
-              status: "success",
-              details: `Successfully deleted from Shopify`
-            });
-          } catch (shopifyError: any) {
-            // Log error but don't fail the request
-            console.error("Error deleting from Shopify:", shopifyError);
-            
-            // Create sync activity
-            await storage.createSyncActivity({
-              activity: `Failed to delete "${post.title}" from Shopify`,
-              status: "failed",
-              details: shopifyError.message
-            });
-          }
+      // Verify post belongs to the requesting store
+      if (post.storeId && post.storeId !== store.id) {
+        return res.status(403).json({ error: "Post does not belong to this store" });
+      }
+      
+      console.log(`Deleting post "${post.title}" (ID: ${id}) from store ${store.shopName}`);
+      
+      // If post has a Shopify ID, delete from Shopify first
+      if (post.shopifyPostId && store.isConnected && store.defaultBlogId) {
+        try {
+          // Initialize the Shopify service with the correct store
+          shopifyService.initializeClient(store);
+          
+          await shopifyService.deleteArticle(store, store.defaultBlogId, post.shopifyPostId);
+          
+          console.log(`Successfully deleted post "${post.title}" from Shopify (Article ID: ${post.shopifyPostId})`);
+          
+          // Create sync activity for successful Shopify deletion
+          await storage.createSyncActivity({
+            activity: `Deleted "${post.title}" from Shopify`,
+            status: "success",
+            details: `Successfully deleted from Shopify blog ${store.defaultBlogId}`,
+            storeId: store.id
+          });
+        } catch (shopifyError: any) {
+          // Log error but don't fail the request - still delete from local database
+          console.error(`Error deleting post "${post.title}" from Shopify:`, shopifyError);
+          
+          // Create sync activity for failed Shopify deletion
+          await storage.createSyncActivity({
+            activity: `Failed to delete "${post.title}" from Shopify`,
+            status: "failed",
+            details: shopifyError.message,
+            storeId: store.id
+          });
         }
       }
       
-      // Delete post from storage
+      // Delete post from local database
       const result = await storage.deleteBlogPost(id);
       
       if (!result) {
-        return res.status(500).json({ error: "Failed to delete post" });
+        return res.status(500).json({ error: "Failed to delete post from database" });
       }
+      
+      console.log(`Successfully deleted post "${post.title}" (ID: ${id}) from database`);
       
       res.json({ success: true });
     } catch (error: any) {

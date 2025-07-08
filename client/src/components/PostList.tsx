@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { 
   FileText, 
   Clock, 
@@ -11,7 +11,8 @@ import {
   Loader2,
   Radio,
   Edit3,
-  CheckCircle
+  CheckCircle,
+  Trash2
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
@@ -29,6 +30,16 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,6 +79,8 @@ export default function PostList({
   const [postStatuses, setPostStatuses] = useState<Record<number, { isLive: boolean; lastChecked: Date; error?: string }>>({});
   const [editingSchedule, setEditingSchedule] = useState<{ postId: number; date: string; time: string } | null>(null);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
   
   const { data, isLoading, error, refetch } = useQuery<{ posts: BlogPost[] }>({
     queryKey: [queryKey, limit, page, storeId],
@@ -77,6 +90,41 @@ export default function PostList({
   });
   
   const posts = data?.posts || [];
+  
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await apiRequest(`/api/posts/${postId}`, {
+        method: 'DELETE',
+      });
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+      // Invalidate queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/published'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      
+      // Dispatch custom event for real-time updates
+      window.dispatchEvent(new CustomEvent('postDeleted'));
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete post",
+        variant: "destructive",
+      });
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
+    },
+  });
   
   // Listen for post creation/updates to refresh list immediately
   useEffect(() => {
@@ -195,6 +243,18 @@ export default function PostList({
       time: currentTime
     });
     setRescheduleDialogOpen(true);
+  };
+  
+  // Handle delete with confirmation
+  const handleDeletePost = (post: BlogPost) => {
+    setPostToDelete(post);
+    setDeleteDialogOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (postToDelete) {
+      deleteMutation.mutate(postToDelete.id);
+    }
   };
   
   const handleViewAnalytics = (post: BlogPost) => {
@@ -476,8 +536,12 @@ export default function PostList({
                               )}
                               <DropdownMenuItem 
                                 className="text-red-500"
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePost(post);
+                                }}
                               >
+                                <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -584,6 +648,43 @@ export default function PostList({
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{postToDelete?.title}"? This action cannot be undone.
+              {postToDelete?.shopifyPostId && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                  <strong>Note:</strong> This post has been published to Shopify and will also be deleted from your store.
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Post
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
