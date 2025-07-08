@@ -352,41 +352,67 @@ export default function MediaSelectionStep({
     }
   };
   
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
     // Handle multiple file uploads
-    Array.from(files).forEach(file => {
+    for (const file of Array.from(files)) {
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target && e.target.result) {
-            const imageUrl = e.target.result.toString();
+        try {
+          // Create form data for upload
+          const formData = new FormData();
+          formData.append('image', file);
+          
+          // Upload to server
+          const response = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
             
-            // Create a new MediaImage object
+            // Create a new MediaImage object with server URL
             const newImage: MediaImage = {
               id: `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              url: imageUrl,
+              url: result.url, // Use server URL instead of blob
               width: 800, // Placeholder dimensions
               height: 600,
               alt: file.name,
               src: {
-                original: imageUrl,
-                large: imageUrl,
-                medium: imageUrl,
-                small: imageUrl,
-                thumbnail: imageUrl
+                original: result.url,
+                large: result.url,
+                medium: result.url,
+                small: result.url,
+                thumbnail: result.url
               },
               source: 'uploaded'
             };
             
             setUploadedImages(prev => [...prev, newImage]);
+            
+            toast({
+              title: 'Image uploaded successfully',
+              description: `${file.name} has been uploaded and is ready to use`,
+            });
+          } else {
+            toast({
+              title: 'Upload failed',
+              description: `Failed to upload ${file.name}`,
+              variant: 'destructive'
+            });
           }
-        };
-        reader.readAsDataURL(file);
+        } catch (error) {
+          console.error('Upload error:', error);
+          toast({
+            title: 'Upload error',
+            description: `Error uploading ${file.name}`,
+            variant: 'destructive'
+          });
+        }
       }
-    });
+    }
     
     // Reset the input value to allow uploading the same file again
     event.target.value = '';
@@ -660,9 +686,10 @@ export default function MediaSelectionStep({
       />
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="primary">Primary Image</TabsTrigger>
           <TabsTrigger value="secondary">Secondary Images</TabsTrigger>
+          <TabsTrigger value="uploaded">Uploaded Images</TabsTrigger>
           <TabsTrigger value="youtube">YouTube Video</TabsTrigger>
         </TabsList>
         
@@ -918,6 +945,59 @@ export default function MediaSelectionStep({
               <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-md">
                 <ImageIcon className="h-12 w-12 mx-auto text-slate-300" />
                 <p className="mt-2">No media library images available</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        {/* UPLOADED IMAGES SELECTION */}
+        <TabsContent value="uploaded" className="space-y-4">
+          <div className="flex flex-col space-y-4">
+            <div className="bg-purple-50 p-4 rounded-md border border-purple-200">
+              <div className="flex items-start">
+                <Upload className="h-5 w-5 text-purple-500 mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-purple-700">Your Uploaded Images</h3>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Images you've uploaded are displayed below. Click on any image to set it as primary or add to secondary images.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* File Upload Section */}
+            <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600 mb-2">Upload additional images</p>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                id="upload-images-tab"
+                onChange={handleFileUpload}
+              />
+              <Label htmlFor="upload-images-tab" className="cursor-pointer">
+                <Button variant="outline" asChild>
+                  <span>Choose Files</span>
+                </Button>
+              </Label>
+            </div>
+            
+            {/* Display Uploaded Images */}
+            {uploadedImages.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {uploadedImages.map(image => renderImageCard(
+                  image,
+                  primaryImage?.id === image.id,
+                  secondaryImages.some(img => img.id === image.id)
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <ImageIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">No uploaded images yet</p>
+                <p className="text-xs text-gray-400 mt-1">Upload images using the button above</p>
               </div>
             )}
           </div>

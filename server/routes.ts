@@ -55,6 +55,26 @@ const upload = multer({
   }
 });
 
+// Helper function to get main theme ID
+async function getMainThemeId(store: any): Promise<string> {
+  try {
+    const themesResponse = await axios.get(
+      `https://${store.shopName}/admin/api/2025-07/themes.json`,
+      {
+        headers: {
+          'X-Shopify-Access-Token': store.accessToken,
+        }
+      }
+    );
+    
+    const mainTheme = themesResponse.data.themes.find((theme: any) => theme.role === 'main');
+    return mainTheme ? mainTheme.id : themesResponse.data.themes[0]?.id || '';
+  } catch (error) {
+    console.error('Error getting theme ID:', error);
+    return '';
+  }
+}
+
 // Helper function to get store from request with multi-store support
 async function getStoreFromRequest(req: Request): Promise<any | null> {
   try {
@@ -134,33 +154,45 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         console.log('Shopify API payload prepared for:', req.file.originalname);
 
-        const shopifyResponse = await axios.post(
-          `https://${store.shopName}/admin/api/2025-07/files.json`,
-          shopifyPayload,
+        // Try uploading directly to Shopify store's assets
+        const assetsUrl = `https://${store.shopName}/admin/api/2025-07/themes/${await getMainThemeId(store)}/assets.json`;
+        
+        const assetPayload = {
+          asset: {
+            key: `assets/${req.file.originalname}`,
+            attachment: base64Data
+          }
+        };
+
+        console.log('Trying Shopify assets upload to:', assetsUrl);
+
+        const shopifyResponse = await axios.put(
+          assetsUrl,
+          assetPayload,
           {
             headers: {
               'X-Shopify-Access-Token': store.accessToken,
               'Content-Type': 'application/json'
             },
-            timeout: 30000 // 30 second timeout
+            timeout: 30000
           }
         );
 
         console.log('Shopify upload response status:', shopifyResponse.status);
         console.log('Shopify upload response data:', JSON.stringify(shopifyResponse.data, null, 2));
 
-        const fileData = shopifyResponse.data?.file;
-        if (fileData && fileData.url) {
-          console.log('Successfully uploaded to Shopify Files:', fileData.url);
+        const assetData = shopifyResponse.data?.asset;
+        if (assetData && assetData.public_url) {
+          console.log('Successfully uploaded to Shopify assets:', assetData.public_url);
           res.json({ 
             success: true, 
-            url: fileData.url,
+            url: assetData.public_url,
             filename: req.file.originalname,
-            shopifyFileId: fileData.id,
+            shopifyAssetKey: assetData.key,
             source: 'shopify' 
           });
         } else {
-          throw new Error(`Shopify upload failed: No file URL returned`);
+          throw new Error(`Shopify assets upload failed: No public URL returned`);
         }
       } catch (shopifyError) {
         console.error('Shopify upload error:', shopifyError);
