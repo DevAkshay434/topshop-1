@@ -118,18 +118,42 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       try {
-        // Upload to Shopify Files API using base64 encoding (more compatible)
-        const base64Data = req.file.buffer.toString('base64');
-        
+        // Upload to Shopify Files API using staged upload (modern approach)
         console.log('Uploading file to Shopify:', req.file.originalname, req.file.mimetype);
 
-        const shopifyResponse = await axios.post(
-          `https://${store.shopName}/admin/api/2025-07/files.json`,
+        // First, create staged upload target
+        const stagedUploadMutation = `
+          mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+            stagedUploadsCreate(input: $input) {
+              userErrors {
+                field
+                message
+              }
+              stagedTargets {
+                resourceUrl
+                url
+                parameters {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        `;
+
+        const stagedUploadResponse = await axios.post(
+          `https://${store.shopName}/admin/api/2025-07/graphql.json`,
           {
-            file: {
-              attachment: base64Data,
-              filename: req.file.originalname,
-              content_type: req.file.mimetype
+            query: stagedUploadMutation,
+            variables: {
+              input: [
+                {
+                  filename: req.file.originalname,
+                  mimeType: req.file.mimetype,
+                  httpMethod: "POST",
+                  resource: "FILE"
+                }
+              ]
             }
           },
           {
@@ -140,18 +164,89 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
         );
 
-        const fileData = shopifyResponse.data.file;
-        if (fileData && fileData.url) {
-          console.log('Successfully uploaded to Shopify Files:', fileData.url);
-          res.json({ 
-            success: true, 
-            url: fileData.url,
-            filename: req.file.originalname,
-            shopifyFileId: fileData.id,
-            source: 'shopify' 
-          });
+        const stagedTarget = stagedUploadResponse.data.data.stagedUploadsCreate.stagedTargets[0];
+        if (!stagedTarget) {
+          throw new Error('Failed to create staged upload target');
+        }
+
+        // Create FormData for the staged upload
+        const FormData = require('form-data');
+        const formData = new FormData();
+        
+        // Add parameters from staged upload
+        stagedTarget.parameters.forEach(param => {
+          formData.append(param.name, param.value);
+        });
+        
+        // Add the file
+        formData.append('file', req.file.buffer, {
+          filename: req.file.originalname,
+          contentType: req.file.mimetype
+        });
+
+        // Upload to staged target
+        const uploadResponse = await axios.post(stagedTarget.url, formData, {
+          headers: formData.getHeaders(),
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity
+        });
+
+        if (uploadResponse.status === 201) {
+          // Create file in Shopify using the staged upload
+          const fileCreateMutation = `
+            mutation fileCreate($files: [FileCreateInput!]!) {
+              fileCreate(files: $files) {
+                userErrors {
+                  field
+                  message
+                }
+                files {
+                  id
+                  alt
+                  url
+                  createdAt
+                }
+              }
+            }
+          `;
+
+          const fileCreateResponse = await axios.post(
+            `https://${store.shopName}/admin/api/2025-07/graphql.json`,
+            {
+              query: fileCreateMutation,
+              variables: {
+                files: [
+                  {
+                    alt: req.file.originalname,
+                    contentType: "FILE",
+                    originalSource: stagedTarget.resourceUrl
+                  }
+                ]
+              }
+            },
+            {
+              headers: {
+                'X-Shopify-Access-Token': store.accessToken,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          const createdFile = fileCreateResponse.data.data.fileCreate.files[0];
+          if (createdFile && createdFile.url) {
+            console.log('Successfully uploaded to Shopify Files:', createdFile.url);
+            res.json({ 
+              success: true, 
+              url: createdFile.url,
+              filename: req.file.originalname,
+              shopifyFileId: createdFile.id,
+              source: 'shopify' 
+            });
+          } else {
+            throw new Error(`Shopify file create failed: No file URL returned`);
+          }
         } else {
-          throw new Error(`Shopify upload failed: No file URL returned`);
+          throw new Error(`Staged upload failed with status: ${uploadResponse.status}`);
         }
       } catch (shopifyError) {
         console.error('Shopify upload error:', shopifyError);

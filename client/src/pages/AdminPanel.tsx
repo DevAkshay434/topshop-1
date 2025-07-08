@@ -8395,22 +8395,56 @@ export default function AdminPanel() {
                             size="sm"
                             variant="secondary"
                             onClick={() => {
-                              if (imageTab === 'primary') {
-                                setPrimaryImages([image]);
-                              } else {
-                                setSecondaryImages(prev => [...prev, image]);
-                              }
-                              setSearchedImages(prev => 
-                                prev.map(img => 
-                                  img.id === image.id ? { ...img, selected: true } : img
-                                )
-                              );
+                              // Set as primary image
+                              setSelectedMediaContent(prev => ({
+                                ...prev,
+                                primaryImage: image
+                              }));
+                              console.log('Set uploaded image as primary:', image);
+                              
+                              toast({
+                                title: "Primary image selected",
+                                description: `${image.alt || 'Uploaded image'} has been set as the primary image`,
+                              });
                             }}
-                            className="text-xs px-2 py-1"
                           >
-                            {imageTab === 'primary' ? 'Primary' : 'Secondary'}
+                            <Star className="h-3 w-3 mr-1" />
+                            Primary
                           </Button>
-                          
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              // Add to secondary images if not already there
+                              setSelectedMediaContent(prev => {
+                                const isAlreadySecondary = prev.secondaryImages.some(img => img.id === image.id);
+                                if (isAlreadySecondary) {
+                                  toast({
+                                    title: "Image already selected",
+                                    description: "This image is already in your secondary images",
+                                    variant: "destructive"
+                                  });
+                                  return prev;
+                                }
+                                
+                                const updatedSecondary = [...prev.secondaryImages, image];
+                                console.log('Added uploaded image to secondary:', image);
+                                
+                                toast({
+                                  title: "Secondary image added",
+                                  description: `${image.alt || 'Uploaded image'} has been added to secondary images`,
+                                });
+                                
+                                return {
+                                  ...prev,
+                                  secondaryImages: updatedSecondary
+                                };
+                              });
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Secondary
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
