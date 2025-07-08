@@ -824,6 +824,7 @@ export class DatabaseStorage implements IStorage {
         title: post.title,
         content: post.content,
         status: post.status || 'draft',
+        contentType: post.contentType || 'post', // CRITICAL FIX: Add missing contentType field
         featuredImage: post.featuredImage || null,
         category: post.category || null,
         categories: post.categories || null,
