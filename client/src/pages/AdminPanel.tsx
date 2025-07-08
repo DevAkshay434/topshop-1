@@ -6725,7 +6725,9 @@ export default function AdminPanel() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-2">
-                  {searchedImages && searchedImages.length > 0 ? searchedImages.map((image) => (
+                  {searchedImages && searchedImages.length > 0 ? searchedImages.map((image) => {
+                    console.log('Rendering image:', image);
+                    return (
                     <div 
                       key={image.id} 
                       className={`relative group rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
@@ -6880,7 +6882,8 @@ export default function AdminPanel() {
                         </div>
                       )}
                     </div>
-                  )) : (
+                    );
+                  }) : (
                     !isSearchingImages && (
                       <div className="col-span-full text-center py-6">
                         <p className="text-slate-500">No images found. Try searching for something else.</p>
@@ -8133,7 +8136,11 @@ export default function AdminPanel() {
                       };
                       
                       // Add to uploaded images array (user will choose primary/secondary)
-                      setSearchedImages(prev => [...prev, { ...uploadedImage, source: 'uploaded' }]);
+                      setSearchedImages(prev => {
+                        const updated = [...prev, { ...uploadedImage, source: 'uploaded' }];
+                        console.log('Updated searchedImages after drag upload:', updated);
+                        return updated;
+                      });
                       
                       toast({
                         title: "Image uploaded successfully",
@@ -8208,7 +8215,11 @@ export default function AdminPanel() {
                         };
                         
                         // Add to uploaded images array (user will choose primary/secondary)
-                        setSearchedImages(prev => [...prev, { ...uploadedImage, source: 'uploaded' }]);
+                        setSearchedImages(prev => {
+                          const updated = [...prev, { ...uploadedImage, source: 'uploaded' }];
+                          console.log('Updated searchedImages after upload:', updated);
+                          return updated;
+                        });
                         
                         toast({
                           title: "Image uploaded successfully",
