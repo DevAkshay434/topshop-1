@@ -6212,7 +6212,20 @@ export default function AdminPanel() {
                   Product Images
                 </Button>
                 
-              
+                <Button 
+                  size="sm"
+                  variant={imageSource === 'uploaded_images' ? 'default' : 'outline'} 
+                  onClick={() => setImageSource('uploaded_images')}
+                  className="flex-1"
+                >
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  Uploaded Images
+                  {searchedImages.filter(img => img.source === 'uploaded').length > 0 && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {searchedImages.filter(img => img.source === 'uploaded').length}
+                    </Badge>
+                  )}
+                </Button>
               
               <div className="flex-1 flex flex-col gap-1">
                 <Button 
@@ -8306,6 +8319,81 @@ export default function AdminPanel() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+          
+          {/* Uploaded Images Display */}
+          {imageSource === 'uploaded_images' && (
+            <div className="mt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <ImageIcon className="h-4 w-4 text-purple-500" />
+                <h3 className="text-sm font-medium">Your Uploaded Images</h3>
+                <Badge variant="secondary" className="text-xs">
+                  {searchedImages.filter(img => img.source === 'uploaded').length} images
+                </Badge>
+              </div>
+              
+              {searchedImages.filter(img => img.source === 'uploaded').length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <ImageIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No uploaded images yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Use the "Upload Image" tab to add your own images</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-0.5 max-h-96 overflow-y-auto">
+                  {searchedImages.filter(img => img.source === 'uploaded').map((image, index) => (
+                    <div key={image.id || index} className="relative group">
+                      <div className="aspect-square relative overflow-hidden rounded-sm">
+                        <img 
+                          src={image.url} 
+                          alt={image.alt || 'Uploaded image'} 
+                          className="w-full h-full object-cover"
+                        />
+                        
+                        {/* Uploaded badge */}
+                        <div className="absolute top-1 left-1 bg-purple-500 text-white px-1.5 py-0.5 rounded text-xs font-medium">
+                          Uploaded
+                        </div>
+                        
+                        {/* Hover overlay with selection buttons */}
+                        <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              if (imageTab === 'primary') {
+                                setPrimaryImages([image]);
+                              } else {
+                                setSecondaryImages(prev => [...prev, image]);
+                              }
+                              setSearchedImages(prev => 
+                                prev.map(img => 
+                                  img.id === image.id ? { ...img, selected: true } : img
+                                )
+                              );
+                            }}
+                            className="text-xs px-2 py-1"
+                          >
+                            {imageTab === 'primary' ? 'Primary' : 'Secondary'}
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              // Open full-size image in new tab
+                              window.open(image.url, '_blank');
+                            }}
+                            className="text-xs px-2 py-1"
+                          >
+                            <ZoomIn className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           

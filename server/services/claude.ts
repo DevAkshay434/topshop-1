@@ -505,17 +505,23 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
       The content must directly address these instructions while maintaining a ${toneStyle} tone and proper blog structure.`;
     }
     
-    // Make API call to Claude with increased token limit for longer content
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 8000,
-      system: request.contentStyleToneId 
-        ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
-        : undefined,
-      messages: [
-        {
-          role: 'user',
-          content: `${promptText}
+    // Make API call to Claude with retry logic for overloaded errors
+    let response;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        response = await anthropic.messages.create({
+          model: CLAUDE_MODEL,
+          max_tokens: 8000,
+          system: request.contentStyleToneId 
+            ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
+            : undefined,
+          messages: [
+            {
+              role: 'user',
+              content: `${promptText}
           
           IMPORTANT: Return the response in JSON format with the following structure:
           {
@@ -529,6 +535,32 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
         }
       ],
     });
+    
+    // If successful, break out of retry loop
+    break;
+    
+  } catch (error: any) {
+    console.error(`Claude API attempt ${retryCount + 1} failed:`, error);
+    
+    // Check if this is a 529 overloaded error
+    if (error.status === 529 && error.error?.error?.type === 'overloaded_error') {
+      retryCount++;
+      if (retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
+        console.log(`Claude API overloaded (529), retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+    }
+    
+    // If not overloaded error or max retries reached, throw the error
+    throw error;
+  }
+}
+
+if (!response) {
+  throw new Error("Failed to get response from Claude API after all retries");
+}
     
     // Extract and parse the JSON response
     const responseText = response.content[0].type === 'text' 
