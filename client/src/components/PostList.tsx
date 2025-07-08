@@ -210,6 +210,26 @@ export default function PostList({
       // Parse date and time in store timezone and convert to UTC
       const storeDateTime = zonedTimeToUtc(`${editingSchedule.date}T${editingSchedule.time}:00`, storeTimezone);
       
+      // Optimistically update the UI immediately
+      const previousData = queryClient.getQueryData([queryKey, limit, page, storeId]);
+      if (previousData?.posts) {
+        const updatedPosts = previousData.posts.map((post: BlogPost) => {
+          if (post.id === editingSchedule.postId) {
+            return {
+              ...post,
+              scheduledDate: storeDateTime.toISOString(),
+              scheduledPublishDate: editingSchedule.date,
+              scheduledPublishTime: editingSchedule.time
+            };
+          }
+          return post;
+        });
+        
+        queryClient.setQueryData([queryKey, limit, page, storeId], {
+          posts: updatedPosts
+        });
+      }
+      
       const response = await apiRequest('POST', `/api/posts/${editingSchedule.postId}/reschedule`, {
         scheduledDate: storeDateTime.toISOString(),
         scheduledPublishDate: editingSchedule.date,
@@ -222,13 +242,20 @@ export default function PostList({
           description: response.message
         });
         
-        // Refresh data
+        // Dispatch event for real-time updates
+        window.dispatchEvent(new CustomEvent('postUpdated'));
+        
+        // Refresh data to ensure consistency
         queryClient.invalidateQueries({ queryKey: [queryKey] });
         setRescheduleDialogOpen(false);
         setEditingSchedule(null);
       }
     } catch (error) {
       console.error('Error rescheduling post:', error);
+      
+      // Rollback optimistic update on error
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      
       toast({
         title: "Error",
         description: "Failed to reschedule post. Please try again.",
