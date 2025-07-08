@@ -1350,7 +1350,17 @@ export default function AdminPanel() {
     // Check if we already have this search in history
     const existingSearch = imageSearchHistory.find(hist => hist.query === trimmedQuery);
     if (existingSearch) {
-      setSearchedImages(existingSearch.images);
+      // Preserve uploaded images and add search history results
+      setSearchedImages(prev => {
+        const uploadedImages = prev.filter(img => img.source === 'uploaded');
+        const combined = [...uploadedImages, ...existingSearch.images];
+        console.log('Loading search history while preserving uploaded images:', {
+          uploadedCount: uploadedImages.length,
+          historyCount: existingSearch.images.length,
+          totalCount: combined.length
+        });
+        return combined;
+      });
       
       // If no primary images are set, automatically use the first image from history as featured
       if (primaryImages.length === 0 && existingSearch.images.length > 0) {
@@ -1384,7 +1394,17 @@ export default function AdminPanel() {
           selected: selectedImages.some(selected => selected.id === img.id)
         }));
         
-        setSearchedImages(newImages);
+        // Preserve uploaded images and add new search results
+        setSearchedImages(prev => {
+          const uploadedImages = prev.filter(img => img.source === 'uploaded');
+          const combined = [...uploadedImages, ...newImages];
+          console.log('Adding new search results while preserving uploaded images:', {
+            uploadedCount: uploadedImages.length,
+            newCount: newImages.length,
+            totalCount: combined.length
+          });
+          return combined;
+        });
         
         // Set Pexels images as default for primary images
         if (primaryImages.length === 0 && newImages.length > 0) {
@@ -6665,7 +6685,18 @@ export default function AdminPanel() {
                           type: 'image'
                         }));
                         
-                        setSearchedImages(formattedImages || []);
+                        // Preserve uploaded images and add search results
+                        setSearchedImages(prev => {
+                          const uploadedImages = prev.filter(img => img.source === 'uploaded');
+                          const newSearchResults = formattedImages || [];
+                          const combined = [...uploadedImages, ...newSearchResults];
+                          console.log('Preserving uploaded images and adding search results:', {
+                            uploadedCount: uploadedImages.length,
+                            searchCount: newSearchResults.length,
+                            totalCount: combined.length
+                          });
+                          return combined;
+                        });
                         
                         // Show search results summary
                         const pexelsCount = formattedImages.filter(img => img.source === 'pexels').length;
