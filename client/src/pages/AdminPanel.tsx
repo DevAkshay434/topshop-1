@@ -8211,7 +8211,7 @@ export default function AdminPanel() {
                       
                       toast({
                         title: "Image uploaded successfully",
-                        description: `${file.name} has been added to the image grid. Click Primary or Secondary buttons to select it.`,
+                        description: `${file.name} uploaded to ${uploadData.source === 'shopify' ? 'Shopify' : 'local storage'}. Switch to "Uploaded Images" tab to select it.`,
                       });
                       
                       console.log('Image dropped and uploaded successfully:', uploadedImage);
@@ -8305,7 +8305,7 @@ export default function AdminPanel() {
                         
                         toast({
                           title: "Image uploaded successfully",
-                          description: `${file.name} has been added to the image grid. Click Primary or Secondary buttons to select it.`,
+                          description: `${file.name} uploaded to ${uploadData.source === 'shopify' ? 'Shopify' : 'local storage'}. Switch to "Uploaded Images" tab to select it.`,
                         });
                         
                         console.log('Image uploaded successfully:', uploadedImage);

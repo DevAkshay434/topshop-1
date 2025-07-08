@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createServer, Server } from "http";
 import * as fsPath from "path";
+import path from "path";
 import fs from "fs";
 
 // Global maintenance mode flag
@@ -19,6 +20,9 @@ export function setMaintenanceMode(active: boolean) {
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Serve uploaded images statically
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'public/uploads')));
 
 // Configure session middleware for multi-store support
 app.use(session({

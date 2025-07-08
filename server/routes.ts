@@ -118,39 +118,19 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       try {
-        // Upload to Shopify Files API with proper GraphQL mutation
-        const mutation = `
-          mutation fileCreate($files: [FileCreateInput!]!) {
-            fileCreate(files: $files) {
-              files {
-                id
-                fileStatus
-                ... on GenericFile {
-                  url
-                  originalFileSize
-                  mimeType
-                }
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
+        // Upload to Shopify Files API using base64 encoding (more compatible)
+        const base64Data = req.file.buffer.toString('base64');
         
-        const variables = {
-          files: [{
-            contentType: "FILE",
-            originalSource: `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
-          }]
-        };
+        console.log('Uploading file to Shopify:', req.file.originalname, req.file.mimetype);
 
         const shopifyResponse = await axios.post(
-          `https://${store.shopName}/admin/api/2025-07/graphql.json`,
+          `https://${store.shopName}/admin/api/2025-07/files.json`,
           {
-            query: mutation,
-            variables: variables
+            file: {
+              attachment: base64Data,
+              filename: req.file.originalname,
+              content_type: req.file.mimetype
+            }
           },
           {
             headers: {
@@ -160,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
         );
 
-        const fileData = shopifyResponse.data.data?.fileCreate?.files?.[0];
+        const fileData = shopifyResponse.data.file;
         if (fileData && fileData.url) {
           console.log('Successfully uploaded to Shopify Files:', fileData.url);
           res.json({ 
@@ -171,8 +151,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             source: 'shopify' 
           });
         } else {
-          const errors = shopifyResponse.data.data?.fileCreate?.userErrors || [];
-          throw new Error(`Shopify upload failed: ${errors.map(e => e.message).join(', ')}`);
+          throw new Error(`Shopify upload failed: No file URL returned`);
         }
       } catch (shopifyError) {
         console.error('Shopify upload error:', shopifyError);
