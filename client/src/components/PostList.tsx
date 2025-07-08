@@ -229,10 +229,19 @@ export default function PostList({
     
     try {
       // Create a date/time in the store's timezone and convert to UTC for backend
-      const { zonedTimeToUtc } = await import('date-fns-tz');
-      
-      // Parse date and time in store timezone and convert to UTC
-      const storeDateTime = zonedTimeToUtc(`${editingSchedule.date}T${editingSchedule.time}:00`, storeTimezone);
+      let storeDateTime;
+      try {
+        const { zonedTimeToUtc } = await import('date-fns-tz');
+        // Parse date and time in store timezone and convert to UTC
+        storeDateTime = zonedTimeToUtc(`${editingSchedule.date}T${editingSchedule.time}:00`, storeTimezone);
+      } catch (tzError) {
+        console.warn('Failed to use date-fns-tz, falling back to Date parsing:', tzError);
+        // Fallback: create date and adjust for timezone offset
+        const localDateTime = new Date(`${editingSchedule.date}T${editingSchedule.time}:00`);
+        // For America/New_York, add 4-5 hours to convert to UTC (depending on DST)
+        const offsetHours = storeTimezone === 'America/New_York' ? 4 : 0; // EDT offset
+        storeDateTime = new Date(localDateTime.getTime() + (offsetHours * 60 * 60 * 1000));
+      }
       
       // Optimistically update the UI immediately
       const previousData = queryClient.getQueryData([queryKey, limit, page, storeId]);
