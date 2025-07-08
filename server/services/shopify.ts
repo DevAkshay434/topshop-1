@@ -636,6 +636,11 @@ export class ShopifyService {
               optimizedUrl = optimizedUrl.replace('_1024x1024', '_600x600');
               optimizedUrl = optimizedUrl.replace('_800x800', '_600x600');
             }
+            else if (url.startsWith('/uploads/')) {
+              // Handle uploaded images - don't add query parameters to relative URLs
+              // These should be served from the local server without transformation
+              optimizedUrl = url;
+            }
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
               // Add size constraints for external images
               const separator = optimizedUrl.includes('?') ? '&' : '?';
@@ -883,6 +888,11 @@ export class ShopifyService {
                   optimizedUrl = optimizedUrl.replace('_2048x2048', '_400x400');
                   optimizedUrl = optimizedUrl.replace('_1024x1024', '_400x400');
                   optimizedUrl = optimizedUrl.replace('_800x800', '_400x400');
+                }
+                else if (url.startsWith('/uploads/')) {
+                  // Handle uploaded images - don't add query parameters to relative URLs
+                  // These should be served from the local server without transformation
+                  optimizedUrl = url;
                 }
                 else if (url.startsWith('http') && !url.includes('youtube.com')) {
                   // Add aggressive size constraints for external images
