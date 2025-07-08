@@ -4329,27 +4329,7 @@ export default function AdminPanel() {
                       />
                     </div>
                     
-                    {/* Template Controls */}
-                    <div className="mt-6 grid grid-cols-2 gap-3">
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => {
-                          setTemplateName('');
-                          setShowSaveTemplateDialog(true);
-                        }}
-                      >
-                        Save as Template
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => setShowLoadTemplateDialog(true)}
-                        disabled={templates.length === 0}
-                      >
-                        Load Template
-                      </Button>
-                    </div>
+
                     
                     {/* Sticky Generate Content button fixed to bottom of screen */}
                     <div className="sticky bottom-6 left-0 right-0 mt-8 z-10">
