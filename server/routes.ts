@@ -2919,34 +2919,33 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         });
       }
       
-      // Use timezone-aware functions
-      const { formatDate, formatTime } = await import("./services/custom-scheduler");
+      // Extract date and time from request body (already in store timezone)
+      const { scheduledPublishDate, scheduledPublishTime } = req.body;
       
-      // Format the dates for database storage
-      const formattedPublishDate = formatDate(newScheduledDate);
-      const formattedPublishTime = formatTime(newScheduledDate);
-      
-      // Update our database with the new schedule
+      // Update our database with the new schedule (keep in store timezone)
       const updatedPost = await storage.updateBlogPost(id, {
         scheduledDate: newScheduledDate,
-        scheduledPublishDate: formattedPublishDate,
-        scheduledPublishTime: formattedPublishTime,
+        scheduledPublishDate: scheduledPublishDate || newScheduledDate.toISOString().split('T')[0],
+        scheduledPublishTime: scheduledPublishTime || newScheduledDate.toTimeString().slice(0, 5),
         status: 'scheduled' // Ensure it stays in scheduled status
       });
+      
+      const displayDate = scheduledPublishDate || newScheduledDate.toISOString().split('T')[0];
+      const displayTime = scheduledPublishTime || newScheduledDate.toTimeString().slice(0, 5);
       
       // Log the rescheduling
       await storage.createSyncActivity({
         storeId: store.id,
         activity: `Rescheduled ${post.contentType === 'page' ? 'page' : 'blog post'} "${post.title}"`,
         status: 'success',
-        details: `Rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`
+        details: `Rescheduled to ${displayDate} at ${displayTime}`
       });
       
-      console.log(`Successfully rescheduled ${post.contentType || 'content'} ${id} to ${formattedPublishDate} at ${formattedPublishTime}`);
+      console.log(`Successfully rescheduled ${post.contentType || 'content'} ${id} to ${displayDate} at ${displayTime}`);
       
       return res.json({ 
         status: "success", 
-        message: `Content successfully rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`,
+        message: `Content successfully rescheduled to ${displayDate} at ${displayTime}`,
         post: updatedPost
       });
     } catch (error) {
