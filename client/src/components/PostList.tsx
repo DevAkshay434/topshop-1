@@ -385,11 +385,28 @@ export default function PostList({
 
   const getActualScheduledTime = (post: BlogPost) => {
     // For scheduled posts, show the actual current scheduled time
-    if (post.status === 'scheduled' && post.scheduledDate) {
-      const scheduledDateTime = new Date(post.scheduledDate);
-      
-      // Display in store timezone instead of user's local timezone
-      return formatInTimeZone(scheduledDateTime, storeTimezone, "MMM d, yyyy 'at' HH:mm");
+    if (post.status === 'scheduled') {
+      // Always prioritize scheduledDate as the source of truth since it's properly timezone-converted
+      if (post.scheduledDate) {
+        const scheduledDateTime = new Date(post.scheduledDate);
+        // Display in store timezone instead of user's local timezone
+        return formatInTimeZone(scheduledDateTime, storeTimezone, "MMM d, yyyy 'at' HH:mm");
+      }
+      // Fallback to scheduledPublishDate/Time if scheduledDate is missing
+      else if (post.scheduledPublishDate && post.scheduledPublishTime) {
+        try {
+          // Import zonedTimeToUtc dynamically
+          const { zonedTimeToUtc } = require('date-fns-tz');
+          const storeDateTime = zonedTimeToUtc(
+            `${post.scheduledPublishDate}T${post.scheduledPublishTime}:00`, 
+            storeTimezone
+          );
+          return formatInTimeZone(storeDateTime, storeTimezone, "MMM d, yyyy 'at' HH:mm");
+        } catch (error) {
+          console.error('Error converting fallback time:', error);
+          return `${post.scheduledPublishDate} at ${post.scheduledPublishTime}`;
+        }
+      }
     }
     return null;
   };
