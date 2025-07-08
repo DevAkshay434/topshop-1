@@ -832,9 +832,17 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Map articleType to contentType before validation
+      console.log("POST /api/posts - Before mapping - articleType:", req.body.articleType);
+      console.log("POST /api/posts - Before mapping - contentType:", req.body.contentType);
+      console.log("POST /api/posts - Full request body keys:", Object.keys(req.body));
+      
       if (req.body.articleType) {
+        console.log("POST /api/posts - Mapping articleType:", req.body.articleType, "to contentType");
         req.body.contentType = req.body.articleType;
         delete req.body.articleType;
+        console.log("POST /api/posts - After mapping - contentType:", req.body.contentType);
+      } else {
+        console.log("POST /api/posts - No articleType found in request body");
       }
       
       // Validate request body
