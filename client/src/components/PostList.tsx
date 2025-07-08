@@ -93,13 +93,30 @@ export default function PostList({
   
   const posts = data?.posts || [];
   
-  // Delete mutation
+  // Delete mutation with optimistic updates
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
       const response = await apiRequest(`/api/posts/${postId}`, {
         method: 'DELETE',
       });
       return response;
+    },
+    onMutate: async (postId: number) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [queryKey, limit, page, storeId] });
+      
+      // Snapshot previous value for rollback
+      const previousData = queryClient.getQueryData<{ posts: BlogPost[] }>([queryKey, limit, page, storeId]);
+      
+      // Optimistically update to remove the post
+      if (previousData) {
+        queryClient.setQueryData([queryKey, limit, page, storeId], {
+          posts: previousData.posts.filter(post => post.id !== postId)
+        });
+      }
+      
+      // Return context for rollback
+      return { previousData };
     },
     onSuccess: () => {
       toast({
@@ -299,15 +316,7 @@ export default function PostList({
   
   const confirmDelete = async () => {
     if (postToDelete) {
-      // Optimistically remove the post from the UI immediately
-      const previousData = queryClient.getQueryData([queryKey, limit, page, storeId]);
-      if (previousData?.posts) {
-        queryClient.setQueryData([queryKey, limit, page, storeId], {
-          posts: previousData.posts.filter((p: BlogPost) => p.id !== postToDelete.id)
-        });
-      }
-      
-      // Then perform the actual delete
+      // Perform the delete with optimistic updates handled by the mutation
       deleteMutation.mutate(postToDelete.id);
     }
   };
