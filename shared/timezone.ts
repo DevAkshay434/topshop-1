@@ -45,21 +45,16 @@ export function createDateInTimezone(
         cleanTimezone = 'America/New_York'; // Default fallback for the store
       }
       
-      // For America/New_York timezone (EST/EDT), we need to convert to UTC
-      // EST is UTC-5, EDT is UTC-4 (during daylight saving time)
-      // Since it's July, we're in EDT (UTC-4)
-      const isDST = true; // July is daylight saving time
-      const utcOffsetHours = isDST ? 4 : 5; // EDT is UTC-4, EST is UTC-5
+      // Use proper timezone conversion with date-fns-tz
+      const { zonedTimeToUtc } = require('date-fns-tz');
       
-      // Create the date in the store's timezone and convert to UTC
-      futureDate = new Date(Date.UTC(
-        year,
-        month - 1,  // JS months are 0-indexed
-        day,
-        hour + utcOffsetHours,  // Add the UTC offset to convert from store time to UTC
-        minute,
-        0
-      ));
+      // Create the local date string in ISO format
+      const localDateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`;
+      
+      console.log(`Converting local date ${localDateString} from ${cleanTimezone} to UTC`);
+      
+      // Convert from store timezone to UTC
+      futureDate = zonedTimeToUtc(localDateString, cleanTimezone);
       
       console.log(`Converted ${cleanTimezone} time to UTC: ${futureDate.toISOString()}`);
     } catch (error) {
