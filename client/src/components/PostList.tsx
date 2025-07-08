@@ -104,11 +104,17 @@ export default function PostList({
         title: "Success",
         description: "Post deleted successfully",
       });
-      // Invalidate queries to refresh the list
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/published'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      
+      // Invalidate all post-related queries with broader pattern matching
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0] as string;
+          return key?.includes('/api/posts') || key?.includes('posts');
+        }
+      });
+      
+      // Force refetch current query immediately
+      refetch();
       
       // Dispatch custom event for real-time updates
       window.dispatchEvent(new CustomEvent('postDeleted'));
