@@ -51,6 +51,14 @@ export async function apiRequest<T = any>(
   // Add store ID to headers for backend routing
   if (autoDetectedStoreId && autoDetectedStoreId !== 'null' && autoDetectedStoreId !== 'undefined') {
     headers['X-Store-ID'] = autoDetectedStoreId.toString();
+    console.log(`API request: Adding X-Store-ID header: ${autoDetectedStoreId} for ${method} ${url}`);
+  } else {
+    console.log(`API request: No auto-detected store ID available for ${method} ${url}. Value: ${autoDetectedStoreId}`);
+  }
+  
+  // Add store ID to headers for backend routing
+  if (autoDetectedStoreId && autoDetectedStoreId !== 'null' && autoDetectedStoreId !== 'undefined') {
+    headers['X-Store-ID'] = autoDetectedStoreId.toString();
     console.log(`Query client: Adding X-Store-ID header: ${autoDetectedStoreId} for URL: ${url}`);
   } else {
     console.log(`Query client: No auto-detected store ID available for URL: ${url}. Value: ${autoDetectedStoreId}`);

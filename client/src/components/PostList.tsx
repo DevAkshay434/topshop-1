@@ -265,8 +265,11 @@ export default function PostList({
       });
       
       console.log('Reschedule response:', response);
+      console.log('Response status:', response?.status);
+      console.log('Response post:', response?.post);
       
-      if (response?.status === 'success' || response?.post) {
+      // Check if response indicates success
+      if (response && (response.status === 'success' || response.post)) {
         toast({
           title: "Post Rescheduled",
           description: response.message || "Post rescheduled successfully"
@@ -281,6 +284,7 @@ export default function PostList({
         setEditingSchedule(null);
       } else {
         console.error('Unexpected response format:', response);
+        console.error('Full response object:', JSON.stringify(response, null, 2));
         toast({
           title: "Warning", 
           description: "Post may have been rescheduled, but confirmation failed. Please refresh to see changes.",
@@ -289,13 +293,19 @@ export default function PostList({
       }
     } catch (error) {
       console.error('Error rescheduling post:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        response: error?.response,
+        data: error?.data
+      });
       
       // Rollback optimistic update on error
       queryClient.invalidateQueries({ queryKey: [queryKey] });
       
       toast({
         title: "Error",
-        description: "Failed to reschedule post. Please try again.",
+        description: `Failed to reschedule post: ${error?.message || 'Unknown error'}`,
         variant: "destructive"
       });
     }
