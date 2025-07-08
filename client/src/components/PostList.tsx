@@ -264,10 +264,12 @@ export default function PostList({
         }
       });
       
-      if (response?.status === 'success') {
+      console.log('Reschedule response:', response);
+      
+      if (response?.status === 'success' || response?.post) {
         toast({
           title: "Post Rescheduled",
-          description: response.message
+          description: response.message || "Post rescheduled successfully"
         });
         
         // Dispatch event for real-time updates
@@ -277,6 +279,13 @@ export default function PostList({
         queryClient.invalidateQueries({ queryKey: [queryKey] });
         setRescheduleDialogOpen(false);
         setEditingSchedule(null);
+      } else {
+        console.error('Unexpected response format:', response);
+        toast({
+          title: "Warning", 
+          description: "Post may have been rescheduled, but confirmation failed. Please refresh to see changes.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error rescheduling post:', error);
