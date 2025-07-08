@@ -119,7 +119,8 @@ import {
   Type,
   X, 
   XCircle,
-  ZoomIn 
+  ZoomIn,
+  Star 
 } from 'lucide-react';
 import {
   DropdownMenu,
