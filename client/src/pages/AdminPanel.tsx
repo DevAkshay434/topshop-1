@@ -118,7 +118,8 @@ import {
   Trash, 
   Type,
   X, 
-  XCircle 
+  XCircle,
+  ZoomIn 
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -6510,11 +6511,11 @@ export default function AdminPanel() {
                   ))}
                 </div>
                 
-                {/* Labels Row */}
-                <div className="flex gap-3 mt-2 text-xs text-gray-500">
+                {/* Labels Row - Reduced spacing for better UI */}
+                <div className="flex gap-3 mt-1 text-xs text-gray-500">
                   {primaryImages.length > 0 && (
                     <div className="w-24 text-center flex-shrink-0">
-                      <div className="flex items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-0.5">
                         <ImageIcon className="h-3 w-3 text-blue-600" />
                         <span className="text-blue-600 font-medium">Featured</span>
                       </div>
@@ -6522,7 +6523,7 @@ export default function AdminPanel() {
                   )}
                   {secondaryImages.map((_, index) => (
                     <div key={`label-${index}`} className="w-20 text-center flex-shrink-0">
-                      <div className="flex items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-0.5">
                         <Camera className="h-3 w-3 text-green-600" />
                         <span className="text-green-600 font-medium">#{index + 1}</span>
                       </div>
@@ -6727,13 +6728,29 @@ export default function AdminPanel() {
                   {searchedImages && searchedImages.length > 0 ? searchedImages.map((image) => (
                     <div 
                       key={image.id} 
-                      className={`relative rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
+                      className={`relative group rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${image.selected ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent'}`}
                     >
                       <ShopifyImageViewer 
                         src={image.src?.medium || image.url} 
                         alt={image.alt || "Stock image"} 
                         className="w-full h-28 md:h-32 object-cover"
                       />
+                      
+                      {/* Full-size view icon */}
+                      <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-6 w-6 bg-white/90 shadow-sm hover:bg-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(image.src?.original || image.url, '_blank');
+                          }}
+                          title="View full size"
+                        >
+                          <ZoomIn className="h-3 w-3" />
+                        </Button>
+                      </div>
                       
                       {/* Source badge */}
                       <div className="absolute top-1 right-1">
@@ -6960,6 +6977,22 @@ export default function AdminPanel() {
                                 </span>
                               )}
                             </Badge>
+                          </div>
+                          
+                          {/* Full-size view icon */}
+                          <div className="absolute top-1 left-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="h-6 w-6 bg-white/90 shadow-sm hover:bg-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(image.url, '_blank');
+                              }}
+                              title="View full size"
+                            >
+                              <ZoomIn className="h-3 w-3" />
+                            </Button>
                           </div>
                           
                           {/* Selection Badges */}
@@ -7482,7 +7515,7 @@ export default function AdminPanel() {
                           return (
                             <div 
                               key={product.id} 
-                              className={`relative cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
+                              className={`relative group cursor-pointer rounded-md overflow-hidden border-2 hover:border-blue-400 transition-all ${isAlreadySelected ? 'border-green-500' : 'border-transparent'}`}
                             >
                               <div className="relative aspect-square">
                                 <ShopifyImageViewer 
@@ -7490,6 +7523,23 @@ export default function AdminPanel() {
                                   alt={product.title || 'Product image'} 
                                   className="w-full h-full bg-white"
                                 />
+                                
+                                {/* Full-size view icon */}
+                                <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="secondary"
+                                    size="icon"
+                                    className="h-6 w-6 bg-white/90 shadow-sm hover:bg-white"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(productImage, '_blank');
+                                    }}
+                                    title="View full size"
+                                  >
+                                    <ZoomIn className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                
                                 {isAlreadySelected && (
                                   <div className="absolute top-1 right-1 bg-green-500 text-white p-1 rounded-full">
                                     <Check className="h-4 w-4" />
