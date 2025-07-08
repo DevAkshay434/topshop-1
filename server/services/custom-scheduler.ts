@@ -705,13 +705,33 @@ export async function checkScheduledPosts(): Promise<void> {
           continue;
         }
         
-        // Get current time in UTC for proper comparison
-        const now = new Date();
-        console.log(`Current time in UTC: ${now.toISOString()}`);
+        // Get current time, also considering the store's timezone
+        const now = getCurrentDateInTimezone(storeTimezone);
+        console.log(`Current time in store timezone (${storeTimezone}): ${now.toISOString()}`);
         console.log(`Post ${post.id} scheduled time: ${scheduledDate.toISOString()}`);
         
-        // Compare the UTC scheduled time with current UTC time
-        const shouldPublish = scheduledDate <= now;
+        // Check if the original date/time (before any adjustments) has passed
+        let originalScheduledDate: Date | null = null;
+        if (post.scheduledPublishDate && post.scheduledPublishTime) {
+          // Recreate the original date without safety adjustments
+          const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
+          const [hour, minute] = post.scheduledPublishTime.split(':').map(Number);
+          
+          if (!isNaN(year) && !isNaN(month) && !isNaN(day) && !isNaN(hour) && !isNaN(minute)) {
+            originalScheduledDate = new Date(Date.UTC(
+              year,
+              month - 1,  // JS months are 0-indexed
+              day,
+              hour,
+              minute,
+              0
+            ));
+            console.log(`Original scheduled date (before adjustments): ${originalScheduledDate.toISOString()}`);
+          }
+        }
+        
+        // If the original scheduled time has passed OR the adjusted time is now or in the past, publish
+        const shouldPublish = (originalScheduledDate && originalScheduledDate <= now) || scheduledDate <= now;
         
         // If it's time to publish
         if (shouldPublish) {

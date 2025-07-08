@@ -5,12 +5,10 @@ import PostList from "@/components/PostList";
 import CreatePostModal from "@/components/CreatePostModal";
 import { BlogPost } from "@shared/schema";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
-import { useStore } from "../contexts/StoreContext";
 
 export default function ScheduledPosts() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
-  const { autoDetectedStoreId } = useStore();
   
   // Check if the store has the scheduling permission
   const { data: permissionsData } = useQuery<{ 
@@ -24,24 +22,6 @@ export default function ScheduledPosts() {
       console.log('Scheduled Posts - Permissions check result:', data);
     }
   });
-
-  // Get store info including timezone
-  const { data: storeInfoData } = useQuery<{
-    success: boolean;
-    shopInfo: {
-      timezone: string;
-    };
-  }>({
-    queryKey: ['/api/shopify/store-info'],
-    enabled: true
-  });
-
-  // Extract timezone from format "(GMT-05:00) America/New_York"
-  const getStoreTimezone = () => {
-    if (!storeInfoData?.shopInfo?.timezone) return 'America/New_York';
-    const timezoneMatch = storeInfoData.shopInfo.timezone.match(/\) (.+)$/);
-    return timezoneMatch ? timezoneMatch[1] : 'America/New_York';
-  };
   
   const handleEditPost = (post: BlogPost) => {
     setSelectedPost(post);
@@ -71,8 +51,6 @@ export default function ScheduledPosts() {
         queryKey="/api/posts/scheduled"
         title="Scheduled Posts"
         onEditPost={handleEditPost}
-        storeId={autoDetectedStoreId}
-        storeTimezone={getStoreTimezone()}
       />
       
       <CreatePostModal

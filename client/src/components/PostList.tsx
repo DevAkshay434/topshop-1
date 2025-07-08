@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   FileText, 
   Clock, 
@@ -11,12 +11,10 @@ import {
   Loader2,
   Radio,
   Edit3,
-  CheckCircle,
-  Trash2
+  CheckCircle
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -30,16 +28,6 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,8 +45,6 @@ interface PostListProps {
   onPageChange?: (page: number) => void;
   totalPages?: number;
   onEditPost?: (post: BlogPost) => void;
-  storeId?: number | null;
-  storeTimezone?: string;
 }
 
 export default function PostList({ 
@@ -69,9 +55,7 @@ export default function PostList({
   page = 1,
   onPageChange,
   totalPages = 1,
-  onEditPost,
-  storeId,
-  storeTimezone = 'America/New_York'
+  onEditPost
 }: PostListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,109 +63,12 @@ export default function PostList({
   const [postStatuses, setPostStatuses] = useState<Record<number, { isLive: boolean; lastChecked: Date; error?: string }>>({});
   const [editingSchedule, setEditingSchedule] = useState<{ postId: number; date: string; time: string } | null>(null);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
   
-  const { data, isLoading, error, refetch } = useQuery<{ posts: BlogPost[] }>({
-    queryKey: [queryKey, limit, page, storeId],
-    enabled: storeId !== null, // Only fetch when we have a valid store ID
-    refetchInterval: 15000, // Refetch every 15 seconds for real-time updates
-    refetchIntervalInBackground: true,
-    gcTime: 0, // Disable garbage collection to prevent stale data
-    staleTime: 0 // Always consider data stale to force refetch
+  const { data, isLoading, error } = useQuery<{ posts: BlogPost[] }>({
+    queryKey: [queryKey, limit, page],
   });
   
   const posts = data?.posts || [];
-  
-  // Delete mutation with optimistic updates
-  const deleteMutation = useMutation({
-    mutationFn: async (postId: number) => {
-      const response = await apiRequest({
-        method: 'DELETE',
-        url: `/api/posts/${postId}`
-      });
-      return response;
-    },
-    onMutate: async (postId: number) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: [queryKey, limit, page, storeId] });
-      
-      // Snapshot previous value for rollback
-      const previousData = queryClient.getQueryData<{ posts: BlogPost[] }>([queryKey, limit, page, storeId]);
-      
-      // Optimistically update to remove the post
-      if (previousData) {
-        queryClient.setQueryData([queryKey, limit, page, storeId], {
-          posts: previousData.posts.filter(post => post.id !== postId)
-        });
-      }
-      
-      // Return context for rollback
-      return { previousData };
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Post deleted successfully",
-      });
-      
-      // Clear all post-related queries from cache to force fresh data
-      queryClient.removeQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey[0] as string;
-          return key?.includes('/api/posts') || key?.includes('posts');
-        }
-      });
-      
-      // Clear specific query cache
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/published'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/recent'] });
-      
-      // Force refetch current query immediately
-      refetch();
-      
-      // Dispatch custom event for real-time updates
-      window.dispatchEvent(new CustomEvent('postDeleted'));
-      setDeleteDialogOpen(false);
-      setPostToDelete(null);
-    },
-    onError: (error: any, variables, context) => {
-      // Rollback optimistic update on error
-      if (context?.previousData) {
-        queryClient.setQueryData([queryKey, limit, page, storeId], context.previousData);
-      }
-      
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete post",
-        variant: "destructive",
-      });
-      setDeleteDialogOpen(false);
-      setPostToDelete(null);
-    },
-  });
-  
-  // Listen for post creation/updates to refresh list immediately
-  useEffect(() => {
-    const handlePostCreated = () => {
-      console.log('Post created/updated - refreshing list');
-      refetch();
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
-    };
-
-    // Listen for custom events
-    window.addEventListener('postCreated', handlePostCreated);
-    window.addEventListener('postUpdated', handlePostCreated);
-    window.addEventListener('postDeleted', handlePostCreated);
-
-    return () => {
-      window.removeEventListener('postCreated', handlePostCreated);
-      window.removeEventListener('postUpdated', handlePostCreated);
-      window.removeEventListener('postDeleted', handlePostCreated);
-    };
-  }, [refetch, queryClient, queryKey]);
   
   // Check status for scheduled posts periodically
   useEffect(() => {
@@ -228,98 +115,37 @@ export default function PostList({
     if (!editingSchedule) return;
     
     try {
-      // Keep the date/time in store timezone - don't convert to UTC
-      const storeDateTime = new Date(`${editingSchedule.date}T${editingSchedule.time}:00`);
-      
-      // Optimistically update the UI immediately
-      const previousData = queryClient.getQueryData([queryKey, limit, page, storeId]);
-      if (previousData?.posts) {
-        const updatedPosts = previousData.posts.map((post: BlogPost) => {
-          if (post.id === editingSchedule.postId) {
-            return {
-              ...post,
-              scheduledDate: storeDateTime.toISOString(),
-              scheduledPublishDate: editingSchedule.date,
-              scheduledPublishTime: editingSchedule.time
-            };
-          }
-          return post;
-        });
-        
-        queryClient.setQueryData([queryKey, limit, page, storeId], {
-          posts: updatedPosts
-        });
-      }
-      
-      const response = await apiRequest({
-        method: 'POST',
-        url: `/api/posts/${editingSchedule.postId}/reschedule`,
-        data: {
-          scheduledDate: storeDateTime.toISOString(),
-          scheduledPublishDate: editingSchedule.date,
-          scheduledPublishTime: editingSchedule.time
-        }
+      const scheduledDateTime = `${editingSchedule.date}T${editingSchedule.time}:00`;
+      const response = await apiRequest('POST', `/api/posts/${editingSchedule.postId}/reschedule`, {
+        scheduledDate: scheduledDateTime,
+        scheduledPublishDate: editingSchedule.date,
+        scheduledPublishTime: editingSchedule.time
       });
       
-      console.log('Reschedule response:', response);
-      console.log('Response status:', response?.status);
-      console.log('Response post:', response?.post);
-      
-      // Check if response indicates success
-      if (response && (response.status === 'success' || response.post)) {
+      if (response?.status === 'success') {
         toast({
           title: "Post Rescheduled",
-          description: response.message || "Post rescheduled successfully"
+          description: response.message
         });
         
-        // Dispatch event for real-time updates
-        window.dispatchEvent(new CustomEvent('postUpdated'));
-        
-        // Refresh data to ensure consistency
+        // Refresh data
         queryClient.invalidateQueries({ queryKey: [queryKey] });
         setRescheduleDialogOpen(false);
         setEditingSchedule(null);
-      } else {
-        console.error('Unexpected response format:', response);
-        console.error('Full response object:', JSON.stringify(response, null, 2));
-        toast({
-          title: "Warning", 
-          description: "Post may have been rescheduled, but confirmation failed. Please refresh to see changes.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       console.error('Error rescheduling post:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        stack: error?.stack,
-        response: error?.response,
-        data: error?.data
-      });
-      
-      // Rollback optimistic update on error
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
-      
       toast({
         title: "Error",
-        description: `Failed to reschedule post: ${error?.message || 'Unknown error'}`,
+        description: "Failed to reschedule post. Please try again.",
         variant: "destructive"
       });
     }
   };
   
   const openRescheduleDialog = (post: BlogPost) => {
-    // Use the actual scheduled date/time from scheduledDate if available, otherwise fall back to original values
-    let currentDate = post.scheduledPublishDate || format(new Date(), 'yyyy-MM-dd');
-    let currentTime = post.scheduledPublishTime || '09:30';
-    
-    // If post has been rescheduled, use the updated scheduledDate
-    if (post.scheduledDate) {
-      const scheduledDateTime = new Date(post.scheduledDate);
-      // Convert UTC time to store timezone for editing
-      currentDate = formatInTimeZone(scheduledDateTime, storeTimezone, 'yyyy-MM-dd');
-      currentTime = formatInTimeZone(scheduledDateTime, storeTimezone, 'HH:mm');
-    }
+    const currentDate = post.scheduledPublishDate || format(new Date(), 'yyyy-MM-dd');
+    const currentTime = post.scheduledPublishTime || '09:30';
     
     setEditingSchedule({
       postId: post.id,
@@ -327,19 +153,6 @@ export default function PostList({
       time: currentTime
     });
     setRescheduleDialogOpen(true);
-  };
-  
-  // Handle delete with confirmation
-  const handleDeletePost = (post: BlogPost) => {
-    setPostToDelete(post);
-    setDeleteDialogOpen(true);
-  };
-  
-  const confirmDelete = async () => {
-    if (postToDelete) {
-      // Perform the delete with optimistic updates handled by the mutation
-      deleteMutation.mutate(postToDelete.id);
-    }
   };
   
   const handleViewAnalytics = (post: BlogPost) => {
@@ -417,34 +230,6 @@ export default function PostList({
   const formatDate = (date: Date | null) => {
     if (!date) return "";
     return format(new Date(date), "MMM d, yyyy");
-  };
-
-  const getActualScheduledTime = (post: BlogPost) => {
-    // For scheduled posts, show the actual current scheduled time
-    if (post.status === 'scheduled') {
-      // Always prioritize scheduledDate as the source of truth since it's properly timezone-converted
-      if (post.scheduledDate) {
-        const scheduledDateTime = new Date(post.scheduledDate);
-        // Display in store timezone instead of user's local timezone
-        return formatInTimeZone(scheduledDateTime, storeTimezone, "MMM d, yyyy 'at' HH:mm");
-      }
-      // Fallback to scheduledPublishDate/Time if scheduledDate is missing
-      else if (post.scheduledPublishDate && post.scheduledPublishTime) {
-        try {
-          // Import zonedTimeToUtc dynamically
-          const { zonedTimeToUtc } = require('date-fns-tz');
-          const storeDateTime = zonedTimeToUtc(
-            `${post.scheduledPublishDate}T${post.scheduledPublishTime}:00`, 
-            storeTimezone
-          );
-          return formatInTimeZone(storeDateTime, storeTimezone, "MMM d, yyyy 'at' HH:mm");
-        } catch (error) {
-          console.error('Error converting fallback time:', error);
-          return `${post.scheduledPublishDate} at ${post.scheduledPublishTime}`;
-        }
-      }
-    }
-    return null;
   };
   
   if (isLoading) {
@@ -537,7 +322,7 @@ export default function PostList({
                             {post.status === "published" 
                               ? formatDate(post.publishedDate)
                               : post.status === "scheduled"
-                                ? getActualScheduledTime(post) || formatDate(post.scheduledDate)
+                                ? formatDate(post.scheduledDate)
                                 : "Draft"}
                           </span>
                         </p>
@@ -638,12 +423,8 @@ export default function PostList({
                               )}
                               <DropdownMenuItem 
                                 className="text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeletePost(post);
-                                }}
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -750,43 +531,6 @@ export default function PostList({
           </div>
         </DialogContent>
       </Dialog>
-      
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Post</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{postToDelete?.title}"? This action cannot be undone.
-              {postToDelete?.shopifyPostId && (
-                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                  <strong>Note:</strong> This post has been published to Shopify and will also be deleted from your store.
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Post
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

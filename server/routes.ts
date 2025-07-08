@@ -37,7 +37,6 @@ import {
 } from './services/oauth';
 import { generateBlogContentWithHF } from './services/huggingface';
 import { PLANS, PlanType, createSubscription, getSubscriptionStatus, cancelSubscription } from './services/billing';
-import { createDateInTimezone } from '@shared/timezone';
 
 // Configure multer for image uploads
 const upload = multer({
@@ -831,20 +830,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         console.log("POST /api/posts - Converted authorId to number:", req.body.authorId);
       }
       
-      // Map articleType to contentType before validation
-      console.log("POST /api/posts - Before mapping - articleType:", req.body.articleType);
-      console.log("POST /api/posts - Before mapping - contentType:", req.body.contentType);
-      console.log("POST /api/posts - Full request body keys:", Object.keys(req.body));
-      
-      if (req.body.articleType) {
-        console.log("POST /api/posts - Mapping articleType:", req.body.articleType, "to contentType");
-        req.body.contentType = req.body.articleType;
-        delete req.body.articleType;
-        console.log("POST /api/posts - After mapping - contentType:", req.body.contentType);
-      } else {
-        console.log("POST /api/posts - No articleType found in request body");
-      }
-      
       // Validate request body
       let postData;
       try {
@@ -874,7 +859,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           // Set scheduledDate for compatibility with old code
           if (postData.scheduledPublishDate && postData.scheduledPublishTime) {
             try {
-              // Using imported createDateInTimezone function
+              const { createDateInTimezone } = await import('../shared/timezone');
               // Get store timezone from Shopify
               const connection = await storage.getShopifyConnection();
               const shopifyService = await import('./services/shopify').then(module => module.shopifyService);
@@ -1024,7 +1009,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                 const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
                 console.log(`Using timezone: ${timezone} for scheduling`);
                 
-                // Use timezone-aware date creation function
+                // Import the timezone-aware date creation function
+                const { createDateInTimezone } = await import('@shared/timezone');
                 
                 // Create a proper Date object in the store's timezone
                 scheduledPublishDate = createDateInTimezone(
@@ -1446,7 +1432,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
                 
                 // Create a date in the shop's timezone
-                // Using imported createDateInTimezone function
+                const { createDateInTimezone } = await import('@shared/timezone');
                 scheduledPublishDate = createDateInTimezone(
                   post.scheduledPublishDate,
                   post.scheduledPublishTime,
@@ -1504,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Delete a blog post with multi-store support
+  // Delete a blog post
   apiRouter.delete("/posts/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -1513,67 +1499,69 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "Invalid ID" });
       }
       
-      console.log(`DELETE /api/posts/${id} - Starting delete process`);
-      
-      // Get store context for multi-store support
-      const store = await getStoreFromRequest(req);
-      if (!store) {
-        return res.status(400).json({ error: "Store context required" });
-      }
-      
-      // Check if post exists and belongs to this store
+      // Check if post exists
       const post = await storage.getBlogPost(id);
       
       if (!post) {
         return res.status(404).json({ error: "Post not found" });
       }
       
-      // Verify post belongs to the requesting store
-      if (post.storeId && post.storeId !== store.id) {
-        return res.status(403).json({ error: "Post does not belong to this store" });
-      }
-      
-      console.log(`Deleting post "${post.title}" (ID: ${id}) from store ${store.shopName}`);
-      
-      // If post has a Shopify ID, delete from Shopify first
-      if (post.shopifyPostId && store.isConnected && store.defaultBlogId) {
-        try {
-          // Initialize the Shopify service with the correct store
-          shopifyService.initializeClient(store);
-          
-          await shopifyService.deleteArticle(store, store.defaultBlogId, post.shopifyPostId);
-          
-          console.log(`Successfully deleted post "${post.title}" from Shopify (Article ID: ${post.shopifyPostId})`);
-          
-          // Create sync activity for successful Shopify deletion
-          await storage.createSyncActivity({
-            activity: `Deleted "${post.title}" from Shopify`,
-            status: "success",
-            details: `Successfully deleted from Shopify blog ${store.defaultBlogId}`,
-            storeId: store.id
-          });
-        } catch (shopifyError: any) {
-          // Log error but don't fail the request - still delete from local database
-          console.error(`Error deleting post "${post.title}" from Shopify:`, shopifyError);
-          
-          // Create sync activity for failed Shopify deletion
-          await storage.createSyncActivity({
-            activity: `Failed to delete "${post.title}" from Shopify`,
-            status: "failed",
-            details: shopifyError.message,
-            storeId: store.id
-          });
+      // If post has a Shopify ID, delete from Shopify
+      if (post.shopifyPostId) {
+        const connection = await storage.getShopifyConnection();
+        
+        if (connection && connection.isConnected && connection.defaultBlogId) {
+          try {
+            // Get function references
+            const { setConnection, deleteArticle } = shopifyService;
+            
+            // Set connection first
+            setConnection(connection);
+            
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
+            
+            await deleteArticle(tempStore, connection.defaultBlogId, post.shopifyPostId);
+            
+            // Create sync activity
+            await storage.createSyncActivity({
+              activity: `Deleted "${post.title}" from Shopify`,
+              status: "success",
+              details: `Successfully deleted from Shopify`
+            });
+          } catch (shopifyError: any) {
+            // Log error but don't fail the request
+            console.error("Error deleting from Shopify:", shopifyError);
+            
+            // Create sync activity
+            await storage.createSyncActivity({
+              activity: `Failed to delete "${post.title}" from Shopify`,
+              status: "failed",
+              details: shopifyError.message
+            });
+          }
         }
       }
       
-      // Delete post from local database
+      // Delete post from storage
       const result = await storage.deleteBlogPost(id);
       
       if (!result) {
-        return res.status(500).json({ error: "Failed to delete post from database" });
+        return res.status(500).json({ error: "Failed to delete post" });
       }
-      
-      console.log(`Successfully deleted post "${post.title}" (ID: ${id}) from database`);
       
       res.json({ success: true });
     } catch (error: any) {
@@ -2919,33 +2907,34 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         });
       }
       
-      // Extract date and time from request body (already in store timezone)
-      const { scheduledPublishDate, scheduledPublishTime } = req.body;
+      // Use timezone-aware functions
+      const { formatDate, formatTime } = await import("./services/custom-scheduler");
       
-      // Update our database with the new schedule (keep in store timezone)
+      // Format the dates for database storage
+      const formattedPublishDate = formatDate(newScheduledDate);
+      const formattedPublishTime = formatTime(newScheduledDate);
+      
+      // Update our database with the new schedule
       const updatedPost = await storage.updateBlogPost(id, {
         scheduledDate: newScheduledDate,
-        scheduledPublishDate: scheduledPublishDate || newScheduledDate.toISOString().split('T')[0],
-        scheduledPublishTime: scheduledPublishTime || newScheduledDate.toTimeString().slice(0, 5),
+        scheduledPublishDate: formattedPublishDate,
+        scheduledPublishTime: formattedPublishTime,
         status: 'scheduled' // Ensure it stays in scheduled status
       });
-      
-      const displayDate = scheduledPublishDate || newScheduledDate.toISOString().split('T')[0];
-      const displayTime = scheduledPublishTime || newScheduledDate.toTimeString().slice(0, 5);
       
       // Log the rescheduling
       await storage.createSyncActivity({
         storeId: store.id,
         activity: `Rescheduled ${post.contentType === 'page' ? 'page' : 'blog post'} "${post.title}"`,
         status: 'success',
-        details: `Rescheduled to ${displayDate} at ${displayTime}`
+        details: `Rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`
       });
       
-      console.log(`Successfully rescheduled ${post.contentType || 'content'} ${id} to ${displayDate} at ${displayTime}`);
+      console.log(`Successfully rescheduled ${post.contentType || 'content'} ${id} to ${formattedPublishDate} at ${formattedPublishTime}`);
       
       return res.json({ 
         status: "success", 
-        message: `Content successfully rescheduled to ${displayDate} at ${displayTime}`,
+        message: `Content successfully rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`,
         post: updatedPost
       });
     } catch (error) {
