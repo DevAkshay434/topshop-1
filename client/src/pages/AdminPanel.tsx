@@ -4272,51 +4272,7 @@ export default function AdminPanel() {
                             </div>
                           </div>
                         )}
-                        {/* Generate Images Section - Moved to bottom */}
-                        <div className="mb-4">
-                          <FormField
-                            control={form.control}
-                            name="generateImages"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                  <FormLabel>
-                                    Generate Images
-                                  </FormLabel>
-                                  <FormDescription>
-                                    Select images for your content from Pexels
-                                  </FormDescription>
-                                  {field.value && (
-                                    <Button 
-                                      type="button" 
-                                      variant="outline" 
-                                      className="mt-2" 
-                                      onClick={() => {
-                                        // Close any existing dialogs first to prevent overlap
-                                        if (showChooseMediaDialog) {
-                                          setShowChooseMediaDialog(false);
-                                          setTimeout(() => setShowImageDialog(true), 300);
-                                        } else {
-                                          setShowImageDialog(true);
-                                        }
-                                      }}
-                                    >
-                                      {Array.isArray(selectedImages) && selectedImages.length > 0 
-                                        ? `${selectedImages.length} Image(s) Selected` 
-                                        : "Search & Select Images"}
-                                    </Button>
-                                  )}
-                                </div>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+
 
                         {/* Image Selection Dialog */}
                         <ImageSearchDialog
