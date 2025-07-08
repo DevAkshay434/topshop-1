@@ -6724,7 +6724,14 @@ export default function AdminPanel() {
                   <span className="ml-2">Searching for images...</span>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-2">
+                <>
+                  {/* Debug info */}
+                  {searchedImages.length > 0 && (
+                    <div className="text-xs text-gray-500 mb-2 p-2 bg-gray-50 rounded">
+                      Showing {searchedImages.length} images (including {searchedImages.filter(img => img.source === 'uploaded').length} uploaded)
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto p-2">
                   {searchedImages && searchedImages.length > 0 ? searchedImages.map((image) => {
                     console.log('Rendering image:', image);
                     return (
@@ -6891,6 +6898,7 @@ export default function AdminPanel() {
                     )
                   )}
                 </div>
+                </>
               )}
               
               {!isSearchingImages && searchedImages.length === 0 && imageSearchQuery && (
