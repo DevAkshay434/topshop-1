@@ -40,33 +40,35 @@ export function createDateInTimezone(
     let futureDate: Date;
     
     try {
-      // For America/New_York timezone (EST/EDT), we need to convert to UTC
-      // Since it's July 2025, we're in EDT (UTC-4)
-      const isDST = true; // July is daylight saving time
-      const utcOffsetHours = isDST ? 4 : 5; // EDT is UTC-4, EST is UTC-5
+      // Use date-fns-tz for proper timezone conversion regardless of store timezone
+      const { zonedTimeToUtc } = require('date-fns-tz');
       
-      // Create the date in the store's timezone and convert to UTC
-      futureDate = new Date(Date.UTC(
-        year,
-        month - 1,  // JS months are 0-indexed
-        day,
-        hour + utcOffsetHours,  // Add the UTC offset to convert from store time to UTC
-        minute,
-        0
-      ));
+      // Create a date string in ISO format for the store timezone
+      const dateTimeString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+      console.log(`Creating datetime string: ${dateTimeString} in timezone: ${cleanTimezone}`);
       
+      // Convert from store timezone to UTC
+      futureDate = zonedTimeToUtc(dateTimeString, cleanTimezone);
       console.log(`Converted ${cleanTimezone} time to UTC: ${futureDate.toISOString()}`);
+      
+      // Fallback using manual UTC offset calculation if date-fns-tz fails
     } catch (error) {
-      console.error('Error with timezone conversion, falling back to UTC:', error);
-      // Fallback to UTC if timezone conversion fails
+      console.warn(`Failed to use date-fns-tz for timezone conversion: ${error.message}`);
+      console.log(`Falling back to manual timezone offset calculation`);
+      
+      // If date-fns-tz fails, use Intl.DateTimeFormat for timezone offset
+      const timeZoneOffset = getTimezoneOffset(cleanTimezone);
+      
       futureDate = new Date(Date.UTC(
         year,
         month - 1,  // JS months are 0-indexed
         day,
-        hour,
+        hour + timeZoneOffset,  // Add the UTC offset to convert from store time to UTC
         minute,
         0
       ));
+      
+      console.log(`Converted ${cleanTimezone} time to UTC using offset ${timeZoneOffset}: ${futureDate.toISOString()}`);
     }
     
     console.log(`Created future date in UTC: ${futureDate.toISOString()}`);
@@ -200,4 +202,50 @@ export function getTomorrowInTimezone(timezone: string = 'UTC'): Date {
  */
 export function formatToISOForStorage(date: Date): string {
   return date.toISOString();
+}
+
+/**
+ * Get the timezone offset in hours for a given IANA timezone
+ * 
+ * @param timezone The IANA timezone string (e.g., 'America/New_York')
+ * @returns The offset in hours to add to local time to get UTC
+ */
+export function getTimezoneOffset(timezone: string): number {
+  try {
+    // Create a date object for the current time in the specified timezone
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    
+    // Get the time in the specified timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    const parts = formatter.formatToParts(now);
+    const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+    const month = parseInt(parts.find(p => p.type === 'month')?.value || '0');
+    const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+    const second = parseInt(parts.find(p => p.type === 'second')?.value || '0');
+    
+    // Create a date object from the timezone-specific components
+    const localTime = new Date(year, month - 1, day, hour, minute, second);
+    
+    // Calculate the offset in hours
+    const offset = (utcTime - localTime.getTime()) / (1000 * 60 * 60);
+    
+    console.log(`Timezone ${timezone} offset: ${offset} hours`);
+    return Math.round(offset);
+  } catch (error) {
+    console.error(`Error calculating timezone offset for ${timezone}:`, error);
+    return 0; // Fallback to UTC if calculation fails
+  }
 }
