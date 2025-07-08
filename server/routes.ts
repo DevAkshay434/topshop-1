@@ -138,61 +138,122 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       try {
-        // Try to upload to Shopify Files API using REST API (simpler approach)
-        console.log('Uploading file to Shopify:', req.file.originalname, req.file.mimetype);
+        // Upload to Shopify Files API using GraphQL (proper approach for content images)
+        console.log('Uploading file to Shopify Files API:', req.file.originalname, req.file.mimetype);
 
         // Convert to base64 for Shopify upload
         const base64Data = req.file.buffer.toString('base64');
         
-        const shopifyPayload = {
-          file: {
-            attachment: base64Data,
-            filename: req.file.originalname,
-            content_type: req.file.mimetype
-          }
-        };
-
-        console.log('Shopify API payload prepared for:', req.file.originalname);
-
-        // Try uploading directly to Shopify store's assets
-        const assetsUrl = `https://${store.shopName}/admin/api/2025-07/themes/${await getMainThemeId(store)}/assets.json`;
+        // Generate a unique filename to avoid conflicts
+        const timestamp = Date.now();
+        const fileExtension = path.extname(req.file.originalname);
+        const baseName = path.basename(req.file.originalname, fileExtension);
+        const uniqueFilename = `${baseName}-${timestamp}${fileExtension}`;
         
-        const assetPayload = {
-          asset: {
-            key: `assets/${req.file.originalname}`,
-            attachment: base64Data
+        // Use GraphQL mutation to upload file to Shopify Files API
+        const mutation = `
+          mutation fileCreate($files: [FileCreateInput!]!) {
+            fileCreate(files: $files) {
+              files {
+                id
+                fileStatus
+                ... on GenericFile {
+                  id
+                  url
+                  mimeType
+                  originalFileSize
+                  createdAt
+                }
+                ... on MediaImage {
+                  id
+                  image {
+                    id
+                    url
+                    altText
+                    width
+                    height
+                  }
+                  mimeType
+                  originalSource {
+                    url
+                  }
+                  createdAt
+                }
+              }
+              userErrors {
+                field
+                message
+              }
+            }
           }
+        `;
+
+        const variables = {
+          files: [
+            {
+              alt: req.file.originalname.split('.')[0],
+              contentType: "IMAGE",
+              originalSource: `data:${req.file.mimetype};base64,${base64Data}`,
+              filename: uniqueFilename
+            }
+          ]
         };
 
-        console.log('Trying Shopify assets upload to:', assetsUrl);
+        console.log('Uploading to Shopify Files API with filename:', uniqueFilename);
 
-        const shopifyResponse = await axios.put(
-          assetsUrl,
-          assetPayload,
+        const shopifyResponse = await axios.post(
+          `https://${store.shopName}/admin/api/2025-07/graphql.json`,
+          {
+            query: mutation,
+            variables: variables
+          },
           {
             headers: {
               'X-Shopify-Access-Token': store.accessToken,
               'Content-Type': 'application/json'
             },
-            timeout: 30000
+            timeout: 60000 // Increase timeout for file uploads
           }
         );
 
-        console.log('Shopify upload response status:', shopifyResponse.status);
-        console.log('Shopify upload response data:', JSON.stringify(shopifyResponse.data, null, 2));
+        console.log('Shopify Files API response status:', shopifyResponse.status);
+        console.log('Shopify Files API response data:', JSON.stringify(shopifyResponse.data, null, 2));
 
-        const assetData = shopifyResponse.data?.asset;
-        if (assetData && assetData.public_url) {
-          console.log('Successfully uploaded to Shopify assets:', assetData.public_url);
-          res.json({ 
-            success: true, 
-            url: assetData.public_url,
-            filename: req.file.originalname,
-            shopifyAssetKey: assetData.key,
-            source: 'shopify' 
-          });
+        const fileData = shopifyResponse.data?.data?.fileCreate;
+        if (fileData && fileData.files && fileData.files.length > 0) {
+          const uploadedFile = fileData.files[0];
+          
+          // Check for errors
+          if (fileData.userErrors && fileData.userErrors.length > 0) {
+            console.error('Shopify Files API errors:', fileData.userErrors);
+            throw new Error(`Shopify Files API error: ${fileData.userErrors[0].message}`);
+          }
+          
+          // Extract URL from different file types
+          let fileUrl = '';
+          if (uploadedFile.image && uploadedFile.image.url) {
+            fileUrl = uploadedFile.image.url;
+          } else if (uploadedFile.url) {
+            fileUrl = uploadedFile.url;
+          } else if (uploadedFile.originalSource && uploadedFile.originalSource.url) {
+            fileUrl = uploadedFile.originalSource.url;
+          }
+          
+          if (fileUrl) {
+            console.log('Successfully uploaded to Shopify Files API:', fileUrl);
+            res.json({ 
+              success: true, 
+              url: fileUrl,
+              filename: req.file.originalname,
+              shopifyFileId: uploadedFile.id,
+              fileStatus: uploadedFile.fileStatus,
+              source: 'shopify' 
+            });
+          } else {
+            throw new Error(`Shopify Files API upload failed: No URL returned`);
+          }
         } else {
-          throw new Error(`Shopify assets upload failed: No public URL returned`);
+          throw new Error(`Shopify Files API upload failed: No files returned`);
         }
       } catch (shopifyError) {
         console.error('Shopify upload error:', shopifyError);

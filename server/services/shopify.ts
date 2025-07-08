@@ -641,6 +641,10 @@ export class ShopifyService {
               // These should be served from the local server without transformation
               optimizedUrl = url;
             }
+            else if (url.includes('shopify.com/s/files/')) {
+              // Handle Shopify Files API URLs - these are already optimized
+              optimizedUrl = url;
+            }
             else if (url.startsWith('http') && !url.includes('youtube.com')) {
               // Add size constraints for external images
               const separator = optimizedUrl.includes('?') ? '&' : '?';
