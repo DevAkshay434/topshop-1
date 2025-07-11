@@ -65,6 +65,7 @@ export function ChooseMediaDialog({
   const [searchInProgress, setSearchInProgress] = useState<boolean>(false);
   const [youtubeUrl, setYoutubeUrl] = useState<string>('');
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<MediaImage[]>([]);
 
   // Enhanced method to get selected product ID from any available source
   const getSelectedProductId = () => {
@@ -126,6 +127,114 @@ export function ChooseMediaDialog({
       setSelectedImages(initialSelectedImages);
     }
   }, [initialSelectedImages]);
+
+  // Handle file upload functionality
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Validate file types and sizes
+    const validFiles = Array.from(files).filter(file => {
+      const isValidType = file.type.startsWith('image/');
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      
+      if (!isValidType) {
+        toast({
+          title: "Invalid file type",
+          description: `${file.name} is not a valid image file`,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      if (!isValidSize) {
+        toast({
+          title: "File too large",
+          description: `${file.name} is larger than 10MB`,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      return true;
+    });
+
+    if (validFiles.length === 0) {
+      // Reset input
+      event.target.value = '';
+      return;
+    }
+
+    // Upload files
+    setIsLoading(true);
+    const uploadPromises = validFiles.map(async (file) => {
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+          const uploadedImage: MediaImage = {
+            id: `uploaded-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            url: result.url,
+            alt: file.name,
+            title: file.name,
+            filename: file.name,
+            source: 'uploaded',
+            selected: false,
+            isPrimary: false
+          };
+          
+          return uploadedImage;
+        } else {
+          throw new Error(result.message || 'Upload failed');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast({
+          title: "Upload failed",
+          description: `Failed to upload ${file.name}`,
+          variant: "destructive"
+        });
+        return null;
+      }
+    });
+
+    try {
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter(Boolean) as MediaImage[];
+      
+      if (successfulUploads.length > 0) {
+        setUploadedImages(prev => [...prev, ...successfulUploads]);
+        
+        toast({
+          title: "Upload successful",
+          description: `${successfulUploads.length} image(s) uploaded successfully`
+        });
+      }
+    } catch (error) {
+      console.error('Upload process error:', error);
+      toast({
+        title: "Upload error",
+        description: "Some uploads failed. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+      // Reset input
+      event.target.value = '';
+    }
+  };
 
   // We've removed the Shopify Media Library functionality
   // as per the simplified UI requirements
@@ -525,12 +634,20 @@ export function ChooseMediaDialog({
         </DialogHeader>
 
         <Tabs defaultValue="primary_images" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="primary_images">
               Primary Images
             </TabsTrigger>
             <TabsTrigger value="secondary_images">
               Secondary Images
+            </TabsTrigger>
+            <TabsTrigger value="uploaded">
+              <div className="flex items-center space-x-2">
+                <span>Uploaded</span>
+                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                  {uploadedImages.length}
+                </span>
+              </div>
             </TabsTrigger>
             <TabsTrigger value="youtube">
               YouTube Video
@@ -606,6 +723,79 @@ export function ChooseMediaDialog({
               </TabsContent>
             </Tabs>
           </TabsContent>
+          
+          <TabsContent value="uploaded" className="space-y-4">
+            <div className="rounded-md bg-purple-50 p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <ImageIcon className="h-5 w-5 text-purple-400" aria-hidden="true" />
+                </div>
+                <div className="ml-3 flex-1 md:flex md:justify-between">
+                  <p className="text-sm text-purple-700">
+                    Upload your own images to use in your content
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <ImagePlus className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600 mb-2">Upload images</p>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                id="upload-images-dialog"
+                onChange={handleFileUpload}
+              />
+              <label htmlFor="upload-images-dialog" className="cursor-pointer">
+                <Button variant="outline" asChild>
+                  <span>Choose Files</span>
+                </Button>
+              </label>
+              <p className="text-xs text-gray-500 mt-2">
+                Support: JPG, PNG, WebP. Max size: 10MB per file
+              </p>
+            </div>
+            
+            {/* Display uploaded images */}
+            {uploadedImages.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {uploadedImages.map((image) => {
+                  const isSelected = selectedImages.some(img => img.id === image.id);
+                  return (
+                    <div 
+                      key={image.id} 
+                      className={`
+                        relative cursor-pointer border-2 rounded-md overflow-hidden
+                        ${isSelected ? 'border-purple-500' : 'border-gray-100 hover:border-gray-300'}
+                      `}
+                      onClick={() => toggleImageSelection(image)}
+                    >
+                      <div className="aspect-square bg-gray-50 overflow-hidden relative">
+                        <ShopifyImageViewer
+                          src={image.url}
+                          alt={image.alt || 'Uploaded image'}
+                          className="w-full h-full object-cover"
+                        />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-purple-500 bg-opacity-20 flex items-center justify-center">
+                            <Check className="h-6 w-6 text-white bg-purple-500 rounded-full p-1" />
+                          </div>
+                        )}
+                        <div className="absolute top-2 left-2 bg-purple-500 text-white text-xs px-2 py-1 rounded">
+                          Uploaded
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+          
           <TabsContent value="youtube" className="space-y-4">
             <div className="rounded-md bg-red-50 p-4 mb-4">
               <div className="flex">
