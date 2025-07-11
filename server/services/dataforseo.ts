@@ -1020,7 +1020,9 @@ export class DataForSEOService {
       clothing: [
         'jacket', 'coat', 'sweater', 'shoes', 'boots', 'pants', 'jeans', 'shirt', 't-shirt',
         'hoodie', 'sweatshirt', 'dress', 'skirt', 'hat', 'cap', 'beanie', 'gloves', 'socks',
-        'underwear', 'activewear', 'sportswear', 'workout clothes', 'gym clothes', 'shorts'
+        'underwear', 'activewear', 'sportswear', 'workout clothes', 'gym clothes', 'shorts',
+        'sports shoes', 'athletic shoes', 'running shoes', 'sneakers', 'tennis shoes', 'basketball shoes',
+        'casual shoes', 'dress shoes', 'sandals', 'flip flops', 'high heels', 'loafers'
       ],
       
       // Electronics
@@ -1094,11 +1096,11 @@ export class DataForSEOService {
     // Determine which category this product likely belongs to
     let categoryType: keyof typeof categoryKeywords | null = null;
     
-    // Check for water treatment products first (primary focus of the app)
-    if (normalizedInput.includes('water') || 
-        normalizedInput.includes('softener') || 
-        normalizedInput.includes('conditioner') || 
-        normalizedInput.includes('filter')) {
+    // Check for water treatment products first (only if actually water-related)
+    if ((normalizedInput.includes('water') && (normalizedInput.includes('softener') || normalizedInput.includes('conditioner') || normalizedInput.includes('filter'))) ||
+        (normalizedInput.includes('softener') && normalizedInput.includes('water')) ||
+        (normalizedInput.includes('conditioner') && normalizedInput.includes('water')) ||
+        (normalizedInput.includes('filter') && normalizedInput.includes('water'))) {
       categoryType = 'waterTreatment';
     } 
     // Check for clothing products
@@ -1107,7 +1109,11 @@ export class DataForSEOService {
              normalizedInput.includes('shirt') || 
              normalizedInput.includes('pant') || 
              normalizedInput.includes('shoe') || 
-             normalizedInput.includes('boot')) {
+             normalizedInput.includes('boot') ||
+             normalizedInput.includes('sports shoes') ||
+             normalizedInput.includes('athletic shoes') ||
+             normalizedInput.includes('running shoes') ||
+             normalizedInput.includes('sneakers')) {
       categoryType = 'clothing';
     }
     // Check for electronics
@@ -1167,14 +1173,14 @@ export class DataForSEOService {
       if (categoryType === 'waterTreatment') {
         // Add specific water treatment terms in order of relevance
         if (normalizedInput.includes('softener')) {
-          terms.unshift('water softener'); // Add to front of array if it's specifically a softener
+          if (!terms.includes('water softener')) terms.unshift('water softener');
         } else if (normalizedInput.includes('filter')) {
-          terms.unshift('water filter');
+          if (!terms.includes('water filter')) terms.unshift('water filter');
         } else if (normalizedInput.includes('conditioner')) {
-          terms.unshift('water conditioner');
-        } else {
-          // Generic water treatment terms
-          terms.unshift('water treatment system');
+          if (!terms.includes('water conditioner')) terms.unshift('water conditioner');
+        } else if (normalizedInput.includes('water')) {
+          // Only add generic water treatment terms if the input actually contains 'water'
+          if (!terms.includes('water treatment system')) terms.unshift('water treatment system');
         }
         
         // Add salt free specific terms if applicable
@@ -1203,6 +1209,11 @@ export class DataForSEOService {
           if (!terms.includes('jacket styles')) terms.push('jacket styles');
         }
         if (normalizedInput.includes('shoe') || normalizedInput.includes('boot')) {
+          if (normalizedInput.includes('sports') || normalizedInput.includes('athletic') || normalizedInput.includes('running')) {
+            if (!terms.includes('athletic shoes')) terms.push('athletic shoes');
+            if (!terms.includes('sports shoes')) terms.push('sports shoes');
+            if (!terms.includes('running shoes')) terms.push('running shoes');
+          }
           if (!terms.includes('shoe sizing')) terms.push('shoe sizing');
           if (!terms.includes('comfortable shoes')) terms.push('comfortable shoes');
         }

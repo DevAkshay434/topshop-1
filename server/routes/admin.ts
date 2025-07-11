@@ -517,11 +517,21 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     // Try to get keywords from DataForSEO API with fallback
     let keywords;
     try {
+      console.log(`Attempting to fetch keywords for: "${searchTerm}"`);
       keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
+      console.log(`Successfully fetched ${keywords.length} keywords from DataForSEO API`);
     } catch (error) {
-      console.log('DataForSEO API unavailable, using fallback keyword generation');
+      console.log(`DataForSEO API error: ${error.message}`);
+      console.log(`Using fallback keyword generation for: "${searchTerm}"`);
       // Fallback keyword generation
       keywords = generateFallbackKeywords(searchTerm);
+      console.log(`Generated ${keywords.length} fallback keywords for: "${searchTerm}"`);
+      
+      // Add a flag to indicate these are fallback keywords
+      keywords = keywords.map(kw => ({
+        ...kw,
+        intent: 'Fallback'
+      }));
     }
     
     // If we have additional search terms, process them and merge unique keywords
