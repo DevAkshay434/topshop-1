@@ -426,6 +426,8 @@ export function ChooseMediaDialog({
       return searchInProgress 
         ? "No images found. Try a different search term." 
         : "Enter search terms above to find images on Pexels.";
+    } else if (activeTab === 'uploaded') {
+      return "No uploaded images yet. Upload images using the button above.";
     }
     return "No images available. Try a different source.";
   };
@@ -437,6 +439,8 @@ export function ChooseMediaDialog({
         return productImages;
       case 'pexels':
         return pexelsImages;
+      case 'uploaded':
+        return uploadedImages;
       default:
         return [];
     }
@@ -517,8 +521,11 @@ export function ChooseMediaDialog({
                   key={image.id} 
                   className={`
                     relative cursor-pointer border-2 rounded-md overflow-hidden
-                    ${isSelected ? 'border-blue-500' : 'border-gray-100 hover:border-gray-300'}
+                    ${isSelected ? 
+                      (image.source === 'uploaded' ? 'border-orange-500' : 'border-blue-500') 
+                      : 'border-gray-100 hover:border-gray-300'}
                     ${image.source === 'variant' ? 'ring-1 ring-purple-300' : ''}
+                    ${image.source === 'uploaded' ? 'ring-1 ring-orange-300' : ''}
                   `}
                   onClick={() => toggleImageSelection(image)}
                 >
@@ -537,11 +544,13 @@ export function ChooseMediaDialog({
                         className={`text-xs px-2 py-1 rounded text-white ${
                           image.source === 'product' ? 'bg-green-500' : 
                           image.source === 'variant' ? 'bg-purple-500' : 
+                          image.source === 'uploaded' ? 'bg-orange-500' :
                           'bg-blue-500'
                         }`}
                       >
                         {image.source === 'product' ? 'Product' : 
                          image.source === 'variant' ? 'Variant' : 
+                         image.source === 'uploaded' ? 'Uploaded' :
                          'Pexels'}
                       </span>
                     </div>
@@ -760,40 +769,8 @@ export function ChooseMediaDialog({
               </p>
             </div>
             
-            {/* Display uploaded images */}
-            {uploadedImages.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {uploadedImages.map((image) => {
-                  const isSelected = selectedImages.some(img => img.id === image.id);
-                  return (
-                    <div 
-                      key={image.id} 
-                      className={`
-                        relative cursor-pointer border-2 rounded-md overflow-hidden
-                        ${isSelected ? 'border-purple-500' : 'border-gray-100 hover:border-gray-300'}
-                      `}
-                      onClick={() => toggleImageSelection(image)}
-                    >
-                      <div className="aspect-square bg-gray-50 overflow-hidden relative">
-                        <ShopifyImageViewer
-                          src={image.url}
-                          alt={image.alt || 'Uploaded image'}
-                          className="w-full h-full object-cover"
-                        />
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-purple-500 bg-opacity-20 flex items-center justify-center">
-                            <Check className="h-6 w-6 text-white bg-purple-500 rounded-full p-1" />
-                          </div>
-                        )}
-                        <div className="absolute top-2 left-2 bg-purple-500 text-white text-xs px-2 py-1 rounded">
-                          Uploaded
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {/* Display uploaded images using the general renderTabContent function */}
+            {renderTabContent()}
           </TabsContent>
           
           <TabsContent value="youtube" className="space-y-4">
