@@ -3141,7 +3141,7 @@ export default function AdminPanel() {
                             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                           >
                             <Sparkles className="mr-2 h-4 w-4" /> 
-                            Select Keywords
+                            Generate Keywords
                           </Button>
                         </div>
                         
@@ -3171,36 +3171,24 @@ export default function AdminPanel() {
                             Back
                           </Button>
                           
-                          <div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="mr-2"
-                              onClick={() => setShowKeywordSelector(true)}
-                            >
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              {selectedKeywords.length > 0 ? 'Change Keywords' : 'Select Keywords'}
-                            </Button>
-                            
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                if (selectedKeywords.length > 0) {
-                                  setWorkflowStep('title');
-                                  setShowTitleSelector(true);
-                                } else {
-                                  toast({
-                                    title: "Keywords Required",
-                                    description: "Please select at least one keyword before continuing",
-                                    variant: "destructive"
-                                  });
-                                }
-                              }}
-                              disabled={selectedKeywords.length === 0}
-                            >
-                              Next
-                            </Button>
-                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (selectedKeywords.length > 0) {
+                                setWorkflowStep('title');
+                                setShowTitleSelector(true);
+                              } else {
+                                toast({
+                                  title: "Keywords Required",
+                                  description: "Please select at least one keyword before continuing",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                            disabled={selectedKeywords.length === 0}
+                          >
+                            Next
+                          </Button>
                         </div>
                       </div>
                       
@@ -5963,16 +5951,16 @@ export default function AdminPanel() {
         <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Select Keywords</DialogTitle>
+              <DialogTitle>Generate Keywords</DialogTitle>
               <DialogDescription>
-                Choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
+                Generate and choose keywords to optimize your content for SEO. Higher search volume keywords typically attract more traffic.
               </DialogDescription>
             </DialogHeader>
             <KeywordSelector
               initialKeywords={selectedKeywords}
               onKeywordsSelected={handleKeywordsSelected}
               onClose={() => setShowKeywordSelector(false)}
-              title="Select Keywords for SEO Optimization"
+              title="Generate Keywords for SEO Optimization"
               productTitle={productTitle}
               selectedProducts={selectedProducts}
               selectedCollections={selectedCollections}
