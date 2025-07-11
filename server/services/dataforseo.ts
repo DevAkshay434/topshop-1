@@ -70,6 +70,8 @@ export class DataForSEOService {
       // Extract keyword from URL or use as direct input
       const keyword = this.extractKeywordFromUrl(productUrl);
       console.log(`DataForSEO search for keyword: "${keyword}"`);
+      console.log('DATAFORSEO DEBUG - Original input:', productUrl);
+      console.log('DATAFORSEO DEBUG - Extracted keyword:', keyword);
 
       // Check if we have valid credentials
       if (!this.hasValidCredentials()) {
@@ -1022,10 +1024,9 @@ export class DataForSEOService {
     const categoryKeywords = {
       // Water treatment keywords
       waterTreatment: [
-        'water softener', 'water conditioner', 'water filter', 'water purifier', 'water system',
-        'water treatment', 'water purification', 'softener', 'conditioner', 'water filtration',
-        'water system', 'water quality', 'reverse osmosis', 'deionization', 'water testing',
-        'well water', 'city water', 'hard water', 'soft water', 'iron filter', 'salt free'
+        'water filter', 'water purifier', 'water system', 'water treatment', 'water purification',
+        'filtration system', 'water filtration', 'water quality', 'reverse osmosis', 'deionization',
+        'water testing', 'well water', 'city water', 'hard water', 'soft water', 'iron filter'
       ],
       
       // Clothing and apparel
@@ -1185,7 +1186,7 @@ export class DataForSEOService {
       if (categoryType === 'waterTreatment') {
         // Add specific water treatment terms in order of relevance
         if (normalizedInput.includes('softener')) {
-          if (!terms.includes('water softener')) terms.unshift('water softener');
+          if (!terms.includes('water filter')) terms.unshift('water filter');
         } else if (normalizedInput.includes('filter')) {
           if (!terms.includes('water filter')) terms.unshift('water filter');
         } else if (normalizedInput.includes('conditioner')) {
@@ -1197,7 +1198,7 @@ export class DataForSEOService {
         
         // Add salt free specific terms if applicable
         if (normalizedInput.includes('salt free') || normalizedInput.includes('saltfree')) {
-          if (!terms.includes('salt free water softener')) terms.unshift('salt free water softener');
+          if (!terms.includes('water filtration system')) terms.unshift('water filtration system');
           if (!terms.includes('salt free water conditioner')) terms.push('salt free water conditioner');
         }
         

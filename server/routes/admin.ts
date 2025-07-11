@@ -498,6 +498,12 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     // Accept either a direct topic, productTitle, or productUrl
     const searchTerm = topic || productTitle || productUrl;
     
+    console.log('KEYWORD SEARCH DEBUG - Raw request body:', JSON.stringify(req.body, null, 2));
+    console.log('KEYWORD SEARCH DEBUG - Extracted search term:', searchTerm);
+    console.log('KEYWORD SEARCH DEBUG - topic:', topic);
+    console.log('KEYWORD SEARCH DEBUG - productTitle:', productTitle);
+    console.log('KEYWORD SEARCH DEBUG - productUrl:', productUrl);
+    
     if (!searchTerm) {
       return res.status(400).json({
         success: false,
@@ -619,13 +625,13 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
         // If the keyword is still just the full product name, try to extract a more meaningful term
         if (searchTerm && processedKeyword.length > 30 && 
             processedKeyword.toLowerCase() === cleanKeyword(searchTerm).toLowerCase()) {
-          // Extract meaningful part (e.g., "water softener" from "SoftPro Elite Salt Free Water Conditioner")
+          // Extract meaningful part (e.g., "water filter" from "SoftPro Elite Salt Free Water Conditioner")
           const parts = processedKeyword.split(' ');
           if (parts.length > 3) {
             // Try to find meaningful pairs of words for specific categories
             const categoryKeywords = [
-              'water softener', 'water conditioner', 'water filter', 
-              'salt free', 'water treatment', 'softener system',
+              'water filter', 'water conditioner', 'water treatment', 
+              'salt free', 'filtration system', 'water system',
               'jacket', 'smartphone', 'laptop', 'camera', 'headphones'
             ];
             
