@@ -20,13 +20,15 @@ function generateFallbackKeywords(searchTerm: string): KeywordData[] {
   ];
   
   const keywords: KeywordData[] = [];
+  const normalizedTerm = searchTerm.toLowerCase();
   
   // Add base term
   keywords.push({
     keyword: searchTerm,
     searchVolume: 1000,
     competition: 0.5,
-    cpc: 1.50
+    cpc: 1.50,
+    intent: 'Informational'
   });
   
   // Generate variations with modifiers
@@ -35,27 +37,55 @@ function generateFallbackKeywords(searchTerm: string): KeywordData[] {
       keyword: `${modifier} ${searchTerm}`,
       searchVolume: Math.floor(Math.random() * 800) + 200,
       competition: Math.random() * 0.8 + 0.1,
-      cpc: Math.random() * 3 + 0.5
+      cpc: Math.random() * 3 + 0.5,
+      intent: modifier.includes('buy') || modifier.includes('price') ? 'Commercial' : 'Informational'
     });
   });
   
-  // Add some related terms
-  const words = searchTerm.split(' ');
-  if (words.length > 1) {
-    words.forEach(word => {
-      if (word.length > 3) { // Only use words longer than 3 characters
-        keywords.push({
-          keyword: word,
-          searchVolume: Math.floor(Math.random() * 500) + 100,
-          competition: Math.random() * 0.6 + 0.2,
-          cpc: Math.random() * 2 + 0.3
-        });
-      }
-    });
+  // Add category-specific related terms
+  let categoryTerms: string[] = [];
+  
+  if (normalizedTerm.includes('sports shoes') || normalizedTerm.includes('athletic shoes')) {
+    categoryTerms = [
+      'running shoes', 'sneakers', 'athletic footwear', 'tennis shoes', 'basketball shoes',
+      'cross training shoes', 'gym shoes', 'workout shoes', 'casual sneakers', 'sport sneakers',
+      'athletic shoes for men', 'athletic shoes for women', 'comfortable sports shoes', 'breathable sports shoes'
+    ];
+  } else if (normalizedTerm.includes('shoes')) {
+    categoryTerms = [
+      'footwear', 'sneakers', 'boots', 'sandals', 'dress shoes', 'casual shoes',
+      'comfortable shoes', 'shoe sizing', 'shoe brands', 'shoe reviews'
+    ];
+  } else if (normalizedTerm.includes('water')) {
+    categoryTerms = [
+      'water treatment', 'water filtration', 'water quality', 'water system',
+      'home water treatment', 'water purification', 'clean water', 'water solutions'
+    ];
+  } else {
+    // Generic related terms from the actual search term
+    const words = searchTerm.split(' ');
+    if (words.length > 1) {
+      words.forEach(word => {
+        if (word.length > 3) { // Only use words longer than 3 characters
+          categoryTerms.push(word);
+        }
+      });
+    }
   }
   
+  // Add category-specific terms
+  categoryTerms.forEach(term => {
+    keywords.push({
+      keyword: term,
+      searchVolume: Math.floor(Math.random() * 600) + 150,
+      competition: Math.random() * 0.6 + 0.2,
+      cpc: Math.random() * 2 + 0.3,
+      intent: 'Informational'
+    });
+  });
+  
   console.log(`Generated ${keywords.length} fallback keywords for "${searchTerm}"`);
-  return keywords.slice(0, 15); // Limit to 15 keywords
+  return keywords.slice(0, 20); // Limit to 20 keywords
 }
 
 // Store retrieval function that respects X-Store-ID header
