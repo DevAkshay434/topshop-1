@@ -271,6 +271,9 @@ export async function registerRoutes(app: Express): Promise<void> {
       } catch (shopifyError) {
         console.error('Shopify upload error:', shopifyError);
         
+        // Check if it's a permission error
+        const isPermissionError = shopifyError.message && shopifyError.message.includes('Access denied');
+        
         // Create a unique filename for local storage
         const timestamp = Date.now();
         const uniqueFilename = `${timestamp}-${req.file.originalname}`;
@@ -288,12 +291,18 @@ export async function registerRoutes(app: Express): Promise<void> {
         const localUrl = `/uploads/${uniqueFilename}`;
         console.log('Shopify upload failed, saved locally:', localUrl);
         
+        let note = 'Image uploaded locally - Shopify upload failed';
+        if (isPermissionError) {
+          note = 'Store needs re-authentication for file upload permissions. Using local storage.';
+        }
+        
         res.json({ 
           success: true, 
           url: localUrl,
           filename: req.file.originalname,
           source: 'local',
-          note: 'Image uploaded locally - Shopify upload failed' 
+          note: note,
+          requiresReauth: isPermissionError
         });
       }
     } catch (error) {
@@ -334,29 +343,42 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Check if store has scheduling permissions
+  // Check if store has all required permissions including file upload
   apiRouter.get("/shopify/check-permissions", async (req: Request, res: Response) => {
     try {
-      const { hasSchedulingPermission, getMissingSchedulingPermissions } = await import('../shared/permissions');
+      const { hasSchedulingPermission, getMissingSchedulingPermissions, getFullScopeString } = await import('../shared/permissions');
       
       // Get current store
-      const stores = await storage.getShopifyStores();
-      if (!stores || stores.length === 0) {
+      const store = await getStoreFromRequest(req);
+      if (!store) {
         return res.status(404).json({
           success: false,
           hasPermission: false,
-          message: "No stores found"
+          message: "No store found"
         });
       }
       
-      const store = stores[0]; // Use first store for now
-      const hasPermission = hasSchedulingPermission(store.scope || '');
-      const missingPermissions = getMissingSchedulingPermissions(store.scope || '');
+      const currentScope = store.scope || '';
+      const requiredScopes = getFullScopeString();
+      
+      const hasPermission = hasSchedulingPermission(currentScope);
+      const missingPermissions = getMissingSchedulingPermissions(currentScope);
+      
+      // Check for file upload permissions
+      const hasFileUploadPermission = currentScope.includes('read_files') && currentScope.includes('write_files');
+      const missingFilePermissions = [];
+      if (!currentScope.includes('read_files')) missingFilePermissions.push('read_files');
+      if (!currentScope.includes('write_files')) missingFilePermissions.push('write_files');
+      
+      const allMissingPermissions = [...missingPermissions, ...missingFilePermissions];
       
       res.json({
         success: true,
-        hasPermission,
-        missingPermissions,
+        hasPermission: hasPermission && hasFileUploadPermission,
+        hasFileUploadPermission,
+        missingPermissions: allMissingPermissions,
+        currentScope,
+        requiredScope: requiredScopes,
         store: {
           id: store.id,
           name: store.shopName,
@@ -373,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Special route to handle reconnection with the new write_publications scope
+  // Special route to handle reconnection with updated scopes (including file upload permissions)
   apiRouter.get("/shopify/reconnect", async (req: Request, res: Response) => {
     try {
       const apiKey = process.env.SHOPIFY_API_KEY;
@@ -385,9 +407,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         });
       }
       
-      // Get shop from existing connection
-      const stores = await storage.getShopifyStores();
-      if (!stores || stores.length === 0) {
+      // Get current store
+      const store = await getStoreFromRequest(req);
+      if (!store) {
         return res.status(400).json({ 
           success: false, 
           message: "No connected store found" 
@@ -398,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const nonce = crypto.randomBytes(16).toString('hex');
       
       // Store nonce data
-      const shop = stores[0].shopName;
+      const shop = store.shopName;
       const nonceData: NonceData = {
         shop,
         timestamp: Date.now()
@@ -413,10 +435,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       const redirectUri = `${baseUrl}/oauth/shopify/callback`;
       
-      // Create the auth URL with the new write_publications scope
+      // Use the full scope string including file upload permissions
+      const fullScopes = 'read_products,write_products,read_content,write_content,read_themes,write_publications,read_files,write_files';
+      
+      // Create the auth URL with all required scopes including file upload permissions
       const authUrl = `https://${shop}/admin/oauth/authorize?` +
         `client_id=${apiKey}&` +
-        `scope=read_products,write_products,read_content,write_content,read_themes,write_publications&` +
+        `scope=${encodeURIComponent(fullScopes)}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `state=${nonce}`;
       
