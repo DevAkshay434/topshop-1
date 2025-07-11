@@ -19,6 +19,7 @@ import Settings from "@/pages/Settings";
 import Help from "@/pages/Help";
 import AdminPanel from "@/pages/AdminPanel";
 import TestImageDisplay from "@/pages/TestImageDisplay";
+import ReauthenticatePage from "@/pages/ReauthenticatePage";
 import { Authors } from "@/pages/Authors";
 
 import { useEffect, useState } from "react";
@@ -83,6 +84,7 @@ function Router() {
           <Route path="/authors" component={Authors} />
           <Route path="/legacy-dashboard" component={Dashboard} />
           <Route path="/test-images" component={TestImageDisplay} />
+          <Route path="/reauthenticate" component={ReauthenticatePage} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />
