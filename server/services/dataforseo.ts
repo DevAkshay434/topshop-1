@@ -149,7 +149,7 @@ export class DataForSEOService {
           requestData,
           { 
             auth,
-            timeout: 15000, // 15 second timeout
+            timeout: 45000, // 45 second timeout for DataForSEO API
             headers: {
               'Content-Type': 'application/json'
             }
@@ -1462,7 +1462,7 @@ export class DataForSEOService {
           requestData,
           { 
             auth,
-            timeout: 15000, // 15 second timeout
+            timeout: 45000, // 45 second timeout for DataForSEO API
             headers: {
               'Content-Type': 'application/json'
             }
