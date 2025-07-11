@@ -618,15 +618,32 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
         }
         
         console.log(`Generating additional keywords for: ${term}`);
-        const additionalKeywords = await dataForSEOService.getKeywordsForProduct(term);
-        
-        // Add only unique keywords to our result set
-        additionalKeywords.forEach(kw => {
-          if (!processedKeywords.has(kw.keyword.toLowerCase())) {
-            processedKeywords.add(kw.keyword.toLowerCase());
-            keywords.push(kw);
-          }
-        });
+        try {
+          const additionalKeywords = await dataForSEOService.getKeywordsForProduct(term);
+          
+          // Add only unique keywords to our result set
+          additionalKeywords.forEach(kw => {
+            if (!processedKeywords.has(kw.keyword.toLowerCase())) {
+              processedKeywords.add(kw.keyword.toLowerCase());
+              keywords.push(kw);
+            }
+          });
+        } catch (error) {
+          console.log(`Error generating additional keywords for "${term}": ${error.message}`);
+          // Generate fallback keywords for this term too
+          const fallbackKeywords = generateFallbackKeywords(term);
+          
+          // Add only unique fallback keywords to our result set
+          fallbackKeywords.forEach(kw => {
+            if (!processedKeywords.has(kw.keyword.toLowerCase())) {
+              processedKeywords.add(kw.keyword.toLowerCase());
+              keywords.push({
+                ...kw,
+                intent: 'Fallback'
+              });
+            }
+          });
+        }
       }
       
       // Sort combined results by search volume
