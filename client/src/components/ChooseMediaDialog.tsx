@@ -215,7 +215,12 @@ export function ChooseMediaDialog({
       const successfulUploads = results.filter(Boolean) as MediaImage[];
       
       if (successfulUploads.length > 0) {
-        setUploadedImages(prev => [...prev, ...successfulUploads]);
+        setUploadedImages(prev => {
+          const newImages = [...prev, ...successfulUploads];
+          console.log('Added uploaded images. Total count:', newImages.length);
+          console.log('Uploaded images:', newImages);
+          return newImages;
+        });
         
         toast({
           title: "Upload successful",
@@ -366,9 +371,13 @@ export function ChooseMediaDialog({
 
   // Toggle image selection with limit enforcement
   const toggleImageSelection = (image: MediaImage) => {
+    console.log('Toggling selection for image:', image.id, 'Source:', image.source, 'URL:', image.url);
+    
     setSelectedImages(prevSelectedImages => {
       // Check if image is already selected
       const isSelected = prevSelectedImages.some(img => img.id === image.id);
+      console.log('Image already selected:', isSelected);
+      console.log('Current selected images:', prevSelectedImages.length);
 
       // If not selected and we're at the limit, show warning and prevent selection
       if (!isSelected && prevSelectedImages.length >= maxImages && !allowMultiple) {
@@ -393,9 +402,13 @@ export function ChooseMediaDialog({
 
       // Toggle selection normally
       if (isSelected) {
-        return prevSelectedImages.filter(img => img.id !== image.id);
+        const newSelection = prevSelectedImages.filter(img => img.id !== image.id);
+        console.log('Removing image from selection. New count:', newSelection.length);
+        return newSelection;
       } else {
-        return [...prevSelectedImages, { ...image, selected: true }];
+        const newSelection = [...prevSelectedImages, { ...image, selected: true }];
+        console.log('Adding image to selection. New count:', newSelection.length);
+        return newSelection;
       }
     });
   };
@@ -885,7 +898,7 @@ export function ChooseMediaDialog({
         {/* Selected Images Preview */}
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-medium">Selected Images ({selectedImages.length})</h3>
+            <h3 className="text-sm font-medium">Your Selected Images ({selectedImages.length})</h3>
             {selectedImages.length > 0 && (
               <Button 
                 variant="outline" 
