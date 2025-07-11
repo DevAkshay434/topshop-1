@@ -193,14 +193,15 @@ export default function KeywordSelector({
     }
   };
 
-  // Filter keywords based on search and intent filter, hide 0 search volume (except manual keywords), and sort dynamically
+  // Filter keywords based on search and intent filter, hide 0 search volume (except manual and fallback keywords), and sort dynamically
   const filteredKeywords = keywords
     .filter(keyword => {
       const matchesSearch = keyword.keyword.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesIntent = filterIntent ? keyword.intent === filterIntent : true;
       const hasSearchVolume = keyword.searchVolume !== 0 && keyword.searchVolume !== undefined;
       const isManualKeyword = keyword.intent === "Manual";
-      return matchesSearch && matchesIntent && (hasSearchVolume || isManualKeyword);
+      const isFallbackKeyword = keyword.intent === "Fallback";
+      return matchesSearch && matchesIntent && (hasSearchVolume || isManualKeyword || isFallbackKeyword);
     })
     .sort((a, b) => {
       const valueA = getSortValue(a, sortBy);
