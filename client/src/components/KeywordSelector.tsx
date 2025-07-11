@@ -21,7 +21,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Filter, Search, Activity, FileText, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -291,6 +291,9 @@ export default function KeywordSelector({
 
     setIsLoading(true);
     setKeywords([]); // Clear previous keywords when starting a new search
+    
+    // Invalidate any cached keyword queries to ensure fresh data
+    queryClient.invalidateQueries({ queryKey: ['/api/admin/keywords-for-product'] });
 
     // Store start time for minimum display duration
     const startTime = Date.now();
@@ -324,8 +327,9 @@ export default function KeywordSelector({
         }));
       }
 
+      // Add timestamp to ensure fresh requests (bypass React Query cache)
       const response = await apiRequest<{ success: boolean; keywords: KeywordData[] }>({
-        url: "/api/admin/keywords-for-product",
+        url: `/api/admin/keywords-for-product?t=${Date.now()}`,
         method: "POST",
         data: requestData
       });
