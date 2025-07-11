@@ -582,7 +582,7 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     
     console.log(`Searching for keywords related to ${searchTerms.length} topics: ${searchTerms.join(', ')}`);
     
-    // Try to get keywords from DataForSEO API with fallback
+    // Try to get keywords from DataForSEO API - only use authentic data
     let keywords;
     try {
       console.log(`Attempting to fetch keywords for: "${searchTerm}"`);
@@ -590,16 +590,11 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       console.log(`Successfully fetched ${keywords.length} keywords from DataForSEO API`);
     } catch (error) {
       console.log(`DataForSEO API error: ${error.message}`);
-      console.log(`Using fallback keyword generation for: "${searchTerm}"`);
-      // Fallback keyword generation
-      keywords = generateFallbackKeywords(searchTerm);
-      console.log(`Generated ${keywords.length} fallback keywords for: "${searchTerm}"`);
+      console.log(`No authentic keywords available - DataForSEO API not configured`);
       
-      // Add a flag to indicate these are fallback keywords
-      keywords = keywords.map(kw => ({
-        ...kw,
-        intent: 'Fallback'
-      }));
+      // Return empty keywords array instead of fallback keywords
+      // This ensures only authentic DataForSEO data is shown
+      keywords = [];
     }
     
     // If we have additional search terms, process them and merge unique keywords
@@ -630,19 +625,8 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
           });
         } catch (error) {
           console.log(`Error generating additional keywords for "${term}": ${error.message}`);
-          // Generate fallback keywords for this term too
-          const fallbackKeywords = generateFallbackKeywords(term);
-          
-          // Add only unique fallback keywords to our result set
-          fallbackKeywords.forEach(kw => {
-            if (!processedKeywords.has(kw.keyword.toLowerCase())) {
-              processedKeywords.add(kw.keyword.toLowerCase());
-              keywords.push({
-                ...kw,
-                intent: 'Fallback'
-              });
-            }
-          });
+          // Skip fallback keywords to maintain authentic data integrity
+          console.log(`Skipping fallback keywords for "${term}" - only showing authentic DataForSEO results`);
         }
       }
       
@@ -705,12 +689,19 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       });
     }
     
-    res.json({
+    // Add helpful message when no authentic keywords are available
+    const response: any = {
       success: true,
       productId,
       topic: searchTerm,
       keywords
-    });
+    };
+    
+    if (keywords.length === 0) {
+      response.message = "No authentic keywords available. DataForSEO API credentials not configured. Please provide valid API credentials to access real keyword data.";
+    }
+    
+    res.json(response);
   } catch (error: any) {
     console.error("Error generating keywords:", error);
     res.status(500).json({
