@@ -208,23 +208,13 @@ export class DataForSEOService {
           const competition = result.competition;
           const cpc = result.cpc;
           
-          // Handle null search volumes - if the keyword is relevant, use fallback values
-          let adjustedSearchVolume = searchVolume;
+          // Only use authentic search volumes - skip keywords with no data
           if (searchVolume === null || searchVolume === undefined || searchVolume === 0) {
-            // Check if this keyword matches our search term - if so, give it a reasonable fallback value
-            const cleanSearchTerm = this.cleanKeywordString(keyword).toLowerCase();
-            const cleanResultKeyword = this.cleanKeywordString(keywordText).toLowerCase();
-            
-            // If the keyword contains our search term, give it a fallback search volume
-            if (cleanResultKeyword.includes(cleanSearchTerm.split(' ')[0]) || 
-                cleanSearchTerm.includes(cleanResultKeyword.split(' ')[0])) {
-              adjustedSearchVolume = Math.floor(Math.random() * 500) + 100; // Random 100-600
-              console.log(`Using fallback search volume ${adjustedSearchVolume} for relevant keyword: ${keywordText}`);
-            } else {
-              // Skip irrelevant keywords with no search data
-              continue;
-            }
+            console.log(`Skipping keyword with no authentic search volume: ${keywordText}`);
+            continue;
           }
+          
+          const adjustedSearchVolume = searchVolume;
           
           const competitionLevel = this.getCompetitionLevel(competition || 0);
           
@@ -261,153 +251,8 @@ export class DataForSEOService {
           }
         }
         
-        // If we don't have valid search data for the specific product, try to get data for a more generic term
-        if (!hasValidData && keywordData.length > 0) {
-          console.log("No valid search data found for specific term, trying generic alternatives");
-          
-          // Extract more generic terms from the product name
-          const genericTerms = this.extractGenericTerms(keywordData[0].keyword);
-          
-          // Only proceed if we found generic terms
-          if (genericTerms.length > 0) {
-            console.log(`Found generic terms: ${genericTerms.join(', ')}`);
-            
-            // Try each generic term in sequence until we find one with data
-            for (const genericKeyword of genericTerms) {
-              try {
-                console.log(`Trying generic term: ${genericKeyword}`);
-                const genericKeywordData = await this.getKeywordsForProduct(genericKeyword);
-                
-                if (genericKeywordData.length > 0 && 
-                    genericKeywordData[0].searchVolume && 
-                    genericKeywordData[0].searchVolume > 0) {
-                  console.log(`Got valid data for generic term: ${genericKeyword}`);
-                  
-                  // Replace main keyword's metrics with the generic term's data, but keep the original keyword text
-                  const originalKeyword = keywordData[0].keyword;
-                  const mainGenericKeyword = genericKeywordData[0];
-                  
-                  keywordData[0] = {
-                    ...mainGenericKeyword,
-                    keyword: originalKeyword, // Keep the original product name
-                    selected: false
-                  };
-                  
-                  // Flag that we now have valid data
-                  hasValidData = true;
-                  
-                  // Break the loop once we find a term with data
-                  break;
-                } else {
-                  console.log(`No valid search volume for generic term: ${genericKeyword}`);
-                }
-              } catch (err: any) {
-                console.error(`Error getting data for generic term ${genericKeyword}: ${err.message}`);
-                // Continue to the next term if this one fails
-              }
-            }
-            
-            // If we still don't have valid data from generic keywords, try common industry terms via direct API calls
-            if (!hasValidData) {
-              console.log("Generic terms failed, trying direct industry term API requests");
-              
-              const originalKeyword = keywordData[0].keyword;
-              
-              // List of standard industry terms to try - these should have data in the DataForSEO API
-              const industryTerms = [
-                'water softener', 'water filter', 'water treatment', 'water conditioner',
-                'softener', 'water system', 'water purification',
-                'home appliance', 'home water', 'water quality'
-              ];
-              
-              // Try each industry term as a direct API call
-              for (const industryTerm of industryTerms) {
-                try {
-                  console.log(`Making direct API call for industry term: ${industryTerm}`);
-                  
-                  // Make a direct API call for industry term
-                  const auth = {
-                    username: this.username,
-                    password: this.password
-                  };
-                  
-                  const simpleRequestData = [{
-                    keywords: [industryTerm],
-                    language_code: "en",
-                    location_code: 2840,
-                    limit: 50 // Get more keywords from the industry terms query
-                  }];
-                  
-                  const response = await axios.post(
-                    `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
-                    simpleRequestData,
-                    { 
-                      auth,
-                      timeout: 15000,
-                      headers: { 'Content-Type': 'application/json' }
-                    }
-                  );
-                  
-                  if (response.data?.tasks?.[0]?.result && 
-                      Array.isArray(response.data.tasks[0].result) && 
-                      response.data.tasks[0].result.length > 0) {
-                    
-                    const result = response.data.tasks[0].result[0];
-                    
-                    if (result.search_volume && result.search_volume > 0) {
-                      console.log(`Got valid industry term data from API: ${industryTerm} with volume: ${result.search_volume}`);
-                      
-                      // Extract trend data
-                      const trend = result.monthly_searches
-                        ? result.monthly_searches.map((monthData: any) => monthData.search_volume)
-                        : Array(12).fill(Math.round(result.search_volume));
-                      
-                      keywordData[0] = {
-                        keyword: originalKeyword,
-                        searchVolume: result.search_volume,
-                        cpc: result.cpc || 0,
-                        competition: result.competition || 0,
-                        competitionLevel: this.getCompetitionLevel(result.competition || 0),
-                        intent: this.determineIntent({ keyword: originalKeyword }),
-                        trend,
-                        difficulty: this.calculateKeywordDifficulty({
-                          search_volume: result.search_volume,
-                          competition: result.competition,
-                          cpc: result.cpc
-                        }),
-                        selected: false
-                      };
-                      
-                      hasValidData = true;
-                      break;
-                    }
-                  }
-                } catch (err: any) {
-                  console.error(`Error getting data for industry term ${industryTerm}: ${err.message}`);
-                }
-              }
-              
-              // If all API attempts failed, use a very minimal placeholder to avoid breaking the UI
-              if (!hasValidData) {
-                console.error("CRITICAL: All DataForSEO API attempts failed to retrieve keyword data");
-                console.error("Please check DataForSEO API credentials and connection");
-                
-                // Use obvious placeholder with zero metrics to make it clear this is an API failure
-                keywordData[0] = {
-                  keyword: originalKeyword + " (API ERROR - CHECK DATAFORSEO CREDENTIALS)",
-                  searchVolume: 0,
-                  cpc: 0,
-                  competition: 0,
-                  competitionLevel: "Low", 
-                  intent: "Navigational",
-                  trend: Array(12).fill(0),
-                  difficulty: 0,
-                  selected: false
-                };
-              }
-            }
-          }
-        }
+        // REMOVED: All fallback keyword generation logic
+        // Only authentic DataForSEO keywords with real search volumes are returned
         
         // Get related keywords from DataForSEO API to expand our keyword list
         // Use keyword suggestions endpoint to get a broader range of keywords
@@ -1369,54 +1214,11 @@ export class DataForSEOService {
    * @returns Array of related keyword data
    */
   // Simplified method to generate related keywords without API calls
-  // This prevents undefined variable errors while maintaining functionality
+  // REMOVED: Fallback keyword generation function
+  // Only authentic DataForSEO keywords with real search volumes are returned
   private async generateRelatedKeywords(mainKeyword: KeywordData): Promise<KeywordData[]> {
-    console.log(`Generating related keywords for: ${mainKeyword.keyword}`);
-    
-    // Create semantic variations based on the main keyword
-    const relatedKeywords: KeywordData[] = [];
-    const baseKeyword = mainKeyword.keyword.toLowerCase();
-    
-    // Generate high-value variations that would be useful for content creation
-    const variations = [
-      `best ${baseKeyword}`,
-      `${baseKeyword} reviews`,
-      `${baseKeyword} guide`,
-      `how to choose ${baseKeyword}`,
-      `${baseKeyword} comparison`,
-      `top ${baseKeyword}`,
-      `${baseKeyword} buying guide`,
-      `${baseKeyword} benefits`,
-      `${baseKeyword} problems`,
-      `${baseKeyword} installation`
-    ];
-    
-    // Create keyword data for each variation
-    for (const variation of variations) {
-      // Estimate metrics based on the main keyword with some variation
-      const estimatedVolume = Math.round((mainKeyword.searchVolume || 0) * (0.1 + Math.random() * 0.3));
-      const estimatedCompetition = (mainKeyword.competition || 0) * (0.8 + Math.random() * 0.4);
-      const estimatedCpc = (mainKeyword.cpc || 0) * (0.7 + Math.random() * 0.6);
-      
-      relatedKeywords.push({
-        keyword: variation,
-        searchVolume: estimatedVolume,
-        cpc: estimatedCpc,
-        competition: estimatedCompetition,
-        competitionLevel: this.getCompetitionLevel(estimatedCompetition),
-        intent: this.determineIntent({ keyword: variation }),
-        trend: Array(12).fill(Math.round(estimatedVolume / 12)),
-        difficulty: this.calculateKeywordDifficulty({
-          search_volume: estimatedVolume,
-          competition: estimatedCompetition,
-          cpc: estimatedCpc
-        }),
-        selected: false
-      });
-    }
-    
-    console.log(`Generated ${relatedKeywords.length} related keyword variations`);
-    return relatedKeywords;
+    console.log(`Skipping fallback keyword generation for: ${mainKeyword.keyword}`);
+    return []; // Return empty array instead of generating fallback keywords
   }
 
 
