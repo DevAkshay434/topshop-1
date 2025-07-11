@@ -170,8 +170,6 @@ export default function KeywordSelector({
   
   // Manual keyword input states
   const [manualKeyword, setManualKeyword] = useState("");
-  const [customSearchTerm, setCustomSearchTerm] = useState("");
-  const [isCustomSearchLoading, setIsCustomSearchLoading] = useState(false);
 
   // Count selected keywords
   const selectedCount = keywords.filter(kw => kw.selected).length;
@@ -195,13 +193,14 @@ export default function KeywordSelector({
     }
   };
 
-  // Filter keywords based on search and intent filter, hide 0 search volume, and sort dynamically
+  // Filter keywords based on search and intent filter, hide 0 search volume (except manual keywords), and sort dynamically
   const filteredKeywords = keywords
     .filter(keyword => {
       const matchesSearch = keyword.keyword.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesIntent = filterIntent ? keyword.intent === filterIntent : true;
       const hasSearchVolume = keyword.searchVolume !== 0 && keyword.searchVolume !== undefined;
-      return matchesSearch && matchesIntent && hasSearchVolume;
+      const isManualKeyword = keyword.intent === "Manual";
+      return matchesSearch && matchesIntent && (hasSearchVolume || isManualKeyword);
     })
     .sort((a, b) => {
       const valueA = getSortValue(a, sortBy);
@@ -368,6 +367,39 @@ export default function KeywordSelector({
     setFilterIntent(filterIntent === intent ? null : intent);
   };
 
+  // Add manual keyword function
+  const addManualKeyword = () => {
+    if (!manualKeyword.trim()) return;
+    
+    const sanitizedKeyword = sanitizeKeywordForSEO(manualKeyword.trim());
+    if (!isValidSEOKeyword(sanitizedKeyword)) {
+      console.log("Invalid keyword:", sanitizedKeyword);
+      return;
+    }
+    
+    // Check if keyword already exists
+    const exists = keywords.some(kw => kw.keyword.toLowerCase() === sanitizedKeyword.toLowerCase());
+    if (exists) {
+      setManualKeyword("");
+      return;
+    }
+    
+    // Add new manual keyword
+    const newKeyword: KeywordData = {
+      keyword: sanitizedKeyword,
+      searchVolume: 0, // Manual keywords start with 0 search volume
+      cpc: 0,
+      competition: 0,
+      competitionLevel: "Unknown",
+      intent: "Manual",
+      difficulty: 0,
+      selected: false
+    };
+    
+    setKeywords(prev => [...prev, newKeyword]);
+    setManualKeyword("");
+  };
+
   // Handle form submission
   const handleSubmit = () => {
     const selectedKeywords = keywords.filter(kw => kw.selected);
@@ -491,14 +523,20 @@ export default function KeywordSelector({
           {/* Search inputs */}
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="directTopic">Topic for Keyword Search</Label>
+              <Label htmlFor="directTopic">Search or Add Keywords</Label>
               <div className="flex space-x-2">
                 <Input
                   id="directTopic"
-                  placeholder="Enter a topic to search for keywords"
+                  placeholder="Enter a topic to search for keywords or add manual keywords"
                   value={directTopic}
                   onChange={(e) => setDirectTopic(e.target.value)}
                   disabled={isLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      fetchKeywords();
+                    }
+                  }}
                 />
                 <Button 
                   variant="secondary" 
@@ -514,7 +552,37 @@ export default function KeywordSelector({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Enter a topic related to your products to find relevant keywords.
+                Enter a topic to search for keywords, or use the manual keyword entry below.
+              </p>
+            </div>
+            
+            {/* Manual Keyword Entry */}
+            <div className="space-y-2">
+              <Label htmlFor="manualKeyword">Add Manual Keywords</Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="manualKeyword"
+                  placeholder="Enter individual keywords (e.g., 'water filter', 'best water softener')"
+                  value={manualKeyword}
+                  onChange={(e) => setManualKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addManualKeyword();
+                    }
+                  }}
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={addManualKeyword}
+                  disabled={!manualKeyword.trim()}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Add specific keywords you want to target. Press Enter or click Add to include them.
               </p>
             </div>
           </div>
@@ -676,6 +744,9 @@ export default function KeywordSelector({
                       <TableCell className="font-medium">
                         <div className="flex items-center">
                           {keyword.keyword}
+                          {keyword.intent === "Manual" && (
+                            <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-300">Manual</Badge>
+                          )}
                           {keyword.isMainKeyword ? (
                             <Badge className="ml-2 bg-blue-500 text-white">Main Keyword</Badge>
                           ) : keyword.selected ? (
@@ -734,7 +805,7 @@ export default function KeywordSelector({
             <div className="py-8 text-center border rounded-md">
               <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
-                Enter a product URL or topic and click Search to find relevant keywords
+                Enter a topic and click Search to find relevant keywords, or add your own manual keywords below
               </p>
             </div>
           )}
