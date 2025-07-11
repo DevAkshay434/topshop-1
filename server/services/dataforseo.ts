@@ -57,7 +57,10 @@ export class DataForSEOService {
    * @returns True if credentials are set
    */
   public hasValidCredentials(): boolean {
-    return this.username.length > 0 && this.password.length > 0;
+    // TEMPORARY: Disable DataForSEO API to force fallback generation
+    // This ensures clean keyword results while debugging
+    return false;
+    // return this.username.length > 0 && this.password.length > 0;
   }
 
   /**

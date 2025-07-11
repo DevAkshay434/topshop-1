@@ -13,14 +13,34 @@ import { MediaService } from "../services/media";
 // Fallback keyword generation when DataForSEO API is unavailable
 function generateFallbackKeywords(searchTerm: string): KeywordData[] {
   const baseKeywords = [searchTerm];
-  const modifiers = [
-    'best', 'top', 'review', 'reviews', 'buy', 'price', 'guide', 'how to choose',
-    'comparison', 'buying guide', 'top rated', 'affordable', 'cheap', 'quality',
-    'professional', 'commercial', 'home', 'residential', 'industrial'
-  ];
+  const normalizedTerm = searchTerm.toLowerCase();
+  
+  // Context-aware modifiers based on search term
+  let modifiers: string[] = [];
+  
+  if (normalizedTerm.includes('shoe') || normalizedTerm.includes('sneaker') || 
+      normalizedTerm.includes('boot') || normalizedTerm.includes('footwear')) {
+    modifiers = [
+      'best', 'top', 'review', 'reviews', 'buy', 'price', 'guide', 'how to choose',
+      'comparison', 'buying guide', 'top rated', 'affordable', 'cheap', 'quality',
+      'comfortable', 'durable', 'lightweight', 'breathable', 'waterproof'
+    ];
+  } else if (normalizedTerm.includes('water') || normalizedTerm.includes('filter') || 
+             normalizedTerm.includes('treatment') || normalizedTerm.includes('purifier')) {
+    modifiers = [
+      'best', 'top', 'review', 'reviews', 'buy', 'price', 'guide', 'how to choose',
+      'comparison', 'buying guide', 'top rated', 'affordable', 'cheap', 'quality',
+      'professional', 'commercial', 'home', 'residential', 'industrial'
+    ];
+  } else {
+    // Generic modifiers for other categories
+    modifiers = [
+      'best', 'top', 'review', 'reviews', 'buy', 'price', 'guide', 'how to choose',
+      'comparison', 'buying guide', 'top rated', 'affordable', 'cheap', 'quality'
+    ];
+  }
   
   const keywords: KeywordData[] = [];
-  const normalizedTerm = searchTerm.toLowerCase();
   
   // Add base term
   keywords.push({
@@ -45,11 +65,24 @@ function generateFallbackKeywords(searchTerm: string): KeywordData[] {
   // Add category-specific related terms
   let categoryTerms: string[] = [];
   
-  if (normalizedTerm.includes('sports shoes') || normalizedTerm.includes('athletic shoes')) {
+  if (normalizedTerm.includes('basketball') || normalizedTerm.includes('basketball shoes')) {
+    categoryTerms = [
+      'basketball sneakers', 'basketball footwear', 'basketball cleats', 'court shoes',
+      'high-top basketball shoes', 'low-top basketball shoes', 'basketball shoes for men',
+      'basketball shoes for women', 'basketball training shoes', 'indoor basketball shoes',
+      'outdoor basketball shoes', 'basketball shoes with grip', 'basketball shoes with ankle support'
+    ];
+  } else if (normalizedTerm.includes('sports shoes') || normalizedTerm.includes('athletic shoes')) {
     categoryTerms = [
       'running shoes', 'sneakers', 'athletic footwear', 'tennis shoes', 'basketball shoes',
       'cross training shoes', 'gym shoes', 'workout shoes', 'casual sneakers', 'sport sneakers',
       'athletic shoes for men', 'athletic shoes for women', 'comfortable sports shoes', 'breathable sports shoes'
+    ];
+  } else if (normalizedTerm.includes('running') || normalizedTerm.includes('running shoes')) {
+    categoryTerms = [
+      'running sneakers', 'jogging shoes', 'marathon shoes', 'trail running shoes',
+      'road running shoes', 'running shoes for men', 'running shoes for women',
+      'lightweight running shoes', 'cushioned running shoes', 'breathable running shoes'
     ];
   } else if (normalizedTerm.includes('shoes')) {
     categoryTerms = [
@@ -84,7 +117,6 @@ function generateFallbackKeywords(searchTerm: string): KeywordData[] {
     });
   });
   
-  console.log(`Generated ${keywords.length} fallback keywords for "${searchTerm}"`);
   return keywords.slice(0, 20); // Limit to 20 keywords
 }
 
