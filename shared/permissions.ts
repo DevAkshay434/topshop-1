@@ -38,5 +38,5 @@ export function getMissingSchedulingPermissions(storeScopes: string): string[] {
  * @returns The complete scope string
  */
 export function getFullScopeString(): string {
-  return 'read_products,write_products,read_content,write_content,read_themes,write_publications';
+  return 'read_products,write_products,read_content,write_content,read_themes,write_publications,read_files,write_files';
 }

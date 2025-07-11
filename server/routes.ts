@@ -157,13 +157,6 @@ export async function registerRoutes(app: Express): Promise<void> {
               files {
                 id
                 fileStatus
-                ... on GenericFile {
-                  id
-                  url
-                  mimeType
-                  originalFileSize
-                  createdAt
-                }
                 ... on MediaImage {
                   id
                   image {
@@ -179,6 +172,13 @@ export async function registerRoutes(app: Express): Promise<void> {
                   }
                   createdAt
                 }
+                ... on GenericFile {
+                  id
+                  url
+                  mimeType
+                  originalFileSize
+                  createdAt
+                }
               }
               userErrors {
                 field
@@ -191,10 +191,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         const variables = {
           files: [
             {
-              alt: req.file.originalname.split('.')[0],
+              alt: req.file.originalname.replace(/\.[^/.]+$/, ""),
               contentType: "IMAGE",
-              originalSource: `data:${req.file.mimetype};base64,${base64Data}`,
-              filename: uniqueFilename
+              originalSource: `data:${req.file.mimetype};base64,${base64Data}`
             }
           ]
         };
@@ -229,27 +228,41 @@ export async function registerRoutes(app: Express): Promise<void> {
             throw new Error(`Shopify Files API error: ${fileData.userErrors[0].message}`);
           }
           
-          // Extract URL from different file types
+          // Extract URL from different file types with priority order
           let fileUrl = '';
+          let fileType = '';
+          
+          // MediaImage type has priority
           if (uploadedFile.image && uploadedFile.image.url) {
             fileUrl = uploadedFile.image.url;
-          } else if (uploadedFile.url) {
+            fileType = 'MediaImage';
+          } 
+          // GenericFile type
+          else if (uploadedFile.url) {
             fileUrl = uploadedFile.url;
-          } else if (uploadedFile.originalSource && uploadedFile.originalSource.url) {
+            fileType = 'GenericFile';
+          } 
+          // Original source as fallback
+          else if (uploadedFile.originalSource && uploadedFile.originalSource.url) {
             fileUrl = uploadedFile.originalSource.url;
+            fileType = 'OriginalSource';
           }
           
           if (fileUrl) {
-            console.log('Successfully uploaded to Shopify Files API:', fileUrl);
+            console.log(`Successfully uploaded to Shopify Files API (${fileType}):`, fileUrl);
+            console.log('Full upload response:', JSON.stringify(uploadedFile, null, 2));
+            
             res.json({ 
               success: true, 
               url: fileUrl,
               filename: req.file.originalname,
               shopifyFileId: uploadedFile.id,
               fileStatus: uploadedFile.fileStatus,
+              fileType: fileType,
               source: 'shopify' 
             });
           } else {
+            console.error('No URL found in uploaded file:', JSON.stringify(uploadedFile, null, 2));
             throw new Error(`Shopify Files API upload failed: No URL returned`);
           }
         } else {
