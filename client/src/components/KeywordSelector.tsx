@@ -167,6 +167,11 @@ export default function KeywordSelector({
   const [directTopic, setDirectTopic] = useState(productTitle || ""); // Pre-populate with product title if available
   const [sortBy, setSortBy] = useState<'searchVolume' | 'competition' | 'cpc' | 'difficulty' | 'keyword'>('searchVolume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Manual keyword input states
+  const [manualKeyword, setManualKeyword] = useState("");
+  const [customSearchTerm, setCustomSearchTerm] = useState("");
+  const [isCustomSearchLoading, setIsCustomSearchLoading] = useState(false);
 
   // Count selected keywords
   const selectedCount = keywords.filter(kw => kw.selected).length;
