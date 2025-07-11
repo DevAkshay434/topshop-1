@@ -439,6 +439,7 @@ export default function MediaSelectionStep({
   };
   
   const setPrimaryImageHandler = (image: MediaImage) => {
+    console.log('Setting primary image:', image);
     setPrimaryImage(image);
     
     toast({
@@ -492,6 +493,7 @@ export default function MediaSelectionStep({
     
     if (exists) {
       // Remove from secondary images
+      console.log('Removing secondary image:', image);
       setSecondaryImages(prev => prev.filter(img => img.id !== image.id));
       toast({
         title: 'Image removed',
@@ -499,6 +501,7 @@ export default function MediaSelectionStep({
       });
     } else {
       // Add to secondary images
+      console.log('Adding secondary image:', image);
       setSecondaryImages(prev => [...prev, image]);
       toast({
         title: 'Image added',
@@ -684,6 +687,13 @@ export default function MediaSelectionStep({
         setSecondaryImages={setSecondaryImages}
         onPreviewImage={openImagePreview}
       />
+      
+      {/* Debug info - remove when fixed */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-gray-100 p-2 text-xs border">
+          <strong>Debug:</strong> Primary: {primaryImage?.id || 'none'}, Secondary: {secondaryImages.length}, Uploaded: {uploadedImages.length}
+        </div>
+      )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
