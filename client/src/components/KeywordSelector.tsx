@@ -348,12 +348,32 @@ export default function KeywordSelector({
         
         setKeywords(keywordsWithSelection);
         console.log(`Received ${keywordsWithSelection.length} keywords from API`);
+        console.log("First few keywords:", keywordsWithSelection.slice(0, 5).map(k => ({
+          keyword: k.keyword,
+          searchVolume: k.searchVolume,
+          source: k.source,
+          competition: k.competition
+        })));
       } else {
         console.log("No keywords returned from API");
+        setKeywords([]); // Clear keywords if no authentic data available
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching keywords:", error);
-      // Keep any existing keywords
+      
+      // Handle different types of errors
+      if (error.response?.status === 408) {
+        // DataForSEO API timeout
+        setKeywords([]);
+        alert("The keyword search is taking longer than expected. Please try a simpler search term or try again later.");
+      } else if (error.response?.status === 500) {
+        // API configuration error
+        setKeywords([]);
+        alert("Unable to fetch authentic keyword data. Please check your API configuration.");
+      } else {
+        // Other errors - keep existing keywords
+        console.log("Keeping existing keywords due to error:", error.message);
+      }
     } finally {
       // Ensure minimum loading time to prevent flicker
       const elapsedTime = Date.now() - startTime;

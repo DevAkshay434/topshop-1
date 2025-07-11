@@ -590,11 +590,21 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       console.log(`Successfully fetched ${keywords.length} keywords from DataForSEO API`);
     } catch (error) {
       console.log(`DataForSEO API error: ${error.message}`);
-      console.log(`No authentic keywords available - DataForSEO API not configured`);
       
-      // Return empty keywords array instead of fallback keywords
-      // This ensures only authentic DataForSEO data is shown
-      keywords = [];
+      // Return specific error message for timeout vs other errors
+      if (error.message.includes('timeout')) {
+        return res.status(408).json({
+          success: false,
+          error: "DataForSEO API timeout - please try again with a simpler search term",
+          message: "The keyword search is taking longer than expected. Please try a simpler search term or try again later."
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          error: "DataForSEO API error",
+          message: "Unable to fetch authentic keyword data. Please check your API configuration."
+        });
+      }
     }
     
     // If we have additional search terms, process them and merge unique keywords
