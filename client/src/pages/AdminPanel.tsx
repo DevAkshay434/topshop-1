@@ -379,14 +379,12 @@ export default function AdminPanel() {
         setSuggestionsLoading(false);
         
         console.log('✅ State updated with suggestions:', data.suggestions);
+        console.log('✅ Suggestions array length:', data.suggestions.length);
         
         // Force a state check after a brief delay to ensure React has updated
         setTimeout(() => {
-          console.log('🔍 Post-update state check:', { 
-            suggestionsLength: buyerPersonaSuggestions.length,
-            suggestionsGenerated,
-            currentWorkflowStep: workflowStep 
-          });
+          console.log('🔍 Post-update state check - buyerPersonaSuggestions:', buyerPersonaSuggestions);
+          console.log('🔍 Post-update state check - suggestionsGenerated:', suggestionsGenerated);
         }, 100);
         
         toast({
@@ -434,6 +432,12 @@ export default function AdminPanel() {
   
   // Add logging to track state changes
   console.log('Current selectedMediaContent state:', selectedMediaContent);
+  console.log('🔍 BUYER PERSONA STATE CHECK:', { 
+    buyerPersonaSuggestionsLength: buyerPersonaSuggestions.length, 
+    suggestions: buyerPersonaSuggestions, 
+    suggestionsGenerated, 
+    suggestionsLoading
+  });
   
   // Workflow step state
   const [currentStep, setCurrentStep] = useState<string>("product");
@@ -3138,11 +3142,12 @@ export default function AdminPanel() {
                                 <Loader2 className="w-5 h-5 mr-2 animate-spin text-purple-500" />
                                 <p className="text-sm text-purple-700">Analyzing your selected products to generate personalized buyer personas...</p>
                               </div>
-                            ) : buyerPersonaSuggestions.length > 0 ? (
+                            ) : buyerPersonaSuggestions && buyerPersonaSuggestions.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
                                 {console.log('🎯 Rendering buyer persona suggestions:', buyerPersonaSuggestions)}
                                 {console.log('🎯 Current workflow step:', workflowStep)}
                                 {console.log('🎯 suggestionsGenerated:', suggestionsGenerated)}
+                                {console.log('🎯 buyerPersonaSuggestions length:', buyerPersonaSuggestions.length)}
                                 {buyerPersonaSuggestions.map((suggestion, index) => (
                                   <Button
                                     key={index}
