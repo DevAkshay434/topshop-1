@@ -312,7 +312,13 @@ export default function AdminPanel() {
 
   // Function to generate AI-powered buyer persona suggestions
   const generateBuyerPersonaSuggestions = async () => {
+    console.log('🔄 Regenerate button clicked! Generating buyer persona suggestions...');
+    console.log('📦 Selected products:', selectedProducts);
+    console.log('🏪 Selected collections:', selectedCollections);
+    console.log('🏬 Current store:', storeContext.currentStore);
+    
     if (selectedProducts.length === 0) {
+      console.log('⚠️ No products selected, using default suggestions');
       setBuyerPersonaSuggestions([
         'General Consumers',
         'Budget-Conscious Shoppers',
@@ -320,26 +326,35 @@ export default function AdminPanel() {
         'Online Shoppers',
         'Brand-Conscious Customers'
       ]);
+      setSuggestionsGenerated(true);
       return;
     }
 
     setSuggestionsLoading(true);
+    console.log('🚀 Starting AI generation request...');
+    
     try {
+      const requestData = {
+        products: selectedProducts,
+        collections: selectedCollections
+      };
+      console.log('📤 Request data:', requestData);
+      
       const response = await fetch('/api/buyer-personas/generate-suggestions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Store-ID': storeContext.currentStore?.id?.toString() || '',
         },
-        body: JSON.stringify({
-          products: selectedProducts,
-          collections: selectedCollections
-        })
+        body: JSON.stringify(requestData)
       });
 
+      console.log('📡 Response status:', response.status);
       const data = await response.json();
+      console.log('📥 Response data:', data);
       
       if (data.success && data.suggestions) {
+        console.log('✅ AI suggestions received:', data.suggestions);
         setBuyerPersonaSuggestions(data.suggestions);
         setSuggestionsGenerated(true);
         toast({
@@ -350,7 +365,7 @@ export default function AdminPanel() {
         throw new Error(data.error || 'Failed to generate suggestions');
       }
     } catch (error) {
-      console.error('Error generating buyer persona suggestions:', error);
+      console.error('❌ Error generating buyer persona suggestions:', error);
       toast({
         title: "Error generating suggestions",
         description: "Using default suggestions. Please try again.",
@@ -364,8 +379,10 @@ export default function AdminPanel() {
         'Online Shoppers',
         'Brand-Conscious Customers'
       ]);
+      setSuggestionsGenerated(true);
     } finally {
       setSuggestionsLoading(false);
+      console.log('🏁 Buyer persona generation completed');
     }
   };
   
