@@ -193,15 +193,15 @@ export default function KeywordSelector({
     }
   };
 
-  // Filter keywords based on search and intent filter, hide 0 search volume (except manual keywords), NO FALLBACK KEYWORDS
+  // Filter keywords based on search and intent filter - show ALL authentic DataForSEO keywords
   const filteredKeywords = keywords
     .filter(keyword => {
       const matchesSearch = keyword.keyword.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesIntent = filterIntent ? keyword.intent === filterIntent : true;
-      const hasSearchVolume = keyword.searchVolume !== 0 && keyword.searchVolume !== undefined;
-      const isManualKeyword = keyword.intent === "Manual";
-      // REMOVED: isFallbackKeyword filter - NO FALLBACK KEYWORDS ALLOWED
-      return matchesSearch && matchesIntent && (hasSearchVolume || isManualKeyword);
+      // Show ALL keywords from DataForSEO API (including those with 0 or null search volume)
+      // Only exclude completely invalid keywords
+      const isValidKeyword = keyword.keyword && keyword.keyword.trim().length > 0;
+      return matchesSearch && matchesIntent && isValidKeyword;
     })
     .sort((a, b) => {
       const valueA = getSortValue(a, sortBy);
@@ -335,7 +335,15 @@ export default function KeywordSelector({
         data: requestData
       });
 
+      console.log("API Response:", {
+        success: response.success,
+        keywordCount: response.keywords?.length || 0,
+        hasKeywords: !!(response.keywords && response.keywords.length > 0)
+      });
+
       if (response.success && response.keywords && response.keywords.length > 0) {
+        console.log("Raw keywords from API:", response.keywords.slice(0, 3));
+        
         // Apply comprehensive SEO sanitization to all keywords
         const keywordsWithSelection = response.keywords.map(kw => {
           const sanitizedKeyword = sanitizeKeywordForSEO(kw.keyword);
@@ -346,17 +354,19 @@ export default function KeywordSelector({
           };
         }).filter(kw => isValidSEOKeyword(kw.keyword)); // Filter out invalid keywords
         
+        console.log("Keywords after sanitization:", keywordsWithSelection.length);
+        console.log("Filtered keywords sample:", keywordsWithSelection.slice(0, 3));
+        
         setKeywords(keywordsWithSelection);
-        console.log(`Received ${keywordsWithSelection.length} keywords from API`);
-        console.log("First few keywords:", keywordsWithSelection.slice(0, 5).map(k => ({
-          keyword: k.keyword,
-          searchVolume: k.searchVolume,
-          competition: k.competition,
-          intent: k.intent
-        })));
+        console.log(`✅ Successfully set ${keywordsWithSelection.length} keywords in state`);
       } else {
-        console.log("No keywords returned from API");
-        setKeywords([]); // Clear keywords if no authentic data available
+        console.log("❌ No valid keywords returned from API");
+        console.log("Response details:", {
+          success: response.success,
+          keywords: response.keywords,
+          keywordCount: response.keywords?.length || 0
+        });
+        setKeywords([]);
       }
     } catch (error: any) {
       console.error("Error fetching keywords:", error);
@@ -371,8 +381,13 @@ export default function KeywordSelector({
         setKeywords([]);
         alert("Unable to fetch authentic keyword data. Please check your API configuration.");
       } else {
-        // Other errors - keep existing keywords
-        console.log("Keeping existing keywords due to error:", error.message);
+        // For any other error, clear keywords and show error message
+        console.log("Error occurred, clearing keywords:", error.message);
+        setKeywords([]);
+        
+        // Show user-friendly error message
+        const errorMessage = error.response?.data?.message || error.message || "Failed to fetch keywords";
+        console.error("Keyword fetch error:", errorMessage);
       }
     } finally {
       // Ensure minimum loading time to prevent flicker
