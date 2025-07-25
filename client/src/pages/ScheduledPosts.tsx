@@ -3,15 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import PostList from "@/components/PostList";
 import CreatePostModal from "@/components/CreatePostModal";
-import ScheduledPostEditModal from "@/components/ScheduledPostEditModal";
 import { BlogPost } from "@shared/schema";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
 
 export default function ScheduledPosts() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
-  const [scheduleEditModalOpen, setScheduleEditModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
-  const [scheduleEditPost, setScheduleEditPost] = useState<BlogPost | null>(null);
   
   // Check if the store has the scheduling permission
   const { data: permissionsData } = useQuery<{ 
@@ -29,11 +26,6 @@ export default function ScheduledPosts() {
   const handleEditPost = (post: BlogPost) => {
     setSelectedPost(post);
     setCreatePostModalOpen(true);
-  };
-
-  const handleEditSchedule = (post: BlogPost) => {
-    setScheduleEditPost(post);
-    setScheduleEditModalOpen(true);
   };
   
   return (
@@ -59,19 +51,12 @@ export default function ScheduledPosts() {
         queryKey="/api/posts/scheduled"
         title="Scheduled Posts"
         onEditPost={handleEditPost}
-        onEditSchedule={handleEditSchedule}
       />
       
       <CreatePostModal
         open={createPostModalOpen}
         onOpenChange={setCreatePostModalOpen}
         initialData={selectedPost}
-      />
-      
-      <ScheduledPostEditModal
-        open={scheduleEditModalOpen}
-        onOpenChange={setScheduleEditModalOpen}
-        post={scheduleEditPost}
       />
     </Layout>
   );

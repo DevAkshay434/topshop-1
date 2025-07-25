@@ -8,13 +8,7 @@ import {
   MoreVertical, 
   Calendar, 
   Eye,
-  Loader2,
-  File,
-  BookOpen,
-  CheckCircle,
-  AlertCircle,
-  Circle,
-  Trash2
+  Loader2
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
@@ -37,7 +31,6 @@ interface PostListProps {
   onPageChange?: (page: number) => void;
   totalPages?: number;
   onEditPost?: (post: BlogPost) => void;
-  onEditSchedule?: (post: BlogPost) => void;
 }
 
 export default function PostList({ 
@@ -48,13 +41,11 @@ export default function PostList({
   page = 1,
   onPageChange,
   totalPages = 1,
-  onEditPost,
-  onEditSchedule
+  onEditPost
 }: PostListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [publishingId, setPublishingId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
   
   const { data, isLoading, error } = useQuery<{ posts: BlogPost[] }>({
     queryKey: [queryKey, limit, page],
@@ -101,39 +92,6 @@ export default function PostList({
       setPublishingId(null);
     }
   };
-
-  const handleDeletePost = async (post: BlogPost) => {
-    if (!confirm(`Are you sure you want to delete "${post.title}"? This action cannot be undone.`)) {
-      return;
-    }
-    
-    setDeletingId(post.id);
-    
-    try {
-      await apiRequest('DELETE', `/api/posts/${post.id}`);
-      
-      toast({
-        title: "Post Deleted",
-        description: `"${post.title}" has been deleted successfully.`
-      });
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/recent'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-    } catch (error: any) {
-      console.error('Error deleting post:', error);
-      toast({
-        title: "Delete Failed",
-        description: error?.message || "There was an error deleting the post. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setDeletingId(null);
-    }
-  };
   
   const getPostStatusColor = (status: string) => {
     switch (status) {
@@ -152,58 +110,16 @@ export default function PostList({
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
   
-  const getPostIcon = (status: string, contentType?: string | null) => {
-    const isPage = contentType === 'page';
-    
+  const getPostIcon = (status: string) => {
     switch (status) {
       case "published":
-        return isPage ? <File className="h-5 w-5 text-primary" /> : <FileText className="h-5 w-5 text-primary" />;
+        return <FileText className="h-5 w-5 text-primary" />;
       case "draft":
-        return isPage ? <File className="h-5 w-5 text-neutral-500" /> : <FileText className="h-5 w-5 text-neutral-500" />;
+        return <FileText className="h-5 w-5 text-neutral-500" />;
       case "scheduled":
         return <Clock className="h-5 w-5 text-amber-500" />;
       default:
-        return isPage ? <File className="h-5 w-5 text-neutral-500" /> : <FileText className="h-5 w-5 text-neutral-500" />;
-    }
-  };
-
-  const getContentTypeLabel = (contentType?: string | null) => {
-    return contentType === 'page' ? 'Page' : 'Post';
-  };
-
-  const getContentTypeColor = (contentType?: string | null) => {
-    return contentType === 'page' 
-      ? 'bg-purple-50 text-purple-700' 
-      : 'bg-blue-50 text-blue-700';
-  };
-
-  const getPublishStatusIcon = (status: string, publishedDate?: string | null) => {
-    if (status === 'published' || publishedDate) {
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
-    } else if (status === 'scheduled') {
-      return <Clock className="h-4 w-4 text-amber-500" />;
-    } else {
-      return <Circle className="h-4 w-4 text-gray-400" />;
-    }
-  };
-
-  const getPublishStatusLabel = (status: string, publishedDate?: string | null) => {
-    if (status === 'published' || publishedDate) {
-      return 'Published';
-    } else if (status === 'scheduled') {
-      return 'Scheduled';
-    } else {
-      return 'Draft';
-    }
-  };
-
-  const getPublishStatusColor = (status: string, publishedDate?: string | null) => {
-    if (status === 'published' || publishedDate) {
-      return 'bg-green-50 text-green-700 border-green-200';
-    } else if (status === 'scheduled') {
-      return 'bg-amber-50 text-amber-700 border-amber-200';
-    } else {
-      return 'bg-gray-50 text-gray-600 border-gray-200';
+        return <FileText className="h-5 w-5 text-neutral-500" />;
     }
   };
   
@@ -277,27 +193,16 @@ export default function PostList({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
-                          {getPostIcon(post.status, post.contentType)}
+                          {getPostIcon(post.status)}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-primary truncate">
-                              {post.title}
-                            </p>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getContentTypeColor(post.contentType)}`}>
-                              {getContentTypeLabel(post.contentType)}
-                            </span>
-                          </div>
-                        </div>
+                        <p className="text-sm font-medium text-primary truncate">
+                          {post.title}
+                        </p>
                       </div>
                       <div className="ml-2 flex-shrink-0 flex">
-                        <div className="flex items-center gap-2">
-                          {/* Publication Status Indicator */}
-                          <div className={`px-3 py-1 inline-flex items-center gap-1.5 text-xs font-medium rounded-full border ${getPublishStatusColor(post.status, post.publishedDate)}`}>
-                            {getPublishStatusIcon(post.status, post.publishedDate)}
-                            {getPublishStatusLabel(post.status, post.publishedDate)}
-                          </div>
-                        </div>
+                        <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPostStatusColor(post.status)}`}>
+                          {getStatusLabel(post.status)}
+                        </p>
                       </div>
                     </div>
                     <div className="mt-2 sm:flex sm:justify-between">
@@ -378,15 +283,6 @@ export default function PostList({
                               }}>
                                 View Analytics
                               </DropdownMenuItem>
-                              {post.status === "scheduled" && !post.publishedDate && onEditSchedule && (
-                                <DropdownMenuItem onClick={(e) => {
-                                  e.stopPropagation();
-                                  onEditSchedule(post);
-                                }}>
-                                  <Clock className="mr-2 h-4 w-4" />
-                                  Edit Schedule
-                                </DropdownMenuItem>
-                              )}
                               {post.status !== "published" && (
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
@@ -409,22 +305,9 @@ export default function PostList({
                               )}
                               <DropdownMenuItem 
                                 className="text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeletePost(post);
-                                }}
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                {deletingId === post.id ? (
-                                  <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Deleting...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </>
-                                )}
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
