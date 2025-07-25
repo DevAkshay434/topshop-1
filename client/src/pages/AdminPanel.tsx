@@ -2633,7 +2633,7 @@ export default function AdminPanel() {
                       )}
                       
                       {/* Selected Items Display - appears after blog selection */}
-                      {(selectedProducts.length > 0 || selectedCollections.length > 0 || selectedKeywords.length > 0 || form.watch('title')) && (
+                      {(selectedProducts.length > 0 || selectedCollections.length > 0 || form.watch('buyerPersonas') || selectedKeywords.length > 0 || form.watch('title')) && (
                         <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
                           <h4 className="text-sm font-medium text-slate-700 mb-3">Current Selections</h4>
                           
@@ -2708,7 +2708,20 @@ export default function AdminPanel() {
                             </div>
                           )}
 
-
+                          {/* Buyer Personas Display */}
+                          {form.watch('buyerPersonas') && (
+                            <div className="space-y-2">
+                              <div className="flex items-center">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <Users className="h-4 w-4 mr-2 text-blue-500" />
+                                  Target Audience
+                                </h5>
+                              </div>
+                              <div className="p-3 bg-slate-50 rounded-md border">
+                                <p className="text-sm text-gray-700">{form.watch('buyerPersonas')}</p>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Selected Keywords */}
                           {selectedKeywords.length > 0 && (
