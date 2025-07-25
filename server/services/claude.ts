@@ -723,19 +723,24 @@ export async function generateTitles(request: {
     // Add keyword optimization context if provided
     if (request.keywords && request.keywords.length > 0) {
       const keywordList = request.keywords.join(', ');
-      enhancedPrompt += `\n\nKEYWORD OPTIMIZATION: Use these specific keywords in the titles:
+      enhancedPrompt += `\n\nKEYWORD OPTIMIZATION REQUIREMENTS (MANDATORY): Use these specific keywords in the titles:
       Keywords: ${keywordList}
-      - Incorporate at least 1 keyword per title when naturally possible
-      - DO NOT generate new keywords - only use the provided ones
-      - Ensure keyword usage feels natural and engaging
-      - Prioritize primary keywords in title suggestions`;
+      
+      CRITICAL REQUIREMENT: EVERY SINGLE TITLE MUST include at least one of these provided keywords
+      - Each title MUST contain at least one keyword from the provided list
+      - DO NOT generate titles without keywords - this is absolutely required
+      - DO NOT generate new keywords - only use the provided ones exactly as given
+      - Distribute the keywords across all titles to maximize SEO coverage
+      - Ensure keyword usage feels natural and engaging while being mandatory
+      - Prioritize high-value keywords in title suggestions`;
     }
     
     enhancedPrompt += `\n\nTitle Requirements:
     - Clear and engaging for the defined audience
-    - Incorporate keywords naturally when possible
+    - MUST incorporate keywords - this is mandatory, not optional
     - Focus on conversion potential and relevancy
-    - Avoid generic or overly promotional language`;
+    - Avoid generic or overly promotional language
+    - Each title must use at least one provided keyword exactly as given`;
     
     // Make API call to Claude
     const response = await anthropic.messages.create({

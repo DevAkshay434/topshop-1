@@ -300,7 +300,9 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         - Secondary keywords: ${topKeywords.slice(3).join(", ") || "N/A"}
         - Current year: ${new Date().getFullYear()}${audience ? `\n        - Target Audience: ${audience}` : ''}
         
-        IMPORTANT SEO GUIDELINES:
+        CRITICAL REQUIREMENT - KEYWORD USAGE:
+        - EVERY SINGLE TITLE MUST include at least one of these exact keywords: ${topKeywords.join(", ")}
+        - Do NOT create any titles without keywords - this is absolutely mandatory
         - Each title MUST naturally include at least one of the provided keywords in full
         - Always place the most important keyword as close to the beginning of the title as possible
         - Create titles that directly match search intent (informational, commercial, etc.)
@@ -340,7 +342,48 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       
       if (claudeResponse && claudeResponse.titles && Array.isArray(claudeResponse.titles)) {
         console.log("Claude generated title suggestions:", claudeResponse.titles);
-        titles = claudeResponse.titles;
+        
+        // Validate that every title contains at least one keyword
+        const validatedTitles = claudeResponse.titles.filter(title => {
+          const containsKeyword = topKeywords.some(keyword => 
+            title.toLowerCase().includes(keyword.toLowerCase())
+          );
+          if (!containsKeyword) {
+            console.warn(`Title "${title}" does not contain any keywords, excluding it`);
+          }
+          return containsKeyword;
+        });
+        
+        if (validatedTitles.length < claudeResponse.titles.length) {
+          console.log(`Filtered out ${claudeResponse.titles.length - validatedTitles.length} titles without keywords`);
+        }
+        
+        titles = validatedTitles;
+        
+        // If we don't have enough titles with keywords, supplement with guaranteed keyword titles
+        if (titles.length < 8) {
+          console.log(`Only ${titles.length} titles contain keywords, adding fallback titles to reach minimum count`);
+          const currentYear = new Date().getFullYear();
+          const keyword1 = topKeywords[0] || "product";
+          const keyword2 = topKeywords[1] || keyword1;
+          const keyword3 = topKeywords[2] || keyword1;
+          
+          const fallbackTitles = [
+            `${keyword1}: Complete ${currentYear} Guide`,
+            `Best ${keyword2} for ${currentYear}`,
+            `How to Choose ${keyword1}: Expert Tips`,
+            `${keyword3} vs Alternatives: Which is Better?`,
+            `Top ${keyword1} Benefits You Should Know`,
+            `${keyword2} Review: Is It Worth It in ${currentYear}?`
+          ];
+          
+          // Add fallback titles until we have at least 8
+          let index = 0;
+          while (titles.length < 8 && index < fallbackTitles.length) {
+            titles.push(fallbackTitles[index]);
+            index++;
+          }
+        }
       } else {
         console.error("Claude response missing titles array:", claudeResponse);
       }
