@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { BlogPost } from '@shared/schema';
-import { Calendar, Clock, Save, X } from 'lucide-react';
+import { Calendar, Clock, Loader2, Save, X } from 'lucide-react';
 
 interface ScheduledPostEditModalProps {
   open: boolean;
@@ -78,13 +78,17 @@ export default function ScheduledPostEditModal({
     }
 
     // Validate that the scheduled time is in the future
-    const selectedDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+    // Create date object with proper timezone handling
+    const selectedDateTime = new Date(`${scheduleDate}T${scheduleTime}:00`);
     const now = new Date();
     
-    if (selectedDateTime <= now) {
+    // Add a small buffer (2 minutes) to account for processing time
+    const minScheduleTime = new Date(now.getTime() + 2 * 60 * 1000);
+    
+    if (selectedDateTime <= minScheduleTime) {
       toast({
         title: "Invalid Schedule Time",
-        description: "Scheduled time must be in the future",
+        description: "Scheduled time must be at least 2 minutes in the future",
         variant: "destructive",
       });
       return;
@@ -114,82 +118,96 @@ export default function ScheduledPostEditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-blue-500" />
             Edit Schedule
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-6">
           {/* Post Info */}
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <h3 className="font-medium text-gray-900 truncate">{post.title}</h3>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-medium text-gray-900 line-clamp-2">{post.title}</h3>
             <p className="text-sm text-gray-500 mt-1">
               {formatPostType(post.contentType)} • {post.category || 'No category'}
             </p>
           </div>
 
           {/* Current Schedule */}
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Calendar className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 p-3 rounded-lg">
+            <Calendar className="h-4 w-4 flex-shrink-0" />
             <span>
               Current schedule: {post.scheduledPublishDate} at {post.scheduledPublishTime}
             </span>
           </div>
 
-          {/* Schedule Date Input */}
-          <div className="space-y-2">
-            <Label htmlFor="scheduleDate">Schedule Date</Label>
-            <Input
-              id="scheduleDate"
-              type="date"
-              value={scheduleDate}
-              onChange={(e) => setScheduleDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full"
-            />
-          </div>
-
-          {/* Schedule Time Input */}
-          <div className="space-y-2">
-            <Label htmlFor="scheduleTime">Schedule Time</Label>
-            <Input
-              id="scheduleTime"
-              type="time"
-              value={scheduleTime}
-              onChange={(e) => setScheduleTime(e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-          {/* Preview */}
-          {scheduleDate && scheduleTime && (
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>New schedule:</strong> {scheduleDate} at {scheduleTime}
-              </p>
+          {/* New Schedule Form */}
+          <div className="space-y-4">
+            <h4 className="font-medium text-gray-900">Set New Schedule</h4>
+            
+            {/* Schedule Date Input */}
+            <div className="space-y-2">
+              <Label htmlFor="scheduleDate">Schedule Date</Label>
+              <Input
+                id="scheduleDate"
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full"
+              />
             </div>
-          )}
+
+            {/* Schedule Time Input */}
+            <div className="space-y-2">
+              <Label htmlFor="scheduleTime">Schedule Time</Label>
+              <Input
+                id="scheduleTime"
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* Preview */}
+            {scheduleDate && scheduleTime && (
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>New schedule:</strong> {scheduleDate} at {scheduleTime}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end space-x-2 pt-4 border-t">
+        <div className="flex justify-end space-x-2 pt-6 border-t mt-6">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={updateScheduleMutation.isPending}
           >
-            <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={updateScheduleMutation.isPending || !scheduleDate || !scheduleTime}
+            className="min-w-[130px]"
           >
-            <Save className="h-4 w-4 mr-2" />
-            {updateScheduleMutation.isPending ? 'Updating...' : 'Update Schedule'}
+            {updateScheduleMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Update Schedule
+              </>
+            )}
           </Button>
         </div>
       </DialogContent>
