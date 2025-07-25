@@ -312,6 +312,7 @@ export default function AdminPanel() {
   const [buyerPersonaSuggestions, setBuyerPersonaSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsGenerated, setSuggestionsGenerated] = useState(false);
+  const [suggestionKey, setSuggestionKey] = useState(0); // Force re-render when suggestions change
   
   // Debug state changes
   useEffect(() => {
@@ -380,14 +381,15 @@ export default function AdminPanel() {
         console.log('📝 Setting buyer persona suggestions in state...');
         console.log('📊 Current state before update:', { buyerPersonaSuggestions, suggestionsGenerated, suggestionsLoading });
         
-        // Force component re-render by using functional state updates
+        // Force component re-render by using functional state updates and key change
         setBuyerPersonaSuggestions(() => [...data.suggestions]);
         setSuggestionsGenerated(() => true);
         setSuggestionsLoading(() => false);
+        setSuggestionKey(prev => prev + 1); // Force re-render
         
         console.log('✅ State updated with suggestions:', data.suggestions);
         console.log('✅ Suggestions array length:', data.suggestions.length);
-        console.log('✅ Forcing component re-render with functional state updates');
+        console.log('✅ Forcing component re-render with functional state updates and key change');
         
         // Force a state check after a brief delay to ensure React has updated
         setTimeout(() => {
@@ -411,14 +413,18 @@ export default function AdminPanel() {
         variant: "destructive",
       });
       // Fallback to default suggestions
-      setBuyerPersonaSuggestions([
+      console.log('🔧 Setting fallback suggestions due to API error');
+      const fallbackSuggestions = [
         'General Consumers',
         'Budget-Conscious Shoppers',
         'Quality-Focused Buyers',
         'Online Shoppers',
         'Brand-Conscious Customers'
-      ]);
+      ];
+      setBuyerPersonaSuggestions(fallbackSuggestions);
       setSuggestionsGenerated(true);
+      setSuggestionKey(prev => prev + 1);
+      console.log('🔧 Fallback suggestions set:', fallbackSuggestions);
     } finally {
       setSuggestionsLoading(false);
       console.log('🏁 Buyer persona generation completed');
@@ -3122,26 +3128,44 @@ export default function AdminPanel() {
                                 Suggestions:
                               </h5>
                               {selectedProducts.length > 0 && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={generateBuyerPersonaSuggestions}
-                                  disabled={suggestionsLoading}
-                                  className="h-7 text-xs"
-                                >
-                                  {suggestionsLoading ? (
-                                    <>
-                                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                      Generating...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <RefreshCw className="w-3 h-3 mr-1" />
-                                      Regenerate
-                                    </>
-                                  )}
-                                </Button>
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={generateBuyerPersonaSuggestions}
+                                    disabled={suggestionsLoading}
+                                    className="h-7 text-xs mr-2"
+                                  >
+                                    {suggestionsLoading ? (
+                                      <>
+                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                        Generating...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <RefreshCw className="w-3 h-3 mr-1" />
+                                        Regenerate
+                                      </>
+                                    )}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      console.log('🧪 TEST: Setting test suggestions manually');
+                                      const testSuggestions = ['Test Suggestion 1', 'Test Suggestion 2', 'Test Suggestion 3'];
+                                      setBuyerPersonaSuggestions(testSuggestions);
+                                      setSuggestionsGenerated(true);
+                                      setSuggestionKey(prev => prev + 1);
+                                      console.log('🧪 TEST: Test suggestions set:', testSuggestions);
+                                    }}
+                                    className="h-7 text-xs"
+                                  >
+                                    Test
+                                  </Button>
+                                </>
                               )}
                             </div>
                             
@@ -3151,7 +3175,7 @@ export default function AdminPanel() {
                                 <p className="text-sm text-purple-700">Analyzing your selected products to generate personalized buyer personas...</p>
                               </div>
                             ) : buyerPersonaSuggestions && buyerPersonaSuggestions.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
+                              <div key={suggestionKey} className="flex flex-wrap gap-2">
                                 {console.log('🎯 RENDERING BUYER PERSONA SUGGESTIONS:')}
                                 {console.log('🎯 buyerPersonaSuggestions:', buyerPersonaSuggestions)}
                                 {console.log('🎯 buyerPersonaSuggestions.length:', buyerPersonaSuggestions.length)}
