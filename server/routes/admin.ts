@@ -436,42 +436,12 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       });
     }
     
-    // Create an array to store all terms we'll search for
+    // ONLY use the exact search term to prevent keyword contamination
+    // For topic searches, we only want keywords for that specific topic
     const searchTerms: string[] = [searchTerm];
     
-    // Add selected products' titles to search terms if provided
-    if (selectedProducts && Array.isArray(selectedProducts) && selectedProducts.length > 0) {
-      console.log(`Including ${selectedProducts.length} additional products for keyword generation`);
-      
-      // Extract product titles and add them to search terms
-      const productTitles = selectedProducts
-        .filter(product => product.title && typeof product.title === 'string')
-        .map(product => product.title);
-      
-      // Add unique product titles to the search terms
-      productTitles.forEach(title => {
-        if (!searchTerms.includes(title)) {
-          searchTerms.push(title);
-        }
-      });
-    }
-    
-    // Add selected collections' titles to search terms if provided
-    if (selectedCollections && Array.isArray(selectedCollections) && selectedCollections.length > 0) {
-      console.log(`Including ${selectedCollections.length} collections for keyword generation`);
-      
-      // Extract collection titles and add them to search terms
-      const collectionTitles = selectedCollections
-        .filter(collection => collection.title && typeof collection.title === 'string')
-        .map(collection => collection.title);
-      
-      // Add unique collection titles to the search terms
-      collectionTitles.forEach(title => {
-        if (!searchTerms.includes(title)) {
-          searchTerms.push(title);
-        }
-      });
-    }
+    // REMOVED: Additional product and collection terms to prevent mixed keywords
+    // Only search for the exact topic/term specified by the user
     
     console.log(`Searching for keywords related to ${searchTerms.length} topics: ${searchTerms.join(', ')}`);
     
@@ -481,7 +451,7 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       console.log(`Attempting to fetch keywords for: "${searchTerm}"`);
       keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
       console.log(`Successfully fetched ${keywords.length} keywords from DataForSEO API`);
-    } catch (error) {
+    } catch (error: any) {
       console.log(`DataForSEO API error: ${error.message}`);
       
       // Return specific error message for timeout vs other errors
@@ -500,48 +470,17 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
       }
     }
     
-    // If we have additional search terms, process them and merge unique keywords
-    if (searchTerms.length > 1) {
-      // Use a Set to track keywords we've already processed
-      const processedKeywords = new Set(keywords.map(k => k.keyword.toLowerCase()));
-      
-      // Process the remaining search terms (limit to 3 to avoid hitting API limits)
-      const additionalTerms = searchTerms.slice(1, 4);
-      
-      for (const term of additionalTerms) {
-        // Skip if the term is too similar to the main search term
-        if (term.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            searchTerm.toLowerCase().includes(term.toLowerCase())) {
-          continue;
-        }
-        
-        console.log(`Generating additional keywords for: ${term}`);
-        try {
-          const additionalKeywords = await dataForSEOService.getKeywordsForProduct(term);
-          
-          // Add only unique keywords to our result set
-          additionalKeywords.forEach(kw => {
-            if (!processedKeywords.has(kw.keyword.toLowerCase())) {
-              processedKeywords.add(kw.keyword.toLowerCase());
-              keywords.push(kw);
-            }
-          });
-        } catch (error) {
-          console.log(`Error generating additional keywords for "${term}": ${error.message}`);
-          // Skip fallback keywords to maintain authentic data integrity
-          console.log(`Skipping fallback keywords for "${term}" - only showing authentic DataForSEO results`);
-        }
-      }
-      
-      // Sort combined results by search volume
-      keywords.sort((a, b) => {
-        const volumeA = a.searchVolume || 0;
-        const volumeB = b.searchVolume || 0;
-        return volumeB - volumeA; // Descending order
-      });
-      
-      console.log(`Generated a total of ${keywords.length} keywords from ${searchTerms.length} search terms`);
-    }
+    // REMOVED: Additional search terms processing to prevent keyword contamination
+    // Only use keywords from the exact search term specified by the user
+    
+    // Sort results by search volume (authentic DataForSEO keywords only)
+    keywords.sort((a, b) => {
+      const volumeA = a.searchVolume || 0;
+      const volumeB = b.searchVolume || 0;
+      return volumeB - volumeA; // Descending order
+    });
+    
+    console.log(`Generated ${keywords.length} authentic keywords for: "${searchTerm}"`);
     
     // Process keywords to ensure they're not just showing the product name
     if (keywords.length > 0) {
