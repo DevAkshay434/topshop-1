@@ -3127,6 +3127,8 @@ export default function AdminPanel() {
                             ) : buyerPersonaSuggestions.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
                                 {console.log('🎯 Rendering buyer persona suggestions:', buyerPersonaSuggestions)}
+                                {console.log('🎯 Current workflow step:', workflowStep)}
+                                {console.log('🎯 suggestionsGenerated:', suggestionsGenerated)}
                                 {buyerPersonaSuggestions.map((suggestion, index) => (
                                   <Button
                                     key={index}
