@@ -326,6 +326,8 @@ export default function AdminPanel() {
     console.log('✅ suggestionsGenerated state updated:', suggestionsGenerated);
   }, [suggestionsGenerated]);
 
+
+
   // Function to generate AI-powered buyer persona suggestions
   const generateBuyerPersonaSuggestions = async () => {
     console.log('🔄 Regenerate button clicked! Generating buyer persona suggestions...');
@@ -368,18 +370,24 @@ export default function AdminPanel() {
       console.log('📡 Response status:', response.status);
       const data = await response.json();
       console.log('📥 Response data:', data);
+      console.log('📥 Response data.success:', data.success);
+      console.log('📥 Response data.suggestions:', data.suggestions);
+      console.log('📥 Response data.suggestions type:', typeof data.suggestions);
+      console.log('📥 Response data.suggestions.length:', data.suggestions?.length);
       
       if (data.success && data.suggestions) {
         console.log('✅ Suggestions received:', data.suggestions);
         console.log('📝 Setting buyer persona suggestions in state...');
         console.log('📊 Current state before update:', { buyerPersonaSuggestions, suggestionsGenerated, suggestionsLoading });
         
-        setBuyerPersonaSuggestions(data.suggestions);
-        setSuggestionsGenerated(true);
-        setSuggestionsLoading(false);
+        // Force component re-render by using functional state updates
+        setBuyerPersonaSuggestions(() => [...data.suggestions]);
+        setSuggestionsGenerated(() => true);
+        setSuggestionsLoading(() => false);
         
         console.log('✅ State updated with suggestions:', data.suggestions);
         console.log('✅ Suggestions array length:', data.suggestions.length);
+        console.log('✅ Forcing component re-render with functional state updates');
         
         // Force a state check after a brief delay to ensure React has updated
         setTimeout(() => {
@@ -3144,10 +3152,11 @@ export default function AdminPanel() {
                               </div>
                             ) : buyerPersonaSuggestions && buyerPersonaSuggestions.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
-                                {console.log('🎯 Rendering buyer persona suggestions:', buyerPersonaSuggestions)}
-                                {console.log('🎯 Current workflow step:', workflowStep)}
+                                {console.log('🎯 RENDERING BUYER PERSONA SUGGESTIONS:')}
+                                {console.log('🎯 buyerPersonaSuggestions:', buyerPersonaSuggestions)}
+                                {console.log('🎯 buyerPersonaSuggestions.length:', buyerPersonaSuggestions.length)}
                                 {console.log('🎯 suggestionsGenerated:', suggestionsGenerated)}
-                                {console.log('🎯 buyerPersonaSuggestions length:', buyerPersonaSuggestions.length)}
+                                {console.log('🎯 suggestionsLoading:', suggestionsLoading)}
                                 {buyerPersonaSuggestions.map((suggestion, index) => (
                                   <Button
                                     key={index}
