@@ -312,6 +312,19 @@ export default function AdminPanel() {
   const [buyerPersonaSuggestions, setBuyerPersonaSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsGenerated, setSuggestionsGenerated] = useState(false);
+  
+  // Debug state changes
+  useEffect(() => {
+    console.log('🔄 buyerPersonaSuggestions state updated:', buyerPersonaSuggestions);
+  }, [buyerPersonaSuggestions]);
+  
+  useEffect(() => {
+    console.log('📊 suggestionsLoading state updated:', suggestionsLoading);
+  }, [suggestionsLoading]);
+  
+  useEffect(() => {
+    console.log('✅ suggestionsGenerated state updated:', suggestionsGenerated);
+  }, [suggestionsGenerated]);
 
   // Function to generate AI-powered buyer persona suggestions
   const generateBuyerPersonaSuggestions = async () => {
@@ -358,13 +371,16 @@ export default function AdminPanel() {
       
       if (data.success && data.suggestions) {
         console.log('✅ AI suggestions received:', data.suggestions);
+        console.log('📝 Setting buyer persona suggestions in state...');
         setBuyerPersonaSuggestions(data.suggestions);
         setSuggestionsGenerated(true);
+        console.log('✅ State updated with suggestions:', data.suggestions);
         toast({
           title: "AI suggestions generated",
           description: `Generated ${data.suggestions.length} buyer persona suggestions based on your selected products.`,
         });
       } else {
+        console.error('❌ API response missing success or suggestions:', data);
         throw new Error(data.error || 'Failed to generate suggestions');
       }
     } catch (error) {
@@ -3110,6 +3126,7 @@ export default function AdminPanel() {
                               </div>
                             ) : buyerPersonaSuggestions.length > 0 ? (
                               <div className="flex flex-wrap gap-2">
+                                {console.log('🎯 Rendering buyer persona suggestions:', buyerPersonaSuggestions)}
                                 {buyerPersonaSuggestions.map((suggestion, index) => (
                                   <Button
                                     key={index}
