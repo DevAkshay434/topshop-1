@@ -208,13 +208,13 @@ export class DataForSEOService {
           const competition = result.competition;
           const cpc = result.cpc;
           
-          // Only use authentic search volumes - skip keywords with no data
-          if (searchVolume === null || searchVolume === undefined || searchVolume === 0) {
-            console.log(`Skipping keyword with no authentic search volume: ${keywordText}`);
-            continue;
+          // Include all keywords from DataForSEO API, even with null/zero search volume
+          // Assign a fallback value for null/undefined search volumes to ensure display
+          let adjustedSearchVolume = searchVolume;
+          if (searchVolume === null || searchVolume === undefined) {
+            adjustedSearchVolume = 0; // Use 0 instead of skipping
+            console.log(`Keyword with null search volume included: ${keywordText} (assigned 0)`);
           }
-          
-          const adjustedSearchVolume = searchVolume;
           
           const competitionLevel = this.getCompetitionLevel(competition || 0);
           
@@ -233,8 +233,8 @@ export class DataForSEOService {
           // Sanitize and format the keyword properly
           const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
           
-          // Only add keywords that pass quality checks and have meaningful search volume
-          if (this.isValidSEOKeyword(sanitizedKeyword) && adjustedSearchVolume > 0) {
+          // Only add keywords that pass quality checks - include ALL DataForSEO keywords regardless of search volume
+          if (this.isValidSEOKeyword(sanitizedKeyword)) {
             keywordData.push({
               keyword: sanitizedKeyword,
               searchVolume: adjustedSearchVolume,
