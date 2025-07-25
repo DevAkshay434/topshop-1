@@ -136,10 +136,7 @@ export class DataForSEOService {
           location_code: 2840, // United States
           limit: 100, // Get up to 100 keyword suggestions
           include_seed_keyword: true,
-          include_serp_info: true,
-          filters: [
-            ["search_volume", ">=", 10] // Only keywords with at least 10 monthly searches
-          ]
+          include_serp_info: true
         }];
 
         console.log("DataForSEO request payload:", JSON.stringify(requestData));
@@ -1257,7 +1254,8 @@ export class DataForSEOService {
         keyword: "test connection", // Single keyword for keyword suggestions endpoint
         language_code: "en", 
         location_code: 2840, // United States
-        limit: 10
+        limit: 10,
+        include_seed_keyword: true
       }];
 
       // Add more detailed logging  
