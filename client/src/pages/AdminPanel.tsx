@@ -266,20 +266,7 @@ const predefinedCategories = [
   { id: "how-to", name: "How-To" },
 ];
 
-// Predefined buyer persona suggestions for quick insertion
-const buyerPersonaSuggestions = [
-  "35+ Aged Buyer",
-  "Children",
-  "Business Owners", 
-  "Parents",
-  "Students",
-  "Retired Adults",
-  "Young Professionals",
-  "Homeowners",
-  "First-time Buyers",
-  "Budget-Conscious Shoppers",
-  "Luxury Seekers"
-];
+// AI-generated buyer persona suggestions will be defined in component state
 
 export default function AdminPanel() {
   const [selectedTab, setSelectedTab] = useState("generate");
@@ -318,38 +305,69 @@ export default function AdminPanel() {
   // State to control whether Select components should use controlled mode
   // const [isSelectControlled, setIsSelectControlled] = useState(true);
 
-  // Buyer persona suggestions for the flexible text input
-  const buyerPersonaSuggestions = [
-    '35+ Aged Buyer',
-    'Children',
-    'Business Owners',
-    'Parents',
-    'Students',
-    'Retired Adults',
-    'Young Professionals',
-    'First-Time Buyers',
-    'Budget-Conscious Shoppers',
-    'Luxury Seekers',
-    'Health-Conscious Consumers',
-    'Tech Enthusiasts',
-    'Eco-Friendly Shoppers',
-    'Millennials',
-    'Gen Z Customers',
-    'Baby Boomers',
-    'Working Mothers',
-    'Single Professionals',
-    'Empty Nesters',
-    'College Students',
-    'Small Business Owners',
-    'Fitness Enthusiasts',
-    'Home Improvement DIYers',
-    'Fashion-Forward Individuals',
-    'Pet Owners',
-    'Outdoor Adventure Seekers',
-    'Urban Dwellers',
-    'Suburban Families',
-    'Rural Communities'
-  ];
+  // AI-generated buyer persona suggestions based on selected products
+  const [buyerPersonaSuggestions, setBuyerPersonaSuggestions] = useState<string[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsGenerated, setSuggestionsGenerated] = useState(false);
+
+  // Function to generate AI-powered buyer persona suggestions
+  const generateBuyerPersonaSuggestions = async () => {
+    if (selectedProducts.length === 0) {
+      setBuyerPersonaSuggestions([
+        'General Consumers',
+        'Budget-Conscious Shoppers',
+        'Quality-Focused Buyers',
+        'Online Shoppers',
+        'Brand-Conscious Customers'
+      ]);
+      return;
+    }
+
+    setSuggestionsLoading(true);
+    try {
+      const response = await fetch('/api/buyer-personas/generate-suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Store-ID': storeContext.currentStore?.id?.toString() || '',
+        },
+        body: JSON.stringify({
+          products: selectedProducts,
+          collections: selectedCollections
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.suggestions) {
+        setBuyerPersonaSuggestions(data.suggestions);
+        setSuggestionsGenerated(true);
+        toast({
+          title: "AI suggestions generated",
+          description: `Generated ${data.suggestions.length} buyer persona suggestions based on your selected products.`,
+        });
+      } else {
+        throw new Error(data.error || 'Failed to generate suggestions');
+      }
+    } catch (error) {
+      console.error('Error generating buyer persona suggestions:', error);
+      toast({
+        title: "Error generating suggestions",
+        description: "Using default suggestions. Please try again.",
+        variant: "destructive",
+      });
+      // Fallback to default suggestions
+      setBuyerPersonaSuggestions([
+        'General Consumers',
+        'Budget-Conscious Shoppers',
+        'Quality-Focused Buyers',
+        'Online Shoppers',
+        'Brand-Conscious Customers'
+      ]);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
   
   // Media selection state - initialized with empty values
   const [selectedMediaContent, setSelectedMediaContent] = useState<{
@@ -1065,6 +1083,14 @@ export default function AdminPanel() {
 
   const { toast } = useToast();
 
+  // Reset suggestions when products change
+  useEffect(() => {
+    if (selectedProducts.length > 0 && suggestionsGenerated) {
+      setSuggestionsGenerated(false);
+      setBuyerPersonaSuggestions([]);
+    }
+  }, [selectedProducts, suggestionsGenerated]);
+
   // Utility function to scroll to current step section
   const scrollToCurrentStep = () => {
     // Find the current step section based on workflowStep
@@ -1729,6 +1755,11 @@ export default function AdminPanel() {
     // Move to buying avatars step after collections selection
     setWorkflowStep('buying-avatars');
     scrollToCurrentStep();
+    
+    // Generate AI buyer persona suggestions when entering this step
+    if (!suggestionsGenerated) {
+      generateBuyerPersonaSuggestions();
+    }
     
     toast({
       title: "Related collections saved",
@@ -3021,30 +3052,81 @@ export default function AdminPanel() {
                             )}
                           />
                           
-                          {/* Suggestion Buttons */}
+                          {/* AI-Generated Suggestion Buttons */}
                           <div className="space-y-3">
-                            <h5 className="text-sm font-medium text-gray-700">Quick Suggestions:</h5>
-                            <div className="flex flex-wrap gap-2">
-                              {buyerPersonaSuggestions.map((suggestion, index) => (
+                            <div className="flex items-center justify-between">
+                              <h5 className="text-sm font-medium text-gray-700 flex items-center">
+                                <Sparkles className="w-4 h-4 mr-2 text-purple-500" />
+                                AI-Generated Suggestions:
+                              </h5>
+                              {selectedProducts.length > 0 && (
                                 <Button
-                                  key={index}
                                   type="button"
                                   variant="outline"
                                   size="sm"
-                                  className="h-8 text-xs"
-                                  onClick={() => {
-                                    const currentValue = form.getValues('buyerPersonas') || '';
-                                    const newValue = currentValue ? `${currentValue}, ${suggestion}` : suggestion;
-                                    form.setValue('buyerPersonas', newValue);
-                                  }}
+                                  onClick={generateBuyerPersonaSuggestions}
+                                  disabled={suggestionsLoading}
+                                  className="h-7 text-xs"
                                 >
-                                  <Plus className="w-3 h-3 mr-1" />
-                                  {suggestion}
+                                  {suggestionsLoading ? (
+                                    <>
+                                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="w-3 h-3 mr-1" />
+                                      Regenerate
+                                    </>
+                                  )}
                                 </Button>
-                              ))}
+                              )}
                             </div>
+                            
+                            {suggestionsLoading ? (
+                              <div className="flex items-center justify-center p-4 bg-purple-50 rounded-md border">
+                                <Loader2 className="w-5 h-5 mr-2 animate-spin text-purple-500" />
+                                <p className="text-sm text-purple-700">Analyzing your selected products to generate personalized buyer personas...</p>
+                              </div>
+                            ) : buyerPersonaSuggestions.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {buyerPersonaSuggestions.map((suggestion, index) => (
+                                  <Button
+                                    key={index}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 text-xs hover:bg-purple-50 hover:border-purple-300"
+                                    onClick={() => {
+                                      const currentValue = form.getValues('buyerPersonas') || '';
+                                      const newValue = currentValue ? `${currentValue}, ${suggestion}` : suggestion;
+                                      form.setValue('buyerPersonas', newValue);
+                                    }}
+                                  >
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    {suggestion}
+                                  </Button>
+                                ))}
+                              </div>
+                            ) : selectedProducts.length === 0 ? (
+                              <div className="p-4 bg-amber-50 rounded-md border border-amber-200">
+                                <p className="text-sm text-amber-700">
+                                  <Info className="w-4 h-4 inline mr-1" />
+                                  Select products in Step 1 to get AI-generated buyer persona suggestions based on your specific products.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="p-4 bg-gray-50 rounded-md border">
+                                <p className="text-sm text-gray-600">
+                                  Click "Regenerate" to get AI-generated buyer persona suggestions based on your selected products.
+                                </p>
+                              </div>
+                            )}
+                            
                             <p className="text-xs text-gray-500">
-                              Click any suggestion to add it to your description. You can combine multiple suggestions or write your own.
+                              {suggestionsGenerated && selectedProducts.length > 0 
+                                ? "These suggestions are AI-generated based on your selected products. Click any suggestion to add it to your description."
+                                : "You can type your own description or use the suggestion buttons above."}
                             </p>
                           </div>
                         </div>

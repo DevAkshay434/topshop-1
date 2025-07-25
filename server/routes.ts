@@ -27,6 +27,7 @@ import claudeRouter from './routes/claude';
 import adminRouter from './routes/admin';
 import { mediaRouter } from './routes/media';
 import oauthRouter from './routes/oauth';
+import buyerPersonasRouter from './routes/buyer-personas';
 import { pexelsService } from './services/pexels';
 import { shopifyAuthMiddleware, shopifyAuthOptional } from './middleware/shopify-auth';
 import { 
@@ -3113,6 +3114,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
   app.use('/api/claude', claudeRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/media', mediaRouter);
+  app.use('/api/buyer-personas', buyerPersonasRouter);
 
   // Mount API routes with /api prefix and store context
   app.use('/api', apiRouter);
