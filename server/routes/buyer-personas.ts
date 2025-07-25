@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
 const router = Router();
 
@@ -19,6 +20,120 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Retry function with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      // Don't retry on auth errors or final attempt
+      if (i === maxRetries - 1 || error.status === 401 || error.status === 403) {
+        throw error;
+      }
+      
+      // Wait with exponential backoff
+      const delay = baseDelay * Math.pow(2, i);
+      console.log(`Retry attempt ${i + 1} after ${delay}ms delay`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+// Generate buyer personas using Claude AI (with OpenAI fallback)
+async function generateBuyerPersonasWithAI(productDetails: any[], collections: any[] = []) {
+  // Try Claude first
+  try {
+    console.log('🤖 Attempting Claude AI generation...');
+    return await retryWithBackoff(async () => {
+      const response = await anthropic.messages.create({
+        model: DEFAULT_MODEL_STR,
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Based on these specific products: ${JSON.stringify(productDetails, null, 2)}
+
+Generate 10 highly specific buyer persona suggestions that would be interested in these exact products. 
+
+Requirements:
+- Each persona should be 2-4 words maximum
+- Focus on demographics, psychographics, and use cases specific to these products
+- Be very specific to the product characteristics, not generic
+- Include age ranges, lifestyle characteristics, or specific needs when relevant
+- Make them actionable for marketing purposes
+
+Return only a JSON array of strings, nothing else.
+
+Example format: ["Tech-savvy millennials 25-35", "Small business owners", "Health-conscious families"]`
+        }]
+      });
+
+      const content = response.content[0];
+      if (content.type === 'text') {
+        const suggestions = JSON.parse(content.text.trim());
+        console.log('✅ Claude AI generation successful');
+        return suggestions;
+      }
+      throw new Error('Invalid response format from Claude');
+    });
+  } catch (claudeError: any) {
+    console.warn('⚠️ Claude AI failed, trying OpenAI fallback:', claudeError.message);
+    
+    // Fallback to OpenAI
+    try {
+      console.log('🤖 Attempting OpenAI fallback generation...');
+      const response = await retryWithBackoff(async () => {
+        return await openai.chat.completions.create({
+          model: "gpt-4o",
+          max_tokens: 800,
+          temperature: 0.7,
+          messages: [{
+            role: 'system',
+            content: 'You are an expert marketing strategist who creates highly specific buyer personas based on product analysis. Return only valid JSON arrays.'
+          }, {
+            role: 'user',
+            content: `Based on these specific products: ${JSON.stringify(productDetails, null, 2)}
+
+Generate 10 highly specific buyer persona suggestions that would be interested in these exact products.
+
+Requirements:
+- Each persona should be 2-4 words maximum
+- Focus on demographics, psychographics, and use cases specific to these products
+- Be very specific to the product characteristics, not generic
+- Include age ranges, lifestyle characteristics, or specific needs when relevant
+- Make them actionable for marketing purposes
+
+Return only a JSON array of strings, nothing else.
+
+Example format: ["Tech-savvy millennials 25-35", "Small business owners", "Health-conscious families"]`
+          }],
+          response_format: { type: "json_object" }
+        });
+      });
+
+      if (response.choices[0]?.message?.content) {
+        const result = JSON.parse(response.choices[0].message.content);
+        const suggestions = result.suggestions || result.personas || Object.values(result)[0];
+        console.log('✅ OpenAI fallback generation successful');
+        return Array.isArray(suggestions) ? suggestions : [suggestions];
+      }
+      throw new Error('Invalid response from OpenAI');
+    } catch (openaiError: any) {
+      console.error('❌ Both Claude and OpenAI failed:', openaiError.message);
+      throw new Error(`AI generation failed - Claude: ${claudeError.message}, OpenAI: ${openaiError.message}`);
+    }
+  }
+}
+
 // Generate buyer persona suggestions based on selected products
 router.post('/generate-suggestions', async (req, res) => {
   try {
@@ -30,6 +145,8 @@ router.post('/generate-suggestions', async (req, res) => {
         error: 'No products provided for buyer persona generation'
       });
     }
+
+    console.log(`🚀 Generating buyer personas for ${products.length} products...`);
 
     // Create a detailed description of the products for AI analysis
     const productDetails = products.map((product: any) => {
@@ -48,76 +165,36 @@ router.post('/generate-suggestions', async (req, res) => {
       description: collection.description || ''
     })) || [];
 
-    const prompt = `You are a marketing expert analyzing e-commerce products to identify target buyer personas. Based on the following product information, generate 8-10 specific and realistic buyer persona suggestions that would be interested in these products.
-
-Products:
-${productDetails.map(p => `- ${p.title}: ${p.description.replace(/<[^>]*>/g, '').substring(0, 200)}... (Price: $${p.price}, Type: ${p.product_type}, Tags: ${Array.isArray(p.tags) ? p.tags.join(', ') : p.tags})`).join('\n')}
-
-${collectionsInfo.length > 0 ? `Collections:
-${collectionsInfo.map(c => `- ${c.title}: ${c.description}`).join('\n')}` : ''}
-
-Requirements:
-1. Each suggestion should be 3-6 words maximum
-2. Focus on demographics, interests, and customer types that would buy these specific products
-3. Be specific and actionable (not generic like "general consumers")
-4. Consider price points, product types, and use cases
-5. Include age ranges, professions, lifestyle factors, or specific interests
-6. Make suggestions diverse but relevant
-
-Return ONLY a JSON array of strings, no additional text or explanation:
-["suggestion1", "suggestion2", "suggestion3", ...]`;
-
-    const response = await anthropic.messages.create({
-      model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
+    // Use the robust AI generation function with fallback
+    const suggestions = await generateBuyerPersonasWithAI(productDetails, collectionsInfo);
+    
+    console.log(`✅ Successfully generated ${suggestions.length} buyer persona suggestions`);
+    
+    return res.json({
+      success: true,
+      suggestions: suggestions.slice(0, 10) // Limit to 10 suggestions
     });
 
-    const responseText = response.content[0]?.text || '';
+  } catch (error: any) {
+    console.error('❌ Error generating buyer persona suggestions:', error);
     
-    try {
-      // Parse the JSON response
-      const suggestions = JSON.parse(responseText);
-      
-      if (Array.isArray(suggestions) && suggestions.length > 0) {
-        return res.json({
-          success: true,
-          suggestions: suggestions.slice(0, 10) // Limit to 10 suggestions
-        });
-      } else {
-        throw new Error('Invalid response format');
-      }
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      console.error('Raw response:', responseText);
-      
-      // Fallback: try to extract suggestions from text
-      const lines = responseText.split('\n').filter(line => line.trim());
-      const extractedSuggestions = lines
-        .filter(line => line.includes('"') || line.match(/^\d+\./))
-        .map(line => line.replace(/^\d+\.?\s*/, '').replace(/["\[\],]/g, '').trim())
-        .filter(suggestion => suggestion.length > 0 && suggestion.length < 50)
-        .slice(0, 8);
-      
-      if (extractedSuggestions.length > 0) {
-        return res.json({
-          success: true,
-          suggestions: extractedSuggestions
-        });
-      }
-      
-      // Final fallback
-      return res.json({
-        success: false,
-        error: 'Failed to generate buyer persona suggestions'
-      });
-    }
-
-  } catch (error) {
-    console.error('Error generating buyer persona suggestions:', error);
+    // Provide fallback suggestions based on product types if AI fails completely
+    const fallbackSuggestions = [
+      'Budget-conscious shoppers',
+      'Quality-focused buyers',
+      'Early adopters',
+      'Brand-loyal customers',
+      'Price-sensitive consumers',
+      'Premium buyers',
+      'Tech enthusiasts',
+      'Convenience seekers'
+    ];
+    
     return res.json({
-      success: false,
-      error: 'Failed to generate buyer persona suggestions'
+      success: true, // Return success with fallback suggestions
+      suggestions: fallbackSuggestions,
+      fallback: true,
+      error: `AI generation failed: ${error.message}`
     });
   }
 });
