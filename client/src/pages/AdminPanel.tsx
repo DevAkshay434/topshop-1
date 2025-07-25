@@ -331,10 +331,17 @@ export default function AdminPanel() {
 
   // Function to generate AI-powered buyer persona suggestions
   const generateBuyerPersonaSuggestions = async () => {
-    console.log('🔄 Regenerate button clicked! Generating buyer persona suggestions...');
+    console.log('🔄 REGENERATE BUTTON CLICKED! Starting buyer persona generation...');
     console.log('📦 Selected products:', selectedProducts);
     console.log('🏪 Selected collections:', selectedCollections);
     console.log('🏬 Current store:', storeContext.currentStore);
+    
+    // Add to window for debugging
+    (window as any).debugBuyerPersonas = {
+      selectedProducts,
+      selectedCollections,
+      currentState: { buyerPersonaSuggestions, suggestionsGenerated, suggestionsLoading }
+    };
     
     if (selectedProducts.length === 0) {
       console.log('⚠️ No products selected, using default suggestions');
@@ -359,6 +366,12 @@ export default function AdminPanel() {
       };
       console.log('📤 Request data:', requestData);
       
+      console.log('📡 Making API request to /api/buyer-personas/generate-suggestions');
+      console.log('📡 Headers:', {
+        'Content-Type': 'application/json',
+        'X-Store-ID': storeContext.currentStore?.id?.toString() || '',
+      });
+      
       const response = await fetch('/api/buyer-personas/generate-suggestions', {
         method: 'POST',
         headers: {
@@ -367,6 +380,8 @@ export default function AdminPanel() {
         },
         body: JSON.stringify(requestData)
       });
+      
+      console.log('📡 Request sent successfully');
 
       console.log('📡 Response status:', response.status);
       const data = await response.json();
@@ -381,11 +396,18 @@ export default function AdminPanel() {
         console.log('📝 Setting buyer persona suggestions in state...');
         console.log('📊 Current state before update:', { buyerPersonaSuggestions, suggestionsGenerated, suggestionsLoading });
         
-        // Force component re-render by using functional state updates and key change
-        setBuyerPersonaSuggestions(() => [...data.suggestions]);
-        setSuggestionsGenerated(() => true);
-        setSuggestionsLoading(() => false);
-        setSuggestionKey(prev => prev + 1); // Force re-render
+        // Multiple approaches to ensure state updates
+        const newSuggestions = [...data.suggestions];
+        setBuyerPersonaSuggestions(newSuggestions);
+        setSuggestionsGenerated(true);
+        setSuggestionsLoading(false);
+        setSuggestionKey(prev => prev + 1);
+        
+        // Force immediate re-render
+        setTimeout(() => {
+          setBuyerPersonaSuggestions([...newSuggestions]);
+          setSuggestionKey(prev => prev + 1);
+        }, 50);
         
         console.log('✅ State updated with suggestions:', data.suggestions);
         console.log('✅ Suggestions array length:', data.suggestions.length);
@@ -3153,17 +3175,36 @@ export default function AdminPanel() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => {
-                                      console.log('🧪 TEST: Setting test suggestions manually');
-                                      const testSuggestions = ['Test Suggestion 1', 'Test Suggestion 2', 'Test Suggestion 3'];
-                                      setBuyerPersonaSuggestions(testSuggestions);
-                                      setSuggestionsGenerated(true);
-                                      setSuggestionKey(prev => prev + 1);
-                                      console.log('🧪 TEST: Test suggestions set:', testSuggestions);
+                                    onClick={async () => {
+                                      console.log('🧪 FORCE API TEST: Making direct API call');
+                                      try {
+                                        const response = await fetch('/api/buyer-personas/generate-suggestions', {
+                                          method: 'POST',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-Store-ID': storeContext.currentStore?.id?.toString() || '1',
+                                          },
+                                          body: JSON.stringify({
+                                            products: selectedProducts.slice(0, 1),
+                                            collections: []
+                                          })
+                                        });
+                                        const data = await response.json();
+                                        console.log('🧪 FORCE API RESPONSE:', data);
+                                        
+                                        if (data.success && data.suggestions) {
+                                          setBuyerPersonaSuggestions([...data.suggestions]);
+                                          setSuggestionsGenerated(true);
+                                          setSuggestionKey(Date.now());
+                                          console.log('🧪 FORCE APPLIED SUGGESTIONS:', data.suggestions);
+                                        }
+                                      } catch (error) {
+                                        console.error('🧪 FORCE API ERROR:', error);
+                                      }
                                     }}
                                     className="h-7 text-xs"
                                   >
-                                    Test
+                                    Force API
                                   </Button>
                                 </>
                               )}
