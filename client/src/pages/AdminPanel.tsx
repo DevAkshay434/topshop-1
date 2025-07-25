@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { cn } from '@/lib/utils';
 import ShopifyImageViewer from '../components/ShopifyImageViewer';
 import { useQuery } from '@tanstack/react-query';
@@ -313,6 +314,7 @@ export default function AdminPanel() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsGenerated, setSuggestionsGenerated] = useState(false);
   const [suggestionKey, setSuggestionKey] = useState(0); // Force re-render when suggestions change
+  const [forceRerender, setForceRerender] = useState(0);
   
   // Debug state changes
   useEffect(() => {
@@ -391,37 +393,23 @@ export default function AdminPanel() {
       console.log('📥 Response data.suggestions type:', typeof data.suggestions);
       console.log('📥 Response data.suggestions.length:', data.suggestions?.length);
       
-      if (data.success && data.suggestions) {
-        console.log('✅ Suggestions received:', data.suggestions);
-        console.log('📝 Setting buyer persona suggestions in state...');
-        console.log('📊 Current state before update:', { buyerPersonaSuggestions, suggestionsGenerated, suggestionsLoading });
+      if (data.success && data.suggestions && Array.isArray(data.suggestions)) {
+        console.log('✅ Valid API response received, updating state:', data.suggestions);
         
-        // Multiple approaches to ensure state updates
-        const newSuggestions = [...data.suggestions];
-        setBuyerPersonaSuggestions(newSuggestions);
-        setSuggestionsGenerated(true);
-        setSuggestionsLoading(false);
-        setSuggestionKey(prev => prev + 1);
+        // Use React's flushSync to force immediate state updates
+        ReactDOM.flushSync(() => {
+          setBuyerPersonaSuggestions([...data.suggestions]);
+          setSuggestionsGenerated(true);
+          setSuggestionsLoading(false);
+          setSuggestionKey(Date.now());
+          setForceRerender(prev => prev + 1);
+        });
         
-        // Force immediate re-render
-        setTimeout(() => {
-          setBuyerPersonaSuggestions([...newSuggestions]);
-          setSuggestionKey(prev => prev + 1);
-        }, 50);
-        
-        console.log('✅ State updated with suggestions:', data.suggestions);
-        console.log('✅ Suggestions array length:', data.suggestions.length);
-        console.log('✅ Forcing component re-render with functional state updates and key change');
-        
-        // Force a state check after a brief delay to ensure React has updated
-        setTimeout(() => {
-          console.log('🔍 Post-update state check - buyerPersonaSuggestions:', buyerPersonaSuggestions);
-          console.log('🔍 Post-update state check - suggestionsGenerated:', suggestionsGenerated);
-        }, 100);
+        console.log('✅ State updates applied with flushSync');
         
         toast({
           title: "Suggestions generated",
-          description: `Generated ${data.suggestions.length} buyer persona suggestions based on your selected products.`,
+          description: `Generated ${data.suggestions.length} buyer persona suggestions.`,
         });
       } else {
         console.error('❌ API response missing success or suggestions:', data);
@@ -3150,63 +3138,26 @@ export default function AdminPanel() {
                                 Suggestions:
                               </h5>
                               {selectedProducts.length > 0 && (
-                                <>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={generateBuyerPersonaSuggestions}
-                                    disabled={suggestionsLoading}
-                                    className="h-7 text-xs mr-2"
-                                  >
-                                    {suggestionsLoading ? (
-                                      <>
-                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                        Generating...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <RefreshCw className="w-3 h-3 mr-1" />
-                                        Regenerate
-                                      </>
-                                    )}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={async () => {
-                                      console.log('🧪 FORCE API TEST: Making direct API call');
-                                      try {
-                                        const response = await fetch('/api/buyer-personas/generate-suggestions', {
-                                          method: 'POST',
-                                          headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-Store-ID': storeContext.currentStore?.id?.toString() || '1',
-                                          },
-                                          body: JSON.stringify({
-                                            products: selectedProducts.slice(0, 1),
-                                            collections: []
-                                          })
-                                        });
-                                        const data = await response.json();
-                                        console.log('🧪 FORCE API RESPONSE:', data);
-                                        
-                                        if (data.success && data.suggestions) {
-                                          setBuyerPersonaSuggestions([...data.suggestions]);
-                                          setSuggestionsGenerated(true);
-                                          setSuggestionKey(Date.now());
-                                          console.log('🧪 FORCE APPLIED SUGGESTIONS:', data.suggestions);
-                                        }
-                                      } catch (error) {
-                                        console.error('🧪 FORCE API ERROR:', error);
-                                      }
-                                    }}
-                                    className="h-7 text-xs"
-                                  >
-                                    Force API
-                                  </Button>
-                                </>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={generateBuyerPersonaSuggestions}
+                                  disabled={suggestionsLoading}
+                                  className="h-7 text-xs"
+                                >
+                                  {suggestionsLoading ? (
+                                    <>
+                                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="w-3 h-3 mr-1" />
+                                      Regenerate
+                                    </>
+                                  )}
+                                </Button>
                               )}
                             </div>
                             
@@ -3216,7 +3167,7 @@ export default function AdminPanel() {
                                 <p className="text-sm text-purple-700">Analyzing your selected products to generate personalized buyer personas...</p>
                               </div>
                             ) : buyerPersonaSuggestions && buyerPersonaSuggestions.length > 0 ? (
-                              <div key={suggestionKey} className="flex flex-wrap gap-2">
+                              <div key={`${suggestionKey}-${forceRerender}`} className="flex flex-wrap gap-2">
                                 {console.log('🎯 RENDERING BUYER PERSONA SUGGESTIONS:')}
                                 {console.log('🎯 buyerPersonaSuggestions:', buyerPersonaSuggestions)}
                                 {console.log('🎯 buyerPersonaSuggestions.length:', buyerPersonaSuggestions.length)}
