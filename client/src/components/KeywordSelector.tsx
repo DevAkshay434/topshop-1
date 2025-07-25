@@ -344,15 +344,14 @@ export default function KeywordSelector({
       if (response.success && response.keywords && response.keywords.length > 0) {
         console.log("Raw keywords from API:", response.keywords.slice(0, 3));
         
-        // Apply comprehensive SEO sanitization to all keywords
+        // Keep keywords as-is from DataForSEO API without aggressive sanitization
         const keywordsWithSelection = response.keywords.map(kw => {
-          const sanitizedKeyword = sanitizeKeywordForSEO(kw.keyword);
+          console.log("Processing keyword:", kw.keyword);
           return {
             ...kw,
-            keyword: sanitizedKeyword,
             selected: false
           };
-        }).filter(kw => isValidSEOKeyword(kw.keyword)); // Filter out invalid keywords
+        }); // Show all authentic DataForSEO keywords without filtering
         
         console.log("Keywords after sanitization:", keywordsWithSelection.length);
         console.log("Filtered keywords sample:", keywordsWithSelection.slice(0, 3));
