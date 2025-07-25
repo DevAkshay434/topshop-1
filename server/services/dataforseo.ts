@@ -131,18 +131,23 @@ export class DataForSEOService {
         console.log(`Sending ${uniqueKeywords.length} focused keywords to DataForSEO API:`, uniqueKeywords);
         
         const requestData = [{
-          keywords: uniqueKeywords,
+          keyword: uniqueKeywords[0], // Use first keyword as seed
           language_code: "en",
           location_code: 2840, // United States
-          limit: 200 // Get up to 200 results per keyword (maximum allowed by DataForSEO)
+          limit: 100, // Get up to 100 keyword suggestions
+          include_seed_keyword: true,
+          include_serp_info: true,
+          filters: [
+            ["search_volume", ">=", 10] // Only keywords with at least 10 monthly searches
+          ]
         }];
 
         console.log("DataForSEO request payload:", JSON.stringify(requestData));
 
-        // POST request to DataForSEO API to get keyword data
-        // Try using the keywords_data endpoint that should work with our account
-        const endpoint = `/v3/keywords_data/google/search_volume/live`;
-        console.log(`Using DataForSEO endpoint: ${endpoint}`);
+        // POST request to DataForSEO API to get comprehensive keyword data
+        // Use keywords research endpoint for full data including difficulty
+        const endpoint = `/v3/dataforseo_labs/google/keyword_suggestions/live`;
+        console.log(`Using DataForSEO keyword research endpoint: ${endpoint}`);
         
         const response = await axios.post(
           `${this.apiUrl}${endpoint}`,
@@ -198,15 +203,16 @@ export class DataForSEOService {
           console.log("Sample result structure:", JSON.stringify(results[0]));
         }
         
-        // Process main keyword data from search_volume endpoint
+        // Process keyword suggestions data from keyword_suggestions endpoint
         let hasValidData = false;
         
         for (const result of results) {
-          // Extract keyword data based on the search_volume endpoint structure
+          // Extract keyword data based on the keyword_suggestions endpoint structure
           const keywordText = result.keyword || '';
           const searchVolume = result.search_volume;
-          const competition = result.competition;
+          const competition = result.competition_index; // Different field name in suggestions API
           const cpc = result.cpc;
+          const keywordDifficulty = result.keyword_difficulty; // Direct difficulty score from API
           
           // Include all keywords from DataForSEO API, even with null/zero search volume
           // Assign a fallback value for null/undefined search volumes to ensure display
@@ -218,13 +224,13 @@ export class DataForSEOService {
           
           const competitionLevel = this.getCompetitionLevel(competition || 0);
           
-          // Process monthly_searches data which is directly in the result object
+          // Process monthly_searches data if available
           const trend = result.monthly_searches
             ? result.monthly_searches.map((monthData: any) => monthData.search_volume)
             : Array(12).fill(adjustedSearchVolume); // Use adjusted search volume if monthly data unavailable
             
-          // Calculate keyword difficulty
-          const difficulty = this.calculateKeywordDifficulty({
+          // Use direct keyword difficulty from API or calculate if not available
+          const difficulty = keywordDifficulty || this.calculateKeywordDifficulty({
             search_volume: adjustedSearchVolume,
             competition: competition || 0,
             cpc: cpc || 0
@@ -1248,13 +1254,14 @@ export class DataForSEOService {
       // Use a keyword search endpoint that's known to work
       // For search_volume endpoint, use 'keywords' array instead of 'keyword'
       const requestData = [{
-        keywords: ["test connection"], // Always using a simple keyword for testing
-        language_code: "en",
-        location_code: 2840 // United States
+        keyword: "test connection", // Single keyword for keyword suggestions endpoint
+        language_code: "en", 
+        location_code: 2840, // United States
+        limit: 10
       }];
 
-      // Add more detailed logging
-      const endpoint = `/v3/keywords_data/google/search_volume/live`;
+      // Add more detailed logging  
+      const endpoint = `/v3/dataforseo_labs/google/keyword_suggestions/live`;
       console.log(`DataForSEO test request URL: ${this.apiUrl}${endpoint}`);
       console.log(`DataForSEO test request data: ${JSON.stringify(requestData)}`);
       
