@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import ShopifyImageViewer from '../components/ShopifyImageViewer';
 import { useQuery } from '@tanstack/react-query';
@@ -315,6 +314,7 @@ export default function AdminPanel() {
   const [suggestionsGenerated, setSuggestionsGenerated] = useState(false);
   const [suggestionKey, setSuggestionKey] = useState(0); // Force re-render when suggestions change
   const [forceRerender, setForceRerender] = useState(0);
+  const suggestionsRef = useRef<string[]>([]);
   
   // Debug state changes
   useEffect(() => {
@@ -396,19 +396,20 @@ export default function AdminPanel() {
       if (data.success && data.suggestions && Array.isArray(data.suggestions)) {
         console.log('✅ Valid API response received, updating state:', data.suggestions);
         
-        // Use React's flushSync to force immediate state updates
-        ReactDOM.flushSync(() => {
-          setBuyerPersonaSuggestions([...data.suggestions]);
-          setSuggestionsGenerated(true);
-          setSuggestionsLoading(false);
-          setSuggestionKey(Date.now());
-          setForceRerender(prev => prev + 1);
-        });
+        // Store in ref for reliable access
+        suggestionsRef.current = [...data.suggestions];
         
-        console.log('✅ State updates applied with flushSync');
+        // Update all state variables
+        setBuyerPersonaSuggestions([...data.suggestions]);
+        setSuggestionsGenerated(true);
+        setSuggestionsLoading(false);
+        setSuggestionKey(Date.now());
+        setForceRerender(Date.now());
+        
+        console.log('✅ Suggestions stored in ref and state:', suggestionsRef.current);
         
         toast({
-          title: "Suggestions generated",
+          title: "Suggestions generated", 
           description: `Generated ${data.suggestions.length} buyer persona suggestions.`,
         });
       } else {
@@ -3166,14 +3167,14 @@ export default function AdminPanel() {
                                 <Loader2 className="w-5 h-5 mr-2 animate-spin text-purple-500" />
                                 <p className="text-sm text-purple-700">Analyzing your selected products to generate personalized buyer personas...</p>
                               </div>
-                            ) : buyerPersonaSuggestions && buyerPersonaSuggestions.length > 0 ? (
+                            ) : (buyerPersonaSuggestions.length > 0 || suggestionsRef.current.length > 0) ? (
                               <div key={`${suggestionKey}-${forceRerender}`} className="flex flex-wrap gap-2">
                                 {console.log('🎯 RENDERING BUYER PERSONA SUGGESTIONS:')}
                                 {console.log('🎯 buyerPersonaSuggestions:', buyerPersonaSuggestions)}
-                                {console.log('🎯 buyerPersonaSuggestions.length:', buyerPersonaSuggestions.length)}
+                                {console.log('🎯 suggestionsRef.current:', suggestionsRef.current)}
                                 {console.log('🎯 suggestionsGenerated:', suggestionsGenerated)}
                                 {console.log('🎯 suggestionsLoading:', suggestionsLoading)}
-                                {buyerPersonaSuggestions.map((suggestion, index) => (
+                                {(buyerPersonaSuggestions.length > 0 ? buyerPersonaSuggestions : suggestionsRef.current).map((suggestion, index) => (
                                   <Button
                                     key={index}
                                     type="button"
