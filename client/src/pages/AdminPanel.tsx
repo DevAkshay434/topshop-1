@@ -370,13 +370,27 @@ export default function AdminPanel() {
       console.log('📥 Response data:', data);
       
       if (data.success && data.suggestions) {
-        console.log('✅ AI suggestions received:', data.suggestions);
+        console.log('✅ Suggestions received:', data.suggestions);
         console.log('📝 Setting buyer persona suggestions in state...');
+        console.log('📊 Current state before update:', { buyerPersonaSuggestions, suggestionsGenerated, suggestionsLoading });
+        
         setBuyerPersonaSuggestions(data.suggestions);
         setSuggestionsGenerated(true);
+        setSuggestionsLoading(false);
+        
         console.log('✅ State updated with suggestions:', data.suggestions);
+        
+        // Force a state check after a brief delay to ensure React has updated
+        setTimeout(() => {
+          console.log('🔍 Post-update state check:', { 
+            suggestionsLength: buyerPersonaSuggestions.length,
+            suggestionsGenerated,
+            currentWorkflowStep: workflowStep 
+          });
+        }, 100);
+        
         toast({
-          title: "AI suggestions generated",
+          title: "Suggestions generated",
           description: `Generated ${data.suggestions.length} buyer persona suggestions based on your selected products.`,
         });
       } else {
@@ -3093,7 +3107,7 @@ export default function AdminPanel() {
                             <div className="flex items-center justify-between">
                               <h5 className="text-sm font-medium text-gray-700 flex items-center">
                                 <Sparkles className="w-4 h-4 mr-2 text-purple-500" />
-                                AI-Generated Suggestions:
+                                Suggestions:
                               </h5>
                               {selectedProducts.length > 0 && (
                                 <Button
@@ -3151,20 +3165,20 @@ export default function AdminPanel() {
                               <div className="p-4 bg-amber-50 rounded-md border border-amber-200">
                                 <p className="text-sm text-amber-700">
                                   <Info className="w-4 h-4 inline mr-1" />
-                                  Select products in Step 1 to get AI-generated buyer persona suggestions based on your specific products.
+                                  Select products in Step 1 to get buyer persona suggestions based on your specific products.
                                 </p>
                               </div>
                             ) : (
                               <div className="p-4 bg-gray-50 rounded-md border">
                                 <p className="text-sm text-gray-600">
-                                  Click "Regenerate" to get AI-generated buyer persona suggestions based on your selected products.
+                                  Click "Regenerate" to get buyer persona suggestions based on your selected products.
                                 </p>
                               </div>
                             )}
                             
                             <p className="text-xs text-gray-500">
                               {suggestionsGenerated && selectedProducts.length > 0 
-                                ? "These suggestions are AI-generated based on your selected products. Click any suggestion to add it to your description."
+                                ? "These suggestions are based on your selected products. Click any suggestion to add it to your description."
                                 : "You can type your own description or use the suggestion buttons above."}
                             </p>
                           </div>
