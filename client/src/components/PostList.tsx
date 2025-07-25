@@ -10,7 +10,10 @@ import {
   Eye,
   Loader2,
   File,
-  BookOpen
+  BookOpen,
+  CheckCircle,
+  AlertCircle,
+  Circle
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
@@ -138,6 +141,36 @@ export default function PostList({
       ? 'bg-purple-50 text-purple-700' 
       : 'bg-blue-50 text-blue-700';
   };
+
+  const getPublishStatusIcon = (status: string, publishedDate?: string | null) => {
+    if (status === 'published' || publishedDate) {
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    } else if (status === 'scheduled') {
+      return <Clock className="h-4 w-4 text-amber-500" />;
+    } else {
+      return <Circle className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const getPublishStatusLabel = (status: string, publishedDate?: string | null) => {
+    if (status === 'published' || publishedDate) {
+      return 'Published';
+    } else if (status === 'scheduled') {
+      return 'Scheduled';
+    } else {
+      return 'Draft';
+    }
+  };
+
+  const getPublishStatusColor = (status: string, publishedDate?: string | null) => {
+    if (status === 'published' || publishedDate) {
+      return 'bg-green-50 text-green-700 border-green-200';
+    } else if (status === 'scheduled') {
+      return 'bg-amber-50 text-amber-700 border-amber-200';
+    } else {
+      return 'bg-gray-50 text-gray-600 border-gray-200';
+    }
+  };
   
   const formatDate = (date: Date | null) => {
     if (!date) return "";
@@ -224,15 +257,11 @@ export default function PostList({
                       </div>
                       <div className="ml-2 flex-shrink-0 flex">
                         <div className="flex items-center gap-2">
-                          <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPostStatusColor(post.status)}`}>
-                            {getStatusLabel(post.status)}
-                          </p>
-                          {/* Show Published label for scheduled posts that have been published */}
-                          {post.status === 'scheduled' && post.publishedDate && (
-                            <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                              Published
-                            </p>
-                          )}
+                          {/* Publication Status Indicator */}
+                          <div className={`px-3 py-1 inline-flex items-center gap-1.5 text-xs font-medium rounded-full border ${getPublishStatusColor(post.status, post.publishedDate)}`}>
+                            {getPublishStatusIcon(post.status, post.publishedDate)}
+                            {getPublishStatusLabel(post.status, post.publishedDate)}
+                          </div>
                         </div>
                       </div>
                     </div>
