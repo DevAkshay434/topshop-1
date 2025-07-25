@@ -31,6 +31,7 @@ interface PostListProps {
   onPageChange?: (page: number) => void;
   totalPages?: number;
   onEditPost?: (post: BlogPost) => void;
+  onEditSchedule?: (post: BlogPost) => void;
 }
 
 export default function PostList({ 
@@ -41,7 +42,8 @@ export default function PostList({
   page = 1,
   onPageChange,
   totalPages = 1,
-  onEditPost
+  onEditPost,
+  onEditSchedule
 }: PostListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -200,9 +202,17 @@ export default function PostList({
                         </p>
                       </div>
                       <div className="ml-2 flex-shrink-0 flex">
-                        <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPostStatusColor(post.status)}`}>
-                          {getStatusLabel(post.status)}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPostStatusColor(post.status)}`}>
+                            {getStatusLabel(post.status)}
+                          </p>
+                          {/* Show Published label for scheduled posts that have been published */}
+                          {post.status === 'scheduled' && post.publishedDate && (
+                            <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              Published
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="mt-2 sm:flex sm:justify-between">
@@ -283,6 +293,15 @@ export default function PostList({
                               }}>
                                 View Analytics
                               </DropdownMenuItem>
+                              {post.status === "scheduled" && !post.publishedDate && onEditSchedule && (
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditSchedule(post);
+                                }}>
+                                  <Clock className="mr-2 h-4 w-4" />
+                                  Edit Schedule
+                                </DropdownMenuItem>
+                              )}
                               {post.status !== "published" && (
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
