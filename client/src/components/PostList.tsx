@@ -8,7 +8,9 @@ import {
   MoreVertical, 
   Calendar, 
   Eye,
-  Loader2
+  Loader2,
+  File,
+  BookOpen
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
@@ -112,17 +114,29 @@ export default function PostList({
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
   
-  const getPostIcon = (status: string) => {
+  const getPostIcon = (status: string, contentType?: string | null) => {
+    const isPage = contentType === 'page';
+    
     switch (status) {
       case "published":
-        return <FileText className="h-5 w-5 text-primary" />;
+        return isPage ? <File className="h-5 w-5 text-primary" /> : <FileText className="h-5 w-5 text-primary" />;
       case "draft":
-        return <FileText className="h-5 w-5 text-neutral-500" />;
+        return isPage ? <File className="h-5 w-5 text-neutral-500" /> : <FileText className="h-5 w-5 text-neutral-500" />;
       case "scheduled":
         return <Clock className="h-5 w-5 text-amber-500" />;
       default:
-        return <FileText className="h-5 w-5 text-neutral-500" />;
+        return isPage ? <File className="h-5 w-5 text-neutral-500" /> : <FileText className="h-5 w-5 text-neutral-500" />;
     }
+  };
+
+  const getContentTypeLabel = (contentType?: string | null) => {
+    return contentType === 'page' ? 'Page' : 'Post';
+  };
+
+  const getContentTypeColor = (contentType?: string | null) => {
+    return contentType === 'page' 
+      ? 'bg-purple-50 text-purple-700' 
+      : 'bg-blue-50 text-blue-700';
   };
   
   const formatDate = (date: Date | null) => {
@@ -195,11 +209,18 @@ export default function PostList({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
-                          {getPostIcon(post.status)}
+                          {getPostIcon(post.status, post.contentType)}
                         </div>
-                        <p className="text-sm font-medium text-primary truncate">
-                          {post.title}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-primary truncate">
+                              {post.title}
+                            </p>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getContentTypeColor(post.contentType)}`}>
+                              {getContentTypeLabel(post.contentType)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                       <div className="ml-2 flex-shrink-0 flex">
                         <div className="flex items-center gap-2">
