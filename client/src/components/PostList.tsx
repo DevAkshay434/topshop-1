@@ -13,7 +13,8 @@ import {
   BookOpen,
   CheckCircle,
   AlertCircle,
-  Circle
+  Circle,
+  Trash2
 } from "lucide-react";
 import { BlogPost } from "@shared/schema";
 import { format } from "date-fns";
@@ -53,6 +54,7 @@ export default function PostList({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [publishingId, setPublishingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   
   const { data, isLoading, error } = useQuery<{ posts: BlogPost[] }>({
     queryKey: [queryKey, limit, page],
@@ -97,6 +99,39 @@ export default function PostList({
       });
     } finally {
       setPublishingId(null);
+    }
+  };
+
+  const handleDeletePost = async (post: BlogPost) => {
+    if (!confirm(`Are you sure you want to delete "${post.title}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    setDeletingId(post.id);
+    
+    try {
+      await apiRequest('DELETE', `/api/posts/${post.id}`);
+      
+      toast({
+        title: "Post Deleted",
+        description: `"${post.title}" has been deleted successfully.`
+      });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/recent'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/scheduled'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+    } catch (error: any) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Delete Failed",
+        description: error?.message || "There was an error deleting the post. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
   
@@ -374,9 +409,22 @@ export default function PostList({
                               )}
                               <DropdownMenuItem 
                                 className="text-red-500"
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePost(post);
+                                }}
                               >
-                                Delete
+                                {deletingId === post.id ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </>
+                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
