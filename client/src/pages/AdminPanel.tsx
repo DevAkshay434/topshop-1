@@ -2634,7 +2634,7 @@ export default function AdminPanel() {
                       )}
                       
                       {/* Selected Items Display - appears after blog selection */}
-                      {(selectedProducts.length > 0 || selectedCollections.length > 0 || form.watch('buyerPersonas') || selectedKeywords.length > 0 || form.watch('title')) && (
+                      {(selectedProducts.length > 0 || selectedCollections.length > 0 || selectedKeywords.length > 0 || form.watch('title')) && (
                         <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
                           <h4 className="text-sm font-medium text-slate-700 mb-3">Current Selections</h4>
                           
@@ -2709,20 +2709,7 @@ export default function AdminPanel() {
                             </div>
                           )}
 
-                          {/* Buyer Personas Display */}
-                          {form.watch('buyerPersonas') && (
-                            <div className="space-y-2">
-                              <div className="flex items-center">
-                                <h5 className="text-sm font-medium flex items-center">
-                                  <Users className="h-4 w-4 mr-2 text-blue-500" />
-                                  Target Audience
-                                </h5>
-                              </div>
-                              <div className="p-3 bg-slate-50 rounded-md border">
-                                <p className="text-sm text-gray-700">{form.watch('buyerPersonas')}</p>
-                              </div>
-                            </div>
-                          )}
+
 
                           {/* Selected Keywords */}
                           {selectedKeywords.length > 0 && (
@@ -3785,58 +3772,6 @@ export default function AdminPanel() {
                       <h3 className="text-lg font-medium">Style & Formatting</h3>
                       
                       {/* Content Generation Options */}
-                      {/* Buyer Personas Display */}
-                      <div className="col-span-full mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium flex items-center">
-                            <Users className="h-4 w-4 mr-2 text-blue-500" />
-                            Selected Buyer Personas
-                          </h4>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setWorkflowStep('buying-avatars');
-                              scrollToCurrentStep();
-                            }}
-                            className="h-8"
-                          >
-                            <User className="mr-2 h-4 w-4" />
-                            Edit Personas
-                          </Button>
-                        </div>
-                        
-                        <div className="border rounded-md p-3 bg-slate-50">
-                          {form.watch('buyerPersonas') ? (
-                            <div className="space-y-2">
-                              <div className="text-sm font-medium text-gray-700 mb-2">Target Audience:</div>
-                              <div className="text-sm text-gray-600 bg-white p-2 rounded border">
-                                {form.watch('buyerPersonas')}
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Content will be tailored to this target audience
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="text-center py-4">
-                              <p className="text-sm text-muted-foreground mb-2">No buyer personas defined</p>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => {
-                                  setWorkflowStep('buying-avatars');
-                                  scrollToCurrentStep();
-                                }}
-                              >
-                                <Users className="mr-2 h-4 w-4" />
-                                Define Target Audience
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
