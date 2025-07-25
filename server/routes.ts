@@ -2939,6 +2939,96 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     }
   });
   
+  // Endpoint to update scheduled post schedule
+  apiRouter.put("/posts/:id/schedule", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id, 10);
+      const { scheduledPublishDate, scheduledPublishTime } = req.body;
+      
+      console.log(`Updating schedule for post ${postId}:`, { scheduledPublishDate, scheduledPublishTime });
+      
+      // Validate required fields
+      if (!scheduledPublishDate || !scheduledPublishTime) {
+        return res.status(400).json({
+          status: "error",
+          message: "Both scheduledPublishDate and scheduledPublishTime are required"
+        });
+      }
+      
+      // Get the post data
+      const post = await storage.getBlogPost(postId);
+      if (!post) {
+        return res.status(404).json({
+          status: "error",
+          message: `Post with ID ${postId} not found`
+        });
+      }
+      
+      // Only allow updating scheduled posts
+      if (post.status !== 'scheduled') {
+        return res.status(400).json({
+          status: "error",
+          message: "Only scheduled posts can have their schedule updated"
+        });
+      }
+      
+      // Create scheduled date from the provided date and time
+      const { createDateInTimezone } = await import('../shared/timezone');
+      
+      // Get store timezone info
+      const store = await getStoreFromRequest(req);
+      let timezone = 'UTC';
+      
+      if (store) {
+        try {
+          const shopifyService = await import('./services/shopify').then(module => module.shopifyService);
+          const shopInfo = await shopifyService.getShopInfo(store);
+          timezone = shopInfo.iana_timezone || 'UTC';
+        } catch (error) {
+          console.warn('Could not get store timezone, using UTC');
+        }
+      }
+      
+      const scheduledDate = createDateInTimezone(scheduledPublishDate, scheduledPublishTime, timezone);
+      
+      // Validate that the new schedule is in the future
+      const now = new Date();
+      if (scheduledDate <= now) {
+        return res.status(400).json({
+          status: "error",
+          message: "Scheduled time must be in the future"
+        });
+      }
+      
+      // Update the post schedule
+      const updateData = {
+        scheduledPublishDate,
+        scheduledPublishTime,
+        scheduledDate,
+        status: 'scheduled',
+        updatedAt: new Date()
+      };
+      
+      await storage.updateBlogPost(postId, updateData);
+      
+      // Get updated post data
+      const updatedPost = await storage.getBlogPost(postId);
+      
+      res.json({
+        status: "success",
+        message: "Post schedule updated successfully",
+        post: updatedPost
+      });
+      
+    } catch (error: any) {
+      console.error(`Error updating post schedule:`, error);
+      res.status(500).json({
+        status: "error",
+        message: error.message || "Failed to update post schedule"
+      });
+    }
+  });
+
   // Endpoint to manually publish a scheduled post
   apiRouter.post("/posts/:id/publish", async (req: Request, res: Response) => {
     try {
