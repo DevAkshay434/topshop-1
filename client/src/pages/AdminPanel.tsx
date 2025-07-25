@@ -269,6 +269,9 @@ const predefinedCategories = [
 // AI-generated buyer persona suggestions will be defined in component state
 
 export default function AdminPanel() {
+  // Store context
+  const storeContext = useStore();
+  
   const [selectedTab, setSelectedTab] = useState("generate");
   const [selectedContentToneId, setSelectedContentToneId] = useState<string>("");
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
