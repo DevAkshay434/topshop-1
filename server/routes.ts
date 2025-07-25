@@ -2992,11 +2992,17 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       const scheduledDate = createDateInTimezone(scheduledPublishDate, scheduledPublishTime, timezone);
       
       // Validate that the new schedule is in the future
-      const now = new Date();
-      if (scheduledDate <= now) {
+      // Use timezone-aware current time for proper comparison
+      const { getCurrentDateInTimezone } = await import('../shared/timezone');
+      const now = getCurrentDateInTimezone(timezone);
+      
+      // Add a small buffer (1 minute) to account for processing time
+      const minScheduleTime = new Date(now.getTime() + 60 * 1000);
+      
+      if (scheduledDate <= minScheduleTime) {
         return res.status(400).json({
           status: "error",
-          message: "Scheduled time must be in the future"
+          message: "Scheduled time must be at least 1 minute in the future"
         });
       }
       

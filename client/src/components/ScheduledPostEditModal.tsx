@@ -77,23 +77,8 @@ export default function ScheduledPostEditModal({
       return;
     }
 
-    // Validate that the scheduled time is in the future
-    // Create date object with proper timezone handling
-    const selectedDateTime = new Date(`${scheduleDate}T${scheduleTime}:00`);
-    const now = new Date();
-    
-    // Add a small buffer (2 minutes) to account for processing time
-    const minScheduleTime = new Date(now.getTime() + 2 * 60 * 1000);
-    
-    if (selectedDateTime <= minScheduleTime) {
-      toast({
-        title: "Invalid Schedule Time",
-        description: "Scheduled time must be at least 2 minutes in the future",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // Send the schedule update without client-side validation
+    // Let the server handle timezone-aware validation
     updateScheduleMutation.mutate({
       postId: post.id,
       scheduleData: {
