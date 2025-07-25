@@ -362,8 +362,7 @@ export default function AdminPanel() {
     youtubeEmbed: null
   });
 
-  // Category input state for space-to-tag functionality
-  const [categoryInput, setCategoryInput] = useState('');
+
   
   // Add logging to track state changes
   console.log('Current selectedMediaContent state:', selectedMediaContent);
@@ -3839,83 +3838,7 @@ export default function AdminPanel() {
                           )}
                         />
                         
-                        
-                        {/* Categories with Space-to-Tag Input */}
-                        <FormField
-                          control={form.control}
-                          name="categories"
-                          render={({ field }) => {
-                            const addCategory = (categoryText: string) => {
-                              if (!categoryText.trim()) return;
-                              
-                              const currentCategories = Array.isArray(field.value) ? field.value : [];
-                              const trimmedCategory = categoryText.trim();
-                              
-                              // Prevent duplicates
-                              if (!currentCategories.includes(trimmedCategory)) {
-                                form.setValue('categories', [...currentCategories, trimmedCategory]);
-                              }
-                              setCategoryInput('');
-                            };
-                            
-                            const handleKeyDown = (e: React.KeyboardEvent) => {
-                              if (e.key === ' ' && categoryInput.trim()) {
-                                e.preventDefault();
-                                addCategory(categoryInput);
-                              } else if (e.key === 'Enter' && categoryInput.trim()) {
-                                e.preventDefault();
-                                addCategory(categoryInput);
-                              }
-                            };
-                            
-                            return (
-                              <FormItem>
-                                <FormLabel>Categories</FormLabel>
-                                <div className="space-y-3">
-                                  {/* Display existing tags */}
-                                  <div className="flex flex-wrap gap-2 min-h-[20px]">
-                                    {field.value && Array.isArray(field.value) && field.value.length > 0 ? (
-                                      field.value.map((category, index) => (
-                                        <Badge
-                                          key={index}
-                                          variant="secondary"
-                                          className="flex items-center gap-1"
-                                        >
-                                          {category}
-                                          <X
-                                            className="h-3 w-3 cursor-pointer hover:text-destructive"
-                                            onClick={() => {
-                                              const currentCategories = Array.isArray(field.value) ? field.value : [];
-                                              const updatedCategories = currentCategories.filter(
-                                                (cat: string) => cat !== category
-                                              );
-                                              form.setValue('categories', updatedCategories);
-                                            }}
-                                          />
-                                        </Badge>
-                                      ))
-                                    ) : null}
-                                  </div>
-                                  
-                                  {/* Text input for adding new categories */}
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Type category name and press space or enter..."
-                                      value={categoryInput}
-                                      onChange={(e) => setCategoryInput(e.target.value)}
-                                      onKeyDown={handleKeyDown}
-                                      className="w-full"
-                                    />
-                                  </FormControl>
-                                </div>
-                                <FormDescription className="text-xs">
-                                  Type a category name and press space or enter to add it as a tag
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            );
-                          }}
-                        />
+
                       </div>
                       
                       <FormField
