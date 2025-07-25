@@ -193,15 +193,15 @@ export default function KeywordSelector({
     }
   };
 
-  // Filter keywords based on search and intent filter, hide 0 search volume (except manual and fallback keywords), and sort dynamically
+  // Filter keywords based on search and intent filter, hide 0 search volume (except manual keywords), NO FALLBACK KEYWORDS
   const filteredKeywords = keywords
     .filter(keyword => {
       const matchesSearch = keyword.keyword.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesIntent = filterIntent ? keyword.intent === filterIntent : true;
       const hasSearchVolume = keyword.searchVolume !== 0 && keyword.searchVolume !== undefined;
       const isManualKeyword = keyword.intent === "Manual";
-      const isFallbackKeyword = keyword.intent === "Fallback";
-      return matchesSearch && matchesIntent && (hasSearchVolume || isManualKeyword || isFallbackKeyword);
+      // REMOVED: isFallbackKeyword filter - NO FALLBACK KEYWORDS ALLOWED
+      return matchesSearch && matchesIntent && (hasSearchVolume || isManualKeyword);
     })
     .sort((a, b) => {
       const valueA = getSortValue(a, sortBy);
@@ -351,8 +351,8 @@ export default function KeywordSelector({
         console.log("First few keywords:", keywordsWithSelection.slice(0, 5).map(k => ({
           keyword: k.keyword,
           searchVolume: k.searchVolume,
-          source: k.source,
-          competition: k.competition
+          competition: k.competition,
+          intent: k.intent
         })));
       } else {
         console.log("No keywords returned from API");
