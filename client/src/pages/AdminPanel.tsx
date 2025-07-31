@@ -1181,7 +1181,7 @@ export default function AdminPanel() {
       'author': 7,
       'style': 8,
       'content': 9,
-      // Legacy step mappings
+      // Legacy step mappings for backward compatibility
       'related-products': 2,
       'buying-avatars': 3
     };
@@ -2597,73 +2597,104 @@ export default function AdminPanel() {
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                       <h3 className="font-medium text-blue-700 mb-4">Content Creation Workflow</h3>
                       
-                      {/* Modern Step Indicator */}
-                      <div className="flex items-center justify-between">
-                        {[
-                          { step: 'product', number: 1, label: 'Select Products or Collections' },
-                          { step: 'related-collections', number: 2, label: 'Choose Related Collections' },
-                          { step: 'persona', number: 3, label: 'Define Target Buyer Personas' },
-                          { step: 'keyword', number: 4, label: 'Choose Keywords' },
-                          { step: 'title', number: 5, label: 'Select a Title' },
-                          { step: 'media', number: 6, label: 'Choose Media' },
-                          { step: 'author', number: 7, label: 'Choose Author' },
-                          { step: 'style', number: 8, label: 'Style & Formatting' },
-                          { step: 'content', number: 9, label: 'Generate Content' }
-                        ].map((item, index) => {
-                          const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
-                          const isCurrent = workflowStep === item.step;
-                          
-                          return (
-                            <div key={item.step} className="flex items-center">
-                              {/* Step Circle */}
-                              <div className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium transition-all duration-200 ${
-                                isCurrent 
-                                  ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
-                                  : isCompleted 
-                                    ? 'bg-green-500 border-green-500 text-white' 
-                                    : 'bg-white border-gray-300 text-gray-400'
-                              }`}>
-                                {isCompleted ? (
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                ) : (
-                                  item.number
+                      {/* Compact Step Indicator - 2 rows */}
+                      <div className="space-y-3">
+                        {/* First Row - Steps 1-5 */}
+                        <div className="flex items-center justify-center space-x-2">
+                          {[
+                            { step: 'product', number: 1, label: 'Products' },
+                            { step: 'related-collections', number: 2, label: 'Collections' },
+                            { step: 'persona', number: 3, label: 'Personas' },
+                            { step: 'keyword', number: 4, label: 'Keywords' },
+                            { step: 'title', number: 5, label: 'Title' }
+                          ].map((item, index) => {
+                            const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
+                            const isCurrent = workflowStep === item.step;
+                            
+                            return (
+                              <div key={item.step} className="flex items-center">
+                                {/* Step Circle */}
+                                <div className={`relative flex flex-col items-center`}>
+                                  <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200 ${
+                                    isCurrent 
+                                      ? 'bg-blue-600 text-white shadow-lg scale-110' 
+                                      : isCompleted 
+                                        ? 'bg-green-500 text-white' 
+                                        : 'bg-gray-200 text-gray-500'
+                                  }`}>
+                                    {isCompleted ? (
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    ) : (
+                                      item.number
+                                    )}
+                                  </div>
+                                  <span className={`text-xs mt-1 transition-all duration-200 ${
+                                    isCurrent ? 'text-blue-700 font-medium' : 'text-gray-600'
+                                  }`}>
+                                    {item.label}
+                                  </span>
+                                </div>
+                                
+                                {/* Connector Line (except for last item) */}
+                                {index < 4 && (
+                                  <div className={`w-6 h-0.5 mx-1 transition-all duration-200 ${
+                                    isCompleted ? 'bg-green-400' : 'bg-gray-300'
+                                  }`} />
                                 )}
                               </div>
-                              
-                              {/* Connector Line (except for last item) */}
-                              {index < 8 && (
-                                <div className={`w-8 h-0.5 ml-2 transition-all duration-200 ${
-                                  isCompleted ? 'bg-green-500' : 'bg-gray-300'
-                                }`} />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Step Labels */}
-                      <div className="grid grid-cols-9 gap-1 mt-3 text-xs text-center">
-                        {[
-                          'Select Products',
-                          'Related Collections', 
-                          'Target Personas',
-                          'Choose Keywords',
-                          'Select Title',
-                          'Choose Media',
-                          'Choose Author',
-                          'Style & Format',
-                          'Generate'
-                        ].map((label, index) => (
-                          <div key={index} className={`text-gray-600 ${
-                            workflowStep === ['product', 'related-collections', 'persona', 'keyword', 'title', 'media', 'author', 'style', 'content'][index] 
-                              ? 'font-medium text-blue-700' 
-                              : ''
-                          }`}>
-                            {label}
-                          </div>
-                        ))}
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Second Row - Steps 6-9 */}
+                        <div className="flex items-center justify-center space-x-2">
+                          {[
+                            { step: 'media', number: 6, label: 'Media' },
+                            { step: 'author', number: 7, label: 'Author' },
+                            { step: 'style', number: 8, label: 'Style' },
+                            { step: 'content', number: 9, label: 'Generate' }
+                          ].map((item, index) => {
+                            const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
+                            const isCurrent = workflowStep === item.step;
+                            
+                            return (
+                              <div key={item.step} className="flex items-center">
+                                {/* Step Circle */}
+                                <div className={`relative flex flex-col items-center`}>
+                                  <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200 ${
+                                    isCurrent 
+                                      ? 'bg-blue-600 text-white shadow-lg scale-110' 
+                                      : isCompleted 
+                                        ? 'bg-green-500 text-white' 
+                                        : 'bg-gray-200 text-gray-500'
+                                  }`}>
+                                    {isCompleted ? (
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    ) : (
+                                      item.number
+                                    )}
+                                  </div>
+                                  <span className={`text-xs mt-1 transition-all duration-200 ${
+                                    isCurrent ? 'text-blue-700 font-medium' : 'text-gray-600'
+                                  }`}>
+                                    {item.label}
+                                  </span>
+                                </div>
+                                
+                                {/* Connector Line (except for last item) */}
+                                {index < 3 && (
+                                  <div className={`w-6 h-0.5 mx-1 transition-all duration-200 ${
+                                    isCompleted ? 'bg-green-400' : 'bg-gray-300'
+                                  }`} />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                       
