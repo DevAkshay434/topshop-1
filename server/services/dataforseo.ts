@@ -364,20 +364,117 @@ export class DataForSEOService {
         
         console.log(`Total keywords collected: ${keywordData.length}`);
         
-        // If insufficient keywords found, try broader category terms
-        if (keywordData.length < 5) {
-          console.log(`Only ${keywordData.length} keywords with sufficient search volume (>50) found, trying broader category terms`);
+        // If insufficient keywords found, implement aggressive expansion strategy
+        if (keywordData.length < 15) {
+          console.log(`Only ${keywordData.length} keywords found, implementing aggressive expansion to reach 15-20 keywords`);
           
+          // Strategy 1: Generate additional related keywords using broader category terms
           const broadTerms = this.generateBroadCategoryTerms(keyword);
+          console.log(`Generated ${broadTerms.length} broader category terms for expansion`);
           
-          if (broadTerms.length > 0 && broadTerms[0] !== keyword) {
-            console.log(`Trying broader term: ${broadTerms[0]}`);
-            try {
-              return await this.getKeywordsForProduct(broadTerms[0]);
-            } catch (error) {
-              console.log(`Broader term search failed: ${error}`);
+          // Try each broader term to get more keywords
+          for (const broadTerm of broadTerms.slice(0, 5)) {
+            if (broadTerm !== keyword && keywordData.length < 25) {
+              console.log(`Searching for additional keywords with broader term: ${broadTerm}`);
+              
+              try {
+                // Get generic terms for the broader category
+                const genericTerms = this.extractGenericTerms(broadTerm);
+                console.log(`Generated ${genericTerms.length} generic terms from: ${broadTerm}`);
+                
+                // Create keyword variations for the generic terms
+                const expansionKeywords: string[] = [];
+                for (const term of genericTerms.slice(0, 3)) {
+                  const variations = [
+                    term,
+                    `best ${term}`,
+                    `${term} reviews`,
+                    `${term} guide`,
+                    `buy ${term}`,
+                    `${term} price`,
+                    `cheap ${term}`,
+                    `${term} comparison`
+                  ];
+                  
+                  // Only add variations as candidates for API lookup - don't generate synthetic data
+                  variations.forEach(variation => {
+                    if (!keywordData.some(existing => existing.keyword === variation) && 
+                        !expansionKeywords.includes(variation)) {
+                      expansionKeywords.push(variation);
+                    }
+                  });
+                }
+                
+                // Get authentic search volume data for expansion keywords
+                if (expansionKeywords.length > 0) {
+                  console.log(`Getting authentic DataForSEO data for ${expansionKeywords.length} expansion keywords`);
+                  
+                  try {
+                    const auth = { username: this.username, password: this.password };
+                    const volumeRequestData = [{
+                      keywords: expansionKeywords.slice(0, 15), // Limit API call
+                      language_code: "en",
+                      location_code: 2840
+                    }];
+                    
+                    const volumeResponse = await axios.post(
+                      `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
+                      volumeRequestData,
+                      { auth, timeout: 30000, headers: { 'Content-Type': 'application/json' } }
+                    );
+                    
+                    if (volumeResponse.data?.status_code === 20000 && volumeResponse.data.tasks?.[0]?.result) {
+                      const expansionResults = volumeResponse.data.tasks[0].result;
+                      console.log(`Received authentic data for ${expansionResults.length} expansion keywords`);
+                      
+                      for (const item of expansionResults) {
+                        if (item.keyword && item.search_volume > 0) {
+                          const searchVolume = item.search_volume || 0;
+                          const cpc = item.cpc || 0;
+                          const competition = item.competition || 0;
+                          const competitionLevel = this.getCompetitionLevel(competition);
+                          const trend = item.monthly_searches ? 
+                            item.monthly_searches.map((m: any) => m.search_volume || 0) : 
+                            Array(12).fill(searchVolume);
+                          const difficulty = this.calculateKeywordDifficulty({
+                            search_volume: searchVolume,
+                            competition: competition,
+                            cpc: cpc
+                          });
+                          
+                          const sanitizedKeyword = this.sanitizeKeywordForSEO(item.keyword);
+                          
+                          if (this.isValidSEOKeyword(sanitizedKeyword)) {
+                            keywordData.push({
+                              keyword: sanitizedKeyword,
+                              searchVolume: searchVolume,
+                              cpc: cpc,
+                              competition: competition,
+                              competitionLevel,
+                              intent: this.determineIntent({ keyword: sanitizedKeyword }),
+                              trend,
+                              difficulty,
+                              selected: false
+                            });
+                          }
+                        }
+                      }
+                      
+                      console.log(`Added ${expansionResults.length} authentic expansion keywords from: ${broadTerm}`);
+                    }
+                  } catch (error) {
+                    console.log(`Failed to get authentic data for expansion keywords: ${error}`);
+                  }
+                }
+                
+                if (keywordData.length >= 15) break;
+              } catch (error) {
+                console.log(`Expansion failed for ${broadTerm}: ${error}`);
+              }
             }
           }
+          
+          console.log(`After expansion strategy: ${keywordData.length} total keywords`);
         }
         
         if (!hasValidData && keywordData.length === 0) {
