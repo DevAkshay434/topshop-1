@@ -368,12 +368,12 @@ export class DataForSEOService {
         if (keywordData.length < 5) {
           console.log(`Only ${keywordData.length} keywords with sufficient search volume (>50) found, trying broader category terms`);
           
-          const broadTerms = this.generateBroadCategoryTerms(originalKeyword);
+          const broadTerms = this.generateBroadCategoryTerms(keyword);
           
-          if (broadTerms.length > 0 && broadTerms[0] !== originalKeyword) {
+          if (broadTerms.length > 0 && broadTerms[0] !== keyword) {
             console.log(`Trying broader term: ${broadTerms[0]}`);
             try {
-              return await this.fetchKeywordsFromAPI(broadTerms[0]);
+              return await this.getKeywordsForProduct(broadTerms[0]);
             } catch (error) {
               console.log(`Broader term search failed: ${error}`);
             }
@@ -624,26 +624,21 @@ export class DataForSEOService {
       const words = extractedKeyword.split(/\s+/);
       
       if (words.length > 5) {
-        // Get the most likely core product terms
-        // For water products, look for specific product category indicators
-        const waterProductIndex = words.findIndex(word => 
-          word.toLowerCase().includes('water') || 
-          word.toLowerCase().includes('filter') || 
-          word.toLowerCase().includes('softener')
+        // Use universal approach: extract the most meaningful product category words
+        // Look for the core product category (usually the last 1-2 words are the main category)
+        const potentialCategoryWords = words.filter(word => 
+          word.length > 3 && 
+          !word.match(/^(pro|elite|premium|plus|max|mini|super|ultra|best|top|new|model|series)$/i) &&
+          !word.match(/^\d/) // Skip words starting with numbers
         );
         
-        // If we found water-related terms, use them as central point
-        if (waterProductIndex >= 0) {
-          // Get a few words before and after the water term
-          const startIndex = Math.max(0, waterProductIndex - 1);
-          const endIndex = Math.min(words.length, waterProductIndex + 3);
-          const coreTerms = words.slice(startIndex, endIndex);
-          
-          // Join the core terms back together
+        if (potentialCategoryWords.length >= 2) {
+          // Use the last 2-3 meaningful words as they typically contain the product category
+          const coreTerms = potentialCategoryWords.slice(-3);
           extractedKeyword = coreTerms.join(' ');
-          console.log(`Extracted water-related core terms: "${extractedKeyword}"`);
+          console.log(`Extracted dynamic core category terms: "${extractedKeyword}"`);
         } else {
-          // Default: just use the first 3-4 words which typically contain the main product type
+          // Fallback: use the first 3-4 words which typically contain the main product type
           extractedKeyword = words.slice(0, 4).join(' ');
           console.log(`Extracted first 4 words as core terms: "${extractedKeyword}"`);
         }
@@ -812,6 +807,8 @@ export class DataForSEOService {
     }
     
     
+    // Return final processed terms, limited to most relevant ones
+    const finalTerms = terms.slice(0, 12); // Limit to top 12 terms to avoid API overload
     console.log(`Extracted dynamic terms: ${finalTerms.join(', ')}`);
     return finalTerms;
   }
