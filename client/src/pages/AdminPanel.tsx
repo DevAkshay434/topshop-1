@@ -1168,6 +1168,26 @@ export default function AdminPanel() {
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
   type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
+  
+  // Helper function to determine step order for progress indicator
+  const getStepOrder = (step: string): number => {
+    const stepOrder = {
+      'product': 1,
+      'related-collections': 2,
+      'persona': 3,
+      'keyword': 4,
+      'title': 5,
+      'media': 6,
+      'author': 7,
+      'style': 8,
+      'content': 9,
+      // Legacy step mappings
+      'related-products': 2,
+      'buying-avatars': 3
+    };
+    return stepOrder[step as keyof typeof stepOrder] || 0;
+  };
+  
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
 
@@ -2575,60 +2595,75 @@ export default function AdminPanel() {
 
                     
                     <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
-                      <h3 className="font-medium text-blue-700 mb-2">Content Creation Workflow</h3>
-                      <div className="flex items-center space-x-3">
-                        {/* Step 1: Product Selection */}
-                        <Badge className={workflowStep === 'product' ? 'bg-blue-600' : 'bg-gray-300'}>1</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep !== 'product' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 2: Related Products */}
-                        <Badge className={workflowStep === 'related-products' ? 'bg-blue-600' : (workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>2</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'related-collections' || workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 3: Related Collections */}
-                        <Badge className={workflowStep === 'related-collections' ? 'bg-blue-600' : (workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>3</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'keyword' || workflowStep === 'title' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 4: Keywords */}
-                        <Badge className={workflowStep === 'keyword' ? 'bg-blue-600' : (workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>4</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'title' || workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 5: Title */}
-                        <Badge className={workflowStep === 'title' ? 'bg-blue-600' : (workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>5</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'media' || workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 6: Media */}
-                        <Badge className={workflowStep === 'media' ? 'bg-blue-600' : (workflowStep === 'author' || workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>6</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'author' || workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 7: Author */}
-                        <Badge className={workflowStep === 'author' ? 'bg-blue-600' : (workflowStep === 'content' ? 'bg-green-600' : 'bg-gray-300')}>7</Badge>
-                        <div className="flex-1 h-1 bg-gray-200 rounded">
-                          <div className={`h-1 bg-blue-600 rounded ${workflowStep === 'content' ? 'w-full' : 'w-0'}`}></div>
-                        </div>
-                        
-                        {/* Step 8: Content */}
-                        <Badge className={workflowStep === 'content' ? 'bg-blue-600' : 'bg-gray-300'}>8</Badge>
+                      <h3 className="font-medium text-blue-700 mb-4">Content Creation Workflow</h3>
+                      
+                      {/* Modern Step Indicator */}
+                      <div className="flex items-center justify-between">
+                        {[
+                          { step: 'product', number: 1, label: 'Select Products or Collections' },
+                          { step: 'related-collections', number: 2, label: 'Choose Related Collections' },
+                          { step: 'persona', number: 3, label: 'Define Target Buyer Personas' },
+                          { step: 'keyword', number: 4, label: 'Choose Keywords' },
+                          { step: 'title', number: 5, label: 'Select a Title' },
+                          { step: 'media', number: 6, label: 'Choose Media' },
+                          { step: 'author', number: 7, label: 'Choose Author' },
+                          { step: 'style', number: 8, label: 'Style & Formatting' },
+                          { step: 'content', number: 9, label: 'Generate Content' }
+                        ].map((item, index) => {
+                          const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
+                          const isCurrent = workflowStep === item.step;
+                          
+                          return (
+                            <div key={item.step} className="flex items-center">
+                              {/* Step Circle */}
+                              <div className={`relative flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium transition-all duration-200 ${
+                                isCurrent 
+                                  ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
+                                  : isCompleted 
+                                    ? 'bg-green-500 border-green-500 text-white' 
+                                    : 'bg-white border-gray-300 text-gray-400'
+                              }`}>
+                                {isCompleted ? (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : (
+                                  item.number
+                                )}
+                              </div>
+                              
+                              {/* Connector Line (except for last item) */}
+                              {index < 8 && (
+                                <div className={`w-8 h-0.5 ml-2 transition-all duration-200 ${
+                                  isCompleted ? 'bg-green-500' : 'bg-gray-300'
+                                }`} />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="flex justify-between mt-1 text-xs text-gray-600">
-                        <span>Main Product</span>
-                        <span>Related Products</span>
-                        <span>Collections</span>
-                        <span>Keywords</span>
-                        <span>Title</span>
-                        <span>Generate</span>
+                      
+                      {/* Step Labels */}
+                      <div className="grid grid-cols-9 gap-1 mt-3 text-xs text-center">
+                        {[
+                          'Select Products',
+                          'Related Collections', 
+                          'Target Personas',
+                          'Choose Keywords',
+                          'Select Title',
+                          'Choose Media',
+                          'Choose Author',
+                          'Style & Format',
+                          'Generate'
+                        ].map((label, index) => (
+                          <div key={index} className={`text-gray-600 ${
+                            workflowStep === ['product', 'related-collections', 'persona', 'keyword', 'title', 'media', 'author', 'style', 'content'][index] 
+                              ? 'font-medium text-blue-700' 
+                              : ''
+                          }`}>
+                            {label}
+                          </div>
+                        ))}
                       </div>
                     </div>
                       
