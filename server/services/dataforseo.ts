@@ -716,303 +716,104 @@ export class DataForSEOService {
   }
 
   /**
-   * Extract generic terms from a specific product name
-   * This helps find more general categories when specific product names have no search volume
+   * Extract generic terms dynamically from any product name
+   * Works universally for any product category without hardcoded assumptions
    * @param productName The specific product name to extract generic terms from
    * @returns Array of generic terms in order of relevance
    */
   private extractGenericTerms(productName: string): string[] {
-    console.log(`Extracting generic terms from: ${productName}`);
+    console.log(`Extracting dynamic generic terms from: ${productName}`);
     const terms: string[] = [];
     
-    // Convert to lowercase for better matching
-    const input = productName.toLowerCase();
-    
-    // Remove special characters and normalize
-    const normalizedInput = input
-      .replace(/®|™|©|\[.*?\]|\(.*?\)/g, '') // Remove registered/trademark symbols and bracketed text
-      .replace(/[^\w\s-]/g, ' ')             // Replace other special chars with spaces
+    // Convert to lowercase and clean the input
+    const normalizedInput = productName.toLowerCase()
+      .replace(/®|™|©|\[.*?\]|\(.*?\)/g, '') // Remove trademark symbols and bracketed text
+      .replace(/[^\w\s-]/g, ' ')             // Replace special chars with spaces
       .replace(/\s+/g, ' ')                  // Normalize spaces
       .trim();
       
-    console.log(`Normalized input: ${normalizedInput}`);
+    console.log(`Normalized input for dynamic extraction: ${normalizedInput}`);
     
-    // Split into individual words
-    const words = normalizedInput.split(' ');
+    // Split into words and filter meaningful ones
+    const words = normalizedInput.split(' ').filter(word => word.length > 2);
     
-    // Build an expanded set of category keywords for various industries
-    // This helps us generate high-quality API queries that are likely to return data
-    const categoryKeywords = {
-      // Water treatment keywords
-      waterTreatment: [
-        'water filter', 'water purifier', 'water system', 'water treatment', 'water purification',
-        'filtration system', 'water filtration', 'water quality', 'reverse osmosis', 'deionization',
-        'water testing', 'well water', 'city water', 'hard water', 'soft water', 'iron filter'
-      ],
-      
-      // Clothing and apparel
-      clothing: [
-        'jacket', 'coat', 'sweater', 'shoes', 'boots', 'pants', 'jeans', 'shirt', 't-shirt',
-        'hoodie', 'sweatshirt', 'dress', 'skirt', 'hat', 'cap', 'beanie', 'gloves', 'socks',
-        'underwear', 'activewear', 'sportswear', 'workout clothes', 'gym clothes', 'shorts',
-        'sports shoes', 'athletic shoes', 'running shoes', 'sneakers', 'tennis shoes', 'basketball shoes',
-        'casual shoes', 'dress shoes', 'sandals', 'flip flops', 'high heels', 'loafers'
-      ],
-      
-      // Electronics
-      electronics: [
-        'laptop', 'computer', 'phone', 'smartphone', 'tablet', 'monitor', 'tv', 'television',
-        'camera', 'headphones', 'earbuds', 'speaker', 'smart watch', 'gaming console', 'keyboard',
-        'mouse', 'router', 'modem', 'printer', 'scanner', 'microphone', 'charger', 'power bank'
-      ],
-      
-      // Home goods and furniture
-      home: [
-        'furniture', 'chair', 'table', 'desk', 'sofa', 'couch', 'bed', 'mattress', 'dresser',
-        'bookshelf', 'shelf', 'cabinet', 'wardrobe', 'nightstand', 'ottoman', 'coffee table',
-        'dining table', 'bedding', 'towels', 'curtains', 'blinds', 'rug', 'carpet', 'lamp'
-      ],
-      
-      // Appliances
-      appliances: [
-        'appliance', 'refrigerator', 'fridge', 'dishwasher', 'washer', 'dryer', 'microwave',
-        'oven', 'stove', 'range', 'cooktop', 'blender', 'mixer', 'toaster', 'coffee maker',
-        'vacuum', 'air purifier', 'humidifier', 'dehumidifier', 'air conditioner', 'heater'
-      ],
-      
-      // Tools
-      tools: [
-        'tool', 'drill', 'saw', 'hammer', 'screwdriver', 'wrench', 'pliers', 'level', 'tape measure',
-        'power tool', 'lawn mower', 'trimmer', 'generator', 'battery', 'gardening tools', 'yard tools'
-      ],
-      
-      // Outdoor and sports
-      outdoor: [
-        'grill', 'bbq', 'tent', 'camping', 'hiking', 'backpack', 'fishing', 'boat', 'bike', 'bicycle',
-        'scooter', 'helmet', 'kayak', 'paddle', 'golf', 'basketball', 'football', 'baseball', 'tennis',
-        'snowboard', 'ski', 'skateboard', 'surfboard', 'wetsuit'
-      ]
-    };
-    
-    // Flatten all categories into a single array for initial search
-    const allCategories = Object.values(categoryKeywords).flat();
-    
-    // Check for category terms in the product name
-    for (const category of allCategories) {
-      if (normalizedInput.includes(category)) {
-        terms.push(category);
+    // Strategy 1: Extract the main product category (usually the last 1-2 words)
+    if (words.length >= 2) {
+      // Try last two words as category (e.g., "noise cancelling headphones" -> "cancelling headphones")
+      const lastTwoWords = `${words[words.length - 2]} ${words[words.length - 1]}`;
+      if (lastTwoWords.length > 5) {
+        terms.push(lastTwoWords);
       }
+      
+      // Add just the last word as the main category
+      const lastWord = words[words.length - 1];
+      if (lastWord.length > 3 && !terms.includes(lastWord)) {
+        terms.push(lastWord);
+      }
+    } else if (words.length === 1) {
+      terms.push(words[0]);
     }
     
-    // Look for word pairs that might be categories (2-3 words)
-    for (let i = 0; i < words.length - 1; i++) {
-      const pair = `${words[i]} ${words[i + 1]}`;
-      const triple = i < words.length - 2 ? `${words[i]} ${words[i + 1]} ${words[i + 2]}` : '';
-      
-      // Check if this pair/triple looks like a category
-      if (triple && triple.length > 5 && !terms.includes(triple)) {
-        terms.push(triple);
-      }
-      
-      if (pair.length > 5 && !terms.includes(pair)) {
-        terms.push(pair);
-      }
-    }
+    // Strategy 2: Extract meaningful descriptive words (skip obvious brand/model indicators)
+    const meaningfulWords = words.filter(word => {
+      // Skip brand indicators, model numbers, and common modifiers
+      return !word.match(/^(pro|elite|premium|plus|max|mini|super|ultra|best|top|new|model|series|ltd|inc|corp)$/i) &&
+             !word.match(/^\d/) && // Skip words starting with numbers
+             !word.match(/^[A-Z0-9-]{3,}$/i) && // Skip model codes like "WH-1000XM4"
+             word.length > 3 &&
+             !terms.includes(word);
+    });
     
-    // Add single words that might be meaningful (exclude common stop words)
-    const stopWords = ['the', 'and', 'or', 'for', 'with', 'in', 'on', 'at', 'to', 'a', 'an', 'by', 'is', 'it', 'of', 'from'];
-    for (const word of words) {
-      if (word.length > 3 && !stopWords.includes(word) && !terms.some(term => term.includes(word))) {
+    // Add the most relevant descriptive words
+    meaningfulWords.slice(0, 3).forEach(word => {
+      if (!terms.includes(word)) {
         terms.push(word);
       }
-    }
+    });
     
-    // Determine which category this product likely belongs to
-    let categoryType: keyof typeof categoryKeywords | null = null;
+    // Strategy 3: Create search-friendly keyword variations
+    const mainCategories = terms.slice(0, 2); // Use top 2 categories
     
-    // Check for water treatment products first (only if actually water-related)
-    if ((normalizedInput.includes('water') && (normalizedInput.includes('softener') || normalizedInput.includes('conditioner') || normalizedInput.includes('filter'))) ||
-        (normalizedInput.includes('softener') && normalizedInput.includes('water')) ||
-        (normalizedInput.includes('conditioner') && normalizedInput.includes('water')) ||
-        (normalizedInput.includes('filter') && normalizedInput.includes('water'))) {
-      categoryType = 'waterTreatment';
-    } 
-    // Check for clothing products
-    else if (normalizedInput.includes('jacket') || 
-             normalizedInput.includes('coat') || 
-             normalizedInput.includes('shirt') || 
-             normalizedInput.includes('pant') || 
-             normalizedInput.includes('shoe') || 
-             normalizedInput.includes('boot') ||
-             normalizedInput.includes('sports shoes') ||
-             normalizedInput.includes('athletic shoes') ||
-             normalizedInput.includes('running shoes') ||
-             normalizedInput.includes('sneakers')) {
-      categoryType = 'clothing';
-    }
-    // Check for electronics
-    else if (normalizedInput.includes('phone') || 
-             normalizedInput.includes('laptop') || 
-             normalizedInput.includes('computer') || 
-             normalizedInput.includes('tv') || 
-             normalizedInput.includes('headphone')) {
-      categoryType = 'electronics';
-    }
-    // Check for outdoor/sports products
-    else if (normalizedInput.includes('snowboard') || 
-             normalizedInput.includes('ski') || 
-             normalizedInput.includes('bike') || 
-             normalizedInput.includes('camp') || 
-             normalizedInput.includes('hike') || 
-             normalizedInput.includes('fish')) {
-      categoryType = 'outdoor';
-    }
-    // Check for appliance products
-    else if (normalizedInput.includes('appliance') || 
-             normalizedInput.includes('fridge') || 
-             normalizedInput.includes('oven') || 
-             normalizedInput.includes('washer') || 
-             normalizedInput.includes('dryer')) {
-      categoryType = 'appliances';
-    }
-    // Check for furniture/home products
-    else if (normalizedInput.includes('furniture') || 
-             normalizedInput.includes('sofa') || 
-             normalizedInput.includes('bed') || 
-             normalizedInput.includes('chair') || 
-             normalizedInput.includes('table')) {
-      categoryType = 'home';
-    }
-    // Check for tools
-    else if (normalizedInput.includes('tool') || 
-             normalizedInput.includes('drill') || 
-             normalizedInput.includes('saw') || 
-             normalizedInput.includes('hammer')) {
-      categoryType = 'tools';
-    }
-    
-    // Add more targeted terms based on the identified category
-    if (categoryType) {
-      const categorySpecificTerms = categoryKeywords[categoryType];
+    for (const category of mainCategories) {
+      const variations = [
+        `best ${category}`,
+        `${category} reviews`,
+        `${category} buying guide`,
+        `top ${category}`,
+        `${category} comparison`,
+        `${category} brands`,
+        `cheap ${category}`,
+        `affordable ${category}`
+      ];
       
-      // Add the top 10 most relevant category terms that aren't already in our list
-      for (let i = 0; i < categorySpecificTerms.length && i < 20; i++) {
-        const term = categorySpecificTerms[i];
+      variations.forEach(variation => {
+        if (!terms.includes(variation)) {
+          terms.push(variation);
+        }
+      });
+    }
+    
+    // Strategy 4: Add universal e-commerce terms (only if we have few specific terms)
+    if (terms.length < 5) {
+      const universalTerms = [
+        'product reviews',
+        'buying guide',
+        'best products',
+        'consumer guide',
+        'product comparison',
+        'brand reviews'
+      ];
+      
+      universalTerms.forEach(term => {
         if (!terms.includes(term)) {
           terms.push(term);
         }
-      }
-      
-      // If this is a water treatment product, add special handling
-      if (categoryType === 'waterTreatment') {
-        // Add specific water treatment terms in order of relevance
-        if (normalizedInput.includes('softener')) {
-          if (!terms.includes('water filter')) terms.unshift('water filter');
-        } else if (normalizedInput.includes('filter')) {
-          if (!terms.includes('water filter')) terms.unshift('water filter');
-        } else if (normalizedInput.includes('conditioner')) {
-          if (!terms.includes('water conditioner')) terms.unshift('water conditioner');
-        } else if (normalizedInput.includes('water')) {
-          // Only add generic water treatment terms if the input actually contains 'water'
-          if (!terms.includes('water treatment system')) terms.unshift('water treatment system');
-        }
-        
-        // Add salt free specific terms if applicable
-        if (normalizedInput.includes('salt free') || normalizedInput.includes('saltfree')) {
-          if (!terms.includes('water filtration system')) terms.unshift('water filtration system');
-          if (!terms.includes('salt free water conditioner')) terms.push('salt free water conditioner');
-        }
-        
-        // Add specific usage contexts if present
-        if (normalizedInput.includes('city water') || normalizedInput.includes('citywater')) {
-          if (!terms.includes('city water treatment')) terms.push('city water treatment');
-          if (!terms.includes('city water filter')) terms.push('city water filter');
-        }
-        
-        if (normalizedInput.includes('well water') || normalizedInput.includes('wellwater')) {
-          if (!terms.includes('well water treatment')) terms.push('well water treatment');
-          if (!terms.includes('well water filter')) terms.push('well water filter');
-        }
-      }
-      
-      // If this is a clothing product, add special handling
-      else if (categoryType === 'clothing') {
-        if (normalizedInput.includes('jacket')) {
-          if (!terms.includes('winter jacket')) terms.push('winter jacket');
-          if (!terms.includes('rain jacket')) terms.push('rain jacket');
-          if (!terms.includes('jacket styles')) terms.push('jacket styles');
-        }
-        if (normalizedInput.includes('shoe') || normalizedInput.includes('boot')) {
-          if (normalizedInput.includes('sports') || normalizedInput.includes('athletic') || normalizedInput.includes('running')) {
-            if (!terms.includes('athletic shoes')) terms.push('athletic shoes');
-            if (!terms.includes('sports shoes')) terms.push('sports shoes');
-            if (!terms.includes('running shoes')) terms.push('running shoes');
-          }
-          if (!terms.includes('shoe sizing')) terms.push('shoe sizing');
-          if (!terms.includes('comfortable shoes')) terms.push('comfortable shoes');
-        }
-      }
-      
-      // For electronics, add specific terms
-      else if (categoryType === 'electronics') {
-        if (!terms.includes('tech review')) terms.push('tech review');
-        if (!terms.includes('electronics guide')) terms.push('electronics guide');
-        if (!terms.includes('gadget review')) terms.push('gadget review');
-      }
-      
-      // For outdoor category
-      else if (categoryType === 'outdoor') {
-        if (normalizedInput.includes('snowboard')) {
-          if (!terms.includes('snowboard')) terms.unshift('snowboard');
-          if (!terms.includes('snowboarding')) terms.push('snowboarding');
-          if (!terms.includes('winter sports')) terms.push('winter sports');
-        }
-        if (!terms.includes('outdoor gear')) terms.push('outdoor gear');
-        if (!terms.includes('outdoor activities')) terms.push('outdoor activities');
-      }
-    } else {
-      // For products we couldn't categorize, extract key terms
-      if (words.length >= 2) {
-        // Try to identify the main product category using the last 2 words
-        // This works well for many products like "Sony Noise Cancelling Headphones"
-        const lastTwoWords = `${words[words.length - 2]} ${words[words.length - 1]}`;
-        if (lastTwoWords.length > 5) {
-          terms.unshift(lastTwoWords);
-        } else {
-          // If just one word at the end, use it
-          terms.unshift(words[words.length - 1]);
-        }
-      }
-      
-      // Always add some general e-commerce terms for unknown categories
-      if (!terms.includes('product review')) terms.push('product review');
-      if (!terms.includes('buying guide')) terms.push('buying guide');
-      if (!terms.includes('comparison')) terms.push('comparison');
-      if (!terms.includes('best brands')) terms.push('best brands');
+      });
     }
     
-    // Create common combinations that generally perform well in search
-    if (terms.length > 0) {
-      const mainTerm = terms[0];
-      const combinations = [
-        `best ${mainTerm}`,
-        `${mainTerm} reviews`,
-        `${mainTerm} buying guide`,
-        `how to choose ${mainTerm}`,
-        `${mainTerm} comparison`,
-        `top rated ${mainTerm}`
-      ];
-      
-      // Add these combinations if they don't already exist
-      for (const combo of combinations) {
-        if (!terms.includes(combo)) {
-          terms.push(combo);
-        }
-      }
-    }
     
-    console.log(`Extracted terms: ${terms.join(', ')}`);
-    return terms;
+    console.log(`Extracted dynamic terms: ${finalTerms.join(', ')}`);
+    return finalTerms;
   }
 
   /**
@@ -1095,68 +896,76 @@ export class DataForSEOService {
   }
 
   /**
-   * Generate broader category terms when specific product names yield low search volumes
+   * Generate broader category terms dynamically from any product name
+   * Works universally for any product category without hardcoded terms
    * @param originalKeyword The original specific keyword
    * @returns Array of broader category terms
    */
   private generateBroadCategoryTerms(originalKeyword: string): string[] {
     const broadTerms: string[] = [];
-    const lowercaseKeyword = originalKeyword.toLowerCase();
+    const words = originalKeyword.toLowerCase().split(' ').filter(word => word.length > 2);
     
-    // Water treatment related terms - more comprehensive
-    if (lowercaseKeyword.includes('water') && (lowercaseKeyword.includes('softener') || lowercaseKeyword.includes('conditioner') || lowercaseKeyword.includes('filter'))) {
-      broadTerms.push(
-        'water softener', 
-        'water filter', 
-        'water treatment', 
-        'home water systems',
-        'water purification',
-        'best water softener',
-        'water softener reviews',
-        'hard water solutions',
-        'water conditioning system',
-        'whole house water filter'
-      );
-    }
-    // Electronics and tech
-    else if (lowercaseKeyword.includes('ai') || lowercaseKeyword.includes('artificial intelligence')) {
-      broadTerms.push('artificial intelligence', 'machine learning', 'AI technology', 'smart technology');
-    }
-    // Headphones/audio
-    else if (lowercaseKeyword.includes('headphone') || lowercaseKeyword.includes('earphone') || lowercaseKeyword.includes('audio')) {
-      broadTerms.push('headphones', 'wireless headphones', 'bluetooth headphones', 'audio equipment');
-    }
-    // Kitchen appliances
-    else if (lowercaseKeyword.includes('kitchen') || lowercaseKeyword.includes('cooking') || lowercaseKeyword.includes('appliance')) {
-      broadTerms.push('kitchen appliances', 'cooking equipment', 'home appliances');
-    }
-    // Fitness and health
-    else if (lowercaseKeyword.includes('fitness') || lowercaseKeyword.includes('exercise') || lowercaseKeyword.includes('workout')) {
-      broadTerms.push('fitness equipment', 'exercise gear', 'home gym', 'workout equipment');
-    }
-    // Beauty and skincare
-    else if (lowercaseKeyword.includes('skin') || lowercaseKeyword.includes('beauty') || lowercaseKeyword.includes('cosmetic')) {
-      broadTerms.push('skincare', 'beauty products', 'cosmetics', 'skin care routine');
-    }
-    // Home and garden
-    else if (lowercaseKeyword.includes('home') || lowercaseKeyword.includes('garden') || lowercaseKeyword.includes('outdoor')) {
-      broadTerms.push('home improvement', 'garden tools', 'outdoor equipment', 'home decor');
-    }
-    // Default fallback to generic product categories
-    else {
-      // Extract the last word which is often the product category
-      const words = originalKeyword.split(' ').filter(word => word.length > 2);
-      if (words.length > 0) {
-        const lastWord = words[words.length - 1];
-        broadTerms.push(lastWord, `best ${lastWord}`, `${lastWord} reviews`);
-      }
+    // Strategy 1: Extract product category from the last 1-2 words
+    if (words.length >= 2) {
+      // Try last two words as category (e.g., "noise cancelling headphones" -> "noise cancelling")
+      const lastTwoWords = words.slice(-2).join(' ');
+      broadTerms.push(lastTwoWords);
       
-      // Add some general high-volume categories
+      // Try just the last word (e.g., "headphones")
+      const lastWord = words[words.length - 1];
+      if (lastWord !== lastTwoWords) {
+        broadTerms.push(lastWord);
+      }
+    } else if (words.length === 1) {
+      broadTerms.push(words[0]);
+    }
+    
+    // Strategy 2: Extract middle category words (skip brand names and model numbers)
+    const potentialCategories = words.filter(word => {
+      // Skip obvious brand indicators, model numbers, and common modifiers
+      return !word.match(/^(the|a|an|and|or|with|for|pro|elite|premium|plus|max|mini|super|ultra|best|top|new)$/i) &&
+             !word.match(/^\d/) && // Skip words starting with numbers
+             !word.match(/[®™©]/) && // Skip trademark symbols
+             word.length > 3;
+    });
+    
+    // Add the most meaningful category words
+    potentialCategories.slice(0, 3).forEach(category => {
+      if (!broadTerms.includes(category)) {
+        broadTerms.push(category);
+      }
+    });
+    
+    // Strategy 3: Create high-volume search variations from extracted categories
+    const mainCategories = broadTerms.slice(0, 2); // Use top 2 categories
+    
+    for (const category of mainCategories) {
+      // Add search-friendly variations
+      const variations = [
+        `best ${category}`,
+        `${category} reviews`,
+        `${category} buying guide`,
+        `top ${category}`,
+        `${category} comparison`
+      ];
+      
+      variations.forEach(variation => {
+        if (!broadTerms.includes(variation)) {
+          broadTerms.push(variation);
+        }
+      });
+    }
+    
+    // Strategy 4: Add universal high-volume terms only if we couldn't extract good categories
+    if (broadTerms.length < 3) {
       broadTerms.push('product reviews', 'buying guide', 'best products', 'consumer guide');
     }
     
-    console.log(`Generated broad category terms for "${originalKeyword}": ${broadTerms.join(', ')}`);
-    return broadTerms;
+    // Limit to most relevant terms to avoid API overload
+    const finalTerms = broadTerms.slice(0, 8);
+    
+    console.log(`Generated dynamic category terms for "${originalKeyword}": ${finalTerms.join(', ')}`);
+    return finalTerms;
   }
 
 

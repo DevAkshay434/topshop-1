@@ -79,34 +79,38 @@ If fewer than 5 high-volume keywords found:
 - Duplicate removal
 - Relevance scoring and sorting
 
-## Category-Specific Broad Terms
+## Universal Dynamic Category Extraction
 
-### Water Treatment Products
-When input contains "water" + ("softener" | "conditioner" | "filter"):
-- water softener
-- water filter  
-- water treatment
-- home water systems
-- water purification
-- best water softener
-- water softener reviews
-- hard water solutions
-- water conditioning system
-- whole house water filter
+The system now works **universally for any product category** without hardcoded assumptions:
 
-### AI/Technology Products
-When input contains "ai" | "artificial intelligence":
-- artificial intelligence
-- machine learning
-- AI technology
-- smart technology
+### Strategy 1: Product Category Extraction
+- **Last Two Words**: Extract potential category from end of product name (e.g., "Sony WH-1000XM4 Headphones" → "1000xm4 headphones")
+- **Last Word**: Extract main category (e.g., "headphones")
 
-### Audio Equipment
-When input contains "headphone" | "earphone" | "audio":
-- headphones
-- wireless headphones
-- bluetooth headphones
-- audio equipment
+### Strategy 2: Meaningful Word Filtering
+- Skip brand indicators: pro, elite, premium, plus, max, mini, etc.
+- Skip model numbers: words starting with numbers or codes like "WH-1000XM4"
+- Extract meaningful descriptive words
+
+### Strategy 3: Search-Friendly Variations
+For any extracted category, automatically generates:
+- best {category}
+- {category} reviews
+- {category} buying guide
+- top {category}
+- {category} comparison
+- {category} brands
+- cheap {category}
+- affordable {category}
+
+### Strategy 4: Universal E-Commerce Terms
+When specific categories are insufficient, adds:
+- product reviews
+- buying guide
+- best products
+- consumer guide
+- product comparison
+- brand reviews
 
 ## Functions and Methods
 
