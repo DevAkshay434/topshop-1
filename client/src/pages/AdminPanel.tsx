@@ -2644,10 +2644,10 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step Labels - Simple and Clean */}
-                      <div className="flex justify-between mt-2 text-xs text-gray-600">
-                        <span className={workflowStep === 'product' ? 'text-blue-700 font-medium' : ''}>Select Products</span>
-                        <span className={workflowStep === 'related-collections' ? 'text-blue-700 font-medium' : ''}>Related Collections</span>
-                        <span className={workflowStep === 'persona' ? 'text-blue-700 font-medium' : ''}>Target Personas</span>
+                      <div className="grid grid-cols-9 gap-1 mt-2 text-xs text-center text-gray-600">
+                        <span className={workflowStep === 'product' ? 'text-blue-700 font-medium' : ''}>Products</span>
+                        <span className={workflowStep === 'related-collections' ? 'text-blue-700 font-medium' : ''}>Collections</span>
+                        <span className={workflowStep === 'persona' ? 'text-blue-700 font-medium' : ''}>Personas</span>
                         <span className={workflowStep === 'keyword' ? 'text-blue-700 font-medium' : ''}>Keywords</span>
                         <span className={workflowStep === 'title' ? 'text-blue-700 font-medium' : ''}>Title</span>
                         <span className={workflowStep === 'media' ? 'text-blue-700 font-medium' : ''}>Media</span>
