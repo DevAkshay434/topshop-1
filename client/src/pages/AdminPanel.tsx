@@ -3310,9 +3310,9 @@ export default function AdminPanel() {
                           </Button>
                         </div>
                         
-                        <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2 mb-3">
-                          {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 ? (
-                            selectedKeywords.map((keyword, idx) => (
+                        {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 && (
+                          <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2 mb-3">
+                            {selectedKeywords.map((keyword, idx) => (
                               <Badge key={idx} variant="secondary" className="flex items-center gap-1">
                                 {keyword?.keyword || ''}
                                 {keyword?.searchVolume && (
@@ -3321,11 +3321,9 @@ export default function AdminPanel() {
                                   </span>
                                 )}
                               </Badge>
-                            ))
-                          ) : (
-                            <span className="text-sm text-muted-foreground">No keywords selected yet</span>
-                          )}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                         
                         <div className="flex justify-between">
                           <Button
