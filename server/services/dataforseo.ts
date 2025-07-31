@@ -233,8 +233,8 @@ export class DataForSEOService {
           // Sanitize and format the keyword properly
           const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
           
-          // Filter keywords by minimum search volume - lowered threshold to get more keywords
-          if (this.isValidSEOKeyword(sanitizedKeyword) && adjustedSearchVolume >= 50) {
+          // Include ALL keywords regardless of search volume (including zero volume)
+          if (this.isValidSEOKeyword(sanitizedKeyword)) {
             keywordData.push({
               keyword: sanitizedKeyword,
               searchVolume: adjustedSearchVolume,
@@ -248,8 +248,13 @@ export class DataForSEOService {
             });
             
             hasValidData = true;
-          } else if (adjustedSearchVolume > 0 && adjustedSearchVolume < 100) {
-            console.log(`Filtered out low-volume keyword: ${sanitizedKeyword} (${adjustedSearchVolume} searches)`);
+            
+            // Log keyword inclusion for transparency
+            if (adjustedSearchVolume === 0) {
+              console.log(`Included zero-volume keyword: ${sanitizedKeyword}`);
+            } else if (adjustedSearchVolume < 50) {
+              console.log(`Included low-volume keyword: ${sanitizedKeyword} (${adjustedSearchVolume} searches)`);
+            }
           }
         }
         
@@ -428,7 +433,7 @@ export class DataForSEOService {
                       console.log(`Received authentic data for ${expansionResults.length} expansion keywords`);
                       
                       for (const item of expansionResults) {
-                        if (item.keyword && item.search_volume > 0) {
+                        if (item.keyword) {
                           const searchVolume = item.search_volume || 0;
                           const cpc = item.cpc || 0;
                           const competition = item.competition || 0;
@@ -456,6 +461,13 @@ export class DataForSEOService {
                               difficulty,
                               selected: false
                             });
+                            
+                            // Log inclusion of zero/low volume keywords
+                            if (searchVolume === 0) {
+                              console.log(`Included zero-volume expansion keyword: ${sanitizedKeyword}`);
+                            } else if (searchVolume < 50) {
+                              console.log(`Included low-volume expansion keyword: ${sanitizedKeyword} (${searchVolume} searches)`);
+                            }
                           }
                         }
                       }
