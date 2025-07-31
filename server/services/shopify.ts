@@ -1286,12 +1286,12 @@ export class ShopifyService {
         // Add meta title as metafield for SEO (separate from visible title)
         if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
           metafields.push({
-            namespace: 'seo',
+            namespace: 'global',
             key: 'title_tag',
             value: (post as any).metaTitle,
             type: 'single_line_text_field'
           });
-          console.log(`✓ Added meta title to SEO metafield: ${(post as any).metaTitle}`);
+          console.log(`✓ Added meta title to global.title_tag metafield: ${(post as any).metaTitle}`);
         } else {
           console.log(`✗ No meta title found for SEO metafield`);
         }
@@ -1299,12 +1299,12 @@ export class ShopifyService {
         // Add meta description to page metafields for SEO
         if ((post as any).metaDescription && (post as any).metaDescription.trim()) {
           metafields.push({
-            namespace: 'seo',
-            key: 'description',
+            namespace: 'global',
+            key: 'description_tag',
             value: (post as any).metaDescription,
             type: 'single_line_text_field'
           });
-          console.log(`✓ Added meta description to page metafields: ${(post as any).metaDescription}`);
+          console.log(`✓ Added meta description to global.description_tag metafield: ${(post as any).metaDescription}`);
         } else {
           console.log(`✗ No meta description found for page`);
         }
