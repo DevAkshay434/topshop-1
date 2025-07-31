@@ -53,7 +53,7 @@ This document outlines the complete DataForSEO API integration used for keyword 
 The system starts with user input and creates variations:
 
 1. **Base Keyword**: Original cleaned input
-2. **Generic Terms**: Extracted category terms (e.g., "water softener" from "SoftPro Elite Water Softener")
+2. **Generic Terms**: Dynamically extracted category terms (e.g., "headphones" from "Sony WH-1000XM4 Headphones")
 3. **High-Value Modifiers**: 
    - `best {keyword}`
    - `{keyword} reviews`
@@ -165,28 +165,29 @@ The system provides comprehensive logging:
 
 1. **Lowered Search Volume Threshold**: From 100 to 50 monthly searches
 2. **Enhanced Fallback System**: Triggers when <5 keywords found (was 0)
-3. **Expanded Water Treatment Terms**: 10 comprehensive category terms
-4. **Improved Keyword Expansion**: Better related keyword fetching
+3. **Universal Dynamic Categories**: Completely removed hardcoded category terms
+4. **Improved Keyword Expansion**: Better related keyword fetching for any product type
 5. **Quality Filtering**: Maintains authentic DataForSEO data only
 
-## Example API Flow
+## Example API Flow (Universal for Any Product)
 
-For "SoftPro Elite Salt Free Water Conditioner":
+For any product name like "Brand Model Product Category":
 
 1. **Input Processing**: 
-   - Cleaned to: "softpro elite salt free water conditioner"
-   - Generic terms extracted: ["water conditioner", "water softener"]
+   - Dynamically extracts category terms from product name
+   - Generic terms extracted based on product structure
 
 2. **Initial API Request**: 
-   - 13 keywords sent to search volume endpoint
-   - Results: 1 keyword with 4,400 searches ("free water")
+   - Keywords sent to search volume endpoint
+   - Results filtered by minimum search volume (50+)
 
 3. **Fallback Triggered**: 
-   - Only 1 keyword found (< 5 threshold)
-   - Broad terms generated: "water softener", "water filter", etc.
+   - When fewer than 5 keywords found (< 5 threshold)
+   - Broad terms generated dynamically from product name
+   - Uses universal category extraction strategies
 
 4. **Secondary API Request**: 
-   - Searches broader category terms
-   - Returns higher-volume keywords for water treatment category
+   - Searches broader category terms extracted from input
+   - Returns higher-volume keywords for any product category
 
-This ensures users always get comprehensive, high-volume keyword research data.
+This ensures comprehensive, high-volume keyword research for any store type.
