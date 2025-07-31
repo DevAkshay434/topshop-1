@@ -55,7 +55,12 @@ async function generateBuyerPersonasWithAI(productDetails: any[], collections: a
   try {
     console.log('🤖 Attempting Claude AI generation...');
     return await retryWithBackoff(async () => {
-      const promptContent = `Based on these specific products: ${JSON.stringify(productDetails, null, 2)}
+      const response = await anthropic.messages.create({
+        model: DEFAULT_MODEL_STR,
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Based on these specific products: ${JSON.stringify(productDetails, null, 2)}
 
 Generate 10 highly specific buyer persona suggestions that would be interested in these exact products. 
 
@@ -68,19 +73,7 @@ Requirements:
 
 Return only a JSON array of strings, nothing else.
 
-Example format: ["Tech-savvy millennials 25-35", "Small business owners", "Health-conscious families"]`;
-
-      console.log('📋 CLAUDE PROMPT EXAMPLE - Full prompt being sent to Claude AI:');
-      console.log('================================');
-      console.log(promptContent);
-      console.log('================================');
-
-      const response = await anthropic.messages.create({
-        model: DEFAULT_MODEL_STR,
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: promptContent
+Example format: ["Tech-savvy millennials 25-35", "Small business owners", "Health-conscious families"]`
         }]
       });
 
