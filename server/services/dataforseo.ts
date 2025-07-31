@@ -131,20 +131,17 @@ export class DataForSEOService {
         console.log(`Sending ${uniqueKeywords.length} focused keywords to DataForSEO API:`, uniqueKeywords);
         
         const requestData = [{
-          keyword: uniqueKeywords[0], // Use first keyword as seed
+          keywords: uniqueKeywords.slice(0, 50), // Use up to 50 keywords to get comprehensive data
           language_code: "en",
-          location_code: 2840, // United States
-          limit: 100, // Get up to 100 keyword suggestions
-          include_seed_keyword: true,
-          include_serp_info: true
+          location_code: 2840 // United States
         }];
 
         console.log("DataForSEO request payload:", JSON.stringify(requestData));
 
         // POST request to DataForSEO API to get comprehensive keyword data
-        // Use keywords research endpoint for full data including difficulty
-        const endpoint = `/v3/dataforseo_labs/google/keyword_suggestions/live`;
-        console.log(`Using DataForSEO keyword research endpoint: ${endpoint}`);
+        // Use search volume endpoint for full data including search volume, competition, CPC
+        const endpoint = `/v3/keywords_data/google/search_volume/live`;
+        console.log(`Using DataForSEO search volume endpoint: ${endpoint}`);
         
         const response = await axios.post(
           `${this.apiUrl}${endpoint}`,
@@ -200,16 +197,16 @@ export class DataForSEOService {
           console.log("Sample result structure:", JSON.stringify(results[0]));
         }
         
-        // Process keyword suggestions data from keyword_suggestions endpoint
+        // Process search volume data from search_volume endpoint
         let hasValidData = false;
         
         for (const result of results) {
-          // Extract keyword data based on the keyword_suggestions endpoint structure
+          // Extract keyword data based on the search_volume endpoint structure
           const keywordText = result.keyword || '';
           const searchVolume = result.search_volume;
-          const competition = result.competition_index; // Different field name in suggestions API
+          const competition = result.competition; // Standard field name in search volume API
           const cpc = result.cpc;
-          const keywordDifficulty = result.keyword_difficulty; // Direct difficulty score from API
+          const keywordDifficulty = result.keyword_difficulty; // May not be available in search volume endpoint
           
           // Include all keywords from DataForSEO API, even with null/zero search volume
           // Assign a fallback value for null/undefined search volumes to ensure display
@@ -254,280 +251,138 @@ export class DataForSEOService {
           }
         }
         
-        // REMOVED: All fallback keyword generation logic
-        // Only authentic DataForSEO keywords with real search volumes are returned
+        // Get additional related keywords using keyword suggestions API to expand our list
+        console.log(`Expanding keyword list with related suggestions...`);
         
-        // Get related keywords from DataForSEO API to expand our keyword list
-        // Use keyword suggestions endpoint to get a broader range of keywords
         if (keywordData.length > 0) {
           try {
-            // Only proceed if we have at least one keyword with valid search volume
-            const validKeyword = keywordData.find(k => k.searchVolume && k.searchVolume > 0);
+            // Use the first valid keyword to get more suggestions
+            const seedKeyword = keywordData[0].keyword;
+            console.log(`Getting additional keyword suggestions for: ${seedKeyword}`);
             
-            if (validKeyword) {
-              // Use this keyword to get keyword suggestions from the API
-              console.log(`Getting API keyword suggestions for: ${validKeyword.keyword}`);
-              
-              const auth = {
-                username: this.username,
-                password: this.password
-              };
-              
-              // Use 3 different keyword suggestion approaches to maximize our keyword count
-              const suggestionsRequestData = [{
-                keyword: validKeyword.keyword,
-                language_code: "en",
-                location_code: 2840, // United States
-                limit: 100 // Get up to 100 keyword suggestions
-              }];
-              
-              // Make DataForSEO API call to get keyword suggestions
-              console.log("Fetching keyword suggestions from DataForSEO API");
-              const suggestionsEndpoint = `/v3/keywords_data/google/keywords_for_keywords/live`;
-              
-              try {
-                const suggestionsResponse = await axios.post(
-                  `${this.apiUrl}${suggestionsEndpoint}`,
-                  suggestionsRequestData,
-                  { 
-                    auth,
-                    timeout: 30000, // 30 second timeout
-                    headers: { 'Content-Type': 'application/json' }
-                  }
-                );
-                
-                // Process the suggestions response
-                if (suggestionsResponse.data?.tasks?.[0]?.result) {
-                  const suggestionsResults = suggestionsResponse.data.tasks[0].result;
-                  console.log(`Got ${suggestionsResults.length} keyword suggestions from API`);
-                  
-                  // Process each suggestion
-                  for (const suggestion of suggestionsResults) {
-                    // Only add if we don't already have this keyword
-                    if (!keywordData.some(k => k.keyword.toLowerCase() === suggestion.keyword.toLowerCase())) {
-                      const searchVolume = suggestion.search_volume || 0;
-                      const competition = suggestion.competition || 0;
-                      const cpc = suggestion.cpc || 0;
-                      
-                      // Create trend data from monthly_searches if available
-                      const trend = suggestion.monthly_searches
-                        ? suggestion.monthly_searches.map((monthData: any) => monthData.search_volume)
-                        : Array(12).fill(Math.round(searchVolume));
-                      
-                      // Calculate keyword difficulty
-                      const difficulty = this.calculateKeywordDifficulty({
-                        search_volume: searchVolume,
-                        competition,
-                        cpc
-                      });
-                      
-                      // Add to our keywords list
-                      keywordData.push({
-                        keyword: suggestion.keyword,
-                        searchVolume,
-                        cpc,
-                        competition,
-                        competitionLevel: this.getCompetitionLevel(competition),
-                        intent: this.determineIntent({ keyword: suggestion.keyword }),
-                        trend,
-                        difficulty,
-                        selected: false
-                      });
-                    }
-                  }
-                } else {
-                  console.log("No keyword suggestions found in API response");
+            const auth = {
+              username: this.username,
+              password: this.password
+            };
+            
+            // Use keyword suggestions endpoint to get broader keyword ideas
+            const suggestionsRequestData = [{
+              keyword: seedKeyword,
+              language_code: "en",
+              location_code: 2840,
+              limit: 50,
+              include_seed_keyword: false
+            }];
+            
+            const suggestionsResponse = await axios.post(
+              `${this.apiUrl}/v3/dataforseo_labs/google/keyword_suggestions/live`,
+              suggestionsRequestData,
+              { 
+                auth,
+                timeout: 30000,
+                headers: {
+                  'Content-Type': 'application/json'
                 }
-              } catch (suggestionsError: any) {
-                console.error(`Error getting keyword suggestions: ${suggestionsError.message}`);
               }
+            );
+            
+            if (suggestionsResponse.data?.status_code === 20000 && suggestionsResponse.data.tasks?.[0]?.result) {
+              const suggestions = suggestionsResponse.data.tasks[0].result;
+              console.log(`Found ${suggestions.length} additional keyword suggestions`);
               
-              // Try a second API call with "related_keywords" endpoint
-              try {
-                console.log("Trying related keywords API endpoint for more keyword ideas");
-                const relatedEndpoint = `/v3/keywords_data/google/related_keywords/live`;
+              // Extract the suggested keywords and get their search volume data
+              const suggestedKeywords = suggestions
+                .map((item: any) => item.keyword)
+                .filter((kw: string) => kw && !keywordData.some(existing => existing.keyword === kw))
+                .slice(0, 30); // Limit to 30 additional keywords
+              
+              if (suggestedKeywords.length > 0) {
+                console.log(`Getting search volume data for ${suggestedKeywords.length} suggested keywords`);
                 
-                const relatedResponse = await axios.post(
-                  `${this.apiUrl}${relatedEndpoint}`,
-                  suggestionsRequestData, // Use the same request data
+                // Get search volume data for the suggested keywords
+                const volumeRequestData = [{
+                  keywords: suggestedKeywords,
+                  language_code: "en",
+                  location_code: 2840
+                }];
+                
+                const volumeResponse = await axios.post(
+                  `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
+                  volumeRequestData,
                   { 
                     auth,
                     timeout: 30000,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: {
+                      'Content-Type': 'application/json'
+                    }
                   }
                 );
                 
-                // Process the related keywords response
-                if (relatedResponse.data?.tasks?.[0]?.result?.[0]?.keywords) {
-                  const relatedResults = relatedResponse.data.tasks[0].result[0].keywords;
-                  console.log(`Got ${relatedResults.length} related keywords from API`);
+                if (volumeResponse.data?.status_code === 20000 && volumeResponse.data.tasks?.[0]?.result) {
+                  const volumeData = volumeResponse.data.tasks[0].result;
+                  console.log(`Received search volume data for ${volumeData.length} additional keywords`);
                   
-                  // Process each related keyword
-                  for (const related of relatedResults) {
-                    // Only add if we don't already have this keyword
-                    if (!keywordData.some(k => k.keyword.toLowerCase() === related.keyword.toLowerCase())) {
-                      const searchVolume = related.search_volume || 0;
-                      const competition = related.competition || 0;
-                      const cpc = related.cpc || 0;
-                      
-                      // Create trend data from monthly_searches if available
-                      const trend = related.monthly_searches
-                        ? related.monthly_searches.map((monthData: any) => monthData.search_volume)
-                        : Array(12).fill(Math.round(searchVolume));
-                      
-                      // Calculate keyword difficulty
+                  // Process the additional keywords
+                  for (const result of volumeData) {
+                    const keywordText = result.keyword || '';
+                    const searchVolume = result.search_volume || 0;
+                    const competition = result.competition || 0;
+                    const cpc = result.cpc || 0;
+                    
+                    const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
+                    
+                    if (this.isValidSEOKeyword(sanitizedKeyword)) {
                       const difficulty = this.calculateKeywordDifficulty({
                         search_volume: searchVolume,
-                        competition,
-                        cpc
+                        competition: competition,
+                        cpc: cpc
                       });
                       
-                      // Add to our keywords list
                       keywordData.push({
-                        keyword: related.keyword,
-                        searchVolume,
-                        cpc,
-                        competition,
+                        keyword: sanitizedKeyword,
+                        searchVolume: searchVolume,
+                        cpc: cpc,
+                        competition: competition,
                         competitionLevel: this.getCompetitionLevel(competition),
-                        intent: this.determineIntent({ keyword: related.keyword }),
-                        trend,
+                        intent: this.determineIntent({ keyword: sanitizedKeyword }),
+                        trend: Array(12).fill(searchVolume),
                         difficulty,
                         selected: false
                       });
                     }
                   }
                 }
-              } catch (relatedError: any) {
-                console.error(`Error getting related keywords: ${relatedError.message}`);
               }
-            } else {
-              console.log("No valid keywords found to use for suggestions");
             }
-          } catch (suggestionsError: any) {
-            console.error(`Error processing keyword suggestions: ${suggestionsError.message}`);
+          } catch (error) {
+            console.log('Could not fetch additional keyword suggestions:', error);
+            // Continue with existing keywords if expansion fails
           }
         }
         
-        // If no keywords were found, throw error
-        if (keywordData.length === 0) {
-          console.error("No keywords found in DataForSEO API results");
-          throw new Error("DataForSEO API returned no valid keyword data. Please try different search terms or check your API limits.");
-        }
-
-        // Sort keywords by relevance and search volume
-        let sortedKeywords = this.sortKeywordsByRelevance(keywordData);
+        console.log(`Total keywords collected: ${keywordData.length}`);
         
-        // Auto-select the most relevant keywords (up to 3)
-        if (sortedKeywords.length > 0) {
-          // Always select the main keyword
-          sortedKeywords[0].selected = true;
-          
-          // Select a few more based on search volume and relevance
-          // Prioritize terms that would make good blog post topics
-          let selectedCount = 1;
-          const maxToSelect = Math.min(3, sortedKeywords.length);
-          
-          for (let i = 1; i < sortedKeywords.length && selectedCount < maxToSelect; i++) {
-            const keyword = sortedKeywords[i];
-            
-            // Prioritize informational keywords for content creation
-            if (keyword.intent === 'Informational' && (keyword.searchVolume || 0) > 1000) {
-              keyword.selected = true;
-              selectedCount++;
-            }
-          }
-          
-          // If we didn't select enough informational keywords, add commercial ones
-          for (let i = 1; i < sortedKeywords.length && selectedCount < maxToSelect; i++) {
-            const keyword = sortedKeywords[i];
-            
-            if (!keyword.selected && keyword.intent === 'Commercial' && (keyword.searchVolume || 0) > 1000) {
-              keyword.selected = true;
-              selectedCount++;
-            }
-          }
-          
-          // If we still need more, select based on search volume
-          for (let i = 1; i < sortedKeywords.length && selectedCount < maxToSelect; i++) {
-            const keyword = sortedKeywords[i];
-            
-            if (!keyword.selected && (keyword.searchVolume || 0) > 1000) {
-              keyword.selected = true;
-              selectedCount++;
-            }
-          }
+        if (!hasValidData) {
+          console.error("No valid keyword data found");
+          throw new Error("No valid keywords found. Please try different search terms.");
         }
         
-        // Now add related keywords from API calls to get many more keyword variations
-        // This is a crucial step to increase our keyword count to 100-200
-        console.log(`Generating related keywords via API calls...`);
+        // Sort keywords by search volume (highest first)
+        keywordData.sort((a, b) => (b.searchVolume || 0) - (a.searchVolume || 0));
         
-        try {
-          // Use the top 3 keywords with highest search volume to generate related terms
-          const topKeywords = sortedKeywords.slice(0, 3).filter(k => (k.searchVolume || 0) > 0);
-          let relatedKeywords: KeywordData[] = [];
-          
-          // Make API calls for related keywords (these will be entirely different keywords)
-          for (const topKeyword of topKeywords) {
-            try {
-              console.log(`Getting related keywords for: ${topKeyword.keyword}`);
-              // This call will make additional API requests to different endpoints
-              const moreKeywords = await this.generateRelatedKeywords(topKeyword);
-              console.log(`Found ${moreKeywords.length} related keywords for ${topKeyword.keyword}`);
-              relatedKeywords = [...relatedKeywords, ...moreKeywords];
-            } catch (err: any) {
-              console.error(`Error getting related keywords for ${topKeyword.keyword}: ${err.message}`);
-            }
-            
-            // Don't overwhelm the API with too many requests
-            if (relatedKeywords.length > 100) {
-              break;
-            }
-          }
-          
-          console.log(`Total related keywords found: ${relatedKeywords.length}`);
-          
-          // Add the related keywords to our existing keywords
-          // This should dramatically increase our keyword count
-          if (relatedKeywords.length > 0) {
-            // Remove any duplicates based on keyword text
-            const existingKeywordTexts = sortedKeywords.map(k => k.keyword.toLowerCase());
-            const uniqueRelatedKeywords = relatedKeywords.filter(
-              k => !existingKeywordTexts.includes(k.keyword.toLowerCase())
-            );
-            
-            console.log(`Adding ${uniqueRelatedKeywords.length} unique related keywords`);
-            
-            // Add the unique related keywords to our result set
-            sortedKeywords = [...sortedKeywords, ...uniqueRelatedKeywords];
-          }
-        } catch (relatedError: any) {
-          console.error(`Error processing related keywords: ${relatedError.message}`);
-          // Continue with what we have even if related keywords fail
-        }
+        console.log(`Successfully fetched ${keywordData.length} keywords from DataForSEO API`);
+        console.log(`Generated ${keywordData.length} authentic keywords for: "${keyword}"`);
         
-        console.log(`Final keyword count: ${sortedKeywords.length}`);
-        return sortedKeywords;
+        return keywordData;
       } catch (apiError: any) {
-        // If any error occurs during API call, log it and use fallback
         console.error('Error fetching keywords from DataForSEO API:', apiError.message);
         
-        // Log detailed error information for debugging
         if (apiError.response) {
-          // The request was made and the server responded with a status code outside of 2xx
           console.error('DataForSEO API error details:');
           console.error('Status:', apiError.response.status);
           console.error('Data:', JSON.stringify(apiError.response.data));
-          console.error('Headers:', JSON.stringify(apiError.response.headers));
-        } else if (apiError.request) {
-          // The request was made but no response was received
-          console.error('DataForSEO API request made but no response received:', apiError.request);
-        } else {
-          // Something happened in setting up the request
-          console.error('DataForSEO API error during request setup:', apiError.message);
         }
         
-        console.error('DataForSEO API request failed');
         throw new Error(`DataForSEO API error: ${apiError.message}`);
       }
     } catch (error: any) {
@@ -1251,15 +1106,13 @@ export class DataForSEOService {
       // Use a keyword search endpoint that's known to work
       // For search_volume endpoint, use 'keywords' array instead of 'keyword'
       const requestData = [{
-        keyword: "test connection", // Single keyword for keyword suggestions endpoint
+        keywords: ["test connection"], // Keywords array for search volume endpoint
         language_code: "en", 
-        location_code: 2840, // United States
-        limit: 10,
-        include_seed_keyword: true
+        location_code: 2840 // United States
       }];
 
       // Add more detailed logging  
-      const endpoint = `/v3/dataforseo_labs/google/keyword_suggestions/live`;
+      const endpoint = `/v3/keywords_data/google/search_volume/live`;
       console.log(`DataForSEO test request URL: ${this.apiUrl}${endpoint}`);
       console.log(`DataForSEO test request data: ${JSON.stringify(requestData)}`);
       
