@@ -233,8 +233,8 @@ export class DataForSEOService {
           // Sanitize and format the keyword properly
           const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
           
-          // Filter keywords by minimum search volume to ensure quality results
-          if (this.isValidSEOKeyword(sanitizedKeyword) && adjustedSearchVolume >= 100) {
+          // Filter keywords by minimum search volume - lowered threshold to get more keywords
+          if (this.isValidSEOKeyword(sanitizedKeyword) && adjustedSearchVolume >= 50) {
             keywordData.push({
               keyword: sanitizedKeyword,
               searchVolume: adjustedSearchVolume,
@@ -364,9 +364,9 @@ export class DataForSEOService {
         
         console.log(`Total keywords collected: ${keywordData.length}`);
         
-        // If no high-volume keywords found, try broader category terms
-        if (keywordData.length === 0) {
-          console.log("No keywords with sufficient search volume (>100) found, trying broader category terms");
+        // If insufficient keywords found, try broader category terms
+        if (keywordData.length < 5) {
+          console.log(`Only ${keywordData.length} keywords with sufficient search volume (>50) found, trying broader category terms`);
           
           const broadTerms = this.generateBroadCategoryTerms(originalKeyword);
           
@@ -1103,9 +1103,20 @@ export class DataForSEOService {
     const broadTerms: string[] = [];
     const lowercaseKeyword = originalKeyword.toLowerCase();
     
-    // Water treatment related terms
+    // Water treatment related terms - more comprehensive
     if (lowercaseKeyword.includes('water') && (lowercaseKeyword.includes('softener') || lowercaseKeyword.includes('conditioner') || lowercaseKeyword.includes('filter'))) {
-      broadTerms.push('water softener', 'water filter', 'water treatment', 'home water systems');
+      broadTerms.push(
+        'water softener', 
+        'water filter', 
+        'water treatment', 
+        'home water systems',
+        'water purification',
+        'best water softener',
+        'water softener reviews',
+        'hard water solutions',
+        'water conditioning system',
+        'whole house water filter'
+      );
     }
     // Electronics and tech
     else if (lowercaseKeyword.includes('ai') || lowercaseKeyword.includes('artificial intelligence')) {
