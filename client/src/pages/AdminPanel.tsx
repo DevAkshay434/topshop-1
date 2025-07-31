@@ -2594,107 +2594,66 @@ export default function AdminPanel() {
                     {/* Step guidance */}
 
                     
-                    <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
-                      <h3 className="font-medium text-blue-700 mb-4">Content Creation Workflow</h3>
+                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <h3 className="font-medium text-blue-700 mb-3">Content Creation Workflow</h3>
                       
-                      {/* Compact Step Indicator - 2 rows */}
-                      <div className="space-y-3">
-                        {/* First Row - Steps 1-5 */}
-                        <div className="flex items-center justify-center space-x-2">
-                          {[
-                            { step: 'product', number: 1, label: 'Products' },
-                            { step: 'related-collections', number: 2, label: 'Collections' },
-                            { step: 'persona', number: 3, label: 'Personas' },
-                            { step: 'keyword', number: 4, label: 'Keywords' },
-                            { step: 'title', number: 5, label: 'Title' }
-                          ].map((item, index) => {
-                            const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
-                            const isCurrent = workflowStep === item.step;
-                            
-                            return (
-                              <div key={item.step} className="flex items-center">
-                                {/* Step Circle */}
-                                <div className={`relative flex flex-col items-center`}>
-                                  <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200 ${
-                                    isCurrent 
-                                      ? 'bg-blue-600 text-white shadow-lg scale-110' 
-                                      : isCompleted 
-                                        ? 'bg-green-500 text-white' 
-                                        : 'bg-gray-200 text-gray-500'
-                                  }`}>
-                                    {isCompleted ? (
-                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    ) : (
-                                      item.number
-                                    )}
-                                  </div>
-                                  <span className={`text-xs mt-1 transition-all duration-200 ${
-                                    isCurrent ? 'text-blue-700 font-medium' : 'text-gray-600'
-                                  }`}>
-                                    {item.label}
-                                  </span>
-                                </div>
-                                
-                                {/* Connector Line (except for last item) */}
-                                {index < 4 && (
-                                  <div className={`w-6 h-0.5 mx-1 transition-all duration-200 ${
-                                    isCompleted ? 'bg-green-400' : 'bg-gray-300'
-                                  }`} />
+                      {/* Clean Single Row Step Indicator */}
+                      <div className="flex items-center justify-between">
+                        {[
+                          { step: 'product', number: 1, label: 'Select Products or Collections' },
+                          { step: 'related-collections', number: 2, label: 'Choose Related Collections' },
+                          { step: 'persona', number: 3, label: 'Define Target Buyer Personas' },
+                          { step: 'keyword', number: 4, label: 'Choose Keywords' },
+                          { step: 'title', number: 5, label: 'Select a Title' },
+                          { step: 'media', number: 6, label: 'Choose Media' },
+                          { step: 'author', number: 7, label: 'Choose Author' },
+                          { step: 'style', number: 8, label: 'Style & Formatting' },
+                          { step: 'content', number: 9, label: 'Generate Content' }
+                        ].map((item, index) => {
+                          const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
+                          const isCurrent = workflowStep === item.step;
+                          
+                          return (
+                            <div key={item.step} className="flex items-center">
+                              {/* Step Circle */}
+                              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all duration-300 ${
+                                isCurrent 
+                                  ? 'bg-blue-600 text-white shadow-md' 
+                                  : isCompleted 
+                                    ? 'bg-green-500 text-white' 
+                                    : 'bg-gray-300 text-gray-600'
+                              }`}>
+                                {isCompleted ? (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : (
+                                  item.number
                                 )}
                               </div>
-                            );
-                          })}
-                        </div>
-                        
-                        {/* Second Row - Steps 6-9 */}
-                        <div className="flex items-center justify-center space-x-2">
-                          {[
-                            { step: 'media', number: 6, label: 'Media' },
-                            { step: 'author', number: 7, label: 'Author' },
-                            { step: 'style', number: 8, label: 'Style' },
-                            { step: 'content', number: 9, label: 'Generate' }
-                          ].map((item, index) => {
-                            const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
-                            const isCurrent = workflowStep === item.step;
-                            
-                            return (
-                              <div key={item.step} className="flex items-center">
-                                {/* Step Circle */}
-                                <div className={`relative flex flex-col items-center`}>
-                                  <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold transition-all duration-200 ${
-                                    isCurrent 
-                                      ? 'bg-blue-600 text-white shadow-lg scale-110' 
-                                      : isCompleted 
-                                        ? 'bg-green-500 text-white' 
-                                        : 'bg-gray-200 text-gray-500'
-                                  }`}>
-                                    {isCompleted ? (
-                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    ) : (
-                                      item.number
-                                    )}
-                                  </div>
-                                  <span className={`text-xs mt-1 transition-all duration-200 ${
-                                    isCurrent ? 'text-blue-700 font-medium' : 'text-gray-600'
-                                  }`}>
-                                    {item.label}
-                                  </span>
-                                </div>
-                                
-                                {/* Connector Line (except for last item) */}
-                                {index < 3 && (
-                                  <div className={`w-6 h-0.5 mx-1 transition-all duration-200 ${
-                                    isCompleted ? 'bg-green-400' : 'bg-gray-300'
-                                  }`} />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                              
+                              {/* Connector Line (except for last item) */}
+                              {index < 8 && (
+                                <div className={`flex-1 h-0.5 mx-2 transition-all duration-300 ${
+                                  isCompleted ? 'bg-green-400' : 'bg-gray-300'
+                                }`} />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Step Labels - Simple and Clean */}
+                      <div className="flex justify-between mt-2 text-xs text-gray-600">
+                        <span className={workflowStep === 'product' ? 'text-blue-700 font-medium' : ''}>Select Products</span>
+                        <span className={workflowStep === 'related-collections' ? 'text-blue-700 font-medium' : ''}>Related Collections</span>
+                        <span className={workflowStep === 'persona' ? 'text-blue-700 font-medium' : ''}>Target Personas</span>
+                        <span className={workflowStep === 'keyword' ? 'text-blue-700 font-medium' : ''}>Keywords</span>
+                        <span className={workflowStep === 'title' ? 'text-blue-700 font-medium' : ''}>Title</span>
+                        <span className={workflowStep === 'media' ? 'text-blue-700 font-medium' : ''}>Media</span>
+                        <span className={workflowStep === 'author' ? 'text-blue-700 font-medium' : ''}>Author</span>
+                        <span className={workflowStep === 'style' ? 'text-blue-700 font-medium' : ''}>Style</span>
+                        <span className={workflowStep === 'content' ? 'text-blue-700 font-medium' : ''}>Generate</span>
                       </div>
                     </div>
                       
