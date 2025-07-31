@@ -95,33 +95,20 @@ export class DataForSEOService {
         // Prepare request payload for search_volume endpoint
         // Note: search_volume expects 'keywords' array instead of a single 'keyword'
         
-        // Extract some common variations to include in the API request to get more data
+        // Create product-specific keyword set focused on the exact search term
         const baseKeyword = cleanedKeyword;
         
-        // Create a focused set of diverse keywords for DataForSEO API
-        const mainKeywords = [baseKeyword];
-        
-        // Extract generic terms (limit to most relevant)
-        const genericTerms = this.extractGenericTerms(baseKeyword).slice(0, 2);
-        
-        // Create focused keyword set with high-value variations
+        // ONLY use the exact product name and most relevant variations
+        // No generic terms that might contaminate results
         const focusedKeywords = [
-          // Main keyword
+          // Main keyword - most important
           baseKeyword,
-          // Generic category terms
-          ...genericTerms,
-          // High-value modifiers
-          `best ${baseKeyword}`,
+          // Direct product variations only
           `${baseKeyword} reviews`,
-          // Generic term variations
-          ...genericTerms.map(term => `best ${term}`),
-          ...genericTerms.map(term => `${term} reviews`),
-          // Purchase-intent keywords
-          `buy ${baseKeyword}`,
-          `${baseKeyword} price`,
-          // Information-seeking keywords  
+          `best ${baseKeyword}`,
           `${baseKeyword} guide`,
-          `how to choose ${genericTerms[0] || baseKeyword}`
+          `${baseKeyword} benefits`,
+          `${baseKeyword} features`
         ].filter(Boolean);
 
         
@@ -297,11 +284,28 @@ export class DataForSEOService {
               const suggestions = suggestionsResponse.data.tasks[0].result;
               console.log(`Found ${suggestions.length} additional keyword suggestions`);
               
-              // Extract the suggested keywords and get their search volume data
+              // Only include suggestions that are highly relevant to our main keyword
               const suggestedKeywords = suggestions
                 .map((item: any) => item.keyword)
-                .filter((kw: string) => kw && !keywordData.some(existing => existing.keyword === kw))
-                .slice(0, 30); // Limit to 30 additional keywords
+                .filter((kw: string) => {
+                  if (!kw || keywordData.some(existing => existing.keyword === kw)) {
+                    return false;
+                  }
+                  
+                  // Only include keywords that contain core terms from our main keyword
+                  const mainKeywordTerms = baseKeyword.toLowerCase().split(' ').filter(term => term.length > 2);
+                  const suggestionTerms = kw.toLowerCase().split(' ');
+                  
+                  // Must contain at least one core term from the main keyword
+                  const hasRelevantTerm = mainKeywordTerms.some(mainTerm => 
+                    suggestionTerms.some(suggestionTerm => 
+                      suggestionTerm.includes(mainTerm) || mainTerm.includes(suggestionTerm)
+                    )
+                  );
+                  
+                  return hasRelevantTerm;
+                })
+                .slice(0, 15); // Limit to 15 highly relevant additional keywords
               
               if (suggestedKeywords.length > 0) {
                 console.log(`Getting search volume data for ${suggestedKeywords.length} suggested keywords`);
@@ -367,127 +371,7 @@ export class DataForSEOService {
           }
         }
         
-        console.log(`Total keywords collected: ${keywordData.length}`);
-        
-        // If insufficient keywords found, implement aggressive expansion strategy
-        if (keywordData.length < 15) {
-          console.log(`Only ${keywordData.length} keywords found, implementing aggressive expansion to reach 15-20 keywords`);
-          
-          // Strategy 1: Generate additional related keywords using broader category terms
-          const broadTerms = this.generateBroadCategoryTerms(keyword);
-          console.log(`Generated ${broadTerms.length} broader category terms for expansion`);
-          
-          // Try each broader term to get more keywords
-          for (const broadTerm of broadTerms.slice(0, 5)) {
-            if (broadTerm !== keyword && keywordData.length < 25) {
-              console.log(`Searching for additional keywords with broader term: ${broadTerm}`);
-              
-              try {
-                // Get generic terms for the broader category
-                const genericTerms = this.extractGenericTerms(broadTerm);
-                console.log(`Generated ${genericTerms.length} generic terms from: ${broadTerm}`);
-                
-                // Create keyword variations for the generic terms
-                const expansionKeywords: string[] = [];
-                for (const term of genericTerms.slice(0, 3)) {
-                  const variations = [
-                    term,
-                    `best ${term}`,
-                    `${term} reviews`,
-                    `${term} guide`,
-                    `buy ${term}`,
-                    `${term} price`,
-                    `cheap ${term}`,
-                    `${term} comparison`
-                  ];
-                  
-                  // Only add variations as candidates for API lookup - don't generate synthetic data
-                  variations.forEach(variation => {
-                    if (!keywordData.some(existing => existing.keyword === variation) && 
-                        !expansionKeywords.includes(variation)) {
-                      expansionKeywords.push(variation);
-                    }
-                  });
-                }
-                
-                // Get authentic search volume data for expansion keywords
-                if (expansionKeywords.length > 0) {
-                  console.log(`Getting authentic DataForSEO data for ${expansionKeywords.length} expansion keywords`);
-                  
-                  try {
-                    const auth = { username: this.username, password: this.password };
-                    const volumeRequestData = [{
-                      keywords: expansionKeywords.slice(0, 15), // Limit API call
-                      language_code: "en",
-                      location_code: 2840
-                    }];
-                    
-                    const volumeResponse = await axios.post(
-                      `${this.apiUrl}/v3/keywords_data/google/search_volume/live`,
-                      volumeRequestData,
-                      { auth, timeout: 30000, headers: { 'Content-Type': 'application/json' } }
-                    );
-                    
-                    if (volumeResponse.data?.status_code === 20000 && volumeResponse.data.tasks?.[0]?.result) {
-                      const expansionResults = volumeResponse.data.tasks[0].result;
-                      console.log(`Received authentic data for ${expansionResults.length} expansion keywords`);
-                      
-                      for (const item of expansionResults) {
-                        if (item.keyword) {
-                          const searchVolume = item.search_volume || 0;
-                          const cpc = item.cpc || 0;
-                          const competition = item.competition || 0;
-                          const competitionLevel = this.getCompetitionLevel(competition);
-                          const trend = item.monthly_searches ? 
-                            item.monthly_searches.map((m: any) => m.search_volume || 0) : 
-                            Array(12).fill(searchVolume);
-                          const difficulty = this.calculateKeywordDifficulty({
-                            search_volume: searchVolume,
-                            competition: competition,
-                            cpc: cpc
-                          });
-                          
-                          const sanitizedKeyword = this.sanitizeKeywordForSEO(item.keyword);
-                          
-                          if (this.isValidSEOKeyword(sanitizedKeyword)) {
-                            keywordData.push({
-                              keyword: sanitizedKeyword,
-                              searchVolume: searchVolume,
-                              cpc: cpc,
-                              competition: competition,
-                              competitionLevel,
-                              intent: this.determineIntent({ keyword: sanitizedKeyword }),
-                              trend,
-                              difficulty,
-                              selected: false
-                            });
-                            
-                            // Log inclusion of zero/low volume keywords
-                            if (searchVolume === 0) {
-                              console.log(`Included zero-volume expansion keyword: ${sanitizedKeyword}`);
-                            } else if (searchVolume < 50) {
-                              console.log(`Included low-volume expansion keyword: ${sanitizedKeyword} (${searchVolume} searches)`);
-                            }
-                          }
-                        }
-                      }
-                      
-                      console.log(`Added ${expansionResults.length} authentic expansion keywords from: ${broadTerm}`);
-                    }
-                  } catch (error) {
-                    console.log(`Failed to get authentic data for expansion keywords: ${error}`);
-                  }
-                }
-                
-                if (keywordData.length >= 15) break;
-              } catch (error) {
-                console.log(`Expansion failed for ${broadTerm}: ${error}`);
-              }
-            }
-          }
-          
-          console.log(`After expansion strategy: ${keywordData.length} total keywords`);
-        }
+        console.log(`Total keywords collected: ${keywordData.length} - focusing on product-specific, high-quality results`);
         
         if (!hasValidData && keywordData.length === 0) {
           console.error("No valid keyword data found");
@@ -824,72 +708,7 @@ export class DataForSEOService {
     return Math.round((competitionFactor * 0.5 + volumeFactor * 0.3 + cpcFactor * 0.2) * 100);
   }
 
-  /**
-   * Extract generic terms dynamically from any product name
-   * Works universally for any product category without hardcoded assumptions
-   * @param productName The specific product name to extract generic terms from
-   * @returns Array of generic terms in order of relevance
-   */
-  private extractGenericTerms(productName: string): string[] {
-    console.log(`Extracting universal dynamic terms from: ${productName}`);
-    const terms: string[] = [];
-    
-    // Convert to lowercase and clean the input
-    const normalizedInput = productName.toLowerCase()
-      .replace(/®|™|©|\[.*?\]|\(.*?\)/g, '') // Remove trademark symbols and bracketed text
-      .replace(/[^\w\s-]/g, ' ')             // Replace special chars with spaces
-      .replace(/\b\d+\s*(lbs?|pounds?|kg|grams?|oz|ounces?)\b/gi, '') // Remove weights
-      .replace(/\b(pack|piece|set|count|ct)\b/gi, '') // Remove quantity indicators
-      .replace(/\s+/g, ' ')                  // Normalize spaces
-      .trim();
-      
-    console.log(`Normalized input for universal extraction: ${normalizedInput}`);
-    
-    // Universal dynamic extraction - no hardcoded product categories
-    const words = normalizedInput.split(' ').filter(word => 
-      word.length > 2 && 
-      !['best', 'top', 'new', 'premium', 'series', 'model', 'brand', 'type', 'style', 'size'].includes(word) &&
-      !['for', 'with', 'by', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'of'].includes(word)
-    );
-    
-    // Strategy 1: Extract meaningful word combinations from the actual product name
-    if (words.length >= 2) {
-      // Add 2-word combinations that represent product categories
-      for (let i = 0; i < words.length - 1; i++) {
-        const combination = `${words[i]} ${words[i + 1]}`;
-        if (combination.length > 5 && !terms.includes(combination)) {
-          terms.push(combination);
-        }
-      }
-      
-      // Add 3-word combinations if they seem meaningful
-      if (words.length >= 3) {
-        for (let i = 0; i < words.length - 2; i++) {
-          const combination = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
-          if (combination.length > 8 && !terms.includes(combination)) {
-            terms.push(combination);
-          }
-        }
-      }
-    }
-    
-    // Strategy 2: Add individual significant words as category terms
-    words.slice(0, 3).forEach(word => {
-      if (word.length > 3 && !terms.includes(word)) {
-        terms.push(word);
-      }
-    });
-    
-    // Strategy 3: If we have very few terms, add the full cleaned input
-    if (terms.length < 2 && normalizedInput.length > 5) {
-      terms.push(normalizedInput);
-    }
-    
-    // Limit to most relevant terms to focus the search
-    const finalTerms = terms.slice(0, 6); // Limit to top 6 most relevant terms
-    console.log(`Extracted universal dynamic terms: ${finalTerms.join(', ')}`);
-    return finalTerms;
-  }
+
 
   /**
    * Sort keywords by relevance based on various metrics
@@ -970,78 +789,7 @@ export class DataForSEOService {
     return []; // Return empty array instead of generating fallback keywords
   }
 
-  /**
-   * Generate broader category terms dynamically from any product name
-   * Works universally for any product category without hardcoded terms
-   * @param originalKeyword The original specific keyword
-   * @returns Array of broader category terms
-   */
-  private generateBroadCategoryTerms(originalKeyword: string): string[] {
-    console.log(`Generating universal dynamic category terms for "${originalKeyword}"`);
-    const broadTerms: string[] = [];
-    
-    // Clean and extract meaningful words from the keyword
-    const words = originalKeyword.toLowerCase()
-      .replace(/[^\w\s]/g, ' ') // Remove special characters
-      .split(' ')
-      .filter(word => 
-        word.length > 2 && 
-        !['the', 'a', 'an', 'and', 'or', 'for', 'with', 'by', 'best', 'top', 'new'].includes(word)
-      );
-    
-    if (words.length === 0) {
-      console.log('No meaningful words found for category generation');
-      return [];
-    }
-    
-    // Strategy 1: Use the actual product terms as category bases
-    // Last word is often the main product category
-    const lastWord = words[words.length - 1];
-    if (lastWord) {
-      broadTerms.push(lastWord);
-    }
-    
-    // Second-to-last word for compound categories
-    if (words.length >= 2) {
-      const secondLastWord = words[words.length - 2];
-      broadTerms.push(secondLastWord);
-      broadTerms.push(`${secondLastWord} ${lastWord}`);
-    }
-    
-    // First word if it's different from the last words (often descriptive)
-    const firstWord = words[0];
-    if (firstWord && firstWord !== lastWord && firstWord !== words[words.length - 2]) {
-      broadTerms.push(firstWord);
-    }
-    
-    // Strategy 2: Generate universal search modifiers that work for any product
-    const primaryCategory = lastWord || words[0];
-    if (primaryCategory) {
-      const universalModifiers = [
-        `best ${primaryCategory}`,
-        `${primaryCategory} reviews`,
-        `${primaryCategory} buying guide`,
-        `top ${primaryCategory}`,
-        `${primaryCategory} comparison`,
-        `${primaryCategory} brands`,
-        `cheap ${primaryCategory}`,
-        `affordable ${primaryCategory}`
-      ];
-      
-      universalModifiers.forEach(modifier => {
-        if (!broadTerms.includes(modifier)) {
-          broadTerms.push(modifier);
-        }
-      });
-    }
-    
-    // Remove duplicates and limit to most relevant terms
-    const uniqueTerms = [...new Set(broadTerms)];
-    const finalTerms = uniqueTerms.slice(0, 8);
-    
-    console.log(`Generated universal category terms: ${finalTerms.join(', ')}`);
-    return finalTerms;
-  }
+
 
 
 
