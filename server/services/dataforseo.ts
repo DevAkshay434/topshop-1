@@ -98,17 +98,55 @@ export class DataForSEOService {
         // Create product-specific keyword set focused on the exact search term
         const baseKeyword = cleanedKeyword;
         
-        // ONLY use the exact product name and most relevant variations
-        // No generic terms that might contaminate results
+        // Create comprehensive keyword variations to get more DataForSEO results
+        // Focus on authentic keyword patterns that users actually search for
         const focusedKeywords = [
-          // Main keyword - most important
+          // Core keyword
           baseKeyword,
-          // Direct product variations only
+          
+          // Commercial intent keywords
           `${baseKeyword} reviews`,
           `best ${baseKeyword}`,
+          `${baseKeyword} comparison`,
+          `${baseKeyword} vs`,
+          `buy ${baseKeyword}`,
+          `${baseKeyword} price`,
+          `${baseKeyword} cost`,
+          `${baseKeyword} deals`,
+          `${baseKeyword} sale`,
+          `${baseKeyword} discount`,
+          `cheap ${baseKeyword}`,
+          `affordable ${baseKeyword}`,
+          
+          // Informational keywords
           `${baseKeyword} guide`,
           `${baseKeyword} benefits`,
-          `${baseKeyword} features`
+          `${baseKeyword} features`,
+          `${baseKeyword} specs`,
+          `${baseKeyword} manual`,
+          `${baseKeyword} instructions`,
+          `${baseKeyword} how to`,
+          `${baseKeyword} tips`,
+          `${baseKeyword} problems`,
+          `${baseKeyword} troubleshooting`,
+          
+          // Brand and quality keywords
+          `${baseKeyword} brands`,
+          `top ${baseKeyword}`,
+          `${baseKeyword} quality`,
+          `${baseKeyword} warranty`,
+          
+          // Size and specification keywords
+          `${baseKeyword} size`,
+          `${baseKeyword} dimensions`,
+          `${baseKeyword} weight`,
+          `${baseKeyword} capacity`,
+          
+          // Usage keywords
+          `${baseKeyword} uses`,
+          `${baseKeyword} applications`,
+          `${baseKeyword} installation`,
+          `${baseKeyword} maintenance`
         ].filter(Boolean);
 
         
@@ -245,26 +283,26 @@ export class DataForSEOService {
           }
         }
         
-        // Get additional related keywords using keyword suggestions API to expand our list
-        console.log(`Expanding keyword list with related suggestions...`);
+        // Get additional authentic keywords using multiple DataForSEO endpoints
+        console.log(`Expanding keyword list with comprehensive DataForSEO suggestions...`);
         
         if (keywordData.length > 0) {
           try {
             // Use the first valid keyword to get more suggestions
             const seedKeyword = keywordData[0].keyword;
-            console.log(`Getting additional keyword suggestions for: ${seedKeyword}`);
+            console.log(`Getting comprehensive keyword suggestions for: ${seedKeyword}`);
             
             const auth = {
               username: this.username,
               password: this.password
             };
             
-            // Use keyword suggestions endpoint to get broader keyword ideas
+            // Use keyword suggestions endpoint with higher limit for more results
             const suggestionsRequestData = [{
               keyword: seedKeyword,
-              language_code: "en",
+              language_code: "en", 
               location_code: 2840,
-              limit: 50,
+              limit: 100, // Increase limit to get more authentic suggestions
               include_seed_keyword: false
             }];
             
@@ -273,7 +311,7 @@ export class DataForSEOService {
               suggestionsRequestData,
               { 
                 auth,
-                timeout: 30000,
+                timeout: 45000, // Increase timeout for comprehensive results
                 headers: {
                   'Content-Type': 'application/json'
                 }
@@ -284,7 +322,7 @@ export class DataForSEOService {
               const suggestions = suggestionsResponse.data.tasks[0].result;
               console.log(`Found ${suggestions.length} additional keyword suggestions`);
               
-              // Only include suggestions that are highly relevant to our main keyword
+              // Filter suggestions to be highly relevant and get more comprehensive results
               const suggestedKeywords = suggestions
                 .map((item: any) => item.keyword)
                 .filter((kw: string) => {
@@ -305,7 +343,7 @@ export class DataForSEOService {
                   
                   return hasRelevantTerm;
                 })
-                .slice(0, 15); // Limit to 15 highly relevant additional keywords
+                .slice(0, 30); // Increase to get more authentic keywords from DataForSEO
               
               if (suggestedKeywords.length > 0) {
                 console.log(`Getting search volume data for ${suggestedKeywords.length} suggested keywords`);
@@ -322,7 +360,7 @@ export class DataForSEOService {
                   volumeRequestData,
                   { 
                     auth,
-                    timeout: 30000,
+                    timeout: 45000,
                     headers: {
                       'Content-Type': 'application/json'
                     }
@@ -368,6 +406,96 @@ export class DataForSEOService {
           } catch (error) {
             console.log('Could not fetch additional keyword suggestions:', error);
             // Continue with existing keywords if expansion fails
+          }
+          
+          // Try to get even more keywords using keyword ideas endpoint if we still need more
+          if (keywordData.length < 20) {
+            try {
+              console.log(`Attempting to get more keywords using keyword ideas endpoint...`);
+              
+              const seedKeyword = keywordData[0].keyword;
+              const keywordIdeasRequestData = [{
+                keyword: seedKeyword,
+                language_code: "en",
+                location_code: 2840,
+                search_volume: [0, 999999], // Include all search volumes
+                include_seed_keyword: false,
+                limit: 100
+              }];
+              
+              const ideasResponse = await axios.post(
+                `${this.apiUrl}/v3/dataforseo_labs/google/keyword_ideas/live`,
+                keywordIdeasRequestData,
+                { 
+                  auth: { username: this.username, password: this.password },
+                  timeout: 45000,
+                  headers: { 'Content-Type': 'application/json' }
+                }
+              );
+              
+              if (ideasResponse.data?.status_code === 20000 && ideasResponse.data.tasks?.[0]?.result) {
+                const ideas = ideasResponse.data.tasks[0].result;
+                console.log(`Found ${ideas.length} keyword ideas from DataForSEO`);
+                
+                // Filter ideas to be relevant and add them to our keyword list
+                const relevantIdeas = ideas
+                  .filter((item: any) => {
+                    if (!item.keyword || keywordData.some(existing => existing.keyword === item.keyword)) {
+                      return false;
+                    }
+                    
+                    // Check if keyword contains main terms
+                    const mainKeywordTerms = cleanedKeyword.toLowerCase().split(' ').filter(term => term.length > 2);
+                    const ideaTerms = item.keyword.toLowerCase().split(' ');
+                    
+                    return mainKeywordTerms.some(mainTerm => 
+                      ideaTerms.some((ideaTerm: string) => 
+                        ideaTerm.includes(mainTerm) || mainTerm.includes(ideaTerm)
+                      )
+                    );
+                  })
+                  .slice(0, 20); // Get up to 20 additional authentic ideas
+                
+                // Process the keyword ideas and add to our results
+                for (const idea of relevantIdeas) {
+                  if (keywordData.length >= 30) break; // Reasonable limit
+                  
+                  const keywordText = idea.keyword || '';
+                  const searchVolume = idea.search_volume || 0;
+                  const competition = idea.competition || 0;
+                  const cpc = idea.cpc || 0;
+                  
+                  const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
+                  
+                  if (this.isValidSEOKeyword(sanitizedKeyword)) {
+                    const difficulty = this.calculateKeywordDifficulty({
+                      search_volume: searchVolume,
+                      competition: competition,
+                      cpc: cpc
+                    });
+                    
+                    keywordData.push({
+                      keyword: sanitizedKeyword,
+                      searchVolume: searchVolume,
+                      cpc: cpc,
+                      competition: competition,
+                      competitionLevel: this.getCompetitionLevel(competition),
+                      intent: this.determineIntent({ keyword: sanitizedKeyword }),
+                      trend: Array(12).fill(searchVolume),
+                      difficulty,
+                      selected: false
+                    });
+                    
+                    console.log(`Added keyword idea: ${sanitizedKeyword} (Volume: ${searchVolume})`);
+                  }
+                }
+                
+                console.log(`Added ${relevantIdeas.length} additional keywords from keyword ideas`);
+              }
+            } catch (error) {
+              console.log('Could not fetch keyword ideas:', error);
+              // Continue with existing keywords
+            }
           }
         }
         
