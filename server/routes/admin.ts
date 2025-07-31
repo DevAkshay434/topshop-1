@@ -292,16 +292,16 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         }
       }
       
-      // Universal Claude prompt for any store type - no static assumptions
+      // Evergreen Claude prompt - no dates, audience-focused, product-relevant
       const audience = targetAudience || buyerPersona || 'customers seeking quality solutions';
       const claudeRequest = {
-        prompt: `Generate 12 SEO-optimized blog post titles about "${cleanProductTitle || topKeywords[0]}" that incorporate these specific keywords: ${topKeywords.join(", ")}
+        prompt: `Generate 12 evergreen SEO-optimized blog post titles about "${cleanProductTitle || topKeywords[0]}" that incorporate these specific keywords: ${topKeywords.join(", ")}
         
-        UNIVERSAL REQUIREMENTS - WORKS FOR ANY STORE TYPE:
+        EVERGREEN CONTENT REQUIREMENTS:
         - Subject: ${cleanProductTitle || topKeywords[0]}
         - Target Keywords (MANDATORY): ${topKeywords.join(", ")}
         - Target Audience: ${audience}
-        - Current Year: ${new Date().getFullYear()}
+        - NO dates, years, or time-specific references (evergreen content)
         
         CRITICAL KEYWORD REQUIREMENTS - NO EXCEPTIONS:
         - EVERY title MUST include at least ONE of these exact keywords: ${topKeywords.join(", ")}
@@ -310,25 +310,32 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         - Distribute different keywords across the 12 titles for maximum SEO coverage
         - Place keywords naturally and prominently in titles
         
-        UNIVERSAL TITLE GUIDELINES (work for any product category):
-        - Create engaging titles without product-category assumptions
+        AUDIENCE-TARGETED TITLE GUIDELINES:
+        - Create titles that speak directly to: ${audience}
+        - Address the specific needs, problems, and interests of this audience
+        - Use language and tone that resonates with this target group
+        - Focus on benefits and solutions relevant to this audience
+        - Consider the audience's expertise level and preferences
+        
+        PRODUCT-RELEVANT EVERGREEN GUIDELINES:
+        - Create engaging titles about the specific product: ${cleanProductTitle || topKeywords[0]}
         - Use powerful conversion words: "Ultimate", "Complete", "Best", "Expert"
-        - Include current year (${new Date().getFullYear()}) in 3-4 titles for freshness
         - Create mix of informational, commercial, and comparison intent titles
         - Use numbers for list titles: "7 Best...", "10 Ways...", "5 Top..."
         - Include question formats: "What is...", "How to choose...", "Why..."
         - Keep titles 50-65 characters for optimal SEO performance
-        - Avoid ALL-CAPS, excessive punctuation, or industry-specific assumptions
+        - NO dates, years, months, or seasonal references
+        - Focus on timeless value and benefits
         
-        REQUIRED TITLE FORMATS (distribute across 12 titles):
-        - 2 numbered list titles with keywords (e.g., "7 Best [keyword]...")
-        - 2 "How to" informational titles with keywords
-        - 2 comparison titles with keywords (e.g., "[keyword] vs...")
-        - 2 question format titles with keywords (e.g., "What is [keyword]...")
-        - 2 guide/review titles with year and keywords
-        - 2 benefit/feature titles with keywords
+        REQUIRED EVERGREEN TITLE FORMATS (distribute across 12 titles):
+        - 2 numbered list titles with keywords (e.g., "7 Best [keyword] for [audience]")
+        - 2 "How to" informational titles with keywords and audience focus
+        - 2 comparison titles with keywords (e.g., "[keyword] vs Alternatives")
+        - 2 question format titles with keywords (e.g., "What is [keyword]")
+        - 2 ultimate guide titles with keywords and audience benefits
+        - 2 benefit/feature titles with keywords for target audience
         
-        Format response as JSON array of exactly 12 title strings only.`,
+        Format response as JSON array of exactly 12 evergreen title strings only.`,
         responseFormat: "json",
         targetAudience: audience,
         keywords: topKeywords,
@@ -366,27 +373,26 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         
         titles = validatedTitles;
         
-        // If we don't have enough titles with keywords, supplement with guaranteed keyword titles
+        // If we don't have enough titles with keywords, supplement with evergreen keyword titles
         if (titles.length < 8) {
-          console.log(`Only ${titles.length} titles contain keywords, adding fallback titles to reach minimum count`);
-          const currentYear = new Date().getFullYear();
+          console.log(`Only ${titles.length} titles contain keywords, adding evergreen fallback titles to reach minimum count`);
           const keyword1 = topKeywords[0] || "product";
           const keyword2 = topKeywords[1] || keyword1;
           const keyword3 = topKeywords[2] || keyword1;
           
-          const fallbackTitles = [
-            `${keyword1}: Complete ${currentYear} Guide`,
-            `Best ${keyword2} Options for ${currentYear}`,
+          const evergreenFallbackTitles = [
+            `${keyword1}: Complete Guide`,
+            `Best ${keyword2} Options Available`,
             `How to Choose ${keyword1}: Expert Tips`,
             `${keyword3} vs Alternatives: Which is Better?`,
             `Top ${keyword1} Benefits You Should Know`,
-            `${keyword2} Review: Complete Analysis ${currentYear}`
+            `${keyword2} Review: Complete Analysis`
           ];
           
-          // Add fallback titles until we have at least 8
+          // Add evergreen fallback titles until we have at least 8
           let index = 0;
-          while (titles.length < 8 && index < fallbackTitles.length) {
-            titles.push(fallbackTitles[index]);
+          while (titles.length < 8 && index < evergreenFallbackTitles.length) {
+            titles.push(evergreenFallbackTitles[index]);
             index++;
           }
         }
@@ -420,56 +426,53 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       // Extract a short product name for more compact titles
       const productShortName = cleanProductTitle.split(' ').slice(0, 2).join(' ');
       
-      // Universal dynamic title generation - no static assumptions about store type
-      const currentYear = new Date().getFullYear();
+      // Evergreen universal title generation for any store type and audience
+      const evergreenTitles: string[] = [];
       
-      // Ensure we have enough keywords and create universal templates
-      const universalTitles: string[] = [];
-      
-      // Create titles using each available keyword to maximize coverage
+      // Create evergreen titles using each available keyword with audience focus
       topKeywords.forEach((keyword, index) => {
-        const templates = [
-          `${keyword}: Complete Guide for ${currentYear}`,
+        const evergreenTemplates = [
+          `${keyword}: Complete Guide`,
           `Best ${keyword} Options: Expert Review`,
           `How to Choose the Right ${keyword}`,
           `${keyword}: Everything You Need to Know`,
           `Top ${keyword} Benefits and Features`,
           `${keyword} vs Alternatives: Complete Comparison`,
-          `Ultimate ${keyword} Buying Guide ${currentYear}`,
+          `Ultimate ${keyword} Buying Guide`,
           `Why ${keyword} is Worth Considering`,
           `${keyword} Selection: What to Look For`,
-          `${currentYear} ${keyword} Review and Analysis`,
+          `${keyword} Review and Analysis`,
           `${keyword} Features: Complete Breakdown`,
-          `${keyword} Solutions: Modern Approach`
+          `${keyword} Solutions: Professional Approach`
         ];
         
         // Add 2 titles per keyword to ensure good coverage
         if (index < 6) { // Limit to prevent too many titles
-          universalTitles.push(templates[index * 2]);
-          if (universalTitles.length < 12 && (index * 2 + 1) < templates.length) {
-            universalTitles.push(templates[index * 2 + 1]);
+          evergreenTitles.push(evergreenTemplates[index * 2]);
+          if (evergreenTitles.length < 12 && (index * 2 + 1) < evergreenTemplates.length) {
+            evergreenTitles.push(evergreenTemplates[index * 2 + 1]);
           }
         }
       });
       
-      // Ensure we have at least 8 titles
-      if (universalTitles.length < 8) {
+      // Ensure we have at least 8 evergreen titles
+      if (evergreenTitles.length < 8) {
         const keyword1 = topKeywords[0];
-        const additionalTemplates = [
+        const additionalEvergreenTemplates = [
           `${keyword1} Guide: Expert Recommendations`,
           `${keyword1} Benefits: Complete Analysis`,
           `${keyword1} Comparison: Find the Best Option`,
           `${keyword1} Features: What You Should Know`
         ];
         
-        additionalTemplates.forEach(template => {
-          if (universalTitles.length < 12) {
-            universalTitles.push(template);
+        additionalEvergreenTemplates.forEach(template => {
+          if (evergreenTitles.length < 12) {
+            evergreenTitles.push(template);
           }
         });
       }
       
-      titles = universalTitles.slice(0, 12);
+      titles = evergreenTitles.slice(0, 12);
     }
     
     // Return titles

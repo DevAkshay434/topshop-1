@@ -735,12 +735,15 @@ export async function generateTitles(request: {
       - Prioritize high-value keywords in title suggestions`;
     }
     
-    enhancedPrompt += `\n\nTitle Requirements:
+    enhancedPrompt += `\n\nEVERGREEN TITLE REQUIREMENTS:
     - Clear and engaging for the defined audience
     - MUST incorporate keywords - this is mandatory, not optional
-    - Focus on conversion potential and relevancy
+    - NO dates, years, months, or time-specific references (create evergreen content)
+    - Focus on timeless value and relevancy 
     - Avoid generic or overly promotional language
-    - Each title must use at least one provided keyword exactly as given`;
+    - Each title must use at least one provided keyword exactly as given
+    - Create titles that remain relevant and valuable over time
+    - Focus on benefits, solutions, and guidance rather than trends`;
     
     // Make API call to Claude
     const response = await anthropic.messages.create({
