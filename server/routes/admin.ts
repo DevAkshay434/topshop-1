@@ -268,61 +268,67 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
     // Generate titles using Claude or other service
     let titles: string[] = [];
     try {
-      // Create a clean product title without repetition for prompting
+      // Universal product title cleaning - works for any store type
       let cleanProductTitle = '';
       
       if (productTitle) {
-        // Check if this is a multi-product title and handle appropriately
-        if (productTitle.includes(' - ')) {
-          // Split by dash and take just the first product to avoid long confusing titles
-          cleanProductTitle = productTitle.split(' - ')[0].replace(/\[.*?\]/g, '').trim();
-          console.log("Multi-product title detected. Using first product:", cleanProductTitle);
-        } else {
-          cleanProductTitle = productTitle.replace(/\[.*?\]/g, '').trim();
-        }
+        // Universal cleaning approach without product-specific assumptions
+        cleanProductTitle = productTitle
+          .replace(/\[.*?\]/g, '') // Remove brackets and content
+          .replace(/\(.*?\)/g, '') // Remove parentheses and content  
+          .replace(/®|™|©|℠/g, '') // Remove trademark symbols
+          .replace(/\s+-\s+.*$/, '') // Remove everything after dash
+          .replace(/\s*-\s*\d+.*$/, '') // Remove dash followed by numbers/specs
+          .replace(/\bmultiple\b.*$/i, '') // Remove "multiple" variations
+          .replace(/\bvarious\b.*$/i, '') // Remove "various" variations
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .trim();
         
-        // If still too long (>40 chars), truncate for better title generation
+        // If still too long, take first meaningful words
         if (cleanProductTitle.length > 40) {
-          const shortened = cleanProductTitle.substring(0, 40).trim();
-          console.log(`Product title too long (${cleanProductTitle.length} chars). Shortened to: ${shortened}`);
-          cleanProductTitle = shortened;
+          const words = cleanProductTitle.split(' ');
+          cleanProductTitle = words.slice(0, 4).join(' ').trim();
+          console.log(`Product title simplified to: ${cleanProductTitle}`);
         }
       }
       
-      // Enhanced Claude prompt for trending, Google-optimized titles with audience awareness
-      const audience = targetAudience || buyerPersona;
+      // Universal Claude prompt for any store type - no static assumptions
+      const audience = targetAudience || buyerPersona || 'customers seeking quality solutions';
       const claudeRequest = {
-        prompt: `Generate 12 unique, highly SEO-optimized blog post titles about ${cleanProductTitle || topKeywords[0]} that strategically incorporate these keywords: ${topKeywords.join(", ")}.
+        prompt: `Generate 12 SEO-optimized blog post titles about "${cleanProductTitle || topKeywords[0]}" that incorporate these specific keywords: ${topKeywords.join(", ")}
         
-        IMPORTANT CONTEXT: 
-        - Primary product: ${cleanProductTitle || topKeywords[0]}
-        - Primary keywords: ${topKeywords.slice(0, 3).join(", ")}
-        - Secondary keywords: ${topKeywords.slice(3).join(", ") || "N/A"}
-        - Current year: ${new Date().getFullYear()}${audience ? `\n        - Target Audience: ${audience}` : ''}
+        UNIVERSAL REQUIREMENTS - WORKS FOR ANY STORE TYPE:
+        - Subject: ${cleanProductTitle || topKeywords[0]}
+        - Target Keywords (MANDATORY): ${topKeywords.join(", ")}
+        - Target Audience: ${audience}
+        - Current Year: ${new Date().getFullYear()}
         
-        CRITICAL REQUIREMENT - KEYWORD USAGE:
-        - EVERY SINGLE TITLE MUST include at least one of these exact keywords: ${topKeywords.join(", ")}
-        - Do NOT create any titles without keywords - this is absolutely mandatory
-        - Each title MUST naturally include at least one of the provided keywords in full
-        - Always place the most important keyword as close to the beginning of the title as possible
-        - Create titles that directly match search intent (informational, commercial, etc.)
-        - Use trending headline patterns like "Ultimate Guide", "Complete Breakdown", or "${new Date().getFullYear()} Review"
-        - Include the current year (${new Date().getFullYear()}) in at least 2 titles for freshness signals
-        - For clickthrough optimization, use powerful words like "essential", "complete", "proven", or "ultimate"
-        - Create naturally engaging titles that avoid obvious keyword stuffing
-        - Focus on titles with strong CTR potential in search results
-        - Follow these specific title formats for maximum SEO value:
-          * Include 2 numbered list titles (e.g., "7 Best...", "10 Ways to...")
-          * Include 1 "How to" title specifically targeting informational searches
-          * Include 1 comparison title (e.g., "X vs Y: Which...")
-          * Include 1 question-format title that includes a keyword (e.g., "What is...")
-          * Include 1 title with "Ultimate Guide to [keyword]" format
-          * Include 1 title with a "Why" format (e.g., "Why [keyword] is...")
-          * Include 1 title with "[Current Year] Review/Guide" format
-        - Keep titles between 50-65 characters for optimal SEO click-through rates
-        - Avoid ALL-CAPS words, excessive punctuation, or clickbait tactics
+        CRITICAL KEYWORD REQUIREMENTS - NO EXCEPTIONS:
+        - EVERY title MUST include at least ONE of these exact keywords: ${topKeywords.join(", ")}
+        - Use keywords exactly as provided - do not modify them
+        - NO titles without keywords will be accepted
+        - Distribute different keywords across the 12 titles for maximum SEO coverage
+        - Place keywords naturally and prominently in titles
         
-        Format your response as a JSON array of exactly 12 strings, with no additional text.`,
+        UNIVERSAL TITLE GUIDELINES (work for any product category):
+        - Create engaging titles without product-category assumptions
+        - Use powerful conversion words: "Ultimate", "Complete", "Best", "Expert"
+        - Include current year (${new Date().getFullYear()}) in 3-4 titles for freshness
+        - Create mix of informational, commercial, and comparison intent titles
+        - Use numbers for list titles: "7 Best...", "10 Ways...", "5 Top..."
+        - Include question formats: "What is...", "How to choose...", "Why..."
+        - Keep titles 50-65 characters for optimal SEO performance
+        - Avoid ALL-CAPS, excessive punctuation, or industry-specific assumptions
+        
+        REQUIRED TITLE FORMATS (distribute across 12 titles):
+        - 2 numbered list titles with keywords (e.g., "7 Best [keyword]...")
+        - 2 "How to" informational titles with keywords
+        - 2 comparison titles with keywords (e.g., "[keyword] vs...")
+        - 2 question format titles with keywords (e.g., "What is [keyword]...")
+        - 2 guide/review titles with year and keywords
+        - 2 benefit/feature titles with keywords
+        
+        Format response as JSON array of exactly 12 title strings only.`,
         responseFormat: "json",
         targetAudience: audience,
         keywords: topKeywords,
@@ -370,11 +376,11 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
           
           const fallbackTitles = [
             `${keyword1}: Complete ${currentYear} Guide`,
-            `Best ${keyword2} for ${currentYear}`,
+            `Best ${keyword2} Options for ${currentYear}`,
             `How to Choose ${keyword1}: Expert Tips`,
             `${keyword3} vs Alternatives: Which is Better?`,
             `Top ${keyword1} Benefits You Should Know`,
-            `${keyword2} Review: Is It Worth It in ${currentYear}?`
+            `${keyword2} Review: Complete Analysis ${currentYear}`
           ];
           
           // Add fallback titles until we have at least 8
@@ -414,27 +420,56 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       // Extract a short product name for more compact titles
       const productShortName = cleanProductTitle.split(' ').slice(0, 2).join(' ');
       
-      // Generate dynamic titles based on the product and keywords
+      // Universal dynamic title generation - no static assumptions about store type
       const currentYear = new Date().getFullYear();
-      const keyword1 = topKeywords[0] || "product";
-      const keyword2 = topKeywords[1] || keyword1;
-      const keyword3 = topKeywords[2] || keyword1;
       
-      titles = [
-        // SEO-optimized titles as fallbacks (12 titles)
-        `${keyword1}: The Ultimate Guide for ${currentYear}`,
-        `10 Best ${keyword1} Features You Need to Know (${currentYear})`,
-        `How to Choose the Perfect ${keyword2} in ${currentYear}`,
-        `${keyword1} vs Traditional Systems: Which is Better?`,
-        `What is ${keyword1}? Complete ${currentYear} Buyer's Guide`,
-        `Why ${keyword1} is Essential for Modern Homes`,
-        `7 Reasons ${keyword2} Outperforms the Competition`,
-        `${currentYear} ${keyword1} Review: Everything You Need to Know`,
-        `Best ${keyword3} Options: Expert Recommendations ${currentYear}`,
-        `${keyword1} Benefits: Transform Your Home Today`,
-        `Top ${keyword2} Mistakes to Avoid in ${currentYear}`,
-        `${keyword1} Installation: Step-by-Step Guide`
-      ];
+      // Ensure we have enough keywords and create universal templates
+      const universalTitles: string[] = [];
+      
+      // Create titles using each available keyword to maximize coverage
+      topKeywords.forEach((keyword, index) => {
+        const templates = [
+          `${keyword}: Complete Guide for ${currentYear}`,
+          `Best ${keyword} Options: Expert Review`,
+          `How to Choose the Right ${keyword}`,
+          `${keyword}: Everything You Need to Know`,
+          `Top ${keyword} Benefits and Features`,
+          `${keyword} vs Alternatives: Complete Comparison`,
+          `Ultimate ${keyword} Buying Guide ${currentYear}`,
+          `Why ${keyword} is Worth Considering`,
+          `${keyword} Selection: What to Look For`,
+          `${currentYear} ${keyword} Review and Analysis`,
+          `${keyword} Features: Complete Breakdown`,
+          `${keyword} Solutions: Modern Approach`
+        ];
+        
+        // Add 2 titles per keyword to ensure good coverage
+        if (index < 6) { // Limit to prevent too many titles
+          universalTitles.push(templates[index * 2]);
+          if (universalTitles.length < 12 && (index * 2 + 1) < templates.length) {
+            universalTitles.push(templates[index * 2 + 1]);
+          }
+        }
+      });
+      
+      // Ensure we have at least 8 titles
+      if (universalTitles.length < 8) {
+        const keyword1 = topKeywords[0];
+        const additionalTemplates = [
+          `${keyword1} Guide: Expert Recommendations`,
+          `${keyword1} Benefits: Complete Analysis`,
+          `${keyword1} Comparison: Find the Best Option`,
+          `${keyword1} Features: What You Should Know`
+        ];
+        
+        additionalTemplates.forEach(template => {
+          if (universalTitles.length < 12) {
+            universalTitles.push(template);
+          }
+        });
+      }
+      
+      titles = universalTitles.slice(0, 12);
     }
     
     // Return titles
