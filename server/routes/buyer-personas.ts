@@ -173,170 +173,144 @@ function analyzeProductsForPersonas(productDetails: any[], collections: any[] = 
   };
 }
 
-// Generate fallback personas based on product analysis
+// Generate fast, smart fallback personas based on product analysis
 function generateFallbackPersonas(productAnalysis: any): string[] {
   const fallbackPersonas = [];
   
-  // Category-specific personas
-  if (productAnalysis.categories.includes('water_treatment')) {
-    fallbackPersonas.push('Homeowners 30-60', 'Health-conscious families', 'Quality-focused buyers', 'Water quality concerned');
-  }
-  if (productAnalysis.categories.includes('technology')) {
-    fallbackPersonas.push('Tech enthusiasts 25-45', 'Early adopters', 'Professional users', 'Digital natives');
-  }
-  if (productAnalysis.categories.includes('health_wellness')) {
-    fallbackPersonas.push('Health-conscious consumers', 'Wellness seekers 25-55', 'Fitness enthusiasts', 'Preventive care focused');
-  }
-  if (productAnalysis.categories.includes('home_garden')) {
-    fallbackPersonas.push('Homeowners 25-65', 'DIY enthusiasts', 'Home improvement focused', 'Garden lovers');
-  }
+  // Smart category-specific personas
+  productAnalysis.categories.forEach((category: string) => {
+    switch (category) {
+      case 'water_treatment':
+        fallbackPersonas.push('Health-conscious homeowners 30-60', 'Quality-focused families', 'Water safety concerned', 'Environmental health advocates');
+        break;
+      case 'technology':
+        fallbackPersonas.push('Tech enthusiasts 25-45', 'Early adopters', 'Professional users', 'Digital productivity seekers');
+        break;
+      case 'health_wellness':
+        fallbackPersonas.push('Health-conscious consumers 25-55', 'Wellness seekers', 'Fitness enthusiasts', 'Preventive care focused');
+        break;
+      case 'home_garden':
+        fallbackPersonas.push('Home improvement enthusiasts', 'DIY homeowners 25-65', 'Garden lovers', 'Property value conscious');
+        break;
+      case 'fashion':
+        fallbackPersonas.push('Style-conscious shoppers', 'Fashion enthusiasts 18-45', 'Trend followers', 'Quality fashion buyers');
+        break;
+      case 'electronics':
+        fallbackPersonas.push('Tech-savvy consumers', 'Gadget enthusiasts 20-50', 'Performance seekers', 'Innovation adopters');
+        break;
+      case 'sports_fitness':
+        fallbackPersonas.push('Fitness enthusiasts 20-50', 'Active lifestyle seekers', 'Performance athletes', 'Health-minded individuals');
+        break;
+      default:
+        // Dynamic category-based personas for any product type
+        const categoryName = category.replace(/_/g, ' ');
+        fallbackPersonas.push(
+          `${categoryName} enthusiasts`,
+          `Quality ${categoryName} buyers`,
+          `${categoryName} professionals`,
+          `${categoryName} beginners`
+        );
+    }
+  });
   
-  // Price-based personas
+  // Price-based personas with age targeting
   if (productAnalysis.priceRange.includes('premium')) {
-    fallbackPersonas.push('Premium buyers', 'Quality investors', 'High-income households');
+    fallbackPersonas.push('Premium quality seekers 35-65', 'High-income professionals', 'Luxury buyers', 'Investment-minded consumers');
   } else if (productAnalysis.priceRange.includes('budget')) {
-    fallbackPersonas.push('Budget-conscious families', 'Value seekers', 'Price-sensitive consumers');
+    fallbackPersonas.push('Budget-conscious families', 'Value hunters 25-45', 'Cost-effective shoppers', 'Smart savers');
+  } else {
+    fallbackPersonas.push('Mid-range quality seekers', 'Practical buyers 25-55', 'Value-conscious consumers');
   }
   
-  // Problem-solving personas
-  if (productAnalysis.problemsSolved.includes('water quality issues')) {
-    fallbackPersonas.push('Water quality concerned', 'Health-minded homeowners');
-  }
-  if (productAnalysis.problemsSolved.includes('efficiency improvement')) {
-    fallbackPersonas.push('Efficiency seekers', 'Cost-conscious consumers');
-  }
+  // Use case specific personas
+  productAnalysis.useCases.forEach((useCase: string) => {
+    if (useCase.includes('professional')) {
+      fallbackPersonas.push('Professional users 25-55', 'Business owners', 'Industry professionals');
+    }
+    if (useCase.includes('home')) {
+      fallbackPersonas.push('Homeowners', 'Household managers', 'Domestic users');
+    }
+    if (useCase.includes('personal')) {
+      fallbackPersonas.push('Personal use consumers', 'Individual buyers', 'Self-care focused');
+    }
+  });
   
-  // Generic fallbacks if nothing specific matches
-  if (fallbackPersonas.length === 0) {
+  // Ensure we always have at least 6 personas
+  if (fallbackPersonas.length < 6) {
     fallbackPersonas.push(
-      'General consumers',
-      'Quality-focused buyers',
-      'Budget-conscious shoppers',
-      'Online shoppers',
-      'Brand-conscious customers',
-      'Convenience seekers',
+      'Quality-focused consumers',
       'Problem solvers',
-      'Value seekers'
+      'Convenience seekers',
+      'Brand loyalists',
+      'Research-driven buyers',
+      'Recommendation followers'
     );
   }
   
   return Array.from(new Set(fallbackPersonas)).slice(0, 8);
 }
 
-// Generate buyer personas using Claude AI (with OpenAI fallback)
+// Fast product-specific persona generation with timeout protection
 async function generateBuyerPersonasWithAI(productDetails: any[], collections: any[] = []) {
-  // Try Claude first
+  // Set a 10-second timeout for the entire generation process
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Generation timeout - using smart fallback')), 10000);
+  });
+
   try {
-    console.log('🤖 Attempting Claude AI generation...');
-    return await retryWithBackoff(async () => {
-      // Analyze the product data to create context
-      const productAnalysis = analyzeProductsForPersonas(productDetails, collections);
-      
-      const response = await anthropic.messages.create({
-        model: DEFAULT_MODEL_STR,
-        max_tokens: 1200,
-        messages: [{
-          role: 'user',
-          content: `PRODUCT ANALYSIS FOR BUYER PERSONA GENERATION:
-
-SELECTED PRODUCTS: ${JSON.stringify(productDetails, null, 2)}
-
-PRODUCT INSIGHTS:
-- Primary Categories: ${productAnalysis.categories.join(', ')}
-- Price Range: ${productAnalysis.priceRange}
-- Key Use Cases: ${productAnalysis.useCases.join(', ')}
-- Target Problems Solved: ${productAnalysis.problemsSolved.join(', ')}
-- Product Benefits: ${productAnalysis.benefits.join(', ')}
-
-PERSONA GENERATION REQUIREMENTS:
-Generate 10 highly specific buyer personas based on the EXACT products listed above. Each persona must be directly relevant to someone who would realistically purchase these specific products.
-
-CRITICAL REQUIREMENTS:
-- Each persona should be 2-4 words maximum
-- Base personas on the specific product categories, price points, and use cases identified above
-- Consider who would have the specific problems these products solve
-- Think about demographics, psychographics, and behavioral patterns of people who need these exact products
-- Include age ranges, lifestyle characteristics, or specific needs that match the product features
-- Focus on real customer segments, not generic marketing terms
-- Consider the price range (${productAnalysis.priceRange}) when defining economic segments
-
-PERSONA TARGETING STRATEGY:
-- For product categories: ${productAnalysis.categories.join(', ')}
-- Who specifically needs: ${productAnalysis.useCases.join(', ')}
-- Price-conscious vs premium buyers based on: ${productAnalysis.priceRange}
-- Problem-solution fit for: ${productAnalysis.problemsSolved.join(', ')}
-
-Return ONLY a JSON array of 10 highly targeted persona strings.
-
-Example format: ["Tech-savvy millennials 25-35", "Health-conscious homeowners 30-50", "Budget-minded families"]`
-        }]
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        const suggestions = JSON.parse(content.text.trim());
-        console.log('✅ Claude AI generation successful');
-        return suggestions;
-      }
-      throw new Error('Invalid response format from Claude');
-    });
-  } catch (claudeError: any) {
-    console.warn('⚠️ Claude AI failed, trying OpenAI fallback:', claudeError.message);
+    console.log('🚀 Fast AI persona generation starting...');
     
-    // Fallback to OpenAI
-    try {
-      console.log('🤖 Attempting OpenAI fallback generation...');
-      const response = await retryWithBackoff(async () => {
-        // Use the same product analysis for OpenAI
-        const productAnalysis = analyzeProductsForPersonas(productDetails, collections);
-        
-        return await openai.chat.completions.create({
-          model: "gpt-4o",
-          max_tokens: 1000,
-          temperature: 0.7,
-          messages: [{
-            role: 'system',
-            content: 'You are an expert marketing strategist who creates highly specific buyer personas based on detailed product analysis. Focus on real customer segments who would purchase these specific products. Return only valid JSON with a "personas" array.'
-          }, {
-            role: 'user',
-            content: `PRODUCT ANALYSIS FOR BUYER PERSONA GENERATION:
+    // Analyze products quickly for targeted personas
+    const productAnalysis = analyzeProductsForPersonas(productDetails, collections);
+    
+    // Try Claude with simplified, faster prompt
+    const claudePromise = anthropic.messages.create({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 500, // Reduced for faster response
+      messages: [{
+        role: 'user',
+        content: `Generate 8 specific buyer personas for these products: ${productDetails.map(p => p.title).join(', ')}
 
-SELECTED PRODUCTS: ${JSON.stringify(productDetails, null, 2)}
-
-PRODUCT INSIGHTS:
-- Primary Categories: ${productAnalysis.categories.join(', ')}
-- Price Range: ${productAnalysis.priceRange}
-- Key Use Cases: ${productAnalysis.useCases.join(', ')}
-- Target Problems Solved: ${productAnalysis.problemsSolved.join(', ')}
-- Product Benefits: ${productAnalysis.benefits.join(', ')}
-
-Generate 10 highly specific buyer personas based on the EXACT products above. Each persona must target someone who would realistically purchase these specific products.
+Categories: ${productAnalysis.categories.join(', ')}
+Price Range: ${productAnalysis.priceRange}
 
 Requirements:
-- Each persona should be 2-4 words maximum
-- Base personas on the specific product categories, price points, and use cases
-- Consider demographics and psychographics of people who need these exact products
-- Include age ranges or lifestyle characteristics that match product features
-- Focus on real customer segments who have the problems these products solve
-- Consider the price range when defining economic segments
+- 2-4 words each
+- Specific to these exact products
+- Include demographics/age ranges
+- Focus on who would buy these products
 
-Return JSON format: {"personas": ["persona1", "persona2", ...]}`
-          }],
-          response_format: { type: "json_object" }
-        });
-      });
+Return only JSON array: ["persona1", "persona2", ...]`
+      }]
+    });
 
-      if (response.choices[0]?.message?.content) {
-        const result = JSON.parse(response.choices[0].message.content);
-        const suggestions = result.personas || result.suggestions || Object.values(result)[0];
-        console.log('✅ OpenAI fallback generation successful');
-        return Array.isArray(suggestions) ? suggestions : [suggestions];
+    const result = await Promise.race([claudePromise, timeoutPromise]);
+    
+    if (result && typeof result === 'object' && 'content' in result) {
+      const content = result.content[0];
+      if (content.type === 'text') {
+        // Quick JSON parsing with fallback
+        try {
+          const jsonMatch = content.text.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const suggestions = JSON.parse(jsonMatch[0]);
+            console.log('✅ Fast Claude generation successful');
+            return Array.isArray(suggestions) ? suggestions : [];
+          }
+        } catch (parseError) {
+          console.log('⚠️ Claude response parsing failed, using smart fallback');
+        }
       }
-      throw new Error('Invalid response from OpenAI');
-    } catch (openaiError: any) {
-      console.error('❌ Both Claude and OpenAI failed:', openaiError.message);
-      throw new Error(`AI generation failed - Claude: ${claudeError.message}, OpenAI: ${openaiError.message}`);
     }
+
+    throw new Error('Claude response invalid');
+    
+  } catch (error: any) {
+    console.log('⚠️ AI generation failed or timed out, using smart product-based fallback');
+    
+    // Return smart fallback immediately - no more retries
+    const productAnalysis = analyzeProductsForPersonas(productDetails, collections);
+    return generateFallbackPersonas(productAnalysis);
   }
 }
 
@@ -410,8 +384,7 @@ router.post('/generate-suggestions', async (req, res) => {
     console.error('❌ Error generating buyer persona suggestions:', error);
     
     // Provide product-aware fallback suggestions if AI fails completely
-    const productAnalysis = analyzeProductsForPersonas(productDetails, collectionsInfo);
-    const fallbackSuggestions = generateFallbackPersonas(productAnalysis);
+    const fallbackSuggestions = generateFallbackPersonas(analyzeProductsForPersonas(productDetails, collectionsInfo));
     
     return res.json({
       success: true, // Return success with fallback suggestions

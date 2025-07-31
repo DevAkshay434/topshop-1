@@ -331,22 +331,65 @@ export default function AdminPanel() {
 
 
 
-  // Function to generate AI-powered buyer persona suggestions
-  const generateBuyerPersonaSuggestions = async () => {
-    console.log('🔄 REGENERATE BUTTON CLICKED! Starting buyer persona generation...');
-    console.log('📦 Selected products:', selectedProducts);
-    console.log('🏪 Selected collections:', selectedCollections);
-    console.log('🏬 Current store:', storeContext.currentStore);
+  // Generate instant smart suggestions based on product analysis
+  const generateInstantSmartSuggestions = (products: Product[]): string[] => {
+    const suggestions = [];
     
-    // Add to window for debugging
-    (window as any).debugBuyerPersonas = {
-      selectedProducts,
-      selectedCollections,
-      currentState: { buyerPersonaSuggestions, suggestionsGenerated, suggestionsLoading }
-    };
+    // Analyze product characteristics instantly
+    const hasHighPriceProducts = products.some(p => {
+      const price = parseFloat(p.variants?.[0]?.price || '0');
+      return price > 100;
+    });
+    
+    const hasLowPriceProducts = products.some(p => {
+      const price = parseFloat(p.variants?.[0]?.price || '0');
+      return price < 50;
+    });
+    
+    // Category-based quick analysis
+    const productText = products.map(p => `${p.title} ${p.product_type || ''} ${p.tags || ''}`).join(' ').toLowerCase();
+    
+    if (productText.includes('water') || productText.includes('filter') || productText.includes('treatment')) {
+      suggestions.push('Health-conscious homeowners 30-60', 'Water quality concerned', 'Quality-focused families');
+    }
+    
+    if (productText.includes('tech') || productText.includes('electronic') || productText.includes('digital')) {
+      suggestions.push('Tech enthusiasts 25-45', 'Early adopters', 'Digital productivity seekers');
+    }
+    
+    if (productText.includes('fashion') || productText.includes('clothing') || productText.includes('apparel')) {
+      suggestions.push('Style-conscious shoppers', 'Fashion enthusiasts 18-45', 'Trend followers');
+    }
+    
+    if (productText.includes('home') || productText.includes('kitchen') || productText.includes('furniture')) {
+      suggestions.push('Home improvement enthusiasts', 'DIY homeowners 25-65', 'Property value conscious');
+    }
+    
+    if (productText.includes('health') || productText.includes('wellness') || productText.includes('fitness')) {
+      suggestions.push('Health-conscious consumers', 'Wellness seekers 25-55', 'Fitness enthusiasts');
+    }
+    
+    // Price-based suggestions
+    if (hasHighPriceProducts) {
+      suggestions.push('Premium quality seekers', 'High-income professionals', 'Investment-minded consumers');
+    }
+    
+    if (hasLowPriceProducts) {
+      suggestions.push('Budget-conscious families', 'Value hunters 25-45', 'Cost-effective shoppers');
+    }
+    
+    // Always include some universal suggestions
+    suggestions.push('Quality-focused buyers', 'Problem solvers', 'Brand loyalists', 'Online shoppers');
+    
+    // Return unique suggestions, limited to 8
+    return Array.from(new Set(suggestions)).slice(0, 8);
+  };
+
+  // Fast buyer persona suggestion generation with instant smart fallback
+  const generateBuyerPersonaSuggestions = async () => {
+    console.log('🚀 Fast persona generation starting...');
     
     if (selectedProducts.length === 0) {
-      console.log('⚠️ No products selected, using default suggestions');
       setBuyerPersonaSuggestions([
         'General Consumers',
         'Budget-Conscious Shoppers',
@@ -357,88 +400,56 @@ export default function AdminPanel() {
       setSuggestionsGenerated(true);
       return;
     }
-
-    setSuggestionsLoading(true);
-    console.log('🚀 Starting AI generation request...');
+    
+    // Show instant smart fallback first for immediate user feedback
+    const instantSuggestions = generateInstantSmartSuggestions(selectedProducts);
+    setBuyerPersonaSuggestions(instantSuggestions);
+    setSuggestionsGenerated(true);
+    setSuggestionsLoading(true); // Show we're improving them with AI
     
     try {
-      const requestData = {
-        products: selectedProducts,
-        collections: selectedCollections
-      };
-      console.log('📤 Request data:', requestData);
-      
-      console.log('📡 Making API request to /api/buyer-personas/generate-suggestions');
-      console.log('📡 Headers:', {
-        'Content-Type': 'application/json',
-        'X-Store-ID': storeContext.currentStore?.id?.toString() || '',
-      });
+      // Try to get AI-enhanced suggestions in the background with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
       
       const response = await fetch('/api/buyer-personas/generate-suggestions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Store-ID': storeContext.currentStore?.id?.toString() || '',
+          ...(storeContext.currentStore && { 'X-Store-ID': storeContext.currentStore.id.toString() })
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({
+          products: selectedProducts.map(product => ({
+            id: product.id,
+            title: product.title,
+            description: product.body_html || product.description || '',
+            price: product.variants?.[0]?.price || 'N/A',
+            productType: product.product_type || '',
+            tags: product.tags ? product.tags.split(',').map((tag: string) => tag.trim()) : []
+          })),
+          collections: selectedCollections.map(collection => ({
+            id: collection.id,
+            title: collection.title,
+            description: collection.description || ''
+          }))
+        }),
+        signal: controller.signal
       });
       
-      console.log('📡 Request sent successfully');
-
-      console.log('📡 Response status:', response.status);
+      clearTimeout(timeoutId);
       const data = await response.json();
-      console.log('📥 Response data:', data);
-      console.log('📥 Response data.success:', data.success);
-      console.log('📥 Response data.suggestions:', data.suggestions);
-      console.log('📥 Response data.suggestions type:', typeof data.suggestions);
-      console.log('📥 Response data.suggestions.length:', data.suggestions?.length);
       
       if (data.success && data.suggestions && Array.isArray(data.suggestions)) {
-        console.log('✅ Valid API response received, updating state:', data.suggestions);
-        
-        // Store in ref for reliable access
-        suggestionsRef.current = [...data.suggestions];
-        
-        // Update all state variables
+        // Update with AI-enhanced suggestions
         setBuyerPersonaSuggestions([...data.suggestions]);
-        setSuggestionsGenerated(true);
-        setSuggestionsLoading(false);
         setSuggestionKey(Date.now());
-        setForceRerender(Date.now());
-        
-        console.log('✅ Suggestions stored in ref and state:', suggestionsRef.current);
-        
-        toast({
-          title: "Suggestions generated", 
-          description: `Generated ${data.suggestions.length} buyer persona suggestions.`,
-        });
-      } else {
-        console.error('❌ API response missing success or suggestions:', data);
-        throw new Error(data.error || 'Failed to generate suggestions');
+        console.log('✅ AI-enhanced suggestions loaded');
       }
     } catch (error) {
-      console.error('❌ Error generating buyer persona suggestions:', error);
-      toast({
-        title: "Error generating suggestions",
-        description: "Using default suggestions. Please try again.",
-        variant: "destructive",
-      });
-      // Fallback to default suggestions
-      console.log('🔧 Setting fallback suggestions due to API error');
-      const fallbackSuggestions = [
-        'General Consumers',
-        'Budget-Conscious Shoppers',
-        'Quality-Focused Buyers',
-        'Online Shoppers',
-        'Brand-Conscious Customers'
-      ];
-      setBuyerPersonaSuggestions(fallbackSuggestions);
-      setSuggestionsGenerated(true);
-      setSuggestionKey(prev => prev + 1);
-      console.log('🔧 Fallback suggestions set:', fallbackSuggestions);
+      console.log('⚠️ AI enhancement failed, keeping smart fallback suggestions');
+      // Keep the instant smart suggestions - don't show error to user
     } finally {
       setSuggestionsLoading(false);
-      console.log('🏁 Buyer persona generation completed');
     }
   };
   
