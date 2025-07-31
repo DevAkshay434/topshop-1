@@ -526,27 +526,7 @@ export class DataForSEOService {
   private cleanKeywordString(input: string): string {
     console.log(`Cleaning keyword string: "${input}"`);
     
-    // Product-specific keyword extraction for better relevance
-    const normalizedInput = input.toLowerCase();
-    
-    // Handle calcite/calcium carbonate products specifically
-    if (normalizedInput.includes('calcite') || normalizedInput.includes('calcium carbonate')) {
-      // For calcite media products, return the most relevant search term
-      if (normalizedInput.includes('media') || normalizedInput.includes('filter')) {
-        console.log(`Detected calcite filter media product, using optimized keyword`);
-        return 'calcite filter media';
-      }
-      // If it mentions pH correction, use pH-specific term
-      if (normalizedInput.includes('ph') || normalizedInput.includes('correction')) {
-        console.log(`Detected pH correction product, using optimized keyword`);
-        return 'ph correction media';
-      }
-      // Default to calcite neutralizer for other calcite products
-      console.log(`Detected calcite product, using optimized keyword`);
-      return 'calcite neutralizer';
-    }
-    
-    // For other products, use standard cleaning
+    // Universal dynamic cleaning - no static product assumptions
     let cleaned = input
       .replace(/®|™|©|℠/g, '') // Remove trademark/copyright symbols
       .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets and parentheses
@@ -557,45 +537,59 @@ export class DataForSEOService {
       .replace(/\s*-\s*$/, '') // Remove trailing dash with spaces
       .replace(/\s*-$/, '') // Remove trailing dash without spaces
       .replace(/^-\s*/, '') // Remove leading dash
-      .replace(/\b\d+\s*(lbs?|pounds?|kg|grams?)\b/gi, '') // Remove weight specifications
+      .replace(/\b\d+\s*(lbs?|pounds?|kg|grams?|oz|ounces?)\b/gi, '') // Remove weight specifications
+      .replace(/\b(pack|piece|set|count|ct)\b/gi, '') // Remove quantity indicators
       .replace(/\s*,\s*([a-z])/g, ' $1') // Convert commas to spaces when followed by lowercase
       .replace(/\s+/g, ' ') // Normalize spaces
       .trim(); // Remove leading/trailing whitespace
       
-    // Remove model numbers and variant codes that don't add search value
+    // Remove brand names, model numbers and codes that don't add search value
     cleaned = cleaned
       .replace(/\b[A-Z]\d{3,}\b/g, '') // Remove model numbers like "A1234"
       .replace(/\b[A-Z]{2,}\d{2,}\b/g, '') // Remove codes like "AB123"
       .replace(/\b\d{2,}[A-Z]{1,}\b/g, '') // Remove codes like "123A"
+      .replace(/\b[A-Z][a-z]*\s+[A-Z][a-z]*\b/g, ' ') // Remove brand names like "Imerys Calcite"
       .replace(/\s+/g, ' ') // Normalize spaces again
       .trim();
       
     // Convert to lowercase for SEO best practices
     cleaned = cleaned.toLowerCase();
     
-    // Extract core product terms from long titles
+    // Remove common stop words and noise
+    const stopWords = ['for', 'with', 'by', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'of'];
     const words = cleaned.split(' ').filter(word => 
       word.length > 2 && 
-      !['brand', 'model', 'series', 'pack', 'piece', 'set'].includes(word)
+      !stopWords.includes(word) &&
+      !['brand', 'model', 'series', 'type', 'style', 'size'].includes(word)
     );
     
-    // For long product titles, extract the most relevant 2-3 words
-    if (words.length > 6) {
-      // Try to find product category terms (usually toward the end)
-      const categoryWords = words.slice(-3); // Last 3 words often contain product category
-      cleaned = categoryWords.join(' ');
-      console.log(`Extracted product category from long title: "${cleaned}"`);
+    // Extract the most meaningful product terms
+    let finalKeyword = '';
+    
+    if (words.length >= 2) {
+      // Use the most descriptive 2-3 words that best represent the product
+      // Priority: last words (often product category) + meaningful descriptors
+      const meaningfulWords = words.slice(-3); // Take last 3 words as they're often most descriptive
+      finalKeyword = meaningfulWords.join(' ');
+    } else if (words.length === 1) {
+      finalKeyword = words[0];
+    } else {
+      // Fallback to first few words if no meaningful terms found
+      const fallbackWords = input.toLowerCase().split(' ').slice(0, 2);
+      finalKeyword = fallbackWords.join(' ');
     }
     
-    console.log(`After cleaning and formatting: "${cleaned}"`);
+    console.log(`After universal cleaning: "${finalKeyword}"`);
     
-    // Final validation - ensure we have a meaningful keyword
-    if (cleaned.length < 2) {
-      console.warn(`Warning: Cleaned keyword is too short: "${cleaned}"`);
-      return input.toLowerCase().trim().split(' ').slice(0, 3).join(' '); // Fallback to first 3 words
+    // Ensure minimum keyword length
+    if (finalKeyword.length < 3) {
+      console.warn(`Warning: Cleaned keyword too short: "${finalKeyword}"`);
+      // Use original input first 2-3 words as emergency fallback
+      const emergencyFallback = input.toLowerCase().split(' ').slice(0, 3).join(' ');
+      return emergencyFallback;
     }
     
-    return cleaned;
+    return finalKeyword;
   }
 
   /**
@@ -837,76 +831,63 @@ export class DataForSEOService {
    * @returns Array of generic terms in order of relevance
    */
   private extractGenericTerms(productName: string): string[] {
-    console.log(`Extracting relevant search terms from: ${productName}`);
+    console.log(`Extracting universal dynamic terms from: ${productName}`);
     const terms: string[] = [];
     
     // Convert to lowercase and clean the input
     const normalizedInput = productName.toLowerCase()
       .replace(/®|™|©|\[.*?\]|\(.*?\)/g, '') // Remove trademark symbols and bracketed text
       .replace(/[^\w\s-]/g, ' ')             // Replace special chars with spaces
+      .replace(/\b\d+\s*(lbs?|pounds?|kg|grams?|oz|ounces?)\b/gi, '') // Remove weights
+      .replace(/\b(pack|piece|set|count|ct)\b/gi, '') // Remove quantity indicators
       .replace(/\s+/g, ' ')                  // Normalize spaces
       .trim();
       
-    console.log(`Normalized input for relevant terms: ${normalizedInput}`);
+    console.log(`Normalized input for universal extraction: ${normalizedInput}`);
     
-    // Product-specific keyword mapping for better relevance
-    if (normalizedInput.includes('calcite') || normalizedInput.includes('calcium carbonate')) {
-      // Water treatment media specific terms
-      terms.push(
-        'calcite filter media',
-        'calcium carbonate filter',
-        'ph correction media',
-        'water ph correction',
-        'calcite neutralizer',
-        'acid neutralizing media',
-        'water treatment media',
-        'calcite filter',
-        'ph neutralizer',
-        'alkaline media',
-        'calcite media filter',
-        'ph correction filter'
-      );
-    } else if (normalizedInput.includes('filter') && (normalizedInput.includes('water') || normalizedInput.includes('ph'))) {
-      // General water filtration terms
-      terms.push(
-        'water filter',
-        'ph filter',
-        'water treatment',
-        'filtration media',
-        'water purification',
-        'filter media',
-        'ph adjustment',
-        'water conditioning'
-      );
-    } else {
-      // Extract actual product keywords from the input
-      const words = normalizedInput.split(' ').filter(word => 
-        word.length > 3 && 
-        !['best', 'top', 'new', 'premium', 'series', 'model', 'lbs', 'pounds'].includes(word)
-      );
+    // Universal dynamic extraction - no hardcoded product categories
+    const words = normalizedInput.split(' ').filter(word => 
+      word.length > 2 && 
+      !['best', 'top', 'new', 'premium', 'series', 'model', 'brand', 'type', 'style', 'size'].includes(word) &&
+      !['for', 'with', 'by', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'of'].includes(word)
+    );
+    
+    // Strategy 1: Extract meaningful word combinations from the actual product name
+    if (words.length >= 2) {
+      // Add 2-word combinations that represent product categories
+      for (let i = 0; i < words.length - 1; i++) {
+        const combination = `${words[i]} ${words[i + 1]}`;
+        if (combination.length > 5 && !terms.includes(combination)) {
+          terms.push(combination);
+        }
+      }
       
-      // Add meaningful product terms
-      if (words.length >= 2) {
-        // Add 2-word combinations
-        for (let i = 0; i < words.length - 1; i++) {
-          const combination = `${words[i]} ${words[i + 1]}`;
-          if (combination.length > 6) {
+      // Add 3-word combinations if they seem meaningful
+      if (words.length >= 3) {
+        for (let i = 0; i < words.length - 2; i++) {
+          const combination = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
+          if (combination.length > 8 && !terms.includes(combination)) {
             terms.push(combination);
           }
         }
       }
-      
-      // Add individual significant words
-      words.slice(0, 4).forEach(word => {
-        if (!terms.includes(word)) {
-          terms.push(word);
-        }
-      });
     }
     
-    // Limit to most relevant terms to avoid dilution
-    const finalTerms = terms.slice(0, 8); // Focus on top 8 most relevant terms
-    console.log(`Extracted relevant product terms: ${finalTerms.join(', ')}`);
+    // Strategy 2: Add individual significant words as category terms
+    words.slice(0, 3).forEach(word => {
+      if (word.length > 3 && !terms.includes(word)) {
+        terms.push(word);
+      }
+    });
+    
+    // Strategy 3: If we have very few terms, add the full cleaned input
+    if (terms.length < 2 && normalizedInput.length > 5) {
+      terms.push(normalizedInput);
+    }
+    
+    // Limit to most relevant terms to focus the search
+    const finalTerms = terms.slice(0, 6); // Limit to top 6 most relevant terms
+    console.log(`Extracted universal dynamic terms: ${finalTerms.join(', ')}`);
     return finalTerms;
   }
 
@@ -996,69 +977,69 @@ export class DataForSEOService {
    * @returns Array of broader category terms
    */
   private generateBroadCategoryTerms(originalKeyword: string): string[] {
+    console.log(`Generating universal dynamic category terms for "${originalKeyword}"`);
     const broadTerms: string[] = [];
-    const words = originalKeyword.toLowerCase().split(' ').filter(word => word.length > 2);
     
-    // Strategy 1: Extract product category from the last 1-2 words
-    if (words.length >= 2) {
-      // Try last two words as category (e.g., "noise cancelling headphones" -> "noise cancelling")
-      const lastTwoWords = words.slice(-2).join(' ');
-      broadTerms.push(lastTwoWords);
-      
-      // Try just the last word (e.g., "headphones")
-      const lastWord = words[words.length - 1];
-      if (lastWord !== lastTwoWords) {
-        broadTerms.push(lastWord);
-      }
-    } else if (words.length === 1) {
-      broadTerms.push(words[0]);
+    // Clean and extract meaningful words from the keyword
+    const words = originalKeyword.toLowerCase()
+      .replace(/[^\w\s]/g, ' ') // Remove special characters
+      .split(' ')
+      .filter(word => 
+        word.length > 2 && 
+        !['the', 'a', 'an', 'and', 'or', 'for', 'with', 'by', 'best', 'top', 'new'].includes(word)
+      );
+    
+    if (words.length === 0) {
+      console.log('No meaningful words found for category generation');
+      return [];
     }
     
-    // Strategy 2: Extract middle category words (skip brand names and model numbers)
-    const potentialCategories = words.filter(word => {
-      // Skip obvious brand indicators, model numbers, and common modifiers
-      return !word.match(/^(the|a|an|and|or|with|for|pro|elite|premium|plus|max|mini|super|ultra|best|top|new)$/i) &&
-             !word.match(/^\d/) && // Skip words starting with numbers
-             !word.match(/[®™©]/) && // Skip trademark symbols
-             word.length > 3;
-    });
+    // Strategy 1: Use the actual product terms as category bases
+    // Last word is often the main product category
+    const lastWord = words[words.length - 1];
+    if (lastWord) {
+      broadTerms.push(lastWord);
+    }
     
-    // Add the most meaningful category words
-    potentialCategories.slice(0, 3).forEach(category => {
-      if (!broadTerms.includes(category)) {
-        broadTerms.push(category);
-      }
-    });
+    // Second-to-last word for compound categories
+    if (words.length >= 2) {
+      const secondLastWord = words[words.length - 2];
+      broadTerms.push(secondLastWord);
+      broadTerms.push(`${secondLastWord} ${lastWord}`);
+    }
     
-    // Strategy 3: Create high-volume search variations from extracted categories
-    const mainCategories = broadTerms.slice(0, 2); // Use top 2 categories
+    // First word if it's different from the last words (often descriptive)
+    const firstWord = words[0];
+    if (firstWord && firstWord !== lastWord && firstWord !== words[words.length - 2]) {
+      broadTerms.push(firstWord);
+    }
     
-    for (const category of mainCategories) {
-      // Add search-friendly variations
-      const variations = [
-        `best ${category}`,
-        `${category} reviews`,
-        `${category} buying guide`,
-        `top ${category}`,
-        `${category} comparison`
+    // Strategy 2: Generate universal search modifiers that work for any product
+    const primaryCategory = lastWord || words[0];
+    if (primaryCategory) {
+      const universalModifiers = [
+        `best ${primaryCategory}`,
+        `${primaryCategory} reviews`,
+        `${primaryCategory} buying guide`,
+        `top ${primaryCategory}`,
+        `${primaryCategory} comparison`,
+        `${primaryCategory} brands`,
+        `cheap ${primaryCategory}`,
+        `affordable ${primaryCategory}`
       ];
       
-      variations.forEach(variation => {
-        if (!broadTerms.includes(variation)) {
-          broadTerms.push(variation);
+      universalModifiers.forEach(modifier => {
+        if (!broadTerms.includes(modifier)) {
+          broadTerms.push(modifier);
         }
       });
     }
     
-    // Strategy 4: Add universal high-volume terms only if we couldn't extract good categories
-    if (broadTerms.length < 3) {
-      broadTerms.push('product reviews', 'buying guide', 'best products', 'consumer guide');
-    }
+    // Remove duplicates and limit to most relevant terms
+    const uniqueTerms = [...new Set(broadTerms)];
+    const finalTerms = uniqueTerms.slice(0, 8);
     
-    // Limit to most relevant terms to avoid API overload
-    const finalTerms = broadTerms.slice(0, 8);
-    
-    console.log(`Generated dynamic category terms for "${originalKeyword}": ${finalTerms.join(', ')}`);
+    console.log(`Generated universal category terms: ${finalTerms.join(', ')}`);
     return finalTerms;
   }
 
