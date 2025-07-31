@@ -233,8 +233,8 @@ export class DataForSEOService {
           // Sanitize and format the keyword properly
           const sanitizedKeyword = this.sanitizeKeywordForSEO(keywordText);
           
-          // Only add keywords that pass quality checks - include ALL DataForSEO keywords regardless of search volume
-          if (this.isValidSEOKeyword(sanitizedKeyword)) {
+          // Filter keywords by minimum search volume to ensure quality results
+          if (this.isValidSEOKeyword(sanitizedKeyword) && adjustedSearchVolume >= 100) {
             keywordData.push({
               keyword: sanitizedKeyword,
               searchVolume: adjustedSearchVolume,
@@ -244,10 +244,12 @@ export class DataForSEOService {
               intent: this.determineIntent({ keyword: sanitizedKeyword }),
               trend,
               difficulty,
-              selected: false // Default to not selected
+              selected: false
             });
             
             hasValidData = true;
+          } else if (adjustedSearchVolume > 0 && adjustedSearchVolume < 100) {
+            console.log(`Filtered out low-volume keyword: ${sanitizedKeyword} (${adjustedSearchVolume} searches)`);
           }
         }
         
@@ -362,7 +364,23 @@ export class DataForSEOService {
         
         console.log(`Total keywords collected: ${keywordData.length}`);
         
-        if (!hasValidData) {
+        // If no high-volume keywords found, try broader category terms
+        if (keywordData.length === 0) {
+          console.log("No keywords with sufficient search volume (>100) found, trying broader category terms");
+          
+          const broadTerms = this.generateBroadCategoryTerms(originalKeyword);
+          
+          if (broadTerms.length > 0 && broadTerms[0] !== originalKeyword) {
+            console.log(`Trying broader term: ${broadTerms[0]}`);
+            try {
+              return await this.fetchKeywordsFromAPI(broadTerms[0]);
+            } catch (error) {
+              console.log(`Broader term search failed: ${error}`);
+            }
+          }
+        }
+        
+        if (!hasValidData && keywordData.length === 0) {
           console.error("No valid keyword data found");
           throw new Error("No valid keywords found. Please try different search terms.");
         }
@@ -1071,12 +1089,63 @@ export class DataForSEOService {
    * @param mainKeyword The main keyword to generate variations from
    * @returns Array of related keyword data
    */
-  // Simplified method to generate related keywords without API calls
-  // REMOVED: Fallback keyword generation function
-  // Only authentic DataForSEO keywords with real search volumes are returned
   private async generateRelatedKeywords(mainKeyword: KeywordData): Promise<KeywordData[]> {
     console.log(`Skipping fallback keyword generation for: ${mainKeyword.keyword}`);
     return []; // Return empty array instead of generating fallback keywords
+  }
+
+  /**
+   * Generate broader category terms when specific product names yield low search volumes
+   * @param originalKeyword The original specific keyword
+   * @returns Array of broader category terms
+   */
+  private generateBroadCategoryTerms(originalKeyword: string): string[] {
+    const broadTerms: string[] = [];
+    const lowercaseKeyword = originalKeyword.toLowerCase();
+    
+    // Water treatment related terms
+    if (lowercaseKeyword.includes('water') && (lowercaseKeyword.includes('softener') || lowercaseKeyword.includes('conditioner') || lowercaseKeyword.includes('filter'))) {
+      broadTerms.push('water softener', 'water filter', 'water treatment', 'home water systems');
+    }
+    // Electronics and tech
+    else if (lowercaseKeyword.includes('ai') || lowercaseKeyword.includes('artificial intelligence')) {
+      broadTerms.push('artificial intelligence', 'machine learning', 'AI technology', 'smart technology');
+    }
+    // Headphones/audio
+    else if (lowercaseKeyword.includes('headphone') || lowercaseKeyword.includes('earphone') || lowercaseKeyword.includes('audio')) {
+      broadTerms.push('headphones', 'wireless headphones', 'bluetooth headphones', 'audio equipment');
+    }
+    // Kitchen appliances
+    else if (lowercaseKeyword.includes('kitchen') || lowercaseKeyword.includes('cooking') || lowercaseKeyword.includes('appliance')) {
+      broadTerms.push('kitchen appliances', 'cooking equipment', 'home appliances');
+    }
+    // Fitness and health
+    else if (lowercaseKeyword.includes('fitness') || lowercaseKeyword.includes('exercise') || lowercaseKeyword.includes('workout')) {
+      broadTerms.push('fitness equipment', 'exercise gear', 'home gym', 'workout equipment');
+    }
+    // Beauty and skincare
+    else if (lowercaseKeyword.includes('skin') || lowercaseKeyword.includes('beauty') || lowercaseKeyword.includes('cosmetic')) {
+      broadTerms.push('skincare', 'beauty products', 'cosmetics', 'skin care routine');
+    }
+    // Home and garden
+    else if (lowercaseKeyword.includes('home') || lowercaseKeyword.includes('garden') || lowercaseKeyword.includes('outdoor')) {
+      broadTerms.push('home improvement', 'garden tools', 'outdoor equipment', 'home decor');
+    }
+    // Default fallback to generic product categories
+    else {
+      // Extract the last word which is often the product category
+      const words = originalKeyword.split(' ').filter(word => word.length > 2);
+      if (words.length > 0) {
+        const lastWord = words[words.length - 1];
+        broadTerms.push(lastWord, `best ${lastWord}`, `${lastWord} reviews`);
+      }
+      
+      // Add some general high-volume categories
+      broadTerms.push('product reviews', 'buying guide', 'best products', 'consumer guide');
+    }
+    
+    console.log(`Generated broad category terms for "${originalKeyword}": ${broadTerms.join(', ')}`);
+    return broadTerms;
   }
 
 
