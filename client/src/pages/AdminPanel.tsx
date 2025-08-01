@@ -4788,7 +4788,152 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
+                    {/* Meta Description Section */}
+                    <div className="border-b border-gray-200 pb-4 mt-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Meta Description</h3>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOptimizingMeta}
+                            onClick={async () => {
+                              try {
+                                setIsOptimizingMeta(true);
+                                
+                                // Gather context for AI optimization
+                                const formData = form.getValues();
+                                const currentTitle = generatedContent.title || "";
+                                const currentContent = generatedContent.content || "";
+                                const keywords = formData.keywords || [];
+                                const targetAudience = formData.buyerPersonas || "";
+                                const tone = formData.toneOfVoice || "professional";
+                                const region = "us"; // Default region
 
+                                console.log('Triggering AI meta description optimization...');
+
+                                // Call the AI optimization endpoint
+                                const response = await fetch('/api/optimize-meta-fields', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json'
+                                  },
+                                  body: JSON.stringify({
+                                    title: currentTitle,
+                                    content: currentContent,
+                                    keywords: keywords,
+                                    targetAudience: targetAudience,
+                                    tone: tone,
+                                    region: region
+                                  })
+                                });
+
+                                if (!response.ok) {
+                                  throw new Error('Failed to optimize meta fields');
+                                }
+
+                                const result = await response.json();
+                                
+                                if (result.success) {
+                                  // Update both meta title and description from AI response
+                                  setGeneratedContent(prev => ({
+                                    ...prev,
+                                    metaTitle: result.metaTitle,
+                                    metaDescription: result.metaDescription
+                                  }));
+                                  console.log('AI meta description optimization successful');
+                                } else {
+                                  throw new Error(result.error || 'Optimization failed');
+                                }
+                              } catch (error) {
+                                console.error('Meta description optimization error:', error);
+                                // Fallback: create basic description from content
+                                const content = generatedContent.content || generatedContent.title || "";
+                                const plainText = content.replace(/<[^>]*>/g, ' ').trim();
+                                let description = plainText.substring(0, 155);
+                                
+                                if (description.length === 155) {
+                                  const lastSpace = description.lastIndexOf(' ');
+                                  description = lastSpace > 0 ? description.substring(0, lastSpace) + '...' : description + '...';
+                                }
+                                
+                                setGeneratedContent(prev => ({ ...prev, metaDescription: description }));
+                              } finally {
+                                setIsOptimizingMeta(false);
+                              }
+                            }}
+                          >
+                            {isOptimizingMeta ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
+                                Optimizing...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-4 w-4 mr-1" />
+                                Auto-Optimize
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <textarea
+                            value={generatedContent.metaDescription || ""}
+                            onChange={(e) => {
+                              const value = e.target.value.slice(0, 160); // Hard limit at 160 chars
+                              setGeneratedContent(prev => ({ ...prev, metaDescription: value }));
+                            }}
+                            placeholder={isOptimizingMeta ? "AI is optimizing your meta description..." : "Enter SEO-optimized meta description..."}
+                            disabled={isOptimizingMeta}
+                            rows={3}
+                            className={`w-full pr-16 resize-none ${
+                              isOptimizingMeta ? 'bg-gray-50' :
+                              (generatedContent.metaDescription || "").length > 155 
+                                ? 'border-red-300 focus:border-red-500' 
+                                : (generatedContent.metaDescription || "").length > 140
+                                ? 'border-yellow-300 focus:border-yellow-500'
+                                : 'border-green-300 focus:border-green-500'
+                            } rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500`}
+                          />
+                          {isOptimizingMeta && (
+                            <div className="absolute left-3 top-3">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
+                            </div>
+                          )}
+                          <div className={`absolute right-3 top-3 text-xs font-medium ${
+                            (generatedContent.metaDescription || "").length > 155 
+                              ? 'text-red-500' 
+                              : (generatedContent.metaDescription || "").length > 140
+                              ? 'text-yellow-600'
+                              : 'text-green-600'
+                          }`}>
+                            {(generatedContent.metaDescription || "").length}/155
+                          </div>
+                        </div>
+                        <div className="text-xs space-y-1">
+                          {(generatedContent.metaDescription || "").length > 155 && (
+                            <p className="text-red-600 flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Too long for optimal SEO display
+                            </p>
+                          )}
+                          {(generatedContent.metaDescription || "").length >= 140 && (generatedContent.metaDescription || "").length <= 155 && (
+                            <p className="text-green-600 flex items-center">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Perfect length for SEO
+                            </p>
+                          )}
+                          {(generatedContent.metaDescription || "").length < 120 && (generatedContent.metaDescription || "").length > 0 && (
+                            <p className="text-yellow-600 flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Consider adding more detail for better SEO
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Publication Section - Appears right after meta description */}
                     <Card className="mt-6">
