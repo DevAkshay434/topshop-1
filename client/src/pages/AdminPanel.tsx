@@ -2569,19 +2569,7 @@ export default function AdminPanel() {
           />
         </div>
       )}
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 text-transparent bg-clip-text mb-2">
-            TopShop SEO Admin
-          </h1>
-          <p className="text-muted-foreground">
-            Manage content generation, view service status, and configure settings
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-  
-        </div>
-      </div>
+
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
         <TabsList className="grid grid-cols-3 w-full max-w-md">
