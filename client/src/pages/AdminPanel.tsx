@@ -4445,6 +4445,12 @@ export default function AdminPanel() {
                             disabled={isGenerating || !isReadyToGenerateContent()}
                             onClick={() => {
                               if (isReadyToGenerateContent()) {
+                                // Scroll to top to show content preview area
+                                window.scrollTo({ 
+                                  top: 0, 
+                                  behavior: 'smooth' 
+                                });
+                                
                                 // Manually trigger form submission
                                 const values = form.getValues();
                                 console.log("Manual form submission triggered with values:", values);
@@ -4503,10 +4509,20 @@ export default function AdminPanel() {
               <CardContent>
                 {isGenerating ? (
                   <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Generating content with AI. This might take a minute...
+                    <div className="relative">
+                      <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+                      <div className="absolute inset-0 rounded-full bg-blue-100 animate-pulse opacity-20"></div>
+                    </div>
+                    <p className="mt-4 text-lg font-medium text-gray-900">
+                      Generating Content...
                     </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      AI is creating your content with selected keywords, products, and style preferences
+                    </p>
+                    <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="animate-pulse">⚡</div>
+                      <span>This usually takes 30-60 seconds</span>
+                    </div>
                   </div>
                 ) : generatedContent ? (
                   <div className="space-y-6">
