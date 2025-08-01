@@ -1924,15 +1924,24 @@ Keywords: ${optimizationContext.keywords}
 Target Audience: ${optimizationContext.targetAudience}
 Tone: ${optimizationContext.tone}
 Region: ${optimizationContext.region}
-${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}...` : ''}
+${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}` : ''}
 
-REQUIREMENTS:
-- Meta Title: 50-60 characters maximum, include primary keyword, compelling and clickable
-- Meta Description: 150-160 characters maximum, include keywords naturally, compelling call-to-action
-- Optimize for search engines while remaining engaging for humans
-- Match the specified tone and target audience
-- Use action words and emotional triggers appropriate for the audience
-- Include location-specific terms if relevant to the region
+STRICT REQUIREMENTS:
+- Meta Title (50-60 characters max):
+  * MUST include at least one keyword from the provided keywords list
+  * MUST be directly relevant to the article content
+  * NO ellipsis (...) anywhere in the title
+  * NO month/year references (avoid 2023, 2024, 2025, etc.)
+  * Should be compelling and click-worthy
+  * Use ${optimizationContext.tone} tone
+
+- Meta Description (150-160 characters max):
+  * MUST summarize the actual content value
+  * Include relevant keywords naturally
+  * NO ellipsis (...) anywhere in the description
+  * NO month/year references or dates
+  * Should encourage clicks with clear value proposition
+  * Target ${optimizationContext.targetAudience}
 
 Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. No additional text or formatting.`;
 
@@ -1966,11 +1975,30 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       } catch (parseError) {
         console.log('Failed to parse JSON, using text extraction fallback:', parseError);
         
-        // Fallback: create structured response from text
+        // Fallback: create structured response from text without ellipsis
         const lines = aiResponseText.split('\n').filter((line: string) => line.trim());
+        
+        // Create fallback meta title with keyword
+        let fallbackTitle = title.substring(0, 60);
+        if (keywords.length > 0) {
+          const primaryKeyword = keywords[0];
+          fallbackTitle = `${primaryKeyword}: ${title}`.substring(0, 60);
+          // Truncate at word boundary
+          const lastSpace = fallbackTitle.lastIndexOf(' ');
+          if (lastSpace > 45) fallbackTitle = fallbackTitle.substring(0, lastSpace);
+        }
+        
+        // Create fallback description with keywords
+        let fallbackDesc = `Discover ${title.toLowerCase()}. ${keywords.slice(0, 2).join(', ')} and more`;
+        if (fallbackDesc.length > 160) {
+          const truncated = fallbackDesc.substring(0, 160);
+          const lastSpace = truncated.lastIndexOf(' ');
+          fallbackDesc = lastSpace > 140 ? truncated.substring(0, lastSpace) : truncated;
+        }
+        
         optimizedFields = {
-          metaTitle: title.substring(0, 60), // Fallback to truncated original
-          metaDescription: `Discover ${title.toLowerCase()}. ${keywords.slice(0, 2).join(', ')} and more.`.substring(0, 160)
+          metaTitle: fallbackTitle,
+          metaDescription: fallbackDesc
         };
         
         // Try to extract from formatted text
@@ -1991,12 +2019,36 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         throw new Error('AI response missing required fields');
       }
 
-      // Ensure proper length limits
+      // Clean and validate fields according to user requirements
+      // Remove any ellipsis that might have been added by AI
+      optimizedFields.metaTitle = optimizedFields.metaTitle.replace(/\.{3,}/g, '').trim();
+      optimizedFields.metaDescription = optimizedFields.metaDescription.replace(/\.{3,}/g, '').trim();
+
+      // Ensure proper length limits WITHOUT adding ellipsis
       if (optimizedFields.metaTitle.length > 60) {
-        optimizedFields.metaTitle = optimizedFields.metaTitle.substring(0, 57) + '...';
+        // Truncate at word boundary to avoid cutting words
+        const truncated = optimizedFields.metaTitle.substring(0, 60);
+        const lastSpace = truncated.lastIndexOf(' ');
+        optimizedFields.metaTitle = lastSpace > 45 ? truncated.substring(0, lastSpace) : truncated;
       }
       if (optimizedFields.metaDescription.length > 160) {
-        optimizedFields.metaDescription = optimizedFields.metaDescription.substring(0, 157) + '...';
+        // Truncate at word boundary to avoid cutting words
+        const truncated = optimizedFields.metaDescription.substring(0, 160);
+        const lastSpace = truncated.lastIndexOf(' ');
+        optimizedFields.metaDescription = lastSpace > 140 ? truncated.substring(0, lastSpace) : truncated;
+      }
+
+      // Validate keyword inclusion in meta title
+      const titleLower = optimizedFields.metaTitle.toLowerCase();
+      const hasKeyword = keywords.some(keyword => titleLower.includes(keyword.toLowerCase()));
+      
+      if (!hasKeyword && keywords.length > 0) {
+        console.log('Warning: Generated meta title does not contain any provided keywords');
+        // Optionally regenerate or modify to include a keyword
+        const primaryKeyword = keywords[0];
+        if (optimizedFields.metaTitle.length + primaryKeyword.length <= 58) {
+          optimizedFields.metaTitle = `${primaryKeyword}: ${optimizedFields.metaTitle}`;
+        }
       }
 
       console.log('AI optimization complete:', {
