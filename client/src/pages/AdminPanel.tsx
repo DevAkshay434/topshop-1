@@ -4538,6 +4538,49 @@ export default function AdminPanel() {
                   </div>
                 ) : generatedContent ? (
                   <div className="space-y-6">
+                    {/* Featured Image Section */}
+                    {(primaryImages.length > 0 || selectedMediaContent.primaryImage) && (
+                      <div className="border-b border-gray-200 pb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">Featured Image</h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setImageTab('primary');
+                              setShowImageDialog(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Change
+                          </Button>
+                        </div>
+                        <div className="relative aspect-video overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                          <img 
+                            src={primaryImages[0]?.url || selectedMediaContent.primaryImage?.url || primaryImages[0]?.src?.medium || primaryImages[0]?.src?.large} 
+                            alt={primaryImages[0]?.alt || selectedMediaContent.primaryImage?.alt || "Featured image"} 
+                            className="object-cover w-full h-full"
+                            onError={(e) => {
+                              // If image fails to load, try alternative sources
+                              const target = e.target as HTMLImageElement;
+                              const image = primaryImages[0] || selectedMediaContent.primaryImage;
+                              if (image?.src?.large && target.src !== image.src.large) {
+                                target.src = image.src.large;
+                              } else if (image?.src?.small && target.src !== image.src.small) {
+                                target.src = image.src.small;
+                              }
+                            }}
+                          />
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                            Featured
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This image will appear at the top of your published content
+                        </p>
+                      </div>
+                    )}
+
                     {/* Article/Page Title Section */}
                     <div className="border-b border-gray-200 pb-4">
                       <div className="flex items-center justify-between mb-2">
