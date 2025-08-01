@@ -4538,6 +4538,29 @@ export default function AdminPanel() {
                   </div>
                 ) : generatedContent ? (
                   <div className="space-y-6">
+                    {/* Article/Page Title Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">Article Title</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newTitle = prompt("Edit title:", generatedContent.title || "");
+                            if (newTitle !== null) {
+                              setGeneratedContent(prev => ({ ...prev, title: newTitle }));
+                            }
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                        {generatedContent.title || "Untitled"}
+                      </h1>
+                    </div>
+
                     {/* Featured Image Section */}
                     {(primaryImages.length > 0 || selectedMediaContent.primaryImage) && (
                       <div className="border-b border-gray-200 pb-4">
@@ -4580,29 +4603,6 @@ export default function AdminPanel() {
                         </p>
                       </div>
                     )}
-
-                    {/* Article/Page Title Section */}
-                    <div className="border-b border-gray-200 pb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">Article Title</h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const newTitle = prompt("Edit title:", generatedContent.title || "");
-                            if (newTitle !== null) {
-                              setGeneratedContent(prev => ({ ...prev, title: newTitle }));
-                            }
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                      </div>
-                      <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                        {generatedContent.title || "Untitled"}
-                      </h1>
-                    </div>
 
                     {/* Shopify-Compatible Content Editor Section */}
                     <div className="border-b border-gray-200 pb-4">
