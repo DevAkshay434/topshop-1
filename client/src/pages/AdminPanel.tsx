@@ -278,6 +278,7 @@ export default function AdminPanel() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isOptimizingMeta, setIsOptimizingMeta] = useState(false);
+  const [publicationMethod, setPublicationMethod] = useState<'draft' | 'publish' | 'schedule'>('draft');
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [contentUpdateCounter, setContentUpdateCounter] = useState(0);
   const [contentEditorKey, setContentEditorKey] = useState(0); // Force re-render of editor
@@ -5334,146 +5335,122 @@ export default function AdminPanel() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Form {...form}>
-                          <div className="space-y-6">
-                            {/* Publication Status */}
-                            <FormField
-                              control={form.control}
-                              name="postStatus"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <div className="flex items-center gap-2">
-                                    <FormLabel>Publish Status</FormLabel>
-                                    {form.getValues('scheduledPublishDate') && (
-                                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                                        <CalendarCheck className="h-3 w-3 mr-1" />
-                                        Scheduled
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <Select 
-                                    onValueChange={(value) => {
-                                      field.onChange(value);
-                                      form.setValue('publicationType', value === 'publish' ? 'publish' : 'draft');
-                                      if (form.getValues('scheduledPublishDate')) {
-                                        form.setValue('publicationType', 'schedule');
-                                      }
-                                    }}
-                                    value={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select status" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="draft">Save as Draft</SelectItem>
-                                      <SelectItem value="publish">Publish Immediately</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormDescription>
-                                    Choose whether to publish immediately or save as draft. 
-                                    Use scheduling below to set a future publication date.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Optional Scheduling */}
-                            <FormField
-                              control={form.control}
-                              name="scheduledPublishDate"
-                              render={({ field }) => (
-                                <FormItem className="rounded-md border border-slate-200 p-4">
-                                  <div className="flex items-center space-x-2 mb-3">
-                                    <CalendarCheck className="h-5 w-5 text-blue-600" />
-                                    <FormLabel className="text-lg font-medium">
-                                      Schedule Publication (Optional)
-                                    </FormLabel>
-                                  </div>
-                                  <FormDescription className="mb-4 text-sm text-gray-600">
-                                    Set a future date and time to automatically publish your content. 
-                                    Leave blank to publish based on the status above.
-                                  </FormDescription>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <FormLabel className="text-sm">Publication Date</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          type="date"
-                                          {...field}
-                                          value={field.value || ''}
-                                          className="w-full"
-                                          min={new Date().toISOString().split('T')[0]}
-                                        />
-                                      </FormControl>
-                                    </div>
-                                    
-                                    <FormField
-                                      control={form.control}
-                                      name="scheduledPublishTime"
-                                      render={({ field: timeField }) => (
-                                        <div className="space-y-2">
-                                          <FormLabel className="text-sm mb-1">Publication Time</FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              type="time"
-                                              {...timeField}
-                                              value={timeField.value || '09:30'}
-                                              className="w-full"
-                                            />
-                                          </FormControl>
-                                        </div>
-                                      )}
-                                    />
-                                  </div>
-                                </FormItem>
-                              )}
-                            />
-
-                            {/* Publication Action Buttons */}
-                            <div className="flex flex-col gap-3">
-                              {/* Publish Now Button */}
-                              <Button 
-                                type="button" 
-                                onClick={() => handlePublishContent('publish')}
-                                disabled={isGenerating}
-                                className="w-full"
-                              >
-                                <Send className="mr-2 h-4 w-4" />
-                                Publish Now
-                              </Button>
-
-                              {/* Save as Draft Button */}
-                              <Button 
-                                type="button" 
-                                variant="outline"
-                                onClick={() => handlePublishContent('draft')}
-                                disabled={isGenerating}
-                                className="w-full"
-                              >
-                                <Save className="mr-2 h-4 w-4" />
-                                Save as Draft
-                              </Button>
-
-                              {/* Schedule Publication Button - only show if date is selected */}
-                              {form.getValues('scheduledPublishDate') && (
-                                <Button 
-                                  type="button" 
-                                  variant="secondary"
-                                  onClick={() => handlePublishContent('schedule')}
-                                  disabled={isGenerating}
-                                  className="w-full"
-                                >
-                                  <CalendarCheck className="mr-2 h-4 w-4" />
-                                  Schedule Publication
-                                </Button>
-                              )}
-                            </div>
+                        <div className="space-y-6">
+                          {/* Publication Status Dropdown */}
+                          <div className="space-y-2">
+                            <Label htmlFor="publication-status">Publication Status</Label>
+                            <Select 
+                              onValueChange={(value: 'draft' | 'publish' | 'schedule') => {
+                                setPublicationMethod(value);
+                                // Clear scheduling fields if not scheduling
+                                if (value !== 'schedule') {
+                                  form.setValue('scheduledPublishDate', '');
+                                  form.setValue('scheduledPublishTime', '09:30');
+                                }
+                                // Update form fields for compatibility
+                                form.setValue('postStatus', value === 'publish' ? 'publish' : 'draft');
+                                form.setValue('publicationType', value);
+                              }}
+                              value={publicationMethod}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Save as Draft" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="draft">Save as Draft</SelectItem>
+                                <SelectItem value="publish">Publish Immediately</SelectItem>
+                                <SelectItem value="schedule">Schedule Publication</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-sm text-muted-foreground">
+                              Choose whether to publish immediately or save as draft. Use scheduling below to set a future publication date.
+                            </p>
                           </div>
-                        </Form>
+
+                          {/* Scheduling Block - only visible when "Schedule Publication" is selected */}
+                          {publicationMethod === 'schedule' && (
+                            <div className="rounded-md border border-slate-200 p-4 bg-blue-50/50">
+                              <div className="flex items-center space-x-2 mb-3">
+                                <CalendarCheck className="h-5 w-5 text-blue-600" />
+                                <Label className="text-lg font-medium">
+                                  Set a Future Date/Time
+                                </Label>
+                              </div>
+                              <p className="mb-4 text-sm text-gray-600">
+                                Set a future date and time to automatically publish your content.
+                              </p>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label className="text-sm">Publication Date</Label>
+                                  <Input
+                                    type="date"
+                                    value={form.watch('scheduledPublishDate') || ''}
+                                    onChange={(e) => form.setValue('scheduledPublishDate', e.target.value)}
+                                    className="w-full"
+                                    min={new Date().toISOString().split('T')[0]}
+                                  />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <Label className="text-sm">Publication Time</Label>
+                                  <Input
+                                    type="time"
+                                    value={form.watch('scheduledPublishTime') || '09:30'}
+                                    onChange={(e) => form.setValue('scheduledPublishTime', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Single Proceed Button */}
+                          <Button 
+                            type="button" 
+                            onClick={() => {
+                              if (publicationMethod === 'schedule' && !form.getValues('scheduledPublishDate')) {
+                                toast({
+                                  title: "Date Required",
+                                  description: "Please select a publication date for scheduling.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              handlePublishContent(publicationMethod);
+                            }}
+                            disabled={isPublishing || isGenerating}
+                            className="w-full"
+                          >
+                            {isPublishing ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white mr-2"></div>
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                {publicationMethod === 'draft' && (
+                                  <>
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Proceed (Save as Draft)
+                                  </>
+                                )}
+                                {publicationMethod === 'publish' && (
+                                  <>
+                                    <Send className="mr-2 h-4 w-4" />
+                                    Proceed (Publish Immediately)
+                                  </>
+                                )}
+                                {publicationMethod === 'schedule' && (
+                                  <>
+                                    <CalendarCheck className="mr-2 h-4 w-4" />
+                                    Proceed (Schedule Publication)
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
 
