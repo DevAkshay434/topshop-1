@@ -2355,7 +2355,59 @@ Place this at a logical position in the content, typically after introducing a c
         } // End of disabled automatic page creation
       }
       
-      // 8. Return the result with selected media included for preview
+      // 8. Automatically optimize meta title and description with Claude AI
+      let optimizedMetaTitle = generatedContent.title;
+      let optimizedMetaDescription = generatedContent.metaDescription || '';
+      
+      try {
+        console.log("🚀 Starting automatic meta optimization with Claude AI...");
+        
+        // Only proceed if we have Claude API key
+        if (process.env.ANTHROPIC_API_KEY && requestData.keywords && requestData.keywords.length > 0) {
+          const { optimizeMetaData } = await import("../services/claude");
+          
+          // Optimize Meta Title
+          if (generatedContent.title) {
+            console.log("Optimizing meta title with keywords:", requestData.keywords);
+            const metaTitleOptimization = await optimizeMetaData(
+              generatedContent.title, 
+              requestData.keywords, 
+              "title"
+            );
+            
+            if (metaTitleOptimization && metaTitleOptimization.trim().length > 0) {
+              optimizedMetaTitle = metaTitleOptimization;
+              console.log("✅ Meta title optimized:", optimizedMetaTitle);
+            } else {
+              console.warn("Meta title optimization returned empty result, keeping original");
+            }
+          }
+          
+          // Optimize Meta Description
+          if (generatedContent.metaDescription) {
+            console.log("Optimizing meta description with keywords:", requestData.keywords);
+            const metaDescOptimization = await optimizeMetaData(
+              generatedContent.metaDescription, 
+              requestData.keywords, 
+              "description"
+            );
+            
+            if (metaDescOptimization && metaDescOptimization.trim().length > 0) {
+              optimizedMetaDescription = metaDescOptimization;
+              console.log("✅ Meta description optimized:", optimizedMetaDescription);
+            } else {
+              console.warn("Meta description optimization returned empty result, keeping original");
+            }
+          }
+        } else {
+          console.log("Skipping automatic meta optimization: Missing Claude API key or keywords");
+        }
+      } catch (metaOptimizationError) {
+        console.error("Automatic meta optimization failed, keeping original values:", metaOptimizationError);
+        // Continue with original values if optimization fails
+      }
+      
+      // 9. Return the result with optimized meta data and selected media included for preview
       return res.json({
         success: true,
         contentId,
@@ -2363,7 +2415,8 @@ Place this at a logical position in the content, typically after introducing a c
         content: finalContent, // Use finalContent which includes embedded secondary media
         title: generatedContent.title,
         tags: generatedContent.tags,
-        metaDescription: generatedContent.metaDescription || '',
+        metaDescription: optimizedMetaDescription,
+        metaTitle: optimizedMetaTitle, // Include the optimized meta title
         featuredImage: featuredImage,
         // Include selected media for preview display
         secondaryImages: requestData.secondaryImages || [],
