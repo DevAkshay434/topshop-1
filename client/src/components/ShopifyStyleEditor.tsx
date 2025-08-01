@@ -24,7 +24,10 @@ import {
   Undo,
   Redo,
   Type,
-  MoreHorizontal
+  MoreHorizontal,
+  MoveLeft,
+  MoveRight,
+  Maximize
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCallback, useEffect } from 'react'
@@ -80,6 +83,47 @@ export function ShopifyStyleEditor({
     const url = window.prompt('Enter image URL:')
     if (url && editor) {
       editor.chain().focus().setImage({ src: url }).run()
+    }
+  }, [editor])
+
+  const setImageAlignment = useCallback((alignment: 'left' | 'center' | 'right') => {
+    if (editor) {
+      const { from } = editor.state.selection
+      const nodeAt = editor.state.doc.nodeAt(from)
+      
+      // Find image node in the selection or around the cursor
+      let imageNode = null
+      let imagePos = null
+      
+      if (nodeAt && nodeAt.type.name === 'image') {
+        imageNode = nodeAt
+        imagePos = from
+      } else {
+        // Look for image nodes around the selection
+        editor.state.doc.nodesBetween(from - 1, from + 1, (node, pos) => {
+          if (node.type.name === 'image' && !imageNode) {
+            imageNode = node
+            imagePos = pos
+          }
+        })
+      }
+      
+      if (imageNode && imagePos !== null) {
+        // Remove existing alignment classes and add new one
+        const currentClass = imageNode.attrs.class || ''
+        const baseClass = 'shopify-image'
+        const alignmentClass = `shopify-image-${alignment}`
+        
+        const cleanClass = currentClass
+          .replace(/shopify-image-left|shopify-image-center|shopify-image-right/g, '')
+          .trim()
+        
+        const newClass = `${baseClass} ${alignmentClass} ${cleanClass}`.trim()
+        
+        editor.chain().focus().setNodeSelection(imagePos).updateAttributes('image', {
+          class: newClass
+        }).run()
+      }
     }
   }, [editor])
 
@@ -259,6 +303,36 @@ export function ShopifyStyleEditor({
               >
                 <ImageIcon className="h-4 w-4" />
               </ToolbarButton>
+            </div>
+
+            <Separator orientation="vertical" className="h-6" />
+
+            {/* Image alignment controls */}
+            <div className="flex items-center gap-1">
+              <ToolbarButton
+                onClick={() => setImageAlignment('left')}
+                title="Align Image Left"
+              >
+                <MoveLeft className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton
+                onClick={() => setImageAlignment('center')}
+                title="Align Image Center"
+              >
+                <Maximize className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton
+                onClick={() => setImageAlignment('right')}
+                title="Align Image Right"
+              >
+                <MoveRight className="h-4 w-4" />
+              </ToolbarButton>
+            </div>
+
+            <Separator orientation="vertical" className="h-6" />
+
+            {/* Quote and HR */}
+            <div className="flex items-center gap-1">
               <ToolbarButton
                 onClick={() => editor.chain().focus().toggleBlockquote().run()}
                 isActive={editor.isActive('blockquote')}
@@ -297,10 +371,10 @@ export function ShopifyStyleEditor({
         </div>
       )}
       
-      <div className="prose prose-sm max-w-none p-4">
+      <div className="prose prose-sm max-w-none p-4 h-[400px] overflow-y-auto border-t">
         <EditorContent 
           editor={editor} 
-          className="min-h-[400px] focus:outline-none"
+          className="h-full focus:outline-none"
         />
       </div>
       

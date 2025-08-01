@@ -74,6 +74,58 @@
   vertical-align: top;
 }
 
+/* Image alignment styles */
+.ProseMirror .shopify-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.ProseMirror .shopify-image-left {
+  float: left;
+  margin: 0.5rem 1rem 0.5rem 0;
+  display: inline-block;
+}
+
+.ProseMirror .shopify-image-center {
+  margin: 1rem auto;
+  display: block;
+  text-align: center;
+}
+
+.ProseMirror .shopify-image-right {
+  float: right;
+  margin: 0.5rem 0 0.5rem 1rem;
+  display: inline-block;
+}
+
+/* Editor scrolling improvements */
+.ProseMirror {
+  padding: 1rem;
+  min-height: calc(400px - 2rem);
+}
+
+/* Custom scrollbar for the editor */
+.prose::-webkit-scrollbar {
+  width: 8px;
+}
+
+.prose::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 4px;
+}
+
+.prose::-webkit-scrollbar-thumb {
+  background: #c1c8cd;
+  border-radius: 4px;
+}
+
+.prose::-webkit-scrollbar-thumb:hover {
+  background: #a0a8b0;
+}
+
 .ProseMirror .shopify-table th {
   background-color: #f6f6f7;
   font-weight: 600;
