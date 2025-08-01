@@ -277,6 +277,7 @@ export default function AdminPanel() {
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isOptimizingMeta, setIsOptimizingMeta] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [contentUpdateCounter, setContentUpdateCounter] = useState(0);
   const [contentEditorKey, setContentEditorKey] = useState(0); // Force re-render of editor
@@ -5022,8 +5023,11 @@ export default function AdminPanel() {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={isOptimizingMeta}
                             onClick={async () => {
                               try {
+                                setIsOptimizingMeta(true);
+                                
                                 // Gather context for AI optimization
                                 const formData = form.getValues();
                                 const currentTitle = generatedContent.title || "";
@@ -5081,11 +5085,22 @@ export default function AdminPanel() {
                                 }
                                 
                                 setGeneratedContent(prev => ({ ...prev, metaTitle: optimizedTitle }));
+                              } finally {
+                                setIsOptimizingMeta(false);
                               }
                             }}
                           >
-                            <Zap className="h-4 w-4 mr-1" />
-                            Auto-Optimize
+                            {isOptimizingMeta ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
+                                Optimizing...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-4 w-4 mr-1" />
+                                Auto-Optimize
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -5097,8 +5112,10 @@ export default function AdminPanel() {
                               const value = e.target.value.slice(0, 70); // Hard limit at 70 chars
                               setGeneratedContent(prev => ({ ...prev, metaTitle: value }));
                             }}
-                            placeholder="Enter SEO-optimized meta title..."
+                            placeholder={isOptimizingMeta ? "AI is optimizing your meta title..." : "Enter SEO-optimized meta title..."}
+                            disabled={isOptimizingMeta}
                             className={`pr-16 ${
+                              isOptimizingMeta ? 'bg-gray-50' :
                               (generatedContent.metaTitle || generatedContent.title || "").length > 60 
                                 ? 'border-red-300 focus:border-red-500' 
                                 : (generatedContent.metaTitle || generatedContent.title || "").length > 50
@@ -5106,6 +5123,11 @@ export default function AdminPanel() {
                                 : 'border-green-300 focus:border-green-500'
                             }`}
                           />
+                          {isOptimizingMeta && (
+                            <div className="absolute left-3 top-2.5">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
+                            </div>
+                          )}
                           <div className={`absolute right-3 top-2.5 text-xs font-medium ${
                             (generatedContent.metaTitle || generatedContent.title || "").length > 60 
                               ? 'text-red-500' 
@@ -5141,8 +5163,11 @@ export default function AdminPanel() {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={isOptimizingMeta}
                             onClick={async () => {
                               try {
+                                setIsOptimizingMeta(true);
+                                
                                 // Gather context for AI optimization
                                 const formData = form.getValues();
                                 const currentTitle = generatedContent.title || "";
@@ -5215,11 +5240,22 @@ export default function AdminPanel() {
                                 }
                                 
                                 setGeneratedContent(prev => ({ ...prev, metaDescription: description }));
+                              } finally {
+                                setIsOptimizingMeta(false);
                               }
                             }}
                           >
-                            <Zap className="h-4 w-4 mr-1" />
-                            Auto-Generate
+                            {isOptimizingMeta ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
+                                Optimizing...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-4 w-4 mr-1" />
+                                Auto-Generate
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -5231,9 +5267,11 @@ export default function AdminPanel() {
                               const value = e.target.value.slice(0, 170); // Hard limit at 170 chars
                               setGeneratedContent(prev => ({ ...prev, metaDescription: value }));
                             }}
-                            placeholder="Enter compelling meta description to improve click-through rates..."
+                            placeholder={isOptimizingMeta ? "AI is generating your meta description..." : "Enter compelling meta description to improve click-through rates..."}
+                            disabled={isOptimizingMeta}
                             rows={3}
                             className={`pr-16 resize-none ${
+                              isOptimizingMeta ? 'bg-gray-50' :
                               (generatedContent.metaDescription || "").length > 160 
                                 ? 'border-red-300 focus:border-red-500' 
                                 : (generatedContent.metaDescription || "").length > 120
@@ -5243,6 +5281,11 @@ export default function AdminPanel() {
                                 : 'border-gray-300'
                             }`}
                           />
+                          {isOptimizingMeta && (
+                            <div className="absolute left-3 top-3">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
+                            </div>
+                          )}
                           <div className={`absolute right-3 bottom-3 text-xs font-medium ${
                             (generatedContent.metaDescription || "").length > 160 
                               ? 'text-red-500' 
