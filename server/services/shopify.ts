@@ -1373,6 +1373,63 @@ export class ShopifyService {
   }
 
   /**
+   * Ensure metafield definitions exist for blog posts SEO fields
+   * This makes the metafields visible in Shopify admin interface
+   */
+  async ensureBlogPostMetafieldDefinitions(store: any): Promise<void> {
+    try {
+      const client = this.getClient(store);
+
+      // Check if title_tag definition exists for blog posts
+      try {
+        const titleDefinitionResponse = await client.get('/metafield_definitions.json?owner_resource=article&namespace=global&key=title_tag');
+        if (!titleDefinitionResponse.data.metafield_definitions?.length) {
+          // Create title_tag definition
+          await client.post('/metafield_definitions.json', {
+            metafield_definition: {
+              namespace: 'global',
+              key: 'title_tag',
+              name: 'SEO Title',
+              description: 'Custom title for search engines and browser tabs',
+              type: 'single_line_text_field',
+              owner_resource: 'article',
+              pin: true
+            }
+          });
+          console.log(`✓ Created SEO title metafield definition for blog posts`);
+        }
+      } catch (defError) {
+        console.log(`SEO title definition already exists or creation failed:`, defError?.response?.status);
+      }
+
+      // Check if description_tag definition exists for blog posts
+      try {
+        const descDefinitionResponse = await client.get('/metafield_definitions.json?owner_resource=article&namespace=global&key=description_tag');
+        if (!descDefinitionResponse.data.metafield_definitions?.length) {
+          // Create description_tag definition
+          await client.post('/metafield_definitions.json', {
+            metafield_definition: {
+              namespace: 'global',
+              key: 'description_tag',
+              name: 'SEO Description',
+              description: 'Custom meta description for search engines',
+              type: 'single_line_text_field',
+              owner_resource: 'article',
+              pin: true
+            }
+          });
+          console.log(`✓ Created SEO description metafield definition for blog posts`);
+        }
+      } catch (defError) {
+        console.log(`SEO description definition already exists or creation failed:`, defError?.response?.status);
+      }
+
+    } catch (error) {
+      console.log(`Note: Could not ensure metafield definitions (may not be needed):`, error?.response?.status);
+    }
+  }
+
+  /**
    * Add SEO metafields to a Shopify article after creation
    * @param store The store to add metafields to
    * @param blogId The ID of the blog containing the article
@@ -1382,6 +1439,10 @@ export class ShopifyService {
   async addSEOMetafieldsToArticle(store: any, blogId: string, articleId: string, post: any): Promise<void> {
     try {
       console.log(`🔧 CREATING SEO METAFIELDS for article ${articleId} in blog ${blogId} in store ${store.shopName}`);
+      
+      // Ensure metafield definitions exist first (makes fields visible in admin)
+      await this.ensureBlogPostMetafieldDefinitions(store);
+      
       const client = this.getClient(store);
       
       // Add meta title metafield for SEO (separate from visible title)
