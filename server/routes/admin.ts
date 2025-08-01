@@ -1310,6 +1310,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     console.log("   - Store ID header:", req.headers['x-store-id']);
     console.log("   - Request body keys:", Object.keys(requestData));
     console.log("   - Title:", requestData.title);
+    console.log("   - Keywords:", requestData.keywords ? `${requestData.keywords.length} keywords: ${requestData.keywords.join(', ')}` : "Missing/Empty");
     console.log("   - Primary Image:", requestData.primaryImage ? "Present" : "Missing");
     console.log("   - Secondary Images:", requestData.secondaryImages ? `${requestData.secondaryImages.length} images` : "Missing/Empty");
     console.log("   - Products Info:", requestData.productsInfo ? `${requestData.productsInfo.length} products` : "Missing");
@@ -2337,16 +2338,23 @@ Place this at a logical position in the content, typically after introducing a c
       try {
         console.log("🚀 Starting automatic meta optimization with Claude AI...");
         
-        // Only proceed if we have Claude API key
-        if (process.env.ANTHROPIC_API_KEY && requestData.keywords && requestData.keywords.length > 0) {
+        // Check for keywords from multiple possible sources
+        const availableKeywords = requestData.keywords || [];
+        const hasKeywords = availableKeywords && availableKeywords.length > 0;
+        const hasClaudeKey = !!process.env.ANTHROPIC_API_KEY;
+        
+        console.log(`Meta optimization check: Claude API key = ${hasClaudeKey}, Keywords = ${hasKeywords} (${availableKeywords.length} keywords)`);
+        
+        // Only proceed if we have Claude API key and either keywords OR content to optimize
+        if (hasClaudeKey && (hasKeywords || generatedContent.title)) {
           const { optimizeMetaData } = await import("../services/claude");
           
           // Optimize Meta Title
           if (generatedContent.title) {
-            console.log("Optimizing meta title with keywords:", requestData.keywords);
+            console.log("Optimizing meta title with keywords:", availableKeywords);
             const metaTitleOptimization = await optimizeMetaData(
               generatedContent.title, 
-              requestData.keywords, 
+              availableKeywords, 
               "title"
             );
             
@@ -2358,12 +2366,20 @@ Place this at a logical position in the content, typically after introducing a c
             }
           }
           
-          // Optimize Meta Description
-          if (generatedContent.metaDescription) {
-            console.log("Optimizing meta description with keywords:", requestData.keywords);
+          // Optimize Meta Description - create one if none exists
+          let sourceMetaDescription = generatedContent.metaDescription;
+          if (!sourceMetaDescription && generatedContent.content) {
+            // Generate a basic meta description from content if none exists
+            const plainText = generatedContent.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            sourceMetaDescription = plainText.substring(0, 140) + '...';
+            console.log("Generated fallback meta description from content");
+          }
+          
+          if (sourceMetaDescription) {
+            console.log("Optimizing meta description with keywords:", availableKeywords);
             const metaDescOptimization = await optimizeMetaData(
-              generatedContent.metaDescription, 
-              requestData.keywords, 
+              sourceMetaDescription, 
+              availableKeywords, 
               "description"
             );
             
@@ -2372,10 +2388,11 @@ Place this at a logical position in the content, typically after introducing a c
               console.log("✅ Meta description optimized:", optimizedMetaDescription);
             } else {
               console.warn("Meta description optimization returned empty result, keeping original");
+              optimizedMetaDescription = sourceMetaDescription;
             }
           }
         } else {
-          console.log("Skipping automatic meta optimization: Missing Claude API key or keywords");
+          console.log(`Skipping automatic meta optimization: Claude API key = ${hasClaudeKey}, Keywords available = ${hasKeywords}, Title available = ${!!generatedContent.title}`);
         }
       } catch (metaOptimizationError) {
         console.error("Automatic meta optimization failed, keeping original values:", metaOptimizationError);
