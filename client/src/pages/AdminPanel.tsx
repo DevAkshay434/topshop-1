@@ -2484,6 +2484,17 @@ export default function AdminPanel() {
         // Force content editor to re-render with new content
         setContentEditorKey(prev => prev + 1);
         
+        // Scroll to content preview area after successful generation
+        setTimeout(() => {
+          const contentPreview = document.querySelector('[data-content-preview]');
+          if (contentPreview) {
+            contentPreview.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }, 500); // Delay to allow content to render
+        
         toast({
           title: "Content generated successfully",
           description: "Your content has been generated and is ready for review in the Content Preview section.",
@@ -4445,16 +4456,28 @@ export default function AdminPanel() {
                             disabled={isGenerating || !isReadyToGenerateContent()}
                             onClick={() => {
                               if (isReadyToGenerateContent()) {
-                                // Scroll to top to show content preview area
-                                window.scrollTo({ 
-                                  top: 0, 
-                                  behavior: 'smooth' 
-                                });
-                                
-                                // Manually trigger form submission
+                                // Manually trigger form submission first
                                 const values = form.getValues();
                                 console.log("Manual form submission triggered with values:", values);
                                 handleSubmit(values);
+                                
+                                // Delay scroll to ensure loading state is visible
+                                setTimeout(() => {
+                                  // Scroll to content preview area
+                                  const contentPreview = document.querySelector('[data-content-preview]');
+                                  if (contentPreview) {
+                                    contentPreview.scrollIntoView({ 
+                                      behavior: 'smooth',
+                                      block: 'start'
+                                    });
+                                  } else {
+                                    // Fallback to scroll to top
+                                    window.scrollTo({ 
+                                      top: 0, 
+                                      behavior: 'smooth' 
+                                    });
+                                  }
+                                }, 100); // Small delay to show loading state
                               }
                             }}
                             title={!isReadyToGenerateContent() 
@@ -4499,7 +4522,7 @@ export default function AdminPanel() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-1">
+            <Card className="lg:col-span-1" data-content-preview>
               <CardHeader>
                 <CardTitle>Content Preview</CardTitle>
                 <CardDescription>
