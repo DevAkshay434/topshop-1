@@ -461,36 +461,11 @@ export class ShopifyService {
         })()
       };
 
-      // CRITICAL FIX: Proper SEO handling - Meta Title ≠ Page Title
-      // Page Title (visible headline) = post.title
-      // Meta Title (SEO) = post.metaTitle -> goes to Shopify metafields
-      
-      // Always use the regular title as the visible page title
+      // CRITICAL FIX: Use article title as visible heading (NOT meta title)
+      // Article title = visible blog post heading
+      // Meta title = SEO only (added via metafields after creation)
       articleData.title = post.title;
-      console.log(`✓ Using page title (visible headline): ${post.title}`);
-      
-      // Add meta description to summary_html for SEO
-      if ((post as any).metaDescription) {
-        articleData.summary_html = (post as any).metaDescription;
-        console.log(`✓ Added meta description to summary_html: ${(post as any).metaDescription}`);
-      } else {
-        console.log(`✗ No meta description found in post object`);
-      }
-      
-      // Add meta title as metafield for SEO (separate from visible title)
-      if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
-        articleData.metafields = [
-          {
-            namespace: 'seo',
-            key: 'title_tag',
-            value: (post as any).metaTitle,
-            type: 'single_line_text_field'
-          }
-        ];
-        console.log(`✓ Added meta title to article metafield: ${(post as any).metaTitle}`);
-      } else {
-        console.log(`✗ No meta title found for SEO metafield`);
-      }
+      console.log(`✓ Using article title as blog post heading: ${post.title}`);
       
       // CRITICAL FIX: Add featured image if it exists and is properly formatted
       if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
@@ -761,6 +736,12 @@ export class ShopifyService {
           isScheduled: isScheduledPublishing
         }
       });
+
+      // CRITICAL FIX: Add SEO metafields AFTER article creation
+      // This is required because Shopify REST API doesn't support metafields during article creation
+      if (post && response.data.article.id) {
+        await this.addSEOMetafieldsToArticle(store, blogId.toString(), response.data.article.id.toString(), post);
+      }
       
       // Verify the scheduling was successful by checking if the published_at date matches
       // what we sent (or is very close to it)
@@ -1388,6 +1369,53 @@ export class ShopifyService {
     } catch (error: any) {
       console.error(`Error creating page in Shopify store ${store.shopName}:`, error);
       throw new Error(`Failed to create page: ${error?.message || 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Add SEO metafields to a Shopify article after creation
+   * @param store The store to add metafields to
+   * @param blogId The ID of the blog containing the article
+   * @param articleId The ID of the article to add metafields to
+   * @param post The post data containing SEO information
+   */
+  async addSEOMetafieldsToArticle(store: any, blogId: string, articleId: string, post: any): Promise<void> {
+    try {
+      console.log(`🔧 CREATING SEO METAFIELDS for article ${articleId} in blog ${blogId} in store ${store.shopName}`);
+      const client = this.getClient(store);
+      
+      // Add meta title metafield for SEO (separate from visible title)
+      if ((post as any).metaTitle && (post as any).metaTitle.trim()) {
+        const titleMetafieldData = {
+          metafield: {
+            namespace: 'global',
+            key: 'title_tag',
+            value: (post as any).metaTitle,
+            type: 'single_line_text_field'
+          }
+        };
+        
+        await client.post(`/blogs/${blogId}/articles/${articleId}/metafields.json`, titleMetafieldData);
+        console.log(`✓ Added SEO title metafield to article: ${(post as any).metaTitle}`);
+      }
+      
+      // Add meta description metafield for SEO
+      if ((post as any).metaDescription && (post as any).metaDescription.trim()) {
+        const descriptionMetafieldData = {
+          metafield: {
+            namespace: 'global',
+            key: 'description_tag',
+            value: (post as any).metaDescription,
+            type: 'single_line_text_field'
+          }
+        };
+        
+        await client.post(`/blogs/${blogId}/articles/${articleId}/metafields.json`, descriptionMetafieldData);
+        console.log(`✓ Added SEO description metafield to article: ${(post as any).metaDescription}`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error adding SEO metafields to article ${articleId}:`, error);
     }
   }
 
