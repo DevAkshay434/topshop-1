@@ -1380,52 +1380,64 @@ export class ShopifyService {
     try {
       const client = this.getClient(store);
 
-      // Check if title_tag definition exists for blog posts
+      console.log(`🔧 Ensuring SEO metafield definitions exist for articles in store ${store.shopName}`);
+
+      // Create title_tag definition for articles
       try {
-        const titleDefinitionResponse = await client.get('/metafield_definitions.json?owner_resource=article&namespace=global&key=title_tag');
-        if (!titleDefinitionResponse.data.metafield_definitions?.length) {
-          // Create title_tag definition
-          await client.post('/metafield_definitions.json', {
-            metafield_definition: {
-              namespace: 'global',
-              key: 'title_tag',
-              name: 'SEO Title',
-              description: 'Custom title for search engines and browser tabs',
-              type: 'single_line_text_field',
-              owner_resource: 'article',
-              pin: true
-            }
-          });
-          console.log(`✓ Created SEO title metafield definition for blog posts`);
+        await client.post('/metafield_definitions.json', {
+          metafield_definition: {
+            namespace: 'global',
+            key: 'title_tag',
+            name: 'SEO Title',
+            description: 'Custom page title for search engines (appears in browser tab and search results)',
+            type: 'single_line_text_field',
+            owner_resource: 'article',
+            pin: true,
+            visibilities: [{
+              name: 'api'
+            }, {
+              name: 'storefront'
+            }]
+          }
+        });
+        console.log(`✓ Created SEO title metafield definition for articles`);
+      } catch (defError: any) {
+        if (defError?.response?.status === 422) {
+          console.log(`SEO title definition already exists for articles`);
+        } else {
+          console.log(`SEO title definition creation failed:`, defError?.response?.status);
         }
-      } catch (defError) {
-        console.log(`SEO title definition already exists or creation failed:`, defError?.response?.status);
       }
 
-      // Check if description_tag definition exists for blog posts
+      // Create description_tag definition for articles
       try {
-        const descDefinitionResponse = await client.get('/metafield_definitions.json?owner_resource=article&namespace=global&key=description_tag');
-        if (!descDefinitionResponse.data.metafield_definitions?.length) {
-          // Create description_tag definition
-          await client.post('/metafield_definitions.json', {
-            metafield_definition: {
-              namespace: 'global',
-              key: 'description_tag',
-              name: 'SEO Description',
-              description: 'Custom meta description for search engines',
-              type: 'single_line_text_field',
-              owner_resource: 'article',
-              pin: true
-            }
-          });
-          console.log(`✓ Created SEO description metafield definition for blog posts`);
+        await client.post('/metafield_definitions.json', {
+          metafield_definition: {
+            namespace: 'global',
+            key: 'description_tag',
+            name: 'SEO Description',
+            description: 'Custom meta description for search engines (appears in search results)',
+            type: 'single_line_text_field',
+            owner_resource: 'article',
+            pin: true,
+            visibilities: [{
+              name: 'api'
+            }, {
+              name: 'storefront'
+            }]
+          }
+        });
+        console.log(`✓ Created SEO description metafield definition for articles`);
+      } catch (defError: any) {
+        if (defError?.response?.status === 422) {
+          console.log(`SEO description definition already exists for articles`);
+        } else {
+          console.log(`SEO description definition creation failed:`, defError?.response?.status);
         }
-      } catch (defError) {
-        console.log(`SEO description definition already exists or creation failed:`, defError?.response?.status);
       }
 
-    } catch (error) {
-      console.log(`Note: Could not ensure metafield definitions (may not be needed):`, error?.response?.status);
+    } catch (error: any) {
+      console.log(`Note: Could not ensure metafield definitions:`, error?.response?.status || error?.message);
     }
   }
 
