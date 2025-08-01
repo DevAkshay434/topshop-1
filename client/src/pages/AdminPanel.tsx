@@ -5444,14 +5444,7 @@ export default function AdminPanel() {
                       })()}
                     </div>
                     
-                    {generatedContent.metaDescription && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-semibold">Meta Description:</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {generatedContent.metaDescription}
-                        </p>
-                      </div>
-                    )}
+
 
 
                     
