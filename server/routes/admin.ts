@@ -1818,38 +1818,13 @@ Place this at a logical position in the content, typically after introducing a c
       finalContent = finalContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
 
       
-      // Add featured image at the beginning if available
-      if (featuredImage) {
-        // Make sure we have a valid image URL - use Pexels medium or large src image
-        // Only use URL from src properties, which are the actual image URLs
-        const imageUrl = featuredImage.src?.large || featuredImage.src?.medium || featuredImage.src?.small || featuredImage.src?.original;
-        
-        if (!imageUrl) {
-          console.warn("Featured image is missing valid src URLs, skipping featured image");
-        } else {
-          console.log(`Using featured image URL: ${imageUrl}`);
-          
-          // For Shopify compatibility, we need to use direct image URLs
-          // This will ensure images work both in preview and on Shopify
-          console.log(`Using direct image URL for featured image: ${imageUrl}`);
-          
-          // Remove photographer credit as per request
-          
-          // If we have products, link the featured image to the first product
-          let featuredImageHtml = '';
-          if (productsInfo.length > 0) {
-            // Use the first product URL for the featured image with absolute URL
-            const productUrl = `https://${store.shopName}/products/${productsInfo[0].handle}`;
-            console.log(`Linking featured image to product URL: ${productUrl}`);
-            
-            featuredImageHtml = `<div class="image-container" style="text-align: center; margin: 20px 0;"><a href="${productUrl}" title="${productsInfo[0].title}"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></a></div>`;
-          } else {
-            // No product to link to
-            featuredImageHtml = `<div class="image-container" style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${featuredImage.alt || requestData.title}" class="featured-image" style="max-width: 100%; height: auto;" /></div>`;
-          }
-          
-          finalContent = `${featuredImageHtml}\n${finalContent}`;
-        }
+      // DISABLED: Featured image insertion into content body
+      // Featured image is now displayed separately in the preview UI
+      // and handled by Shopify's featured image system when publishing
+      // This prevents duplicate image display in the content preview
+      if (false && featuredImage) {
+        // This code is disabled to prevent featured image from appearing in content body
+        console.log("Featured image handling disabled - image will be displayed separately from content body");
       }
       
       // LEGACY IMAGE INSERTION - DISABLED TO PREVENT DUPLICATION
