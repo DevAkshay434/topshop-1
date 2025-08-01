@@ -6,6 +6,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { 
   Bold, 
   Italic, 
@@ -27,9 +28,9 @@ import {
   MoreHorizontal,
   MoveLeft,
   MoveRight,
-  Maximize
+  Maximize,
+  Trash
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { useCallback, useEffect } from 'react'
 
 interface ShopifyStyleEditorProps {
@@ -49,8 +50,11 @@ export function ShopifyStyleEditor({
     extensions: [
       StarterKit,
       Image.configure({
+        inline: false,
+        allowBase64: false,
         HTMLAttributes: {
           class: 'shopify-image',
+          draggable: false,
         },
       }),
       Link.configure({
@@ -86,43 +90,87 @@ export function ShopifyStyleEditor({
     }
   }, [editor])
 
+  const deleteSelectedImage = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().deleteSelection().run()
+    }
+  }, [editor])
+
+  const isImageSelected = useCallback(() => {
+    if (!editor) return false
+    
+    // Simple check if current selection contains an image
+    const { selection } = editor.state
+    const { from, to } = selection
+    
+    let hasImage = false
+    editor.state.doc.nodesBetween(from, to, (node) => {
+      if (node.type.name === 'image') {
+        hasImage = true
+      }
+    })
+    
+    return hasImage
+  }, [editor])
+
   const setImageAlignment = useCallback((alignment: 'left' | 'center' | 'right') => {
     if (editor) {
-      const { from } = editor.state.selection
-      const nodeAt = editor.state.doc.nodeAt(from)
+      const { selection } = editor.state
+      const { from, to } = selection
       
-      // Find image node in the selection or around the cursor
-      let imageNode = null
-      let imagePos = null
-      
-      if (nodeAt && nodeAt.type.name === 'image') {
-        imageNode = nodeAt
-        imagePos = from
-      } else {
-        // Look for image nodes around the selection
-        editor.state.doc.nodesBetween(from - 1, from + 1, (node, pos) => {
-          if (node.type.name === 'image' && !imageNode) {
-            imageNode = node
-            imagePos = pos
-          }
-        })
+      // Check if an image is currently selected
+      if (selection.node && selection.node.type.name === 'image') {
+        // Direct image selection
+        const alignmentClass = `shopify-image shopify-image-${alignment}`
+        editor.chain().focus().updateAttributes('image', {
+          class: alignmentClass
+        }).run()
+        return
       }
       
-      if (imageNode && imagePos !== null) {
-        // Remove existing alignment classes and add new one
-        const currentClass = imageNode.attrs.class || ''
-        const baseClass = 'shopify-image'
-        const alignmentClass = `shopify-image-${alignment}`
-        
-        const cleanClass = currentClass
-          .replace(/shopify-image-left|shopify-image-center|shopify-image-right/g, '')
-          .trim()
-        
-        const newClass = `${baseClass} ${alignmentClass} ${cleanClass}`.trim()
-        
-        editor.chain().focus().setNodeSelection(imagePos).updateAttributes('image', {
-          class: newClass
-        }).run()
+      // Find image nodes in the current selection range
+      let imageFound = false
+      editor.state.doc.nodesBetween(from, to, (node, pos) => {
+        if (node.type.name === 'image' && !imageFound) {
+          imageFound = true
+          const alignmentClass = `shopify-image shopify-image-${alignment}`
+          
+          // Select the image and update its attributes
+          editor.chain()
+            .focus()
+            .setNodeSelection(pos)
+            .updateAttributes('image', {
+              class: alignmentClass
+            })
+            .run()
+        }
+      })
+      
+      // If no image found in selection, check around cursor position
+      if (!imageFound) {
+        const nodeAt = editor.state.doc.nodeAt(from)
+        if (nodeAt && nodeAt.type.name === 'image') {
+          const alignmentClass = `shopify-image shopify-image-${alignment}`
+          editor.chain().focus().updateAttributes('image', {
+            class: alignmentClass
+          }).run()
+        } else {
+          // Look for nearby images
+          editor.state.doc.nodesBetween(Math.max(0, from - 5), Math.min(editor.state.doc.content.size, from + 5), (node, pos) => {
+            if (node.type.name === 'image' && !imageFound) {
+              imageFound = true
+              const alignmentClass = `shopify-image shopify-image-${alignment}`
+              
+              editor.chain()
+                .focus()
+                .setNodeSelection(pos)
+                .updateAttributes('image', {
+                  class: alignmentClass
+                })
+                .run()
+            }
+          })
+        }
       }
     }
   }, [editor])
@@ -145,13 +193,15 @@ export function ShopifyStyleEditor({
     isActive = false, 
     disabled = false, 
     children, 
-    title 
+    title,
+    className = ""
   }: {
     onClick: () => void
     isActive?: boolean
     disabled?: boolean
     children: React.ReactNode
     title: string
+    className?: string
   }) => (
     <Button
       variant={isActive ? "default" : "ghost"}
@@ -161,7 +211,8 @@ export function ShopifyStyleEditor({
       title={title}
       className={cn(
         "h-8 w-8 p-0",
-        isActive && "bg-blue-100 text-blue-900 border border-blue-300"
+        isActive && "bg-blue-100 text-blue-900 border border-blue-300",
+        className
       )}
     >
       {children}
@@ -307,27 +358,40 @@ export function ShopifyStyleEditor({
 
             <Separator orientation="vertical" className="h-6" />
 
-            {/* Image alignment controls */}
-            <div className="flex items-center gap-1">
-              <ToolbarButton
-                onClick={() => setImageAlignment('left')}
-                title="Align Image Left"
-              >
-                <MoveLeft className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={() => setImageAlignment('center')}
-                title="Align Image Center"
-              >
-                <Maximize className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={() => setImageAlignment('right')}
-                title="Align Image Right"
-              >
-                <MoveRight className="h-4 w-4" />
-              </ToolbarButton>
-            </div>
+            {/* Image alignment controls - only show when image is selected */}
+            {isImageSelected() && (
+              <>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 mr-2">Image:</span>
+                  <ToolbarButton
+                    onClick={() => setImageAlignment('left')}
+                    title="Align Image Left"
+                  >
+                    <MoveLeft className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={() => setImageAlignment('center')}
+                    title="Align Image Center"
+                  >
+                    <Maximize className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={() => setImageAlignment('right')}
+                    title="Align Image Right"
+                  >
+                    <MoveRight className="h-4 w-4" />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    onClick={deleteSelectedImage}
+                    title="Delete Selected Image"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </ToolbarButton>
+                </div>
+              </>
+            )}
 
             <Separator orientation="vertical" className="h-6" />
 

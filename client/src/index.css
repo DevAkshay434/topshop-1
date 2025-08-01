@@ -81,6 +81,20 @@
   display: block;
   margin: 1rem 0;
   border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.ProseMirror .shopify-image:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.ProseMirror .shopify-image.ProseMirror-selectednode {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px #2563eb;
+  outline: none;
 }
 
 .ProseMirror .shopify-image-left {
@@ -99,6 +113,16 @@
   float: right;
   margin: 0.5rem 0 0.5rem 1rem;
   display: inline-block;
+}
+
+/* Image wrapper for better selection */
+.ProseMirror img {
+  outline: none;
+}
+
+.ProseMirror .ProseMirror-selectednode img {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 /* Editor scrolling improvements */
