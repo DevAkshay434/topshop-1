@@ -65,9 +65,9 @@ function addTableOfContents(content: string): string {
     return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate clean, Shopify-compatible TOC HTML
+  // Generate clean, Shopify-compatible TOC HTML with proper spacing
   const tocHtml = `
-<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0;">
+<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
   <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
     📋 Table of Contents
   </h3>
@@ -76,10 +76,14 @@ function addTableOfContents(content: string): string {
       `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a></li>`
     ).join('')}
   </ol>
-</div>`;
+</div>
+
+`;
   
-  // Replace the TOC marker with the generated TOC
-  return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
+  // Replace the TOC marker with the generated TOC and ensure proper spacing
+  // This regex handles cases where there might not be proper paragraph breaks after the marker
+  return content.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
+                .replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
 }
 
 // Function to remove any H1 tags from content to prevent title duplication
@@ -395,7 +399,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     
     IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
     - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
-    - Start the content directly with the Table of Contents placement marker, then the introduction
+    - Start the content with the Table of Contents placement marker, followed by a paragraph break, then the introduction
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
     - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
     - Make sure sections flow logically and coherently
@@ -429,11 +433,13 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     TABLE OF CONTENTS REQUIREMENTS:
     - AUTOMATICALLY include a Table of Contents at the very beginning of the content
     - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
+    - IMPORTANT: After the TOC marker, add a blank line or proper paragraph break before starting the introduction
     - The system will automatically generate a TOC using all H2 headings in your content
     - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
     - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
     - Include an id="faq" on your FAQ section if present
     - The TOC will be styled with a clean, professional appearance and will improve user navigation
+    - Ensure clean separation between TOC and the introduction paragraph
     
     FAQ SECTION FORMATTING (if FAQ is enabled):
     - Format all FAQ questions with "Q:" prefix (colon, not period)
