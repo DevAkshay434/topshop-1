@@ -65,15 +65,15 @@ function addTableOfContents(content: string): string {
     return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate TOC HTML
+  // Generate clean, Shopify-compatible TOC HTML
   const tocHtml = `
-<div class="table-of-contents" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-  <h3 style="margin-top: 0; color: #495057; font-size: 18px; font-weight: 600; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-bottom: 15px;">
+<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0;">
+  <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
     📋 Table of Contents
   </h3>
-  <ol style="margin: 0; padding: 0 0 0 20px; line-height: 1.6;">
+  <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
     ${headings.map(heading => 
-      `<li style="margin: 8px 0;"><a href="#${heading.id}" style="color: #007bff; text-decoration: none; font-weight: 500; transition: color 0.2s ease;" onmouseover="this.style.color='#0056b3'" onmouseout="this.style.color='#007bff'">${heading.title}</a></li>`
+      `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a></li>`
     ).join('')}
   </ol>
 </div>`;
