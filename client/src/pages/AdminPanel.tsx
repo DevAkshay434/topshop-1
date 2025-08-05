@@ -1315,6 +1315,21 @@ export default function AdminPanel() {
 
 
 
+  // Utility function to calculate reading time
+  const calculateReadingTime = (content: string): number => {
+    if (!content) return 0;
+    
+    // Remove HTML tags and count words
+    const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const wordCount = textContent.split(' ').filter(word => word.length > 0).length;
+    
+    // Average reading speed is 200-250 words per minute, we'll use 225
+    const wordsPerMinute = 225;
+    const readingTimeMinutes = Math.ceil(wordCount / wordsPerMinute);
+    
+    return Math.max(1, readingTimeMinutes); // Minimum 1 minute
+  };
+
   // Content generation readiness validation
   const isReadyToGenerateContent = () => {
     const formValues = form.getValues();
@@ -4601,6 +4616,37 @@ export default function AdminPanel() {
                         <p className="text-xs text-muted-foreground mt-1">
                           This image will appear at the top of your published content
                         </p>
+                      </div>
+                    )}
+
+                    {/* Reading Time Section */}
+                    {generatedContent.content && (
+                      <div className="border-b border-gray-200 pb-4">
+                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                            <svg 
+                              className="w-5 h-5 text-blue-600" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                strokeWidth={2} 
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-blue-900">
+                              {calculateReadingTime(generatedContent.content)} min read
+                            </div>
+                            <div className="text-xs text-blue-700">
+                              Based on average reading speed of 225 words per minute
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
