@@ -1029,8 +1029,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       const allPosts = await storage.getScheduledPostsByStore(store.id);
       // Filter to show only scheduled posts (not published ones)
-      // Show posts with status 'scheduled' regardless of shopifyPostId
-      const posts = allPosts.filter(post => post.status === 'scheduled');
+      // Remove posts that are published OR have been synced to Shopify (indicating they're published)
+      const posts = allPosts.filter(post => 
+        post.status === 'scheduled' && !post.shopifyPostId
+      );
       
       // Get store timezone information
       let storeTimezone = 'UTC';
