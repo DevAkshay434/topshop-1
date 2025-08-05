@@ -870,6 +870,8 @@ export class DatabaseStorage implements IStorage {
     if (post.category !== undefined) updateData.category = post.category;
     if (post.tags !== undefined) updateData.tags = post.tags;
     if (post.scheduledDate !== undefined) updateData.scheduledDate = post.scheduledDate;
+    if (post.scheduledPublishDate !== undefined) updateData.scheduledPublishDate = post.scheduledPublishDate;
+    if (post.scheduledPublishTime !== undefined) updateData.scheduledPublishTime = post.scheduledPublishTime;
     if (post.publishedDate !== undefined) updateData.publishedDate = post.publishedDate;
     if (post.shopifyPostId !== undefined) updateData.shopifyPostId = post.shopifyPostId;
     if (post.shopifyBlogId !== undefined) updateData.shopifyBlogId = post.shopifyBlogId;
