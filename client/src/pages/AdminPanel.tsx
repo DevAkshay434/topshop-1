@@ -2586,15 +2586,8 @@ export default function AdminPanel() {
       )}
 
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
-          <TabsTrigger value="generate">Content Generator</TabsTrigger>
-          <TabsTrigger value="connections">Services</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-
-        {/* Content Generation Tab */}
-        <TabsContent value="generate" className="space-y-6">
+      <div className="space-y-6">
+        {/* Content Generation Section - Always visible */}
           {/* Main Content Grid - Selection and Content Preview side by side */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Selection Section - Left Column */}
@@ -5715,8 +5708,7 @@ export default function AdminPanel() {
           </div>
 
 
-        </TabsContent>
-
+        
         {/* Keyword Selector Dialog */}
         <Dialog open={showKeywordSelector} onOpenChange={setShowKeywordSelector}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -5759,80 +5751,7 @@ export default function AdminPanel() {
               />
             </DialogContent>
           </Dialog>
-          
-
-
-        {/* Services Tab */}
-        <TabsContent value="connections" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Service Connections</CardTitle>
-              <CardDescription>
-                Check the status of your connected services
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {servicesStatusQuery.isLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : servicesStatusQuery.data ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {Object.entries(servicesStatusQuery.data.connections as ServiceStatus).map(([service, status]) => (
-                    <Card key={service}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center">
-                          {status ? (
-                            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                          ) : (
-                            <XCircle className="h-5 w-5 text-red-500 mr-2" />
-                          )}
-                          {service.charAt(0).toUpperCase() + service.slice(1)}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          {status 
-                            ? `Connected and working properly.` 
-                            : `Not connected or having issues.`}
-                        </p>
-                      </CardContent>
-                      <CardFooter className="pt-0">
-                        {!status && (
-                          <Button variant="outline" size="sm">
-                            Fix Connection
-                          </Button>
-                        )}
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  Failed to load service status. Please try again.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Settings</CardTitle>
-              <CardDescription>
-                Configure your TopShop SEO application
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-center py-12">
-                Settings functionality coming soon.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
       
 
       
