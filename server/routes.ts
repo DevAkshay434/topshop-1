@@ -1027,7 +1027,10 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "Store context required" });
       }
       
-      const posts = await storage.getScheduledPostsByStore(store.id);
+      const allPosts = await storage.getScheduledPostsByStore(store.id);
+      
+      // Filter out published posts - only show posts that are still scheduled
+      const posts = allPosts.filter(post => post.status !== 'published');
       
       // Get store timezone information
       let storeTimezone = 'UTC';
