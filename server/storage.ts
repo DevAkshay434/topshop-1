@@ -27,7 +27,7 @@ import {
   type InsertProject
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, lte, gte, sql } from "drizzle-orm";
+import { eq, desc, asc, lte, gte, sql, and } from "drizzle-orm";
 
 // Define the storage interface with all CRUD operations
 export interface IStorage {
@@ -916,7 +916,10 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(blogPosts)
       .where(
-        sql`${blogPosts.status} = 'scheduled' AND ${blogPosts.storeId} = ${storeId}`
+        and(
+          eq(blogPosts.status, 'scheduled'),
+          eq(blogPosts.storeId, storeId)
+        )
       )
       .orderBy(asc(blogPosts.scheduledDate));
   }
@@ -1185,7 +1188,8 @@ const dbStorage = new DatabaseStorage();
 class FallbackStorage implements IStorage {
   private async tryOrFallback<T>(dbOperation: () => Promise<T>, memOperation: () => Promise<T>): Promise<T> {
     try {
-      return await dbOperation();
+      const result = await dbOperation();
+      return result;
     } catch (error) {
       console.warn("Database operation failed, falling back to in-memory storage:", error);
       return await memOperation();
