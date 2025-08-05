@@ -1132,6 +1132,34 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Get schedule details for a specific post
+  apiRouter.get("/posts/:id/schedule", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      const post = await storage.getBlogPost(id);
+      
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      
+      res.json({
+        success: true,
+        schedule: {
+          scheduledDate: post.scheduledDate,
+          scheduledPublishDate: post.scheduledPublishDate,
+          scheduledPublishTime: post.scheduledPublishTime
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Update scheduled publish time for a post
   apiRouter.put("/posts/:id/schedule", async (req: Request, res: Response) => {
     try {
