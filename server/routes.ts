@@ -1006,30 +1006,182 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Get scheduled blog posts with author names populated
+  // Get scheduled blog posts with author names populated and timezone info
   apiRouter.get("/posts/scheduled", async (req: Request, res: Response) => {
     try {
-      const posts = await storage.getScheduledPosts();
+      // Get store context for proper multi-store support
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
       
-      // Populate author names for posts that have authorId but no author name
+      const posts = await storage.getScheduledPostsByStore(store.id);
+      
+      // Get store timezone information
+      let storeTimezone = 'UTC';
+      try {
+        const shopInfo = await shopifyService.getShopInfo(store);
+        storeTimezone = shopInfo.iana_timezone || 'UTC';
+      } catch (error) {
+        console.error('Error getting store timezone:', error);
+      }
+      
+      // Populate author names and enhance with scheduling info
       const postsWithAuthors = await Promise.all(
         posts.map(async (post) => {
+          let enrichedPost = { ...post };
+          
+          // Populate author name if needed
           if (post.authorId && !post.author) {
             try {
               const authorData = await db.select().from(authors).where(eq(authors.id, post.authorId)).limit(1);
               if (authorData.length > 0) {
-                return { ...post, author: authorData[0].name };
+                enrichedPost.author = authorData[0].name;
               }
             } catch (error) {
               console.error(`Error fetching author for post ${post.id}:`, error);
             }
           }
-          return post;
+          
+          // Add timezone-aware scheduling information
+          if (post.scheduledDate) {
+            const scheduledDate = new Date(post.scheduledDate);
+            const now = new Date();
+            const isPastDue = scheduledDate < now;
+            
+            enrichedPost.schedulingInfo = {
+              scheduledDate: scheduledDate.toISOString(),
+              scheduledDateLocal: scheduledDate.toLocaleString('en-US', { 
+                timeZone: storeTimezone,
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short'
+              }),
+              timezone: storeTimezone,
+              isPastDue,
+              minutesUntilPublish: isPastDue ? 0 : Math.floor((scheduledDate.getTime() - now.getTime()) / (1000 * 60))
+            };
+          }
+          
+          // Check if the post has been published to Shopify
+          enrichedPost.publishStatus = {
+            isScheduled: post.status === 'scheduled',
+            isPublished: post.status === 'published',
+            hasShopifyId: !!(post.shopifyPostId),
+            shopifyUrl: post.shopifyPostId ? `https://${store.shopName}/admin/blog_posts/${post.shopifyPostId}` : null
+          };
+          
+          return enrichedPost;
         })
       );
       
-      res.json({ posts: postsWithAuthors });
+      res.json({ 
+        posts: postsWithAuthors,
+        storeTimezone,
+        store: {
+          name: store.shopName,
+          id: store.id
+        }
+      });
     } catch (error) {
+      console.error('Error fetching scheduled posts:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update scheduled publish time for a post
+  apiRouter.put("/posts/:id/schedule", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+      
+      const { scheduledPublishDate, scheduledPublishTime } = req.body;
+      
+      if (!scheduledPublishDate || !scheduledPublishTime) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          details: "Both scheduledPublishDate and scheduledPublishTime are required"
+        });
+      }
+      
+      // Get store context for timezone calculations
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
+      
+      // Get store timezone
+      let storeTimezone = 'UTC';
+      try {
+        const shopInfo = await shopifyService.getShopInfo(store);
+        storeTimezone = shopInfo.iana_timezone || 'UTC';
+      } catch (error) {
+        console.error('Error getting store timezone:', error);
+      }
+      
+      // Create timezone-aware date
+      let scheduledDate: Date;
+      try {
+        const { createDateInTimezone } = await import('@shared/timezone');
+        scheduledDate = createDateInTimezone(
+          scheduledPublishDate,
+          scheduledPublishTime,
+          storeTimezone
+        );
+      } catch (error) {
+        console.error('Error creating timezone-aware date:', error);
+        // Fallback to UTC parsing
+        const [year, month, day] = scheduledPublishDate.split('-').map(Number);
+        const [hours, minutes] = scheduledPublishTime.split(':').map(Number);
+        scheduledDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+      }
+      
+      // Ensure the date is in the future
+      const now = new Date();
+      if (scheduledDate <= now) {
+        return res.status(400).json({ 
+          error: "Invalid schedule time",
+          details: "Scheduled time must be in the future"
+        });
+      }
+      
+      // Update the post
+      const updatedPost = await storage.updateBlogPost(id, {
+        scheduledDate,
+        scheduledPublishDate,
+        scheduledPublishTime,
+        status: 'scheduled'
+      });
+      
+      if (!updatedPost) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      
+      res.json({ 
+        success: true,
+        post: updatedPost,
+        schedulingInfo: {
+          scheduledDate: scheduledDate.toISOString(),
+          scheduledDateLocal: scheduledDate.toLocaleString('en-US', { 
+            timeZone: storeTimezone,
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
+          }),
+          timezone: storeTimezone
+        }
+      });
+    } catch (error) {
+      console.error('Error updating scheduled post:', error);
       res.status(500).json({ error: error.message });
     }
   });

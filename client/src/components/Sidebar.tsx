@@ -111,13 +111,12 @@ export default function Sidebar() {
             text="Blog Posts" 
             active={location === "/blog-posts"} 
           /> */}
-          {/* Scheduled Posts link hidden per user request */}
-          {/* <NavItem 
+          <NavItem 
             href="/scheduled-posts" 
             icon={<Clock size={18} />} 
             text="Scheduled Posts" 
             active={location === "/scheduled-posts"} 
-          /> */}
+          />
           <NavItem 
             href="/content-templates" 
             icon={<FileCode size={18} />} 

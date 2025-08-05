@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
-import PostList from "@/components/PostList";
+import { ScheduledPostsList } from "@/components/ScheduledPostsList";
 import CreatePostModal from "@/components/CreatePostModal";
 import { BlogPost } from "@shared/schema";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
@@ -11,16 +11,13 @@ export default function ScheduledPosts() {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   
   // Check if the store has the scheduling permission
-  const { data: permissionsData } = useQuery<{ 
-    success: boolean; 
+  const { data: permissionsData } = useQuery<{
+    success: boolean;
     hasPermission: boolean;
-    store: { name: string; }
+    store: { name: string; };
   }>({
     queryKey: ['/api/shopify/check-permissions'],
     enabled: true,
-    onSuccess: (data) => {
-      console.log('Scheduled Posts - Permissions check result:', data);
-    }
   });
   
   const handleEditPost = (post: BlogPost) => {
@@ -47,11 +44,7 @@ export default function ScheduledPosts() {
         </div>
       </div>
       
-      <PostList
-        queryKey="/api/posts/scheduled"
-        title="Scheduled Posts"
-        onEditPost={handleEditPost}
-      />
+      <ScheduledPostsList />
       
       <CreatePostModal
         open={createPostModalOpen}

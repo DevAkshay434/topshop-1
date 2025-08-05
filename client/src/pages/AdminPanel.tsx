@@ -2537,7 +2537,7 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto py-10">
+    <div className="container max-w-7xl mx-auto pb-10">
 
       {/* Project Management Header */}
       <div className="mb-6">
