@@ -1079,16 +1079,36 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
           
           // Check if the post has been published to Shopify
+          let shopifyUrl = null;
+          if (post.shopifyPostId) {
+            if (post.contentType === 'page' || !post.shopifyBlogId) {
+              // For pages
+              shopifyUrl = `https://${store.shopName}/pages/${post.shopifyHandle || post.shopifyPostId}`;
+            } else {
+              // For blog posts - determine the correct blog handle
+              let blogHandle = 'news'; // default fallback
+              
+              // Try to get the blog handle from the store's blog configuration
+              try {
+                const blogs = await shopifyService.getBlogs(store);
+                const targetBlog = blogs.find(blog => blog.id.toString() === post.shopifyBlogId?.toString());
+                if (targetBlog && targetBlog.handle) {
+                  blogHandle = targetBlog.handle;
+                }
+              } catch (error) {
+                console.error('Error fetching blog handle:', error);
+                // Keep default fallback
+              }
+              
+              shopifyUrl = `https://${store.shopName}/blogs/${blogHandle}/${post.shopifyHandle || post.shopifyPostId}`;
+            }
+          }
+          
           enrichedPost.publishStatus = {
             isScheduled: post.status === 'scheduled',
             isPublished: post.status === 'published',
             hasShopifyId: !!(post.shopifyPostId),
-            shopifyUrl: post.shopifyPostId ? 
-              // Determine the correct public URL based on content type
-              (post.contentType === 'page' || !post.shopifyBlogId) ?
-                `https://${store.shopName}/pages/${post.shopifyHandle || post.shopifyPostId}` :
-                `https://${store.shopName}/blogs/news/${post.shopifyHandle || post.shopifyPostId}`
-              : null
+            shopifyUrl
           };
           
           return enrichedPost;
