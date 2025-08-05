@@ -297,15 +297,18 @@ export function ScheduledPostsList() {
             <CardContent className="pt-0">
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>
-                      {post.schedulingInfo?.scheduledDateLocal || 
-                       `${post.scheduledPublishDate} ${post.scheduledPublishTime}`}
-                    </span>
-                  </div>
+                  {/* Only show scheduled time if not past due and published */}
+                  {!(post.schedulingInfo?.isPastDue && post.publishStatus?.isPublished) && (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>
+                        {post.schedulingInfo?.scheduledDateLocal || 
+                         `${post.scheduledPublishDate} ${post.scheduledPublishTime}`}
+                      </span>
+                    </div>
+                  )}
                   
-                  {post.schedulingInfo && (
+                  {post.schedulingInfo && !post.publishStatus?.isPublished && (
                     <div className={`flex items-center gap-1 ${
                       post.schedulingInfo.isPastDue 
                         ? "text-destructive" 
@@ -315,6 +318,13 @@ export function ScheduledPostsList() {
                         {formatTimeUntilPublish(post.schedulingInfo.minutesUntilPublish)}
                       </span>
                       {!post.schedulingInfo.isPastDue && <span>remaining</span>}
+                    </div>
+                  )}
+                  
+                  {/* Show published status for published posts */}
+                  {post.publishStatus?.isPublished && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <span className="font-medium">Published</span>
                     </div>
                   )}
                 </div>

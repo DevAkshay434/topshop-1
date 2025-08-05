@@ -1083,7 +1083,12 @@ export async function registerRoutes(app: Express): Promise<void> {
             isScheduled: post.status === 'scheduled',
             isPublished: post.status === 'published',
             hasShopifyId: !!(post.shopifyPostId),
-            shopifyUrl: post.shopifyPostId ? `https://${store.shopName}/admin/blog_posts/${post.shopifyPostId}` : null
+            shopifyUrl: post.shopifyPostId ? 
+              // Determine the correct public URL based on content type
+              (post.contentType === 'page' || !post.shopifyBlogId) ?
+                `https://${store.shopName}/pages/${post.shopifyHandle || post.shopifyPostId}` :
+                `https://${store.shopName}/blogs/news/${post.shopifyHandle || post.shopifyPostId}`
+              : null
           };
           
           return enrichedPost;
