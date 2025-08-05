@@ -103,8 +103,20 @@ async function getStoreFromRequest(req: Request): Promise<any | null> {
       }
     }
 
-    // Final fallback: Get any connected store (legacy behavior)
+    // Final fallback: Prioritize the main store (rajeshshah.myshopify.com)
     const stores = await storage.getAllStores();
+    
+    // First try to find the main store by name
+    const mainStore = stores.find(store => 
+      store.shopName === 'rajeshshah.myshopify.com' && store.isConnected
+    );
+    
+    if (mainStore) {
+      console.log(`Using main store as fallback: ${mainStore.shopName} (ID: ${mainStore.id})`);
+      return mainStore;
+    }
+    
+    // If main store not found, get any connected store
     const connectedStore = stores.find(store => store.isConnected);
     
     if (connectedStore) {
