@@ -1030,10 +1030,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       const allPosts = await storage.getScheduledPostsByStore(store.id);
       console.log(`Found ${allPosts.length} total scheduled posts for store ${store.id}`);
       
-      // Filter out published posts - only show posts that are still scheduled
-      // Remove posts that are either marked as published OR have been synced to Shopify
+      // Filter to show only scheduled posts (not published ones)
+      // Show posts with status 'scheduled' regardless of shopifyPostId
       const posts = allPosts.filter(post => {
-        const shouldShow = post.status !== 'published' && !post.shopifyPostId;
+        const shouldShow = post.status === 'scheduled';
         console.log(`Post ${post.id} (${post.title}): status=${post.status}, shopifyPostId=${post.shopifyPostId}, shouldShow=${shouldShow}`);
         return shouldShow;
       });

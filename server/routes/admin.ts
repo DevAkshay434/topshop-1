@@ -2345,9 +2345,9 @@ Place this at a logical position in the content, typically after introducing a c
         
         console.log(`Meta optimization check: Claude API key = ${hasClaudeKey}, Keywords = ${hasKeywords} (${availableKeywords.length} keywords)`);
         
-        // Only proceed if we have Claude API key and either keywords OR content to optimize
-        if (hasClaudeKey && (hasKeywords || generatedContent.title)) {
-          const { optimizeMetaData } = await import("../services/claude");
+        // Automatic meta optimization is temporarily disabled due to function availability
+        if (false && hasClaudeKey && (hasKeywords || generatedContent.title)) {
+          // const { optimizeMetaData } = await import("../services/claude");
           
           // Optimize Meta Title
           if (generatedContent.title) {
