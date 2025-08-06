@@ -1772,16 +1772,32 @@ export async function registerRoutes(app: Express): Promise<void> {
                 }
               }
               
-              // For pages, we need to pass the published flag and date
-              shopifyArticle = await shopifyService.createPage(
-                tempStore,
-                post.title,
-                pageContent,
-                post.status === 'published', // true only if immediate publish
-                scheduledPublishDate, // date for scheduled posts
-                undefined, // featured image
-                post // pass the post object with categories for metadata
-              );
+              // For pages, use custom scheduler approach since Shopify Pages API doesn't support scheduling
+              if (post.status === 'scheduled' && scheduledPublishDate) {
+                console.log('Creating scheduled page using custom scheduler approach (Shopify Pages API does not support native scheduling)');
+                
+                const { schedulePage } = await import('./services/custom-scheduler');
+                
+                shopifyArticle = await schedulePage(
+                  tempStore,
+                  post.title,
+                  pageContent,
+                  scheduledPublishDate
+                );
+              } else {
+                // For immediate publish or draft
+                const shouldPublish = post.status === 'published';
+                console.log(`Creating page with immediate publish: ${shouldPublish}`);
+                shopifyArticle = await shopifyService.createPage(
+                  tempStore,
+                  post.title,
+                  pageContent,
+                  shouldPublish, // true only if immediate publish
+                  undefined, // no schedule date for immediate/draft
+                  undefined, // featured image
+                  post // pass the post object with categories for metadata
+                );
+              }
             } else {
               // For blog posts, use the existing article creation logic
               console.log(`Creating a Shopify article for post with status: ${post.status}`);
