@@ -63,8 +63,28 @@ export async function apiRequest<T = any>(
     credentials: "include",
   });
 
+  // Debug logging for API response issues
+  console.log(`🔍 API Response Debug for ${url}:`, {
+    status: res.status,
+    contentType: res.headers.get('content-type'),
+    poweredBy: res.headers.get('x-powered-by'),
+  });
+
   await throwIfResNotOk(res);
-  return res.json();
+  
+  // Check if we're getting HTML instead of JSON
+  const responseText = await res.text();
+  if (responseText.includes('<!DOCTYPE html>')) {
+    console.error(`❌ API Error: Got HTML response for ${url} instead of JSON`);
+    throw new Error(`API endpoint returning HTML instead of JSON. This suggests Vite middleware interference.`);
+  }
+  
+  try {
+    return JSON.parse(responseText);
+  } catch (parseError) {
+    console.error('❌ JSON Parse Error:', parseError, 'Response:', responseText.substring(0, 200));
+    throw new Error(`Failed to parse JSON response from ${url}`);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

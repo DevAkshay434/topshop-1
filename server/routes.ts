@@ -2705,9 +2705,12 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         return dateA.getTime() - dateB.getTime();
       });
 
+      // Add explicit response headers to ensure JSON response
+      res.setHeader('Content-Type', 'application/json');
       res.json({ posts });
     } catch (error: any) {
       console.error('Error fetching scheduled posts:', error);
+      res.setHeader('Content-Type', 'application/json');
       res.status(500).json({ error: error.message });
     }
   });

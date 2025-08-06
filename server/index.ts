@@ -146,6 +146,13 @@ app.use((req, res, next) => {
   // Create HTTP server
   const server = createServer(app);
 
+  // Add API route priority middleware to ensure API routes bypass Vite
+  app.use('/api', (req, res, next) => {
+    // Mark API requests so they bypass Vite middleware
+    req.isApiRequest = true;
+    next();
+  });
+
   // Register routes before error handler
   await registerRoutes(app);
 
