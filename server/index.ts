@@ -220,6 +220,16 @@ app.use((req, res, next) => {
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
     
+    // Set up automatic scheduler - check every 2 minutes for past-due posts
+    setInterval(async () => {
+      try {
+        const { checkScheduledPosts } = await import('./services/custom-scheduler');
+        await checkScheduledPosts();
+      } catch (error) {
+        console.error('Auto-scheduler error:', error);
+      }
+    }, 2 * 60 * 1000); // Check every 2 minutes
+    
     // Set up a keep-alive interval to prevent app from sleeping in Replit
     setInterval(() => {
       // Ping ourselves every 5 minutes

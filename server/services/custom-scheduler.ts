@@ -319,8 +319,8 @@ export async function schedulePage(
  * @param post BlogPost data containing the page information
  */
 export async function publishScheduledPage(
-  store: ShopifyStore,
   pageId: string,
+  store: ShopifyStore,
   post?: BlogPost
 ): Promise<any> {
   try {
@@ -776,8 +776,8 @@ export async function checkScheduledPosts(): Promise<void> {
               // Publish page
               console.log(`Publishing page with ID ${post.shopifyPostId}`);
               const publishedPage = await publishScheduledPage(
+                post.shopifyPostId!,
                 store,
-                post.shopifyPostId,
                 post
               );
               
@@ -794,8 +794,8 @@ export async function checkScheduledPosts(): Promise<void> {
               // Publish blog post
               const publishedArticle = await publishScheduledArticle(
                 store, 
-                post.shopifyBlogId, 
-                post.shopifyPostId,
+                post.shopifyBlogId!, 
+                post.shopifyPostId!,
                 post
               );
               
