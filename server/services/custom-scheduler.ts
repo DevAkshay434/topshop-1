@@ -710,28 +710,46 @@ export async function checkScheduledPosts(): Promise<void> {
         console.log(`Current time in store timezone (${storeTimezone}): ${now.toISOString()}`);
         console.log(`Post ${post.id} scheduled time: ${scheduledDate.toISOString()}`);
         
-        // Check if the original date/time (before any adjustments) has passed
-        let originalScheduledDate: Date | null = null;
+        // Check if the scheduled time has passed using store timezone comparison (same logic as API endpoint)
+        let shouldPublish = false;
         if (post.scheduledPublishDate && post.scheduledPublishTime) {
-          // Recreate the original date without safety adjustments
-          const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
-          const [hour, minute] = post.scheduledPublishTime.split(':').map(Number);
+          // Get current time in store timezone
+          const nowFormatted = new Date().toLocaleString("en-CA", { 
+            timeZone: storeTimezone,
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          });
           
-          if (!isNaN(year) && !isNaN(month) && !isNaN(day) && !isNaN(hour) && !isNaN(minute)) {
-            originalScheduledDate = new Date(Date.UTC(
-              year,
-              month - 1,  // JS months are 0-indexed
-              day,
-              hour,
-              minute,
-              0
-            ));
-            console.log(`Original scheduled date (before adjustments): ${originalScheduledDate.toISOString()}`);
-          }
+          // Parse current time in store timezone
+          const [currentDate, currentTime] = nowFormatted.split(', ');
+          const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number);
+          const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+          
+          // Parse scheduled time
+          const [schedYear, schedMonth, schedDay] = post.scheduledPublishDate.split('-').map(Number);
+          const [schedHour, schedMinute] = post.scheduledPublishTime.split(':').map(Number);
+          
+          // Compare dates and times within the store timezone
+          shouldPublish = (
+            schedYear < currentYear ||
+            (schedYear === currentYear && schedMonth < currentMonth) ||
+            (schedYear === currentYear && schedMonth === currentMonth && schedDay < currentDay) ||
+            (schedYear === currentYear && schedMonth === currentMonth && schedDay === currentDay && 
+             (schedHour < currentHour || (schedHour === currentHour && schedMinute <= currentMinute)))
+          );
+          
+          console.log(`Post ${post.id} scheduled for: ${post.scheduledPublishDate} ${post.scheduledPublishTime} in ${storeTimezone}`);
+          console.log(`Current time in ${storeTimezone}: ${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')} ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`);
+          console.log(`Should publish: ${shouldPublish}`);
+        } else {
+          // Fallback to UTC comparison if no date/time fields
+          shouldPublish = scheduledDate <= now;
         }
-        
-        // If the original scheduled time has passed OR the adjusted time is now or in the past, publish
-        const shouldPublish = (originalScheduledDate && originalScheduledDate <= now) || scheduledDate <= now;
         
         // If it's time to publish
         if (shouldPublish) {
