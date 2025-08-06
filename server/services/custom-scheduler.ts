@@ -177,24 +177,17 @@ export async function schedulePage(
   scheduledDate: Date
 ): Promise<any> {
   try {
-    // Get shop information to get the timezone
+    // Get shop information to get the timezone using the shopify service
     let shopInfo: any;
     try {
-      const shopClient = axios.create({
-        baseURL: `https://${store.shopName}/admin/api/2025-07`,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': store.accessToken
-        }
-      });
-      
-      console.log(`Fetching shop information for ${store.shopName}`);
-      const shopResponse = await shopClient.get('/shop.json');
-      shopInfo = shopResponse.data.shop;
+      console.log(`Getting shop information for ${store.shopName} via ShopifyService for page scheduling`);
+      const { ShopifyService } = await import('./shopify');
+      const shopifyService = new ShopifyService();
+      shopInfo = await shopifyService.getShopInfo(store);
       console.log(`Shop timezone for ${store.shopName}: ${shopInfo.iana_timezone}`);
     } catch (shopError: any) {
-      console.error(`Failed to get shop timezone, using UTC: ${shopError.message}`);
-      shopInfo = { iana_timezone: 'UTC' };
+      console.error(`Failed to get shop timezone, using America/New_York as fallback: ${shopError.message}`);
+      shopInfo = { iana_timezone: 'America/New_York' }; // Use store's known timezone as fallback
     }
 
     // Create a client for the Shopify API
@@ -333,36 +326,29 @@ export async function publishScheduledPage(
   try {
     console.log(`Publishing scheduled page ${pageId} for store ${store.shopName}`);
     
-    // Get shop information for accurate timezone handling
+    // Get shop information for accurate timezone handling using shopify service
     let shopInfo: any;
     try {
-      const shopClient = axios.create({
-        baseURL: `https://${store.shopName}/admin/api/2025-07`,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': store.accessToken
-        }
-      });
-      
-      console.log(`Fetching shop information for timezone`);
-      const shopResponse = await shopClient.get('/shop.json');
-      shopInfo = shopResponse.data.shop;
+      console.log(`Getting shop information for ${store.shopName} via ShopifyService for page publishing`);
+      const { ShopifyService } = await import('./shopify');
+      const shopifyService = new ShopifyService();
+      shopInfo = await shopifyService.getShopInfo(store);
       console.log(`Shop timezone: ${shopInfo.iana_timezone}`);
     } catch (shopError: any) {
-      console.error(`Failed to get shop timezone, using UTC: ${shopError.message}`);
-      shopInfo = { iana_timezone: 'UTC' };
+      console.error(`Failed to get shop timezone, using America/New_York as fallback: ${shopError.message}`);
+      shopInfo = { iana_timezone: 'America/New_York' };
       
       // Log the error for tracking
       await storage.createSyncActivity({
         storeId: store.id,
         activity: `Warning: Timezone fetch failed when publishing page`,
         status: 'warning',
-        details: `Using UTC as fallback. Error: ${shopError.message}`
+        details: `Using America/New_York as fallback. Error: ${shopError.message}`
       });
     }
     
     // Get the store's timezone
-    const storeTimezone = shopInfo.iana_timezone || 'UTC';
+    const storeTimezone = shopInfo.iana_timezone || 'America/New_York';
     
     // Create a client for the Shopify API
     const client = axios.create({

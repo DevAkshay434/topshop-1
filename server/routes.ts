@@ -1322,12 +1322,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       // Get store timezone
-      let storeTimezone = 'UTC';
+      let storeTimezone = 'America/New_York'; // Default fallback to store's timezone
       try {
         const shopInfo = await shopifyService.getShopInfo(store);
-        storeTimezone = shopInfo.iana_timezone || 'UTC';
+        storeTimezone = shopInfo.iana_timezone || 'America/New_York';
+        console.log(`Using store timezone: ${storeTimezone} for schedule validation`);
       } catch (error) {
-        console.error('Error getting store timezone:', error);
+        console.error('Error getting store timezone, using America/New_York fallback:', error);
       }
       
       // Create timezone-aware date
