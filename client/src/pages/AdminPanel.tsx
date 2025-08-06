@@ -4426,21 +4426,6 @@ export default function AdminPanel() {
                         />
 
                         <div className="flex gap-3">
-                          {/* Save Project Button */}
-                          <Button
-                            variant="outline"
-                            onClick={handleSaveProject}
-                            disabled={!currentProject || saveProjectMutation.isPending}
-                            className="flex items-center gap-2"
-                          >
-                            {saveProjectMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <CheckCircle className="h-4 w-4" />
-                            )}
-                            Save Project
-                          </Button>
-                          
                           {/* Generate Content Button */}
                           <Button 
                             type="button" 
@@ -5128,6 +5113,21 @@ export default function AdminPanel() {
                                 )}
                               </>
                             )}
+                          </Button>
+
+                          {/* Save Project Button - Moved from left side */}
+                          <Button
+                            variant="outline"
+                            onClick={handleSaveProject}
+                            disabled={!currentProject || saveProjectMutation.isPending}
+                            className="w-full flex items-center gap-2 mt-3"
+                          >
+                            {saveProjectMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4" />
+                            )}
+                            Save Project
                           </Button>
                         </div>
                       </CardContent>
