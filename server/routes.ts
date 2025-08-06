@@ -2705,9 +2705,20 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         return dateA.getTime() - dateB.getTime();
       });
 
-      // Add explicit response headers to ensure JSON response
-      res.setHeader('Content-Type', 'application/json');
-      res.json({ posts });
+      // Add explicit response headers to ensure JSON response and bypass Vite
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('X-API-Response', 'true');
+      
+      console.log(`✅ Returning ${posts.length} scheduled posts for store ${store.id}`);
+      res.json({ 
+        posts,
+        storeTimezone: store.timezone || 'America/New_York',
+        store: {
+          name: store.shopName,
+          id: store.id
+        }
+      });
     } catch (error: any) {
       console.error('Error fetching scheduled posts:', error);
       res.setHeader('Content-Type', 'application/json');

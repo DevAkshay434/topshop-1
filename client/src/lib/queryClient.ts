@@ -120,7 +120,20 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    
+    // Check if we're getting HTML instead of JSON for query requests too
+    const responseText = await res.text();
+    if (responseText.includes('<!DOCTYPE html>')) {
+      console.error(`❌ Query Error: Got HTML response for ${queryKey[0]} instead of JSON`);
+      throw new Error(`API endpoint returning HTML instead of JSON. This suggests Vite middleware interference.`);
+    }
+    
+    try {
+      return JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Query JSON Parse Error:', parseError, 'Response:', responseText.substring(0, 200));
+      throw new Error(`Failed to parse JSON response from ${queryKey[0]}`);
+    }
   };
 
 export const queryClient = new QueryClient({
