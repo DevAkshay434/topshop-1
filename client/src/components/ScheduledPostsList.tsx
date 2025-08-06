@@ -68,23 +68,14 @@ export function ScheduledPostsList() {
       scheduledPublishDate: string;
       scheduledPublishTime: string;
     }) => {
-      console.log("mutationFn called with:", { postId, scheduledPublishDate, scheduledPublishTime });
-      
-      try {
-        const response = await apiRequest({
-          url: `/api/posts/${postId}/schedule`,
-          method: "PUT",
-          data: {
-            scheduledPublishDate,
-            scheduledPublishTime,
-          },
-        });
-        console.log("API response:", response);
-        return response;
-      } catch (error) {
-        console.error("API request failed:", error);
-        throw error;
-      }
+      return await apiRequest({
+        url: `/api/posts/${postId}/schedule`,
+        method: "PUT",
+        data: {
+          scheduledPublishDate,
+          scheduledPublishTime,
+        },
+      });
     },
     onMutate: async ({ postId, scheduledPublishDate, scheduledPublishTime }) => {
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
@@ -114,9 +105,7 @@ export function ScheduledPostsList() {
       // Return a context object with the snapshotted value
       return { previousData };
     },
-    onSuccess: (data) => {
-      console.log("Mutation succeeded, response:", data);
-      
+    onSuccess: () => {
       // Force immediate refetch of scheduled posts
       queryClient.invalidateQueries({ queryKey: ["/api/posts/scheduled"] });
       queryClient.refetchQueries({ queryKey: ["/api/posts/scheduled"] });
@@ -176,21 +165,13 @@ export function ScheduledPostsList() {
   };
 
   const handleEditSchedule = (post: ScheduledPost) => {
-    console.log("handleEditSchedule called for post:", post.id, post.title);
     setEditingPost(post);
     setNewDate(post.scheduledPublishDate || "");
     setNewTime(post.scheduledPublishTime || "");
-    console.log("Set initial values:", {
-      scheduledPublishDate: post.scheduledPublishDate,
-      scheduledPublishTime: post.scheduledPublishTime
-    });
   };
 
   const handleUpdateSchedule = () => {
-    console.log("handleUpdateSchedule called", { editingPost, newDate, newTime });
-    
     if (!editingPost || !newDate || !newTime) {
-      console.log("Validation failed", { editingPost: !!editingPost, newDate, newTime });
       toast({
         title: "Invalid Input",
         description: "Please provide both date and time.",
@@ -199,11 +180,22 @@ export function ScheduledPostsList() {
       return;
     }
 
-    console.log("Calling mutation with:", {
-      postId: editingPost.id,
-      scheduledPublishDate: newDate,
-      scheduledPublishTime: newTime,
-    });
+    // Validate that the scheduled time is in the future (store timezone)
+    const storeTimezoneForValidation = storeTimezone.includes('/') ? storeTimezone : 'America/New_York';
+    const nowInStoreTimezone = new Date().toLocaleString("en-CA", { timeZone: storeTimezoneForValidation });
+    const scheduledInStoreTimezone = `${newDate} ${newTime}:00`;
+    
+    const nowDate = new Date(nowInStoreTimezone);
+    const scheduledDate = new Date(scheduledInStoreTimezone);
+    
+    if (scheduledDate <= nowDate) {
+      toast({
+        title: "Invalid Schedule Time",
+        description: `The scheduled time must be in the future according to store timezone (${storeTimezone}). Current store time: ${nowDate.toLocaleString()}`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     updateScheduleMutation.mutate({
       postId: editingPost.id,
@@ -333,12 +325,20 @@ export function ScheduledPostsList() {
                             value={newTime}
                             onChange={(e) => setNewTime(e.target.value)}
                           />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Current store time: {new Date().toLocaleString("en-US", {
+                              timeZone: storeTimezone.includes('/') ? storeTimezone : 'America/New_York',
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false
+                            })} ({storeTimezone})
+                          </p>
                         </div>
                         <Button
-                          onClick={() => {
-                            console.log("Update button clicked");
-                            handleUpdateSchedule();
-                          }}
+                          onClick={handleUpdateSchedule}
                           disabled={updateScheduleMutation.isPending}
                           className="w-full"
                         >
