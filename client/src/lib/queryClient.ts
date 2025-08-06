@@ -104,7 +104,9 @@ export const getQueryFn: <T>(options: {
       headers['X-Store-ID'] = autoDetectedStoreId.toString();
       console.log(`Query function: Adding X-Store-ID header: ${autoDetectedStoreId} for query: ${queryKey[0]}`);
     } else {
-      console.log(`Query function: No auto-detected store ID available for query: ${queryKey[0]}. Value: ${autoDetectedStoreId}`);
+      // Fallback to store ID 1 if auto-detection fails due to API issues
+      console.log(`Query function: No auto-detected store ID available for query: ${queryKey[0]}. Using fallback store ID 1`);
+      headers['X-Store-ID'] = '1';
     }
     
     const res = await fetch(queryKey[0] as string, {
