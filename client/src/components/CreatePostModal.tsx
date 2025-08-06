@@ -211,6 +211,28 @@ export default function CreatePostModal({
   const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(
     generatedContent?.featuredImage?.url || generatedContent?.featuredImage?.src?.medium || null
   );
+
+  // Function to process content for preview - removes featured image from content body for pages
+  const getContentForPreview = (content: string, contentType: string) => {
+    if (contentType === 'page' && generatedContent?.featuredImage) {
+      // For pages, remove the first image that matches the featured image to prevent duplication
+      const featuredImageSrc = generatedContent.featuredImage.url || 
+                               generatedContent.featuredImage.src?.medium || 
+                               generatedContent.featuredImage.src?.original;
+      
+      if (featuredImageSrc) {
+        // Remove the first occurrence of an img tag with the featured image URL
+        const imageRegex = new RegExp(`<img[^>]*src=["']${featuredImageSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'i');
+        const contentWithoutFeaturedImage = content.replace(imageRegex, '');
+        
+        // Also remove any wrapping divs that might be empty after image removal
+        return contentWithoutFeaturedImage.replace(/<div[^>]*>\s*<\/div>/g, '').replace(/\n\s*\n\s*\n/g, '\n\n');
+      }
+    }
+    
+    // For blog posts or when no featured image, return content as-is
+    return content;
+  };
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -744,7 +766,7 @@ export default function CreatePostModal({
               <h4 className="text-sm text-gray-500 mb-2">Content</h4>
               <div 
                 className="prose max-w-none p-4 bg-gray-50 rounded-md border border-gray-200 overflow-auto max-h-[500px]" 
-                dangerouslySetInnerHTML={{ __html: generatedContent.content }}
+                dangerouslySetInnerHTML={{ __html: getContentForPreview(generatedContent.content, articleType) }}
               />
             </div>
             

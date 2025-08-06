@@ -29,6 +29,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Project Management**: Allows users to save and load complete project configurations, including content settings, selected products, collections, keywords, and media.
 - **Multi-Store Support**: Ensures complete data isolation between connected Shopify stores, with automatic store detection and proper routing of API requests.
 - **URL Generation**: Implements SEO-friendly URL generation using Shopify handles for both blog posts and pages, with robust fallback mechanisms.
+- **Content Preview Optimization**: Intelligent featured image handling in admin panel previews - prevents duplication by removing featured images from page content body when displayed separately in preview mode.
 
 ## External Dependencies
 
