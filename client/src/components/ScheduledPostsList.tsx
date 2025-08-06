@@ -68,13 +68,22 @@ export function ScheduledPostsList() {
       scheduledPublishDate: string;
       scheduledPublishTime: string;
     }) => {
-      return apiRequest(`/api/posts/${postId}/schedule`, {
-        method: "PUT",
-        body: {
-          scheduledPublishDate,
-          scheduledPublishTime,
-        },
-      });
+      console.log("mutationFn called with:", { postId, scheduledPublishDate, scheduledPublishTime });
+      
+      try {
+        const response = await apiRequest(`/api/posts/${postId}/schedule`, {
+          method: "PUT",
+          body: {
+            scheduledPublishDate,
+            scheduledPublishTime,
+          },
+        });
+        console.log("API response:", response);
+        return response;
+      } catch (error) {
+        console.error("API request failed:", error);
+        throw error;
+      }
     },
     onMutate: async ({ postId, scheduledPublishDate, scheduledPublishTime }) => {
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
@@ -104,16 +113,20 @@ export function ScheduledPostsList() {
       // Return a context object with the snapshotted value
       return { previousData };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Mutation succeeded, response:", data);
+      
       // Force immediate refetch of scheduled posts
       queryClient.invalidateQueries({ queryKey: ["/api/posts/scheduled"] });
       queryClient.refetchQueries({ queryKey: ["/api/posts/scheduled"] });
       // Also invalidate any related post queries
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       
+      // Clear the form and close modal
       setEditingPost(null);
       setNewDate("");
       setNewTime("");
+      
       toast({
         title: "Schedule Updated",
         description: "The post schedule has been updated successfully.",
