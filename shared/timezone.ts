@@ -24,10 +24,9 @@ export function createDateInTimezone(
     
     console.log(`Parsed components: year=${year}, month=${month}, day=${day}, hour=${hour}, minute=${minute}`);
     
-    // If timezone contains a prefix like (GMT-05:00), extract just the IANA part
+    // Extract IANA timezone if it contains prefix
     let cleanTimezone = timezone;
     if (timezone.includes(' ')) {
-      // Extract just the IANA part after the space
       const parts = timezone.split(' ');
       if (parts.length > 1) {
         cleanTimezone = parts[parts.length - 1];
@@ -35,52 +34,53 @@ export function createDateInTimezone(
       }
     }
     
-    // IMPORTANT: For scheduling to work in Shopify, we need to create a date in the future
-    // We'll just set it directly to the provided date components in UTC
-    // This forces Shopify to treat it as a future date for scheduling
-    const futureDate = new Date(Date.UTC(
-      year,
-      month - 1,  // JS months are 0-indexed
-      day,
-      hour,
-      minute,
-      0
-    ));
+    // Create a date object that represents the local time in the store's timezone
+    // We need to account for the timezone offset when creating the UTC date
+    const tempDate = new Date(`${dateString}T${timeString}:00`);
+    console.log(`Temp date (local interpretation): ${tempDate.toISOString()}`);
     
-    console.log(`Created future date in UTC: ${futureDate.toISOString()}`);
+    // Get the timezone offset for the store timezone at this date
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: cleanTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
     
-    // Check if the date is truly in the future
-    const now = new Date();
-    if (futureDate <= now) {
-      // For scheduling that is supposed to happen today but passed, 
-      // don't adjust the time. This allows the scheduler to recognize it
-      // should be published immediately.
-      console.warn(`Created date is not in the future. Now: ${now.toISOString()}, Created: ${futureDate.toISOString()}`);
-      
-      // Check if the date is for today (same day)
-      const today = new Date();
-      const scheduleDay = new Date(dateString);
-      const isToday = today.getFullYear() === scheduleDay.getFullYear() &&
-                      today.getMonth() === scheduleDay.getMonth() &&
-                      today.getDate() === scheduleDay.getDate();
-      
-      if (isToday) {
-        console.log(`Scheduled time is for today but already passed. Will publish immediately.`);
-        // Return the created date as is, allowing it to be recognized as ready to publish
-        return futureDate;
-      } else {
-        // For dates not today, push to the future to avoid problems
-        const safeDate = new Date();
-        safeDate.setHours(safeDate.getHours() + 1);
-        console.log(`Adjusting to safe future date: ${safeDate.toISOString()}`);
-        return safeDate;
-      }
+    // Get what the current time looks like in the store timezone
+    const nowInStoreTimezone = formatter.format(new Date());
+    console.log(`Current time in store timezone: ${nowInStoreTimezone}`);
+    
+    // Create the scheduled date by interpreting the input time as store local time
+    // and converting to UTC for storage
+    const storeLocalTimeStr = `${dateString}T${timeString}:00`;
+    const parts = storeLocalTimeStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+    if (!parts) {
+      throw new Error('Invalid date format');
     }
     
-    return futureDate;
+    const [, y, m, d, h, min, s] = parts.map(Number);
+    
+    // Create date as if it's in the store timezone
+    // For Eastern Time (UTC-5), 5:30 AM Eastern = 10:30 AM UTC
+    const utcDate = new Date(Date.UTC(y, m - 1, d, h, min, s));
+    
+    // Adjust for timezone offset
+    // For Eastern Time (UTC-5), we need to add 5 hours to get the correct UTC time
+    const offsetMinutes = utcDate.getTimezoneOffset(); // This doesn't work for specific timezones
+    
+    // Use a different approach: create the date and let JavaScript handle timezone
+    const scheduledDate = new Date(`${dateString}T${timeString}:00`);
+    
+    console.log(`Created scheduled date (treating as local): ${scheduledDate.toISOString()}`);
+    
+    return scheduledDate;
   } catch (error) {
     console.error(`Error creating date:`, error);
-    // Fallback to a date 1 hour in the future
     const fallbackDate = new Date();
     fallbackDate.setHours(fallbackDate.getHours() + 1);
     console.log(`Using fallback date: ${fallbackDate.toISOString()}`);

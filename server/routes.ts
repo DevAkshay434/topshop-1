@@ -1210,12 +1210,44 @@ export async function registerRoutes(app: Express): Promise<void> {
         scheduledDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
       }
       
-      // Ensure the date is in the future
-      const now = new Date();
-      if (scheduledDate <= now) {
+      // Validate schedule time within store timezone
+      // Get current time formatted in store timezone
+      const nowFormatted = new Date().toLocaleString("en-CA", { 
+        timeZone: storeTimezone,
+        year: 'numeric',
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      
+      // Parse current time in store timezone
+      const [currentDate, currentTime] = nowFormatted.split(', ');
+      const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number);
+      const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+      
+      // Parse scheduled time
+      const [schedYear, schedMonth, schedDay] = scheduledPublishDate.split('-').map(Number);
+      const [schedHour, schedMinute] = scheduledPublishTime.split(':').map(Number);
+      
+      console.log(`Current time in ${storeTimezone}: ${currentYear}-${currentMonth}-${currentDay} ${currentHour}:${currentMinute}`);
+      console.log(`Scheduled time: ${schedYear}-${schedMonth}-${schedDay} ${schedHour}:${schedMinute}`);
+      
+      // Compare dates and times within the store timezone
+      const isScheduleInPast = (
+        schedYear < currentYear ||
+        (schedYear === currentYear && schedMonth < currentMonth) ||
+        (schedYear === currentYear && schedMonth === currentMonth && schedDay < currentDay) ||
+        (schedYear === currentYear && schedMonth === currentMonth && schedDay === currentDay && 
+         (schedHour < currentHour || (schedHour === currentHour && schedMinute <= currentMinute)))
+      );
+      
+      if (isScheduleInPast) {
         return res.status(400).json({ 
           error: "Invalid schedule time",
-          details: "Scheduled time must be in the future"
+          details: `Scheduled time must be in the future. Current time in ${storeTimezone}: ${currentHour}:${currentMinute.toString().padStart(2, '0')}`
         });
       }
       
