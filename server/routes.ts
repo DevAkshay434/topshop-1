@@ -3414,11 +3414,14 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         });
       }
       
-      // Verify it has the required Shopify IDs
-      if (!post.shopifyPostId || !post.shopifyBlogId) {
+      // Verify it has the required Shopify IDs (pages don't need shopifyBlogId)
+      const isPage = (post.tags && post.tags.includes('page')) || post.contentType === 'page';
+      console.log(`Detected ${isPage ? 'page' : 'blog post'} for ID ${postId}, tags: "${post.tags}", contentType: "${post.contentType}"`);
+      
+      if (!post.shopifyPostId || (!isPage && !post.shopifyBlogId)) {
         return res.status(400).json({
           status: "error",
-          message: "Post is missing Shopify IDs and cannot be published"
+          message: `${isPage ? 'Page' : 'Post'} is missing required Shopify IDs and cannot be published. Has shopifyPostId: ${!!post.shopifyPostId}, Has shopifyBlogId: ${!!post.shopifyBlogId}`
         });
       }
       
@@ -3438,18 +3441,17 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         });
       }
       
-      console.log(`Publishing post ${postId} to store ${store.shopName}`);
+      console.log(`Publishing ${isPage ? 'page' : 'post'} ${postId} to store ${store.shopName}`);
       
-      // Import the publishing function from custom-scheduler
-      const { publishScheduledArticle } = await import("./services/custom-scheduler");
-      
-      // Publish the post
-      const publishedArticle = await publishScheduledArticle(
-        store,
-        post.shopifyBlogId,
-        post.shopifyPostId,
-        post
-      );
+      // Import the appropriate publishing function from custom-scheduler
+      let publishedResult;
+      if (isPage) {
+        const { publishScheduledPage } = await import("./services/custom-scheduler");
+        publishedResult = await publishScheduledPage(store, post.shopifyPostId, post);
+      } else {
+        const { publishScheduledArticle } = await import("./services/custom-scheduler");
+        publishedResult = await publishScheduledArticle(store, post.shopifyBlogId, post.shopifyPostId, post);
+      }
       
       // Update the post status in the database
       await storage.updateBlogPost(postId, {
@@ -3459,12 +3461,12 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       return res.json({
         status: "success",
-        message: "Post published successfully",
+        message: `${isPage ? 'Page' : 'Post'} published successfully`,
         post: {
           id: postId,
           title: post.title,
           shopifyPostId: post.shopifyPostId,
-          publishedArticle
+          publishedResult
         }
       });
       
