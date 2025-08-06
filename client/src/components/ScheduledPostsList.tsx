@@ -128,9 +128,22 @@ export function ScheduledPostsList() {
         queryClient.setQueryData(["/api/posts/scheduled"], context.previousData);
       }
       
+      // Extract a more user-friendly error message
+      const errorMessage = error.message || "Failed to update post schedule.";
+      const isTimeError = errorMessage.includes("Invalid schedule time") || errorMessage.includes("schedule time");
+      
       toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update post schedule.",
+        title: isTimeError ? "Invalid Schedule Time" : "Update Failed",
+        description: isTimeError 
+          ? `The scheduled time must be in the future. Current time in ${storeTimezone}: ${new Date().toLocaleString("en-US", { 
+              timeZone: storeTimezone.includes('/') ? storeTimezone : 'America/New_York',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+              month: 'short',
+              day: '2-digit'
+            })}`
+          : errorMessage,
         variant: "destructive",
       });
     },
@@ -180,22 +193,9 @@ export function ScheduledPostsList() {
       return;
     }
 
-    // Validate that the scheduled time is in the future (store timezone)
-    const storeTimezoneForValidation = storeTimezone.includes('/') ? storeTimezone : 'America/New_York';
-    const nowInStoreTimezone = new Date().toLocaleString("en-CA", { timeZone: storeTimezoneForValidation });
-    const scheduledInStoreTimezone = `${newDate} ${newTime}:00`;
-    
-    const nowDate = new Date(nowInStoreTimezone);
-    const scheduledDate = new Date(scheduledInStoreTimezone);
-    
-    if (scheduledDate <= nowDate) {
-      toast({
-        title: "Invalid Schedule Time",
-        description: `The scheduled time must be in the future according to store timezone (${storeTimezone}). Current store time: ${nowDate.toLocaleString()}`,
-        variant: "destructive",
-      });
-      return;
-    }
+    // Let the backend handle timezone validation since it has proper timezone logic
+    // Frontend validation would be complex and error-prone with timezones
+    // The backend will return a proper error message if the time is invalid
 
     updateScheduleMutation.mutate({
       postId: editingPost.id,
@@ -308,6 +308,24 @@ export function ScheduledPostsList() {
                         <DialogTitle>Update Schedule</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                          <div className="flex items-center gap-2 text-blue-800 text-sm font-medium">
+                            <Clock className="h-4 w-4" />
+                            Current Store Time
+                          </div>
+                          <div className="text-blue-700 text-lg font-mono mt-1">
+                            {new Date().toLocaleString("en-US", {
+                              timeZone: storeTimezone.includes('/') ? storeTimezone : 'America/New_York',
+                              weekday: 'short',
+                              month: 'short',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })} ({storeTimezone})
+                          </div>
+                        </div>
+                        
                         <div>
                           <Label htmlFor="date">Publish Date</Label>
                           <Input
@@ -315,6 +333,9 @@ export function ScheduledPostsList() {
                             type="date"
                             value={newDate}
                             onChange={(e) => setNewDate(e.target.value)}
+                            min={new Date().toLocaleDateString("en-CA", {
+                              timeZone: storeTimezone.includes('/') ? storeTimezone : 'America/New_York'
+                            })}
                           />
                         </div>
                         <div>
@@ -326,15 +347,7 @@ export function ScheduledPostsList() {
                             onChange={(e) => setNewTime(e.target.value)}
                           />
                           <p className="text-xs text-muted-foreground mt-1">
-                            Current store time: {new Date().toLocaleString("en-US", {
-                              timeZone: storeTimezone.includes('/') ? storeTimezone : 'America/New_York',
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false
-                            })} ({storeTimezone})
+                            Select a time in the future according to your store's timezone
                           </p>
                         </div>
                         <Button
