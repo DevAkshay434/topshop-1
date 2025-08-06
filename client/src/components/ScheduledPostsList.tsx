@@ -76,8 +76,41 @@ export function ScheduledPostsList() {
         },
       });
     },
+    onMutate: async ({ postId, scheduledPublishDate, scheduledPublishTime }) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ["/api/posts/scheduled"] });
+
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(["/api/posts/scheduled"]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(["/api/posts/scheduled"], (old: ScheduledPostsResponse | undefined) => {
+        if (!old) return old;
+        
+        return {
+          ...old,
+          posts: old.posts.map(post => 
+            post.id === postId 
+              ? { 
+                  ...post, 
+                  scheduledPublishDate, 
+                  scheduledPublishTime 
+                }
+              : post
+          )
+        };
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousData };
+    },
     onSuccess: () => {
+      // Force immediate refetch of scheduled posts
       queryClient.invalidateQueries({ queryKey: ["/api/posts/scheduled"] });
+      queryClient.refetchQueries({ queryKey: ["/api/posts/scheduled"] });
+      // Also invalidate any related post queries
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      
       setEditingPost(null);
       setNewDate("");
       setNewTime("");
@@ -86,7 +119,12 @@ export function ScheduledPostsList() {
         description: "The post schedule has been updated successfully.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      // Roll back the optimistic update if there was an error
+      if (context?.previousData) {
+        queryClient.setQueryData(["/api/posts/scheduled"], context.previousData);
+      }
+      
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update post schedule.",
