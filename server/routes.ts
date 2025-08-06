@@ -1028,25 +1028,11 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       
       const allPosts = await storage.getScheduledPostsByStore(store.id);
-      // Filter to show only scheduled blog posts (exclude all pages)
-      // Pages can be identified by: tags containing 'page', OR shopify_post_id being for pages (typically 15+ digits)
+      // Include all scheduled content - both blog posts and pages
+      // Users need to see and manage all their scheduled content in one place
       const posts = allPosts.filter(post => {
-        // First filter: must be scheduled status
-        if (post.status !== 'scheduled') return false;
-        
-        // Second filter: exclude pages by multiple criteria
-        // 1. Check if tags contain 'page'
-        if (post.tags && post.tags.includes('page')) return false;
-        
-        // 2. Check if this looks like a page ID (Shopify page IDs are typically longer than article IDs)
-        if (post.shopifyPostId && post.shopifyPostId.length >= 12) {
-          // Additional check: if title contains typical page keywords, likely a page
-          const pageKeywords = ['test page', 'page scheduling', 'comprehensive test', 'custom page', 'final page'];
-          const titleLower = post.title.toLowerCase();
-          if (pageKeywords.some(keyword => titleLower.includes(keyword))) return false;
-        }
-        
-        return true; // Include this post (it's a blog post)
+        // Only filter: must be scheduled status
+        return post.status === 'scheduled';
       });
       
       // Get store timezone information
