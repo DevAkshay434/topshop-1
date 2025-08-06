@@ -17,6 +17,8 @@ interface ScheduledPost {
   title: string;
   content: string;
   status: string;
+  contentType?: string; // Add contentType field from backend
+  tags?: string; // Add tags field from backend
   author?: string;
   authorId?: number;
   scheduledDate?: string;
@@ -72,6 +74,7 @@ export function ScheduledPostsList() {
   const { data: scheduledData, isLoading, error } = useQuery<ScheduledPostsResponse>({
     queryKey: ["/api/posts/scheduled"],
     refetchInterval: 30000, // Refresh every 30 seconds to show live countdown
+    staleTime: 10000, // Data becomes stale after 10 seconds
   });
 
   const updateScheduleMutation = useMutation({
@@ -195,10 +198,25 @@ export function ScheduledPostsList() {
   };
 
   const getContentType = (post: ScheduledPost): string => {
-    // Determine if this is a page or blog post
-    if (post.tags?.includes('page') || post.title?.toLowerCase().includes('page')) {
+    // Priority 1: Use backend contentType field (most reliable)
+    if (post.contentType === 'page') {
       return "Page";
     }
+    if (post.contentType === 'post') {
+      return "Post";
+    }
+    
+    // Priority 2: Check tags for "page" indicator
+    if (post.tags?.includes('page')) {
+      return "Page";
+    }
+    
+    // Priority 3: Check title for "page" keyword (least reliable)
+    if (post.title?.toLowerCase().includes('page')) {
+      return "Page";
+    }
+    
+    // Default to Post
     return "Post";
   };
 
