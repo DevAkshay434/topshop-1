@@ -878,6 +878,29 @@ export class DatabaseStorage implements IStorage {
     if (post.views !== undefined) updateData.views = post.views;
     if (post.contentType !== undefined) updateData.contentType = post.contentType;
     
+    // Add author fields
+    if (post.author !== undefined) updateData.author = post.author;
+    if (post.authorId !== undefined) updateData.authorId = post.authorId !== null ? 
+      (typeof post.authorId === 'string' ? parseInt(post.authorId, 10) : post.authorId) : null;
+    
+    // Add metaTitle and metaDescription
+    if (post.metaTitle !== undefined) updateData.metaTitle = post.metaTitle;
+    if (post.metaDescription !== undefined) updateData.metaDescription = post.metaDescription;
+    
+    // Add storeId 
+    if (post.storeId !== undefined) updateData.storeId = post.storeId;
+    
+    // Add updatedAt timestamp
+    updateData.updatedAt = new Date();
+    
+    // Ensure we have at least one field to update
+    if (Object.keys(updateData).length === 0) {
+      console.warn(`updateBlogPost: No fields to update for post ${id}`);
+      return this.getBlogPost(id);
+    }
+    
+    console.log(`updateBlogPost: Updating post ${id} with fields:`, Object.keys(updateData));
+    
     const [updatedPost] = await db.update(blogPosts)
       .set(updateData)
       .where(eq(blogPosts.id, id))
