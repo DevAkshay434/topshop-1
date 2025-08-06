@@ -53,7 +53,9 @@ export async function apiRequest<T = any>(
     headers['X-Store-ID'] = autoDetectedStoreId.toString();
     console.log(`Query client: Adding X-Store-ID header: ${autoDetectedStoreId} for URL: ${url}`);
   } else {
-    console.log(`Query client: No auto-detected store ID available for URL: ${url}. Value: ${autoDetectedStoreId}`);
+    // Fallback to store ID 1 if auto-detection fails due to API issues
+    console.log(`Query client: No auto-detected store ID available for URL: ${url}. Using fallback store ID 1`);
+    headers['X-Store-ID'] = '1';
   }
   
   const res = await fetch(url, {
