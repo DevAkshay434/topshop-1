@@ -1373,6 +1373,52 @@ export class ShopifyService {
   }
 
   /**
+   * Update an existing Shopify page
+   * @param store The store to update the page in
+   * @param pageId The page ID to update
+   * @param pageData The updated page data
+   */
+  public async updatePage(store: ShopifyStore, pageId: string, pageData: {
+    title?: string;
+    body_html?: string;
+    published?: boolean;
+  }): Promise<any> {
+    try {
+      const client = this.getClient(store);
+      
+      console.log(`Updating Shopify page ${pageId}`, {
+        title: pageData.title ? pageData.title.substring(0, 50) + '...' : undefined,
+        published: pageData.published
+      });
+      
+      // Update the page
+      const response = await client.put(`/pages/${pageId}.json`, {
+        page: pageData
+      });
+      
+      console.log(`Page updated successfully:`, {
+        id: response.data.page.id,
+        title: response.data.page.title,
+        published: response.data.page.published,
+        handle: response.data.page.handle
+      });
+      
+      return response.data.page;
+    } catch (error: any) {
+      console.error(`Error updating page ${pageId}:`, error?.response?.data || error.message);
+      
+      if (error.response) {
+        console.error(`Shopify API error:`, {
+          status: error.response.status,
+          data: error.response.data
+        });
+      }
+      
+      throw new Error(`Failed to update page: ${error?.message || 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Ensure metafield definitions exist for blog posts SEO fields
    * This makes the metafields visible in Shopify admin interface
    */
