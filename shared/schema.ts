@@ -125,6 +125,7 @@ export const blogPosts = pgTable("blog_posts", {
   publishedDate: timestamp("published_date"),
   shopifyPostId: text("shopify_post_id"),
   shopifyBlogId: text("shopify_blog_id"),
+  shopifyHandle: text("shopify_handle"), // Shopify handle/slug for SEO-friendly URLs
   metaTitle: text("meta_title"), // SEO meta title
   metaDescription: text("meta_description"), // SEO meta description
   views: integer("views").default(0),
@@ -162,6 +163,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts, {
   publishedDate: true,
   shopifyPostId: true,
   shopifyBlogId: true,
+  shopifyHandle: true,
   metaTitle: true,
   metaDescription: true,
   views: true,

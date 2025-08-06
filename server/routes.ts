@@ -1168,19 +1168,54 @@ export async function registerRoutes(app: Express): Promise<void> {
               
               if (!articleIdentifier) {
                 try {
-                  // Fetch article details from Shopify to get the handle
-                  const articleResponse = await shopifyService.makeApiRequest(store, 'GET', `blogs/${post.shopifyBlogId}/articles/${post.shopifyPostId}.json`);
-                  if (articleResponse.article && articleResponse.article.handle) {
-                    articleIdentifier = articleResponse.article.handle;
+                  // If we don't have a blog ID, try to find the article in all available blogs
+                  if (!post.shopifyBlogId) {
+                    console.log(`No blog ID for post ${post.id}, searching all blogs for article ${post.shopifyPostId}`);
+                    const blogs = await shopifyService.getBlogs(store);
                     
-                    // Update local database with the handle for future use
-                    try {
-                      await storage.updateBlogPost(post.id, { shopifyHandle: articleResponse.article.handle });
-                    } catch (updateError) {
-                      console.warn(`Could not update article handle for post ${post.id}:`, updateError);
+                    for (const blog of blogs) {
+                      try {
+                        const articleResponse = await shopifyService.makeApiRequest(store, 'GET', `blogs/${blog.id}/articles/${post.shopifyPostId}.json`);
+                        if (articleResponse.article && articleResponse.article.handle) {
+                          articleIdentifier = articleResponse.article.handle;
+                          blogHandle = blog.handle; // Update blog handle too
+                          
+                          // Update local database with both handles for future use
+                          try {
+                            await storage.updateBlogPost(post.id, { 
+                              shopifyHandle: articleResponse.article.handle,
+                              shopifyBlogId: blog.id.toString()
+                            });
+                          } catch (updateError) {
+                            console.warn(`Could not update article handle for post ${post.id}:`, updateError);
+                          }
+                          console.log(`✓ Found article ${articleIdentifier} in blog ${blog.handle}`);
+                          break;
+                        }
+                      } catch (blogError) {
+                        // Continue searching other blogs
+                        continue;
+                      }
                     }
                   } else {
-                    articleIdentifier = post.shopifyPostId; // fallback to ID
+                    // We have a blog ID, fetch directly
+                    const articleResponse = await shopifyService.makeApiRequest(store, 'GET', `blogs/${post.shopifyBlogId}/articles/${post.shopifyPostId}.json`);
+                    if (articleResponse.article && articleResponse.article.handle) {
+                      articleIdentifier = articleResponse.article.handle;
+                      
+                      // Update local database with the handle for future use
+                      try {
+                        await storage.updateBlogPost(post.id, { shopifyHandle: articleResponse.article.handle });
+                      } catch (updateError) {
+                        console.warn(`Could not update article handle for post ${post.id}:`, updateError);
+                      }
+                    }
+                  }
+                  
+                  // Only fallback to ID if we absolutely can't find the handle
+                  if (!articleIdentifier) {
+                    console.warn(`Could not find handle for article ${post.shopifyPostId}, using ID as fallback`);
+                    articleIdentifier = post.shopifyPostId;
                   }
                 } catch (error) {
                   console.warn(`Could not fetch article handle for article ${post.shopifyPostId}:`, error);
