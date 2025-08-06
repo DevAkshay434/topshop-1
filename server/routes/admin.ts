@@ -1712,9 +1712,20 @@ Place this at a logical position in the content, typically after introducing a c
       
       // Handle primary image differently for pages vs blog posts
       if (requestData.primaryImage && requestData.articleType === 'page') {
-        // For pages: DON'T add primary image to content body since it's displayed separately in the admin panel
-        // This prevents duplication in the preview where featured image is shown separately
-        console.log("Skipping primary image insertion for page to prevent duplication in admin panel preview");
+        // For pages: Add primary image at the beginning of content for Shopify publication
+        // The admin panel preview will handle removing it client-side to prevent duplication
+        const primaryImageUrl = requestData.primaryImage.url;
+        const primaryImageAlt = requestData.primaryImage.alt || requestData.title;
+        
+        // Featured image should NOT be linked to products - display as standalone image
+        const primaryImageHtml = `
+<div class="featured-image-container" style="text-align: center; margin: 20px 0;">
+  <img src="${primaryImageUrl}" alt="${primaryImageAlt}" style="max-width: 100%; height: auto;">
+</div>`;
+        
+        // Add primary image at the beginning of content for Shopify publication
+        finalContent = primaryImageHtml + finalContent;
+        console.log("Added primary image to beginning of page content for Shopify publication");
       }
       
       // Secondary images are now handled by the Claude service via processMediaPlacementsHandler

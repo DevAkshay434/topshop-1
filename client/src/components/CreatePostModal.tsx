@@ -212,21 +212,31 @@ export default function CreatePostModal({
     generatedContent?.featuredImage?.url || generatedContent?.featuredImage?.src?.medium || null
   );
 
-  // Function to process content for preview - removes featured image from content body for pages
+  // Function to process content for preview - removes featured image from content body for pages only in admin preview
   const getContentForPreview = (content: string, contentType: string) => {
     if (contentType === 'page' && generatedContent?.featuredImage) {
-      // For pages, remove the first image that matches the featured image to prevent duplication
+      // For pages, remove the first image that matches the featured image to prevent duplication in admin preview
+      // This ensures the admin panel shows the featured image separately without duplication in content body
       const featuredImageSrc = generatedContent.featuredImage.url || 
                                generatedContent.featuredImage.src?.medium || 
                                generatedContent.featuredImage.src?.original;
       
       if (featuredImageSrc) {
-        // Remove the first occurrence of an img tag with the featured image URL
-        const imageRegex = new RegExp(`<img[^>]*src=["']${featuredImageSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'i');
-        const contentWithoutFeaturedImage = content.replace(imageRegex, '');
+        // Remove the first occurrence of an img tag with the featured image URL (case-insensitive)
+        const escapedSrc = featuredImageSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const imageRegex = new RegExp(`<img[^>]*src=["']${escapedSrc}["'][^>]*>`, 'i');
         
-        // Also remove any wrapping divs that might be empty after image removal
-        return contentWithoutFeaturedImage.replace(/<div[^>]*>\s*<\/div>/g, '').replace(/\n\s*\n\s*\n/g, '\n\n');
+        // Also remove the wrapping div with featured-image-container class if present
+        const containerRegex = new RegExp(`<div[^>]*class=["']featured-image-container["'][^>]*>\\s*<img[^>]*src=["']${escapedSrc}["'][^>]*>\\s*</div>`, 'i');
+        
+        let processedContent = content.replace(containerRegex, '');
+        if (processedContent === content) {
+          // If container removal didn't work, try just the image
+          processedContent = content.replace(imageRegex, '');
+        }
+        
+        // Clean up any empty divs and excessive line breaks
+        return processedContent.replace(/<div[^>]*>\s*<\/div>/g, '').replace(/\n\s*\n\s*\n/g, '\n\n');
       }
     }
     
