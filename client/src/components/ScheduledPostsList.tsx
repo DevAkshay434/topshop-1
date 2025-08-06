@@ -162,13 +162,21 @@ export function ScheduledPostsList() {
   };
 
   const handleEditSchedule = (post: ScheduledPost) => {
+    console.log("handleEditSchedule called for post:", post.id, post.title);
     setEditingPost(post);
     setNewDate(post.scheduledPublishDate || "");
     setNewTime(post.scheduledPublishTime || "");
+    console.log("Set initial values:", {
+      scheduledPublishDate: post.scheduledPublishDate,
+      scheduledPublishTime: post.scheduledPublishTime
+    });
   };
 
   const handleUpdateSchedule = () => {
+    console.log("handleUpdateSchedule called", { editingPost, newDate, newTime });
+    
     if (!editingPost || !newDate || !newTime) {
+      console.log("Validation failed", { editingPost: !!editingPost, newDate, newTime });
       toast({
         title: "Invalid Input",
         description: "Please provide both date and time.",
@@ -176,6 +184,12 @@ export function ScheduledPostsList() {
       });
       return;
     }
+
+    console.log("Calling mutation with:", {
+      postId: editingPost.id,
+      scheduledPublishDate: newDate,
+      scheduledPublishTime: newTime,
+    });
 
     updateScheduleMutation.mutate({
       postId: editingPost.id,
@@ -307,7 +321,10 @@ export function ScheduledPostsList() {
                           />
                         </div>
                         <Button
-                          onClick={handleUpdateSchedule}
+                          onClick={() => {
+                            console.log("Update button clicked");
+                            handleUpdateSchedule();
+                          }}
                           disabled={updateScheduleMutation.isPending}
                           className="w-full"
                         >
