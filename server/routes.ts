@@ -1671,9 +1671,16 @@ export async function registerRoutes(app: Express): Promise<void> {
             let shopifyArticle;
             // Get the article type from the request or default to blog
             const articleType = req.body.articleType || req.body.contentType || 'blog';
-            const isPage = articleType === 'page';
+            const isPage = articleType === 'page' || (post.tags && post.tags.includes('page')) || post.contentType === 'page';
             // Add this info to the post for later use
-            post.articleType = articleType;
+            post.articleType = isPage ? 'page' : 'blog';
+            
+            // Update contentType in database to reflect correct type
+            if (isPage && post.contentType !== 'page') {
+              await storage.updateBlogPost(post.id, { contentType: 'page' });
+              post.contentType = 'page';
+              console.log(`Updated post ${post.id} contentType to 'page'`);
+            }
             
             if (isPage) {
               console.log(`Creating a Shopify page for post with status: ${post.status}`);
