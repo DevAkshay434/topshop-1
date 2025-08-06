@@ -1061,8 +1061,44 @@ export async function registerRoutes(app: Express): Promise<void> {
           // Add timezone-aware scheduling information
           if (post.scheduledDate) {
             const scheduledDate = new Date(post.scheduledDate);
-            const now = new Date();
-            const isPastDue = scheduledDate < now;
+            
+            // Calculate isPastDue using store timezone comparison
+            let isPastDue = false;
+            if (post.scheduledPublishDate && post.scheduledPublishTime) {
+              // Get current time in store timezone
+              const nowFormatted = new Date().toLocaleString("en-CA", { 
+                timeZone: storeTimezone,
+                year: 'numeric',
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+              });
+              
+              // Parse current time in store timezone
+              const [currentDate, currentTime] = nowFormatted.split(', ');
+              const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number);
+              const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+              
+              // Parse scheduled time
+              const [schedYear, schedMonth, schedDay] = post.scheduledPublishDate.split('-').map(Number);
+              const [schedHour, schedMinute] = post.scheduledPublishTime.split(':').map(Number);
+              
+              // Compare dates and times within the store timezone
+              isPastDue = (
+                schedYear < currentYear ||
+                (schedYear === currentYear && schedMonth < currentMonth) ||
+                (schedYear === currentYear && schedMonth === currentMonth && schedDay < currentDay) ||
+                (schedYear === currentYear && schedMonth === currentMonth && schedDay === currentDay && 
+                 (schedHour < currentHour || (schedHour === currentHour && schedMinute < currentMinute)))
+              );
+            } else {
+              // Fallback to UTC comparison if no date/time fields
+              const now = new Date();
+              isPastDue = scheduledDate < now;
+            }
             
             enrichedPost.schedulingInfo = {
               scheduledDate: scheduledDate.toISOString(),
@@ -1077,7 +1113,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               }),
               timezone: storeTimezone,
               isPastDue,
-              minutesUntilPublish: isPastDue ? 0 : Math.floor((scheduledDate.getTime() - now.getTime()) / (1000 * 60))
+              minutesUntilPublish: isPastDue ? 0 : Math.floor((scheduledDate.getTime() - new Date().getTime()) / (1000 * 60))
             };
           }
           
