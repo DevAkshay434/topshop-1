@@ -1120,9 +1120,33 @@ export async function registerRoutes(app: Express): Promise<void> {
           // Check if the post has been published to Shopify
           let shopifyUrl = null;
           if (post.shopifyPostId) {
-            if (post.contentType === 'page' || !post.shopifyBlogId) {
-              // For pages
-              shopifyUrl = `https://${store.shopName}/pages/${post.shopifyHandle || post.shopifyPostId}`;
+            if (post.contentType === 'page') {
+              // For pages - fetch handle if not stored locally
+              let pageIdentifier = post.shopifyHandle;
+              
+              if (!pageIdentifier) {
+                try {
+                  // Fetch page details from Shopify to get the handle
+                  const pageResponse = await shopifyService.makeApiRequest(store, 'GET', `pages/${post.shopifyPostId}.json`);
+                  if (pageResponse.page && pageResponse.page.handle) {
+                    pageIdentifier = pageResponse.page.handle;
+                    
+                    // Update local database with the handle for future use
+                    try {
+                      await storage.updateBlogPost(post.id, { shopifyHandle: pageResponse.page.handle });
+                    } catch (updateError) {
+                      console.warn(`Could not update page handle for post ${post.id}:`, updateError);
+                    }
+                  } else {
+                    pageIdentifier = post.shopifyPostId; // fallback to ID
+                  }
+                } catch (error) {
+                  console.warn(`Could not fetch page handle for page ${post.shopifyPostId}:`, error);
+                  pageIdentifier = post.shopifyPostId; // fallback to ID
+                }
+              }
+              
+              shopifyUrl = `https://${store.shopName}/pages/${pageIdentifier}`;
             } else {
               // For blog posts - determine the correct blog handle
               let blogHandle = 'news'; // default fallback
@@ -1139,7 +1163,32 @@ export async function registerRoutes(app: Express): Promise<void> {
                 // Keep default fallback
               }
               
-              shopifyUrl = `https://${store.shopName}/blogs/${blogHandle}/${post.shopifyHandle || post.shopifyPostId}`;
+              // For blog posts - fetch handle if not stored locally
+              let articleIdentifier = post.shopifyHandle;
+              
+              if (!articleIdentifier) {
+                try {
+                  // Fetch article details from Shopify to get the handle
+                  const articleResponse = await shopifyService.makeApiRequest(store, 'GET', `blogs/${post.shopifyBlogId}/articles/${post.shopifyPostId}.json`);
+                  if (articleResponse.article && articleResponse.article.handle) {
+                    articleIdentifier = articleResponse.article.handle;
+                    
+                    // Update local database with the handle for future use
+                    try {
+                      await storage.updateBlogPost(post.id, { shopifyHandle: articleResponse.article.handle });
+                    } catch (updateError) {
+                      console.warn(`Could not update article handle for post ${post.id}:`, updateError);
+                    }
+                  } else {
+                    articleIdentifier = post.shopifyPostId; // fallback to ID
+                  }
+                } catch (error) {
+                  console.warn(`Could not fetch article handle for article ${post.shopifyPostId}:`, error);
+                  articleIdentifier = post.shopifyPostId; // fallback to ID
+                }
+              }
+              
+              shopifyUrl = `https://${store.shopName}/blogs/${blogHandle}/${articleIdentifier}`;
             }
           }
           
