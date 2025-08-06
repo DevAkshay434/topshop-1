@@ -2681,5 +2681,69 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.status(500).json({ error: error.message });
     }
   });
+
+  // Get scheduled blog posts with author names populated and timezone info
+  apiRouter.get("/posts/scheduled", async (req: Request, res: Response) => {
+    try {
+      // Get store context for proper multi-store support
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
+      
+      const allPosts = await storage.getScheduledPostsByStore(store.id);
+      // Include all scheduled content - both blog posts and pages
+      const posts = allPosts.filter(post => {
+        // Only filter: must be scheduled status
+        return post.status === 'scheduled';
+      });
+
+      // Sort by scheduled time (earliest first)
+      posts.sort((a, b) => {
+        const dateA = new Date(a.scheduledPublishTime || 0);
+        const dateB = new Date(b.scheduledPublishTime || 0);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+      res.json({ posts });
+    } catch (error: any) {
+      console.error('Error fetching scheduled posts:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get single post/page by ID
+  apiRouter.get("/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(400).json({ error: "Store context required" });
+      }
+      
+      const postId = parseInt(req.params.id);
+      const post = await storage.getBlogPostById(postId, store.id);
+      
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      
+      res.json(post);
+    } catch (error: any) {
+      console.error('Error fetching post:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get available plans
+  apiRouter.get("/plans", async (req: Request, res: Response) => {
+    try {
+      res.json({
+        plans: PLANS
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
+    }
+  });
+  
   return apiRouter;
 }

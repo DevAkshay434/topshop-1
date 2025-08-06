@@ -170,18 +170,6 @@ app.use((req, res, next) => {
     // Don't throw the error after handling it
   });
 
-  // Add a 404 handler for API routes before setting up Vite
-  app.use('/api/*', (req, res) => {
-    res.status(404).json({
-      app: "TopShop SEO",
-      status: "error",
-      message: "API endpoint not found",
-      code: 404,
-      timestamp: new Date().toISOString(),
-      path: req.path
-    });
-  });
-
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
