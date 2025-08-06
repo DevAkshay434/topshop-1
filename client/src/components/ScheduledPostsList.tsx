@@ -71,9 +71,10 @@ export function ScheduledPostsList() {
       console.log("mutationFn called with:", { postId, scheduledPublishDate, scheduledPublishTime });
       
       try {
-        const response = await apiRequest(`/api/posts/${postId}/schedule`, {
+        const response = await apiRequest({
+          url: `/api/posts/${postId}/schedule`,
           method: "PUT",
-          body: {
+          data: {
             scheduledPublishDate,
             scheduledPublishTime,
           },
