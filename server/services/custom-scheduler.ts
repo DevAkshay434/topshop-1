@@ -592,8 +592,8 @@ export async function checkScheduledPosts(): Promise<void> {
 
     for (const post of scheduledPosts) {
       try {
-        // Check if this is a page or a blog post
-        const isPage = post.contentType === 'page';
+        // Check if this is a page or a blog post - use multiple indicators
+        const isPage = post.contentType === 'page' || (post.tags && post.tags.includes('page'));
         
         // For blog posts, we need both shopifyPostId and shopifyBlogId
         // For pages, we only need shopifyPostId
@@ -602,10 +602,20 @@ export async function checkScheduledPosts(): Promise<void> {
           continue;
         }
         
-        // Blog posts need a blog ID
+        // Blog posts need a blog ID, but pages don't
         if (!isPage && !post.shopifyBlogId) {
           console.log(`Skipping post ${post.id} - missing Shopify Blog ID`);
           continue;
+        }
+        
+        // Log what type we detected for debugging
+        console.log(`Processing ${isPage ? 'page' : 'blog post'} ${post.id} - contentType: "${post.contentType}", tags: "${post.tags}"`);
+        
+        // Update contentType in database if it's misclassified
+        if (isPage && post.contentType !== 'page') {
+          console.log(`Correcting contentType for post ${post.id} from "${post.contentType}" to "page"`);
+          await storage.updateBlogPost(post.id, { contentType: 'page' });
+          post.contentType = 'page';
         }
 
         // Skip posts without scheduled date
