@@ -109,9 +109,6 @@ export function StoreProvider({ children }: StoreProviderProps) {
         }
       } catch (error) {
         console.error('Error auto-detecting store:', error);
-      // Fallback: Set store ID to 1 if auto-detection fails due to API issues
-      console.log('Setting fallback store ID to 1 due to auto-detection failure');
-      (window as any).__autoDetectedStoreId = 1;
       }
     };
 

@@ -58,7 +58,7 @@ export function ScheduledPostsList() {
   const queryClient = useQueryClient();
 
   const { data: scheduledData, isLoading, error } = useQuery<ScheduledPostsResponse>({
-    queryKey: ["/direct/scheduled-posts"],
+    queryKey: ["/api/posts/scheduled"],
     refetchInterval: 30000, // Refresh every 30 seconds to show live countdown
   });
 

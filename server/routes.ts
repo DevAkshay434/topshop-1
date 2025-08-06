@@ -1967,7 +1967,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
   
-  // Update a blog post or page
+  // Update a blog post
   apiRouter.put("/posts/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -1986,15 +1986,6 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Validate request body
       const postData = insertBlogPostSchema.partial().parse(req.body);
       
-      console.log(`PUT /api/posts/${id} - Updating post:`, {
-        currentStatus: existingPost.status,
-        newStatus: postData.status,
-        currentScheduledTime: `${existingPost.scheduledPublishDate} ${existingPost.scheduledPublishTime}`,
-        newScheduledTime: postData.scheduledPublishDate || postData.scheduledPublishTime ? `${postData.scheduledPublishDate} ${postData.scheduledPublishTime}` : 'unchanged',
-        isPage: existingPost.contentType === 'page' || (existingPost.tags && existingPost.tags.includes('page')),
-        hasShopifyId: !!existingPost.shopifyPostId
-      });
-      
       // Update post in storage
       const post = await storage.updateBlogPost(id, postData);
       
@@ -2002,204 +1993,143 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(500).json({ error: "Failed to update post" });
       }
       
-      // Determine if this is a page or blog post
-      const isPage = post.contentType === 'page' || (post.tags && post.tags.includes('page'));
-      console.log(`Identified content type: ${isPage ? 'page' : 'blog post'}`);
-      
-      // Use proper multi-store routing instead of legacy connection
-      const store = await getStoreFromRequest(req);
-      if (!store) {
-        console.error("No store context found for update");
-        return res.status(400).json({ error: "Store context required for update" });
-      }
-      
-      console.log(`Using store: ${store.shopName} (ID: ${store.id})`);
-      
-      // Check if we need to update/publish in Shopify
-      const needsShopifyUpdate = post.shopifyPostId && store && store.isConnected;
-      const hasScheduleTimeChanged = (postData.scheduledPublishDate || postData.scheduledPublishTime) && 
-        (postData.scheduledPublishDate !== existingPost.scheduledPublishDate || 
-         postData.scheduledPublishTime !== existingPost.scheduledPublishTime);
-      
-      if (needsShopifyUpdate) {
-        try {
-          // Initialize the Shopify service with the correct store
-          shopifyService.initializeClient(store);
-          
-          // Handle scheduled time updates
-          if (hasScheduleTimeChanged && post.status === 'scheduled') {
-            console.log('Schedule time changed - updating scheduled content');
+      // If post is published and has a Shopify ID, update in Shopify
+      if (post.shopifyPostId && (postData.status === 'published' || existingPost.status === 'published')) {
+        const connection = await storage.getShopifyConnection();
+        
+        if (connection && connection.isConnected && connection.defaultBlogId) {
+          try {
+            // Get function references
+            const { setConnection, updateArticle } = shopifyService;
             
-            // Create proper scheduled date with timezone handling
+            // Set connection first
+            setConnection(connection);
+            
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
+            
+            await updateArticle(tempStore, connection.defaultBlogId, post.shopifyPostId, postData);
+            
+            // Create sync activity
+            await storage.createSyncActivity({
+              activity: `Updated "${post.title}" on Shopify`,
+              status: "success",
+              details: `Successfully updated on Shopify`
+            });
+          } catch (shopifyError: any) {
+            // Log error but don't fail the request
+            console.error("Error updating in Shopify:", shopifyError);
+            
+            // Create sync activity
+            await storage.createSyncActivity({
+              activity: `Failed to update "${post.title}" on Shopify`,
+              status: "failed",
+              details: shopifyError.message
+            });
+          }
+        }
+      }
+      // If post is now published but wasn't before, publish to Shopify
+      else if (postData.status === 'published' && existingPost.status !== 'published') {
+        const connection = await storage.getShopifyConnection();
+        
+        if (connection && connection.isConnected && connection.defaultBlogId) {
+          try {
+            // Get function references
+            const { setConnection, createArticle } = shopifyService;
+            
+            // Set connection first
+            setConnection(connection);
+            
+            // Create a temporary store object for using with the new API
+            const tempStore = {
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '', // Not available in legacy connection
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            };
+            // For scheduled posts, create a proper Date object for scheduling
             let scheduledPublishDate: Date | undefined = undefined;
             
-            if (post.scheduledPublishDate && post.scheduledPublishTime) {
+            if (post.status === 'scheduled' && post.scheduledPublishDate && post.scheduledPublishTime) {
               try {
-                // Get shop's timezone from the store info
-                const shopInfo = await shopifyService.getShopInfo(store);
+                // Get shop info for timezone
+                const shopInfo = await shopifyService.getShopInfo(tempStore);
                 const timezone = shopInfo?.iana_timezone || shopInfo.timezone || 'UTC';
-                console.log(`Using timezone: ${timezone} for schedule update`);
                 
-                // Import the timezone-aware date creation function
+                // Create a date in the shop's timezone
                 const { createDateInTimezone } = await import('@shared/timezone');
-                
-                // Create a proper Date object in the store's timezone
                 scheduledPublishDate = createDateInTimezone(
                   post.scheduledPublishDate,
                   post.scheduledPublishTime,
                   timezone
                 );
                 
-                console.log(`Updated scheduled publish date: ${scheduledPublishDate.toISOString()}`);
+                console.log(`Created scheduled date for updated post: ${scheduledPublishDate.toISOString()}`);
               } catch (error) {
-                console.error(`Error creating scheduled date for update:`, error);
+                console.error('Error creating scheduled date for update:', error);
               }
             }
             
-            // For pages, we need to handle differently than blog posts
-            if (isPage) {
-              console.log('Updating scheduled page in Shopify');
-              
-              // For pages, we need to update the existing page
-              // Since Shopify pages don't support scheduling, we just update the page content
-              // and let our custom scheduler handle the publishing
-              const pageUpdateResult = await shopifyService.updatePage(
-                store,
-                post.shopifyPostId,
-                {
-                  title: post.title,
-                  body_html: post.content || '',
-                  published: false // Keep as draft until scheduled time
-                }
-              );
-              
-              console.log('Page updated in Shopify for scheduling:', {
-                pageId: post.shopifyPostId,
-                published: false,
-                scheduledFor: scheduledPublishDate?.toISOString()
-              });
-            } else {
-              console.log('Updating scheduled blog post in Shopify');
-              
-              // For blog posts, update the existing article
-              const articleData = {
-                title: post.title,
-                body_html: post.content || '',
-                published: false, // Keep as draft until scheduled time
-                author: post.author || ''
-              };
-              
-              await shopifyService.updateArticle(store, store.defaultBlogId, post.shopifyPostId, articleData);
-              
-              console.log('Blog post updated in Shopify for scheduling:', {
-                articleId: post.shopifyPostId,
-                published: false,
-                scheduledFor: scheduledPublishDate?.toISOString()
-              });
-            }
+            const shopifyArticle = await createArticle(
+              tempStore, 
+              connection.defaultBlogId, 
+              post,
+              scheduledPublishDate
+            );
             
-            // Create sync activity for schedule update
-            await storage.createSyncActivity({
-              activity: `Updated schedule for "${post.title}" to ${post.scheduledPublishDate} at ${post.scheduledPublishTime}`,
-              status: "success",
-              details: `${isPage ? 'Page' : 'Blog post'} schedule updated in Shopify`
+            // Update post with Shopify ID
+            const updatedPost = await storage.updateBlogPost(post.id, {
+              shopifyPostId: shopifyArticle.id
             });
-          }
-          // Handle immediate publishing
-          else if (postData.status === 'published' && existingPost.status !== 'published') {
-            console.log('Publishing content immediately');
             
-            if (isPage) {
-              console.log('Publishing page immediately');
+            if (updatedPost) {
+              // Create sync activity
+              await storage.createSyncActivity({
+                activity: `Published "${post.title}"`,
+                status: "success",
+                details: `Successfully published to Shopify`
+              });
               
-              const pageUpdateResult = await shopifyService.updatePage(
-                store,
-                post.shopifyPostId,
-                {
-                  title: post.title,
-                  body_html: post.content || '',
-                  published: true // Publish immediately
-                }
-              );
-              
-              console.log('Page published immediately in Shopify');
-            } else {
-              console.log('Publishing blog post immediately');
-              
-              const articleData = {
-                title: post.title,
-                body_html: post.content || '',
-                published: true, // Publish immediately
-                author: post.author || ''
-              };
-              
-              await shopifyService.updateArticle(store, store.defaultBlogId, post.shopifyPostId, articleData);
-              
-              console.log('Blog post published immediately in Shopify');
+              return res.json({ post: updatedPost });
             }
-            
-            // Update published date in our database
-            await storage.updateBlogPost(id, {
-              publishedDate: new Date()
-            });
+          } catch (shopifyError: any) {
+            // Log error but don't fail the request
+            console.error("Error publishing to Shopify:", shopifyError);
             
             // Create sync activity
             await storage.createSyncActivity({
-              activity: `Published "${post.title}" immediately`,
-              status: "success",
-              details: `${isPage ? 'Page' : 'Blog post'} published successfully in Shopify`
+              activity: `Failed to publish "${post.title}"`,
+              status: "failed",
+              details: shopifyError.message
             });
           }
-          // Handle other updates (content, title, etc.)
-          else if (post.status === 'published') {
-            console.log('Updating published content');
-            
-            if (isPage) {
-              await shopifyService.updatePage(
-                store,
-                post.shopifyPostId,
-                {
-                  title: post.title,
-                  body_html: post.content || '',
-                  published: true
-                }
-              );
-            } else {
-              const articleData = {
-                title: post.title,
-                body_html: post.content || '',
-                published: true,
-                author: post.author || ''
-              };
-              
-              await shopifyService.updateArticle(store, store.defaultBlogId, post.shopifyPostId, articleData);
-            }
-            
-            // Create sync activity
-            await storage.createSyncActivity({
-              activity: `Updated "${post.title}" on Shopify`,
-              status: "success",
-              details: `Successfully updated ${isPage ? 'page' : 'blog post'} on Shopify`
-            });
-          }
-          
-        } catch (shopifyError: any) {
-          console.error("Error updating in Shopify:", shopifyError);
-          
-          // Create sync activity for the error
-          await storage.createSyncActivity({
-            activity: `Failed to update "${post.title}" on Shopify`,
-            status: "failed",
-            details: shopifyError.message
-          });
         }
-      } else {
-        console.log('No Shopify update needed - either no Shopify ID or store not connected');
       }
       
       res.json({ post });
     } catch (error: any) {
-      console.error('Error in PUT /posts/:id:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
@@ -2681,73 +2611,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.status(500).json({ error: error.message });
     }
   });
-
-  // Get scheduled blog posts with author names populated and timezone info
-  apiRouter.get("/posts/scheduled", async (req: Request, res: Response) => {
-    try {
-      // Get store context for proper multi-store support
-      const store = await getStoreFromRequest(req);
-      if (!store) {
-        return res.status(400).json({ error: "Store context required" });
-      }
-      
-      const allPosts = await storage.getScheduledPostsByStore(store.id);
-      // Include all scheduled content - both blog posts and pages
-      const posts = allPosts.filter(post => {
-        // Only filter: must be scheduled status
-        return post.status === 'scheduled';
-      });
-
-      // Sort by scheduled time (earliest first)
-      posts.sort((a, b) => {
-        const dateA = new Date(a.scheduledPublishTime || 0);
-        const dateB = new Date(b.scheduledPublishTime || 0);
-        return dateA.getTime() - dateB.getTime();
-      });
-
-      // Add explicit response headers to ensure JSON response and bypass Vite
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('X-API-Response', 'true');
-      
-      console.log(`✅ Returning ${posts.length} scheduled posts for store ${store.id}`);
-      res.json({ 
-        posts,
-        storeTimezone: store.timezone || 'America/New_York',
-        store: {
-          name: store.shopName,
-          id: store.id
-        }
-      });
-    } catch (error: any) {
-      console.error('Error fetching scheduled posts:', error);
-      res.setHeader('Content-Type', 'application/json');
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Get single post/page by ID
-  apiRouter.get("/posts/:id", async (req: Request, res: Response) => {
-    try {
-      const store = await getStoreFromRequest(req);
-      if (!store) {
-        return res.status(400).json({ error: "Store context required" });
-      }
-      
-      const postId = parseInt(req.params.id);
-      const post = await storage.getBlogPostById(postId, store.id);
-      
-      if (!post) {
-        return res.status(404).json({ error: "Post not found" });
-      }
-      
-      res.json(post);
-    } catch (error: any) {
-      console.error('Error fetching post:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
+  
   // Get available plans
   apiRouter.get("/plans", async (req: Request, res: Response) => {
     try {
@@ -2758,6 +2622,953 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.status(500).json({ error: error instanceof Error ? error.message : "An unknown error occurred" });
     }
   });
+
+  // --- AUTHOR MANAGEMENT ROUTES ---
   
-  return apiRouter;
+  // Get all authors
+  apiRouter.get("/authors", async (req: Request, res: Response) => {
+    try {
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        // In standalone mode, try to get authors from all stores for backward compatibility
+        console.log("No store context found for authors - loading from all stores for standalone mode");
+        const authorsList = await db.select().from(authors).orderBy(desc(authors.createdAt));
+        
+        // Convert database authors to expected format
+        const formattedAuthors = authorsList.map((author) => ({
+          id: author.id.toString(),
+          handle: author.name.toLowerCase().replace(/\s+/g, '-'), // Generate handle from name
+          name: author.name,
+          description: author.description || '',
+          profileImage: author.avatarUrl || null,
+          linkedinUrl: author.linkedinUrl || null
+        }));
+
+        return res.json({ authors: formattedAuthors });
+      }
+
+      // Get authors using Drizzle ORM with correct schema for specific store
+      const authorsList = await db.select().from(authors).where(eq(authors.storeId, store.id)).orderBy(desc(authors.createdAt));
+
+      // Convert database authors to expected format
+      const formattedAuthors = authorsList.map((author) => ({
+        id: author.id.toString(),
+        handle: author.name.toLowerCase().replace(/\s+/g, '-'), // Generate handle from name
+        name: author.name,
+        description: author.description || '',
+        profileImage: author.avatarUrl || null,
+        linkedinUrl: author.linkedinUrl || null
+      }));
+
+      res.json({ authors: formattedAuthors });
+    } catch (error: any) {
+      console.error("Error fetching authors:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create a new author
+  apiRouter.post("/authors", async (req: Request, res: Response) => {
+    try {
+      console.log("POST /api/authors - Request body:", JSON.stringify(req.body));
+      const { name, description, profileImage, linkedinUrl } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Author name is required" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        console.log("No store context found for creating author - using fallback store");
+        // In standalone mode, use the first available store or create with default store ID
+        const stores = await storage.getAllStores();
+        const fallbackStore = stores.length > 0 ? stores[0] : null;
+        if (!fallbackStore) {
+          return res.status(400).json({ error: "No stores available for author creation" });
+        }
+        
+        // Use fallback store for author creation
+        const authorData = {
+          name: name.trim(),
+          description: description?.trim() || null,
+          avatarUrl: profileImage?.trim() || null,
+          linkedinUrl: linkedinUrl?.trim() || null,
+          storeId: fallbackStore.id,
+          isActive: true
+        };
+
+        const [newAuthor] = await db.insert(authors).values(authorData).returning();
+        
+        const formattedAuthor = {
+          id: newAuthor.id.toString(),
+          handle: newAuthor.name.toLowerCase().replace(/\s+/g, '-'),
+          name: newAuthor.name,
+          description: newAuthor.description || '',
+          profileImage: newAuthor.avatarUrl || null,
+          linkedinUrl: newAuthor.linkedinUrl || null
+        };
+
+        return res.json({ author: formattedAuthor });
+      }
+
+      // Insert author using Drizzle ORM with correct schema
+      const authorData = {
+        name: name.trim(),
+        description: description?.trim() || null,
+        avatarUrl: profileImage?.trim() || null,
+        linkedinUrl: linkedinUrl?.trim() || null,
+        storeId: store.id,
+        isActive: true
+      };
+
+      const [newAuthor] = await db.insert(authors).values(authorData).returning();
+      
+      // Format response to match expected structure
+      const formattedAuthor = {
+        id: newAuthor.id.toString(),
+        handle: newAuthor.name.toLowerCase().replace(/\s+/g, '-'),
+        name: newAuthor.name,
+        description: newAuthor.description || '',
+        profileImage: newAuthor.avatarUrl || null,
+        linkedinUrl: newAuthor.linkedinUrl || null
+      };
+      
+      console.log("Created author:", JSON.stringify(formattedAuthor));
+      res.json({ author: formattedAuthor });
+    } catch (error: any) {
+      console.error("Error creating author:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update an author
+  apiRouter.put("/authors/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      console.log(`PUT /api/authors/${id} - Request body:`, JSON.stringify(req.body));
+      const { name, description, profileImage, linkedinUrl } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Author name is required" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Update author using Drizzle ORM
+      const [updatedAuthor] = await db.update(authors)
+        .set({
+          name,
+          description: description || '',
+          avatarUrl: profileImage || null,
+          linkedinUrl: linkedinUrl || null,
+          updatedAt: new Date()
+        })
+        .where(and(eq(authors.id, id), eq(authors.storeId, store.id)))
+        .returning();
+
+      if (!updatedAuthor) {
+        return res.status(404).json({ error: "Author not found" });
+      }
+
+      // Format response to match expected structure
+      const formattedAuthor = {
+        id: updatedAuthor.id.toString(),
+        handle: updatedAuthor.name.toLowerCase().replace(/\s+/g, '-'),
+        name: updatedAuthor.name,
+        description: updatedAuthor.description || '',
+        profileImage: updatedAuthor.avatarUrl || null,
+        linkedinUrl: updatedAuthor.linkedinUrl || null
+      };
+      
+      console.log("Updated author:", JSON.stringify(formattedAuthor));
+      res.json({ author: formattedAuthor });
+    } catch (error: any) {
+      console.error("Error updating author:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete an author
+  apiRouter.delete("/authors/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+      
+      console.log(`DELETE /api/authors/${id}`);
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Check if author has any posts
+      const postsWithAuthor = await db.select().from(blogPosts)
+        .where(and(eq(blogPosts.authorId, id), eq(blogPosts.storeId, store.id)))
+        .limit(1);
+
+      if (postsWithAuthor.length > 0) {
+        return res.status(400).json({ 
+          error: "Cannot delete author with existing posts. Please reassign posts to another author first." 
+        });
+      }
+
+      // Delete author using Drizzle ORM
+      const [deletedAuthor] = await db.delete(authors)
+        .where(and(eq(authors.id, id), eq(authors.storeId, store.id)))
+        .returning();
+
+      if (!deletedAuthor) {
+        return res.status(404).json({ error: "Author not found" });
+      }
+
+      console.log(`Deleted author: ${deletedAuthor.name}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting author:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // --- PROJECT MANAGEMENT ROUTES ---
+  
+  // Get all projects for the current store
+  apiRouter.get("/projects", async (req: Request, res: Response) => {
+    try {
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      const projects = await storage.getProjects(store.id);
+      res.json({ projects });
+    } catch (error: any) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get a specific project
+  apiRouter.get("/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      const project = await storage.getProject(id, store.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      res.json({ project });
+    } catch (error: any) {
+      console.error("Error fetching project:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create a new project
+  apiRouter.post("/projects", async (req: Request, res: Response) => {
+    try {
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Validate request body
+      const validation = insertProjectSchema.safeParse({
+        ...req.body,
+        storeId: store.id
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid project data", 
+          details: validation.error.errors 
+        });
+      }
+
+      // Check for duplicate project names within the store
+      const existingProjects = await storage.getProjects(store.id);
+      const duplicateName = existingProjects.some(
+        project => project.name.toLowerCase() === validation.data.name.toLowerCase()
+      );
+
+      if (duplicateName) {
+        return res.status(400).json({ 
+          error: "A project with this name already exists. Please choose a different name." 
+        });
+      }
+
+      const project = await storage.createProject(validation.data);
+      res.status(201).json({ project });
+    } catch (error: any) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update a project
+  apiRouter.put("/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      // Validate request body (partial update)
+      const validation = insertProjectSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid project data", 
+          details: validation.error.errors 
+        });
+      }
+
+      // Check for duplicate names if name is being updated
+      if (validation.data.name) {
+        const existingProjects = await storage.getProjects(store.id);
+        const duplicateName = existingProjects.some(
+          project => project.id !== id && project.name.toLowerCase() === validation.data.name!.toLowerCase()
+        );
+
+        if (duplicateName) {
+          return res.status(400).json({ 
+            error: "A project with this name already exists. Please choose a different name." 
+          });
+        }
+      }
+
+      const project = await storage.updateProject(id, validation.data, store.id);
+      res.json({ project });
+    } catch (error: any) {
+      console.error("Error updating project:", error);
+      if (error.message.includes("not found")) {
+        res.status(404).json({ error: "Project not found" });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  // Delete a project
+  apiRouter.delete("/projects/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid project ID" });
+      }
+
+      const store = await getStoreFromRequest(req);
+      if (!store) {
+        return res.status(401).json({ error: "Store not found or not connected" });
+      }
+
+      await storage.deleteProject(id, store.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      if (error.message.includes("not found")) {
+        res.status(404).json({ error: "Project not found" });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+
+  
+  // --- OAUTH ROUTES ---
+  
+  // Shopify OAuth routes (not prefixed with /api)
+  const oauthRouter = Router();
+  
+  // Store the nonce in memory with type for host parameter
+  interface NonceData {
+    shop: string;
+    timestamp: number;
+    host?: string;
+  }
+  const nonceStore = new Map<string, NonceData>();
+  
+  // Clean up expired nonces (older than 1 hour)
+  setInterval(() => {
+    const now = Date.now();
+    // Use Array.from to convert Iterator to array to avoid TypeScript error
+    Array.from(nonceStore.entries()).forEach(([nonce, data]) => {
+      if (now - data.timestamp > 60 * 60 * 1000) {
+        nonceStore.delete(nonce);
+      }
+    });
+  }, 15 * 60 * 1000); // Run every 15 minutes
+  
+  // Initiate OAuth flow
+  oauthRouter.get("/shopify/auth", async (req: Request, res: Response) => {
+    try {
+      const { shop, host } = req.query;
+      
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).send('Missing shop parameter');
+      }
+      
+      if (!validateShopDomain(shop)) {
+        return res.status(400).send('Invalid shop domain');
+      }
+      
+      // Generate a nonce for CSRF protection
+      const nonce = generateNonce();
+      
+      // Store the host parameter if it exists (for Partner Dashboard installations)
+      if (host && typeof host === 'string') {
+        nonceStore.set(nonce, { shop, timestamp: Date.now(), host });
+      } else {
+        nonceStore.set(nonce, { shop, timestamp: Date.now() });
+      }
+
+      // Get Shopify API credentials from environment variables
+      const apiKey = process.env.SHOPIFY_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).send('Missing Shopify API key');
+      }
+      
+      // Use the exact redirect URL configured in the Shopify Partner Dashboard
+      const hostname = req.headers.host || 'localhost:5000';
+      const protocol = req.headers['x-forwarded-proto'] || (hostname.includes('replit.dev') ? 'https' : 'http');
+      const baseUrl = `${protocol}://${hostname}`;
+      
+      // Use the correct callback path that matches Partner Dashboard configuration
+      const redirectUri = `${baseUrl}/shopify/callback`;
+      
+      console.log(`Using redirect URI: ${redirectUri}`);
+      
+      // Create the authorization URL, passing host parameter for embedded apps
+      const authUrl = createAuthUrl(shop, apiKey, redirectUri, nonce, host as string | undefined);
+      
+      console.log(`Redirecting to Shopify for authorization with URL: ${authUrl}`);
+      
+      // Redirect to Shopify for authorization
+      res.redirect(authUrl);
+    } catch (error: any) {
+      console.error('Error initiating OAuth:', error);
+      res.status(500).send('An error occurred while initiating OAuth');
+    }
+  });
+  
+  // OAuth callback (matches Partner Dashboard configuration)
+  oauthRouter.get("/shopify/callback", async (req: Request, res: Response) => {
+    try {
+      const { shop, code, state, hmac } = req.query as Record<string, string>;
+      
+      if (!shop || !code || !state || !hmac) {
+        return res.status(400).send('Missing required parameters');
+      }
+      
+      // Validate the shop domain
+      if (!validateShopDomain(shop)) {
+        return res.status(400).send('Invalid shop domain');
+      }
+      
+      // Get Shopify API credentials from environment variables
+      const apiKey = process.env.SHOPIFY_API_KEY;
+      const apiSecret = process.env.SHOPIFY_API_SECRET;
+      
+      if (!apiKey || !apiSecret) {
+        return res.status(500).send('Missing Shopify API credentials');
+      }
+      
+      // Verify the HMAC
+      if (!validateHmac(req.query as Record<string, string>, apiSecret)) {
+        return res.status(403).send('Invalid HMAC signature');
+      }
+      
+      // Validate the state (nonce)
+      const nonceData = nonceStore.get(state);
+      if (!nonceData || nonceData.shop !== shop) {
+        return res.status(403).send('Invalid state parameter');
+      }
+      
+      // Clean up the used nonce
+      nonceStore.delete(state);
+      
+      // Exchange the code for a permanent access token
+      const accessToken = await getAccessToken(shop, code, apiKey, apiSecret);
+      
+      // Get shop data from Shopify
+      const shopData = await getShopData(shop, accessToken);
+      
+      // Create or update the store in our multi-store database
+      try {
+        // First check if we already have this store
+        let store = await storage.getShopifyStoreByDomain(shop);
+        let storeId: number;
+        
+        if (store) {
+          // Update the existing store
+          store = await storage.updateShopifyStore(store.id, {
+            accessToken,
+            isConnected: true,
+            lastSynced: new Date(),
+            uninstalledAt: null // Clear uninstall date if previously uninstalled
+          });
+          storeId = store.id;
+        } else {
+          // Create a new store
+          const storeName = shopData.name || shop;
+          
+          store = await storage.createShopifyStore({
+            shopName: shop, // Using the shop domain as the shopName
+            accessToken,
+            scope: "read_products,write_products,read_content,write_content,read_themes,write_publications",
+            isConnected: true
+            // lastSynced will be set by default
+          });
+          storeId = store.id;
+          
+          console.log(`New store created with ID: ${storeId} for shop: ${shop}`);
+        }
+        
+        // Redirect to the app with the shop and host parameters
+        const host = nonceData.host;
+        const redirectUrl = `/embedded?shop=${shop}${host ? `&host=${host}` : ''}`;
+        
+        res.redirect(redirectUrl);
+      } catch (dbError: any) {
+        console.error('Database error:', dbError);
+        res.status(500).send('An error occurred while saving store data');
+      }
+    } catch (error: any) {
+      console.error('OAuth callback error:', error);
+      res.status(500).send('An error occurred during the OAuth callback');
+    }
+  });
+  
+  // Webhook for app uninstalled
+  oauthRouter.post("/shopify/webhooks/app-uninstalled", async (req: Request, res: Response) => {
+    try {
+      // Verify the webhook
+      const hmac = req.headers['x-shopify-hmac-sha256'] as string;
+      const apiSecret = process.env.SHOPIFY_API_SECRET;
+      
+      if (!apiSecret) {
+        console.error('Missing API secret for webhook verification');
+        return res.status(403).send('Unauthorized');
+      }
+      
+      if (!verifyWebhook(req.headers as Record<string, string>, req.body, apiSecret)) {
+        console.error('Invalid webhook signature');
+        return res.status(403).send('Unauthorized');
+      }
+      
+      // Extract shop from webhook
+      const { shop_domain } = req.body;
+      
+      if (!shop_domain) {
+        console.error('Missing shop domain in webhook');
+        return res.status(400).send('Bad request');
+      }
+      
+      // Update store record to mark as uninstalled
+      try {
+        // Find the store
+        const store = await storage.getShopifyStoreByDomain(shop_domain);
+        
+        if (store) {
+          // Mark as uninstalled
+          await storage.updateShopifyStore(store.id, {
+            isConnected: false,
+            uninstalledAt: new Date()
+          });
+          
+          // Also update the legacy connection for backward compatibility
+          const connection = await storage.getShopifyConnection();
+          if (connection) {
+            await storage.updateShopifyConnection({
+              id: connection.id,
+              isConnected: false
+            });
+          }
+          
+          console.log(`App uninstalled from ${shop_domain}`);
+        } else {
+          console.warn(`Uninstall webhook received for unknown shop: ${shop_domain}`);
+        }
+        
+        // Always return 200 to acknowledge receipt
+        res.status(200).send('OK');
+      } catch (dbError: any) {
+        console.error('Database error processing uninstall webhook:', dbError);
+        // Still return 200 to acknowledge receipt and avoid Shopify retrying
+        res.status(200).send('OK');
+      }
+    } catch (error: any) {
+      console.error('Error processing app uninstalled webhook:', error);
+      // Still return 200 to acknowledge receipt and avoid Shopify retrying
+      res.status(200).send('OK');
+    }
+  });
+  
+  // --- BILLING ROUTES ---
+  
+  // Subscribe to a plan
+  apiRouter.post("/billing/subscribe", async (req: Request, res: Response) => {
+    try {
+      const { storeId, plan } = req.body;
+      
+      if (!storeId || !plan) {
+        return res.status(400).json({ error: "Store ID and plan are required" });
+      }
+      
+      // Validate plan type
+      if (!Object.values(PlanType).includes(plan as PlanType)) {
+        return res.status(400).json({ error: "Invalid plan type" });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(parseInt(storeId));
+      
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      
+      // Create subscription
+      const result = await createSubscription(store, plan as PlanType);
+      
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get billing status for a store
+  apiRouter.get("/billing/status/:storeId", async (req: Request, res: Response) => {
+    try {
+      const storeId = parseInt(req.params.storeId);
+      
+      if (isNaN(storeId)) {
+        return res.status(400).json({ error: "Invalid store ID" });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(storeId);
+      
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      
+      // Get subscription status
+      const status = await getSubscriptionStatus(store);
+      
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Cancel subscription
+  apiRouter.post("/billing/cancel", async (req: Request, res: Response) => {
+    try {
+      const { storeId, subscriptionId } = req.body;
+      
+      if (!storeId || !subscriptionId) {
+        return res.status(400).json({ error: "Store ID and subscription ID are required" });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(parseInt(storeId));
+      
+      if (!store) {
+        return res.status(404).json({ error: "Store not found" });
+      }
+      
+      // Cancel subscription
+      const result = await cancelSubscription(store, subscriptionId);
+      
+      res.json({ success: result });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Add image proxy endpoint to handle Pexels images
+  apiRouter.get("/proxy/image/:imageId", async (req: Request, res: Response) => {
+    try {
+      const imageId = req.params.imageId;
+      
+      if (!imageId) {
+        return res.status(400).json({ error: "Image ID is required" });
+      }
+      
+      // Get the image from Pexels
+      const image = await pexelsService.getImageById(imageId);
+      
+      if (!image) {
+        return res.status(404).json({ error: "Image not found" });
+      }
+      
+      // Get the best quality image (but avoid original which can be too large)
+      const imageUrl = image.src?.large || image.src?.medium || image.src?.small || image.src?.original;
+      
+      if (!imageUrl) {
+        return res.status(404).json({ error: "No valid image URL found" });
+      }
+      
+      console.log(`Image proxy: Redirecting to Pexels image URL: ${imageUrl}`);
+      
+      // Option 1: Redirect to the image URL (simplest approach but still uses external URLs)
+      // return res.redirect(imageUrl);
+      
+      // Option 2: Fetch the image and pipe it through our server (more robust but uses more bandwidth)
+      try {
+        // Fetch the image
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        
+        // Set appropriate Content-Type header based on the image type
+        const contentType = response.headers['content-type'] || 'image/jpeg';
+        res.setHeader('Content-Type', contentType);
+        
+        // Set cache headers to improve performance
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+        
+        // Send the image data
+        return res.send(response.data);
+      } catch (fetchError) {
+        console.error('Error fetching image:', fetchError);
+        return res.status(500).json({ error: "Failed to fetch image" });
+      }
+    } catch (error: any) {
+      console.error('Image proxy error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Mount OAuth routes without /api prefix
+  app.use(oauthRouter);
+  
+  // Custom scheduler check endpoint for publishing scheduled content
+  apiRouter.get("/scheduler/check", async (req: Request, res: Response) => {
+    try {
+      console.log("Running custom scheduler check");
+      
+      // Import custom scheduler service
+      const { checkScheduledPosts } = await import("./services/custom-scheduler");
+      
+      // Run the scheduler check
+      await checkScheduledPosts();
+      
+      res.json({
+        status: "success",
+        message: "Scheduler check completed",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Scheduler check failed:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Scheduler check failed",
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+  
+  // Endpoint to manually publish a scheduled post
+  apiRouter.post("/posts/:id/publish", async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id, 10);
+      const force = req.body?.force === true;
+      
+      console.log(`Manual publish request for post ${postId}, force: ${force}`);
+      
+      // Get the post data
+      const post = await storage.getBlogPost(postId);
+      if (!post) {
+        return res.status(404).json({
+          status: "error",
+          message: `Post with ID ${postId} not found`
+        });
+      }
+      
+      // Verify it has the required Shopify IDs (pages don't need shopifyBlogId)
+      const isPage = (post.tags && post.tags.includes('page')) || post.contentType === 'page';
+      console.log(`Detected ${isPage ? 'page' : 'blog post'} for ID ${postId}, tags: "${post.tags}", contentType: "${post.contentType}"`);
+      
+      if (!post.shopifyPostId || (!isPage && !post.shopifyBlogId)) {
+        return res.status(400).json({
+          status: "error",
+          message: `${isPage ? 'Page' : 'Post'} is missing required Shopify IDs and cannot be published. Has shopifyPostId: ${!!post.shopifyPostId}, Has shopifyBlogId: ${!!post.shopifyBlogId}`
+        });
+      }
+      
+      // Get the store info
+      const stores = await storage.getShopifyStores();
+      let store = post.storeId ? stores.find(s => s.id === post.storeId) : undefined;
+      
+      // Try to find by blog ID if store ID not available
+      if (!store) {
+        store = stores.find(s => s.defaultBlogId === post.shopifyBlogId);
+      }
+      
+      if (!store) {
+        return res.status(400).json({
+          status: "error",
+          message: "Could not find associated store for this post"
+        });
+      }
+      
+      console.log(`Publishing ${isPage ? 'page' : 'post'} ${postId} to store ${store.shopName}`);
+      
+      // Import the appropriate publishing function from custom-scheduler
+      let publishedResult;
+      if (isPage) {
+        const { publishScheduledPage } = await import("./services/custom-scheduler");
+        publishedResult = await publishScheduledPage(store, post.shopifyPostId, post);
+      } else {
+        const { publishScheduledArticle } = await import("./services/custom-scheduler");
+        publishedResult = await publishScheduledArticle(store, post.shopifyBlogId, post.shopifyPostId, post);
+      }
+      
+      // Update the post status in the database
+      await storage.updateBlogPost(postId, {
+        status: "published",
+        publishedDate: new Date()
+      });
+      
+      return res.json({
+        status: "success",
+        message: `${isPage ? 'Page' : 'Post'} published successfully`,
+        post: {
+          id: postId,
+          title: post.title,
+          shopifyPostId: post.shopifyPostId,
+          publishedResult
+        }
+      });
+      
+    } catch (error) {
+      console.error("Error publishing post:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to publish post",
+        error: String(error)
+      });
+    }
+  });
+  
+  // Endpoint to reschedule content (both posts and pages)
+  apiRouter.post("/posts/:id/reschedule", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { scheduledDate } = req.body;
+      
+      if (!scheduledDate) {
+        return res.status(400).json({ 
+          status: "error", 
+          message: "Missing scheduled date" 
+        });
+      }
+      
+      // Convert the string date to a Date object
+      const newScheduledDate = new Date(scheduledDate);
+      
+      if (isNaN(newScheduledDate.getTime())) {
+        return res.status(400).json({ 
+          status: "error", 
+          message: "Invalid date format" 
+        });
+      }
+      
+      // Get the post to verify it exists and to get the store ID
+      const post = await storage.getBlogPost(id);
+      
+      if (!post) {
+        return res.status(404).json({ 
+          status: "error", 
+          message: "Post not found" 
+        });
+      }
+      
+      // Get the store
+      const store = await storage.getShopifyStore(post.storeId);
+      
+      if (!store) {
+        return res.status(404).json({ 
+          status: "error", 
+          message: "Store not found" 
+        });
+      }
+      
+      // Use timezone-aware functions
+      const { formatDate, formatTime } = await import("./services/custom-scheduler");
+      
+      // Format the dates for database storage
+      const formattedPublishDate = formatDate(newScheduledDate);
+      const formattedPublishTime = formatTime(newScheduledDate);
+      
+      // Update our database with the new schedule
+      const updatedPost = await storage.updateBlogPost(id, {
+        scheduledDate: newScheduledDate,
+        scheduledPublishDate: formattedPublishDate,
+        scheduledPublishTime: formattedPublishTime,
+        status: 'scheduled' // Ensure it stays in scheduled status
+      });
+      
+      // Log the rescheduling
+      await storage.createSyncActivity({
+        storeId: store.id,
+        activity: `Rescheduled ${post.contentType === 'page' ? 'page' : 'blog post'} "${post.title}"`,
+        status: 'success',
+        details: `Rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`
+      });
+      
+      console.log(`Successfully rescheduled ${post.contentType || 'content'} ${id} to ${formattedPublishDate} at ${formattedPublishTime}`);
+      
+      return res.json({ 
+        status: "success", 
+        message: `Content successfully rescheduled to ${formattedPublishDate} at ${formattedPublishTime}`,
+        post: updatedPost
+      });
+    } catch (error) {
+      console.error(`Error rescheduling content:`, error);
+      return res.status(500).json({ 
+        status: "error", 
+        message: error instanceof Error ? error.message : "Failed to reschedule content" 
+      });
+    }
+  });
+
+  // Register OAuth routes (not prefixed with /api) - these handle multi-store authentication
+  app.use('/oauth', oauthRouter);
+  
+  // Apply authentication middleware to all API routes for multi-store support
+  app.use('/api', shopifyAuthOptional);
+  
+  // Register feature-specific routers with authentication
+  app.use('/api/content', contentRouter);
+  app.use('/api/claude', claudeRouter);
+  app.use('/api/admin', adminRouter);
+  app.use('/api/media', mediaRouter);
+  app.use('/api/buyer-personas', buyerPersonasRouter);
+
+  // Mount API routes with /api prefix and store context
+  app.use('/api', apiRouter);
 }

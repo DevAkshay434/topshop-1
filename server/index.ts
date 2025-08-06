@@ -146,37 +146,7 @@ app.use((req, res, next) => {
   // Create HTTP server
   const server = createServer(app);
 
-  // Create a direct bypass route for scheduled posts that Vite can't override
-  app.get('/direct/scheduled-posts', async (req, res) => {
-    try {
-      const storeId = req.headers['x-store-id'] || '1';
-      const { storage } = await import('./storage');
-      
-      const allPosts = await storage.getScheduledPostsByStore(parseInt(storeId.toString()));
-      const posts = allPosts.filter(post => post.status === 'scheduled');
-      
-      posts.sort((a, b) => {
-        const dateA = new Date(a.scheduledPublishTime || 0);
-        const dateB = new Date(b.scheduledPublishTime || 0);
-        return dateA.getTime() - dateB.getTime();
-      });
-      
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      console.log(`✅ Direct bypass: Returning ${posts.length} scheduled posts`);
-      
-      res.json({ 
-        posts,
-        storeTimezone: 'America/New_York',
-        store: { name: 'Default Store', id: parseInt(storeId.toString()) }
-      });
-    } catch (error) {
-      console.error('Direct bypass error:', error);
-      res.status(500).json({ error: 'Failed to load scheduled posts' });
-    }
-  });
-
-  // Register routes BEFORE any other middleware to ensure API routes have priority
+  // Register routes before error handler
   await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -200,7 +170,17 @@ app.use((req, res, next) => {
     // Don't throw the error after handling it
   });
 
-  // Remove the API protection middleware that's causing 404s
+  // Add a 404 handler for API routes before setting up Vite
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({
+      app: "TopShop SEO",
+      status: "error",
+      message: "API endpoint not found",
+      code: 404,
+      timestamp: new Date().toISOString(),
+      path: req.path
+    });
+  });
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

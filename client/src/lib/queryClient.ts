@@ -53,9 +53,7 @@ export async function apiRequest<T = any>(
     headers['X-Store-ID'] = autoDetectedStoreId.toString();
     console.log(`Query client: Adding X-Store-ID header: ${autoDetectedStoreId} for URL: ${url}`);
   } else {
-    // Fallback to store ID 1 if auto-detection fails due to API issues
-    console.log(`Query client: No auto-detected store ID available for URL: ${url}. Using fallback store ID 1`);
-    headers['X-Store-ID'] = '1';
+    console.log(`Query client: No auto-detected store ID available for URL: ${url}. Value: ${autoDetectedStoreId}`);
   }
   
   const res = await fetch(url, {
@@ -65,28 +63,8 @@ export async function apiRequest<T = any>(
     credentials: "include",
   });
 
-  // Debug logging for API response issues
-  console.log(`🔍 API Response Debug for ${url}:`, {
-    status: res.status,
-    contentType: res.headers.get('content-type'),
-    poweredBy: res.headers.get('x-powered-by'),
-  });
-
   await throwIfResNotOk(res);
-  
-  // Check if we're getting HTML instead of JSON
-  const responseText = await res.text();
-  if (responseText.includes('<!DOCTYPE html>')) {
-    console.error(`❌ API Error: Got HTML response for ${url} instead of JSON`);
-    throw new Error(`API endpoint returning HTML instead of JSON. This suggests Vite middleware interference.`);
-  }
-  
-  try {
-    return JSON.parse(responseText);
-  } catch (parseError) {
-    console.error('❌ JSON Parse Error:', parseError, 'Response:', responseText.substring(0, 200));
-    throw new Error(`Failed to parse JSON response from ${url}`);
-  }
+  return res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -104,9 +82,7 @@ export const getQueryFn: <T>(options: {
       headers['X-Store-ID'] = autoDetectedStoreId.toString();
       console.log(`Query function: Adding X-Store-ID header: ${autoDetectedStoreId} for query: ${queryKey[0]}`);
     } else {
-      // Fallback to store ID 1 if auto-detection fails due to API issues
-      console.log(`Query function: No auto-detected store ID available for query: ${queryKey[0]}. Using fallback store ID 1`);
-      headers['X-Store-ID'] = '1';
+      console.log(`Query function: No auto-detected store ID available for query: ${queryKey[0]}. Value: ${autoDetectedStoreId}`);
     }
     
     const res = await fetch(queryKey[0] as string, {
@@ -120,20 +96,7 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    
-    // Check if we're getting HTML instead of JSON for query requests too
-    const responseText = await res.text();
-    if (responseText.includes('<!DOCTYPE html>')) {
-      console.error(`❌ Query Error: Got HTML response for ${queryKey[0]} instead of JSON`);
-      throw new Error(`API endpoint returning HTML instead of JSON. This suggests Vite middleware interference.`);
-    }
-    
-    try {
-      return JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('❌ Query JSON Parse Error:', parseError, 'Response:', responseText.substring(0, 200));
-      throw new Error(`Failed to parse JSON response from ${queryKey[0]}`);
-    }
+    return await res.json();
   };
 
 export const queryClient = new QueryClient({
