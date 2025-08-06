@@ -361,17 +361,7 @@ export function ScheduledPostsList() {
                     </DialogContent>
                   </Dialog>
                   
-                  {post.publishStatus?.shopifyUrl && (
-                    <Button variant="ghost" size="sm" asChild>
-                      <a 
-                        href={post.publishStatus.shopifyUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </Button>
-                  )}
+
                 </div>
               </div>
             </CardHeader>
