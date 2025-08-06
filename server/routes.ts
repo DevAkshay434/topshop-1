@@ -1698,12 +1698,54 @@ export async function registerRoutes(app: Express): Promise<void> {
                   if (authorData.length > 0) {
                     const author = authorData[0];
                     
+                    // Utility function to calculate reading time for content
+                    const calculateReadingTime = (content: string): { minutes: number; seconds: number; display: string } => {
+                      if (!content || typeof content !== 'string') {
+                        return { minutes: 0, seconds: 0, display: '1 min read' };
+                      }
+
+                      // Remove HTML tags and get plain text
+                      const plainText = content.replace(/<[^>]*>/g, '').trim();
+                      
+                      // Count words (split by whitespace and filter out empty strings)
+                      const words = plainText.split(/\s+/).filter(word => word.length > 0);
+                      const wordCount = words.length;
+                      
+                      // Average reading speed is 200-250 words per minute, we'll use 225
+                      const wordsPerMinute = 225;
+                      
+                      // Calculate total minutes as decimal
+                      const totalMinutes = wordCount / wordsPerMinute;
+                      
+                      // Convert to minutes and seconds
+                      const minutes = Math.floor(totalMinutes);
+                      const seconds = Math.round((totalMinutes - minutes) * 60);
+                      
+                      // Create display string
+                      let display: string;
+                      if (minutes === 0) {
+                        display = '1 min read'; // Minimum 1 minute for very short content
+                      } else if (minutes === 1 && seconds < 30) {
+                        display = '1 min read';
+                      } else if (minutes > 0 && seconds >= 30) {
+                        display = `${minutes + 1} min read`; // Round up if seconds >= 30
+                      } else {
+                        display = `${minutes} min read`;
+                      }
+                      
+                      return { minutes, seconds, display };
+                    };
+
                     // Generate author box HTML inline with LinkedIn integration
-                    const generateAuthorBoxHTML = (author: any) => {
+                    const generateAuthorBoxHTML = (author: any, content?: string) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                       const avatarImg = author.profileImage 
                         ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
                         : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+
+                      // Calculate reading time if content is provided
+                      const readingTime = content ? calculateReadingTime(content) : null;
+                      const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
 
                       // LinkedIn "Learn More" button if LinkedIn URL is available
                       const linkedinButton = author.linkedinUrl 
@@ -1715,7 +1757,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                           <div style="display: flex; gap: 16px; align-items: flex-start;">
                             ${avatarImg}
                             <div style="flex: 1;">
-                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}${readingTimeText}</h3>
                               ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${author.description}</p>` : ''}
                               ${linkedinButton}
                             </div>
@@ -1724,17 +1766,21 @@ export async function registerRoutes(app: Express): Promise<void> {
                       `;
                     };
 
-                    const generateWrittenByHTML = (author: any) => {
+                    const generateWrittenByHTML = (author: any, content?: string) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                       const avatarImg = author.profileImage 
                         ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
                         : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
 
+                      // Calculate reading time if content is provided
+                      const readingTime = content ? calculateReadingTime(content) : null;
+                      const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
+
                       return `
                         <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
                           ${avatarImg}
                           <span style="color: #6b7280; font-size: 14px;">
-                            Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
+                            Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
                           </span>
                         </div>
                       `;
@@ -1748,9 +1794,9 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedin_url || undefined
                     };
                     
-                    // Generate author HTML components
-                    const writtenByHTML = generateWrittenByHTML(authorFormatted);
-                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted);
+                    // Generate author HTML components with reading time
+                    const writtenByHTML = generateWrittenByHTML(authorFormatted, pageContent);
+                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted, pageContent);
                     
                     // Find the first image or paragraph in content to inject "Written by" after it
                     const imageMatch = pageContent.match(/<img[^>]*>/i);
@@ -1844,6 +1890,48 @@ export async function registerRoutes(app: Express): Promise<void> {
                 if (authorToUse && completePost) {
                   const author = authorToUse;
                   
+                  // Calculate reading time for blog post content
+                  const calculateReadingTime = (content: string): { minutes: number; seconds: number; display: string } => {
+                    if (!content || typeof content !== 'string') {
+                      return { minutes: 0, seconds: 0, display: '1 min read' };
+                    }
+
+                    // Remove HTML tags and get plain text
+                    const plainText = content.replace(/<[^>]*>/g, '').trim();
+                    
+                    // Count words (split by whitespace and filter out empty strings)
+                    const words = plainText.split(/\s+/).filter(word => word.length > 0);
+                    const wordCount = words.length;
+                    
+                    // Average reading speed is 200-250 words per minute, we'll use 225
+                    const wordsPerMinute = 225;
+                    
+                    // Calculate total minutes as decimal
+                    const totalMinutes = wordCount / wordsPerMinute;
+                    
+                    // Convert to minutes and seconds
+                    const minutes = Math.floor(totalMinutes);
+                    const seconds = Math.round((totalMinutes - minutes) * 60);
+                    
+                    // Create display string
+                    let display: string;
+                    if (minutes === 0) {
+                      display = '1 min read'; // Minimum 1 minute for very short content
+                    } else if (minutes === 1 && seconds < 30) {
+                      display = '1 min read';
+                    } else if (minutes > 0 && seconds >= 30) {
+                      display = `${minutes + 1} min read`; // Round up if seconds >= 30
+                    } else {
+                      display = `${minutes} min read`;
+                    }
+                    
+                    return { minutes, seconds, display };
+                  };
+
+                  // Calculate reading time for the blog content
+                  const readingTime = calculateReadingTime(completePost.content);
+                  const readingTimeText = ` • ${readingTime.display}`;
+
                   // Author box with LinkedIn integration - small avatar sizing
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const avatarElement = author.avatarUrl 
@@ -1860,7 +1948,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                       <div style="display: flex; gap: 16px; align-items: flex-start;">
                         ${avatarElement}
                         <div style="flex: 1;">
-                          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+                          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}${readingTimeText}</h3>
                           ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${author.description}</p>` : ''}
                           ${linkedinButton}
                         </div>
@@ -1870,7 +1958,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                   
                   completePost.content += authorBox;
                   completePost.author = author.name;
-                  console.log(`Added author with LinkedIn integration: ${author.name}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  console.log(`Added author with LinkedIn integration and reading time: ${author.name}${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);

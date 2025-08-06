@@ -2,6 +2,44 @@ import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Utility function to calculate reading time for content
+export function calculateReadingTime(content: string): { minutes: number; seconds: number; display: string } {
+  if (!content || typeof content !== 'string') {
+    return { minutes: 0, seconds: 0, display: '1 min read' };
+  }
+
+  // Remove HTML tags and get plain text
+  const plainText = content.replace(/<[^>]*>/g, '').trim();
+  
+  // Count words (split by whitespace and filter out empty strings)
+  const words = plainText.split(/\s+/).filter(word => word.length > 0);
+  const wordCount = words.length;
+  
+  // Average reading speed is 200-250 words per minute, we'll use 225
+  const wordsPerMinute = 225;
+  
+  // Calculate total minutes as decimal
+  const totalMinutes = wordCount / wordsPerMinute;
+  
+  // Convert to minutes and seconds
+  const minutes = Math.floor(totalMinutes);
+  const seconds = Math.round((totalMinutes - minutes) * 60);
+  
+  // Create display string
+  let display: string;
+  if (minutes === 0) {
+    display = '1 min read'; // Minimum 1 minute for very short content
+  } else if (minutes === 1 && seconds < 30) {
+    display = '1 min read';
+  } else if (minutes > 0 && seconds >= 30) {
+    display = `${minutes + 1} min read`; // Round up if seconds >= 30
+  } else {
+    display = `${minutes} min read`;
+  }
+  
+  return { minutes, seconds, display };
+}
+
 export interface AuthorBoxProps {
   author: {
     id: string;
@@ -46,11 +84,15 @@ export function generateAuthorBoxHTML(author: {
   description?: string;
   profileImage?: string;
   linkedinUrl?: string;
-}): string {
+}, content?: string): string {
   const avatarInitials = author.name.split(' ').map(n => n[0]).join('').toUpperCase();
   const avatarImg = author.profileImage 
     ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
     : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
+
+  // Calculate reading time if content is provided
+  const readingTime = content ? calculateReadingTime(content) : null;
+  const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
 
   // LinkedIn "Learn More" button if LinkedIn URL is available
   const linkedinButton = author.linkedinUrl 
@@ -62,7 +104,7 @@ export function generateAuthorBoxHTML(author: {
       <div style="display: flex; gap: 16px; align-items: flex-start;">
         ${avatarImg}
         <div style="flex: 1;">
-          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}${readingTimeText}</h3>
           ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${author.description}</p>` : ''}
           ${linkedinButton}
         </div>
@@ -76,17 +118,21 @@ export function generateWrittenByHTML(author: {
   id: string;
   name: string;
   profileImage?: string;
-}): string {
+}, content?: string): string {
   const avatarInitials = author.name.split(' ').map(n => n[0]).join('').toUpperCase();
   const avatarImg = author.profileImage 
     ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
     : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
 
+  // Calculate reading time if content is provided
+  const readingTime = content ? calculateReadingTime(content) : null;
+  const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
+
   return `
     <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
       ${avatarImg}
       <span style="color: #6b7280; font-size: 14px;">
-        Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
+        Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
       </span>
     </div>
   `;
