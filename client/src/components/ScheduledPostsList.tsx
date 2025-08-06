@@ -50,6 +50,18 @@ interface ScheduledPostsResponse {
   };
 }
 
+// Helper function to calculate minutes until publish
+const calculateMinutesUntilPublish = (date: string, time: string, timezone: string): number => {
+  try {
+    const scheduled = new Date(`${date}T${time}:00`);
+    const now = new Date();
+    const diffMs = scheduled.getTime() - now.getTime();
+    return Math.floor(diffMs / (1000 * 60));
+  } catch {
+    return 0;
+  }
+};
+
 export function ScheduledPostsList() {
   const [editingPost, setEditingPost] = useState<ScheduledPost | null>(null);
   const [newDate, setNewDate] = useState("");
@@ -69,7 +81,7 @@ export function ScheduledPostsList() {
       scheduledPublishTime: string;
     }) => {
       return await apiRequest({
-        url: `/api/posts/${postId}/schedule`,
+        url: `/api/posts/${postId}`,
         method: "PUT",
         data: {
           scheduledPublishDate,
@@ -105,8 +117,8 @@ export function ScheduledPostsList() {
       // Return a context object with the snapshotted value
       return { previousData };
     },
-    onSuccess: () => {
-      // Force immediate refetch of scheduled posts
+    onSuccess: (data) => {
+      // Force immediate refetch of scheduled posts for accurate server calculations
       queryClient.invalidateQueries({ queryKey: ["/api/posts/scheduled"] });
       queryClient.refetchQueries({ queryKey: ["/api/posts/scheduled"] });
       // Also invalidate any related post queries
@@ -117,9 +129,13 @@ export function ScheduledPostsList() {
       setNewDate("");
       setNewTime("");
       
+      const contentType = editingPost?.publishStatus?.hasShopifyId ? 
+        (editingPost.tags?.includes('page') || editingPost.title?.includes('Page') ? 'Page' : 'Post') : 
+        'Content';
+        
       toast({
-        title: "Schedule Updated",
-        description: "The post schedule has been updated successfully.",
+        title: `${contentType} Schedule Updated`,
+        description: `Successfully updated to ${newDate} at ${newTime} (${scheduledData?.storeTimezone || 'EST'})`,
       });
     },
     onError: (error: any, variables, context) => {
@@ -172,9 +188,18 @@ export function ScheduledPostsList() {
   };
 
   const getStatusText = (post: ScheduledPost) => {
-    if (post.schedulingInfo?.isPastDue) return "Past Due";
-    if (post.publishStatus?.hasShopifyId) return "Ready to Publish";
-    return "Scheduled";
+    const contentType = getContentType(post);
+    if (post.schedulingInfo?.isPastDue) return `${contentType} Past Due`;
+    if (post.publishStatus?.hasShopifyId) return `${contentType} Ready`;
+    return `${contentType} Scheduled`;
+  };
+
+  const getContentType = (post: ScheduledPost): string => {
+    // Determine if this is a page or blog post
+    if (post.tags?.includes('page') || post.title?.toLowerCase().includes('page')) {
+      return "Page";
+    }
+    return "Post";
   };
 
   const handleEditSchedule = (post: ScheduledPost) => {
@@ -283,9 +308,12 @@ export function ScheduledPostsList() {
                   <CardTitle className="text-base line-clamp-2">
                     {post.title}
                   </CardTitle>
-                  <CardDescription className="flex items-center gap-2">
+                  <CardDescription className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary" className="text-xs">
+                      {getContentType(post)}
+                    </Badge>
                     {post.author && (
-                      <span>by {post.author}</span>
+                      <span className="text-xs">by {post.author}</span>
                     )}
                     <Badge variant={getStatusColor(post)} className="text-xs">
                       {getStatusText(post)}
