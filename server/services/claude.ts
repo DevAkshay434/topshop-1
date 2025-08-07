@@ -339,13 +339,17 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     
     // Build collection-based product carousel context
     let carouselContext = '';
+    let hasCollections = false;
     console.log(`🎠 CLAUDE SERVICE - Carousel Context Debug:`);
     console.log(`   - request.collectionIds: ${JSON.stringify(request.collectionIds)}`);
     console.log(`   - request.collectionsInfo: ${JSON.stringify(request.collectionsInfo?.map(c => ({ id: c.id, title: c.title })))}`);
     
     if (request.collectionIds && request.collectionIds.length > 0 && request.collectionsInfo && request.collectionsInfo.length > 0) {
+      hasCollections = true;
       const collectionTitle = request.collectionsInfo[0].title;
-      carouselContext = `\n    PRODUCT CAROUSEL: A collection has been selected (${collectionTitle}). You MUST include a product carousel within the content that showcases products from this collection. Place the carousel marker <!-- PRODUCT_CAROUSEL_PLACEMENT --> under one of your H2 headings where it fits naturally in the content flow.`;
+      carouselContext = `\n    PRODUCT CAROUSEL: A collection has been selected (${collectionTitle}). You MUST include a product carousel within the content that showcases products from this collection. Place the carousel marker <!-- PRODUCT_CAROUSEL_PLACEMENT --> under one of your H2 headings where it fits naturally in the content flow.
+      
+      IMPORTANT: Since a collection is selected, DO NOT add individual product image markers (<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->) - ONLY use the product carousel marker instead. The carousel will display multiple products from the collection in a horizontal scrollable format.`;
       console.log(`   - ✅ Carousel context added for collection: "${collectionTitle}"`);
       console.log(`   - Context text: ${carouselContext.trim()}`);
     } else {
@@ -432,13 +436,19 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
     
-    CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
+${hasCollections ? 
+    `CRITICAL MEDIA PLACEMENT INSTRUCTIONS FOR COLLECTIONS - MUST FOLLOW EXACTLY:
+    - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
+    - DO NOT add secondary image markers (<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->) when collections are selected
+    - Instead, include ONE product carousel marker: <!-- PRODUCT_CAROUSEL_PLACEMENT --> under an appropriate H2 heading
+    - The product carousel will display multiple products horizontally in a scrollable format
+    - Place the carousel marker where it fits naturally in the content flow` :
+    `CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
     - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
     - Under EVERY OTHER H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     - IMPORTANT: You MUST include at least 3-4 secondary image placement markers: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
-    - If a collection is selected, include ONE product carousel marker: <!-- PRODUCT_CAROUSEL_PLACEMENT --> under an appropriate H2 heading
     - Place one marker under each major H2 section to ensure even distribution
-    - These markers are REQUIRED for image functionality - do not skip them
+    - These markers are REQUIRED for image functionality - do not skip them`}
     - Example structure:
       <h2>First Section</h2>
       <p>Content...</p>
