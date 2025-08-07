@@ -1495,10 +1495,15 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       }
       
       if (requestData.collectionIds && requestData.collectionIds.length > 0) {
+        console.log(`🔍 FETCHING COLLECTIONS - Requested IDs: ${requestData.collectionIds.join(', ')}`);
         const customCollections = await shopifyService.getCollections(store, 'custom', 100);
         const smartCollections = await shopifyService.getCollections(store, 'smart', 100);
         const allCollections = [...customCollections, ...smartCollections];
+        console.log(`📋 Found ${allCollections.length} total collections (${customCollections.length} custom + ${smartCollections.length} smart)`);
+        console.log(`📋 Available collection IDs: ${allCollections.map(c => c.id).join(', ')}`);
+        
         collectionsInfo = allCollections.filter(c => requestData.collectionIds?.includes(c.id));
+        console.log(`✅ Matched ${collectionsInfo.length} collections for carousel: ${collectionsInfo.map(c => c.title).join(', ')}`);
       }
       
       // 2. Generate Claude prompt based on all parameters
