@@ -1151,161 +1151,147 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
   }
 });
 
-// Function to generate product carousel HTML
+// Function to generate product carousel HTML - optimized for horizontal scrolling
 function generateProductCarousel(products: any[], shopName: string, collectionTitle: string): string {
-  const productCards = products.map(product => {
+  const productCards = products.map((product, index) => {
     const productUrl = `https://${shopName}/products/${product.handle}`;
     const imageUrl = product.image?.src || product.images?.[0]?.src || '';
     const price = product.variants?.[0]?.price ? `$${product.variants[0].price}` : '';
     
-    return `
-    <div class="product-card" style="
-      flex: 0 0 auto !important;
-      width: 280px !important;
-      min-width: 280px !important;
-      max-width: 280px !important;
-      margin-right: 20px;
-      border: 1px solid #e5e5e5;
+    return `<div class="product-card-item" style="
+      flex: 0 0 auto;
+      width: 320px;
+      min-width: 320px;
+      margin-right: ${index === products.length - 1 ? '0' : '16px'};
+      background: #ffffff;
+      border: 1px solid #e1e5e9;
       border-radius: 12px;
-      padding: 20px;
-      text-align: center;
-      background: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      display: inline-block !important;
-      vertical-align: top;
-      white-space: normal;
-    ">
-      <a href="${productUrl}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
-        ${imageUrl ? `<img src="${imageUrl}" alt="${product.title}" style="
-          width: 100%;
-          height: 220px;
-          object-fit: cover;
-          border-radius: 8px;
-          margin-bottom: 15px;
-        ">` : ''}
-        <h3 style="
-          font-size: 18px;
-          margin: 15px 0 10px 0;
-          color: #333;
-          line-height: 1.4;
-          font-weight: 600;
-          height: 48px;
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-        ">${product.title}</h3>
-        ${price ? `<p style="
-          font-size: 22px;
-          font-weight: bold;
-          color: #0066cc;
-          margin: 10px 0 15px 0;
-        ">${price}</p>` : ''}
-        <button style="
-          background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: 600;
-          margin-top: 10px;
-          transition: all 0.3s ease;
-          width: 100%;
-        ">View Product</button>
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      display: block;
+    " onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'" 
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+      <a href="${productUrl}" target="_blank" style="text-decoration: none; color: inherit; display: block; height: 100%;">
+        ${imageUrl ? `<div style="width: 100%; height: 300px; overflow: hidden; background: #f8f9fa;">
+          <img src="${imageUrl}" alt="${product.title}" style="
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+          ">
+        </div>` : `<div style="width: 100%; height: 300px; background: #f0f2f5; display: flex; align-items: center; justify-content: center; color: #6c757d;">No Image</div>`}
+        <div style="padding: 16px;">
+          <h3 style="
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 8px 0;
+            line-height: 1.4;
+            height: 44px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+          ">${product.title}</h3>
+          ${price ? `<p style="
+            font-size: 18px;
+            font-weight: 700;
+            color: #007bff;
+            margin: 8px 0 12px 0;
+          ">${price}</p>` : ''}
+          <div style="
+            background: #007bff;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            transition: background 0.3s ease;
+          " onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+            View Product
+          </div>
+        </div>
       </a>
     </div>`;
   }).join('');
 
   return `
-<div class="product-carousel-container" style="
-  margin: 40px 0;
-  padding: 30px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+<div class="featured-products-section" style="
+  margin: 32px auto;
+  max-width: 100%;
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
   border-radius: 16px;
-  border: 1px solid #dee2e6;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 ">
   <h3 style="
     text-align: center;
-    margin-bottom: 30px;
+    margin: 0 0 24px 0;
     color: #2c3e50;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
-    letter-spacing: -0.5px;
-  ">Featured Products from ${collectionTitle}</h3>
+  ">Featured Products: ${collectionTitle}</h3>
   
-  <div class="product-carousel" style="
-    display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    padding: 20px 10px 30px 10px;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    gap: 0;
-    white-space: nowrap;
+  <div class="products-carousel-wrapper" style="
+    width: 100%;
+    overflow: hidden;
   ">
-    ${productCards}
+    <div class="products-horizontal-scroll" style="
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 8px 4px 16px 4px;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e0 #f7fafc;
+    ">
+      ${productCards}
+    </div>
   </div>
   
   <style>
-    .product-carousel {
-      display: flex !important;
-      flex-direction: row !important;
-      scrollbar-width: thin;
-      scrollbar-color: #0066cc #f1f3f4;
+    .products-horizontal-scroll::-webkit-scrollbar {
+      height: 8px;
     }
     
-    .product-card {
-      display: inline-block !important;
-      flex: 0 0 auto !important;
+    .products-horizontal-scroll::-webkit-scrollbar-track {
+      background: #f7fafc;
+      border-radius: 4px;
     }
     
-    .product-carousel::-webkit-scrollbar {
-      height: 12px;
+    .products-horizontal-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e0;
+      border-radius: 4px;
     }
     
-    .product-carousel::-webkit-scrollbar-track {
-      background: #f1f3f4;
-      border-radius: 8px;
-      margin: 0 20px;
-    }
-    
-    .product-carousel::-webkit-scrollbar-thumb {
-      background: linear-gradient(90deg, #0066cc 0%, #004499 100%);
-      border-radius: 8px;
-      border: 2px solid #f1f3f4;
-    }
-    
-    .product-carousel::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(90deg, #004499 0%, #003366 100%);
-    }
-    
-    .product-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-    
-    .product-card:last-child {
-      margin-right: 0;
+    .products-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+      background: #a0aec0;
     }
     
     @media (max-width: 768px) {
-      .product-card {
-        width: 240px;
-        min-width: 240px;
-        margin-right: 15px;
+      .product-card-item {
+        width: 280px !important;
+        min-width: 280px !important;
       }
       
-      .product-carousel-container {
-        padding: 20px 15px;
-        margin: 30px 0;
+      .featured-products-section {
+        padding: 16px;
+        margin: 24px auto;
       }
       
-      .product-carousel {
-        padding: 15px 5px 25px 5px;
+      .products-horizontal-scroll {
+        padding: 4px 2px 12px 2px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .product-card-item {
+        width: 260px !important;
+        min-width: 260px !important;
       }
     }
   </style>
