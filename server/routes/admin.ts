@@ -1953,12 +1953,30 @@ Place this at a logical position in the content, typically after introducing a c
       if (requestData.collectionIds && requestData.collectionIds.length > 0 && collectionsInfo.length > 0) {
         const collection = collectionsInfo[0]; // Use first collection
         
+        console.log(`🎠 PRODUCT CAROUSEL DEBUG:`);
+        console.log(`   - Collection ID: ${collection.id}`);
+        console.log(`   - Collection Title: ${collection.title}`);
+        console.log(`   - Generated content length: ${finalContent.length}`);
+        console.log(`   - Content includes carousel marker: ${finalContent.includes('<!-- PRODUCT_CAROUSEL_PLACEMENT -->')}`);
+        
+        // Search for the marker with more context
+        if (finalContent.includes('PRODUCT_CAROUSEL_PLACEMENT')) {
+          console.log('   - Found partial marker match');
+          const markerIndex = finalContent.indexOf('PRODUCT_CAROUSEL_PLACEMENT');
+          const contextStart = Math.max(0, markerIndex - 100);
+          const contextEnd = Math.min(finalContent.length, markerIndex + 150);
+          console.log(`   - Marker context: "${finalContent.substring(contextStart, contextEnd)}"`);
+        } else {
+          console.log('   - No carousel marker found in content - checking first 500 chars:');
+          console.log(`   - Content preview: "${finalContent.substring(0, 500)}..."`);
+        }
+        
         try {
           // Fetch products from the collection
           const collectionProducts = await shopifyService.getProductsFromCollection(store, collection.id);
           
           if (collectionProducts && collectionProducts.length > 0) {
-            console.log(`Generating product carousel for collection "${collection.title}" with ${collectionProducts.length} products`);
+            console.log(`   - Found ${collectionProducts.length} products in collection`);
             
             // Generate product carousel HTML (limit to 8 products for performance)
             const carouselProducts = collectionProducts.slice(0, 8);
@@ -1969,13 +1987,49 @@ Place this at a logical position in the content, typically after introducing a c
               finalContent = finalContent.replace('<!-- PRODUCT_CAROUSEL_PLACEMENT -->', carouselHtml);
               console.log(`✅ Inserted product carousel for collection "${collection.title}"`);
             } else {
-              console.log('⚠️ No carousel placement marker found in content - carousel not inserted');
+              console.log('⚠️ No carousel placement marker found in content - applying fallback insertion');
+              // Fallback: Add carousel after first H2 heading if marker is missing
+              const h2Pattern = /<\/h2>/i;
+              const h2Match = finalContent.match(h2Pattern);
+              if (h2Match) {
+                const insertPosition = h2Match.index! + h2Match[0].length;
+                finalContent = finalContent.slice(0, insertPosition) + '\n\n' + carouselHtml + '\n\n' + finalContent.slice(insertPosition);
+                console.log(`✅ Fallback insertion: Added carousel after first H2 heading`);
+              } else {
+                // Ultimate fallback: Add carousel before the FAQ section or at the end
+                const faqPattern = /<h2[^>]*id\s*=\s*['"]\s*faq\s*['"]/i;
+                const faqMatch = finalContent.match(faqPattern);
+                if (faqMatch) {
+                  const insertPosition = faqMatch.index!;
+                  finalContent = finalContent.slice(0, insertPosition) + carouselHtml + '\n\n' + finalContent.slice(insertPosition);
+                  console.log(`✅ Ultimate fallback: Added carousel before FAQ section`);
+                } else {
+                  // Final fallback: Add before the conclusion paragraph
+                  const conclusionPattern = /<p[^>]*>.*conclusion.*<\/p>/i;
+                  const conclusionMatch = finalContent.match(conclusionPattern);
+                  if (conclusionMatch) {
+                    const insertPosition = conclusionMatch.index!;
+                    finalContent = finalContent.slice(0, insertPosition) + carouselHtml + '\n\n' + finalContent.slice(insertPosition);
+                    console.log(`✅ Final fallback: Added carousel before conclusion`);
+                  } else {
+                    console.log('❌ No suitable insertion point found - adding carousel at end of content');
+                    finalContent = finalContent + '\n\n' + carouselHtml;
+                  }
+                }
+              }
             }
+          } else {
+            console.log(`   - No products found in collection "${collection.title}"`);
           }
         } catch (error) {
           console.error('Error generating product carousel:', error);
           // Continue without carousel if there's an error
         }
+      } else {
+        console.log(`🎠 PRODUCT CAROUSEL SKIPPED:`);
+        console.log(`   - Collection IDs: ${requestData.collectionIds?.length || 0}`);
+        console.log(`   - Collections Info: ${collectionsInfo.length}`);
+        console.log(`   - This explains why no carousel is being generated`);
       }
 
       // Remove any remaining placement markers to prevent empty placeholders

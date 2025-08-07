@@ -339,8 +339,17 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     
     // Build collection-based product carousel context
     let carouselContext = '';
+    console.log(`🎠 CLAUDE SERVICE - Carousel Context Debug:`);
+    console.log(`   - request.collectionIds: ${JSON.stringify(request.collectionIds)}`);
+    console.log(`   - request.collectionsInfo: ${JSON.stringify(request.collectionsInfo?.map(c => ({ id: c.id, title: c.title })))}`);
+    
     if (request.collectionIds && request.collectionIds.length > 0 && request.collectionsInfo && request.collectionsInfo.length > 0) {
-      carouselContext = `\n    PRODUCT CAROUSEL: A collection has been selected (${request.collectionsInfo[0].title}). You MUST include a product carousel within the content that showcases products from this collection. Place the carousel marker <!-- PRODUCT_CAROUSEL_PLACEMENT --> under one of your H2 headings where it fits naturally in the content flow.`;
+      const collectionTitle = request.collectionsInfo[0].title;
+      carouselContext = `\n    PRODUCT CAROUSEL: A collection has been selected (${collectionTitle}). You MUST include a product carousel within the content that showcases products from this collection. Place the carousel marker <!-- PRODUCT_CAROUSEL_PLACEMENT --> under one of your H2 headings where it fits naturally in the content flow.`;
+      console.log(`   - ✅ Carousel context added for collection: "${collectionTitle}"`);
+      console.log(`   - Context text: ${carouselContext.trim()}`);
+    } else {
+      console.log(`   - ❌ No carousel context - collections missing or empty`);
     }
 
     // Build audience-aware context
