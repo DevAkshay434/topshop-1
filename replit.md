@@ -33,6 +33,19 @@ The application employs a modern full-stack, client-server architecture with mul
 
 ## Recent Changes (January 2025)
 
+### Security Incident Resolution - COMPLETED ✅
+- **Issue**: Shopify API credentials exposed in GitHub repository (database-export file)
+- **Actions Taken**: 
+  - Removed dangerous database export file containing access tokens
+  - Enhanced .gitignore with comprehensive security patterns
+  - Rotated Shopify app credentials (new API key/secret configured)
+  - Configured secure environment variables in Replit
+  - Created security incident documentation
+- **Remaining**: User must uninstall/reinstall app on stores to revoke old access tokens
+- **Deadline**: August 11, 2025 (Shopify Partner Governance response required)
+- **Status**: Technical resolution complete, user action required
+- **Date Completed**: January 8, 2025
+
 ### Subscription Plans System - IN PROGRESS ⚡
 - **New Plan Structure**: Updated from 3-tier (FREE, BASIC, PREMIUM) to 4-tier system plus custom option
 - **Plan Details**: 

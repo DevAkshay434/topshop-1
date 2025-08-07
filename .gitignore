@@ -4,3 +4,12 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Security: Never commit sensitive data
+database-export-*
+*.json
+credentials.*
+secrets.*
+.env
+access_tokens.*
+api_keys.*
