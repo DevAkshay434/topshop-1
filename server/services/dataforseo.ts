@@ -46,7 +46,7 @@ export class DataForSEOService {
   }
 
   // Get authentic keywords using only DataForSEO suggestions
-  async getKeywordsForProduct(productTitle: string): Promise<{ success: boolean; topic: string; keywords: KeywordData[] }> {
+  async getKeywordsForProduct(productTitle: string): Promise<KeywordData[]> {
     try {
       console.log(`🔍 Getting authentic keywords for product: "${productTitle}"`);
       
@@ -166,11 +166,7 @@ export class DataForSEOService {
 
       console.log(`🎉 Successfully found ${keywordData.length} keywords with search volume`);
 
-      return {
-        success: true,
-        topic: cleanedKeyword,
-        keywords: keywordData
-      };
+      return keywordData;
 
     } catch (error: any) {
       console.error('DataForSEO keyword generation failed:', error.message);

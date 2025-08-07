@@ -534,7 +534,7 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     console.log(`Searching for keywords related to ${searchTerms.length} topics: ${searchTerms.join(', ')}`);
     
     // Try to get keywords from DataForSEO API - only use authentic data
-    let keywords;
+    let keywords: KeywordData[] = [];
     try {
       console.log(`Attempting to fetch keywords for: "${searchTerm}"`);
       keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
@@ -542,18 +542,24 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     } catch (error: any) {
       console.log(`DataForSEO API error: ${error.message}`);
       
-      // Return specific error message for timeout vs other errors
-      if (error.message.includes('timeout')) {
+      // Provide specific error feedback based on error type
+      if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        return res.status(401).json({
+          success: false,
+          error: "DataForSEO Authentication Error",
+          message: "The DataForSEO API credentials are not valid. Please check your username and password in the Replit Secrets configuration."
+        });
+      } else if (error.message.includes('timeout')) {
         return res.status(408).json({
           success: false,
-          error: "DataForSEO API timeout - please try again with a simpler search term",
+          error: "DataForSEO API timeout",
           message: "The keyword search is taking longer than expected. Please try a simpler search term or try again later."
         });
       } else {
         return res.status(500).json({
           success: false,
-          error: "DataForSEO API error",
-          message: "Unable to fetch authentic keyword data. Please check your API configuration."
+          error: "DataForSEO API error", 
+          message: `Keyword generation failed: ${error.message}`
         });
       }
     }
@@ -611,78 +617,7 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
   }
 });
 
-/**
- * Clean product title by removing brands, model numbers, and SKUs
- * Convert to a more searchable phrase for better keyword generation
- */
-function cleanProductTitleForKeywords(productTitle: string): string {
-  console.log(`Cleaning product title for keywords: "${productTitle}"`);
-  
-  // Remove trademark symbols and basic cleanup
-  let cleaned = productTitle
-    .replace(/®|™|©|℠/g, '')
-    .replace(/\[.*?\]|\(.*?\)/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-
-  // Remove common brand names (technology, retail, appliance brands)
-  const commonBrands = [
-    'sony', 'apple', 'samsung', 'lg', 'panasonic', 'canon', 'nikon', 'hp', 'dell', 'lenovo',
-    'microsoft', 'google', 'amazon', 'intel', 'amd', 'nvidia', 'nike', 'adidas', 'puma',
-    'whirlpool', 'ge', 'frigidaire', 'kenmore', 'bosch', 'kitchenaid', 'maytag',
-    'softpro', 'culligan', 'kinetico', 'fleck', 'pentair', 'aquasure', 'ispring'
-  ];
-
-  for (const brand of commonBrands) {
-    cleaned = cleaned.replace(new RegExp(`\\b${brand}\\b\\s*`, 'gi'), '').trim();
-  }
-
-  // Remove model numbers, SKUs, and codes
-  cleaned = cleaned
-    .replace(/\b[A-Z]{1,3}\d{2,8}[A-Z]?\b/gi, '') // Model numbers like "WH-1000XM5"
-    .replace(/\b\d{3,8}[A-Z]{1,3}\b/gi, '') // Numbers with letters
-    .replace(/\b[A-Z]{2,4}-\d{2,6}\b/gi, '') // Codes like "SKU-1234"
-    .replace(/\bsku\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // SKU references
-    .replace(/\bmodel\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // Model references
-    .replace(/\b\d{5,}\b/g, '') // Long numeric codes
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Extract meaningful product terms
-  const words = cleaned.split(' ').filter(word => 
-    word.length > 2 && 
-    !['the', 'a', 'an', 'and', 'or', 'for', 'with', 'by'].includes(word)
-  );
-
-  if (words.length === 0) {
-    return productTitle; // Return original if cleaning removed everything
-  }
-
-  // Convert to descriptive search phrase (keep under 5 words for API safety)
-  let descriptivePhrase: string;
-  
-  if (words.length === 1) {
-    descriptivePhrase = `${words[0]} reviews`;
-  } else if (words.length === 2) {
-    descriptivePhrase = `${words.join(' ')} guide`;
-  } else if (words.length >= 3 && words.length <= 4) {
-    // Take most meaningful 2-3 words
-    descriptivePhrase = words.slice(0, 3).join(' ');
-  } else {
-    // For long titles, take first 2 meaningful words only
-    descriptivePhrase = words.slice(0, 2).join(' ');
-  }
-
-  // STRICT limit: never exceed 4 words for DataForSEO API
-  const finalWords = descriptivePhrase.split(' ');
-  if (finalWords.length > 4) {
-    descriptivePhrase = finalWords.slice(0, 4).join(' ');
-  }
-
-  console.log(`Product title cleaned: "${productTitle}" → "${descriptivePhrase}"`);
-  return descriptivePhrase;
-}
+// Removed old cleaning function - DataForSEO service handles all cleaning internally
 
 // Generate product-specific image search suggestions using OpenAI
 adminRouter.post("/image-suggestions-for-product", async (req: Request, res: Response) => {
