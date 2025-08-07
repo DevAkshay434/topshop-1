@@ -144,9 +144,9 @@ export class MemStorage implements IStorage {
     // Add a sample shopify connection
     this.shopifyConnection = {
       id: 1,
-      storeName: "fashion-boutique.myshopify.com",
+      storeName: "rajeshshah.myshopify.com",
       accessToken: "sample_token",
-      defaultBlogId: "fashion-blog",
+      defaultBlogId: "116776337722",
       isConnected: true,
       lastSynced: now
     };
@@ -154,10 +154,10 @@ export class MemStorage implements IStorage {
     // Add a sample store for multi-store support
     const defaultStore: ShopifyStore = {
       id: 1,
-      shopName: "fashion-boutique.myshopify.com",
+      shopName: "rajeshshah.myshopify.com",
       accessToken: "sample_token",
       scope: "read_products,write_products,read_content,write_content",
-      defaultBlogId: "fashion-blog",
+      defaultBlogId: "116776337722",
       isConnected: true,
       lastSynced: now,
       installedAt: now,
