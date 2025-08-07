@@ -502,13 +502,23 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     } = req.body;
     
     // Accept either a direct topic, productTitle, or productUrl
-    const searchTerm = topic || productTitle || productUrl;
+    let searchTerm = topic || productTitle || productUrl;
     
     console.log('KEYWORD SEARCH DEBUG - Raw request body:', JSON.stringify(req.body, null, 2));
-    console.log('KEYWORD SEARCH DEBUG - Extracted search term:', searchTerm);
+    console.log('KEYWORD SEARCH DEBUG - Original search term:', searchTerm);
     console.log('KEYWORD SEARCH DEBUG - topic:', topic);
     console.log('KEYWORD SEARCH DEBUG - productTitle:', productTitle);
     console.log('KEYWORD SEARCH DEBUG - productUrl:', productUrl);
+    
+    // If we have a product title (not a manual topic), clean it for better keyword generation
+    if (productTitle && !topic) {
+      // Clean the product title to remove brands, models, SKUs for better keyword results
+      const cleanedTitle = cleanProductTitleForKeywords(productTitle);
+      if (cleanedTitle !== productTitle) {
+        searchTerm = cleanedTitle;
+        console.log(`KEYWORD SEARCH DEBUG - Cleaned product title: "${productTitle}" → "${searchTerm}"`);
+      }
+    }
     
     if (!searchTerm) {
       return res.status(400).json({
@@ -603,6 +613,79 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     });
   }
 });
+
+/**
+ * Clean product title by removing brands, model numbers, and SKUs
+ * Convert to a more searchable phrase for better keyword generation
+ */
+function cleanProductTitleForKeywords(productTitle: string): string {
+  console.log(`Cleaning product title for keywords: "${productTitle}"`);
+  
+  // Remove trademark symbols and basic cleanup
+  let cleaned = productTitle
+    .replace(/®|™|©|℠/g, '')
+    .replace(/\[.*?\]|\(.*?\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  // Remove common brand names (technology, retail, appliance brands)
+  const commonBrands = [
+    'sony', 'apple', 'samsung', 'lg', 'panasonic', 'canon', 'nikon', 'hp', 'dell', 'lenovo',
+    'microsoft', 'google', 'amazon', 'intel', 'amd', 'nvidia', 'nike', 'adidas', 'puma',
+    'whirlpool', 'ge', 'frigidaire', 'kenmore', 'bosch', 'kitchenaid', 'maytag',
+    'softpro', 'culligan', 'kinetico', 'fleck', 'pentair', 'aquasure', 'ispring'
+  ];
+
+  for (const brand of commonBrands) {
+    cleaned = cleaned.replace(new RegExp(`\\b${brand}\\b\\s*`, 'gi'), '').trim();
+  }
+
+  // Remove model numbers, SKUs, and codes
+  cleaned = cleaned
+    .replace(/\b[A-Z]{1,3}\d{2,8}[A-Z]?\b/gi, '') // Model numbers like "WH-1000XM5"
+    .replace(/\b\d{3,8}[A-Z]{1,3}\b/gi, '') // Numbers with letters
+    .replace(/\b[A-Z]{2,4}-\d{2,6}\b/gi, '') // Codes like "SKU-1234"
+    .replace(/\bsku\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // SKU references
+    .replace(/\bmodel\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // Model references
+    .replace(/\b\d{5,}\b/g, '') // Long numeric codes
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Extract meaningful product terms
+  const words = cleaned.split(' ').filter(word => 
+    word.length > 2 && 
+    !['the', 'a', 'an', 'and', 'or', 'for', 'with', 'by'].includes(word)
+  );
+
+  if (words.length === 0) {
+    return productTitle; // Return original if cleaning removed everything
+  }
+
+  // Convert to descriptive search phrase
+  let descriptivePhrase: string;
+  
+  if (words.length === 1) {
+    descriptivePhrase = `best ${words[0]} reviews and guide`;
+  } else if (words.length === 2) {
+    descriptivePhrase = `best ${words.join(' ')} reviews`;
+  } else if (words.length >= 3 && words.length <= 4) {
+    descriptivePhrase = `${words.join(' ')} reviews`;
+  } else {
+    // Take most meaningful parts for long titles
+    const coreWords = [...words.slice(0, 2), ...words.slice(-2)];
+    descriptivePhrase = `${coreWords.join(' ')} guide`;
+  }
+
+  // Keep under 8 words for API compatibility
+  const finalWords = descriptivePhrase.split(' ');
+  if (finalWords.length > 8) {
+    descriptivePhrase = finalWords.slice(0, 8).join(' ');
+  }
+
+  console.log(`Product title cleaned: "${productTitle}" → "${descriptivePhrase}"`);
+  return descriptivePhrase;
+}
 
 // Generate product-specific image search suggestions using OpenAI
 adminRouter.post("/image-suggestions-for-product", async (req: Request, res: Response) => {

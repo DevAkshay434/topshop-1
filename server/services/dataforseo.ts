@@ -657,7 +657,7 @@ export class DataForSEOService {
 
   /**
    * Extract meaningful keywords from a product URL or title
-   * This improved method preserves meaningful phrases for better DataForSEO results
+   * This improved method cleans product data and converts to descriptive phrases
    * @param input The URL or product title/topic to use
    * @returns The extracted keywords as full meaningful phrase
    */
@@ -666,11 +666,11 @@ export class DataForSEOService {
     
     // If it's a manual user input (topic), use it directly without modification
     if (!input.startsWith('http://') && !input.startsWith('https://')) {
-      console.log(`Using manual topic directly: "${input}"`);
+      console.log(`Manual topic detected: "${input}"`);
       return this.preserveFullPhrase(input);
     }
 
-    // For URLs, extract the product handle and enrich it
+    // For URLs, extract the product handle and clean it
     let extractedKeyword;
     try {
       const urlObj = new URL(input);
@@ -687,11 +687,11 @@ export class DataForSEOService {
       console.log(`URL parsing failed, using raw input: "${extractedKeyword}"`);
     }
 
-    // Enrich the extracted keyword into a descriptive phrase
-    const enrichedKeyword = this.enrichProductDataToPhrase(extractedKeyword);
-    console.log(`Final enriched keyword phrase: "${enrichedKeyword}"`);
+    // Clean product-specific data and convert to searchable phrase
+    const cleanedAndEnriched = this.cleanProductTitleAndEnrich(extractedKeyword);
+    console.log(`Final searchable phrase: "${cleanedAndEnriched}"`);
     
-    return enrichedKeyword;
+    return cleanedAndEnriched;
   }
 
   /**
@@ -717,60 +717,95 @@ export class DataForSEOService {
   }
 
   /**
-   * Enrich product data into a balanced descriptive phrase for DataForSEO API
-   * Convert simple product names into meaningful but API-compliant search phrases
-   * @param productData The basic product title or extracted keyword
-   * @returns A descriptive phrase that provides context while staying within API limits
+   * Clean product title by removing brands, models, SKUs and convert to descriptive search phrase
+   * @param productTitle The raw product title or extracted data
+   * @returns A clean, descriptive phrase optimized for keyword research
    */
-  private enrichProductDataToPhrase(productData: string): string {
-    // Clean basic noise while preserving meaningful content
-    let cleaned = productData
+  private cleanProductTitleAndEnrich(productTitle: string): string {
+    console.log(`Cleaning and enriching product title: "${productTitle}"`);
+    
+    // Step 1: Remove trademark symbols and basic cleanup
+    let cleaned = productTitle
       .replace(/®|™|©|℠/g, '')
-      .replace(/\[.*?\]|\(.*?\)/g, '')
-      .replace(/\b\d{5,}\b/g, '') // Remove long numbers (SKUs)
+      .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets/parentheses
       .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase();
 
-    // Remove excessive model numbers and codes but keep the product essence
+    // Step 2: Remove brand names (common technology and retail brands)
+    const commonBrands = [
+      // Technology brands
+      'sony', 'apple', 'samsung', 'lg', 'panasonic', 'canon', 'nikon', 'hp', 'dell', 'lenovo',
+      'microsoft', 'google', 'amazon', 'netflix', 'spotify', 'adobe', 'intel', 'amd', 'nvidia',
+      'qualcomm', 'broadcom', 'cisco', 'ibm', 'oracle', 'salesforce', 'zoom', 'slack',
+      
+      // Retail and consumer brands  
+      'nike', 'adidas', 'puma', 'reebok', 'under armour', 'levi', 'gap', 'zara', 'h&m',
+      'uniqlo', 'target', 'walmart', 'costco', 'ikea', 'home depot', 'lowes', 'best buy',
+      
+      // Automotive brands
+      'toyota', 'honda', 'ford', 'gm', 'bmw', 'mercedes', 'audi', 'volkswagen', 'hyundai',
+      
+      // Appliance and home brands
+      'whirlpool', 'ge', 'frigidaire', 'kenmore', 'bosch', 'kitchenaid', 'maytag', 'electrolux',
+      'softpro', 'culligan', 'kinetico', 'fleck', 'pentair', 'aquasure', 'ispring'
+    ];
+
+    // Remove brand names from the beginning or end of the title
+    for (const brand of commonBrands) {
+      cleaned = cleaned
+        .replace(new RegExp(`\\b${brand}\\b\\s*`, 'gi'), '') // Remove brand from anywhere
+        .trim();
+    }
+
+    // Step 3: Remove model numbers, SKUs, and codes
     cleaned = cleaned
-      .replace(/\b[A-Z]\d{3,}\b/gi, '')
-      .replace(/\b[A-Z]{2,}\d{2,}\b/gi, '')
+      .replace(/\b[A-Z]{1,3}\d{2,8}[A-Z]?\b/gi, '') // Model numbers like "WH-1000XM5", "A13"
+      .replace(/\b\d{3,8}[A-Z]{1,3}\b/gi, '') // Numbers with letters like "1000XM5"
+      .replace(/\b[A-Z]{2,4}-\d{2,6}\b/gi, '') // Codes like "SKU-1234"
+      .replace(/\bsku\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // SKU references
+      .replace(/\bmodel\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // Model references
+      .replace(/\bpart\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // Part numbers
+      .replace(/\b\d{5,}\b/g, '') // Long numeric codes
       .replace(/\s+/g, ' ')
       .trim();
 
-    const words = cleaned.split(' ').filter(word => word.length > 2);
-    
+    // Step 4: Extract meaningful product terms
+    const words = cleaned.split(' ').filter(word => 
+      word.length > 2 && 
+      !['the', 'a', 'an', 'and', 'or', 'for', 'with', 'by'].includes(word)
+    );
+
     if (words.length === 0) {
-      return 'product'; // Emergency fallback
+      return 'product reviews and buying guide';
     }
 
-    // Create balanced enrichment that stays within API limits (≤8 words typically)
-    let enrichedPhrase: string;
+    // Step 5: Convert to descriptive search phrase
+    let descriptivePhrase: string;
     
     if (words.length === 1) {
-      // For single word: add minimal meaningful context
-      enrichedPhrase = `${words[0]} for home and business`;
+      // Single word: create comprehensive search phrase
+      descriptivePhrase = `best ${words[0]} reviews and buying guide`;
     } else if (words.length === 2) {
-      // For 2 words: add light context 
-      enrichedPhrase = `${words.join(' ')} reviews and features`;
-    } else if (words.length >= 3 && words.length <= 5) {
-      // For 3-5 words: preserve as-is, it's already descriptive
-      enrichedPhrase = words.join(' ');
+      // Two words: add search intent
+      descriptivePhrase = `best ${words.join(' ')} reviews and comparison`;
+    } else if (words.length >= 3 && words.length <= 4) {
+      // 3-4 words: add minimal context
+      descriptivePhrase = `${words.join(' ')} reviews and features`;
     } else {
-      // For 6+ words: take most meaningful parts (first 3 + last 2)
-      const coreWords = [...words.slice(0, 3), ...words.slice(-2)];
-      enrichedPhrase = coreWords.join(' ');
+      // 5+ words: take most meaningful parts
+      const coreWords = [...words.slice(0, 2), ...words.slice(-2)];
+      descriptivePhrase = `${coreWords.join(' ')} buying guide`;
     }
 
-    // Final safety check - ensure we don't exceed reasonable length
-    const finalWords = enrichedPhrase.split(' ');
+    // Step 6: Final length validation (keep under 8 words for API compatibility)
+    const finalWords = descriptivePhrase.split(' ');
     if (finalWords.length > 8) {
-      enrichedPhrase = finalWords.slice(0, 8).join(' ');
+      descriptivePhrase = finalWords.slice(0, 8).join(' ');
     }
 
-    console.log(`Enriched "${cleaned}" to "${enrichedPhrase}" (${enrichedPhrase.split(' ').length} words)`);
-    return enrichedPhrase;
+    console.log(`Transformed "${productTitle}" → "${descriptivePhrase}" (${finalWords.length} words)`);
+    return descriptivePhrase;
   }
 
   /**
