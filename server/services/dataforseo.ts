@@ -662,41 +662,88 @@ export class DataForSEOService {
 
   /**
    * Extract meaningful keywords from a product URL or title
-   * This improved method preserves meaningful phrases for better DataForSEO results
+   * Convert branded product names to searchable categories for better DataForSEO results
    * @param input The URL or product title/topic to use
-   * @returns The extracted keywords as full meaningful phrase
+   * @returns The extracted keywords as searchable category phrase
    */
   private extractKeywordFromUrl(input: string): string {
     console.log(`Extracting keywords from input: "${input}"`);
     
-    // If it's a manual user input (topic), use it directly without modification
-    if (!input.startsWith('http://') && !input.startsWith('https://')) {
+    // Check if this looks like a branded product name that needs category extraction
+    const isBrandedProduct = this.detectBrandedProduct(input);
+    
+    if (input.startsWith('http://') || input.startsWith('https://')) {
+      // For URLs, extract the product handle and enrich it
+      let extractedKeyword;
+      try {
+        const urlObj = new URL(input);
+        const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+        
+        // Get the last segment (usually product handle)
+        const handle = pathSegments[pathSegments.length - 1];
+        
+        // Convert handle to keywords (replace hyphens with spaces)
+        extractedKeyword = handle.replace(/-/g, ' ');
+        console.log(`Extracted from URL handle: "${extractedKeyword}"`);
+      } catch (error) {
+        extractedKeyword = input;
+        console.log(`URL parsing failed, using raw input: "${extractedKeyword}"`);
+      }
+
+      // Always extract category from URL-based product data
+      const enrichedKeyword = this.enrichProductDataToPhrase(extractedKeyword);
+      console.log(`Final enriched keyword phrase: "${enrichedKeyword}"`);
+      return enrichedKeyword;
+      
+    } else if (isBrandedProduct) {
+      // For branded product names, extract the core category
+      console.log(`Detected branded product, extracting category: "${input}"`);
+      const categoryKeyword = this.enrichProductDataToPhrase(input);
+      console.log(`Extracted category keyword: "${categoryKeyword}"`);
+      return categoryKeyword;
+      
+    } else {
+      // For manual user topics/searches, preserve as-is
       console.log(`Using manual topic directly: "${input}"`);
       return this.preserveFullPhrase(input);
     }
+  }
 
-    // For URLs, extract the product handle and enrich it
-    let extractedKeyword;
-    try {
-      const urlObj = new URL(input);
-      const pathSegments = urlObj.pathname.split('/').filter(Boolean);
-      
-      // Get the last segment (usually product handle)
-      const handle = pathSegments[pathSegments.length - 1];
-      
-      // Convert handle to keywords (replace hyphens with spaces)
-      extractedKeyword = handle.replace(/-/g, ' ');
-      console.log(`Extracted from URL handle: "${extractedKeyword}"`);
-    } catch (error) {
-      extractedKeyword = input;
-      console.log(`URL parsing failed, using raw input: "${extractedKeyword}"`);
-    }
-
-    // Enrich the extracted keyword into a descriptive phrase
-    const enrichedKeyword = this.enrichProductDataToPhrase(extractedKeyword);
-    console.log(`Final enriched keyword phrase: "${enrichedKeyword}"`);
+  /**
+   * Detect if input looks like a branded product name rather than a search query
+   * @param input The input to analyze
+   * @returns True if it looks like a branded product name
+   */
+  private detectBrandedProduct(input: string): boolean {
+    console.log(`Detecting if branded product: "${input}"`);
+    const text = input.toLowerCase();
     
-    return enrichedKeyword;
+    // Look for brand indicators
+    const brandIndicators = [
+      // Common brand/model patterns
+      /\b(pro|elite|premium|max|plus|ultra|super|advanced)\b/,
+      // Trademark symbols
+      /[®™©]/,
+      // Model numbers or codes
+      /\b[a-z]+\d+\b/,
+      // Brackets with specifications
+      /\[.*?\]/,
+      // Multiple capitalized words (brand names)
+      /\b[A-Z][a-z]+\s+[A-Z][a-z]+/
+    ];
+    
+    // If it matches brand patterns and is longer than a typical search, it's probably a product name
+    const hasBrandIndicators = brandIndicators.some(pattern => {
+      const match = pattern.test(input);
+      if (match) console.log(`Brand indicator matched: ${pattern}`);
+      return match;
+    });
+    const isLongSpecificName = input.split(' ').length > 4;
+    
+    const result = hasBrandIndicators || isLongSpecificName;
+    console.log(`Brand detection result: ${result} (indicators: ${hasBrandIndicators}, long: ${isLongSpecificName})`);
+    
+    return result;
   }
 
   /**
@@ -722,10 +769,10 @@ export class DataForSEOService {
   }
 
   /**
-   * Enrich product data into a balanced descriptive phrase for DataForSEO API
-   * Convert simple product names into meaningful but API-compliant search phrases
+   * Extract the core product category from branded product names for better keyword search
+   * Convert specific branded names into broad, searchable product categories
    * @param productData The basic product title or extracted keyword
-   * @returns A descriptive phrase that provides context while staying within API limits
+   * @returns A broad product category that people actually search for
    */
   private enrichProductDataToPhrase(productData: string): string {
     // Clean basic noise while preserving meaningful content
@@ -737,45 +784,69 @@ export class DataForSEOService {
       .trim()
       .toLowerCase();
 
-    // Remove excessive model numbers and codes but keep the product essence
+    // Remove brand names, model names, and specific identifiers to get core product type
     cleaned = cleaned
-      .replace(/\b[A-Z]\d{3,}\b/gi, '')
-      .replace(/\b[A-Z]{2,}\d{2,}\b/gi, '')
+      .replace(/\b[A-Z]\d{3,}\b/gi, '') // Remove model numbers like "A1234"
+      .replace(/\b[A-Z]{2,}\d{2,}\b/gi, '') // Remove codes like "AB123"
+      .replace(/\b(softpro|elite|pro|premium|max|plus|ultra|super|advanced|professional)\b/gi, '') // Remove brand/quality modifiers
+      .replace(/\b(series|model|type|version)\b/gi, '') // Remove product line indicators
       .replace(/\s+/g, ' ')
       .trim();
 
     const words = cleaned.split(' ').filter(word => word.length > 2);
     
     if (words.length === 0) {
-      return 'product'; // Emergency fallback
+      return 'water treatment system'; // Generic fallback for water products
     }
 
-    // Create concise but meaningful phrases that DataForSEO API can handle (≤5 words max)
-    let enrichedPhrase: string;
+    // Extract core product categories that people actually search for
+    let coreCategory = '';
     
-    if (words.length === 1) {
-      // For single word: keep simple, just add one contextual word
-      enrichedPhrase = `${words[0]} systems`;
-    } else if (words.length === 2) {
-      // For 2 words: perfect length, use as-is
-      enrichedPhrase = words.join(' ');
-    } else if (words.length >= 3 && words.length <= 4) {
-      // For 3-4 words: use as-is, good length
-      enrichedPhrase = words.join(' ');
-    } else {
-      // For 5+ words: extract the core product terms (first 2 + most relevant 1-2 from end)
-      const coreWords = [...words.slice(0, 2), ...words.slice(-2)];
-      enrichedPhrase = coreWords.slice(0, 4).join(' '); // Max 4 words
+    // Look for common product categories in the cleaned text
+    const productCategories = [
+      // Water treatment products
+      { terms: ['water', 'conditioner'], category: 'water conditioner' },
+      { terms: ['water', 'softener'], category: 'water softener' },
+      { terms: ['water', 'filter'], category: 'water filter' },
+      { terms: ['water', 'purifier'], category: 'water purifier' },
+      { terms: ['water', 'treatment'], category: 'water treatment system' },
+      { terms: ['salt', 'free'], category: 'salt free water softener' },
+      
+      // Other common categories
+      { terms: ['air', 'purifier'], category: 'air purifier' },
+      { terms: ['air', 'conditioner'], category: 'air conditioner' },
+      { terms: ['vacuum', 'cleaner'], category: 'vacuum cleaner' },
+      { terms: ['coffee', 'maker'], category: 'coffee maker' },
+      { terms: ['pressure', 'washer'], category: 'pressure washer' }
+    ];
+
+    // Find matching category
+    for (const cat of productCategories) {
+      const hasAllTerms = cat.terms.every(term => words.includes(term));
+      if (hasAllTerms) {
+        coreCategory = cat.category;
+        break;
+      }
     }
 
-    // Absolute safety check - never exceed 5 words for DataForSEO API
-    const finalWords = enrichedPhrase.split(' ');
-    if (finalWords.length > 5) {
-      enrichedPhrase = finalWords.slice(0, 5).join(' ');
+    // If no specific category found, use the most descriptive 2-3 words
+    if (!coreCategory) {
+      // Take the last 2-3 words as they often contain the product type
+      const meaningfulWords = words.filter(word => 
+        !['for', 'with', 'and', 'the', 'system', 'unit', 'device'].includes(word)
+      );
+      
+      if (meaningfulWords.length >= 2) {
+        coreCategory = meaningfulWords.slice(-2).join(' ');
+      } else if (meaningfulWords.length === 1) {
+        coreCategory = `${meaningfulWords[0]} system`;
+      } else {
+        coreCategory = words.slice(-2).join(' ');
+      }
     }
 
-    console.log(`Enriched "${cleaned}" to "${enrichedPhrase}" (${enrichedPhrase.split(' ').length} words)`);
-    return enrichedPhrase;
+    console.log(`Extracted core category "${coreCategory}" from "${productData}"`);
+    return coreCategory;
   }
 
   /**

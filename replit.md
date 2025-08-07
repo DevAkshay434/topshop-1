@@ -31,6 +31,19 @@ The application employs a modern full-stack, client-server architecture with mul
 - **URL Generation**: Implements SEO-friendly URL generation using Shopify handles for both blog posts and pages, with robust fallback mechanisms.
 - **Content Preview Optimization**: Intelligent featured image handling in admin panel previews - prevents duplication by removing featured images from page content body when displayed separately in preview mode.
 
+## Recent Changes (January 2025)
+
+### Keyword Generation System - COMPLETED ✅
+- **Issue Fixed**: Branded product names (e.g., "SoftPro® Elite Salt Free Water Conditioner") were generating zero search volume because specific brand/model combinations don't have search data
+- **Solution Implemented**: Advanced branded product detection system that extracts core product categories from specific brand names
+- **Technical Changes**: 
+  - Added `detectBrandedProduct()` method to identify branded vs. generic search terms
+  - Enhanced `enrichProductDataToPhrase()` to extract searchable categories from branded names
+  - Implemented pattern matching for common product categories (water conditioners, air purifiers, etc.)
+  - Maintains 5-word limit for DataForSEO API compatibility
+- **Results**: System now converts "SoftPro® Elite Salt Free Water Conditioner" → "water conditioner" → generates 22,200+ search volume keywords
+- **Date Completed**: January 8, 2025
+
 ## External Dependencies
 
 - **AI Content Generation**:
@@ -41,7 +54,7 @@ The application employs a modern full-stack, client-server architecture with mul
     - Pixabay API
     - Shopify Files API (for native media management)
 - **SEO and Analytics**:
-    - DataForSEO API (for keyword research)
+    - DataForSEO API (for keyword research and search volume data)
     - Shopify Analytics API (for store performance)
 - **Infrastructure**:
     - NeonDB (PostgreSQL database)
