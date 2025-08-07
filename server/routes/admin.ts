@@ -502,20 +502,13 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     } = req.body;
     
     // Accept either a direct topic, productTitle, or productUrl
-    let searchTerm = topic || productTitle || productUrl;
+    const searchTerm = topic || productTitle || productUrl;
     
     console.log('KEYWORD SEARCH DEBUG - Raw request body:', JSON.stringify(req.body, null, 2));
-    console.log('KEYWORD SEARCH DEBUG - Original search term:', searchTerm);
+    console.log('KEYWORD SEARCH DEBUG - Extracted search term:', searchTerm);
     console.log('KEYWORD SEARCH DEBUG - topic:', topic);
     console.log('KEYWORD SEARCH DEBUG - productTitle:', productTitle);
     console.log('KEYWORD SEARCH DEBUG - productUrl:', productUrl);
-    
-    // Use the exact product title - let DataForSEO service handle cleaning
-    // No additional cleaning here to avoid keyword contamination
-    if (productTitle && !topic) {
-      searchTerm = productTitle;
-      console.log(`KEYWORD SEARCH DEBUG - Using exact product title: "${productTitle}"`);
-    }
     
     if (!searchTerm) {
       return res.status(400).json({
@@ -534,7 +527,7 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     console.log(`Searching for keywords related to ${searchTerms.length} topics: ${searchTerms.join(', ')}`);
     
     // Try to get keywords from DataForSEO API - only use authentic data
-    let keywords: KeywordData[] = [];
+    let keywords;
     try {
       console.log(`Attempting to fetch keywords for: "${searchTerm}"`);
       keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
@@ -542,30 +535,18 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     } catch (error: any) {
       console.log(`DataForSEO API error: ${error.message}`);
       
-      // Provide specific error feedback based on error type
-      if (error.message.includes('401') || error.message.includes('unauthorized')) {
-        return res.status(401).json({
-          success: false,
-          error: "DataForSEO Authentication Error",
-          message: "DataForSEO credentials are invalid. Please verify your username and password."
-        });
-      } else if (error.message.includes('402') || error.message.includes('billing')) {
-        return res.status(402).json({
-          success: false,
-          error: "DataForSEO Billing Issue",
-          message: "DataForSEO account has insufficient credits or expired subscription. Please check your billing in DataForSEO dashboard."
-        });
-      } else if (error.message.includes('timeout')) {
+      // Return specific error message for timeout vs other errors
+      if (error.message.includes('timeout')) {
         return res.status(408).json({
           success: false,
-          error: "DataForSEO API timeout",
+          error: "DataForSEO API timeout - please try again with a simpler search term",
           message: "The keyword search is taking longer than expected. Please try a simpler search term or try again later."
         });
       } else {
         return res.status(500).json({
           success: false,
-          error: "DataForSEO API error", 
-          message: `Keyword generation failed: ${error.message}`
+          error: "DataForSEO API error",
+          message: "Unable to fetch authentic keyword data. Please check your API configuration."
         });
       }
     }
@@ -622,8 +603,6 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     });
   }
 });
-
-// Removed old cleaning function - DataForSEO service handles all cleaning internally
 
 // Generate product-specific image search suggestions using OpenAI
 adminRouter.post("/image-suggestions-for-product", async (req: Request, res: Response) => {
