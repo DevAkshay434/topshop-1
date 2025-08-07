@@ -659,10 +659,14 @@ export class DataForSEOService {
   private extractKeywordFromUrl(input: string): string {
     console.log(`Extracting keywords from input: "${input}"`);
     
-    // If it's a manual user input (topic), use it directly without modification
+    // If it's a manual user input (topic) or cleaned product title, use it directly
     if (!input.startsWith('http://') && !input.startsWith('https://')) {
-      console.log(`Manual topic detected: "${input}"`);
-      return this.preserveFullPhrase(input);
+      console.log(`Manual topic or cleaned product title detected: "${input}"`);
+      // Apply minimal cleaning for API safety (strict word limit)
+      const words = input.toLowerCase().split(' ').filter(word => word.length > 0);
+      const limitedPhrase = words.slice(0, 3).join(' '); // Maximum 3 words for API safety
+      console.log(`API-safe phrase: "${limitedPhrase}" (${words.length} → ${limitedPhrase.split(' ').length} words)`);
+      return limitedPhrase;
     }
 
     // For URLs, extract the product handle and clean it
@@ -682,125 +686,22 @@ export class DataForSEOService {
       console.log(`URL parsing failed, using raw input: "${extractedKeyword}"`);
     }
 
-    // Clean product-specific data and convert to searchable phrase
-    const cleanedAndEnriched = this.cleanProductTitleAndEnrich(extractedKeyword);
-    console.log(`Final searchable phrase: "${cleanedAndEnriched}"`);
+    // For URLs, apply aggressive cleaning and keep it simple
+    const words = extractedKeyword.toLowerCase()
+      .replace(/[^\w\s]/g, ' ') // Remove all non-alphanumeric chars
+      .split(' ')
+      .filter(word => word.length > 2)
+      .slice(0, 3); // Maximum 3 words
     
-    return cleanedAndEnriched;
+    const cleanedPhrase = words.join(' ');
+    console.log(`URL-based phrase: "${cleanedPhrase}" (${words.length} words)`);
+    
+    return cleanedPhrase;
   }
 
-  /**
-   * Preserve the full meaningful phrase instead of slicing it
-   * Only clean problematic characters but keep the context intact
-   * @param input The user's manual input or topic
-   * @returns Cleaned but full phrase
-   */
-  private preserveFullPhrase(input: string): string {
-    let cleaned = input
-      .replace(/®|™|©|℠/g, '') // Remove trademark/copyright symbols
-      .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets and parentheses
-      .replace(/[[\]{}|<>]/g, ' ') // Remove special characters
-      .replace(/^\d+\s*[.:)]\s*/, '') // Remove list numbers (e.g., "1. ", "2) ")
-      .replace(/\s+/g, ' ') // Normalize spaces
-      .trim(); // Remove leading/trailing whitespace
 
-    // Convert to lowercase for consistency
-    cleaned = cleaned.toLowerCase();
 
-    console.log(`Preserved full phrase: "${cleaned}" (original: "${input}")`);
-    return cleaned;
-  }
 
-  /**
-   * Clean product title by removing brands, models, SKUs and convert to descriptive search phrase
-   * @param productTitle The raw product title or extracted data
-   * @returns A clean, descriptive phrase optimized for keyword research
-   */
-  private cleanProductTitleAndEnrich(productTitle: string): string {
-    console.log(`Cleaning and enriching product title: "${productTitle}"`);
-    
-    // Step 1: Remove trademark symbols and basic cleanup
-    let cleaned = productTitle
-      .replace(/®|™|©|℠/g, '')
-      .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets/parentheses
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toLowerCase();
-
-    // Step 2: Remove brand names (common technology and retail brands)
-    const commonBrands = [
-      // Technology brands
-      'sony', 'apple', 'samsung', 'lg', 'panasonic', 'canon', 'nikon', 'hp', 'dell', 'lenovo',
-      'microsoft', 'google', 'amazon', 'netflix', 'spotify', 'adobe', 'intel', 'amd', 'nvidia',
-      'qualcomm', 'broadcom', 'cisco', 'ibm', 'oracle', 'salesforce', 'zoom', 'slack',
-      
-      // Retail and consumer brands  
-      'nike', 'adidas', 'puma', 'reebok', 'under armour', 'levi', 'gap', 'zara', 'h&m',
-      'uniqlo', 'target', 'walmart', 'costco', 'ikea', 'home depot', 'lowes', 'best buy',
-      
-      // Automotive brands
-      'toyota', 'honda', 'ford', 'gm', 'bmw', 'mercedes', 'audi', 'volkswagen', 'hyundai',
-      
-      // Appliance and home brands
-      'whirlpool', 'ge', 'frigidaire', 'kenmore', 'bosch', 'kitchenaid', 'maytag', 'electrolux',
-      'softpro', 'culligan', 'kinetico', 'fleck', 'pentair', 'aquasure', 'ispring'
-    ];
-
-    // Remove brand names from the beginning or end of the title
-    for (const brand of commonBrands) {
-      cleaned = cleaned
-        .replace(new RegExp(`\\b${brand}\\b\\s*`, 'gi'), '') // Remove brand from anywhere
-        .trim();
-    }
-
-    // Step 3: Remove model numbers, SKUs, and codes
-    cleaned = cleaned
-      .replace(/\b[A-Z]{1,3}\d{2,8}[A-Z]?\b/gi, '') // Model numbers like "WH-1000XM5", "A13"
-      .replace(/\b\d{3,8}[A-Z]{1,3}\b/gi, '') // Numbers with letters like "1000XM5"
-      .replace(/\b[A-Z]{2,4}-\d{2,6}\b/gi, '') // Codes like "SKU-1234"
-      .replace(/\bsku\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // SKU references
-      .replace(/\bmodel\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // Model references
-      .replace(/\bpart\s*[:\-]?\s*[A-Z0-9\-]{3,10}\b/gi, '') // Part numbers
-      .replace(/\b\d{5,}\b/g, '') // Long numeric codes
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    // Step 4: Extract meaningful product terms
-    const words = cleaned.split(' ').filter(word => 
-      word.length > 2 && 
-      !['the', 'a', 'an', 'and', 'or', 'for', 'with', 'by'].includes(word)
-    );
-
-    if (words.length === 0) {
-      return 'product reviews and buying guide';
-    }
-
-    // Step 5: Convert to minimal descriptive search phrase (API safety first)
-    let descriptivePhrase: string;
-    
-    if (words.length === 1) {
-      // Single word: minimal addition
-      descriptivePhrase = `${words[0]} reviews`;
-    } else if (words.length === 2) {
-      // Two words: use as-is
-      descriptivePhrase = words.join(' ');
-    } else if (words.length >= 3 && words.length <= 4) {
-      // 3-4 words: take first 3 only
-      descriptivePhrase = words.slice(0, 3).join(' ');
-    } else {
-      // 5+ words: take most meaningful 2 words only
-      descriptivePhrase = words.slice(0, 2).join(' ');
-    }
-
-    // Step 6: STRICT API limit - never exceed 4 words
-    const finalWords = descriptivePhrase.split(' ');
-    if (finalWords.length > 4) {
-      descriptivePhrase = finalWords.slice(0, 4).join(' ');
-    }
-
-    console.log(`Transformed "${productTitle}" → "${descriptivePhrase}" (${finalWords.length} words)`);
-    return descriptivePhrase;
-  }
 
   /**
    * Determine intent from keyword data
