@@ -375,8 +375,14 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
 
 let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${carouselContext}${audienceContext}${keywordContext}
     
+    CRITICAL TITLE REQUIREMENTS:
+    - DO NOT include any specific years (2021, 2022, 2023, 2024, 2025, etc.) in titles
+    - Create evergreen titles that remain relevant over time
+    - Use phrases like "Latest", "Current", "Top", "Best" instead of specific years
+    - Focus on timeless value and benefits rather than dated references
+    
     The blog post MUST follow this exact structure:
-    1. A compelling title that includes the main topic and primary keywords (this will be used separately)
+    1. A compelling evergreen title that includes the main topic and primary keywords (this will be used separately)
     2. Multiple clearly defined sections with H2 headings that incorporate important keywords
     3. Appropriate H3 subheadings within each section where needed
     4. Well-organized paragraphs (2-4 paragraphs per section)

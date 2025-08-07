@@ -1160,9 +1160,10 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
     
     return `
     <div class="product-card" style="
-      flex: 0 0 auto;
-      width: 280px;
-      min-width: 280px;
+      flex: 0 0 auto !important;
+      width: 280px !important;
+      min-width: 280px !important;
+      max-width: 280px !important;
       margin-right: 20px;
       border: 1px solid #e5e5e5;
       border-radius: 12px;
@@ -1171,6 +1172,9 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
       background: white;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: inline-block !important;
+      vertical-align: top;
+      white-space: normal;
     ">
       <a href="${productUrl}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
         ${imageUrl ? `<img src="${imageUrl}" alt="${product.title}" style="
@@ -1233,21 +1237,30 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
   ">Featured Products from ${collectionTitle}</h3>
   
   <div class="product-carousel" style="
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
     padding: 20px 10px 30px 10px;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     gap: 0;
+    white-space: nowrap;
   ">
     ${productCards}
   </div>
   
   <style>
     .product-carousel {
+      display: flex !important;
+      flex-direction: row !important;
       scrollbar-width: thin;
       scrollbar-color: #0066cc #f1f3f4;
+    }
+    
+    .product-card {
+      display: inline-block !important;
+      flex: 0 0 auto !important;
     }
     
     .product-carousel::-webkit-scrollbar {
