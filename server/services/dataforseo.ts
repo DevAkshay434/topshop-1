@@ -536,69 +536,51 @@ export class DataForSEOService {
    * @returns Cleaned, lowercase keyword string
    */
   private cleanKeywordString(input: string): string {
-    console.log(`Cleaning keyword string: "${input}"`);
+    console.log(`Cleaning keyword string (preserving full phrase): "${input}"`);
     
-    // Universal dynamic cleaning - no static product assumptions
+    // Light cleaning that preserves the full meaningful phrase
+    // Only remove problematic characters that interfere with API calls
     let cleaned = input
       .replace(/®|™|©|℠/g, '') // Remove trademark/copyright symbols
       .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets and parentheses
-      .replace(/[[\]{}|<>]/g, ' ') // Remove special characters
+      .replace(/[[\]{}|<>]/g, ' ') // Remove special characters that break APIs
       .replace(/^\d+\s*[.:)]\s*/, '') // Remove list numbers (e.g., "1. ", "2) ")
       .replace(/\b\d{5,}\b/g, '') // Remove long numbers (likely SKUs, model numbers)
-      .replace(/\s+-\s+.*$/, '') // Remove everything after a dash with spaces around it
-      .replace(/\s*-\s*$/, '') // Remove trailing dash with spaces
-      .replace(/\s*-$/, '') // Remove trailing dash without spaces
-      .replace(/^-\s*/, '') // Remove leading dash
-      .replace(/\b\d+\s*(lbs?|pounds?|kg|grams?|oz|ounces?)\b/gi, '') // Remove weight specifications
-      .replace(/\b(pack|piece|set|count|ct)\b/gi, '') // Remove quantity indicators
-      .replace(/\s*,\s*([a-z])/g, ' $1') // Convert commas to spaces when followed by lowercase
       .replace(/\s+/g, ' ') // Normalize spaces
-      .trim(); // Remove leading/trailing whitespace
-      
-    // Remove brand names, model numbers and codes that don't add search value
+      .trim() // Remove leading/trailing whitespace
+      .toLowerCase(); // Convert to lowercase for consistency
+
+    // Remove excessive model numbers and codes but preserve product description
     cleaned = cleaned
-      .replace(/\b[A-Z]\d{3,}\b/g, '') // Remove model numbers like "A1234"
-      .replace(/\b[A-Z]{2,}\d{2,}\b/g, '') // Remove codes like "AB123"
-      .replace(/\b\d{2,}[A-Z]{1,}\b/g, '') // Remove codes like "123A"
-      .replace(/\b[A-Z][a-z]*\s+[A-Z][a-z]*\b/g, ' ') // Remove brand names like "Imerys Calcite"
+      .replace(/\b[A-Z]\d{3,}\b/gi, '') // Remove model numbers like "A1234"  
+      .replace(/\b[A-Z]{2,}\d{2,}\b/gi, '') // Remove codes like "AB123"
+      .replace(/\b\d{2,}[A-Z]{1,}\b/gi, '') // Remove codes like "123A"
       .replace(/\s+/g, ' ') // Normalize spaces again
       .trim();
-      
-    // Convert to lowercase for SEO best practices
-    cleaned = cleaned.toLowerCase();
+
+    // Keep stop words as they provide important context for DataForSEO
+    // Remove only leading/trailing articles if they exist
+    const words = cleaned.split(' ');
     
-    // Remove common stop words and noise
-    const stopWords = ['for', 'with', 'by', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'of'];
-    const words = cleaned.split(' ').filter(word => 
-      word.length > 2 && 
-      !stopWords.includes(word) &&
-      !['brand', 'model', 'series', 'type', 'style', 'size'].includes(word)
-    );
-    
-    // Extract the most meaningful product terms
-    let finalKeyword = '';
-    
-    if (words.length >= 2) {
-      // Use the most descriptive 2-3 words that best represent the product
-      // Priority: last words (often product category) + meaningful descriptors
-      const meaningfulWords = words.slice(-3); // Take last 3 words as they're often most descriptive
-      finalKeyword = meaningfulWords.join(' ');
-    } else if (words.length === 1) {
-      finalKeyword = words[0];
-    } else {
-      // Fallback to first few words if no meaningful terms found
-      const fallbackWords = input.toLowerCase().split(' ').slice(0, 2);
-      finalKeyword = fallbackWords.join(' ');
+    // Remove leading articles only if there are multiple words
+    if (words.length > 2 && ['the', 'a', 'an'].includes(words[0])) {
+      words.shift();
     }
     
-    console.log(`After universal cleaning: "${finalKeyword}"`);
+    // Remove trailing prepositions only if there are multiple words  
+    if (words.length > 2 && ['for', 'with', 'by', 'of'].includes(words[words.length - 1])) {
+      words.pop();
+    }
     
-    // Ensure minimum keyword length
+    const finalKeyword = words.join(' ');
+    
+    console.log(`Preserved meaningful phrase: "${finalKeyword}" (original: "${input}")`);
+    
+    // Ensure we have meaningful content
     if (finalKeyword.length < 3) {
       console.warn(`Warning: Cleaned keyword too short: "${finalKeyword}"`);
-      // Use original input first 2-3 words as emergency fallback
-      const emergencyFallback = input.toLowerCase().split(' ').slice(0, 3).join(' ');
-      return emergencyFallback;
+      // Return original input with basic cleaning as fallback
+      return input.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
     }
     
     return finalKeyword;
@@ -698,84 +680,112 @@ export class DataForSEOService {
 
   /**
    * Extract meaningful keywords from a product URL or title
-   * This improved method focuses on pulling out the most relevant search terms
+   * This improved method preserves meaningful phrases for better DataForSEO results
    * @param input The URL or product title/topic to use
-   * @returns The extracted keywords
+   * @returns The extracted keywords as full meaningful phrase
    */
   private extractKeywordFromUrl(input: string): string {
     console.log(`Extracting keywords from input: "${input}"`);
     
-    // First check if input is a URL or direct topic
+    // If it's a manual user input (topic), use it directly without modification
+    if (!input.startsWith('http://') && !input.startsWith('https://')) {
+      console.log(`Using manual topic directly: "${input}"`);
+      return this.preserveFullPhrase(input);
+    }
+
+    // For URLs, extract the product handle and enrich it
     let extractedKeyword;
-
-    if (input.startsWith('http://') || input.startsWith('https://')) {
-      try {
-        // Extract product name from URL
-        const urlObj = new URL(input);
-        const pathSegments = urlObj.pathname.split('/').filter(Boolean);
-        
-        // Get the last segment (usually product handle)
-        const handle = pathSegments[pathSegments.length - 1];
-        
-        // Convert handle to keywords (replace hyphens with spaces)
-        extractedKeyword = handle.replace(/-/g, ' ');
-        console.log(`Extracted from URL handle: "${extractedKeyword}"`);
-      } catch (error) {
-        // If URL parsing fails, just use the input
-        extractedKeyword = input;
-        console.log(`URL parsing failed, using raw input: "${extractedKeyword}"`);
-      }
-    } else {
-      // If it's not a URL, use the input directly
+    try {
+      const urlObj = new URL(input);
+      const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+      
+      // Get the last segment (usually product handle)
+      const handle = pathSegments[pathSegments.length - 1];
+      
+      // Convert handle to keywords (replace hyphens with spaces)
+      extractedKeyword = handle.replace(/-/g, ' ');
+      console.log(`Extracted from URL handle: "${extractedKeyword}"`);
+    } catch (error) {
       extractedKeyword = input;
-      console.log(`Using direct input as keyword: "${extractedKeyword}"`);
+      console.log(`URL parsing failed, using raw input: "${extractedKeyword}"`);
     }
 
-    // Special case: Sometimes we get product titles that are very long and specific
-    // Extract the most relevant parts to use as keyword
-    if (extractedKeyword.length > 30) {
-      console.log(`Long keyword detected (${extractedKeyword.length} chars), extracting core terms...`);
-      
-      // Remove common product identifiers and model numbers that don't make good search keywords
-      // e.g. "(Model: ABC123)" or "- XYZ456"
-      extractedKeyword = extractedKeyword
-        .replace(/\s*[-–—]\s*[A-Z0-9]{3,8}\b/g, '') // Remove model numbers after dashes
-        .replace(/\bmodel[:\s]+[A-Z0-9\-]{3,10}\b/i, '') // Remove model numbers with "model:" prefix
-        .replace(/\b(?:model|type|item|sku|part|size|style)\b[:\s]+[\w\d\-]{3,10}\b/gi, '') // Remove various product identifiers
-        .replace(/\b[A-Z0-9]{2,3}[-–—][A-Z0-9]{3,6}\b/g, '') // Remove formatted model numbers like "AB-12345"
-        .replace(/\([^)]*\)/g, '') // Remove text in parentheses
-        .replace(/\sby\s[\w\s]+$/i, ''); // Remove "by [Brand]" at the end
-      
-      // Extract core product terms (the first 3-5 words usually contain the key product terms)
-      const words = extractedKeyword.split(/\s+/);
-      
-      if (words.length > 5) {
-        // Use universal approach: extract the most meaningful product category words
-        // Look for the core product category (usually the last 1-2 words are the main category)
-        const potentialCategoryWords = words.filter(word => 
-          word.length > 3 && 
-          !word.match(/^(pro|elite|premium|plus|max|mini|super|ultra|best|top|new|model|series)$/i) &&
-          !word.match(/^\d/) // Skip words starting with numbers
-        );
-        
-        if (potentialCategoryWords.length >= 2) {
-          // Use the last 2-3 meaningful words as they typically contain the product category
-          const coreTerms = potentialCategoryWords.slice(-3);
-          extractedKeyword = coreTerms.join(' ');
-          console.log(`Extracted dynamic core category terms: "${extractedKeyword}"`);
-        } else {
-          // Fallback: use the first 3-4 words which typically contain the main product type
-          extractedKeyword = words.slice(0, 4).join(' ');
-          console.log(`Extracted first 4 words as core terms: "${extractedKeyword}"`);
-        }
-      }
-    }
-
-    // Apply final cleaning to the keyword
-    const cleanedKeyword = this.cleanKeywordString(extractedKeyword);
-    console.log(`Final cleaned keyword: "${cleanedKeyword}"`);
+    // Enrich the extracted keyword into a descriptive phrase
+    const enrichedKeyword = this.enrichProductDataToPhrase(extractedKeyword);
+    console.log(`Final enriched keyword phrase: "${enrichedKeyword}"`);
     
-    return cleanedKeyword;
+    return enrichedKeyword;
+  }
+
+  /**
+   * Preserve the full meaningful phrase instead of slicing it
+   * Only clean problematic characters but keep the context intact
+   * @param input The user's manual input or topic
+   * @returns Cleaned but full phrase
+   */
+  private preserveFullPhrase(input: string): string {
+    let cleaned = input
+      .replace(/®|™|©|℠/g, '') // Remove trademark/copyright symbols
+      .replace(/\[.*?\]|\(.*?\)/g, '') // Remove text in brackets and parentheses
+      .replace(/[[\]{}|<>]/g, ' ') // Remove special characters
+      .replace(/^\d+\s*[.:)]\s*/, '') // Remove list numbers (e.g., "1. ", "2) ")
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim(); // Remove leading/trailing whitespace
+
+    // Convert to lowercase for consistency
+    cleaned = cleaned.toLowerCase();
+
+    console.log(`Preserved full phrase: "${cleaned}" (original: "${input}")`);
+    return cleaned;
+  }
+
+  /**
+   * Enrich product data into a full descriptive phrase for better DataForSEO results
+   * Convert simple product names into detailed search phrases
+   * @param productData The basic product title or extracted keyword
+   * @returns A descriptive phrase that provides context for the API
+   */
+  private enrichProductDataToPhrase(productData: string): string {
+    // Clean basic noise while preserving meaningful content
+    let cleaned = productData
+      .replace(/®|™|©|℠/g, '')
+      .replace(/\[.*?\]|\(.*?\)/g, '')
+      .replace(/\b\d{5,}\b/g, '') // Remove long numbers (SKUs)
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+
+    // Remove excessive model numbers and codes but keep the product essence
+    cleaned = cleaned
+      .replace(/\b[A-Z]\d{3,}\b/gi, '')
+      .replace(/\b[A-Z]{2,}\d{2,}\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Instead of slicing to 1-2 words, enrich the phrase with context
+    const words = cleaned.split(' ').filter(word => word.length > 2);
+    
+    if (words.length === 0) {
+      return 'product'; // Emergency fallback
+    }
+
+    // Create descriptive phrase templates based on the product data
+    const enrichmentTemplates = [
+      // For single word products - add descriptive context
+      (words.length === 1) ? `${words[0]} products and accessories for daily use` : null,
+      
+      // For 2-word products - add usage context
+      (words.length === 2) ? `${words.join(' ')} with advanced features and benefits` : null,
+      
+      // For 3+ words - preserve the full description and add minimal context
+      (words.length >= 3) ? `${words.join(' ')} for professional and personal use` : null
+    ].filter(Boolean);
+
+    // Use the most appropriate template
+    const enrichedPhrase = enrichmentTemplates[0] || `${words.join(' ')} with premium quality and performance`;
+
+    console.log(`Enriched "${cleaned}" to "${enrichedPhrase}"`);
+    return enrichedPhrase;
   }
 
   /**
