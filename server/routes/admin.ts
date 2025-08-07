@@ -547,7 +547,13 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
         return res.status(401).json({
           success: false,
           error: "DataForSEO Authentication Error",
-          message: "The DataForSEO API credentials are not valid. Please check your username and password in the Replit Secrets configuration."
+          message: "DataForSEO credentials are invalid. Please verify your username and password."
+        });
+      } else if (error.message.includes('402') || error.message.includes('billing')) {
+        return res.status(402).json({
+          success: false,
+          error: "DataForSEO Billing Issue",
+          message: "DataForSEO account has insufficient credits or expired subscription. Please check your billing in DataForSEO dashboard."
         });
       } else if (error.message.includes('timeout')) {
         return res.status(408).json({
