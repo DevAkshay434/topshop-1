@@ -1151,157 +1151,6 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
   }
 });
 
-// Function to generate product carousel HTML - optimized for horizontal scrolling
-function generateProductCarousel(products: any[], shopName: string, collectionTitle: string): string {
-  const productCards = products.map((product, index) => {
-    const productUrl = `https://${shopName}/products/${product.handle}`;
-    const imageUrl = product.image?.src || product.images?.[0]?.src || '';
-    const price = product.variants?.[0]?.price ? `$${product.variants[0].price}` : '';
-    
-    return `<div class="product-card-item" style="
-      flex: 0 0 auto;
-      width: 320px;
-      min-width: 320px;
-      margin-right: ${index === products.length - 1 ? '0' : '16px'};
-      background: #ffffff;
-      border: 1px solid #e1e5e9;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
-      display: block;
-    " onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'" 
-       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
-      <a href="${productUrl}" target="_blank" style="text-decoration: none; color: inherit; display: block; height: 100%;">
-        ${imageUrl ? `<div style="width: 100%; height: 300px; overflow: hidden; background: #f8f9fa;">
-          <img src="${imageUrl}" alt="${product.title}" style="
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-            display: block;
-          ">
-        </div>` : `<div style="width: 100%; height: 300px; background: #f0f2f5; display: flex; align-items: center; justify-content: center; color: #6c757d;">No Image</div>`}
-        <div style="padding: 16px;">
-          <h3 style="
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            margin: 0 0 8px 0;
-            line-height: 1.4;
-            height: 44px;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-          ">${product.title}</h3>
-          ${price ? `<p style="
-            font-size: 18px;
-            font-weight: 700;
-            color: #007bff;
-            margin: 8px 0 12px 0;
-          ">${price}</p>` : ''}
-          <div style="
-            background: #007bff;
-            color: white;
-            padding: 10px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            transition: background 0.3s ease;
-          " onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
-            View Product
-          </div>
-        </div>
-      </a>
-    </div>`;
-  }).join('');
-
-  return `
-<div class="product-carousel-parent-container" style="
-  margin: 32px auto;
-  max-width: 100%;
-  background: #ffffff;
-  border: 1px solid #e1e5e9;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  display: flex;
-  flex-direction: column;
-">
-  <h3 style="
-    text-align: center;
-    margin: 0 0 24px 0;
-    color: #2c3e50;
-    font-size: 22px;
-    font-weight: 700;
-  ">Featured Products: ${collectionTitle}</h3>
-  
-  <div class="products-carousel-wrapper" style="
-    width: 100%;
-    overflow: hidden;
-    display: flex;
-  ">
-    <div class="products-horizontal-scroll" style="
-      display: flex;
-      flex-direction: row;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 8px 4px 16px 4px;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
-      scrollbar-color: #cbd5e0 #f7fafc;
-      gap: 0;
-    ">
-      ${productCards}
-    </div>
-  </div>
-  
-  <style>
-    .products-horizontal-scroll::-webkit-scrollbar {
-      height: 8px;
-    }
-    
-    .products-horizontal-scroll::-webkit-scrollbar-track {
-      background: #f7fafc;
-      border-radius: 4px;
-    }
-    
-    .products-horizontal-scroll::-webkit-scrollbar-thumb {
-      background: #cbd5e0;
-      border-radius: 4px;
-    }
-    
-    .products-horizontal-scroll::-webkit-scrollbar-thumb:hover {
-      background: #a0aec0;
-    }
-    
-    @media (max-width: 768px) {
-      .product-carousel-parent-container {
-        display: none !important;
-      }
-    }
-    
-    @media (min-width: 769px) {
-      .product-carousel-parent-container {
-        display: flex !important;
-        flex-direction: column !important;
-      }
-      
-      .products-carousel-wrapper {
-        display: flex !important;
-      }
-      
-      .products-horizontal-scroll {
-        display: flex !important;
-        flex-direction: row !important;
-      }
-    }
-  </style>
-</div>`;
-}
-
 // Enhanced content generation endpoint with all new parameters
 adminRouter.post("/generate-content", async (req: Request, res: Response) => {
   console.log("Content generation request received with body:", JSON.stringify(req.body));
@@ -1495,15 +1344,10 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       }
       
       if (requestData.collectionIds && requestData.collectionIds.length > 0) {
-        console.log(`🔍 FETCHING COLLECTIONS - Requested IDs: ${requestData.collectionIds.join(', ')}`);
         const customCollections = await shopifyService.getCollections(store, 'custom', 100);
         const smartCollections = await shopifyService.getCollections(store, 'smart', 100);
         const allCollections = [...customCollections, ...smartCollections];
-        console.log(`📋 Found ${allCollections.length} total collections (${customCollections.length} custom + ${smartCollections.length} smart)`);
-        console.log(`📋 Available collection IDs: ${allCollections.map(c => c.id).join(', ')}`);
-        
         collectionsInfo = allCollections.filter(c => requestData.collectionIds?.includes(c.id));
-        console.log(`✅ Matched ${collectionsInfo.length} collections for carousel: ${collectionsInfo.map(c => c.title).join(', ')}`);
       }
       
       // 2. Generate Claude prompt based on all parameters
@@ -1699,9 +1543,6 @@ Place this at a logical position in the content, typically after introducing a c
         contentStyleToneId: requestData.contentStyleToneId,
         contentStyleDisplayName: requestData.contentStyleDisplayName,
         includeKeywords: requestData.keywords && requestData.keywords.length > 0,
-        // Pass collection data for product carousel
-        collectionIds: requestData.collectionIds,
-        collectionsInfo: collectionsInfo,
         // Add selected media from Choose Media step
         primaryImage: requestData.primaryImage,
         secondaryImages: requestData.secondaryImages,
@@ -1944,101 +1785,9 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
-      // 6.1 Process product carousel placement if collections are selected
-      console.log(`🎠 PRODUCT CAROUSEL - ENTRY POINT CHECK:`);
-      console.log(`   - requestData.collectionIds: ${JSON.stringify(requestData.collectionIds)}`);
-      console.log(`   - collectionsInfo.length: ${collectionsInfo.length}`);
-      console.log(`   - collectionsInfo data: ${JSON.stringify(collectionsInfo.map(c => ({id: c.id, title: c.title})))}`);
-      
-      if (requestData.collectionIds && requestData.collectionIds.length > 0 && collectionsInfo.length > 0) {
-        const collection = collectionsInfo[0]; // Use first collection
-        
-        console.log(`🎠 PRODUCT CAROUSEL DEBUG:`);
-        console.log(`   - Collection ID: ${collection.id}`);
-        console.log(`   - Collection Title: ${collection.title}`);
-        console.log(`   - Generated content length: ${finalContent.length}`);
-        console.log(`   - Content includes carousel marker: ${finalContent.includes('<!-- PRODUCT_CAROUSEL_PLACEMENT -->')}`);
-        
-        // Search for the marker with more context
-        if (finalContent.includes('PRODUCT_CAROUSEL_PLACEMENT')) {
-          console.log('   - Found partial marker match');
-          const markerIndex = finalContent.indexOf('PRODUCT_CAROUSEL_PLACEMENT');
-          const contextStart = Math.max(0, markerIndex - 100);
-          const contextEnd = Math.min(finalContent.length, markerIndex + 150);
-          console.log(`   - Marker context: "${finalContent.substring(contextStart, contextEnd)}"`);
-        } else {
-          console.log('   - No carousel marker found in content - checking first 500 chars:');
-          console.log(`   - Content preview: "${finalContent.substring(0, 500)}..."`);
-        }
-        
-        try {
-          // Fetch products from the collection
-          const collectionProducts = await shopifyService.getProductsFromCollection(store, collection.id);
-          
-          if (collectionProducts && collectionProducts.length > 0) {
-            console.log(`   - Found ${collectionProducts.length} products in collection`);
-            
-            // Generate product carousel HTML (limit to 8 products for performance)
-            const carouselProducts = collectionProducts.slice(0, 8);
-            const carouselHtml = generateProductCarousel(carouselProducts, store.shopName, collection.title);
-            
-            console.log(`🔧 CAROUSEL HTML GENERATED - First 200 chars: "${carouselHtml.substring(0, 200)}..."`);
-            
-            // Replace the carousel placement marker
-            if (finalContent.includes('<!-- PRODUCT_CAROUSEL_PLACEMENT -->')) {
-              finalContent = finalContent.replace('<!-- PRODUCT_CAROUSEL_PLACEMENT -->', carouselHtml);
-              console.log(`✅ Inserted product carousel for collection "${collection.title}" via marker replacement`);
-            } else {
-              console.log('⚠️ No carousel placement marker found in content - applying FORCED insertion');
-              // FORCED insertion: Add carousel after first H2 heading regardless
-              const h2Pattern = /<\/h2>/i;
-              const h2Match = finalContent.match(h2Pattern);
-              if (h2Match) {
-                const insertPosition = h2Match.index! + h2Match[0].length;
-                finalContent = finalContent.slice(0, insertPosition) + '\n\n' + carouselHtml + '\n\n' + finalContent.slice(insertPosition);
-                console.log(`✅ FORCED insertion: Added carousel after first H2 heading`);
-              } else {
-                // Ultimate fallback: Add carousel at the beginning of content
-                finalContent = carouselHtml + '\n\n' + finalContent;
-                console.log(`✅ ULTIMATE FORCED insertion: Added carousel at beginning of content`);
-              }
-            }
-            
-            // CRITICAL FIX: Remove any large individual product images that Claude might have generated
-            // when collections are selected to prevent conflicts with the carousel
-            console.log('🧹 Cleaning large product images from content when collections are selected...');
-            const beforeCleanup = finalContent.length;
-            
-            // Remove large shopify-image elements that conflict with carousel
-            finalContent = finalContent.replace(/<img[^>]*class[^>]*shopify-image[^>]*>/gi, '');
-            finalContent = finalContent.replace(/<img[^>]*draggable\s*=\s*["']true["'][^>]*>/gi, '');
-            
-            // Remove any standalone product image divs that might conflict
-            finalContent = finalContent.replace(/<div[^>]*>\s*<img[^>]*alt[^>]*water[^>]*conditioner[^>]*>[^<]*<\/div>/gi, '');
-            
-            const afterCleanup = finalContent.length;
-            if (beforeCleanup !== afterCleanup) {
-              console.log(`✅ Removed ${beforeCleanup - afterCleanup} characters of conflicting product images`);
-            }
-            
-          } else {
-            console.log(`   - No products found in collection "${collection.title}"`);
-          }
-        } catch (error) {
-          console.error('Error generating product carousel:', error);
-          // Continue without carousel if there's an error
-        }
-      } else {
-        console.log(`🎠 PRODUCT CAROUSEL SKIPPED:`);
-        console.log(`   - Collection IDs: ${requestData.collectionIds?.length || 0}`);
-        console.log(`   - Collections Info: ${collectionsInfo.length}`);
-        console.log(`   - This explains why no carousel is being generated`);
-      }
-
       // Remove any remaining placement markers to prevent empty placeholders
       finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
       finalContent = finalContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
-      finalContent = finalContent.replace(/<!-- PRODUCT_CAROUSEL_PLACEMENT -->/g, '');
 
       
       // DISABLED: Featured image insertion into content body
