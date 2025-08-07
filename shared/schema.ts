@@ -44,6 +44,8 @@ export const shopifyStores = pgTable("shopify_stores", {
   planName: text("plan_name"),
   chargeId: text("charge_id"),
   trialEndsAt: timestamp("trial_ends_at"),
+  currentMonthlyUsage: integer("current_monthly_usage").default(0),
+  lastUsageReset: timestamp("last_usage_reset").defaultNow(),
 });
 
 export const insertShopifyStoreSchema = createInsertSchema(shopifyStores).pick({
@@ -55,6 +57,8 @@ export const insertShopifyStoreSchema = createInsertSchema(shopifyStores).pick({
   planName: true,
   chargeId: true,
   trialEndsAt: true,
+  currentMonthlyUsage: true,
+  lastUsageReset: true,
 });
 
 export type InsertShopifyStore = z.infer<typeof insertShopifyStoreSchema>;

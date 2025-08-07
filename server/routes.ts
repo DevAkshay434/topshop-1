@@ -28,6 +28,7 @@ import adminRouter from './routes/admin';
 import { mediaRouter } from './routes/media';
 import oauthRouter from './routes/oauth';
 import buyerPersonasRouter from './routes/buyer-personas';
+import billingRouter from './routes/billing';
 import { pexelsService } from './services/pexels';
 import { shopifyAuthMiddleware, shopifyAuthOptional } from './middleware/shopify-auth';
 import { 
@@ -2678,6 +2679,9 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
   
   // Add admin panel routes under /api/admin
   apiRouter.use('/admin', adminRouter);
+  
+  // Add billing and subscription routes under /api/billing
+  apiRouter.use('/billing', billingRouter);
   
   // Get stats for dashboard
   apiRouter.get("/stats", async (req: Request, res: Response) => {

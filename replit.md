@@ -33,6 +33,22 @@ The application employs a modern full-stack, client-server architecture with mul
 
 ## Recent Changes (January 2025)
 
+### Subscription Plans System - IN PROGRESS ⚡
+- **New Plan Structure**: Updated from 3-tier (FREE, BASIC, PREMIUM) to 4-tier system plus custom option
+- **Plan Details**: 
+  - **FREE**: 5 blog posts/pages per month, basic features ($0)
+  - **SILVER**: 25 blog posts/pages per month, enhanced features ($19.99)
+  - **GOLD**: 75 blog posts/pages per month, premium features ($39.99)
+  - **DIAMOND**: 200 blog posts/pages per month, enterprise features ($79.99)
+  - **CUSTOM**: Unlimited/custom limits, bespoke solutions (contact sales)
+- **Technical Implementation**:
+  - Added usage tracking fields to shopify_stores table (current_monthly_usage, last_usage_reset)
+  - Created comprehensive billing service with plan management and usage enforcement
+  - Implemented API endpoints for plan management, usage tracking, and subscription handling
+  - Added frontend Plans page with usage visualization and subscription management
+- **Features**: Monthly usage limits, automatic reset, usage statistics, plan upgrade/downgrade
+- **Date Started**: January 8, 2025
+
 ### Keyword Generation System - COMPLETED ✅
 - **Issue Fixed**: Branded product names (e.g., "SoftPro® Elite Salt Free Water Conditioner") were generating zero search volume because specific brand/model combinations don't have search data
 - **Solution Implemented**: Advanced branded product detection system that extracts core product categories from specific brand names

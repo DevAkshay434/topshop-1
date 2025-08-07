@@ -1,11 +1,14 @@
 import axios from 'axios';
 import { ShopifyStore } from '@shared/schema';
+import { storage } from '../storage';
 
 // Define the subscription plan options
 export enum PlanType {
   FREE = 'free',
-  BASIC = 'basic',
-  PREMIUM = 'premium'
+  SILVER = 'silver',
+  GOLD = 'gold',
+  DIAMOND = 'diamond',
+  CUSTOM = 'custom'
 }
 
 export interface PlanConfig {
@@ -13,6 +16,8 @@ export interface PlanConfig {
   price: number; // Price in USD
   trialDays: number;
   features: string[];
+  blogPostsPerMonth: number; // Monthly limit for blog/page generation
+  description: string;
 }
 
 // Configure different plan tiers
@@ -21,33 +26,79 @@ export const PLANS: Record<PlanType, PlanConfig> = {
     name: 'Free Plan',
     price: 0,
     trialDays: 0,
+    blogPostsPerMonth: 5,
+    description: 'Perfect for trying out our AI content generation',
     features: [
-      'Generate up to 5 blog posts per month',
+      'Generate up to 5 blog posts/pages per month',
       'Basic SEO tools',
-      'Manual publishing'
+      'Manual publishing',
+      'Standard AI content quality',
+      'Community support'
     ]
   },
-  [PlanType.BASIC]: {
-    name: 'Basic Plan',
-    price: 9.99,
-    trialDays: 14,
-    features: [
-      'Generate up to 20 blog posts per month',
-      'Advanced SEO suggestions',
-      'Scheduled publishing',
-      'Post analytics'
-    ]
-  },
-  [PlanType.PREMIUM]: {
-    name: 'Premium Plan',
+  [PlanType.SILVER]: {
+    name: 'Silver Plan',
     price: 19.99,
     trialDays: 14,
+    blogPostsPerMonth: 25,
+    description: 'Great for small businesses starting their content journey',
     features: [
-      'Unlimited blog post generation',
+      'Generate up to 25 blog posts/pages per month',
+      'Advanced SEO suggestions',
+      'Scheduled publishing',
+      'Enhanced AI content quality',
+      'Post analytics',
+      'Email support'
+    ]
+  },
+  [PlanType.GOLD]: {
+    name: 'Gold Plan',
+    price: 39.99,
+    trialDays: 14,
+    blogPostsPerMonth: 75,
+    description: 'Perfect for growing businesses with regular content needs',
+    features: [
+      'Generate up to 75 blog posts/pages per month',
       'Premium AI content quality',
-      'Advanced analytics',
-      'Priority support',
-      'Custom branding'
+      'Advanced analytics dashboard',
+      'Keyword research tools',
+      'Custom content templates',
+      'Priority email support',
+      'Bulk content generation'
+    ]
+  },
+  [PlanType.DIAMOND]: {
+    name: 'Diamond Plan',
+    price: 79.99,
+    trialDays: 14,
+    blogPostsPerMonth: 200,
+    description: 'For enterprises and agencies with high-volume content needs',
+    features: [
+      'Generate up to 200 blog posts/pages per month',
+      'Premium AI content quality',
+      'Advanced analytics with custom reports',
+      'Priority support with dedicated account manager',
+      'Custom branding and white-label options',
+      'API access for integrations',
+      'Multi-store management dashboard',
+      'Advanced scheduling and automation'
+    ]
+  },
+  [PlanType.CUSTOM]: {
+    name: 'Custom Plan',
+    price: 0, // Price determined during consultation
+    trialDays: 30,
+    blogPostsPerMonth: -1, // Unlimited or custom limit
+    description: 'Tailored solutions for unique business requirements',
+    features: [
+      'Custom blog post/page generation limits',
+      'Bespoke AI content optimization',
+      'Custom integrations and workflows',
+      'Dedicated support team',
+      'Service level agreements (SLA)',
+      'Custom training and onboarding',
+      'Enterprise security compliance',
+      'Custom reporting and analytics'
     ]
   }
 };
@@ -127,7 +178,7 @@ export async function createSubscription(
     };
   } catch (error) {
     console.error('Error creating subscription:', error);
-    throw new Error(`Failed to create subscription: ${error.message}`);
+    throw new Error(`Failed to create subscription: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -182,10 +233,14 @@ export async function getSubscriptionStatus(store: ShopifyStore): Promise<{
       
       // Determine plan type from subscription name
       let plan = PlanType.FREE;
-      if (subscription.name.toLowerCase().includes('premium')) {
-        plan = PlanType.PREMIUM;
-      } else if (subscription.name.toLowerCase().includes('basic')) {
-        plan = PlanType.BASIC;
+      if (subscription.name.toLowerCase().includes('diamond')) {
+        plan = PlanType.DIAMOND;
+      } else if (subscription.name.toLowerCase().includes('gold')) {
+        plan = PlanType.GOLD;
+      } else if (subscription.name.toLowerCase().includes('silver')) {
+        plan = PlanType.SILVER;
+      } else if (subscription.name.toLowerCase().includes('custom')) {
+        plan = PlanType.CUSTOM;
       }
       
       return {
@@ -265,6 +320,149 @@ export async function cancelSubscription(store: ShopifyStore, subscriptionId: st
     return true;
   } catch (error) {
     console.error('Error cancelling subscription:', error);
-    throw new Error(`Failed to cancel subscription: ${error.message}`);
+    throw new Error(`Failed to cancel subscription: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Get plan configuration for a plan type
+ */
+export function getPlanConfig(planType: PlanType): PlanConfig {
+  return PLANS[planType];
+}
+
+/**
+ * Check if a store can generate more content based on their plan
+ */
+export async function canGenerateContent(storeId: number): Promise<{
+  canGenerate: boolean;
+  currentUsage: number;
+  limit: number;
+  planType: PlanType;
+  message?: string;
+}> {
+  try {
+    const store = await storage.getShopifyStore(storeId);
+    if (!store) {
+      throw new Error('Store not found');
+    }
+
+    // Determine current plan
+    const currentPlan = (store.planName as PlanType) || PlanType.FREE;
+    const planConfig = PLANS[currentPlan];
+
+    // Check if we need to reset monthly usage (new month)
+    const currentDate = new Date();
+    const lastReset = store.lastUsageReset ? new Date(store.lastUsageReset) : new Date();
+    const shouldReset = currentDate.getMonth() !== lastReset.getMonth() || 
+                       currentDate.getFullYear() !== lastReset.getFullYear();
+
+    let currentUsage = store.currentMonthlyUsage || 0;
+
+    // Reset usage if it's a new month
+    if (shouldReset) {
+      currentUsage = 0;
+      await storage.updateShopifyStore(storeId, {
+        currentMonthlyUsage: 0,
+        lastUsageReset: currentDate
+      });
+    }
+
+    // Check limits
+    const limit = planConfig.blogPostsPerMonth;
+    const canGenerate = limit === -1 || currentUsage < limit; // -1 means unlimited
+
+    return {
+      canGenerate,
+      currentUsage,
+      limit,
+      planType: currentPlan,
+      message: canGenerate ? undefined : `You have reached your monthly limit of ${limit} blog posts/pages. Please upgrade your plan to generate more content.`
+    };
+  } catch (error) {
+    console.error('Error checking content generation limits:', error);
+    return {
+      canGenerate: false,
+      currentUsage: 0,
+      limit: 0,
+      planType: PlanType.FREE,
+      message: 'Unable to verify plan limits. Please try again.'
+    };
+  }
+}
+
+/**
+ * Increment usage count for a store after successful content generation
+ */
+export async function incrementUsage(storeId: number): Promise<void> {
+  try {
+    const store = await storage.getShopifyStore(storeId);
+    if (!store) {
+      throw new Error('Store not found');
+    }
+
+    const currentUsage = (store.currentMonthlyUsage || 0) + 1;
+    await storage.updateShopifyStore(storeId, {
+      currentMonthlyUsage: currentUsage
+    });
+  } catch (error) {
+    console.error('Error incrementing usage:', error);
+    // Don't throw here to avoid blocking content generation for tracking errors
+  }
+}
+
+/**
+ * Get usage statistics for a store
+ */
+export async function getUsageStats(storeId: number): Promise<{
+  currentUsage: number;
+  limit: number;
+  planType: PlanType;
+  percentUsed: number;
+  daysUntilReset: number;
+}> {
+  try {
+    const store = await storage.getShopifyStore(storeId);
+    if (!store) {
+      throw new Error('Store not found');
+    }
+
+    const currentPlan = (store.planName as PlanType) || PlanType.FREE;
+    const planConfig = PLANS[currentPlan];
+    
+    // Check if we need to reset monthly usage
+    const currentDate = new Date();
+    const lastReset = store.lastUsageReset ? new Date(store.lastUsageReset) : new Date();
+    const shouldReset = currentDate.getMonth() !== lastReset.getMonth() || 
+                       currentDate.getFullYear() !== lastReset.getFullYear();
+
+    let currentUsage = store.currentMonthlyUsage || 0;
+    if (shouldReset) {
+      currentUsage = 0;
+    }
+
+    const limit = planConfig.blogPostsPerMonth;
+    const percentUsed = limit === -1 ? 0 : Math.round((currentUsage / limit) * 100);
+    
+    // Calculate days until next reset (beginning of next month)
+    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    const daysUntilReset = Math.ceil((nextMonth.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    return {
+      currentUsage,
+      limit,
+      planType: currentPlan,
+      percentUsed,
+      daysUntilReset
+    };
+  } catch (error) {
+    console.error('Error getting usage stats:', error);
+    return {
+      currentUsage: 0,
+      limit: 5,
+      planType: PlanType.FREE,
+      percentUsed: 0,
+      daysUntilReset: 30
+    };
   }
 }
