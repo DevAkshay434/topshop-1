@@ -1159,36 +1159,141 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
     const price = product.variants?.[0]?.price ? `$${product.variants[0].price}` : '';
     
     return `
-    <div class="product-card" style="flex: 0 0 auto; width: 250px; margin: 0 15px; border: 1px solid #e5e5e5; border-radius: 8px; padding: 15px; text-align: center; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <a href="${productUrl}" style="text-decoration: none; color: inherit;">
-        ${imageUrl ? `<img src="${imageUrl}" alt="${product.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">` : ''}
-        <h3 style="font-size: 16px; margin: 10px 0; color: #333; line-height: 1.3;">${product.title}</h3>
-        ${price ? `<p style="font-size: 18px; font-weight: bold; color: #0066cc; margin: 5px 0;">${price}</p>` : ''}
-        <button style="background: #0066cc; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 8px;">View Product</button>
+    <div class="product-card" style="
+      flex: 0 0 auto;
+      width: 280px;
+      min-width: 280px;
+      margin-right: 20px;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    ">
+      <a href="${productUrl}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${product.title}" style="
+          width: 100%;
+          height: 220px;
+          object-fit: cover;
+          border-radius: 8px;
+          margin-bottom: 15px;
+        ">` : ''}
+        <h3 style="
+          font-size: 18px;
+          margin: 15px 0 10px 0;
+          color: #333;
+          line-height: 1.4;
+          font-weight: 600;
+          height: 48px;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        ">${product.title}</h3>
+        ${price ? `<p style="
+          font-size: 22px;
+          font-weight: bold;
+          color: #0066cc;
+          margin: 10px 0 15px 0;
+        ">${price}</p>` : ''}
+        <button style="
+          background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: 600;
+          margin-top: 10px;
+          transition: all 0.3s ease;
+          width: 100%;
+        ">View Product</button>
       </a>
     </div>`;
   }).join('');
 
   return `
-<div class="product-carousel-container" style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
-  <h3 style="text-align: center; margin-bottom: 20px; color: #333;">Featured Products from ${collectionTitle}</h3>
-  <div class="product-carousel" style="display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; scroll-behavior: smooth;">
+<div class="product-carousel-container" style="
+  margin: 40px 0;
+  padding: 30px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  border: 1px solid #dee2e6;
+">
+  <h3 style="
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  ">Featured Products from ${collectionTitle}</h3>
+  
+  <div class="product-carousel" style="
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 20px 10px 30px 10px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
+  ">
     ${productCards}
   </div>
+  
   <style>
+    .product-carousel {
+      scrollbar-width: thin;
+      scrollbar-color: #0066cc #f1f3f4;
+    }
+    
     .product-carousel::-webkit-scrollbar {
-      height: 8px;
+      height: 12px;
     }
+    
     .product-carousel::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 4px;
+      background: #f1f3f4;
+      border-radius: 8px;
+      margin: 0 20px;
     }
+    
     .product-carousel::-webkit-scrollbar-thumb {
-      background: #0066cc;
-      border-radius: 4px;
+      background: linear-gradient(90deg, #0066cc 0%, #004499 100%);
+      border-radius: 8px;
+      border: 2px solid #f1f3f4;
     }
+    
     .product-carousel::-webkit-scrollbar-thumb:hover {
-      background: #0052a3;
+      background: linear-gradient(90deg, #004499 0%, #003366 100%);
+    }
+    
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .product-card:last-child {
+      margin-right: 0;
+    }
+    
+    @media (max-width: 768px) {
+      .product-card {
+        width: 240px;
+        min-width: 240px;
+        margin-right: 15px;
+      }
+      
+      .product-carousel-container {
+        padding: 20px 15px;
+        margin: 30px 0;
+      }
+      
+      .product-carousel {
+        padding: 15px 5px 25px 5px;
+      }
     }
   </style>
 </div>`;
