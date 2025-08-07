@@ -1945,6 +1945,11 @@ Place this at a logical position in the content, typically after introducing a c
       }
       
       // 6.1 Process product carousel placement if collections are selected
+      console.log(`🎠 PRODUCT CAROUSEL - ENTRY POINT CHECK:`);
+      console.log(`   - requestData.collectionIds: ${JSON.stringify(requestData.collectionIds)}`);
+      console.log(`   - collectionsInfo.length: ${collectionsInfo.length}`);
+      console.log(`   - collectionsInfo data: ${JSON.stringify(collectionsInfo.map(c => ({id: c.id, title: c.title})))}`);
+      
       if (requestData.collectionIds && requestData.collectionIds.length > 0 && collectionsInfo.length > 0) {
         const collection = collectionsInfo[0]; // Use first collection
         
@@ -1977,40 +1982,25 @@ Place this at a logical position in the content, typically after introducing a c
             const carouselProducts = collectionProducts.slice(0, 8);
             const carouselHtml = generateProductCarousel(carouselProducts, store.shopName, collection.title);
             
+            console.log(`🔧 CAROUSEL HTML GENERATED - First 200 chars: "${carouselHtml.substring(0, 200)}..."`);
+            
             // Replace the carousel placement marker
             if (finalContent.includes('<!-- PRODUCT_CAROUSEL_PLACEMENT -->')) {
               finalContent = finalContent.replace('<!-- PRODUCT_CAROUSEL_PLACEMENT -->', carouselHtml);
-              console.log(`✅ Inserted product carousel for collection "${collection.title}"`);
+              console.log(`✅ Inserted product carousel for collection "${collection.title}" via marker replacement`);
             } else {
-              console.log('⚠️ No carousel placement marker found in content - applying fallback insertion');
-              // Fallback: Add carousel after first H2 heading if marker is missing
+              console.log('⚠️ No carousel placement marker found in content - applying FORCED insertion');
+              // FORCED insertion: Add carousel after first H2 heading regardless
               const h2Pattern = /<\/h2>/i;
               const h2Match = finalContent.match(h2Pattern);
               if (h2Match) {
                 const insertPosition = h2Match.index! + h2Match[0].length;
                 finalContent = finalContent.slice(0, insertPosition) + '\n\n' + carouselHtml + '\n\n' + finalContent.slice(insertPosition);
-                console.log(`✅ Fallback insertion: Added carousel after first H2 heading`);
+                console.log(`✅ FORCED insertion: Added carousel after first H2 heading`);
               } else {
-                // Ultimate fallback: Add carousel before the FAQ section or at the end
-                const faqPattern = /<h2[^>]*id\s*=\s*['"]\s*faq\s*['"]/i;
-                const faqMatch = finalContent.match(faqPattern);
-                if (faqMatch) {
-                  const insertPosition = faqMatch.index!;
-                  finalContent = finalContent.slice(0, insertPosition) + carouselHtml + '\n\n' + finalContent.slice(insertPosition);
-                  console.log(`✅ Ultimate fallback: Added carousel before FAQ section`);
-                } else {
-                  // Final fallback: Add before the conclusion paragraph
-                  const conclusionPattern = /<p[^>]*>.*conclusion.*<\/p>/i;
-                  const conclusionMatch = finalContent.match(conclusionPattern);
-                  if (conclusionMatch) {
-                    const insertPosition = conclusionMatch.index!;
-                    finalContent = finalContent.slice(0, insertPosition) + carouselHtml + '\n\n' + finalContent.slice(insertPosition);
-                    console.log(`✅ Final fallback: Added carousel before conclusion`);
-                  } else {
-                    console.log('❌ No suitable insertion point found - adding carousel at end of content');
-                    finalContent = finalContent + '\n\n' + carouselHtml;
-                  }
-                }
+                // Ultimate fallback: Add carousel at the beginning of content
+                finalContent = carouselHtml + '\n\n' + finalContent;
+                console.log(`✅ ULTIMATE FORCED insertion: Added carousel at beginning of content`);
               }
             }
             
