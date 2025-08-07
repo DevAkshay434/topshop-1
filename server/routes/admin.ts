@@ -1218,7 +1218,7 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
   }).join('');
 
   return `
-<div class="featured-products-section" style="
+<div class="product-carousel-parent-container" style="
   margin: 32px auto;
   max-width: 100%;
   background: #ffffff;
@@ -1226,6 +1226,8 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
 ">
   <h3 style="
     text-align: center;
@@ -1238,9 +1240,11 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
   <div class="products-carousel-wrapper" style="
     width: 100%;
     overflow: hidden;
+    display: flex;
   ">
     <div class="products-horizontal-scroll" style="
       display: flex;
+      flex-direction: row;
       overflow-x: auto;
       overflow-y: hidden;
       padding: 8px 4px 16px 4px;
@@ -1248,6 +1252,7 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
       -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
       scrollbar-color: #cbd5e0 #f7fafc;
+      gap: 0;
     ">
       ${productCards}
     </div>
@@ -1273,25 +1278,24 @@ function generateProductCarousel(products: any[], shopName: string, collectionTi
     }
     
     @media (max-width: 768px) {
-      .product-card-item {
-        width: 280px !important;
-        min-width: 280px !important;
-      }
-      
-      .featured-products-section {
-        padding: 16px;
-        margin: 24px auto;
-      }
-      
-      .products-horizontal-scroll {
-        padding: 4px 2px 12px 2px;
+      .product-carousel-parent-container {
+        display: none !important;
       }
     }
     
-    @media (max-width: 480px) {
-      .product-card-item {
-        width: 260px !important;
-        min-width: 260px !important;
+    @media (min-width: 769px) {
+      .product-carousel-parent-container {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      
+      .products-carousel-wrapper {
+        display: flex !important;
+      }
+      
+      .products-horizontal-scroll {
+        display: flex !important;
+        flex-direction: row !important;
       }
     }
   </style>
@@ -2004,6 +2008,24 @@ Place this at a logical position in the content, typically after introducing a c
                 }
               }
             }
+            
+            // CRITICAL FIX: Remove any large individual product images that Claude might have generated
+            // when collections are selected to prevent conflicts with the carousel
+            console.log('🧹 Cleaning large product images from content when collections are selected...');
+            const beforeCleanup = finalContent.length;
+            
+            // Remove large shopify-image elements that conflict with carousel
+            finalContent = finalContent.replace(/<img[^>]*class[^>]*shopify-image[^>]*>/gi, '');
+            finalContent = finalContent.replace(/<img[^>]*draggable\s*=\s*["']true["'][^>]*>/gi, '');
+            
+            // Remove any standalone product image divs that might conflict
+            finalContent = finalContent.replace(/<div[^>]*>\s*<img[^>]*alt[^>]*water[^>]*conditioner[^>]*>[^<]*<\/div>/gi, '');
+            
+            const afterCleanup = finalContent.length;
+            if (beforeCleanup !== afterCleanup) {
+              console.log(`✅ Removed ${beforeCleanup - afterCleanup} characters of conflicting product images`);
+            }
+            
           } else {
             console.log(`   - No products found in collection "${collection.title}"`);
           }
