@@ -510,14 +510,11 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     console.log('KEYWORD SEARCH DEBUG - productTitle:', productTitle);
     console.log('KEYWORD SEARCH DEBUG - productUrl:', productUrl);
     
-    // If we have a product title (not a manual topic), clean it for better keyword generation
+    // Use the exact product title - let DataForSEO service handle cleaning
+    // No additional cleaning here to avoid keyword contamination
     if (productTitle && !topic) {
-      // Clean the product title to remove brands, models, SKUs for better keyword results
-      const cleanedTitle = cleanProductTitleForKeywords(productTitle);
-      if (cleanedTitle !== productTitle) {
-        searchTerm = cleanedTitle;
-        console.log(`KEYWORD SEARCH DEBUG - Cleaned product title: "${productTitle}" → "${searchTerm}"`);
-      }
+      searchTerm = productTitle;
+      console.log(`KEYWORD SEARCH DEBUG - Using exact product title: "${productTitle}"`);
     }
     
     if (!searchTerm) {
