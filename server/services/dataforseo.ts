@@ -100,35 +100,80 @@ export class DataForSEOService {
         // Prepare request payload for search_volume endpoint
         // Note: search_volume expects 'keywords' array instead of a single 'keyword'
         
-        // Create API-safe keyword variations (strict word limits)
+        // Create comprehensive API-safe keyword variations
+        const baseWords = baseKeyword.split(' ');
         const focusedKeywords = [
           // Core keyword (most important)
-          baseKeyword,
-          
-          // ONLY if base keyword is 3 words or less, add variations
-          ...(baseKeyword.split(' ').length <= 3 ? [
+          baseKeyword
+        ];
+
+        // Generate comprehensive variations for all keywords to get more results
+        if (baseWords.length <= 1) {
+          // For single words, create very extensive variations
+          focusedKeywords.push(
             `${baseKeyword} reviews`,
             `best ${baseKeyword}`,
             `${baseKeyword} guide`,
-            `${baseKeyword} price`
-          ] : []),
-          
-          // For longer base keywords, use truncated versions
-          ...(baseKeyword.split(' ').length > 3 ? [
-            baseKeyword.split(' ').slice(0, 2).join(' '),
-            baseKeyword.split(' ').slice(0, 3).join(' ')
-          ] : [])
-        ].filter(Boolean)
-         .filter(kw => kw.split(' ').length <= 4); // Final safety filter
+            `${baseKeyword} comparison`,
+            `${baseKeyword} price`,
+            `${baseKeyword} features`,
+            `${baseKeyword} benefits`,
+            `${baseKeyword} problems`,
+            `${baseKeyword} installation`,
+            `${baseKeyword} maintenance`,
+            `top ${baseKeyword}`,
+            `${baseKeyword} brands`,
+            `${baseKeyword} types`,
+            `${baseKeyword} options`,
+            `${baseKeyword} solutions`,
+            `${baseKeyword} cost`,
+            `${baseKeyword} quality`,
+            `${baseKeyword} warranty`,
+            `${baseKeyword} repair`
+          );
+        } else if (baseWords.length === 2) {
+          // For 2-word keywords, create extensive variations
+          focusedKeywords.push(
+            `${baseKeyword} reviews`,
+            `best ${baseKeyword}`,
+            `${baseKeyword} guide`,
+            `${baseKeyword} comparison`,
+            `${baseKeyword} price`,
+            `${baseKeyword} features`,
+            `${baseKeyword} benefits`,
+            `${baseKeyword} problems`,
+            `${baseKeyword} installation`,
+            `top ${baseKeyword}`,
+            `${baseKeyword} brands`,
+            `${baseKeyword} types`,
+            `${baseKeyword} cost`,
+            `${baseKeyword} quality`
+          );
+        } else if (baseWords.length === 3) {
+          // For 3-word keywords, add more comprehensive variations  
+          focusedKeywords.push(
+            `${baseKeyword} reviews`,
+            `best ${baseKeyword}`,
+            `${baseKeyword} guide`,
+            `${baseKeyword} tips`,
+            `${baseKeyword} cost`,
+            `${baseKeyword} types`,
+            `top ${baseKeyword}`
+          );
+        }
+
+        // Filter to ensure API compliance (max 4 words)
+        const validKeywords = focusedKeywords.filter(kw => kw.split(' ').length <= 4);
 
         
         // Use the focused keywords directly - no batching needed for smaller sets
-        const uniqueKeywords = Array.from(new Set(focusedKeywords));
+        const uniqueKeywords = Array.from(new Set(validKeywords));
         
-        console.log(`Sending ${uniqueKeywords.length} focused keywords to DataForSEO API:`, uniqueKeywords);
+        console.log(`Generated ${validKeywords.length} comprehensive keyword variations:`, validKeywords);
+        console.log(`Sending ${uniqueKeywords.length} unique keywords to DataForSEO API:`, uniqueKeywords);
         
         const requestData = [{
-          keywords: uniqueKeywords.slice(0, 25), // Reduced to 25 keywords for faster API response
+          keywords: uniqueKeywords, // Send all generated keywords for comprehensive results
           language_code: "en",
           location_code: 2840 // United States
         }];
@@ -176,8 +221,8 @@ export class DataForSEOService {
           throw new Error(`DataForSEO API error: ${errorMessage}`);
         }
 
-        // Extract keyword data from response
-        const keywordData: KeywordData[] = [];
+        // Extract keyword data from response  
+        let keywordData: KeywordData[] = [];
         const results = response.data.tasks[0]?.result || [];
         
         // Using focused keywords approach - no additional batch processing needed
