@@ -1151,6 +1151,49 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
   }
 });
 
+// Function to generate product carousel HTML
+function generateProductCarousel(products: any[], shopName: string, collectionTitle: string): string {
+  const productCards = products.map(product => {
+    const productUrl = `https://${shopName}/products/${product.handle}`;
+    const imageUrl = product.image?.src || product.images?.[0]?.src || '';
+    const price = product.variants?.[0]?.price ? `$${product.variants[0].price}` : '';
+    
+    return `
+    <div class="product-card" style="flex: 0 0 auto; width: 250px; margin: 0 15px; border: 1px solid #e5e5e5; border-radius: 8px; padding: 15px; text-align: center; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <a href="${productUrl}" style="text-decoration: none; color: inherit;">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${product.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">` : ''}
+        <h3 style="font-size: 16px; margin: 10px 0; color: #333; line-height: 1.3;">${product.title}</h3>
+        ${price ? `<p style="font-size: 18px; font-weight: bold; color: #0066cc; margin: 5px 0;">${price}</p>` : ''}
+        <button style="background: #0066cc; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 8px;">View Product</button>
+      </a>
+    </div>`;
+  }).join('');
+
+  return `
+<div class="product-carousel-container" style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+  <h3 style="text-align: center; margin-bottom: 20px; color: #333;">Featured Products from ${collectionTitle}</h3>
+  <div class="product-carousel" style="display: flex; overflow-x: auto; padding: 10px 0; gap: 10px; scroll-behavior: smooth;">
+    ${productCards}
+  </div>
+  <style>
+    .product-carousel::-webkit-scrollbar {
+      height: 8px;
+    }
+    .product-carousel::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    .product-carousel::-webkit-scrollbar-thumb {
+      background: #0066cc;
+      border-radius: 4px;
+    }
+    .product-carousel::-webkit-scrollbar-thumb:hover {
+      background: #0052a3;
+    }
+  </style>
+</div>`;
+}
+
 // Enhanced content generation endpoint with all new parameters
 adminRouter.post("/generate-content", async (req: Request, res: Response) => {
   console.log("Content generation request received with body:", JSON.stringify(req.body));
@@ -1543,6 +1586,9 @@ Place this at a logical position in the content, typically after introducing a c
         contentStyleToneId: requestData.contentStyleToneId,
         contentStyleDisplayName: requestData.contentStyleDisplayName,
         includeKeywords: requestData.keywords && requestData.keywords.length > 0,
+        // Pass collection data for product carousel
+        collectionIds: requestData.collectionIds,
+        collectionsInfo: collectionsInfo,
         // Add selected media from Choose Media step
         primaryImage: requestData.primaryImage,
         secondaryImages: requestData.secondaryImages,
@@ -1785,9 +1831,39 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
+      // 6.1 Process product carousel placement if collections are selected
+      if (requestData.collectionIds && requestData.collectionIds.length > 0 && collectionsInfo.length > 0) {
+        const collection = collectionsInfo[0]; // Use first collection
+        
+        try {
+          // Fetch products from the collection
+          const collectionProducts = await shopifyService.getProductsFromCollection(store, collection.id);
+          
+          if (collectionProducts && collectionProducts.length > 0) {
+            console.log(`Generating product carousel for collection "${collection.title}" with ${collectionProducts.length} products`);
+            
+            // Generate product carousel HTML (limit to 8 products for performance)
+            const carouselProducts = collectionProducts.slice(0, 8);
+            const carouselHtml = generateProductCarousel(carouselProducts, store.shopName, collection.title);
+            
+            // Replace the carousel placement marker
+            if (finalContent.includes('<!-- PRODUCT_CAROUSEL_PLACEMENT -->')) {
+              finalContent = finalContent.replace('<!-- PRODUCT_CAROUSEL_PLACEMENT -->', carouselHtml);
+              console.log(`✅ Inserted product carousel for collection "${collection.title}"`);
+            } else {
+              console.log('⚠️ No carousel placement marker found in content - carousel not inserted');
+            }
+          }
+        } catch (error) {
+          console.error('Error generating product carousel:', error);
+          // Continue without carousel if there's an error
+        }
+      }
+
       // Remove any remaining placement markers to prevent empty placeholders
       finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
       finalContent = finalContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
+      finalContent = finalContent.replace(/<!-- PRODUCT_CAROUSEL_PLACEMENT -->/g, '');
 
       
       // DISABLED: Featured image insertion into content body

@@ -19,6 +19,9 @@ interface BlogContentRequest {
   // Product linking fields
   productIds?: string[];
   productsInfo?: any[];
+  // Collection fields for product carousel
+  collectionIds?: string[];
+  collectionsInfo?: any[];
   // Audience targeting fields
   targetAudience?: string;
   buyerPersona?: string;
@@ -333,6 +336,12 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     if (request.youtubeEmbed) {
       mediaContext += `\n    SELECTED YOUTUBE VIDEO: A relevant YouTube video has been selected to enhance the content. This will be placed under the second H2 heading.`;
     }
+    
+    // Build collection-based product carousel context
+    let carouselContext = '';
+    if (request.collectionIds && request.collectionIds.length > 0 && request.collectionsInfo && request.collectionsInfo.length > 0) {
+      carouselContext = `\n    PRODUCT CAROUSEL: A collection has been selected (${request.collectionsInfo[0].title}). You MUST include a product carousel within the content that showcases products from this collection. Place the carousel marker <!-- PRODUCT_CAROUSEL_PLACEMENT --> under one of your H2 headings where it fits naturally in the content flow.`;
+    }
 
     // Build audience-aware context
     let audienceContext = '';
@@ -364,7 +373,7 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Ensure keyword usage feels natural and not forced`;
     }
 
-let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${carouselContext}${audienceContext}${keywordContext}
     
     The blog post MUST follow this exact structure:
     1. A compelling title that includes the main topic and primary keywords (this will be used separately)
@@ -412,6 +421,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post about ${re
     - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
     - Under EVERY OTHER H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     - IMPORTANT: You MUST include at least 3-4 secondary image placement markers: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
+    - If a collection is selected, include ONE product carousel marker: <!-- PRODUCT_CAROUSEL_PLACEMENT --> under an appropriate H2 heading
     - Place one marker under each major H2 section to ensure even distribution
     - These markers are REQUIRED for image functionality - do not skip them
     - Example structure:

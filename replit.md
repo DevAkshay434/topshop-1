@@ -33,6 +33,18 @@ The application employs a modern full-stack, client-server architecture with mul
 
 ## Recent Changes (January 2025)
 
+### Product Carousel Feature - COMPLETED ✅
+- **Feature Added**: AI-generated content now includes product carousels when collections are selected in the admin panel
+- **Technical Implementation**:
+  - Enhanced Claude AI prompt to include product carousel placement marker `<!-- PRODUCT_CAROUSEL_PLACEMENT -->`
+  - Added `generateProductCarousel()` function to create responsive HTML carousel with product cards
+  - Extended Shopify services with `getProductsFromCollection()` method using GraphQL API
+  - Integrated carousel processing in content generation pipeline after YouTube/image placement
+  - Carousel displays up to 8 products with images, titles, prices, and direct product links
+- **User Experience**: Carousels only appear when a collection is selected, maintaining content relevance
+- **Styling**: Responsive design with horizontal scrolling and professional product card styling
+- **Date Completed**: August 7, 2025
+
 ### Keyword Generation System - COMPLETED ✅
 - **Issue Fixed**: Branded product names (e.g., "SoftPro® Elite Salt Free Water Conditioner") were generating zero search volume because specific brand/model combinations don't have search data
 - **Solution Implemented**: Advanced branded product detection system that extracts core product categories from specific brand names

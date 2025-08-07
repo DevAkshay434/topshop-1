@@ -1708,6 +1708,21 @@ export class ShopifyService {
       return [];
     }
   }
+
+  public async getProductsFromCollection(store: ShopifyStore, collectionId: string, limit: number = 20): Promise<any[]> {
+    try {
+      console.log(`Fetching products from collection ${collectionId} for store: ${store.shopName}`);
+      
+      // Use GraphQL to fetch products from a specific collection
+      const { graphqlShopifyService } = await import('./graphql-shopify');
+      return await graphqlShopifyService.getProductsFromCollection(store, collectionId, limit);
+      
+    } catch (error: any) {
+      console.error(`Error fetching products from collection ${collectionId}: ${error?.message}`);
+      // Return empty array to prevent failures
+      return [];
+    }
+  }
 }
 
 // Create a singleton instance
