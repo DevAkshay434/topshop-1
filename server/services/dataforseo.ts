@@ -88,65 +88,42 @@ export class DataForSEOService {
 
         console.log(`Using DataForSEO credentials - Login: ${this.username}, Password length: ${this.password.length}`);
 
-        // Clean the keyword to remove problematic characters
+        // Clean the keyword to remove problematic characters and ensure proper length
         const cleanedKeyword = this.cleanKeywordString(keyword);
         console.log(`Cleaned keyword for API request: "${cleanedKeyword}" (original: "${keyword}")`);
+        
+        // Validate keyword length for DataForSEO API (max ~10-15 words typically)
+        const words = cleanedKeyword.split(' ');
+        const baseKeyword = words.length > 10 ? words.slice(0, 10).join(' ') : cleanedKeyword;
+        console.log(`Base keyword for variations: "${baseKeyword}" (${words.length} words)`);
         
         // Prepare request payload for search_volume endpoint
         // Note: search_volume expects 'keywords' array instead of a single 'keyword'
         
-        // Create product-specific keyword set focused on the exact search term
-        const baseKeyword = cleanedKeyword;
-        
-        // Create comprehensive keyword variations to get more DataForSEO results
-        // Focus on authentic keyword patterns that users actually search for
+        // Create focused keyword variations for DataForSEO API
+        // Prioritize high-value search patterns while keeping API calls efficient
         const focusedKeywords = [
-          // Core keyword
+          // Core keyword (most important)
           baseKeyword,
           
-          // Commercial intent keywords
+          // High-value commercial intent keywords (proven search patterns)
           `${baseKeyword} reviews`,
           `best ${baseKeyword}`,
           `${baseKeyword} comparison`,
-          `${baseKeyword} vs`,
           `buy ${baseKeyword}`,
           `${baseKeyword} price`,
-          `${baseKeyword} cost`,
-          `${baseKeyword} deals`,
-          `${baseKeyword} sale`,
-          `${baseKeyword} discount`,
-          `cheap ${baseKeyword}`,
-          `affordable ${baseKeyword}`,
           
-          // Informational keywords
+          // Popular informational keywords
           `${baseKeyword} guide`,
           `${baseKeyword} benefits`,
           `${baseKeyword} features`,
-          `${baseKeyword} specs`,
-          `${baseKeyword} manual`,
-          `${baseKeyword} instructions`,
-          `${baseKeyword} how to`,
-          `${baseKeyword} tips`,
-          `${baseKeyword} problems`,
-          `${baseKeyword} troubleshooting`,
+          `how to choose ${baseKeyword}`,
           
-          // Brand and quality keywords
-          `${baseKeyword} brands`,
+          // Essential product research keywords
           `top ${baseKeyword}`,
-          `${baseKeyword} quality`,
-          `${baseKeyword} warranty`,
-          
-          // Size and specification keywords
-          `${baseKeyword} size`,
-          `${baseKeyword} dimensions`,
-          `${baseKeyword} weight`,
-          `${baseKeyword} capacity`,
-          
-          // Usage keywords
-          `${baseKeyword} uses`,
-          `${baseKeyword} applications`,
+          `${baseKeyword} brands`,
           `${baseKeyword} installation`,
-          `${baseKeyword} maintenance`
+          `${baseKeyword} problems`
         ].filter(Boolean);
 
         
@@ -156,7 +133,7 @@ export class DataForSEOService {
         console.log(`Sending ${uniqueKeywords.length} focused keywords to DataForSEO API:`, uniqueKeywords);
         
         const requestData = [{
-          keywords: uniqueKeywords.slice(0, 50), // Use up to 50 keywords to get comprehensive data
+          keywords: uniqueKeywords.slice(0, 25), // Reduced to 25 keywords for faster API response
           language_code: "en",
           location_code: 2840 // United States
         }];
@@ -740,10 +717,10 @@ export class DataForSEOService {
   }
 
   /**
-   * Enrich product data into a full descriptive phrase for better DataForSEO results
-   * Convert simple product names into detailed search phrases
+   * Enrich product data into a balanced descriptive phrase for DataForSEO API
+   * Convert simple product names into meaningful but API-compliant search phrases
    * @param productData The basic product title or extracted keyword
-   * @returns A descriptive phrase that provides context for the API
+   * @returns A descriptive phrase that provides context while staying within API limits
    */
   private enrichProductDataToPhrase(productData: string): string {
     // Clean basic noise while preserving meaningful content
@@ -762,29 +739,37 @@ export class DataForSEOService {
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Instead of slicing to 1-2 words, enrich the phrase with context
     const words = cleaned.split(' ').filter(word => word.length > 2);
     
     if (words.length === 0) {
       return 'product'; // Emergency fallback
     }
 
-    // Create descriptive phrase templates based on the product data
-    const enrichmentTemplates = [
-      // For single word products - add descriptive context
-      (words.length === 1) ? `${words[0]} products and accessories for daily use` : null,
-      
-      // For 2-word products - add usage context
-      (words.length === 2) ? `${words.join(' ')} with advanced features and benefits` : null,
-      
-      // For 3+ words - preserve the full description and add minimal context
-      (words.length >= 3) ? `${words.join(' ')} for professional and personal use` : null
-    ].filter(Boolean);
+    // Create balanced enrichment that stays within API limits (≤8 words typically)
+    let enrichedPhrase: string;
+    
+    if (words.length === 1) {
+      // For single word: add minimal meaningful context
+      enrichedPhrase = `${words[0]} for home and business`;
+    } else if (words.length === 2) {
+      // For 2 words: add light context 
+      enrichedPhrase = `${words.join(' ')} reviews and features`;
+    } else if (words.length >= 3 && words.length <= 5) {
+      // For 3-5 words: preserve as-is, it's already descriptive
+      enrichedPhrase = words.join(' ');
+    } else {
+      // For 6+ words: take most meaningful parts (first 3 + last 2)
+      const coreWords = [...words.slice(0, 3), ...words.slice(-2)];
+      enrichedPhrase = coreWords.join(' ');
+    }
 
-    // Use the most appropriate template
-    const enrichedPhrase = enrichmentTemplates[0] || `${words.join(' ')} with premium quality and performance`;
+    // Final safety check - ensure we don't exceed reasonable length
+    const finalWords = enrichedPhrase.split(' ');
+    if (finalWords.length > 8) {
+      enrichedPhrase = finalWords.slice(0, 8).join(' ');
+    }
 
-    console.log(`Enriched "${cleaned}" to "${enrichedPhrase}"`);
+    console.log(`Enriched "${cleaned}" to "${enrichedPhrase}" (${enrichedPhrase.split(' ').length} words)`);
     return enrichedPhrase;
   }
 
