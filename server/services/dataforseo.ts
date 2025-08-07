@@ -92,39 +92,34 @@ export class DataForSEOService {
         const cleanedKeyword = this.cleanKeywordString(keyword);
         console.log(`Cleaned keyword for API request: "${cleanedKeyword}" (original: "${keyword}")`);
         
-        // Validate keyword length for DataForSEO API (max ~10-15 words typically)
+        // Validate keyword length for DataForSEO API (strict 4-word limit)
         const words = cleanedKeyword.split(' ');
-        const baseKeyword = words.length > 10 ? words.slice(0, 10).join(' ') : cleanedKeyword;
-        console.log(`Base keyword for variations: "${baseKeyword}" (${words.length} words)`);
+        const baseKeyword = words.length > 4 ? words.slice(0, 4).join(' ') : cleanedKeyword;
+        console.log(`Base keyword for variations: "${baseKeyword}" (${words.length} → ${baseKeyword.split(' ').length} words)`);
         
         // Prepare request payload for search_volume endpoint
         // Note: search_volume expects 'keywords' array instead of a single 'keyword'
         
-        // Create focused keyword variations for DataForSEO API
-        // Prioritize high-value search patterns while keeping API calls efficient
+        // Create API-safe keyword variations (strict word limits)
         const focusedKeywords = [
           // Core keyword (most important)
           baseKeyword,
           
-          // High-value commercial intent keywords (proven search patterns)
-          `${baseKeyword} reviews`,
-          `best ${baseKeyword}`,
-          `${baseKeyword} comparison`,
-          `buy ${baseKeyword}`,
-          `${baseKeyword} price`,
+          // ONLY if base keyword is 3 words or less, add variations
+          ...(baseKeyword.split(' ').length <= 3 ? [
+            `${baseKeyword} reviews`,
+            `best ${baseKeyword}`,
+            `${baseKeyword} guide`,
+            `${baseKeyword} price`
+          ] : []),
           
-          // Popular informational keywords
-          `${baseKeyword} guide`,
-          `${baseKeyword} benefits`,
-          `${baseKeyword} features`,
-          `how to choose ${baseKeyword}`,
-          
-          // Essential product research keywords
-          `top ${baseKeyword}`,
-          `${baseKeyword} brands`,
-          `${baseKeyword} installation`,
-          `${baseKeyword} problems`
-        ].filter(Boolean);
+          // For longer base keywords, use truncated versions
+          ...(baseKeyword.split(' ').length > 3 ? [
+            baseKeyword.split(' ').slice(0, 2).join(' '),
+            baseKeyword.split(' ').slice(0, 3).join(' ')
+          ] : [])
+        ].filter(Boolean)
+         .filter(kw => kw.split(' ').length <= 4); // Final safety filter
 
         
         // Use the focused keywords directly - no batching needed for smaller sets
@@ -780,28 +775,27 @@ export class DataForSEOService {
       return 'product reviews and buying guide';
     }
 
-    // Step 5: Convert to descriptive search phrase
+    // Step 5: Convert to minimal descriptive search phrase (API safety first)
     let descriptivePhrase: string;
     
     if (words.length === 1) {
-      // Single word: create comprehensive search phrase
-      descriptivePhrase = `best ${words[0]} reviews and buying guide`;
+      // Single word: minimal addition
+      descriptivePhrase = `${words[0]} reviews`;
     } else if (words.length === 2) {
-      // Two words: add search intent
-      descriptivePhrase = `best ${words.join(' ')} reviews and comparison`;
+      // Two words: use as-is
+      descriptivePhrase = words.join(' ');
     } else if (words.length >= 3 && words.length <= 4) {
-      // 3-4 words: add minimal context
-      descriptivePhrase = `${words.join(' ')} reviews and features`;
+      // 3-4 words: take first 3 only
+      descriptivePhrase = words.slice(0, 3).join(' ');
     } else {
-      // 5+ words: take most meaningful parts
-      const coreWords = [...words.slice(0, 2), ...words.slice(-2)];
-      descriptivePhrase = `${coreWords.join(' ')} buying guide`;
+      // 5+ words: take most meaningful 2 words only
+      descriptivePhrase = words.slice(0, 2).join(' ');
     }
 
-    // Step 6: Final length validation (keep under 8 words for API compatibility)
+    // Step 6: STRICT API limit - never exceed 4 words
     const finalWords = descriptivePhrase.split(' ');
-    if (finalWords.length > 8) {
-      descriptivePhrase = finalWords.slice(0, 8).join(' ');
+    if (finalWords.length > 4) {
+      descriptivePhrase = finalWords.slice(0, 4).join(' ');
     }
 
     console.log(`Transformed "${productTitle}" → "${descriptivePhrase}" (${finalWords.length} words)`);

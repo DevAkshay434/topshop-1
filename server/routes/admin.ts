@@ -662,25 +662,25 @@ function cleanProductTitleForKeywords(productTitle: string): string {
     return productTitle; // Return original if cleaning removed everything
   }
 
-  // Convert to descriptive search phrase
+  // Convert to descriptive search phrase (keep under 5 words for API safety)
   let descriptivePhrase: string;
   
   if (words.length === 1) {
-    descriptivePhrase = `best ${words[0]} reviews and guide`;
+    descriptivePhrase = `${words[0]} reviews`;
   } else if (words.length === 2) {
-    descriptivePhrase = `best ${words.join(' ')} reviews`;
+    descriptivePhrase = `${words.join(' ')} guide`;
   } else if (words.length >= 3 && words.length <= 4) {
-    descriptivePhrase = `${words.join(' ')} reviews`;
+    // Take most meaningful 2-3 words
+    descriptivePhrase = words.slice(0, 3).join(' ');
   } else {
-    // Take most meaningful parts for long titles
-    const coreWords = [...words.slice(0, 2), ...words.slice(-2)];
-    descriptivePhrase = `${coreWords.join(' ')} guide`;
+    // For long titles, take first 2 meaningful words only
+    descriptivePhrase = words.slice(0, 2).join(' ');
   }
 
-  // Keep under 8 words for API compatibility
+  // STRICT limit: never exceed 4 words for DataForSEO API
   const finalWords = descriptivePhrase.split(' ');
-  if (finalWords.length > 8) {
-    descriptivePhrase = finalWords.slice(0, 8).join(' ');
+  if (finalWords.length > 4) {
+    descriptivePhrase = finalWords.slice(0, 4).join(' ');
   }
 
   console.log(`Product title cleaned: "${productTitle}" → "${descriptivePhrase}"`);
