@@ -92,39 +92,44 @@ export class DataForSEOService {
         const cleanedKeyword = this.cleanKeywordString(keyword);
         console.log(`Cleaned keyword for API request: "${cleanedKeyword}" (original: "${keyword}")`);
         
-        // Validate keyword length for DataForSEO API (max ~10-15 words typically)
+        // Validate keyword length for DataForSEO API (max 5 words strictly enforced)
         const words = cleanedKeyword.split(' ');
-        const baseKeyword = words.length > 10 ? words.slice(0, 10).join(' ') : cleanedKeyword;
+        const baseKeyword = words.length > 5 ? words.slice(0, 5).join(' ') : cleanedKeyword;
         console.log(`Base keyword for variations: "${baseKeyword}" (${words.length} words)`);
         
         // Prepare request payload for search_volume endpoint
         // Note: search_volume expects 'keywords' array instead of a single 'keyword'
         
-        // Create focused keyword variations for DataForSEO API
-        // Prioritize high-value search patterns while keeping API calls efficient
+        // Create focused keyword variations for DataForSEO API with strict word limits
+        // Each variation must be ≤5 words to pass API validation
         const focusedKeywords = [
           // Core keyword (most important)
           baseKeyword,
           
-          // High-value commercial intent keywords (proven search patterns)
+          // High-value commercial intent keywords (≤5 words each)
           `${baseKeyword} reviews`,
           `best ${baseKeyword}`,
-          `${baseKeyword} comparison`,
-          `buy ${baseKeyword}`,
           `${baseKeyword} price`,
+          `buy ${baseKeyword}`,
           
-          // Popular informational keywords
+          // Popular informational keywords (≤5 words each)
           `${baseKeyword} guide`,
           `${baseKeyword} benefits`,
           `${baseKeyword} features`,
-          `how to choose ${baseKeyword}`,
           
-          // Essential product research keywords
+          // Essential product research keywords (≤5 words each)
           `top ${baseKeyword}`,
           `${baseKeyword} brands`,
-          `${baseKeyword} installation`,
           `${baseKeyword} problems`
-        ].filter(Boolean);
+        ].filter(Boolean).filter(keyword => {
+          // Final safety filter: ensure no keyword exceeds 5 words
+          const wordCount = keyword.split(' ').length;
+          if (wordCount > 5) {
+            console.log(`Filtered out long keyword: "${keyword}" (${wordCount} words)`);
+            return false;
+          }
+          return true;
+        });
 
         
         // Use the focused keywords directly - no batching needed for smaller sets
@@ -745,28 +750,28 @@ export class DataForSEOService {
       return 'product'; // Emergency fallback
     }
 
-    // Create balanced enrichment that stays within API limits (≤8 words typically)
+    // Create concise but meaningful phrases that DataForSEO API can handle (≤5 words max)
     let enrichedPhrase: string;
     
     if (words.length === 1) {
-      // For single word: add minimal meaningful context
-      enrichedPhrase = `${words[0]} for home and business`;
+      // For single word: keep simple, just add one contextual word
+      enrichedPhrase = `${words[0]} systems`;
     } else if (words.length === 2) {
-      // For 2 words: add light context 
-      enrichedPhrase = `${words.join(' ')} reviews and features`;
-    } else if (words.length >= 3 && words.length <= 5) {
-      // For 3-5 words: preserve as-is, it's already descriptive
+      // For 2 words: perfect length, use as-is
+      enrichedPhrase = words.join(' ');
+    } else if (words.length >= 3 && words.length <= 4) {
+      // For 3-4 words: use as-is, good length
       enrichedPhrase = words.join(' ');
     } else {
-      // For 6+ words: take most meaningful parts (first 3 + last 2)
-      const coreWords = [...words.slice(0, 3), ...words.slice(-2)];
-      enrichedPhrase = coreWords.join(' ');
+      // For 5+ words: extract the core product terms (first 2 + most relevant 1-2 from end)
+      const coreWords = [...words.slice(0, 2), ...words.slice(-2)];
+      enrichedPhrase = coreWords.slice(0, 4).join(' '); // Max 4 words
     }
 
-    // Final safety check - ensure we don't exceed reasonable length
+    // Absolute safety check - never exceed 5 words for DataForSEO API
     const finalWords = enrichedPhrase.split(' ');
-    if (finalWords.length > 8) {
-      enrichedPhrase = finalWords.slice(0, 8).join(' ');
+    if (finalWords.length > 5) {
+      enrichedPhrase = finalWords.slice(0, 5).join(' ');
     }
 
     console.log(`Enriched "${cleaned}" to "${enrichedPhrase}" (${enrichedPhrase.split(' ').length} words)`);
