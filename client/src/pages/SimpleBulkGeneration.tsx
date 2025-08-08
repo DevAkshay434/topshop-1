@@ -1034,9 +1034,12 @@ Essential kitchen tools for beginners`}
             <CardContent>
               <MediaSelectionStep
                 selectedProductId={selectedProducts[0]?.id || ""}
-                selectedMediaContent={selectedMediaContent}
-                onMediaChange={setSelectedMediaContent}
-                workflowStep="media"
+                initialValues={selectedMediaContent}
+                onComplete={(media) => {
+                  setSelectedMediaContent(media);
+                  nextStep();
+                }}
+                onBack={previousStep}
               />
             </CardContent>
           </Card>
