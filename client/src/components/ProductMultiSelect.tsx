@@ -27,7 +27,7 @@ interface ProductSelectOption {
 }
 
 interface ProductMultiSelectProps {
-  options: ProductSelectOption[];
+  options: Product[];
   selected: string[];
   onChange: (selected: string[]) => void;
   placeholder?: string;
@@ -52,7 +52,7 @@ export function ProductMultiSelect({
   
   // Filter options based on search query
   const filteredOptions = options.filter(option => 
-    option.product.title.toLowerCase().includes(searchQuery.toLowerCase())
+    option.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   // Remove an item from selection
@@ -72,8 +72,7 @@ export function ProductMultiSelect({
   
   // Find a product by its ID
   const getProductById = (id: string): Product | undefined => {
-    const option = options.find(opt => opt.value === id);
-    return option?.product;
+    return options.find(product => product.id === id);
   };
   
   // Get image URL for a product
@@ -133,19 +132,18 @@ export function ProductMultiSelect({
                   No products found
                 </div>
               ) : (
-                filteredOptions.map((option) => {
-                  const isSelected = selectedValues.includes(option.value);
-                  const product = option.product;
+                filteredOptions.map((product) => {
+                  const isSelected = selectedValues.includes(product.id);
                   const imageUrl = getProductImageUrl(product);
                   
                   return (
                     <div
-                      key={option.value}
+                      key={product.id}
                       className={cn(
                         "flex items-center gap-2 p-2 rounded-md cursor-pointer",
                         isSelected ? "bg-secondary" : "hover:bg-accent"
                       )}
-                      onClick={() => handleSelect(option.value)}
+                      onClick={() => handleSelect(product.id)}
                     >
                       {/* Product Image */}
                       <div className="flex-shrink-0 w-10 h-10 rounded-md overflow-hidden bg-secondary border">

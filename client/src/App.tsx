@@ -69,6 +69,7 @@ function Router() {
           <Route path="/scheduled-posts" component={ScheduledPosts} />
           <Route path="/content-templates" component={ContentTemplates} />
           <Route path="/simple-bulk-generation" component={SimpleBulkGeneration} />
+          <Route path="/bulk-generation" component={SimpleBulkGeneration} />
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/plans" component={PlansPage} />
