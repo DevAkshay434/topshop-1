@@ -257,8 +257,8 @@ export default function SimpleBulkGeneration() {
     }
   });
 
-  // Workflow and generation state
-  const [currentStep, setCurrentStep] = useState<'setup' | 'topics' | 'products' | 'collections' | 'personas' | 'style' | 'author' | 'media' | 'generation' | 'results'>('setup');
+  // Workflow and generation state (removed 'topics' step as requested)
+  const [currentStep, setCurrentStep] = useState<'setup' | 'products' | 'collections' | 'personas' | 'style' | 'author' | 'media' | 'generation' | 'results'>('setup');
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<GenerationResult[]>([]);
@@ -395,7 +395,7 @@ export default function SimpleBulkGeneration() {
 
   // Navigation functions
   const nextStep = () => {
-    const steps: typeof currentStep[] = ['setup', 'topics', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation'];
+    const steps: typeof currentStep[] = ['setup', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
@@ -403,7 +403,7 @@ export default function SimpleBulkGeneration() {
   };
 
   const previousStep = () => {
-    const steps: typeof currentStep[] = ['setup', 'topics', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation'];
+    const steps: typeof currentStep[] = ['setup', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
@@ -513,9 +513,7 @@ export default function SimpleBulkGeneration() {
   const canProceedToNextStep = () => {
     switch (currentStep) {
       case 'setup':
-        return true; // Basic setup can always proceed
-      case 'topics':
-        return topicsList.length > 0;
+        return topicsList.length > 0; // Must have topics to proceed
       case 'products':
         return true; // Products are optional
       case 'collections':
@@ -564,9 +562,7 @@ export default function SimpleBulkGeneration() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="blog">Blog Post</SelectItem>
-                            <SelectItem value="article">Article</SelectItem>
-                            <SelectItem value="guide">Guide</SelectItem>
-                            <SelectItem value="tutorial">Tutorial</SelectItem>
+                            <SelectItem value="page">Page</SelectItem>
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -691,75 +687,144 @@ export default function SimpleBulkGeneration() {
                     )}
                   />
                 </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 'topics':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-green-600" />
-                Content Topics
-              </CardTitle>
-              <CardDescription>
-                Enter the topics you want to create content for (one per line)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="topics"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Topics (one per line)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Sustainable fashion trends
-Benefits of organic skincare
+                
+                {/* Add topics input to setup step */}
+                <div className="space-y-4 pt-6 border-t">
+                  <h4 className="font-medium text-lg flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-green-600" />
+                    Content Topics
+                  </h4>
+                  
+                  <FormField
+                    control={form.control}
+                    name="topics"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Topics (one per line)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder={`Enter topics, one per line:
 How to choose the right running shoes
-Best practices for home organization
-Top 10 productivity apps for entrepreneurs"
-                        rows={12}
-                        {...field}
-                        disabled={isGenerating}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {topicsList.length > 0 && (
-                        <span className="text-green-600 font-medium">
-                          {topicsList.length} topics detected • {totalBatches} batches planned
-                        </span>
-                      )}
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
+Best skincare routine for dry skin
+Sustainable fashion trends 2024
+Benefits of meal planning
+Essential kitchen tools for beginners`}
+                            className="min-h-32"
+                            rows={8}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Each line will generate a separate piece of content. You can enter up to 50 topics.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="customPrompt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Custom AI Prompt (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="You are a professional blog writer creating high-quality content for an e-commerce store. Write a detailed, informative, and engaging blog post about [TOPIC]..."
-                        rows={6}
-                        {...field}
-                        disabled={isGenerating}
+                  {/* Topics preview */}
+                  {topicsList.length > 0 && (
+                    <div className="border rounded-lg p-4 bg-neutral-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-sm">
+                          Topics Preview ({topicsList.length})
+                        </h4>
+                        <Badge variant="secondary">{totalBatches} batches</Badge>
+                      </div>
+                      <div className="grid gap-2">
+                        {topicsList.slice(0, 5).map((topic, index) => (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span>{topic}</span>
+                          </div>
+                        ))}
+                        {topicsList.length > 5 && (
+                          <div className="text-sm text-neutral-500 mt-2">
+                            + {topicsList.length - 5} more topics...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Batch configuration */}
+                  <div className="border rounded-lg p-4 space-y-4 bg-blue-50">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <Cpu className="h-4 w-4 text-blue-600" />
+                      Batch Processing Configuration
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="batchSize"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Batch Size</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="20"
+                                {...field}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Number of topics to process per batch (1-20)
+                            </FormDescription>
+                          </FormItem>
+                        )}
                       />
-                    </FormControl>
-                    <FormDescription>
-                      Use [TOPIC] as a placeholder where you want the topic to be inserted
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
+
+                      <FormField
+                        control={form.control}
+                        name="simultaneousGeneration"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox 
+                                checked={field.value} 
+                                onCheckedChange={field.onChange} 
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>
+                                Parallel Processing
+                              </FormLabel>
+                              <FormDescription>
+                                Generate content simultaneously within batches (faster but uses more resources)
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    {/* Batch info */}
+                    <div className="text-sm text-neutral-600 bg-white rounded p-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="font-medium">Total Topics:</span> {topicsList.length}
+                        </div>
+                        <div>
+                          <span className="font-medium">Batches:</span> {totalBatches}
+                        </div>
+                        <div>
+                          <span className="font-medium">Batch Size:</span> {form.watch('batchSize')}
+                        </div>
+                        <div>
+                          <span className="font-medium">Processing:</span> {form.watch('simultaneousGeneration') ? 'Parallel' : 'Sequential'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
             </CardContent>
           </Card>
         );
+
+
 
       case 'products':
         return (
@@ -775,13 +840,10 @@ Top 10 productivity apps for entrepreneurs"
             </CardHeader>
             <CardContent>
               <ProductMultiSelect
-                options={productsData?.products?.map((product: any) => ({
-                  product: product,
-                  value: product.id
-                })) || []}
+                options={productsData?.products || []}
                 selected={selectedProducts.map(p => p.id)}
                 onChange={(selectedIds: string[]) => {
-                  const products = (productsData?.products || []).filter((p: any) => 
+                  const products = (productsData?.products || []).filter((p: Product) => 
                     selectedIds.includes(p.id)
                   );
                   setSelectedProducts(products);
@@ -951,7 +1013,7 @@ Top 10 productivity apps for entrepreneurs"
             <CardContent>
               <AuthorSelector
                 selectedAuthorId={selectedAuthorId}
-                onAuthorSelect={(authorId: string) => setSelectedAuthorId(authorId)}
+                onAuthorSelect={(authorId: string | null) => setSelectedAuthorId(authorId)}
               />
             </CardContent>
           </Card>
@@ -971,7 +1033,7 @@ Top 10 productivity apps for entrepreneurs"
             </CardHeader>
             <CardContent>
               <MediaSelectionStep
-                selectedProducts={selectedProducts}
+                selectedProductId={selectedProducts[0]?.id || ""}
                 selectedMediaContent={selectedMediaContent}
                 onMediaChange={setSelectedMediaContent}
                 workflowStep="media"
@@ -1103,7 +1165,7 @@ Top 10 productivity apps for entrepreneurs"
 
   // Progress indicator
   const getStepProgress = () => {
-    const steps = ['setup', 'topics', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation', 'results'];
+    const steps = ['setup', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation', 'results'];
     const currentIndex = steps.indexOf(currentStep);
     return ((currentIndex + 1) / steps.length) * 100;
   };
@@ -1123,7 +1185,7 @@ Top 10 productivity apps for entrepreneurs"
               <div className="flex items-center gap-2">
                 <Layers className="h-6 w-6 text-blue-600" />
                 <span className="text-sm font-medium text-neutral-600">
-                  Step {['setup', 'topics', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation', 'results'].indexOf(currentStep) + 1} of 10
+                  Step {['setup', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation', 'results'].indexOf(currentStep) + 1} of 9
                 </span>
               </div>
             </div>
