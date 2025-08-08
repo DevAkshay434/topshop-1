@@ -52,7 +52,7 @@ export function ProductMultiSelect({
   
   // Filter options based on search query
   const filteredOptions = options.filter(option => 
-    option.title.toLowerCase().includes(searchQuery.toLowerCase())
+    option.title && option.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   // Remove an item from selection

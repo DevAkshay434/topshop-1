@@ -840,10 +840,10 @@ Essential kitchen tools for beginners`}
             </CardHeader>
             <CardContent>
               <ProductMultiSelect
-                options={productsData?.products || []}
+                options={(productsData as any)?.products || []}
                 selected={selectedProducts.map(p => p.id)}
                 onChange={(selectedIds: string[]) => {
-                  const products = (productsData?.products || []).filter((p: Product) => 
+                  const products = ((productsData as any)?.products || []).filter((p: Product) => 
                     selectedIds.includes(p.id)
                   );
                   setSelectedProducts(products);
@@ -875,7 +875,7 @@ Essential kitchen tools for beginners`}
             </CardHeader>
             <CardContent>
               <RelatedCollectionsSelector
-                collections={collectionsData?.collections || []}
+                collections={(collectionsData as any)?.collections || []}
                 selectedCollections={selectedCollections}
                 onCollectionSelect={(collection: Collection) => {
                   if (!selectedCollections.find(c => c.id === collection.id)) {
@@ -1013,7 +1013,7 @@ Essential kitchen tools for beginners`}
             <CardContent>
               <AuthorSelector
                 selectedAuthorId={selectedAuthorId}
-                onAuthorSelect={(authorId: string | null) => setSelectedAuthorId(authorId)}
+                onAuthorSelect={(authorId: string | null) => setSelectedAuthorId(authorId || "")}
               />
             </CardContent>
           </Card>
