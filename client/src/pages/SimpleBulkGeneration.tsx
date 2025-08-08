@@ -549,7 +549,6 @@ export default function SimpleBulkGeneration() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <Form {...form}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -692,7 +691,6 @@ export default function SimpleBulkGeneration() {
                     )}
                   />
                 </div>
-              </Form>
             </CardContent>
           </Card>
         );
@@ -1112,85 +1110,87 @@ Top 10 productivity apps for entrepreneurs"
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-neutral-900">Bulk Content Generation</h1>
-              <p className="text-neutral-600 mt-2">
-                Create multiple high-quality blog posts using the same advanced workflow as single post generation
-              </p>
+      <Form {...form}>
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-neutral-900">Bulk Content Generation</h1>
+                <p className="text-neutral-600 mt-2">
+                  Create multiple high-quality blog posts using the same advanced workflow as single post generation
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Layers className="h-6 w-6 text-blue-600" />
+                <span className="text-sm font-medium text-neutral-600">
+                  Step {['setup', 'topics', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation', 'results'].indexOf(currentStep) + 1} of 10
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Layers className="h-6 w-6 text-blue-600" />
-              <span className="text-sm font-medium text-neutral-600">
-                Step {['setup', 'topics', 'products', 'collections', 'personas', 'style', 'author', 'media', 'generation', 'results'].indexOf(currentStep) + 1} of 10
-              </span>
+            
+            {/* Progress bar */}
+            <div className="w-full bg-neutral-200 rounded-full h-2 mb-6">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${getStepProgress()}%` }}
+              />
             </div>
           </div>
-          
-          {/* Progress bar */}
-          <div className="w-full bg-neutral-200 rounded-full h-2 mb-6">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${getStepProgress()}%` }}
-            />
-          </div>
-        </div>
 
-        {/* Step content */}
-        <div className="mb-8">
-          {renderStepContent()}
-        </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between bg-white border rounded-lg p-4">
-          <Button
-            variant="outline"
-            onClick={previousStep}
-            disabled={currentStep === 'setup' || isGenerating}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Previous
-          </Button>
-
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
-            {topicsList.length > 0 && (
-              <span>{topicsList.length} topics • {totalBatches} batches</span>
-            )}
-            {selectedProducts.length > 0 && (
-              <span>• {selectedProducts.length} products</span>
-            )}
+          {/* Step content */}
+          <div className="mb-8">
+            {renderStepContent()}
           </div>
 
-          {currentStep === 'media' ? (
-            <Button
-              onClick={handleBulkGeneration}
-              disabled={!canProceedToNextStep() || isGenerating || topicsList.length === 0}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate {topicsList.length} Articles
-            </Button>
-          ) : currentStep === 'results' ? (
+          {/* Navigation */}
+          <div className="flex items-center justify-between bg-white border rounded-lg p-4">
             <Button
               variant="outline"
-              onClick={() => setLocation("/blog-posts")}
+              onClick={previousStep}
+              disabled={currentStep === 'setup' || isGenerating}
             >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              View Posts
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Previous
             </Button>
-          ) : (
-            <Button
-              onClick={nextStep}
-              disabled={!canProceedToNextStep() || isGenerating}
-            >
-              Next
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
+
+            <div className="flex items-center gap-2 text-sm text-neutral-500">
+              {topicsList.length > 0 && (
+                <span>{topicsList.length} topics • {totalBatches} batches</span>
+              )}
+              {selectedProducts.length > 0 && (
+                <span>• {selectedProducts.length} products</span>
+              )}
+            </div>
+
+            {currentStep === 'media' ? (
+              <Button
+                onClick={handleBulkGeneration}
+                disabled={!canProceedToNextStep() || isGenerating || topicsList.length === 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate {topicsList.length} Articles
+              </Button>
+            ) : currentStep === 'results' ? (
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/blog-posts")}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View Posts
+              </Button>
+            ) : (
+              <Button
+                onClick={nextStep}
+                disabled={!canProceedToNextStep() || isGenerating}
+              >
+                Next
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </Form>
     </Layout>
   );
 }
