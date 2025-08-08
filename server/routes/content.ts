@@ -506,7 +506,9 @@ contentRouter.post("/generate-content/enhanced-bulk", async (req: Request, res: 
         keywords: z.array(z.any()).default([]),
         buyerPersonas: z.string().optional(),
         authorId: z.string().optional(),
-        categories: z.array(z.string()).default([]),
+        categories: z.union([z.array(z.string()), z.string()]).default([]).transform((val) => 
+          Array.isArray(val) ? val : [val]
+        ),
         contentStyle: z.object({
           toneId: z.string().optional(),
           displayName: z.string().optional()
@@ -670,9 +672,10 @@ async function processEnhancedTopic(
       let authorName = "Store Owner";
       if (formData.authorId) {
         try {
-          const author = await storage.getAuthorById(formData.authorId);
+          const authors = await storage.getAuthors();
+          const author = authors.find(a => a.id === formData.authorId);
           if (author) {
-            authorName = author.name || author.handle || authorName;
+            authorName = author.name || authorName;
           }
         } catch (error) {
           console.warn(`Could not fetch author ${formData.authorId}:`, error);
@@ -756,7 +759,7 @@ function buildEnhancedPrompt(topic: string, formData: any): string {
     'long': '800-1200 words',
     'extended': '1200+ words'
   };
-  prompt += `The content should be approximately ${lengthMap[formData.articleLength] || '500-800 words'}. `;
+  prompt += `The content should be approximately ${lengthMap[formData.articleLength as keyof typeof lengthMap] || '500-800 words'}. `;
   
   // Tone and perspective
   prompt += `Write in a ${formData.toneOfVoice || 'friendly'} tone using ${formData.writingPerspective || 'first person plural'} perspective. `;
