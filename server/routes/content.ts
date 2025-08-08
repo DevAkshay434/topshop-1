@@ -4,6 +4,60 @@ import { z } from "zod";
 import { insertContentGenRequestSchema } from "@shared/schema";
 import { generateBlogContentWithClaude, testClaudeConnection } from "../services/claude";
 
+// Helper function to get store from request with multi-store support (copied from routes.ts)
+async function getStoreFromRequest(req: Request): Promise<any | null> {
+  try {
+    // Check if X-Store-ID header is provided (from frontend store selection)
+    const requestedStoreId = req.headers['x-store-id'] as string;
+    
+    if (requestedStoreId) {
+      const storeId = parseInt(requestedStoreId);
+      const store = await storage.getStoreById(storeId);
+      
+      if (store && store.isConnected) {
+        console.log(`Using store from X-Store-ID header: ${store.shopName} (ID: ${store.id})`);
+        return store;
+      }
+    }
+
+    // Fallback: Get store from shopify auth session  
+    const session = req.session as any;
+    if (session?.shopifyAuth?.shop) {
+      const store = await storage.getStoreByShopName(session.shopifyAuth.shop);
+      if (store && store.isConnected) {
+        console.log(`Using store from session: ${store.shopName} (ID: ${store.id})`);
+        return store;
+      }
+    }
+
+    // Final fallback: Prioritize the main store (rajeshshah.myshopify.com)
+    const stores = await storage.getAllStores();
+    
+    // First try to find the main store by name
+    const mainStore = stores.find(store => 
+      store.shopName === 'rajeshshah.myshopify.com' && store.isConnected
+    );
+    
+    if (mainStore) {
+      console.log(`Using main store as fallback: ${mainStore.shopName} (ID: ${mainStore.id})`);
+      return mainStore;
+    }
+    
+    // If main store not found, get any connected store
+    const connectedStore = stores.find(store => store.isConnected);
+    
+    if (connectedStore) {
+      console.log(`Using fallback store: ${connectedStore.shopName} (ID: ${connectedStore.id})`);
+      return connectedStore;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting store from request:', error);
+    return null;
+  }
+}
+
 const contentRouter = Router();
 
 // Generate content for a single topic with optional custom prompt
@@ -425,5 +479,362 @@ contentRouter.get("/test-claude", async (req: Request, res: Response) => {
     });
   }
 });
+
+// Enhanced bulk generation with comprehensive AdminPanel features
+contentRouter.post("/generate-content/enhanced-bulk", async (req: Request, res: Response) => {
+  try {
+    // Validate request body
+    const reqSchema = z.object({
+      topics: z.array(z.string().min(1)).min(1),
+      formData: z.object({
+        articleType: z.string().default("blog"),
+        articleLength: z.string().default("medium"),
+        headingsCount: z.string().default("3"),
+        writingPerspective: z.string().default("first_person_plural"),
+        toneOfVoice: z.string().default("friendly"),
+        introType: z.string().default("search_intent"),
+        faqType: z.string().default("short"),
+        enableTables: z.boolean().default(true),
+        enableLists: z.boolean().default(true),
+        enableH3s: z.boolean().default(true),
+        enableCitations: z.boolean().default(true),
+        generateImages: z.boolean().default(true),
+        postStatus: z.string().default("draft"),
+        blogId: z.string().optional(),
+        productIds: z.array(z.string()).default([]),
+        collectionIds: z.array(z.string()).default([]),
+        keywords: z.array(z.any()).default([]),
+        buyerPersonas: z.string().optional(),
+        authorId: z.string().optional(),
+        categories: z.array(z.string()).default([]),
+        contentStyle: z.object({
+          toneId: z.string().optional(),
+          displayName: z.string().optional()
+        }).optional(),
+        customPrompt: z.string().optional()
+      }),
+      mediaContent: z.object({
+        primaryImage: z.any().nullable(),
+        secondaryImages: z.array(z.any()).default([]),
+        youtubeEmbed: z.string().nullable()
+      }).optional(),
+      batchSize: z.number().default(5),
+      simultaneousGeneration: z.boolean().default(false)
+    });
+    
+    const { topics, formData, mediaContent, batchSize, simultaneousGeneration } = reqSchema.parse(req.body);
+    
+    console.log(`Enhanced bulk generating content for ${topics.length} topics with advanced settings`);
+    console.log(`Batch size: ${batchSize}, Simultaneous: ${simultaneousGeneration}`);
+    
+    // Get store from request
+    const storeFromRequest = await getStoreFromRequest(req);
+    if (!storeFromRequest) {
+      return res.status(400).json({
+        success: false,
+        error: "No connected Shopify store found"
+      });
+    }
+    
+    const results = [];
+    
+    // Process topics based on configuration
+    if (simultaneousGeneration) {
+      // Process topics in parallel batches
+      console.log(`Processing ${topics.length} topics in parallel batches of ${batchSize}`);
+      
+      for (let i = 0; i < topics.length; i += batchSize) {
+        const batch = topics.slice(i, i + batchSize);
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1} with ${batch.length} topics`);
+        
+        const batchPromises = batch.map(topic => 
+          processEnhancedTopic(topic, formData, mediaContent, storeFromRequest)
+        );
+        
+        const batchResults = await Promise.allSettled(batchPromises);
+        
+        batchResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            results.push(result.value);
+          } else {
+            results.push({
+              topic: batch[index],
+              status: "failed",
+              error: result.reason?.message || "Unknown error in parallel processing"
+            });
+          }
+        });
+        
+        // Add small delay between batches to avoid rate limits
+        if (i + batchSize < topics.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+    } else {
+      // Process topics sequentially 
+      console.log(`Processing ${topics.length} topics sequentially`);
+      
+      for (const topic of topics) {
+        try {
+          const result = await processEnhancedTopic(topic, formData, mediaContent, storeFromRequest);
+          results.push(result);
+          
+          // Small delay between requests
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error(`Error processing topic "${topic}":`, error);
+          results.push({
+            topic,
+            status: "failed",
+            error: error instanceof Error ? error.message : "Unknown error"
+          });
+        }
+      }
+    }
+    
+    // Send response
+    res.json({
+      success: true,
+      totalTopics: topics.length,
+      successful: results.filter(r => r.status === "success").length,
+      results
+    });
+    
+  } catch (error: any) {
+    console.error("Error in enhanced bulk generation endpoint:", error);
+    res.status(400).json({
+      success: false,
+      error: error.message || "Invalid request"
+    });
+  }
+});
+
+// Helper function to process a single topic with enhanced features
+async function processEnhancedTopic(
+  topic: string, 
+  formData: any, 
+  mediaContent: any, 
+  store: any
+): Promise<any> {
+  try {
+    console.log(`Enhanced processing for topic: "${topic}"`);
+    
+    // Create content request record
+    const contentRequest = await storage.createContentGenRequest({
+      topic,
+      tone: formData.toneOfVoice || "friendly",
+      length: formData.articleLength || "medium",
+      status: "pending",
+      generatedContent: null
+    });
+    
+    // Build enhanced prompt based on form data
+    let enhancedPrompt = formData.customPrompt;
+    
+    if (!enhancedPrompt) {
+      // Create comprehensive prompt based on form settings
+      enhancedPrompt = buildEnhancedPrompt(topic, formData);
+    } else {
+      // Replace topic placeholder in custom prompt
+      enhancedPrompt = enhancedPrompt.replace(/\[TOPIC\]/g, topic);
+    }
+    
+    // Include product and collection context if available
+    if (formData.productIds?.length > 0 || formData.collectionIds?.length > 0) {
+      enhancedPrompt += await buildProductContext(formData.productIds, formData.collectionIds, store);
+    }
+    
+    // Add buyer persona context
+    if (formData.buyerPersonas) {
+      enhancedPrompt += `\n\nTarget audience: ${formData.buyerPersonas}`;
+    }
+    
+    try {
+      // Generate content with Claude using enhanced prompt
+      const generatedContent = await generateBlogContentWithClaude({
+        topic,
+        tone: formData.toneOfVoice || "friendly",
+        length: formData.articleLength || "medium",
+        customPrompt: enhancedPrompt
+      });
+      
+      console.log(`Enhanced content generated for "${topic}". Title: "${generatedContent.title}"`);
+      
+      // Update request record
+      await storage.updateContentGenRequest(contentRequest.id, {
+        status: "completed",
+        generatedContent: JSON.stringify(generatedContent)
+      });
+      
+      // Determine author
+      let authorName = "Store Owner";
+      if (formData.authorId) {
+        try {
+          const author = await storage.getAuthorById(formData.authorId);
+          if (author) {
+            authorName = author.name || author.handle || authorName;
+          }
+        } catch (error) {
+          console.warn(`Could not fetch author ${formData.authorId}:`, error);
+        }
+      }
+      
+      // Create blog post with enhanced settings
+      const post = await storage.createBlogPost({
+        title: generatedContent.title,
+        content: generatedContent.content || `# ${generatedContent.title}\n\nContent for ${topic}`,
+        status: formData.postStatus || "draft",
+        publishedDate: formData.postStatus === "published" ? new Date() : undefined,
+        author: authorName,
+        tags: Array.isArray(generatedContent.tags) && generatedContent.tags.length > 0 
+          ? generatedContent.tags.join(",") 
+          : topic,
+        category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content"
+      });
+      
+      console.log(`Created enhanced post: ${post.id} - "${post.title}"`);
+      
+      return {
+        topic,
+        postId: post.id,
+        title: generatedContent.title,
+        content: generatedContent.content,
+        status: "success"
+      };
+      
+    } catch (aiError: any) {
+      console.error(`AI generation error for topic "${topic}":`, aiError);
+      
+      // Update request as failed
+      await storage.updateContentGenRequest(contentRequest.id, {
+        status: "failed",
+        generatedContent: JSON.stringify({ 
+          error: "AI generation failed: " + (aiError?.message || String(aiError))
+        })
+      });
+      
+      return {
+        topic,
+        status: "failed",
+        error: "AI generation failed: " + (aiError?.message || String(aiError))
+      };
+    }
+    
+  } catch (error) {
+    console.error(`Error in enhanced topic processing for "${topic}":`, error);
+    return {
+      topic,
+      status: "failed",
+      error: error instanceof Error ? error.message : "Unknown processing error"
+    };
+  }
+}
+
+// Build enhanced prompt based on form settings
+function buildEnhancedPrompt(topic: string, formData: any): string {
+  let prompt = `You are a professional ${formData.articleType || 'blog'} writer creating high-quality content for an e-commerce store. `;
+  
+  // Article type specific instructions
+  switch (formData.articleType) {
+    case 'guide':
+      prompt += `Write a comprehensive step-by-step guide about ${topic}. `;
+      break;
+    case 'tutorial':
+      prompt += `Create a detailed tutorial explaining how to ${topic}. `;
+      break;
+    case 'article':
+      prompt += `Write an informative article about ${topic}. `;
+      break;
+    default:
+      prompt += `Write a detailed, informative, and engaging blog post about ${topic}. `;
+  }
+  
+  // Length specifications
+  const lengthMap = {
+    'short': '300-500 words',
+    'medium': '500-800 words', 
+    'long': '800-1200 words',
+    'extended': '1200+ words'
+  };
+  prompt += `The content should be approximately ${lengthMap[formData.articleLength] || '500-800 words'}. `;
+  
+  // Tone and perspective
+  prompt += `Write in a ${formData.toneOfVoice || 'friendly'} tone using ${formData.writingPerspective || 'first person plural'} perspective. `;
+  
+  // Structure requirements
+  const headingsCount = parseInt(formData.headingsCount) || 3;
+  prompt += `Include ${headingsCount} main headings with substantial content under each. `;
+  
+  if (formData.enableTables) {
+    prompt += `Include helpful tables where appropriate to organize information. `;
+  }
+  
+  if (formData.enableLists) {
+    prompt += `Use bullet points and numbered lists to improve readability. `;
+  }
+  
+  if (formData.enableH3s) {
+    prompt += `Include relevant H3 subheadings to further organize content. `;
+  }
+  
+  // Introduction type
+  switch (formData.introType) {
+    case 'search_intent':
+      prompt += `Start with an introduction that addresses the search intent behind "${topic}". `;
+      break;
+    case 'story':
+      prompt += `Begin with a compelling story or anecdote related to ${topic}. `;
+      break;
+    case 'question':
+      prompt += `Open with a thought-provoking question about ${topic}. `;
+      break;
+    default:
+      prompt += `Include an attention-grabbing introduction. `;
+  }
+  
+  // FAQ section
+  if (formData.faqType && formData.faqType !== 'none') {
+    const faqLength = formData.faqType === 'short' ? '3-5' : '5-8';
+    prompt += `Include a FAQ section with ${faqLength} relevant questions and answers. `;
+  }
+  
+  // Citations and credibility
+  if (formData.enableCitations) {
+    prompt += `Include credible sources and references where appropriate. `;
+  }
+  
+  prompt += `Format the content with markdown, using # for the title, ## for major sections, and proper paragraph breaks. `;
+  prompt += `Focus on providing value to readers interested in ${topic}.`;
+  
+  return prompt;
+}
+
+// Build product and collection context
+async function buildProductContext(productIds: string[], collectionIds: string[], store: any): Promise<string> {
+  let context = "";
+  
+  try {
+    // Add product context
+    if (productIds?.length > 0) {
+      context += `\n\nRelated products to reference in the content: `;
+      // In a real implementation, you would fetch product details from Shopify
+      context += productIds.map(id => `Product ID: ${id}`).join(', ');
+    }
+    
+    // Add collection context  
+    if (collectionIds?.length > 0) {
+      context += `\n\nRelated collections to reference: `;
+      context += collectionIds.map(id => `Collection ID: ${id}`).join(', ');
+    }
+    
+    if (context) {
+      context = `\n\nPlease naturally incorporate references to these products/collections where relevant in the content.` + context;
+    }
+  } catch (error) {
+    console.warn("Error building product context:", error);
+  }
+  
+  return context;
+}
 
 export default contentRouter;
