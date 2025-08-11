@@ -81,6 +81,7 @@ function addTableOfContents(content: string): string {
 `;
   
   // Replace the TOC marker with the generated TOC and ensure proper spacing
+  // This regex handles cases where there might not be proper paragraph breaks after the marker
   return content.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
                 .replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
 }
@@ -89,113 +90,6 @@ function addTableOfContents(content: string): string {
 function removeH1Tags(content: string): string {
   // Remove H1 tags and their content, but preserve the text inside
   return content.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '');
-}
-
-// Function to remove any manual TOC created by Claude and replace with proper placement marker
-function removeManualTOC(content: string): string {
-  // Remove common TOC patterns that Claude creates despite instructions
-  // Use flags g, i, m and handle multiline with [\s\S]*? instead of dotall
-  
-  // Pattern 1: <h3>📋 Table of Contents</h3><ol>...</ol>
-  content = content.replace(/<h3[^>]*>[\s\S]*?📋[\s\S]*?Table of Contents[\s\S]*?<\/h3>\s*<ol[^>]*>[\s\S]*?<\/ol>/gi, '<!-- TABLE_OF_CONTENTS_PLACEMENT -->');
-  
-  // Pattern 2: <h3><strong>📋 Table of Contents</strong></h3><ol>...</ol>
-  content = content.replace(/<h3[^>]*><strong>[\s\S]*?📋[\s\S]*?Table of Contents[\s\S]*?<\/strong><\/h3>\s*<ol[^>]*>[\s\S]*?<\/ol>/gi, '<!-- TABLE_OF_CONTENTS_PLACEMENT -->');
-  
-  // Pattern 3: Any heading with "Table of Contents" followed by ordered list
-  content = content.replace(/<h[2-6][^>]*>[\s\S]*?Table of Contents[\s\S]*?<\/h[2-6]>\s*<ol[^>]*>[\s\S]*?<\/ol>/gi, '<!-- TABLE_OF_CONTENTS_PLACEMENT -->');
-  
-  // Pattern 4: Ordered list at the beginning that contains anchor links (likely TOC)
-  const startPattern = /^([\s\S]*?)(<ol[^>]*>[\s\S]*?href=["']#[^"']*["'][\s\S]*?<\/ol>)/i;
-  if (startPattern.test(content)) {
-    content = content.replace(startPattern, '$1<!-- TABLE_OF_CONTENTS_PLACEMENT -->\n\n');
-  }
-  
-  return content;
-}
-
-// Function to fix TOC and anchor links - remove target="_blank" from internal links
-function fixInternalLinks(content: string): string {
-  // Remove target="_blank" and related attributes from anchor links (TOC links)
-  content = content.replace(/<a([^>]*href=["']#[^"']*["'][^>]*)\s+target=["'][^"']*["']([^>]*)>/gi, '<a$1$2>');
-  content = content.replace(/<a([^>]*href=["']#[^"']*["'][^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi, '<a$1$2>');
-  
-  // More comprehensive cleanup for internal anchor links
-  content = content.replace(
-    /<a([^>]*)href=["']#([^"']+)["']([^>]*)\s+target=["'][^"']*["']([^>]*)>/gi,
-    '<a$1href="#$2"$3$4>'
-  );
-  
-  // Remove rel attributes from internal links
-  content = content.replace(
-    /<a([^>]*)href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
-    '<a$1href="#$2"$3$4>'
-  );
-  
-  return content;
-}
-
-// Function to add IDs to headings that don't have them (fallback if Claude doesn't follow instructions)
-function ensureHeadingIds(content: string): string {
-  // Function to create a slug from heading text
-  const createSlug = (text: string): string => {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single
-      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-  };
-
-  const usedIds = new Set<string>();
-
-  // Process H2 headings
-  content = content.replace(/<h2(?:\s+[^>]*)?>(.*?)<\/h2>/gi, (match, titleText) => {
-    // Check if this H2 already has an id attribute
-    if (/<h2[^>]*id=/.test(match)) {
-      return match; // Already has ID, leave as is
-    }
-    
-    // Create ID from title text
-    const cleanText = titleText.replace(/<[^>]*>/g, '').trim();
-    let baseSlug = createSlug(cleanText);
-    
-    // Ensure uniqueness
-    let finalSlug = baseSlug;
-    let counter = 1;
-    while (usedIds.has(finalSlug)) {
-      finalSlug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-    usedIds.add(finalSlug);
-    
-    return `<h2 id="${finalSlug}">${titleText}</h2>`;
-  });
-
-  // Process H3 headings
-  content = content.replace(/<h3(?:\s+[^>]*)?>(.*?)<\/h3>/gi, (match, titleText) => {
-    // Check if this H3 already has an id attribute
-    if (/<h3[^>]*id=/.test(match)) {
-      return match; // Already has ID, leave as is
-    }
-    
-    // Create ID from title text
-    const cleanText = titleText.replace(/<[^>]*>/g, '').trim();
-    let baseSlug = createSlug(cleanText);
-    
-    // Ensure uniqueness
-    let finalSlug = baseSlug;
-    let counter = 1;
-    while (usedIds.has(finalSlug)) {
-      finalSlug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-    usedIds.add(finalSlug);
-    
-    return `<h3 id="${finalSlug}">${titleText}</h3>`;
-  });
-
-  return content;
 }
 
 // Function to process media placements and prevent duplicate secondary images
@@ -300,7 +194,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       // Find all H2 headings and add markers after them (skip first 2 H2s for intro and video)
       const h2Regex = /<h2[^>]*>.*?<\/h2>/gi;
-      const h2Matches = Array.from(processedContent.matchAll(h2Regex));
+      const h2Matches = [...processedContent.matchAll(h2Regex)];
       
       if (h2Matches.length > 1) {
         console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #2 and beyond`);
@@ -492,8 +386,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
       * Organizations: wikipedia.org, who.int, un.org, redcross.org, acs.org, ieee.org
       * Research: ncbi.nlm.nih.gov, nature.com, sciencedirect.com, jstor.org
     - Place these links naturally within the content where they support specific claims, statistics, or provide additional credible information
-    - Use proper link formatting for external links: <a href="URL" target="_blank" rel="noopener noreferrer">descriptive anchor text</a>
-    - IMPORTANT: Do NOT add target="_blank" to anchor links that start with # (these are internal TOC links)
+    - Use proper link formatting: <a href="URL" target="_blank" rel="noopener noreferrer">descriptive anchor text</a>
     - Make anchor text descriptive and specific (e.g., "EPA water quality standards" not "click here")
     - Distribute links across different sections of the content for better SEO value
     - Links should enhance credibility and provide readers with additional authoritative information
@@ -508,18 +401,14 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     
     IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
     - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
+    - Start the content with the Table of Contents placement marker, followed by a paragraph break, then the introduction
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
     - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
-    - ALL H2 and H3 headings MUST have exactly ONE id attribute using kebab-case format (lowercase with hyphens)
-    - Example heading format: <h2 id="why-this-matters">Why This Matters</h2>
-    - NEVER use duplicate id attributes on the same heading
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
-    
-
     
     CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
     - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
@@ -544,17 +433,15 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
       <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     
     TABLE OF CONTENTS REQUIREMENTS:
-    - MANDATORY: Start content with this exact marker: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
-    - NEVER create manual TOC HTML - the system will generate it automatically
-    - DO NOT create <h3>Table of Contents</h3> or <ol> lists for TOC
-    - CRITICAL: Every H2 and H3 heading MUST have a unique id attribute for proper navigation
-    - H2 heading format: <h2 id="section-name">Section Title</h2>  
-    - H3 heading format: <h3 id="subsection-name">Subsection Title</h3>
-    - Use descriptive, SEO-friendly id names based on the heading text (lowercase, words separated by hyphens)
-    - Example: "Water Filter Benefits" becomes id="water-filter-benefits"
-    - MANDATORY: Do not skip heading IDs - every single H2 and H3 MUST have an id attribute
+    - AUTOMATICALLY include a Table of Contents at the very beginning of the content
+    - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
+    - IMPORTANT: After the TOC marker, add a blank line or proper paragraph break before starting the introduction
+    - The system will automatically generate a TOC using all H2 headings in your content
+    - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
+    - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
     - Include an id="faq" on your FAQ section if present
-    - The system will automatically create clean TOC links that open in same tab (no target="_blank")
+    - The TOC will be styled with a clean, professional appearance and will improve user navigation
+    - Ensure clean separation between TOC and the introduction paragraph
     
     FAQ SECTION FORMATTING (if FAQ is enabled):
     - Format all FAQ questions with "Q:" prefix (colon, not period)
@@ -780,18 +667,9 @@ if (!response) {
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
     
-    // Process the content: remove H1 tags, ensure heading IDs, generate TOC, and handle media
+    // Process the content to remove H1 tags, add automatic Table of Contents and handle media placement
     let processedContent = removeH1Tags(jsonContent.content);
-    
-    // Remove any manual TOCs that Claude might have created despite instructions
-    processedContent = removeManualTOC(processedContent);
-    
-    // Ensure all headings have proper IDs for TOC navigation
-    processedContent = ensureHeadingIds(processedContent);
-    
-    // Generate and insert the actual Table of Contents
     processedContent = addTableOfContents(processedContent);
-    
     processedContent = processMediaPlacementsHandler(processedContent, request);
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
