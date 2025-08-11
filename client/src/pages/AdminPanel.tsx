@@ -2969,10 +2969,7 @@ export default function AdminPanel() {
                               <FormLabel>Featured Products</FormLabel>
                               <FormControl>
                                 <ProductMultiSelect
-                                  options={productsQuery.data?.products.map(product => ({
-                                    product: product,
-                                    value: product.id
-                                  })) || []}
+                                  options={productsQuery.data?.products || []}
                                   selected={Array.isArray(field.value) ? field.value : []}
                                   onChange={(selected) => {
                                     field.onChange(selected);
