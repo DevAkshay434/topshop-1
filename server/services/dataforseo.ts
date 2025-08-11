@@ -95,10 +95,15 @@ export class DataForSEOService {
           const suggestions = suggestionsResponse.data.tasks[0].result;
           console.log(`Found ${suggestions.length} keyword suggestions`);
           
+          // Debug: Log the raw suggestions response
+          console.log("Raw suggestions data:", JSON.stringify(suggestions.slice(0, 3), null, 2));
+          
           const suggestedKeywords = suggestions
             .map((item: any) => item.keyword)
             .filter((kw: string) => kw && kw.length > 0)
             .slice(0, 30);
+          
+          console.log(`Extracted ${suggestedKeywords.length} keyword strings:`, suggestedKeywords.slice(0, 5));
           
           if (suggestedKeywords.length > 0) {
             console.log(`Getting search volume for ${suggestedKeywords.length} suggested keywords`);
@@ -151,7 +156,16 @@ export class DataForSEOService {
                 has_result: !!volumeResponse.data?.tasks?.[0]?.result
               });
             }
+          } else {
+            console.log("No suggested keywords found after filtering");
           }
+        } else {
+          console.log("Suggestions API response failed:", {
+            status_code: suggestionsResponse.data?.status_code,
+            has_tasks: !!suggestionsResponse.data?.tasks,
+            has_result: !!suggestionsResponse.data?.tasks?.[0]?.result,
+            error_message: suggestionsResponse.data?.status_message
+          });
         }
         
         keywordData.sort((a, b) => b.searchVolume - a.searchVolume);
