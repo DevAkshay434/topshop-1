@@ -3006,6 +3006,12 @@ export default function AdminPanel() {
                                 description: "Selecting a product is required to continue. Please choose at least one product.",
                                 variant: "destructive"
                               });
+                              
+                              // Redirect back to product selection step
+                              if (workflowStep !== 'product') {
+                                setWorkflowStep('product');
+                                scrollToCurrentStep();
+                              }
                             }
                           }}
                           onContinue={() => {
