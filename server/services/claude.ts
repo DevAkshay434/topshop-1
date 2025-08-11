@@ -509,14 +509,22 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     
     IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
     - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
-    - Start the content with the Table of Contents placement marker, followed by a paragraph break, then the introduction
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
     - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
+    - ALL H2 and H3 headings MUST have exactly ONE id attribute using kebab-case format (lowercase with hyphens)
+    - Example heading format: <h2 id="why-this-matters">Why This Matters</h2>
+    - NEVER use duplicate id attributes on the same heading
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
+    
+    TABLE OF CONTENTS REQUIREMENTS:
+    - Include a properly formatted Table of Contents section at the beginning of the content
+    - TOC should list all H2 sections with clean anchor links (no target="_blank" attributes)
+    - Format: <a href="#section-id">Section Name</a>
+    - Use professional styling for the TOC section
     
     CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
     - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
@@ -783,39 +791,8 @@ if (!response) {
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
     
-    // Process the content: remove H1 tags, remove manual TOC, ensure heading IDs, add proper TOC, and handle media
+    // Process the content: remove H1 tags and handle media
     let processedContent = removeH1Tags(jsonContent.content);
-    
-    // Remove any manual TOC that Claude created and replace with placement marker
-    processedContent = removeManualTOC(processedContent);
-    
-    // Debug: Check content after manual TOC removal
-    console.log("🔍 DEBUGGING - Content after manual TOC removal (first 1000 chars):");
-    console.log(processedContent.substring(0, 1000));
-    console.log("🔍 DEBUGGING - TOC removal completed, placement marker should be present");
-    
-    // Ensure all headings have IDs (fallback if Claude didn't follow instructions)
-    processedContent = ensureHeadingIds(processedContent);
-    
-    // Check for H2 headings with IDs after processing
-    const h2WithIdRegex = /<h2[^>]*id=["']([^"']+)["'][^>]*>/gi;
-    const h2WithIdMatches = processedContent.match(h2WithIdRegex);
-    console.log("🔍 DEBUG - H2 headings with IDs found:", h2WithIdMatches?.length || 0);
-    if (h2WithIdMatches) {
-      h2WithIdMatches.forEach((h2, index) => {
-        console.log(`   H2 ${index + 1}: ${h2}`);
-      });
-    }
-    
-    // Add proper TOC using the placement marker
-    processedContent = addTableOfContents(processedContent);
-    
-    // Fix any remaining internal links - remove target="_blank" from anchor links
-    processedContent = fixInternalLinks(processedContent);
-    
-    // Debug: Final content check
-    console.log("🔍 DEBUG - Final processed content (first 1000 chars):");
-    console.log(processedContent.substring(0, 1000));
     
     processedContent = processMediaPlacementsHandler(processedContent, request);
     
