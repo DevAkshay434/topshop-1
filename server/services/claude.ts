@@ -790,8 +790,9 @@ if (!response) {
     processedContent = removeManualTOC(processedContent);
     
     // Debug: Check content after manual TOC removal
-    console.log("🔍 DEBUG - Content after manual TOC removal (first 1000 chars):");
+    console.log("🔍 DEBUGGING - Content after manual TOC removal (first 1000 chars):");
     console.log(processedContent.substring(0, 1000));
+    console.log("🔍 DEBUGGING - TOC removal completed, placement marker should be present");
     
     // Ensure all headings have IDs (fallback if Claude didn't follow instructions)
     processedContent = ensureHeadingIds(processedContent);

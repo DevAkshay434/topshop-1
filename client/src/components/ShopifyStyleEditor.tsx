@@ -80,6 +80,22 @@ export function ShopifyStyleEditor({
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content)
+      
+      // Fix internal TOC links after content is set
+      setTimeout(() => {
+        const editorElement = editor.view.dom
+        const internalLinks = editorElement.querySelectorAll('a[href^="#"]')
+        
+        internalLinks.forEach(link => {
+          // Remove target="_blank" and rel attributes from internal links
+          link.removeAttribute('target')
+          link.removeAttribute('rel')
+          // Add toc-link class for styling
+          link.classList.add('toc-link')
+          
+          console.log('Fixed internal link:', link.getAttribute('href'), link.getAttribute('target'))
+        })
+      }, 100) // Small delay to ensure content is rendered
     }
   }, [content, editor])
 

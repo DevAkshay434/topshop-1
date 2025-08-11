@@ -232,6 +232,18 @@ html {
   text-decoration-color: #005bd3;
 }
 
+.ProseMirror .toc-link {
+  color: #005bd3;
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 91, 211, 0.4);
+  transition: text-decoration-color 0.2s ease;
+  cursor: pointer;
+}
+
+.ProseMirror .toc-link:hover {
+  text-decoration-color: #005bd3;
+}
+
 .ProseMirror .shopify-code-block {
   background-color: #f6f6f7;
   border: 1px solid #e1e3e5;
