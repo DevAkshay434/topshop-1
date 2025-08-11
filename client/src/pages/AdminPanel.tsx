@@ -1917,7 +1917,7 @@ export default function AdminPanel() {
   
   // Handle back button from collections to products
   const handleBackToProducts = () => {
-    setWorkflowStep('related-products');
+    setWorkflowStep('product');
     scrollToCurrentStep();
   };
   
@@ -2955,11 +2955,13 @@ export default function AdminPanel() {
 
                       </div>
                       
-                      {/* Step 1: Product and Collection Selection */}
+                      {/* Step 1: Choose Product (formerly Related Products) */}
                       <div className={workflowStep === 'product' ? 'block' : 'hidden'} data-step="product">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 1: Select Products or Collections</h4>
-                          <p className="text-sm text-blue-600">Choose products or collections to feature in your content</p>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 1: Choose Product</h4>
+                          <p className="text-sm text-blue-600 mb-4">
+                            Select products to feature in your content. Products are required for content generation.
+                          </p>
                         </div>
                         
                         {/* Mandatory Product Warning */}
@@ -2974,122 +2976,6 @@ export default function AdminPanel() {
                           </p>
                         </div>
                         
-                        <FormField
-                          control={form.control}
-                          name="productIds"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Featured Products</FormLabel>
-                              <FormControl>
-                                <ProductMultiSelect
-                                  options={productsQuery.data?.products || []}
-                                  selected={Array.isArray(field.value) ? field.value : []}
-                                  onChange={(selected) => {
-                                    field.onChange(selected);
-                                    handleProductsSelected(selected);
-                                  }}
-                                  placeholder="Select products to feature in content..."
-                                />
-                              </FormControl>
-                              
-                              <FormDescription>
-                                Products will be mentioned and linked in your content
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="collectionIds"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Featured Collections</FormLabel>
-                              <FormControl>
-                                <MultiSelect
-                                  options={collectionsQuery.data?.collections.map(collection => ({
-                                    label: collection.title,
-                                    value: collection.id
-                                  })) || []}
-                                  selected={Array.isArray(field.value) ? field.value : []}
-                                  onChange={(selected) => {
-                                    field.onChange(selected);
-                                    handleCollectionsSelected(selected);
-                                  }}
-                                  placeholder="Select collections to feature in content..."
-                                />
-                              </FormControl>
-                              
-                              {/* Display selected collections more prominently */}
-                              {selectedCollections.length > 0 && (
-                                <div className="mt-3 p-3 bg-green-50 rounded-md border border-green-200">
-                                  <h4 className="font-medium text-sm text-green-700 mb-2">Selected Collections:</h4>
-                                  <div className="space-y-2">
-                                    {selectedCollections.map(collection => (
-                                      <div key={collection.id} className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
-                                        {collection.image ? (
-                                          <img 
-                                            src={collection.image} 
-                                            alt={collection.title} 
-                                            className="w-10 h-10 object-contain rounded border border-gray-200" 
-                                          />
-                                        ) : (
-                                          <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                                            <Package className="h-5 w-5 text-gray-400" />
-                                          </div>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-medium text-gray-800 truncate">{collection.title}</p>
-                                          <p className="text-xs text-gray-500 truncate">Category</p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              <FormDescription>
-                                Collections will be mentioned and linked in your content
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="mt-4 flex justify-end">
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              if (selectedProducts.length > 0) {
-                                setWorkflowStep('related-products');
-                                toast({
-                                  title: "Main product selected",
-                                  description: "Now select any related products you want to include in your content",
-                                });
-                              } else {
-                                toast({
-                                  title: "Selection Required",
-                                  description: "Please select at least one product",
-                                  variant: "destructive"
-                                });
-                              }
-                            }}
-                          >
-                            Next
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Step 2: Related Products Selection Section */}
-                      <div className={workflowStep === 'related-products' ? 'block' : 'hidden'} data-step="related-products">
-                        <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Related Products</h4>
-                          <p className="text-sm text-blue-600 mb-4">
-                            Select products related to your content to improve cross-selling opportunities
-                          </p>
-                        </div>
-
                         <RelatedProductsSelector
                           products={productsQuery.data?.products || []}
                           selectedProducts={selectedProducts}
@@ -3112,15 +2998,35 @@ export default function AdminPanel() {
                             // Update form value with the IDs
                             const productIds = updatedProducts.map(p => p.id);
                             form.setValue('productIds', productIds);
+                            
+                            // Show alert and redirect if no products left
+                            if (updatedProducts.length === 0) {
+                              toast({
+                                title: "Product Required",
+                                description: "Selecting a product is required to continue. Please choose at least one product.",
+                                variant: "destructive"
+                              });
+                            }
                           }}
-                          onContinue={handleRelatedProductsContinue}
+                          onContinue={() => {
+                            if (selectedProducts.length > 0) {
+                              setWorkflowStep('related-collections');
+                              scrollToCurrentStep();
+                            } else {
+                              toast({
+                                title: "Product Required",
+                                description: "Please select at least one product before continuing",
+                                variant: "destructive"
+                              });
+                            }
+                          }}
                         />
                       </div>
                       
-                      {/* Step 3: Related Collections Selection Section */}
+                      {/* Step 2: Related Collections Selection Section */}
                       <div className={workflowStep === 'related-collections' ? 'block' : 'hidden'} data-step="related-collections">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Choose Related Collections</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 2: Choose Related Collections</h4>
                           <p className="text-sm text-blue-600 mb-4">
                             Select collections that are related to your content to group products and categories
                           </p>
@@ -3154,10 +3060,10 @@ export default function AdminPanel() {
                         />
                       </div>
                       
-                      {/* Step 4: Buyer Personas Input Section */}
+                      {/* Step 3: Buyer Personas Input Section */}
                       <div className={workflowStep === 'buying-avatars' ? 'block' : 'hidden'} data-step="buying-avatars">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Define Target Buyer Personas</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Define Target Buyer Personas</h4>
                           <p className="text-sm text-blue-600 mb-2">
                             Describe your target audience in detail. You can type custom descriptions or use the suggestion buttons below.
                           </p>
@@ -3288,10 +3194,10 @@ export default function AdminPanel() {
                         </div>
                       </div>
                       
-                      {/* Step 5: Keyword Selection Section */}
+                      {/* Step 4: Keyword Selection Section */}
                       <div className={workflowStep === 'keyword' ? 'block' : 'hidden'} data-step="keyword">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Keywords</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Keywords</h4>
                           <p className="text-sm text-blue-600 mb-2">
                             Click the button below to select keywords for your content. The following selected items will be used for keyword generation:
                           </p>
@@ -3436,10 +3342,10 @@ export default function AdminPanel() {
                         </div>
                       </div>
                       
-                      {/* Step 3: Title Selection Section */}
+                      {/* Step 5: Title Selection Section */}
                       <div className={workflowStep === 'title' ? 'block' : 'hidden'} data-step="title">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 3: Select a Title</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 5: Select a Title</h4>
                           <p className="text-sm text-blue-600">Choose from AI-generated title suggestions based on your keywords</p>
                         </div>
                         
@@ -3504,10 +3410,10 @@ export default function AdminPanel() {
                         </div>
                       </div>
                       
-                      {/* Step 4: Media Selection Section */}
+                      {/* Step 6: Media Selection Section */}
                       <div className={workflowStep === 'media' ? 'block' : 'hidden'} data-step="media">
                         <div className="p-4 bg-blue-50 rounded-md mb-4">
-                          <h4 className="font-medium text-blue-700 mb-1">Step 4: Choose Media</h4>
+                          <h4 className="font-medium text-blue-700 mb-1">Step 6: Choose Media</h4>
                           <p className="text-sm text-blue-600">Select compelling visuals to enhance your content and boost engagement</p>
                         </div>
                         
@@ -4018,10 +3924,10 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    {/* Step 5: Author Selection Section */}
+                    {/* Step 7: Author Selection Section */}
                     <div className={workflowStep === 'author' ? 'block' : 'hidden'} data-step="author">
                       <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">Step 5: Choose Author</h4>
+                        <h4 className="font-medium text-blue-700 mb-1">Step 7: Choose Author</h4>
                         <p className="text-sm text-blue-600">Select an author for this content or create a new one</p>
                       </div>
                       
