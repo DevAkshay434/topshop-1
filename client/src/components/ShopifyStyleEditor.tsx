@@ -83,6 +83,51 @@ export function ShopifyStyleEditor({
     }
   }, [content, editor])
 
+  // Handle smooth scrolling for TOC links
+  useEffect(() => {
+    if (!editor) return
+
+    const handleTocClick = (event: Event) => {
+      const target = event.target as HTMLElement
+      
+      // Check if the clicked element is a TOC link
+      if (target.tagName === 'A' && target.getAttribute('href')?.startsWith('#')) {
+        event.preventDefault()
+        
+        const targetId = target.getAttribute('href')?.substring(1)
+        if (!targetId) return
+
+        // Find the editor container
+        const editorContainer = document.querySelector('.prose.prose-sm.max-w-none.p-4.h-\\[400px\\].overflow-y-auto.border-t')
+        
+        // Find the target heading within the editor
+        const targetHeading = editorContainer?.querySelector(`#${CSS.escape(targetId)}`)
+        
+        if (targetHeading && editorContainer) {
+          // Smooth scroll to the target heading within the editor container
+          const containerRect = editorContainer.getBoundingClientRect()
+          const targetRect = targetHeading.getBoundingClientRect()
+          
+          // Calculate the scroll position relative to the container
+          const scrollTop = editorContainer.scrollTop + (targetRect.top - containerRect.top) - 20
+          
+          editorContainer.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth'
+          })
+        }
+      }
+    }
+
+    // Add event listener to the editor view
+    const editorElement = editor.view.dom
+    editorElement.addEventListener('click', handleTocClick)
+
+    return () => {
+      editorElement.removeEventListener('click', handleTocClick)
+    }
+  }, [editor])
+
   const addImage = useCallback(() => {
     const url = window.prompt('Enter image URL:')
     if (url && editor) {
@@ -119,7 +164,7 @@ export function ShopifyStyleEditor({
       const { from, to } = selection
       
       // Check if an image is currently selected
-      if (selection.node && selection.node.type.name === 'image') {
+      if ((selection as any).node && (selection as any).node.type.name === 'image') {
         // Direct image selection
         const alignmentClass = `shopify-image shopify-image-${alignment}`
         editor.chain().focus().updateAttributes('image', {

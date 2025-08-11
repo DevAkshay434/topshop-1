@@ -194,7 +194,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       // Find all H2 headings and add markers after them (skip first 2 H2s for intro and video)
       const h2Regex = /<h2[^>]*>.*?<\/h2>/gi;
-      const h2Matches = [...processedContent.matchAll(h2Regex)];
+      const h2Matches = Array.from(processedContent.matchAll(h2Regex));
       
       if (h2Matches.length > 1) {
         console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #2 and beyond`);
@@ -436,12 +436,16 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - AUTOMATICALLY include a Table of Contents at the very beginning of the content
     - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
     - IMPORTANT: After the TOC marker, add a blank line or proper paragraph break before starting the introduction
-    - The system will automatically generate a TOC using all H2 headings in your content
-    - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
-    - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
+    - CRITICAL: Every H2 and H3 heading MUST have a unique id attribute for proper navigation
+    - H2 heading format: <h2 id="section-name">Section Title</h2>
+    - H3 heading format: <h3 id="subsection-name">Subsection Title</h3>
+    - Use descriptive, SEO-friendly id names based on the heading text (lowercase, words separated by hyphens)
+    - Example: "Water Filter Benefits" becomes id="water-filter-benefits"
     - Include an id="faq" on your FAQ section if present
-    - The TOC will be styled with a clean, professional appearance and will improve user navigation
-    - Ensure clean separation between TOC and the introduction paragraph
+    - TOC links should NOT open in new tabs - use current tab navigation only
+    - TOC links should use anchor format: <a href="#section-id">Section Name</a> (no target="_blank")
+    - Ensure every heading has a corresponding ID that matches TOC links exactly
+    - The TOC will include smooth scroll animation when users click on links
     
     FAQ SECTION FORMATTING (if FAQ is enabled):
     - Format all FAQ questions with "Q:" prefix (colon, not period)

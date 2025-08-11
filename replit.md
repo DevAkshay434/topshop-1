@@ -100,6 +100,27 @@ The application employs a modern full-stack, client-server architecture with mul
 - **User Experience**: Clean, intuitive workflow navigation with clear completion indicators
 - **Date Completed**: August 11, 2025
 
+### Table of Contents Navigation Enhancement - COMPLETED ✅
+- **Goal**: Fixed TOC links and navigation issues for proper user experience
+- **Issues Addressed**:
+  - TOC links were opening in new tabs instead of current tab
+  - H2 and H3 headings lacked proper IDs for anchor navigation
+  - Missing smooth scroll animation when clicking TOC links
+- **Changes Made**:
+  - Updated Claude service to generate proper heading IDs for all H2 and H3 elements
+  - Modified TOC generation to use current tab navigation (removed target="_blank")
+  - Added smooth scroll CSS behavior for HTML and ProseMirror editor
+  - Implemented JavaScript smooth scrolling within editor container
+  - Added TOC styling with professional appearance and hover effects
+- **Technical Implementation**:
+  - Enhanced Claude prompt with mandatory heading ID requirements
+  - Added scroll-behavior: smooth CSS for seamless navigation
+  - Created custom TOC click handler in ShopifyStyleEditor component
+  - Added scroll-margin-top for proper heading positioning
+  - Implemented container-aware smooth scrolling calculations
+- **User Experience**: TOC links now smoothly navigate to content sections within the same tab
+- **Date Completed**: August 11, 2025
+
 ## External Dependencies
 
 - **AI Content Generation**:
