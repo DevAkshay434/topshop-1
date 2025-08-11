@@ -1167,6 +1167,9 @@ export default function AdminPanel() {
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Collection[]>([]);
   const [selectedTitle, setSelectedTitle] = useState<string>('');
+  // Manual keyword functionality
+  const [manualKeyword, setManualKeyword] = useState<string>('');
+  const [isAddingManualKeyword, setIsAddingManualKeyword] = useState(false);
   // Removed selectedBuyerPersonas state - now using form field buyerPersonas
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
@@ -1329,6 +1332,84 @@ export default function AdminPanel() {
     const readingTimeMinutes = Math.ceil(wordCount / wordsPerMinute);
     
     return Math.max(1, readingTimeMinutes); // Minimum 1 minute
+  };
+
+  // Manual keyword addition with DataForSEO lookup
+  const addManualKeyword = async () => {
+    if (!manualKeyword.trim() || isAddingManualKeyword) return;
+    
+    setIsAddingManualKeyword(true);
+    
+    try {
+      // Fetch keyword data from DataForSEO
+      const response = await apiRequest({
+        url: '/api/admin/keywords-for-product',
+        method: 'POST',
+        data: { topic: manualKeyword.trim() }
+      });
+
+      if (response.success && response.keywords && response.keywords.length > 0) {
+        // Find the exact match or closest match for the manual keyword
+        const exactMatch = response.keywords.find((kw: any) => 
+          kw.keyword.toLowerCase() === manualKeyword.trim().toLowerCase()
+        );
+        
+        const keywordToAdd = exactMatch || response.keywords[0]; // Use exact match or first result
+        
+        // Check if keyword already exists
+        const exists = selectedKeywords.some((kw: any) => 
+          kw.keyword.toLowerCase() === keywordToAdd.keyword.toLowerCase()
+        );
+        
+        if (!exists) {
+          // Add to the beginning of the array (so manual keywords appear on top)
+          setSelectedKeywords(prev => [keywordToAdd, ...prev]);
+          toast({
+            title: "Keyword Added",
+            description: `Added "${keywordToAdd.keyword}" with ${keywordToAdd.searchVolume.toLocaleString()} search volume`
+          });
+        } else {
+          toast({
+            title: "Keyword Already Added",
+            description: `"${keywordToAdd.keyword}" is already in your selection`,
+            variant: "destructive"
+          });
+        }
+      } else {
+        // Fallback: add as manual keyword with basic data
+        const newKeyword = {
+          keyword: manualKeyword.trim(),
+          searchVolume: 0,
+          competition: 'UNKNOWN',
+          difficulty: 0,
+          selected: true,
+          isManual: true
+        };
+        
+        const exists = selectedKeywords.some((kw: any) => 
+          kw.keyword.toLowerCase() === newKeyword.keyword.toLowerCase()
+        );
+        
+        if (!exists) {
+          setSelectedKeywords(prev => [newKeyword, ...prev]);
+          toast({
+            title: "Manual Keyword Added",
+            description: `Added "${newKeyword.keyword}" (search volume data unavailable)`
+          });
+        }
+      }
+      
+      setManualKeyword('');
+    } catch (error) {
+      console.error('Error adding manual keyword:', error);
+      toast({
+        title: "Error Adding Keyword",
+        description: "Failed to fetch keyword data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAddingManualKeyword(false);
+    }
   };
 
   // Content generation readiness validation
@@ -3307,6 +3388,45 @@ export default function AdminPanel() {
                             <Sparkles className="mr-2 h-4 w-4" /> 
                             Generate Keywords
                           </Button>
+                          
+                          {/* Manual Keyword Entry */}
+                          <div className="mt-4 space-y-2">
+                            <Label htmlFor="manualKeyword" className="text-sm font-medium text-slate-700">
+                              Add Manual Keywords
+                            </Label>
+                            <div className="flex space-x-2">
+                              <Input
+                                id="manualKeyword"
+                                placeholder="Enter a keyword (e.g., 'water filter', 'organic skincare')"
+                                value={manualKeyword}
+                                onChange={(e) => setManualKeyword(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addManualKeyword();
+                                  }
+                                }}
+                                disabled={isAddingManualKeyword}
+                                className="flex-1"
+                              />
+                              <Button 
+                                variant="outline" 
+                                onClick={addManualKeyword}
+                                disabled={!manualKeyword.trim() || isAddingManualKeyword}
+                                className="flex-shrink-0"
+                              >
+                                {isAddingManualKeyword ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Plus className="h-4 w-4 mr-2" />
+                                )}
+                                {isAddingManualKeyword ? "Adding..." : "Add"}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Enter specific keywords you want to target. We'll fetch search volume and competition data for you.
+                            </p>
+                          </div>
                         </div>
                         
                         {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 && (

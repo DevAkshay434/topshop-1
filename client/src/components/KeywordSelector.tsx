@@ -125,6 +125,7 @@ interface KeywordData {
   difficulty?: number;
   selected: boolean;
   isMainKeyword?: boolean; // Flag to mark main keyword
+  isManual?: boolean; // Flag to mark manually added keywords 
   _originalSearchVolume?: number; // Store original search volume when marking as main
 }
 
@@ -168,8 +169,7 @@ export default function KeywordSelector({
   const [sortBy, setSortBy] = useState<'searchVolume' | 'competition' | 'cpc' | 'difficulty' | 'keyword'>('searchVolume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
-  // Manual keyword input states
-  const [manualKeyword, setManualKeyword] = useState("");
+
 
   // Count selected keywords
   const selectedCount = keywords.filter(kw => kw.selected).length;
@@ -204,6 +204,11 @@ export default function KeywordSelector({
       return matchesSearch && matchesIntent && isValidKeyword;
     })
     .sort((a, b) => {
+      // First, prioritize manual keywords (those marked as isManual) to appear at the top
+      if (a.isManual && !b.isManual) return -1;
+      if (!a.isManual && b.isManual) return 1;
+      
+      // Then sort by the selected sort criteria
       const valueA = getSortValue(a, sortBy);
       const valueB = getSortValue(b, sortBy);
       
@@ -387,38 +392,7 @@ export default function KeywordSelector({
     setFilterIntent(filterIntent === intent ? null : intent);
   };
 
-  // Add manual keyword function
-  const addManualKeyword = () => {
-    if (!manualKeyword.trim()) return;
-    
-    const sanitizedKeyword = sanitizeKeywordForSEO(manualKeyword.trim());
-    if (!isValidSEOKeyword(sanitizedKeyword)) {
-      console.log("Invalid keyword:", sanitizedKeyword);
-      return;
-    }
-    
-    // Check if keyword already exists
-    const exists = keywords.some(kw => kw.keyword.toLowerCase() === sanitizedKeyword.toLowerCase());
-    if (exists) {
-      setManualKeyword("");
-      return;
-    }
-    
-    // Add new manual keyword
-    const newKeyword: KeywordData = {
-      keyword: sanitizedKeyword,
-      searchVolume: 0, // Manual keywords start with 0 search volume
-      cpc: 0,
-      competition: 0,
-      competitionLevel: "Unknown",
-      intent: "Manual",
-      difficulty: 0,
-      selected: false
-    };
-    
-    setKeywords(prev => [...prev, newKeyword]);
-    setManualKeyword("");
-  };
+
 
   // Handle form submission
   const handleSubmit = () => {
@@ -572,39 +546,11 @@ export default function KeywordSelector({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Enter a topic to search for keywords, or use the manual keyword entry below.
+                Enter a topic to search for related keywords. Manual keywords can be added from the main Keywords step.
               </p>
             </div>
             
-            {/* Manual Keyword Entry */}
-            <div className="space-y-2">
-              <Label htmlFor="manualKeyword">Add Manual Keywords</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="manualKeyword"
-                  placeholder="Enter individual keywords (e.g., 'water filter', 'best water softener')"
-                  value={manualKeyword}
-                  onChange={(e) => setManualKeyword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addManualKeyword();
-                    }
-                  }}
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={addManualKeyword}
-                  disabled={!manualKeyword.trim()}
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Add
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Add specific keywords you want to target. Press Enter or click Add to include them.
-              </p>
-            </div>
+
           </div>
 
           {/* Difficulty Legend */}
