@@ -92,6 +92,69 @@ function removeH1Tags(content: string): string {
   return content.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '');
 }
 
+// Function to add IDs to headings that don't have them (fallback if Claude doesn't follow instructions)
+function ensureHeadingIds(content: string): string {
+  // Function to create a slug from heading text
+  const createSlug = (text: string): string => {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  };
+
+  const usedIds = new Set<string>();
+
+  // Process H2 headings
+  content = content.replace(/<h2(?:\s+[^>]*)?>(.*?)<\/h2>/gi, (match, titleText) => {
+    // Check if this H2 already has an id attribute
+    if (/<h2[^>]*id=/.test(match)) {
+      return match; // Already has ID, leave as is
+    }
+    
+    // Create ID from title text
+    const cleanText = titleText.replace(/<[^>]*>/g, '').trim();
+    let baseSlug = createSlug(cleanText);
+    
+    // Ensure uniqueness
+    let finalSlug = baseSlug;
+    let counter = 1;
+    while (usedIds.has(finalSlug)) {
+      finalSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    usedIds.add(finalSlug);
+    
+    return `<h2 id="${finalSlug}">${titleText}</h2>`;
+  });
+
+  // Process H3 headings
+  content = content.replace(/<h3(?:\s+[^>]*)?>(.*?)<\/h3>/gi, (match, titleText) => {
+    // Check if this H3 already has an id attribute
+    if (/<h3[^>]*id=/.test(match)) {
+      return match; // Already has ID, leave as is
+    }
+    
+    // Create ID from title text
+    const cleanText = titleText.replace(/<[^>]*>/g, '').trim();
+    let baseSlug = createSlug(cleanText);
+    
+    // Ensure uniqueness
+    let finalSlug = baseSlug;
+    let counter = 1;
+    while (usedIds.has(finalSlug)) {
+      finalSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    usedIds.add(finalSlug);
+    
+    return `<h3 id="${finalSlug}">${titleText}</h3>`;
+  });
+
+  return content;
+}
+
 // Function to process media placements and prevent duplicate secondary images
 function processMediaPlacementsHandler(content: string, request: BlogContentRequest): string {
   let processedContent = content;
@@ -386,7 +449,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
       * Organizations: wikipedia.org, who.int, un.org, redcross.org, acs.org, ieee.org
       * Research: ncbi.nlm.nih.gov, nature.com, sciencedirect.com, jstor.org
     - Place these links naturally within the content where they support specific claims, statistics, or provide additional credible information
-    - Use proper link formatting: <a href="URL" target="_blank" rel="noopener noreferrer">descriptive anchor text</a>
+    - Use proper link formatting for external links: <a href="URL" target="_blank" rel="noopener noreferrer">descriptive anchor text</a>
+    - IMPORTANT: Do NOT add target="_blank" to anchor links that start with # (these are internal TOC links)
     - Make anchor text descriptive and specific (e.g., "EPA water quality standards" not "click here")
     - Distribute links across different sections of the content for better SEO value
     - Links should enhance credibility and provide readers with additional authoritative information
@@ -441,6 +505,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - H3 heading format: <h3 id="subsection-name">Subsection Title</h3>
     - Use descriptive, SEO-friendly id names based on the heading text (lowercase, words separated by hyphens)
     - Example: "Water Filter Benefits" becomes id="water-filter-benefits"
+    - MANDATORY: Do not skip heading IDs - every single H2 and H3 MUST have an id attribute
     - Include an id="faq" on your FAQ section if present
     - TOC links should NOT open in new tabs - use current tab navigation only
     - TOC links should use anchor format: <a href="#section-id">Section Name</a> (no target="_blank")
@@ -671,9 +736,36 @@ if (!response) {
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
     
-    // Process the content to remove H1 tags, add automatic Table of Contents and handle media placement
+    // Process the content to remove H1 tags, ensure heading IDs, add automatic Table of Contents and handle media placement
     let processedContent = removeH1Tags(jsonContent.content);
+    
+    // Debug: Check if Claude generated headings with IDs
+    console.log("🔍 DEBUG - Content before heading ID processing (first 1000 chars):");
+    console.log(processedContent.substring(0, 1000));
+    
+    // Check for H2 headings with IDs before processing
+    const h2WithIdRegex = /<h2[^>]*id=["']([^"']+)["'][^>]*>/gi;
+    const h2WithIdMatches = processedContent.match(h2WithIdRegex);
+    console.log("🔍 DEBUG - H2 headings with IDs found before processing:", h2WithIdMatches?.length || 0);
+    
+    // Ensure all headings have IDs (fallback if Claude didn't follow instructions)
+    processedContent = ensureHeadingIds(processedContent);
+    
+    // Check again after ensuring IDs
+    const h2WithIdMatchesAfter = processedContent.match(h2WithIdRegex);
+    console.log("🔍 DEBUG - H2 headings with IDs found after processing:", h2WithIdMatchesAfter?.length || 0);
+    if (h2WithIdMatchesAfter) {
+      h2WithIdMatchesAfter.forEach((h2, index) => {
+        console.log(`   H2 ${index + 1}: ${h2}`);
+      });
+    }
+    
     processedContent = addTableOfContents(processedContent);
+    
+    // Debug: Check TOC after generation
+    console.log("🔍 DEBUG - Content after TOC processing (first 1000 chars):");
+    console.log(processedContent.substring(0, 1000));
+    
     processedContent = processMediaPlacementsHandler(processedContent, request);
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
