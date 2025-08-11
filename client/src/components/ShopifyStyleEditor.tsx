@@ -81,23 +81,64 @@ export function ShopifyStyleEditor({
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content)
       
-      // Fix internal TOC links after content is set
-      setTimeout(() => {
+      // Fix internal TOC links after content is set - run multiple times to ensure it takes effect
+      const fixInternalLinks = () => {
         const editorElement = editor.view.dom
         const internalLinks = editorElement.querySelectorAll('a[href^="#"]')
         
+        console.log(`🔍 Found ${internalLinks.length} internal links to fix`)
+        
         internalLinks.forEach(link => {
+          const href = link.getAttribute('href')
+          const hadTarget = link.hasAttribute('target')
+          const hadRel = link.hasAttribute('rel')
+          
           // Remove target="_blank" and rel attributes from internal links
           link.removeAttribute('target')
           link.removeAttribute('rel')
           // Add toc-link class for styling
           link.classList.add('toc-link')
           
-          console.log('Fixed internal link:', link.getAttribute('href'), link.getAttribute('target'))
+          console.log(`✅ Fixed internal link ${href}: had target=${hadTarget}, had rel=${hadRel}`)
         })
-      }, 100) // Small delay to ensure content is rendered
+      }
+      
+      // Run the fix multiple times to ensure it takes effect
+      setTimeout(fixInternalLinks, 50)
+      setTimeout(fixInternalLinks, 200)
+      setTimeout(fixInternalLinks, 500)
     }
   }, [content, editor])
+
+  // Set up mutation observer to continuously fix internal links
+  useEffect(() => {
+    if (!editor) return
+
+    const editorElement = editor.view.dom
+    
+    // Create a mutation observer to watch for changes in the editor
+    const observer = new MutationObserver(() => {
+      const internalLinks = editorElement.querySelectorAll('a[href^="#"]')
+      internalLinks.forEach(link => {
+        if (link.hasAttribute('target') || link.hasAttribute('rel')) {
+          link.removeAttribute('target')
+          link.removeAttribute('rel')
+          link.classList.add('toc-link')
+          console.log('🔧 Observer fixed internal link:', link.getAttribute('href'))
+        }
+      })
+    })
+    
+    // Start observing
+    observer.observe(editorElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['target', 'rel']
+    })
+    
+    return () => observer.disconnect()
+  }, [editor])
 
   // Handle smooth scrolling for TOC links
   useEffect(() => {
