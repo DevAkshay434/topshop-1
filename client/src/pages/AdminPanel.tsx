@@ -2721,10 +2721,10 @@ export default function AdminPanel() {
                                 title={`Step ${item.number}: ${item.label}`}
                               >
                                 <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 ${
-                                  isCurrent 
-                                    ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-300 ring-offset-2' 
-                                    : isCompleted 
-                                      ? 'bg-green-500 text-white group-hover:bg-green-600' 
+                                  isCompleted 
+                                    ? 'bg-green-500 text-white group-hover:bg-green-600' 
+                                    : isCurrent 
+                                      ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-300 ring-offset-2' 
                                       : isClickable
                                         ? 'bg-gray-300 text-gray-600 group-hover:bg-gray-400 group-hover:text-gray-700'
                                         : 'bg-gray-200 text-gray-400'
@@ -2740,10 +2740,10 @@ export default function AdminPanel() {
                                 
                                 {/* Step Label */}
                                 <span className={`text-xs mt-1 text-center leading-tight transition-colors duration-300 ${
-                                  isCurrent 
-                                    ? 'text-blue-700 font-medium' 
-                                    : isCompleted 
-                                      ? 'text-green-600 font-medium'
+                                  isCompleted 
+                                    ? 'text-green-600 font-medium'
+                                    : isCurrent 
+                                      ? 'text-blue-700 font-medium' 
                                       : isClickable
                                         ? 'text-gray-600 group-hover:text-gray-700'
                                         : 'text-gray-400'
