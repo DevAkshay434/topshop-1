@@ -2672,19 +2672,19 @@ export default function AdminPanel() {
                     <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <h3 className="font-medium text-blue-700 mb-3">Content Creation Workflow</h3>
                       
-                      {/* Clean Single Row Step Indicator */}
-                      <div className="flex items-center justify-between">
+                      {/* Enhanced Clickable Step Indicator */}
+                      <div className="flex items-center justify-between gap-1">
                         {[
-                          { step: 'product', number: 1, label: 'Select Products or Collections' },
-                          { step: 'related-collections', number: 2, label: 'Choose Related Collections' },
-                          { step: 'persona', number: 3, label: 'Define Target Buyer Personas' },
-                          { step: 'keyword', number: 4, label: 'Choose Keywords' },
-                          { step: 'title', number: 5, label: 'Select a Title' },
-                          { step: 'media', number: 6, label: 'Choose Media' },
-                          { step: 'author', number: 7, label: 'Choose Author' },
-                          { step: 'style', number: 8, label: 'Style & Formatting' },
-                          { step: 'content', number: 9, label: 'Generate Content' },
-                          { step: 'post', number: 10, label: 'Post to Shopify' }
+                          { step: 'product', number: 1, label: 'Products', shortLabel: 'Products' },
+                          { step: 'related-collections', number: 2, label: 'Collections', shortLabel: 'Collections' },
+                          { step: 'persona', number: 3, label: 'Personas', shortLabel: 'Personas' },
+                          { step: 'keyword', number: 4, label: 'Keywords', shortLabel: 'Keywords' },
+                          { step: 'title', number: 5, label: 'Title', shortLabel: 'Title' },
+                          { step: 'media', number: 6, label: 'Media', shortLabel: 'Media' },
+                          { step: 'author', number: 7, label: 'Author', shortLabel: 'Author' },
+                          { step: 'style', number: 8, label: 'Style', shortLabel: 'Style' },
+                          { step: 'content', number: 9, label: 'Generate', shortLabel: 'Generate' },
+                          { step: 'post', number: 10, label: 'Post', shortLabel: 'Post' }
                         ].map((item, index) => {
                           // Special logic for Generate (step 9) and Post (step 10) completion status
                           let isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
@@ -2700,49 +2700,67 @@ export default function AdminPanel() {
                           }
                           
                           const isCurrent = workflowStep === item.step;
+                          const isClickable = isCompleted || isCurrent || getStepOrder(workflowStep) >= getStepOrder(item.step) - 1;
                           
                           return (
-                            <div key={item.step} className="flex items-center">
-                              {/* Step Circle */}
-                              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 ${
-                                isCurrent 
-                                  ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-300 ring-offset-2' 
-                                  : isCompleted 
-                                    ? 'bg-green-500 text-white' 
-                                    : 'bg-gray-300 text-gray-600'
-                              }`}>
-                                {isCompleted ? (
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                ) : (
-                                  item.number
-                                )}
-                              </div>
+                            <div key={item.step} className="flex items-center flex-1">
+                              {/* Clickable Step Circle */}
+                              <button 
+                                onClick={() => {
+                                  if (isClickable) {
+                                    setWorkflowStep(item.step as WorkflowStep);
+                                    scrollToCurrentStep();
+                                  }
+                                }}
+                                disabled={!isClickable}
+                                className={`group flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 rounded-lg transition-all duration-300 ${
+                                  isClickable 
+                                    ? 'hover:bg-blue-50 cursor-pointer' 
+                                    : 'cursor-not-allowed opacity-50'
+                                }`}
+                                title={`Step ${item.number}: ${item.label}`}
+                              >
+                                <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 ${
+                                  isCurrent 
+                                    ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-300 ring-offset-2' 
+                                    : isCompleted 
+                                      ? 'bg-green-500 text-white group-hover:bg-green-600' 
+                                      : isClickable
+                                        ? 'bg-gray-300 text-gray-600 group-hover:bg-gray-400 group-hover:text-gray-700'
+                                        : 'bg-gray-200 text-gray-400'
+                                }`}>
+                                  {isCompleted ? (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    item.number
+                                  )}
+                                </div>
+                                
+                                {/* Step Label */}
+                                <span className={`text-xs mt-1 text-center leading-tight transition-colors duration-300 ${
+                                  isCurrent 
+                                    ? 'text-blue-700 font-medium' 
+                                    : isCompleted 
+                                      ? 'text-green-600 font-medium'
+                                      : isClickable
+                                        ? 'text-gray-600 group-hover:text-gray-700'
+                                        : 'text-gray-400'
+                                }`}>
+                                  {item.shortLabel}
+                                </span>
+                              </button>
                               
                               {/* Connector Line (except for last item) */}
                               {index < 9 && (
-                                <div className={`flex-1 h-0.5 mx-2 transition-all duration-300 ${
+                                <div className={`h-0.5 w-3 mx-1 transition-all duration-300 ${
                                   isCompleted ? 'bg-green-400' : 'bg-gray-300'
                                 }`} />
                               )}
                             </div>
                           );
                         })}
-                      </div>
-                      
-                      {/* Step Labels - Simple and Clean */}
-                      <div className="grid grid-cols-10 gap-1 mt-2 text-xs text-center text-gray-600">
-                        <span className={workflowStep === 'product' ? 'text-blue-700 font-medium' : ''}>Products</span>
-                        <span className={workflowStep === 'related-collections' ? 'text-blue-700 font-medium' : ''}>Collections</span>
-                        <span className={workflowStep === 'persona' ? 'text-blue-700 font-medium' : ''}>Personas</span>
-                        <span className={workflowStep === 'keyword' ? 'text-blue-700 font-medium' : ''}>Keywords</span>
-                        <span className={workflowStep === 'title' ? 'text-blue-700 font-medium' : ''}>Title</span>
-                        <span className={workflowStep === 'media' ? 'text-blue-700 font-medium' : ''}>Media</span>
-                        <span className={workflowStep === 'author' ? 'text-blue-700 font-medium' : ''}>Author</span>
-                        <span className={workflowStep === 'style' ? 'text-blue-700 font-medium' : ''}>Style</span>
-                        <span className={workflowStep === 'content' ? 'text-blue-700 font-medium' : ''}>Generate</span>
-                        <span className={workflowStep === 'post' ? 'text-blue-700 font-medium' : ''}>Post</span>
                       </div>
                     </div>
                       
