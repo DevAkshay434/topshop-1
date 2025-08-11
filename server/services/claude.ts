@@ -364,10 +364,12 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Ensure keyword usage feels natural and not forced`;
     }
 
-let promptText = `Generate a well-structured, SEO-optimized blog post about ${request.topic} in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+    
+    CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
     
     The blog post MUST follow this exact structure:
-    1. A compelling title that includes the main topic and primary keywords (this will be used separately)
+    1. Use the provided title "${request.topic}" exactly as given (no modifications allowed)
     2. Multiple clearly defined sections with H2 headings that incorporate important keywords
     3. Appropriate H3 subheadings within each section where needed
     4. Well-organized paragraphs (2-4 paragraphs per section)

@@ -87,6 +87,7 @@ import {
   Cpu,
   Download,
   Edit,
+  Edit2,
   ExternalLink, 
   FileImage,
   FileText,
@@ -1202,6 +1203,9 @@ export default function AdminPanel() {
   // Track completion status for Generate and Post steps
   const [isContentGenerated, setIsContentGenerated] = useState(false);
   const [isContentPosted, setIsContentPosted] = useState(false);
+  
+  // Title editor state
+  const [showTitleEditor, setShowTitleEditor] = useState(false);
 
   const { toast } = useToast();
 
@@ -3028,15 +3032,71 @@ export default function AdminPanel() {
                           {/* Selected Title */}
                           {form.watch('title') && (
                             <div className="space-y-2">
-                              <div className="flex items-center">
+                              <div className="flex items-center justify-between">
                                 <h5 className="text-sm font-medium flex items-center">
                                   <Type className="h-4 w-4 mr-2 text-indigo-500" />
                                   Selected Title
                                 </h5>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => setShowTitleEditor(true)}
+                                >
+                                  <Edit2 className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Button>
                               </div>
-                              <div className="bg-white rounded-md p-3 shadow-sm border">
-                                <p className="text-sm font-medium">{form.watch('title')}</p>
-                              </div>
+                              {showTitleEditor ? (
+                                <div className="bg-white rounded-md p-3 shadow-sm border space-y-2">
+                                  <FormField
+                                    control={form.control}
+                                    name="title"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <Textarea
+                                            {...field}
+                                            placeholder="Enter your custom title..."
+                                            className="min-h-[60px] resize-y text-sm"
+                                            autoFocus
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => setShowTitleEditor(false)}
+                                      className="h-7 text-xs"
+                                    >
+                                      <Check className="w-3 h-3 mr-1" />
+                                      Save
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setShowTitleEditor(false);
+                                        // Reset to the original selected title if user wants to cancel
+                                      }}
+                                      className="h-7 text-xs"
+                                    >
+                                      <X className="w-3 h-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-white rounded-md p-3 shadow-sm border">
+                                  <p className="text-sm font-medium">{form.watch('title')}</p>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
