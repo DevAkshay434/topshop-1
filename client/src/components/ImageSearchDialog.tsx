@@ -43,6 +43,7 @@ interface ImageSearchDialogProps {
     keyword: string;
     isMainKeyword?: boolean;
   }>;
+  initialTab?: 'search' | 'selected';
 }
 
 export default function ImageSearchDialog({
@@ -50,7 +51,8 @@ export default function ImageSearchDialog({
   onOpenChange,
   onImagesSelected,
   initialSelectedImages = [],
-  selectedKeywords = []
+  selectedKeywords = [],
+  initialTab = 'search'
 }: ImageSearchDialogProps) {
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
@@ -59,9 +61,16 @@ export default function ImageSearchDialog({
   const [imageSearchHistory, setImageSearchHistory] = useState<SearchHistory[]>([]);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'shopify_media' | 'product_image' | 'variant_image'>('all');
   const [availableSources, setAvailableSources] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'search' | 'selected'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'selected'>(initialTab);
   const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Reset active tab when dialog opens with new initialTab
+  useEffect(() => {
+    if (open) {
+      setActiveTab(initialTab);
+    }
+  }, [open, initialTab]);
 
   // Reset selected images when initialSelectedImages changes
   useEffect(() => {

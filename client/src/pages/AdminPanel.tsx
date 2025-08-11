@@ -1134,6 +1134,7 @@ export default function AdminPanel() {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageDialogInitialTab, setImageDialogInitialTab] = useState<'search' | 'selected'>('search');
   const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify_media' | 'product_images' | 'upload' | 'youtube'>('pexels');
   const [mediaTypeSelection, setMediaTypeSelection] = useState<'products' | 'variants' | 'media'>('products');
   const [contentFiles, setContentFiles] = useState<any[]>([]);
@@ -3667,6 +3668,7 @@ export default function AdminPanel() {
                                       onClick={() => {
                                         setImageSource('pexels');
                                         setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
+                                        setImageDialogInitialTab('selected'); // Open with Selected Search Images tab
                                         setShowImageDialog(true);
                                       }}
                                     >
@@ -3695,6 +3697,7 @@ export default function AdminPanel() {
                                           size="sm"
                                           onClick={() => {
                                             setImageSource('product_images');
+                                            setImageDialogInitialTab('search'); // Open with default search tab
                                             if (selectedProducts[0]?.id) {
                                               fetchProductImages(selectedProducts[0].id);
                                             } else {
@@ -3729,6 +3732,7 @@ export default function AdminPanel() {
                                       size="sm"
                                       onClick={() => {
                                         setImageSource('upload');
+                                        setImageDialogInitialTab('search'); // Open with default search tab
                                         setShowImageDialog(true);
                                       }}
                                     >
@@ -4622,6 +4626,7 @@ export default function AdminPanel() {
                             keyword: k.keyword,
                             isMainKeyword: k === selectedKeywords[0] // First keyword is main
                           }))}
+                          initialTab={imageDialogInitialTab}
                         />
 
                         <div className="flex gap-3">
