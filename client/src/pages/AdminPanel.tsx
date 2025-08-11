@@ -3666,10 +3666,15 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setImageSource('pexels');
-                                        setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
-                                        setImageDialogInitialTab('selected'); // Open with Selected Search Images tab
-                                        setShowImageDialog(true);
+                                        setImageTab('primary'); // Set to primary tab for featured image selection
+                                        // Trigger Pexels search with appropriate query
+                                        const searchTerm = selectedProducts.length > 0 
+                                          ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
+                                          : 'happy customer';
+                                        
+                                        // Store the search term for the dialog to use
+                                        setImageSearchQuery(searchTerm);
+                                        setShowChooseMediaDialog(true); // Open the Choose Media dialog instead
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
@@ -8585,6 +8590,8 @@ export default function AdminPanel() {
         description={imageTab === 'primary' 
           ? "Select emotionally compelling images for the top of your content" 
           : "Select product images to appear throughout your article body"}
+        initialSearchQuery={imageSearchQuery}
+        autoSearchPexels={!!imageSearchQuery}
       />
 
       {/* Project Management Dialogs */}
