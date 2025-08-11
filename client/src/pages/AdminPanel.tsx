@@ -2823,7 +2823,26 @@ export default function AdminPanel() {
                                       size="icon"
                                       className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
                                       onClick={() => {
-                                        setSelectedProducts(prev => prev.filter(p => p.id !== product.id));
+                                        // Remove the product from the selected products
+                                        const updatedProducts = selectedProducts.filter(p => p.id !== product.id);
+                                        setSelectedProducts(updatedProducts);
+                                        
+                                        // Update form value with the IDs
+                                        const productIds = updatedProducts.map(p => p.id);
+                                        form.setValue('productIds', productIds);
+                                        
+                                        // Show alert and redirect if no products left
+                                        if (updatedProducts.length === 0) {
+                                          toast({
+                                            title: "Product Required",
+                                            description: "Selecting a product is required to continue. Please choose at least one product.",
+                                            variant: "destructive"
+                                          });
+                                          
+                                          // Redirect back to product selection step
+                                          setWorkflowStep('product');
+                                          scrollToCurrentStep();
+                                        }
                                       }}
                                     >
                                       <X className="h-3 w-3" />
