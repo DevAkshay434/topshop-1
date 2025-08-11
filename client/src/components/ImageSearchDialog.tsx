@@ -74,13 +74,22 @@ export default function ImageSearchDialog({
     if (open && autoSearch && initialSearchQuery) {
       console.log("Auto-searching images with query:", initialSearchQuery);
       setImageSearchQuery(initialSearchQuery);
-      setActiveTab('search'); // Ensure we're on search tab
+      // Start on search tab during search, unless initialTab is specifically 'selected'
+      if (initialTab !== 'selected') {
+        setActiveTab('search');
+      }
       // Trigger search after a short delay to ensure state is set
-      setTimeout(() => {
-        handleImageSearch(initialSearchQuery);
+      setTimeout(async () => {
+        await handleImageSearch(initialSearchQuery);
+        // If initialTab was 'selected', switch to it after search completes
+        if (initialTab === 'selected') {
+          setTimeout(() => {
+            setActiveTab('selected');
+          }, 300);
+        }
       }, 100);
     }
-  }, [open, autoSearch, initialSearchQuery]);
+  }, [open, autoSearch, initialSearchQuery, initialTab]);
 
   // Reset active tab when dialog opens with new initialTab
   useEffect(() => {

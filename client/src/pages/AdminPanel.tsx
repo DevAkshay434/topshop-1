@@ -3673,7 +3673,7 @@ export default function AdminPanel() {
                                           : 'happy customer';
                                         
                                         setImageSearchQuery(searchTerm);
-                                        setImageDialogInitialTab('search'); // Open with Search Images tab
+                                        setImageDialogInitialTab('selected'); // Open with Selected Images tab to show results
                                         setShowImageDialog(true); // Open the ImageSearchDialog instead
                                       }}
                                     >
