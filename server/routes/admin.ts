@@ -2,7 +2,8 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { shopifyService } from "../services/shopify";
-import { dataForSEOService, KeywordData } from "../services/dataforseo";
+import { DataForSEOService, KeywordData } from "../services/dataforseo";
+const dataForSEOService = new DataForSEOService();
 import { pexelsService, type PexelsImage } from "../services/pexels";
 import { pixabayService, type PixabayImage } from "../services/pixabay";
 import { generateBlogContentWithClaude } from "../services/claude";
@@ -530,7 +531,7 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
     let keywords;
     try {
       console.log(`Attempting to fetch keywords for: "${searchTerm}"`);
-      keywords = await dataForSEOService.getKeywordsForProduct(searchTerm);
+      keywords = await dataForSEOService.searchRelatedKeywords(searchTerm);
       console.log(`Successfully fetched ${keywords.length} keywords from DataForSEO API`);
     } catch (error: any) {
       console.log(`DataForSEO API error: ${error.message}`);

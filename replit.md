@@ -62,16 +62,21 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Features**: Monthly usage limits, automatic reset, usage statistics, plan upgrade/downgrade
 - **Date Started**: January 8, 2025
 
-### Keyword Generation System - COMPLETED ✅
-- **Issue Fixed**: Branded product names (e.g., "SoftPro® Elite Salt Free Water Conditioner") were generating zero search volume because specific brand/model combinations don't have search data
-- **Solution Implemented**: Advanced branded product detection system that extracts core product categories from specific brand names
-- **Technical Changes**: 
-  - Added `detectBrandedProduct()` method to identify branded vs. generic search terms
-  - Enhanced `enrichProductDataToPhrase()` to extract searchable categories from branded names
-  - Implemented pattern matching for common product categories (water conditioners, air purifiers, etc.)
-  - Maintains 5-word limit for DataForSEO API compatibility
-- **Results**: System now converts "SoftPro® Elite Salt Free Water Conditioner" → "water conditioner" → generates 22,200+ search volume keywords
-- **Date Completed**: January 8, 2025
+### Manual Keyword Search Implementation - COMPLETED ✅
+- **Goal**: Removed automatic product-based keyword generation and simplified to manual search only
+- **Changes Made**:
+  - Replaced complex `getKeywordsForProduct()` with simplified `searchRelatedKeywords()` method
+  - Removed automatic product title processing, branded product detection, and keyword slicing
+  - Updated API routes in both `admin.ts` and `routes.ts` to use new method
+  - Simplified KeywordSelector component to remove automatic product/collection keyword inclusion
+  - Process: User enters keyword → DataForSEO finds related high-volume keywords
+- **Technical Implementation**:
+  - DataForSEO service now uses keyword suggestions API followed by search volume lookup
+  - Maintains authentic search volume data and competition levels
+  - Results sorted by search volume (highest first)
+  - Clean, simple workflow without complex product enrichment logic
+- **Testing**: Verified working with "water filters" (110K volume) and "organic skincare" examples
+- **Date Completed**: August 8, 2025
 
 ## External Dependencies
 

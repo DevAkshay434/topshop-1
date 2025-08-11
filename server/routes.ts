@@ -2627,7 +2627,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       // Process first search term
       if (searchTerms.length > 0) {
-        const keywords = await dataForSEOService.getKeywordsForProduct(searchTerms[0]);
+        const keywords = await dataForSEOService.searchRelatedKeywords(searchTerms[0]);
         allKeywords = keywords;
       }
       
@@ -2636,7 +2636,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         const processedKeywords = new Set(allKeywords.map(k => k.keyword.toLowerCase()));
         
         for (let i = 1; i < Math.min(searchTerms.length, 3); i++) {
-          const additionalKeywords = await dataForSEOService.getKeywordsForProduct(searchTerms[i]);
+          const additionalKeywords = await dataForSEOService.searchRelatedKeywords(searchTerms[i]);
           
           additionalKeywords.forEach(keyword => {
             if (!processedKeywords.has(keyword.keyword.toLowerCase())) {

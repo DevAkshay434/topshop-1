@@ -277,12 +277,7 @@ export default function KeywordSelector({
     setKeywords(updatedKeywords);
   };
 
-  // Automatically fetch keywords when component mounts if productTitle is provided
-  useEffect(() => {
-    if (productTitle && keywords.length === 0) {
-      fetchKeywords();
-    }
-  }, []);
+  // Note: Removed automatic keyword fetching on mount to require explicit user search
   
   // Fetch keywords based on product URL or direct topic
   const fetchKeywords = async () => {
@@ -312,21 +307,7 @@ export default function KeywordSelector({
         requestData.productUrl = productUrl;
       }
       
-      // Include selected products information for more relevant keywords
-      if (selectedProducts && selectedProducts.length > 0) {
-        requestData.selectedProducts = selectedProducts.map(product => ({
-          id: product.id,
-          title: product.title
-        }));
-      }
-      
-      // Include selected collections information
-      if (selectedCollections && selectedCollections.length > 0) {
-        requestData.selectedCollections = selectedCollections.map(collection => ({
-          id: collection.id,
-          title: collection.title
-        }));
-      }
+      // Note: Removed automatic product/collection inclusion to focus on manual keyword search only
 
       // Add timestamp to ensure fresh requests (bypass React Query cache)
       const response = await apiRequest<{ success: boolean; keywords: KeywordData[] }>({
