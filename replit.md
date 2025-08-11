@@ -106,19 +106,24 @@ The application employs a modern full-stack, client-server architecture with mul
   - TOC links were opening in new tabs instead of current tab
   - H2 and H3 headings lacked proper IDs for anchor navigation
   - Missing smooth scroll animation when clicking TOC links
+  - TipTap Link extension was automatically adding target="_blank" to all links including internal ones
 - **Changes Made**:
   - Updated Claude service to generate proper heading IDs for all H2 and H3 elements
   - Modified TOC generation to use current tab navigation (removed target="_blank")
   - Added smooth scroll CSS behavior for HTML and ProseMirror editor
   - Implemented JavaScript smooth scrolling within editor container
   - Added TOC styling with professional appearance and hover effects
+  - **Dual-Layer Fix**: Implemented both server-side content processing and client-side link fixing
+  - Added comprehensive debugging system to track content processing pipeline
 - **Technical Implementation**:
-  - Enhanced Claude prompt with mandatory heading ID requirements
-  - Added scroll-behavior: smooth CSS for seamless navigation
-  - Created custom TOC click handler in ShopifyStyleEditor component
-  - Added scroll-margin-top for proper heading positioning
-  - Implemented container-aware smooth scrolling calculations
-- **User Experience**: TOC links now smoothly navigate to content sections within the same tab
+  - Enhanced Claude prompt with mandatory heading ID requirements and explicit "NEVER create TOC manually" instructions
+  - Added server-side functions: removeManualTOC(), fixInternalLinks(), and ensureHeadingIds()
+  - Created client-side real-time link processing in ShopifyStyleEditor useEffect hook
+  - Added automatic removal of target="_blank" and rel attributes from internal links
+  - Added toc-link CSS class for proper styling of TOC navigation links
+  - Implemented container-aware smooth scrolling calculations with scroll-margin-top
+  - Added comprehensive console logging for both server and client-side processing
+- **User Experience**: TOC links now smoothly navigate to content sections within the same tab with bulletproof functionality
 - **Date Completed**: August 11, 2025
 
 ## External Dependencies
