@@ -44,6 +44,8 @@ interface ImageSearchDialogProps {
     isMainKeyword?: boolean;
   }>;
   initialTab?: 'search' | 'selected';
+  initialSearchQuery?: string;
+  autoSearch?: boolean;
 }
 
 export default function ImageSearchDialog({
@@ -52,7 +54,9 @@ export default function ImageSearchDialog({
   onImagesSelected,
   initialSelectedImages = [],
   selectedKeywords = [],
-  initialTab = 'search'
+  initialTab = 'search',
+  initialSearchQuery = '',
+  autoSearch = false
 }: ImageSearchDialogProps) {
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
@@ -65,12 +69,29 @@ export default function ImageSearchDialog({
   const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Auto-search when dialog opens with search query
+  useEffect(() => {
+    if (open && autoSearch && initialSearchQuery) {
+      console.log("Auto-searching images with query:", initialSearchQuery);
+      setImageSearchQuery(initialSearchQuery);
+      setActiveTab('search'); // Ensure we're on search tab
+      // Trigger search after a short delay to ensure state is set
+      setTimeout(() => {
+        handleImageSearch(initialSearchQuery);
+      }, 100);
+    }
+  }, [open, autoSearch, initialSearchQuery]);
+
   // Reset active tab when dialog opens with new initialTab
   useEffect(() => {
     if (open) {
       setActiveTab(initialTab);
+      // If initial search query is provided, set it
+      if (initialSearchQuery) {
+        setImageSearchQuery(initialSearchQuery);
+      }
     }
-  }, [open, initialTab]);
+  }, [open, initialTab, initialSearchQuery]);
 
   // Reset selected images when initialSelectedImages changes
   useEffect(() => {

@@ -3666,15 +3666,15 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setImageTab('primary'); // Set to primary tab for featured image selection
+                                        setImageSource('pexels');
                                         // Trigger Pexels search with appropriate query
                                         const searchTerm = selectedProducts.length > 0 
                                           ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
                                           : 'happy customer';
                                         
-                                        // Store the search term for the dialog to use
                                         setImageSearchQuery(searchTerm);
-                                        setShowChooseMediaDialog(true); // Open the Choose Media dialog instead
+                                        setImageDialogInitialTab('search'); // Open with Search Images tab
+                                        setShowImageDialog(true); // Open the ImageSearchDialog instead
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
@@ -4632,6 +4632,8 @@ export default function AdminPanel() {
                             isMainKeyword: k === selectedKeywords[0] // First keyword is main
                           }))}
                           initialTab={imageDialogInitialTab}
+                          initialSearchQuery={imageSearchQuery}
+                          autoSearch={!!imageSearchQuery}
                         />
 
                         <div className="flex gap-3">
