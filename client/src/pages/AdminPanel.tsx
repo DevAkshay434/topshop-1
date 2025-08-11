@@ -1341,37 +1341,39 @@ export default function AdminPanel() {
     setIsAddingManualKeyword(true);
     
     try {
-      // Fetch keyword data from DataForSEO
+      // Fetch keyword data from DataForSEO for the exact keyword entered
       const response = await apiRequest({
-        url: '/api/admin/keywords-for-product',
+        url: '/api/admin/manual-keyword-lookup',
         method: 'POST',
-        data: { topic: manualKeyword.trim() }
+        data: { keyword: manualKeyword.trim() }
       });
 
-      if (response.success && response.keywords && response.keywords.length > 0) {
-        // Find the exact match or closest match for the manual keyword
-        const exactMatch = response.keywords.find((kw: any) => 
-          kw.keyword.toLowerCase() === manualKeyword.trim().toLowerCase()
-        );
-        
-        const keywordToAdd = exactMatch || response.keywords[0]; // Use exact match or first result
+      if (response.success && response.keywordData) {
+        const keywordData = response.keywordData;
         
         // Check if keyword already exists
         const exists = selectedKeywords.some((kw: any) => 
-          kw.keyword.toLowerCase() === keywordToAdd.keyword.toLowerCase()
+          kw.keyword.toLowerCase() === keywordData.keyword.toLowerCase()
         );
         
         if (!exists) {
           // Add to the beginning of the array (so manual keywords appear on top)
-          setSelectedKeywords(prev => [keywordToAdd, ...prev]);
+          setSelectedKeywords(prev => [{
+            ...keywordData,
+            selected: true,
+            isManual: true
+          }, ...prev]);
+          
           toast({
             title: "Keyword Added",
-            description: `Added "${keywordToAdd.keyword}" with ${keywordToAdd.searchVolume.toLocaleString()} search volume`
+            description: keywordData.searchVolume > 0 
+              ? `Added "${keywordData.keyword}" with ${keywordData.searchVolume.toLocaleString()} search volume`
+              : `Added "${keywordData.keyword}" (no search volume data available)`
           });
         } else {
           toast({
             title: "Keyword Already Added",
-            description: `"${keywordToAdd.keyword}" is already in your selection`,
+            description: `"${keywordData.keyword}" is already in your selection`,
             variant: "destructive"
           });
         }

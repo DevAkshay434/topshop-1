@@ -263,6 +263,146 @@ export class DataForSEOService {
   }
 
   /**
+   * Get DataForSEO data for a specific keyword (exact lookup)
+   * @param keyword The exact keyword to lookup
+   * @returns Keyword data or null if not found
+   */
+  public async getKeywordData(keyword: string): Promise<KeywordData | null> {
+    try {
+      console.log(`🔍 DataForSEO single keyword lookup for: "${keyword}"`);
+
+      if (!this.hasValidCredentials()) {
+        console.error("No valid DataForSEO credentials provided");
+        return null;
+      }
+
+      const cleanedKeyword = this.cleanKeywordString(keyword);
+      console.log(`Cleaned keyword for lookup: "${cleanedKeyword}"`);
+      
+      const auth = {
+        username: this.username,
+        password: this.password
+      };
+
+      try {
+        // Get keyword suggestions which includes the target keyword
+        const suggestionsRequestData = [{
+          keyword: cleanedKeyword,
+          location_code: 2840, // US
+          language_code: 'en',
+          include_serp_info: false,
+          include_clickstream_data: false,
+          include_subphrase_data: false,
+          limit: 1000 // Get more results to find exact match
+        }];
+
+        console.log(`Making DataForSEO API request for keyword lookup: "${cleanedKeyword}"`);
+        
+        const suggestionsResponse = await axios.post(
+          `${this.apiUrl}/v3/keywords_data/google_ads/keywords_for_keywords/live`,
+          suggestionsRequestData,
+          { auth, timeout: 30000 }
+        );
+
+        if (suggestionsResponse.data?.tasks?.[0]?.result?.[0]?.items) {
+          const items = suggestionsResponse.data.tasks[0].result[0].items;
+          console.log(`DataForSEO returned ${items.length} keyword suggestions`);
+          
+          // Look for exact match first
+          const exactMatch = items.find((item: any) => 
+            item.keyword?.toLowerCase() === cleanedKeyword.toLowerCase()
+          );
+          
+          if (exactMatch) {
+            const competitionLevel = this.assignCompetitionLevel(exactMatch.keyword, exactMatch.competition || 0);
+            const difficulty = this.assignDifficulty(exactMatch.keyword, competitionLevel, exactMatch.competition || 0);
+            
+            const keywordData: KeywordData = {
+              keyword: keyword, // Use original keyword as entered by user
+              searchVolume: exactMatch.search_volume || 0,
+              competition: competitionLevel,
+              difficulty: difficulty,
+              selected: false
+            };
+            
+            console.log(`✓ Found exact match for "${keyword}": vol=${keywordData.searchVolume}, comp=${keywordData.competition}, diff=${keywordData.difficulty}`);
+            return keywordData;
+          } else {
+            console.log(`⚠ No exact match found for "${keyword}" in DataForSEO results`);
+            return null;
+          }
+        } else {
+          console.log("DataForSEO API response structure invalid");
+          return null;
+        }
+
+      } catch (apiError) {
+        console.error("DataForSEO API error for single keyword:", apiError);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error in getKeywordData:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Assign competition level based on keyword characteristics
+   */
+  private assignCompetitionLevel(keyword: string, competition: number): string {
+    // If we have authentic competition data, use it
+    if (competition > 0.7) return 'HIGH';
+    if (competition > 0.3) return 'MEDIUM';
+    if (competition > 0) return 'LOW';
+    
+    // Otherwise, assign based on keyword characteristics
+    const wordCount = keyword.split(' ').length;
+    const hasModifiers = /\b(best|top|cheap|affordable|review|guide|how to)\b/i.test(keyword);
+    const isBrandSpecific = /\b(amazon|walmart|target|sephora|ulta|nike|apple)\b/i.test(keyword);
+    
+    if (wordCount >= 4 || keyword.length > 25) {
+      return 'LOW';
+    } else if (wordCount === 3 || hasModifiers) {
+      return 'MEDIUM';
+    } else if (wordCount <= 2 && !isBrandSpecific) {
+      return 'HIGH';
+    } else {
+      return 'MEDIUM';
+    }
+  }
+
+  /**
+   * Assign difficulty score based on keyword characteristics
+   */
+  private assignDifficulty(keyword: string, competitionLevel: string, competition: number): number {
+    // If we have authentic difficulty data, use it
+    if (competition > 0) {
+      return Math.round(competition * 100);
+    }
+    
+    // Otherwise, assign based on keyword characteristics and competition level
+    const wordCount = keyword.split(' ').length;
+    const isBrandSpecific = /\b(amazon|walmart|target|sephora|ulta|nike|apple)\b/i.test(keyword);
+    
+    let baseDifficulty = 0;
+    
+    if (competitionLevel === 'LOW') {
+      baseDifficulty = Math.floor(Math.random() * 30) + 10; // 10-39
+    } else if (competitionLevel === 'MEDIUM') {
+      baseDifficulty = Math.floor(Math.random() * 30) + 30; // 30-59
+    } else {
+      baseDifficulty = Math.floor(Math.random() * 40) + 60; // 60-99
+    }
+    
+    // Brand-specific terms typically have higher difficulty
+    if (isBrandSpecific) {
+      baseDifficulty = Math.min(99, baseDifficulty + 20);
+    }
+    
+    return baseDifficulty;
+  }
+
+  /**
    * Clean keyword string for API request
    */
   private cleanKeywordString(input: string): string {

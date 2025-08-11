@@ -605,6 +605,78 @@ adminRouter.post("/keywords-for-product", async (req: Request, res: Response) =>
   }
 });
 
+// Manual keyword lookup - gets DataForSEO data for exact keyword entered by user
+adminRouter.post("/manual-keyword-lookup", async (req: Request, res: Response) => {
+  try {
+    const { keyword } = req.body;
+    
+    if (!keyword || typeof keyword !== 'string' || !keyword.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "A keyword is required for lookup"
+      });
+    }
+    
+    const trimmedKeyword = keyword.trim();
+    console.log(`Manual keyword lookup for: "${trimmedKeyword}"`);
+    
+    try {
+      // Use DataForSEO to get data for the exact keyword
+      const keywordData = await dataForSEOService.getKeywordData(trimmedKeyword);
+      
+      if (keywordData) {
+        console.log(`✓ Found DataForSEO data for "${trimmedKeyword}": vol=${keywordData.searchVolume}, comp=${keywordData.competitionLevel}, diff=${keywordData.difficulty}`);
+        
+        res.json({
+          success: true,
+          keywordData: {
+            keyword: trimmedKeyword,
+            searchVolume: keywordData.searchVolume || 0,
+            competition: keywordData.competitionLevel || 'UNKNOWN',
+            difficulty: keywordData.difficulty || 0,
+            competitionLevel: keywordData.competitionLevel || 'UNKNOWN'
+          }
+        });
+      } else {
+        console.log(`⚠ No DataForSEO data available for "${trimmedKeyword}"`);
+        
+        // Return basic keyword structure without authentic data
+        res.json({
+          success: true,
+          keywordData: {
+            keyword: trimmedKeyword,
+            searchVolume: 0,
+            competition: 'UNKNOWN',
+            difficulty: 0,
+            competitionLevel: 'UNKNOWN'
+          }
+        });
+      }
+    } catch (dataForSEOError) {
+      console.error(`DataForSEO lookup failed for "${trimmedKeyword}":`, dataForSEOError);
+      
+      // Return basic keyword structure on API failure
+      res.json({
+        success: true,
+        keywordData: {
+          keyword: trimmedKeyword,
+          searchVolume: 0,
+          competition: 'UNKNOWN',
+          difficulty: 0,
+          competitionLevel: 'UNKNOWN'
+        }
+      });
+    }
+    
+  } catch (error: any) {
+    console.error("Manual keyword lookup error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to lookup keyword data"
+    });
+  }
+});
+
 // Generate product-specific image search suggestions using OpenAI
 adminRouter.post("/image-suggestions-for-product", async (req: Request, res: Response) => {
   try {
