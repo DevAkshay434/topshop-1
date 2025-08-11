@@ -109,8 +109,7 @@ export function ChooseMediaDialog({
     if (open && autoSearchPexels && initialSearchQuery) {
       console.log("Auto-searching Pexels with query:", initialSearchQuery);
       setSearchQuery(initialSearchQuery);
-      setActiveTab('primary_images'); // Start with primary images tab
-      setPrimarySubTab('pexels'); // Make sure pexels sub-tab is active
+      setActiveTab('pexels'); // Set to Pexels tab directly for Search Images functionality
       // Trigger search after a short delay to ensure state is set
       setTimeout(() => {
         searchPexelsImages();

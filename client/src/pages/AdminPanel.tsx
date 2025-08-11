@@ -3672,9 +3672,8 @@ export default function AdminPanel() {
                                           ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
                                           : 'happy customer';
                                         
-                                        setImageSearchQuery(searchTerm);
-                                        setImageDialogInitialTab('selected'); // Open with Selected Images tab to show results
-                                        setShowImageDialog(true); // Open the ImageSearchDialog instead
+                                        setChooseMediaInitialQuery(searchTerm);
+                                        setShowChooseMediaDialog(true); // Open ChooseMediaDialog with Pexels search
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
