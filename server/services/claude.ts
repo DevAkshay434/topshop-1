@@ -92,6 +92,27 @@ function removeH1Tags(content: string): string {
   return content.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '');
 }
 
+// Function to fix TOC and anchor links - remove target="_blank" from internal links
+function fixInternalLinks(content: string): string {
+  // Remove target="_blank" and related attributes from anchor links (TOC links)
+  content = content.replace(/<a([^>]*href=["']#[^"']*["'][^>]*)\s+target=["'][^"']*["']([^>]*)>/gi, '<a$1$2>');
+  content = content.replace(/<a([^>]*href=["']#[^"']*["'][^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi, '<a$1$2>');
+  
+  // More comprehensive cleanup for internal anchor links
+  content = content.replace(
+    /<a([^>]*)href=["']#([^"']+)["']([^>]*)\s+target=["'][^"']*["']([^>]*)>/gi,
+    '<a$1href="#$2"$3$4>'
+  );
+  
+  // Remove rel attributes from internal links
+  content = content.replace(
+    /<a([^>]*)href=["']#([^"']+)["']([^>]*)\s+rel=["'][^"']*["']([^>]*)>/gi,
+    '<a$1href="#$2"$3$4>'
+  );
+  
+  return content;
+}
+
 // Function to add IDs to headings that don't have them (fallback if Claude doesn't follow instructions)
 function ensureHeadingIds(content: string): string {
   // Function to create a slug from heading text
@@ -497,15 +518,18 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
       <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     
     TABLE OF CONTENTS REQUIREMENTS:
-    - AUTOMATICALLY include a Table of Contents at the very beginning of the content
-    - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
-    - IMPORTANT: After the TOC marker, add a blank line or proper paragraph break before starting the introduction
+    - DO NOT manually create a Table of Contents in the content
+    - Instead, add this exact marker at the very beginning: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
+    - The system will automatically generate the TOC based on your H2 headings
+    - IMPORTANT: After the TOC marker, add a blank line before starting the introduction
     - CRITICAL: Every H2 and H3 heading MUST have a unique id attribute for proper navigation
     - H2 heading format: <h2 id="section-name">Section Title</h2>
     - H3 heading format: <h3 id="subsection-name">Subsection Title</h3>
     - Use descriptive, SEO-friendly id names based on the heading text (lowercase, words separated by hyphens)
     - Example: "Water Filter Benefits" becomes id="water-filter-benefits"
     - MANDATORY: Do not skip heading IDs - every single H2 and H3 MUST have an id attribute
+    - DO NOT create manual TOC HTML - only use the placement marker
+    - The automatic TOC generation will ensure proper internal navigation without target="_blank"
     - Include an id="faq" on your FAQ section if present
     - TOC links should NOT open in new tabs - use current tab navigation only
     - TOC links should use anchor format: <a href="#section-id">Section Name</a> (no target="_blank")
@@ -762,8 +786,11 @@ if (!response) {
     
     processedContent = addTableOfContents(processedContent);
     
-    // Debug: Check TOC after generation
-    console.log("🔍 DEBUG - Content after TOC processing (first 1000 chars):");
+    // Fix internal TOC links - remove target="_blank" from anchor links
+    processedContent = fixInternalLinks(processedContent);
+    
+    // Debug: Check TOC after generation and link fixing
+    console.log("🔍 DEBUG - Content after TOC and link fixing (first 1000 chars):");
     console.log(processedContent.substring(0, 1000));
     
     processedContent = processMediaPlacementsHandler(processedContent, request);
