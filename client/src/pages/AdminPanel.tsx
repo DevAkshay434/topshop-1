@@ -1341,64 +1341,34 @@ export default function AdminPanel() {
     setIsAddingManualKeyword(true);
     
     try {
-      // Fetch keyword data from DataForSEO for the exact keyword entered
-      const response = await apiRequest({
-        url: '/api/admin/manual-keyword-lookup',
-        method: 'POST',
-        data: { keyword: manualKeyword.trim() }
-      });
-
-      if (response.success && response.keywordData) {
-        const keywordData = response.keywordData;
-        
-        // Check if keyword already exists
-        const exists = selectedKeywords.some((kw: any) => 
-          kw.keyword.toLowerCase() === keywordData.keyword.toLowerCase()
-        );
-        
-        if (!exists) {
-          // Add to the beginning of the array (so manual keywords appear on top)
-          setSelectedKeywords(prev => [{
-            ...keywordData,
-            selected: true,
-            isManual: true
-          }, ...prev]);
-          
-          toast({
-            title: "Keyword Added",
-            description: keywordData.searchVolume > 0 
-              ? `Added "${keywordData.keyword}" with ${keywordData.searchVolume.toLocaleString()} search volume`
-              : `Added "${keywordData.keyword}" (no search volume data available)`
-          });
-        } else {
-          toast({
-            title: "Keyword Already Added",
-            description: `"${keywordData.keyword}" is already in your selection`,
-            variant: "destructive"
-          });
-        }
+      // Add manual keyword exactly as entered by user, without DataForSEO lookup
+      const newKeyword = {
+        keyword: manualKeyword.trim(),
+        searchVolume: 0,
+        competition: 'MANUAL',
+        difficulty: 0,
+        selected: true,
+        isManual: true
+      };
+      
+      // Check if keyword already exists
+      const exists = selectedKeywords.some((kw: any) => 
+        kw.keyword.toLowerCase() === newKeyword.keyword.toLowerCase()
+      );
+      
+      if (!exists) {
+        // Add to the beginning of the array (so manual keywords appear on top)
+        setSelectedKeywords(prev => [newKeyword, ...prev]);
+        toast({
+          title: "Manual Keyword Added",
+          description: `Added "${newKeyword.keyword}" as manual keyword`
+        });
       } else {
-        // Fallback: add as manual keyword with basic data
-        const newKeyword = {
-          keyword: manualKeyword.trim(),
-          searchVolume: 0,
-          competition: 'UNKNOWN',
-          difficulty: 0,
-          selected: true,
-          isManual: true
-        };
-        
-        const exists = selectedKeywords.some((kw: any) => 
-          kw.keyword.toLowerCase() === newKeyword.keyword.toLowerCase()
-        );
-        
-        if (!exists) {
-          setSelectedKeywords(prev => [newKeyword, ...prev]);
-          toast({
-            title: "Manual Keyword Added",
-            description: `Added "${newKeyword.keyword}" (search volume data unavailable)`
-          });
-        }
+        toast({
+          title: "Keyword Already Added",
+          description: `"${newKeyword.keyword}" is already in your selection`,
+          variant: "destructive"
+        });
       }
       
       setManualKeyword('');
@@ -1406,7 +1376,7 @@ export default function AdminPanel() {
       console.error('Error adding manual keyword:', error);
       toast({
         title: "Error Adding Keyword",
-        description: "Failed to fetch keyword data. Please try again.",
+        description: "Failed to add manual keyword. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -3426,7 +3396,7 @@ export default function AdminPanel() {
                               </Button>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              Enter specific keywords you want to target. We'll fetch search volume and competition data for you.
+                              Enter specific keywords exactly as you want to target them. Keywords will be added as-is without modification.
                             </p>
                           </div>
                         </div>

@@ -63,21 +63,21 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Date Started**: January 8, 2025
 
 ### Manual Keyword Search Implementation - COMPLETED ✅
-- **Goal**: Removed automatic product-based keyword generation and simplified to manual search only
+- **Goal**: Implemented manual keyword input that preserves exact user input without DataForSEO processing
 - **Changes Made**:
-  - Replaced complex `getKeywordsForProduct()` with simplified `searchRelatedKeywords()` method
-  - Removed automatic product title processing, branded product detection, and keyword slicing
-  - Updated API routes in both `admin.ts` and `routes.ts` to use new method
-  - Simplified KeywordSelector component to remove automatic product/collection keyword inclusion
-  - Enhanced competition and difficulty assignment with intelligent keyword analysis
-  - Process: User enters keyword → DataForSEO finds related high-volume keywords with realistic metrics
+  - Moved manual keyword input from KeywordSelector popup to main Keywords step in AdminPanel
+  - Removed DataForSEO lookup for manual keywords - they are added exactly as user enters them
+  - Manual keywords get basic metadata (searchVolume: 0, competition: 'MANUAL', difficulty: 0)
+  - Manual keywords appear at top of keyword list when displayed (isManual: true flag)
+  - Updated helper text to clarify that keywords are added "as-is without modification"
+  - Removed automatic keyword processing, cleaning, or enhancement for manual entries
 - **Technical Implementation**:
-  - DataForSEO service uses keyword suggestions API with proper data structure access (`result[0].items[].related_keywords`)
-  - Assigns realistic search volumes (500-1500 range) and intelligent competition/difficulty based on keyword characteristics
-  - Competition levels (LOW/MEDIUM/HIGH) assigned based on word count, commercial intent, and brand specificity
-  - Difficulty scores (0-99) with color-coded progress bars in frontend
-  - Results sorted by search volume (highest first) with full data display
-- **Testing**: Verified working with "water filters", "organic skincare", "best coffee" - all returning 50 keywords with proper metrics
+  - Manual keyword input field placed below "Generate Keywords" button
+  - Simple validation checks for duplicates and empty strings
+  - Keywords marked with `isManual: true` flag for special handling in UI
+  - No API calls or external processing - pure client-side addition
+  - DataForSEO service still available for "Generate Keywords" functionality
+- **User Experience**: Users can add their exact target keywords without any system modifications
 - **Date Completed**: August 11, 2025
 
 ## External Dependencies
