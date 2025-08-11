@@ -67,6 +67,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useMutation } from '@tanstack/react-query';
 import { 
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   BarChart, 
@@ -2961,6 +2962,18 @@ export default function AdminPanel() {
                           <p className="text-sm text-blue-600">Choose products or collections to feature in your content</p>
                         </div>
                         
+                        {/* Mandatory Product Warning */}
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mb-4">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm font-medium text-amber-800">Products Required</span>
+                          </div>
+                          <p className="text-sm text-amber-700 mt-1">
+                            You must select at least one product to proceed with content generation. 
+                            Products are essential for creating relevant, targeted content.
+                          </p>
+                        </div>
+                        
                         <FormField
                           control={form.control}
                           name="productIds"
@@ -3344,9 +3357,21 @@ export default function AdminPanel() {
                           )}
                           
                           <Button 
-                            onClick={() => setShowKeywordSelector(true)}
+                            onClick={() => {
+                              // Check if products are selected before allowing keyword generation
+                              if (selectedProducts.length === 0) {
+                                toast({
+                                  title: "Products Required",
+                                  description: "Please select at least one product before generating keywords. Keywords are based on your product selection.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              setShowKeywordSelector(true);
+                            }}
                             size="lg"
                             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                            disabled={selectedProducts.length === 0}
                           >
                             <Sparkles className="mr-2 h-4 w-4" /> 
                             Generate Keywords
@@ -3380,6 +3405,19 @@ export default function AdminPanel() {
                           <Button
                             type="button"
                             onClick={() => {
+                              // Check if products are selected first
+                              if (selectedProducts.length === 0) {
+                                toast({
+                                  title: "Products Required",
+                                  description: "You must select at least one product to proceed. Content generation requires product information.",
+                                  variant: "destructive"
+                                });
+                                setWorkflowStep('product'); // Force back to product selection
+                                scrollToCurrentStep();
+                                return;
+                              }
+                              
+                              // Then check keywords
                               if (selectedKeywords.length > 0) {
                                 setWorkflowStep('title');
                                 setShowTitleSelector(true);
@@ -3435,6 +3473,18 @@ export default function AdminPanel() {
                             <Button
                               type="button"
                               onClick={() => {
+                                // Check if products are still selected
+                                if (selectedProducts.length === 0) {
+                                  toast({
+                                    title: "Products Required",
+                                    description: "You removed products but they are required for content generation. Please select products first.",
+                                    variant: "destructive"
+                                  });
+                                  setWorkflowStep('product'); // Force back to product selection
+                                  scrollToCurrentStep();
+                                  return;
+                                }
+                                
                                 if (form.watch('title')) {
                                   setWorkflowStep('media');
                                   scrollToCurrentStep();
@@ -3945,6 +3995,18 @@ export default function AdminPanel() {
                           <Button
                             type="button"
                             onClick={() => {
+                              // Check if products are still selected
+                              if (selectedProducts.length === 0) {
+                                toast({
+                                  title: "Products Required",
+                                  description: "You removed products but they are required for content generation. Please select products first.",
+                                  variant: "destructive"
+                                });
+                                setWorkflowStep('product');
+                                scrollToCurrentStep();
+                                return;
+                              }
+                              
                               // Continue to author selection step
                               setWorkflowStep('author');
                               scrollToCurrentStep();
@@ -3979,7 +4041,21 @@ export default function AdminPanel() {
                         
                         <Button
                           type="button"
-                          onClick={handleAuthorSelectionComplete}
+                          onClick={() => {
+                            // Final validation before content generation
+                            if (selectedProducts.length === 0) {
+                              toast({
+                                title: "Products Required",
+                                description: "Cannot proceed to content generation without products. Please select at least one product.",
+                                variant: "destructive"
+                              });
+                              setWorkflowStep('product');
+                              scrollToCurrentStep();
+                              return;
+                            }
+                            
+                            handleAuthorSelectionComplete();
+                          }}
                         >
                           Next
                         </Button>
