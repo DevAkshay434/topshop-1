@@ -123,15 +123,33 @@ export class DataForSEOService {
               const volumeResults = volumeResponse.data.tasks[0].result;
               console.log(`Got search volume data for ${volumeResults.length} keywords`);
               
-              keywordData = volumeResults
-                .filter((item: any) => item.search_volume && item.search_volume > 0)
-                .map((item: any) => ({
-                  keyword: item.keyword,
-                  searchVolume: item.search_volume || 0,
-                  competition: item.competition_level || 'LOW',
-                  difficulty: item.competition_index || 0,
-                  selected: false
-                }));
+              // Debug: Check what the raw volume data looks like
+              console.log("Sample volume result:", JSON.stringify(volumeResults[0], null, 2));
+              
+              // Filter and map with better debugging
+              const filteredResults = volumeResults.filter((item: any) => {
+                const hasVolume = item.search_volume && item.search_volume > 0;
+                if (!hasVolume) {
+                  console.log(`Filtered out keyword "${item.keyword}": search_volume = ${item.search_volume}`);
+                }
+                return hasVolume;
+              });
+              
+              console.log(`After filtering: ${filteredResults.length} keywords with search volume > 0`);
+              
+              keywordData = filteredResults.map((item: any) => ({
+                keyword: item.keyword,
+                searchVolume: item.search_volume || 0,
+                competition: item.competition_level || 'LOW',
+                difficulty: item.competition_index || 0,
+                selected: false
+              }));
+            } else {
+              console.log("Volume response failed:", {
+                status_code: volumeResponse.data?.status_code,
+                has_tasks: !!volumeResponse.data?.tasks,
+                has_result: !!volumeResponse.data?.tasks?.[0]?.result
+              });
             }
           }
         }
