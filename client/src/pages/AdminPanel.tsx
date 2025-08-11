@@ -1174,7 +1174,7 @@ export default function AdminPanel() {
   const [productTitle, setProductTitle] = useState<string>('');
   const [productId, setProductId] = useState<string>('');
   const [productDescription, setProductDescription] = useState<string>('');
-  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content';
+  type WorkflowStep = 'product' | 'related-products' | 'related-collections' | 'buying-avatars' | 'keyword' | 'title' | 'media' | 'author' | 'content' | 'post';
   
   // Helper function to determine step order for progress indicator
   const getStepOrder = (step: string): number => {
@@ -1188,6 +1188,7 @@ export default function AdminPanel() {
       'author': 7,
       'style': 8,
       'content': 9,
+      'post': 10,
       // Legacy step mappings for backward compatibility
       'related-products': 2,
       'buying-avatars': 3
@@ -1197,6 +1198,10 @@ export default function AdminPanel() {
   
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>('product');
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
+  
+  // Track completion status for Generate and Post steps
+  const [isContentGenerated, setIsContentGenerated] = useState(false);
+  const [isContentPosted, setIsContentPosted] = useState(false);
 
   const { toast } = useToast();
 
@@ -2164,6 +2169,9 @@ export default function AdminPanel() {
         
         // Update generated content with Shopify information if sent to Shopify (published or scheduled)
         if (isSentToShopify) {
+          // Mark content as posted for workflow step indicator
+          setIsContentPosted(true);
+          
           setGeneratedContent(prev => prev ? {
             ...prev,
             shopifyPostId: response.post.shopifyPostId,
@@ -2565,6 +2573,9 @@ export default function AdminPanel() {
           }
         }, 500); // Delay to allow content to render
         
+        // Mark content as generated for workflow step indicator
+        setIsContentGenerated(true);
+        
         toast({
           title: "Content generated successfully",
           description: "Your content has been generated and is ready for review in the Content Preview section.",
@@ -2672,9 +2683,22 @@ export default function AdminPanel() {
                           { step: 'media', number: 6, label: 'Choose Media' },
                           { step: 'author', number: 7, label: 'Choose Author' },
                           { step: 'style', number: 8, label: 'Style & Formatting' },
-                          { step: 'content', number: 9, label: 'Generate Content' }
+                          { step: 'content', number: 9, label: 'Generate Content' },
+                          { step: 'post', number: 10, label: 'Post to Shopify' }
                         ].map((item, index) => {
-                          const isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
+                          // Special logic for Generate (step 9) and Post (step 10) completion status
+                          let isCompleted = getStepOrder(workflowStep) > getStepOrder(item.step);
+                          
+                          // Override completion status for Generate step based on content generation
+                          if (item.step === 'content' && isContentGenerated) {
+                            isCompleted = true;
+                          }
+                          
+                          // Override completion status for Post step based on posting status
+                          if (item.step === 'post' && isContentPosted) {
+                            isCompleted = true;
+                          }
+                          
                           const isCurrent = workflowStep === item.step;
                           
                           return (
@@ -2697,7 +2721,7 @@ export default function AdminPanel() {
                               </div>
                               
                               {/* Connector Line (except for last item) */}
-                              {index < 8 && (
+                              {index < 9 && (
                                 <div className={`flex-1 h-0.5 mx-2 transition-all duration-300 ${
                                   isCompleted ? 'bg-green-400' : 'bg-gray-300'
                                 }`} />
@@ -2708,7 +2732,7 @@ export default function AdminPanel() {
                       </div>
                       
                       {/* Step Labels - Simple and Clean */}
-                      <div className="grid grid-cols-9 gap-1 mt-2 text-xs text-center text-gray-600">
+                      <div className="grid grid-cols-10 gap-1 mt-2 text-xs text-center text-gray-600">
                         <span className={workflowStep === 'product' ? 'text-blue-700 font-medium' : ''}>Products</span>
                         <span className={workflowStep === 'related-collections' ? 'text-blue-700 font-medium' : ''}>Collections</span>
                         <span className={workflowStep === 'persona' ? 'text-blue-700 font-medium' : ''}>Personas</span>
@@ -2718,6 +2742,7 @@ export default function AdminPanel() {
                         <span className={workflowStep === 'author' ? 'text-blue-700 font-medium' : ''}>Author</span>
                         <span className={workflowStep === 'style' ? 'text-blue-700 font-medium' : ''}>Style</span>
                         <span className={workflowStep === 'content' ? 'text-blue-700 font-medium' : ''}>Generate</span>
+                        <span className={workflowStep === 'post' ? 'text-blue-700 font-medium' : ''}>Post</span>
                       </div>
                     </div>
                       
