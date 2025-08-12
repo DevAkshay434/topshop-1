@@ -3667,8 +3667,11 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
+                                        // Ensure ImageSearchDialog is closed
+                                        setShowImageDialog(false);
+                                        
+                                        // Set up ChooseMediaDialog
                                         setImageSource('pexels');
-                                        // Trigger Pexels search with appropriate query
                                         const searchTerm = selectedProducts.length > 0 
                                           ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
                                           : 'happy customer';
