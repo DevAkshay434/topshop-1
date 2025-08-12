@@ -43,6 +43,7 @@ interface ChooseMediaDialogProps {
   allowMultiple?: boolean;
   title?: string;
   description?: string;
+  initialTab?: string;
 }
 
 export function ChooseMediaDialog({
@@ -53,10 +54,11 @@ export function ChooseMediaDialog({
   maxImages = 10,
   allowMultiple = true,
   title = "Choose Media",
-  description = "Select images from your Shopify store or other sources."
+  description = "Select images from your Shopify store or other sources.",
+  initialTab = 'pexels-pixabay'
 }: ChooseMediaDialogProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>('pexels-pixabay');
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
@@ -66,6 +68,13 @@ export function ChooseMediaDialog({
   const [youtubeUrl, setYoutubeUrl] = useState<string>('');
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<MediaImage[]>([]);
+
+  // Update active tab when dialog opens with different initialTab
+  useEffect(() => {
+    if (open && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [open, initialTab]);
 
   // Enhanced method to get selected product ID from any available source
   const getSelectedProductId = () => {

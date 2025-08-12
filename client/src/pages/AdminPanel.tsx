@@ -3659,9 +3659,7 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setImageSource('pexels');
-                                        setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
-                                        setShowImageDialog(true);
+                                        setShowChooseMediaDialog(true);
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
@@ -8385,6 +8383,7 @@ export default function AdminPanel() {
             setShowChooseMediaDialog(open);
           }
         }}
+        initialTab="pexels-pixabay"
         onImagesSelected={(images) => {
           // When user confirms selected images
           if (images.length > 0) {
