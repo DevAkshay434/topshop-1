@@ -6181,16 +6181,29 @@ export default function AdminPanel() {
                 
                 {youtubeVideoId && (
                   <div className="mt-4 border rounded-md p-4">
-                    <h4 className="text-sm font-medium mb-2">Video Ready to Add</h4>
-                    <div className="bg-muted rounded-md p-3 flex items-center gap-3">
-                      <div className="bg-red-100 text-red-600 p-2 rounded-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">YouTube Video ID: {youtubeVideoId}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          This video will be embedded in your content when you click 'Add Video'
-                        </p>
+                    <h4 className="text-sm font-medium mb-2 text-blue-600">✅ Video Ready to Add</h4>
+                    <div className="bg-muted rounded-md p-3">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="relative w-24 h-16 rounded-md overflow-hidden border-2 border-red-500 shadow-sm">
+                          <img 
+                            src={`https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`}
+                            alt="YouTube video thumbnail"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="bg-red-600 text-white rounded-full p-2 shadow-lg">
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">YouTube Video ID: {youtubeVideoId}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Video added successfully - will be embedded in your content
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -8316,11 +8329,14 @@ export default function AdminPanel() {
               onClick={() => {
                   // Add selected images to the appropriate collection
                   const selectedPexelsImages = searchedImages.filter(img => img.selected);
+                  const hasSelectedItems = selectedPexelsImages.length > 0;
+                  const hasVideos = youtubeVideoId && youtubeVideoId.length > 0;
+                  const totalSelectedMedia = primaryImages.length + secondaryImages.length;
                   
-                  if (selectedPexelsImages.length === 0) {
+                  if (!hasSelectedItems && !hasVideos && totalSelectedMedia === 0) {
                     toast({
-                      title: "No Images Selected",
-                      description: "Please select at least one image",
+                      title: "No Media Selected",
+                      description: "Please select at least one image or add a video",
                       variant: "destructive"
                     });
                     return;
@@ -8340,7 +8356,7 @@ export default function AdminPanel() {
                   }
                   
                   // If no isPrimary flag is set but we're in media step, treat all as primary
-                  if (primarySelected.length === 0 && secondarySelected.length === 0) {
+                  if (primarySelected.length === 0 && secondarySelected.length === 0 && hasSelectedItems) {
                     if (workflowStep === 'media') {
                       setPrimaryImages(prev => [...prev, ...selectedPexelsImages]);
                     } else {
@@ -8352,14 +8368,22 @@ export default function AdminPanel() {
                   setSearchedImages(searchedImages.map(img => ({ ...img, selected: false })));
                   setShowImageDialog(false);
                   
+                  const totalItems = hasSelectedItems ? selectedPexelsImages.length : totalSelectedMedia;
+                  const mediaType = hasVideos && !hasSelectedItems ? "video" : "images";
+                  const itemText = totalItems === 1 ? mediaType.slice(0, -1) : mediaType;
+                  
                   toast({
-                    title: "Images Added",
-                    description: `Added ${selectedPexelsImages.length} image${selectedPexelsImages.length === 1 ? '' : 's'} to your content`,
+                    title: "Media Added Successfully",
+                    description: `Added ${totalItems} ${itemText} to your content`,
                   });
                 }}
-                disabled={searchedImages.filter(img => img.selected).length === 0}
+                disabled={
+                  searchedImages.filter(img => img.selected).length === 0 && 
+                  (!youtubeVideoId || youtubeVideoId.length === 0) &&
+                  (primaryImages.length + secondaryImages.length === 0)
+                }
               >
-                Add Selected Items
+                Add Selected Media
               </Button>
             </DialogFooter>
         </DialogContent>
