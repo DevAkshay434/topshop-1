@@ -5996,32 +5996,7 @@ export default function AdminPanel() {
                 </div>
               </div>
               
-              <Tabs 
-                value={imageTab} 
-                onValueChange={(v) => setImageTab(v as 'primary' | 'secondary')}
-                className="w-[500px]"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="primary" className="flex items-center">
-                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center mr-2">
-                      <span className="text-white text-xs">🖼️</span>
-                    </div>
-                    Featured Image
-                    {primaryImages.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">{primaryImages.length}</Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="secondary" className="flex items-center">
-                    <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center mr-2">
-                      <span className="text-white text-xs">📷</span>
-                    </div>
-                    Secondary Images
-                    {secondaryImages.length > 0 && (
-                      <Badge variant="secondary" className="ml-2">{secondaryImages.length}</Badge>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+
             </div>
             
             <DialogDescription className="mt-1">
