@@ -249,6 +249,12 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
     console.log("Title suggestions requested with data:", req.body);
     const { keywords, keywordData, productTitle, targetAudience, buyerPersona } = req.body;
     
+    console.log("Debugging keywordData:", {
+      type: typeof keywordData,
+      isArray: Array.isArray(keywordData),
+      value: keywordData
+    });
+    
     if (!Array.isArray(keywords) || keywords.length === 0) {
       return res.status(400).json({
         success: false,
@@ -256,15 +262,22 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       });
     }
     
-    // Prioritize keywords with higher search volume
-    const sortedKeywords = [...keywordData].sort((a, b) => {
-      const volumeA = a.searchVolume || 0;
-      const volumeB = b.searchVolume || 0;
-      return volumeB - volumeA;
-    });
+    // Prioritize keywords with higher search volume if keywordData is available
+    let topKeywords: string[] = [];
     
-    const keywordStrings = sortedKeywords.map(k => k.keyword);
-    const topKeywords = keywordStrings.slice(0, 5); // Use top 5 keywords by search volume
+    if (Array.isArray(keywordData) && keywordData.length > 0) {
+      const sortedKeywords = [...keywordData].sort((a, b) => {
+        const volumeA = a.searchVolume || 0;
+        const volumeB = b.searchVolume || 0;
+        return volumeB - volumeA;
+      });
+      
+      const keywordStrings = sortedKeywords.map(k => k.keyword);
+      topKeywords = keywordStrings.slice(0, 5); // Use top 5 keywords by search volume
+    } else {
+      // Fallback to using the keywords array directly
+      topKeywords = keywords.slice(0, 5);
+    }
     
     // Generate titles using Claude or other service
     let titles: string[] = [];
@@ -369,7 +382,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
           responseFormat: "json",
           targetAudience: audience,
           keywords: topKeywords,
-          keywordData: keywordData
+          keywordData: keywordData || []
         };
         
         // Log the Claude request for debugging
