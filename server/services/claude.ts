@@ -44,7 +44,9 @@ const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
 // Function to automatically add id attributes to H2 headings that don't have them
 function addHeadingIds(content: string): string {
+  console.log('🔧 HEADING ID PROCESSING STARTED');
   let processedContent = content;
+  let addedIds = 0;
   
   // Find all H2 headings without id attributes
   const h2WithoutIdRegex = /<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi;
@@ -59,21 +61,30 @@ function addHeadingIds(content: string): string {
       .replace(/-+/g, '-') // Replace multiple hyphens with single
       .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
     
+    addedIds++;
+    console.log(`   - Added id="${id}" to H2: "${cleanTitle}"`);
     return `<h2${attributes} id="${id}">${title}</h2>`;
   });
   
+  console.log(`✅ HEADING ID PROCESSING COMPLETED: Added ${addedIds} IDs to H2 headings`);
   return processedContent;
 }
 
 // Function to automatically generate Table of Contents from H2 headings
 function addTableOfContents(content: string): string {
+  console.log('🔍 TABLE OF CONTENTS PROCESSING STARTED');
+  console.log(`   - Content length: ${content.length} characters`);
+  console.log(`   - Has TOC marker: ${content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')}`);
+  
   // Check if content has TOC placement marker
   if (!content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')) {
+    console.log('❌ No TOC placement marker found - returning content as-is');
     return content; // No TOC marker, return content as-is
   }
   
   // First, ensure all H2 headings have id attributes
   let processedContent = addHeadingIds(content);
+  console.log('✅ Added missing heading IDs to H2 elements');
   
   // Extract all H2 headings with their id attributes
   const h2Regex = /<h2[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h2>/gi;
@@ -84,13 +95,17 @@ function addTableOfContents(content: string): string {
     const id = match[1];
     const title = match[2].replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags from title
     headings.push({ id, title });
+    console.log(`   - Found H2 heading: "${title}" with id="${id}"`);
   }
   
   // Reset regex lastIndex to avoid issues with global regex
   h2Regex.lastIndex = 0;
   
+  console.log(`📊 TOC STATISTICS: Found ${headings.length} H2 headings with IDs`);
+  
   // If no headings found, remove the TOC marker
   if (headings.length === 0) {
+    console.log('⚠️ No H2 headings with IDs found - removing TOC marker');
     return processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
@@ -109,10 +124,18 @@ function addTableOfContents(content: string): string {
 
 `;
   
+  console.log('🎨 Generated TOC HTML (internal links without target="_blank")');
+  console.log(`   - TOC HTML length: ${tocHtml.length} characters`);
+  
   // Replace the TOC marker with the generated TOC and ensure proper spacing
   // This regex handles cases where there might not be proper paragraph breaks after the marker
-  return processedContent.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
+  const finalContent = processedContent.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
                 .replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
+  
+  console.log('✅ TABLE OF CONTENTS PROCESSING COMPLETED');
+  console.log(`   - Final content length: ${finalContent.length} characters`);
+  
+  return finalContent;
 }
 
 // Function to remove any H1 tags from content to prevent title duplication
@@ -223,7 +246,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       // Find all H2 headings and add markers after them (skip first 2 H2s for intro and video)
       const h2Regex = /<h2[^>]*>.*?<\/h2>/gi;
-      const h2Matches = [...processedContent.matchAll(h2Regex)];
+      const h2Matches: RegExpExecArray[] = [];
+      let h2Match;
+      while ((h2Match = h2Regex.exec(processedContent)) !== null) {
+        h2Matches.push(h2Match);
+      }
       
       if (h2Matches.length > 1) {
         console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #2 and beyond`);
@@ -466,11 +493,13 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
     - IMPORTANT: After the TOC marker, add a blank line or proper paragraph break before starting the introduction
     - The system will automatically generate a TOC using all H2 headings in your content
-    - Make sure each H2 heading has a unique id attribute (e.g., <h2 id="benefits">Benefits</h2>)
+    - CRITICAL: EVERY H2 heading MUST have a unique id attribute for navigation (e.g., <h2 id="benefits">Benefits</h2>)
     - Use descriptive, SEO-friendly id names based on the heading text (lowercase, hyphenated)
+    - Examples: <h2 id="key-benefits">Key Benefits</h2>, <h2 id="how-it-works">How It Works</h2>, <h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
     - Include an id="faq" on your FAQ section if present
     - The TOC will be styled with a clean, professional appearance and will improve user navigation
     - Ensure clean separation between TOC and the introduction paragraph
+    - MANDATORY: Do not create any H2 heading without an id attribute - the TOC will fail without proper IDs
     
     FAQ SECTION FORMATTING (if FAQ is enabled):
     - Format all FAQ questions with "Q:" prefix (colon, not period)
