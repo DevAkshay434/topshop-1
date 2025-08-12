@@ -228,14 +228,14 @@ export async function generateTopicSuggestions(
  * Generate dynamic title suggestions using ChatGPT based on keywords and products
  * @param keywords Array of selected keywords
  * @param products Array of selected products
- * @param count Number of titles to generate (default: 12)
+ * @param count Number of titles to generate (default: 8)
  * @param targetAudience Optional target audience
  * @returns Array of dynamic title suggestions
  */
 export async function generateDynamicTitles(
   keywords: string[],
   products: any[] = [],
-  count: number = 12,
+  count: number = 8,
   targetAudience?: string
 ): Promise<string[]> {
   try {

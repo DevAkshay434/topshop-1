@@ -2396,7 +2396,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Generate dynamic title suggestions using ChatGPT based on keywords and products
   apiRouter.post("/dynamic-title-suggestions", async (req: Request, res: Response) => {
     try {
-      const { keywords = [], products = [], count = 12, targetAudience } = req.body;
+      const { keywords = [], products = [], count = 8, targetAudience } = req.body;
       
       console.log(`Generating ${count} dynamic title suggestions with keywords:`, keywords);
       
@@ -2432,22 +2432,30 @@ export async function registerRoutes(app: Express): Promise<void> {
       } catch (serviceError: any) {
         console.error("Service error generating dynamic titles:", serviceError);
         
-        // Create smart fallback titles based on keywords and products
-        const keywordFallbacks = keywords.slice(0, count).map((keyword: string, index: number) => {
-          const templates = [
-            `The Ultimate Guide to ${keyword}`,
-            `Why ${keyword} Matters for Your Business`,
-            `How to Master ${keyword} in 2024`,
-            `${keyword}: Complete Beginner's Guide`,
-            `Best Practices for ${keyword}`,
-            `${keyword} vs Alternatives: What You Need to Know`,
-            `Top 10 ${keyword} Tips for Success`,
-            `Everything You Need to Know About ${keyword}`,
-            `${keyword} Explained: A Comprehensive Overview`,
-            `How ${keyword} Can Transform Your Business`
-          ];
-          return templates[index % templates.length];
-        });
+        // Create smart fallback titles based on keywords and products (exactly 8 titles)
+        const keywordFallbacks = [];
+        const primaryKeyword = keywords[0] || 'Quality Products';
+        
+        const templates = [
+          `The Ultimate Guide to ${primaryKeyword}`,
+          `Why ${primaryKeyword} Matters for Your Business`,
+          `How to Choose the Best ${primaryKeyword}`,
+          `${primaryKeyword}: Complete Beginner's Guide`,
+          `Best Practices for ${primaryKeyword}`,
+          `${primaryKeyword} vs Alternatives: What You Need to Know`,
+          `Top 7 ${primaryKeyword} Tips for Success`,
+          `Everything You Need to Know About ${primaryKeyword}`
+        ];
+        
+        // Generate exactly 8 titles using different keywords if available
+        for (let i = 0; i < 8; i++) {
+          const keyword = keywords[i % keywords.length] || primaryKeyword;
+          const baseTemplate = templates[i];
+          
+          // Replace the primary keyword with the current keyword for variety
+          let finalTitle = baseTemplate.replace(primaryKeyword, keyword);
+          keywordFallbacks.push(finalTitle);
+        }
         
         console.log(`Using ${keywordFallbacks.length} keyword-based fallback titles`);
         res.json({ 

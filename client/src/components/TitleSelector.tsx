@@ -56,7 +56,7 @@ export default function TitleSelector({
     const requestData = {
       keywords,
       products,
-      count: 12,
+      count: 8,
       targetAudience: targetAudience || buyerPersona
     };
     

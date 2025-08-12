@@ -310,7 +310,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         const dynamicTitles = await generateDynamicTitles(
           topKeywords,
           products,
-          12,
+          8,
           audience
         );
         
@@ -325,7 +325,7 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         
         // Fallback to Claude title generation
         const claudeRequest = {
-          prompt: `Generate 12 evergreen SEO-optimized blog post titles about "${cleanProductTitle || topKeywords[0]}" that incorporate these specific keywords: ${topKeywords.join(", ")}
+          prompt: `Generate 8 evergreen SEO-optimized blog post titles about "${cleanProductTitle || topKeywords[0]}" that incorporate these specific keywords: ${topKeywords.join(", ")}
           
           EVERGREEN CONTENT REQUIREMENTS:
           - Subject: ${cleanProductTitle || topKeywords[0]}
@@ -357,15 +357,15 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
           - NO dates, years, months, or seasonal references
           - Focus on timeless value and benefits
           
-          REQUIRED EVERGREEN TITLE FORMATS (distribute across 12 titles):
+          REQUIRED EVERGREEN TITLE FORMATS (distribute across 8 titles):
           - 2 numbered list titles with keywords (e.g., "7 Best [keyword] for [audience]")
           - 2 "How to" informational titles with keywords and audience focus
-          - 2 comparison titles with keywords (e.g., "[keyword] vs Alternatives")
-          - 2 question format titles with keywords (e.g., "What is [keyword]")
-          - 2 ultimate guide titles with keywords and audience benefits
-          - 2 benefit/feature titles with keywords for target audience
+          - 1 comparison title with keywords (e.g., "[keyword] vs Alternatives")
+          - 1 question format title with keywords (e.g., "What is [keyword]")
+          - 1 ultimate guide title with keywords and audience benefits
+          - 1 benefit/feature title with keywords for target audience
           
-          Format response as JSON array of exactly 12 evergreen title strings only.`,
+          Format response as JSON array of exactly 8 evergreen title strings only.`,
           responseFormat: "json",
           targetAudience: audience,
           keywords: topKeywords,
