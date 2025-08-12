@@ -101,7 +101,9 @@ export function ChooseMediaDialog({
   // Load appropriate images when dialog is opened
   useEffect(() => {
     if (open) {
-      // Reset UI state for new dialog
+      // Reset UI state for new dialog and set default tab
+      console.log('ChooseMediaDialog opened, setting activeTab to pexels-pixabay');
+      setActiveTab('pexels-pixabay');
       setIsLoading(false);
 
       if (activeTab === 'products') {
@@ -657,7 +659,7 @@ export function ChooseMediaDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="pexels-pixabay" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="pexels-pixabay">
               Search Images
