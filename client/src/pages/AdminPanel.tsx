@@ -5981,7 +5981,7 @@ export default function AdminPanel() {
 
       
       {/* Image Search Dialog */}
-      <Dialog open={showImageDialog && !showChooseMediaDialog} onOpenChange={(open) => {
+      <Dialog open={false} onOpenChange={(open) => {
         console.log("🔍 ImageSearchDialog onOpenChange:", open);
         // When dialog closes, always reset the UI to a clean state
         if (!open) {
