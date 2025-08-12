@@ -142,6 +142,99 @@ import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
 import { ImageUpload } from '@/components/ImageUpload';
 
+// Client-side TOC processing functions (mirrors server-side functions)
+function addHeadingIdsToPreview(content: string): string {
+  console.log('🔧 CLIENT-SIDE HEADING ID PROCESSING STARTED');
+  let processedContent = content;
+  let addedIds = 0;
+  
+  // Find all H2 headings without id attributes
+  const h2WithoutIdRegex = /<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi;
+  
+  processedContent = processedContent.replace(h2WithoutIdRegex, (match, attributes, title) => {
+    // Generate a clean id from the title
+    const cleanTitle = title.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
+    const id = cleanTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    
+    addedIds++;
+    console.log(`   - Added id="${id}" to H2: "${cleanTitle}"`);
+    return `<h2${attributes} id="${id}">${title}</h2>`;
+  });
+  
+  console.log(`✅ CLIENT-SIDE HEADING ID PROCESSING COMPLETED: Added ${addedIds} IDs to H2 headings`);
+  return processedContent;
+}
+
+function addTableOfContentsToPreview(content: string): string {
+  console.log('🔍 CLIENT-SIDE TABLE OF CONTENTS PROCESSING STARTED');
+  console.log(`   - Content length: ${content.length} characters`);
+  console.log(`   - Has TOC marker: ${content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')}`);
+  
+  // Check if content has TOC placement marker
+  if (!content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')) {
+    console.log('❌ No TOC placement marker found - returning content as-is');
+    return content; // No TOC marker, return content as-is
+  }
+  
+  // First, ensure all H2 headings have id attributes
+  let processedContent = addHeadingIdsToPreview(content);
+  console.log('✅ Added missing heading IDs to H2 elements');
+  
+  // Extract all H2 headings with their id attributes
+  const h2Regex = /<h2[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h2>/gi;
+  const headings: { id: string; title: string }[] = [];
+  let match;
+  
+  while ((match = h2Regex.exec(processedContent)) !== null) {
+    const id = match[1];
+    const title = match[2].replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags from title
+    headings.push({ id, title });
+    console.log(`   - Found H2 heading: "${title}" with id="${id}"`);
+  }
+  
+  // Reset regex lastIndex to avoid issues with global regex
+  h2Regex.lastIndex = 0;
+  
+  console.log(`📊 CLIENT-SIDE TOC STATISTICS: Found ${headings.length} H2 headings with IDs`);
+  
+  // If no headings found, remove the TOC marker
+  if (headings.length === 0) {
+    console.log('⚠️ No H2 headings with IDs found - removing TOC marker');
+    return processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
+  }
+  
+  // Generate clean, Shopify-compatible TOC HTML with proper spacing (NO target="_blank" for internal navigation)
+  const tocHtml = `
+<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
+  <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
+    📋 Table of Contents
+  </h3>
+  <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
+    ${headings.map(heading => 
+      `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a></li>`
+    ).join('')}
+  </ol>
+</div>
+
+`;
+  
+  console.log('🎨 Generated CLIENT-SIDE TOC HTML (internal links without target="_blank")');
+  console.log(`   - TOC HTML length: ${tocHtml.length} characters`);
+  
+  // Replace the TOC marker with the generated TOC and ensure proper spacing
+  const finalContent = processedContent.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
+                .replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
+  
+  console.log('✅ CLIENT-SIDE TABLE OF CONTENTS PROCESSING COMPLETED');
+  console.log(`   - Final content length: ${finalContent.length} characters`);
+  
+  return finalContent;
+}
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -5338,6 +5431,10 @@ export default function AdminPanel() {
                           if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
                             // Process content to render embedded images and videos properly
                             let processedContent = generatedContent.content;
+                            
+                            // CRITICAL FIX: Apply TOC processing to preview (same as database processing)
+                            processedContent = addHeadingIdsToPreview(processedContent);
+                            processedContent = addTableOfContentsToPreview(processedContent);
                             
                             // Ensure images have proper styling and are visible
                             processedContent = processedContent.replace(
