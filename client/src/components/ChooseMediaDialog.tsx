@@ -56,7 +56,7 @@ export function ChooseMediaDialog({
   description = "Select images from your Shopify store or other sources."
 }: ChooseMediaDialogProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>('primary_images');
+  const [activeTab, setActiveTab] = useState<string>('pexels-pixabay');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
