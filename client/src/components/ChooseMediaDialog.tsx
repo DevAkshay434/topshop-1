@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, Image as ImageIcon, ImagePlus, Loader2, X, Search } from 'lucide-react';
+import { Check, Image as ImageIcon, ImagePlus, Loader2, X, Search, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Separator } from '@/components/ui/separator';
@@ -657,26 +657,40 @@ export function ChooseMediaDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="primary_images" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
-            <TabsTrigger value="primary_images">
-              Primary Images
+        <Tabs defaultValue="pexels-pixabay" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="pexels-pixabay">
+              Search Images
             </TabsTrigger>
-            <TabsTrigger value="secondary_images">
-              Secondary Images
+            <TabsTrigger value="primary_images">
+              Product Images
             </TabsTrigger>
             <TabsTrigger value="uploaded">
-              <div className="flex items-center space-x-2">
-                <span>Uploaded</span>
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
-                  {uploadedImages.length}
-                </span>
-              </div>
+              Uploaded Images
+            </TabsTrigger>
+            <TabsTrigger value="upload">
+              Upload Image
             </TabsTrigger>
             <TabsTrigger value="youtube">
               YouTube Video
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="pexels-pixabay" className="space-y-4">
+            <div className="rounded-md bg-teal-50 p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Search className="h-5 w-5 text-teal-400" aria-hidden="true" />
+                </div>
+                <div className="ml-3 flex-1 md:flex md:justify-between">
+                  <p className="text-sm text-teal-700">
+                    Search for high-quality images from Pexels and Pixabay. Use keywords like "happy customer", "confused customer", "smiling family", etc.
+                  </p>
+                </div>
+              </div>
+            </div>
+            {renderTabContent()}
+          </TabsContent>
 
           <TabsContent value="primary_images" className="space-y-4">
             <div className="rounded-md bg-blue-50 p-4 mb-4">
@@ -686,77 +700,23 @@ export function ChooseMediaDialog({
                 </div>
                 <div className="ml-3 flex-1 md:flex md:justify-between">
                   <p className="text-sm text-blue-700">
-                    Choose emotionally compelling images with human subjects to feature at the top of your content
+                    Use images from your Shopify store products and collections.
                   </p>
                 </div>
               </div>
             </div>
-
-            {/* Tab selection for image sources */}
-            <Tabs defaultValue="pexels-pixabay" className="w-full">
-              <TabsList className="w-full flex justify-start border-b mb-4">
-                <TabsTrigger value="pexels-pixabay" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
-                  Pexels + Pixabay Search Images
-                </TabsTrigger>
-                <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
-                  Product Images
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="pexels-pixabay">
-                {renderTabContent()}
-              </TabsContent>
-
-              <TabsContent value="products">
-                {renderTabContent()}
-              </TabsContent>
-            </Tabs>
+            {renderTabContent()}
           </TabsContent>
 
-          <TabsContent value="secondary_images" className="space-y-4">
-            <div className="rounded-md bg-green-50 p-4 mb-4">
+          <TabsContent value="upload" className="space-y-4">
+            <div className="rounded-md bg-orange-50 p-4 mb-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <ImageIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+                  <Upload className="h-5 w-5 text-orange-400" aria-hidden="true" />
                 </div>
                 <div className="ml-3 flex-1 md:flex md:justify-between">
-                  <p className="text-sm text-green-700">
-                    Choose additional product-focused images to include throughout your content
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tab selection for image sources */}
-            <Tabs defaultValue="pexels-pixabay" className="w-full">
-              <TabsList className="w-full flex justify-start border-b mb-4">
-                <TabsTrigger value="pexels-pixabay" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
-                  Pexels + Pixabay Search Images
-                </TabsTrigger>
-                <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
-                  Product Images
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="pexels-pixabay">
-                {renderTabContent()}
-              </TabsContent>
-
-              <TabsContent value="products">
-                {renderTabContent()}
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
-          
-          <TabsContent value="uploaded" className="space-y-4">
-            <div className="rounded-md bg-purple-50 p-4 mb-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <ImageIcon className="h-5 w-5 text-purple-400" aria-hidden="true" />
-                </div>
-                <div className="ml-3 flex-1 md:flex md:justify-between">
-                  <p className="text-sm text-purple-700">
-                    Upload your own images to use in your content
+                  <p className="text-sm text-orange-700">
+                    Upload your own images (JPG, PNG, GIF - max 10MB each)
                   </p>
                 </div>
               </div>
@@ -764,7 +724,7 @@ export function ChooseMediaDialog({
 
             {/* File Upload Section */}
             <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <ImagePlus className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-600 mb-2">Upload images</p>
               <input
                 type="file"
@@ -779,12 +739,54 @@ export function ChooseMediaDialog({
                   <span>Choose Files</span>
                 </Button>
               </label>
-              <p className="text-xs text-gray-500 mt-2">
-                Support: JPG, PNG, WebP. Max size: 10MB per file
-              </p>
             </div>
-            
-            {/* Display uploaded images using the general renderTabContent function */}
+
+            {/* Show uploaded images */}
+            {uploadedImages.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {uploadedImages.map((image) => (
+                  <div 
+                    key={image.id} 
+                    className={`
+                      relative cursor-pointer border-2 rounded-md overflow-hidden
+                      ${selectedImages.some(img => img.id === image.id) ? 'border-orange-500' : 'border-gray-200 hover:border-gray-300'}
+                    `}
+                    onClick={() => toggleImageSelection(image)}
+                  >
+                    <div className="aspect-square bg-gray-50 overflow-hidden relative">
+                      <img
+                        src={image.url}
+                        alt={image.alt || 'Uploaded image'}
+                        className="w-full h-full object-cover"
+                      />
+                      {selectedImages.some(img => img.id === image.id) && (
+                        <div className="absolute top-2 right-2 bg-orange-500 text-white p-1 rounded-full">
+                          <Check className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs truncate">{image.title || image.alt || 'Uploaded image'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="uploaded" className="space-y-4">
+            <div className="rounded-md bg-purple-50 p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <ImageIcon className="h-5 w-5 text-purple-400" aria-hidden="true" />
+                </div>
+                <div className="ml-3 flex-1 md:flex md:justify-between">
+                  <p className="text-sm text-purple-700">
+                    View and select from previously uploaded images.
+                  </p>
+                </div>
+              </div>
+            </div>
             {renderTabContent()}
           </TabsContent>
           
