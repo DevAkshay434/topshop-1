@@ -6031,10 +6031,12 @@ export default function AdminPanel() {
                             }
                             
                             // Update selectedMediaContent state immediately
+                            // Update both selectedMediaContent and the main youtubeEmbed state
                             setSelectedMediaContent(prev => ({
                               ...prev,
                               youtubeEmbed: videoId
                             }));
+                            setYoutubeEmbed(videoId); // Also update the main state that secondary content uses
                             
                             toast({
                               title: "YouTube Video Added",
