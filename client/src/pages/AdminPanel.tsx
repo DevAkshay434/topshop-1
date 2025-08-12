@@ -3821,17 +3821,17 @@ export default function AdminPanel() {
                                       </div>
                                       <h4 className="text-sm font-semibold text-green-800">Secondary Content</h4>
                                       <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                        {secondaryImages.length + (selectedMediaContent.youtubeEmbed ? 1 : 0)} Selected
+                                        {secondaryImages.length + (youtubeEmbed ? 1 : 0)} Selected
                                       </span>
                                     </div>
-                                    {(secondaryImages.length > 0 || selectedMediaContent.youtubeEmbed) && (
+                                    {(secondaryImages.length > 0 || youtubeEmbed) && (
                                       <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
                                           setSecondaryImages([]);
-                                          setSelectedMediaContent(prev => ({ ...prev, youtubeEmbed: null }));
+                                          setYoutubeEmbed(null);
                                         }}
                                         className="text-xs border-green-300 text-green-600 hover:bg-green-50"
                                       >
@@ -3840,7 +3840,7 @@ export default function AdminPanel() {
                                     )}
                                   </div>
                                   
-                                  {(secondaryImages.length > 0 || selectedMediaContent.youtubeEmbed) ? (
+                                  {(secondaryImages.length > 0 || youtubeEmbed) ? (
                                     <div className="space-y-3">
                                       <div className="text-xs text-green-600 bg-green-50 p-2 rounded border">
                                         💡 These images and videos will appear throughout your content to support the main topic
@@ -3880,26 +3880,33 @@ export default function AdminPanel() {
                                           </div>
                                         ))}
                                         
-                                        {/* YouTube Video */}
-                                        {selectedMediaContent.youtubeEmbed && (
+                                        {/* YouTube Video - Using youtubeEmbed state instead of selectedMediaContent */}
+                                        {youtubeEmbed && (
                                           <div className="relative group">
                                             <div className="w-full h-24 border-2 border-green-300 rounded-md overflow-hidden shadow-sm relative">
-                                              {selectedMediaContent.youtubeEmbed.thumbnail ? (
-                                                <img 
-                                                  src={selectedMediaContent.youtubeEmbed.thumbnail} 
-                                                  alt={selectedMediaContent.youtubeEmbed.title || "YouTube video"} 
-                                                  className="w-full h-full object-cover"
-                                                />
-                                              ) : (
-                                                <div className="w-full h-full bg-red-100 flex items-center justify-center">
-                                                  <div className="text-center">
-                                                    <div className="w-8 h-8 mx-auto bg-red-600 rounded-full flex items-center justify-center mb-1">
-                                                      <span className="text-white text-xs">▶️</span>
+                                              {(() => {
+                                                // Extract video ID from YouTube URL and construct thumbnail URL
+                                                const videoIdMatch = youtubeEmbed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+                                                const videoId = videoIdMatch ? videoIdMatch[1] : null;
+                                                const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+                                                
+                                                return thumbnailUrl ? (
+                                                  <img 
+                                                    src={thumbnailUrl} 
+                                                    alt="YouTube video thumbnail" 
+                                                    className="w-full h-full object-cover"
+                                                  />
+                                                ) : (
+                                                  <div className="w-full h-full bg-red-100 flex items-center justify-center">
+                                                    <div className="text-center">
+                                                      <div className="w-8 h-8 mx-auto bg-red-600 rounded-full flex items-center justify-center mb-1">
+                                                        <span className="text-white text-xs">▶️</span>
+                                                      </div>
+                                                      <p className="text-xs text-red-700 font-medium">YouTube</p>
                                                     </div>
-                                                    <p className="text-xs text-red-700 font-medium">YouTube</p>
                                                   </div>
-                                                </div>
-                                              )}
+                                                );
+                                              })()}
                                               
                                               {/* Play button overlay */}
                                               <div className="absolute inset-0 flex items-center justify-center">
@@ -3915,7 +3922,7 @@ export default function AdminPanel() {
                                                 variant="destructive"
                                                 size="icon"
                                                 className="h-5 w-5 rounded-full opacity-80 hover:opacity-100"
-                                                onClick={() => setSelectedMediaContent(prev => ({ ...prev, youtubeEmbed: null }))}
+                                                onClick={() => setYoutubeEmbed(null)}
                                               >
                                                 <X className="h-3 w-3" />
                                               </Button>
