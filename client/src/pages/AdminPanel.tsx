@@ -3637,14 +3637,8 @@ export default function AdminPanel() {
                           <p className="text-sm text-blue-600">Select compelling visuals to enhance your content and boost engagement</p>
                         </div>
                         
-                        <Tabs defaultValue="primary" className="mb-6">
-                          <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="primary">Primary Images</TabsTrigger>
-                            <TabsTrigger value="secondary">Secondary Images</TabsTrigger>
-                            <TabsTrigger value="upload">Upload Images</TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="primary" className="p-4 bg-slate-50 rounded-md mt-2">
+                        <div className="mb-6">
+                          <div className="p-4 bg-slate-50 rounded-md mt-2">
                             <div className="mb-4">
                               <h4 className="text-sm font-medium mb-1">Featured Image</h4>
                               <p className="text-xs text-slate-500 mb-3">
@@ -3949,9 +3943,9 @@ export default function AdminPanel() {
                                 </div>
                               </div>
                             </div>
-                          </TabsContent>
+                          </div>
                           
-                          <TabsContent value="secondary" className="p-4 bg-slate-50 rounded-md mt-2">
+                          <div className="p-4 bg-slate-50 rounded-md mt-2">
                             <div className="mb-4">
                               <h4 className="text-sm font-medium mb-1">Secondary Images</h4>
                               <p className="text-xs text-slate-500 mb-3">
@@ -4085,9 +4079,9 @@ export default function AdminPanel() {
                                 )}
                               </div>
                             </div>
-                          </TabsContent>
+                          </div>
                           
-                          <TabsContent value="upload" className="p-4 bg-slate-50 rounded-md mt-2">
+                          <div className="p-4 bg-slate-50 rounded-md mt-2">
                             <div className="mb-4">
                               <h4 className="text-sm font-medium mb-2">Upload Your Own Images</h4>
                               <p className="text-xs text-slate-600 mb-4">
@@ -4103,8 +4097,8 @@ export default function AdminPanel() {
                               maxFiles={10}
                               accept="image/*"
                             />
-                          </TabsContent>
-                        </Tabs>
+                          </div>
+                        </div>
                         
                         <div className="flex justify-between mt-6">
                           <Button
