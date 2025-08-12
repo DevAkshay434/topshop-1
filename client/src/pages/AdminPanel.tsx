@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ContentStyleSelector } from '../components/ContentStyleSelector';
 
-import { ChooseMediaDialog, MediaImage } from '../components/ChooseMediaDialog';
+
 import { RelatedProductsSelector } from '../components/RelatedProductsSelector';
 import { RelatedCollectionsSelector } from '../components/RelatedCollectionsSelector';
 import { ProductMultiSelect } from '../components/ProductMultiSelect';
@@ -292,8 +292,6 @@ export default function AdminPanel() {
   const [selectedImages, setSelectedImages] = useState<PexelsImage[]>([]);
   const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
   const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
-  const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
-  const [mediaDialogInitialTab, setMediaDialogInitialTab] = useState<string>('pexels-pixabay');
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
   
@@ -3660,8 +3658,9 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setMediaDialogInitialTab('pexels-pixabay');
-                                        setShowChooseMediaDialog(true);
+                                        setImageSource('pexels');
+                                        setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
+                                        setShowImageDialog(true);
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
@@ -3688,8 +3687,17 @@ export default function AdminPanel() {
                                           className="w-full" 
                                           size="sm"
                                           onClick={() => {
-                                            setMediaDialogInitialTab('product-images');
-                                            setShowChooseMediaDialog(true);
+                                            setImageSource('product_images');
+                                            if (selectedProducts[0]?.id) {
+                                              fetchProductImages(selectedProducts[0].id);
+                                            } else {
+                                              toast({
+                                                title: "No product selected",
+                                                description: "Please select a product first",
+                                                variant: "destructive"
+                                              });
+                                            }
+                                            setShowImageDialog(true);
                                           }}
                                         >
                                           <ImageIcon className="mr-2 h-4 w-4" />
@@ -3713,8 +3721,8 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setMediaDialogInitialTab('upload');
-                                        setShowChooseMediaDialog(true);
+                                        setImageSource('upload');
+                                        setShowImageDialog(true);
                                       }}
                                     >
                                       <Upload className="mr-2 h-4 w-4" />
@@ -8364,184 +8372,7 @@ export default function AdminPanel() {
       </Dialog>
       
 
-      {/* Choose Media Dialog - New improved component */}
-      <ChooseMediaDialog
-        open={showChooseMediaDialog && !showImageDialog} 
-        onOpenChange={(open) => {
-          // Ensure only one dialog is open at a time
-          if (open && showImageDialog) {
-            setShowImageDialog(false); // Close the other dialog first
-            setTimeout(() => setShowChooseMediaDialog(open), 300); // Then open this one after a short delay
-          } else {
-            setShowChooseMediaDialog(open);
-          }
-        }}
-        initialTab={mediaDialogInitialTab}
-        onImagesSelected={(images) => {
-          // When user confirms selected images
-          if (images.length > 0) {
-            // Create a standardized image format that works for both Shopify and Pexels images
-            const standardizedImages = images.map(img => {
-              // Create a common format that has all necessary properties
-              const standardImage = {
-                id: img.id,
-                url: img.url,
-                width: 500, // default size if not available
-                height: 500,
-                alt: img.alt || img.title || 'Image',
-                // Ensure src is properly formatted for our components
-                src: {
-                  original: img.url,
-                  large: img.url,
-                  medium: img.url,
-                  small: img.url,
-                  thumbnail: img.url,
-                },
-                // Keep track of the original source
-                source: img.source || 'shopify',
-                // For type safety - let's add these fields to make it compatible with PexelsImage
-                selected: false,
-                type: 'image',
-                // Store the primary/secondary designation from the ChooseMediaDialog
-                isPrimary: img.isPrimary
-              };
-              return standardImage;
-            });
-            
-            try {
-              // Sort images into primary and secondary based on the isPrimary flag
-              const primaryImgs = standardizedImages.filter(img => img.isPrimary === true);
-              const secondaryImgs = standardizedImages.filter(img => img.isPrimary === false);
-              
-              // Process primary images if any exist
-              if (primaryImgs.length > 0) {
-                const safePrimaryImages = primaryImgs.map(img => ({
-                  ...img,
-                  selected: false,
-                  type: 'image',
-                  src: {
-                    original: img.url,
-                    large: img.url,
-                    medium: img.url,
-                    small: img.url,
-                    thumbnail: img.url
-                  }
-                }));
-                setPrimaryImages(prev => [...prev, ...safePrimaryImages]);
-                toast({
-                  title: "Featured images added",
-                  description: `${primaryImgs.length} featured image${primaryImgs.length === 1 ? '' : 's'} added successfully`
-                });
-              }
-              
-              // Process secondary images if any exist
-              if (secondaryImgs.length > 0) {
-                const safeSecondaryImages = secondaryImgs.map(img => ({
-                  ...img,
-                  selected: false,
-                  type: 'image',
-                  src: {
-                    original: img.url,
-                    large: img.url,
-                    medium: img.url,
-                    small: img.url,
-                    thumbnail: img.url
-                  }
-                }));
-                setSecondaryImages(prev => [...prev, ...safeSecondaryImages]);
-                
-                // Update selectedMediaContent state immediately
-                setSelectedMediaContent(prev => ({
-                  ...prev,
-                  secondaryImages: [...prev.secondaryImages, ...safeSecondaryImages.map(img => ({
-                    id: img.id,
-                    url: img.url,
-                    alt: img.alt || '',
-                    width: img.width || 0,
-                    height: img.height || 0,
-                    source: img.source || 'pexels'
-                  }))]
-                }));
-                
-                toast({
-                  title: "Content images added",
-                  description: `${secondaryImgs.length} content image${secondaryImgs.length === 1 ? '' : 's'} added successfully`
-                });
-              }
-              
-              // If no isPrimary designation was made, use the active tab as before
-              if (primaryImgs.length === 0 && secondaryImgs.length === 0) {
-                // Fallback to the old method - add to the appropriate collection based on active tab
-                if (imageTab === 'primary') {
-                  const safeImages = standardizedImages.map(img => ({
-                    ...img,
-                    selected: false,
-                    type: 'image',
-                    src: {
-                      original: img.url,
-                      large: img.url,
-                      medium: img.url,
-                      small: img.url,
-                      thumbnail: img.url
-                    }
-                  }));
-                  setPrimaryImages(prev => [...prev, ...safeImages]);
-                  toast({
-                    title: "Featured images added",
-                    description: `${images.length} featured image${images.length === 1 ? '' : 's'} added successfully`
-                  });
-                } else {
-                  const safeImages = standardizedImages.map(img => ({
-                    ...img,
-                    selected: false,
-                    type: 'image',
-                    src: {
-                      original: img.url,
-                      large: img.url,
-                      medium: img.url,
-                      small: img.url,
-                      thumbnail: img.url
-                    }
-                  }));
-                  setSecondaryImages(prev => [...prev, ...safeImages]);
-                  
-                  // Update selectedMediaContent state immediately
-                  setSelectedMediaContent(prev => ({
-                    ...prev,
-                    secondaryImages: [...prev.secondaryImages, ...safeImages.map(img => ({
-                      id: img.id,
-                      url: img.url,
-                      alt: img.alt || '',
-                      width: img.width || 0,
-                      height: img.height || 0,
-                      source: img.source || 'pexels'
-                    }))]
-                  }));
-                  
-                  toast({
-                    title: "Content images added",
-                    description: `${images.length} content image${images.length === 1 ? '' : 's'} added successfully`
-                  });
-                }
-              }
-            } catch (error) {
-              console.error("Error adding images:", error);
-              toast({
-                title: "Error adding images",
-                description: "There was a problem adding the selected images. Please try again.",
-                variant: "destructive"
-              });
-            }
-          }
-        }}
-        initialSelectedImages={imageTab === 'primary' ? primaryImages : secondaryImages}
-        maxImages={10}
-        allowMultiple={true}
-        title={imageTab === 'primary' ? "Choose Featured Images" : "Choose Content Images"}
-        description={imageTab === 'primary' 
-          ? "Select emotionally compelling images for the top of your content" 
-          : "Select product images to appear throughout your article body"}
-      />
+
 
       {/* Project Management Dialogs */}
       <ProjectCreationDialog
