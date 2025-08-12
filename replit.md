@@ -143,6 +143,37 @@ The application employs a modern full-stack, client-server architecture with mul
 - **User Experience**: ALL title suggestions are now completely dynamic and AI-generated with no static options
 - **Date Completed**: August 12, 2025
 
+### Enhanced Save Project Functionality - COMPLETED ✅
+- **Goal**: Always keep the Save Project button enabled with popup-driven project creation workflow
+- **Changes Made**:
+  - Save Project button is now always enabled regardless of current project status
+  - Clicking Save Project without an existing project opens the project creation dialog instead of showing error
+  - After creating a project, all current AdminPanel form data is automatically saved to the new project
+  - Enhanced project creation workflow with immediate data persistence
+  - Maintained all existing project loading and management functionality
+- **Technical Implementation**:
+  - Modified `handleSaveProject` function to show create project dialog when no current project exists
+  - Updated Save Project button to remove `!currentProject` from disabled condition
+  - Enhanced `handleCreateProject` function with automatic form data saving after project creation
+  - Integrated existing project API endpoints for seamless save/load operations
+- **User Experience**: Streamlined workflow where users can always save their work, with guided project creation when needed
+- **Date Completed**: August 12, 2025
+
+### Table of Contents Navigation Enhancement - COMPLETED ✅
+- **Goal**: Remove target="_blank" from Table of Contents links and ensure proper heading ID navigation
+- **Changes Made**:
+  - Enhanced Table of Contents generation to ensure all H2 headings have proper id attributes
+  - Added automatic ID generation for H2 headings that don't have them
+  - Table of Contents links open in same page (no target="_blank") for proper internal navigation
+  - External reference links maintain target="_blank" for opening in new tabs
+- **Technical Implementation**:
+  - Created `addHeadingIds` function to automatically add id attributes to H2 headings without them
+  - Enhanced `addTableOfContents` function to process headings and ensure proper ID-based navigation
+  - Automatic ID generation uses clean, SEO-friendly slugs (lowercase, hyphenated)
+  - Maintained distinction between internal TOC links and external reference links
+- **User Experience**: Smooth in-page navigation from Table of Contents to corresponding sections
+- **Date Completed**: August 12, 2025
+
 ## External Dependencies
 
 - **AI Content Generation**:

@@ -42,6 +42,29 @@ const anthropic = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
+// Function to automatically add id attributes to H2 headings that don't have them
+function addHeadingIds(content: string): string {
+  let processedContent = content;
+  
+  // Find all H2 headings without id attributes
+  const h2WithoutIdRegex = /<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi;
+  
+  processedContent = processedContent.replace(h2WithoutIdRegex, (match, attributes, title) => {
+    // Generate a clean id from the title
+    const cleanTitle = title.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
+    const id = cleanTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    
+    return `<h2${attributes} id="${id}">${title}</h2>`;
+  });
+  
+  return processedContent;
+}
+
 // Function to automatically generate Table of Contents from H2 headings
 function addTableOfContents(content: string): string {
   // Check if content has TOC placement marker
@@ -49,23 +72,29 @@ function addTableOfContents(content: string): string {
     return content; // No TOC marker, return content as-is
   }
   
+  // First, ensure all H2 headings have id attributes
+  let processedContent = addHeadingIds(content);
+  
   // Extract all H2 headings with their id attributes
   const h2Regex = /<h2[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h2>/gi;
   const headings: { id: string; title: string }[] = [];
   let match;
   
-  while ((match = h2Regex.exec(content)) !== null) {
+  while ((match = h2Regex.exec(processedContent)) !== null) {
     const id = match[1];
     const title = match[2].replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags from title
     headings.push({ id, title });
   }
   
+  // Reset regex lastIndex to avoid issues with global regex
+  h2Regex.lastIndex = 0;
+  
   // If no headings found, remove the TOC marker
   if (headings.length === 0) {
-    return content.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
+    return processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate clean, Shopify-compatible TOC HTML with proper spacing
+  // Generate clean, Shopify-compatible TOC HTML with proper spacing (NO target="_blank" for internal navigation)
   const tocHtml = `
 <div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
   <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
@@ -82,7 +111,7 @@ function addTableOfContents(content: string): string {
   
   // Replace the TOC marker with the generated TOC and ensure proper spacing
   // This regex handles cases where there might not be proper paragraph breaks after the marker
-  return content.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
+  return processedContent.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
                 .replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
 }
 
