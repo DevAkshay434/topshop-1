@@ -293,7 +293,6 @@ export default function AdminPanel() {
   const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
   const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
-  const [chooseMediaInitialQuery, setChooseMediaInitialQuery] = useState<string>('');
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
   
@@ -1135,7 +1134,6 @@ export default function AdminPanel() {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<{url: string, id: string}[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imageDialogInitialTab, setImageDialogInitialTab] = useState<'search' | 'selected'>('search');
   const [imageSource, setImageSource] = useState<'pexels' | 'pixabay' | 'shopify_media' | 'product_images' | 'upload' | 'youtube'>('pexels');
   const [mediaTypeSelection, setMediaTypeSelection] = useState<'products' | 'variants' | 'media'>('products');
   const [contentFiles, setContentFiles] = useState<any[]>([]);
@@ -3666,29 +3664,10 @@ export default function AdminPanel() {
                                       variant="outline" 
                                       className="w-full" 
                                       size="sm"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        console.log("🔍 Search Pexels button clicked");
-                                        
-                                        // Force close all dialogs first
-                                        setShowImageDialog(false);
-                                        setShowChooseMediaDialog(false);
-                                        
-                                        // Add a small delay to ensure state is reset
-                                        setTimeout(() => {
-                                          // Set up ChooseMediaDialog
-                                          setImageSource('pexels');
-                                          const searchTerm = selectedProducts.length > 0 
-                                            ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
-                                            : 'happy customer';
-                                          
-                                          console.log("🔍 Setting up ChooseMediaDialog with searchTerm:", searchTerm);
-                                          setChooseMediaInitialQuery(searchTerm);
-                                          setShowChooseMediaDialog(true);
-                                          
-                                          console.log("🔍 ChooseMediaDialog should open now");
-                                        }, 100);
+                                      onClick={() => {
+                                        setImageSource('pexels');
+                                        setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
+                                        setShowImageDialog(true);
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
@@ -3716,7 +3695,6 @@ export default function AdminPanel() {
                                           size="sm"
                                           onClick={() => {
                                             setImageSource('product_images');
-                                            setImageDialogInitialTab('search'); // Open with default search tab
                                             if (selectedProducts[0]?.id) {
                                               fetchProductImages(selectedProducts[0].id);
                                             } else {
@@ -3751,7 +3729,6 @@ export default function AdminPanel() {
                                       size="sm"
                                       onClick={() => {
                                         setImageSource('upload');
-                                        setImageDialogInitialTab('search'); // Open with default search tab
                                         setShowImageDialog(true);
                                       }}
                                     >
@@ -4645,9 +4622,6 @@ export default function AdminPanel() {
                             keyword: k.keyword,
                             isMainKeyword: k === selectedKeywords[0] // First keyword is main
                           }))}
-                          initialTab={imageDialogInitialTab}
-                          initialSearchQuery={imageSearchQuery}
-                          autoSearch={!!imageSearchQuery}
                         />
 
                         <div className="flex gap-3">
@@ -5981,8 +5955,7 @@ export default function AdminPanel() {
 
       
       {/* Image Search Dialog */}
-      <Dialog open={false} onOpenChange={(open) => {
-        console.log("🔍 ImageSearchDialog onOpenChange:", open);
+      <Dialog open={showImageDialog && !showChooseMediaDialog} onOpenChange={(open) => {
         // When dialog closes, always reset the UI to a clean state
         if (!open) {
           // Reset loading state if dialog is closed during a search
@@ -5991,10 +5964,12 @@ export default function AdminPanel() {
           }
         }
         
-        setShowImageDialog(open);
-        // When ImageSearchDialog opens, ensure ChooseMediaDialog is closed
-        if (open) {
-          setShowChooseMediaDialog(false);
+        // Ensure only one dialog is open at a time
+        if (open && showChooseMediaDialog) {
+          setShowChooseMediaDialog(false); // Close the other dialog first
+          setTimeout(() => setShowImageDialog(open), 300); // Then open this one after a short delay
+        } else {
+          setShowImageDialog(open);
         }
       }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
@@ -8431,13 +8406,14 @@ export default function AdminPanel() {
 
       {/* Choose Media Dialog - New improved component */}
       <ChooseMediaDialog
-        open={showChooseMediaDialog} 
+        open={showChooseMediaDialog && !showImageDialog} 
         onOpenChange={(open) => {
-          console.log("🔍 ChooseMediaDialog onOpenChange:", open);
-          setShowChooseMediaDialog(open);
-          // When ChooseMediaDialog opens, ensure ImageSearchDialog is closed
-          if (open) {
-            setShowImageDialog(false);
+          // Ensure only one dialog is open at a time
+          if (open && showImageDialog) {
+            setShowImageDialog(false); // Close the other dialog first
+            setTimeout(() => setShowChooseMediaDialog(open), 300); // Then open this one after a short delay
+          } else {
+            setShowChooseMediaDialog(open);
           }
         }}
         onImagesSelected={(images) => {
@@ -8604,8 +8580,6 @@ export default function AdminPanel() {
         description={imageTab === 'primary' 
           ? "Select emotionally compelling images for the top of your content" 
           : "Select product images to appear throughout your article body"}
-        initialSearchQuery={imageSearchQuery}
-        autoSearchPexels={!!imageSearchQuery}
       />
 
       {/* Project Management Dialogs */}

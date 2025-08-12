@@ -43,9 +43,6 @@ interface ImageSearchDialogProps {
     keyword: string;
     isMainKeyword?: boolean;
   }>;
-  initialTab?: 'search' | 'selected';
-  initialSearchQuery?: string;
-  autoSearch?: boolean;
 }
 
 export default function ImageSearchDialog({
@@ -53,10 +50,7 @@ export default function ImageSearchDialog({
   onOpenChange,
   onImagesSelected,
   initialSelectedImages = [],
-  selectedKeywords = [],
-  initialTab = 'search',
-  initialSearchQuery = '',
-  autoSearch = false
+  selectedKeywords = []
 }: ImageSearchDialogProps) {
   const [imageSearchQuery, setImageSearchQuery] = useState<string>('');
   const [searchedImages, setSearchedImages] = useState<PexelsImage[]>([]);
@@ -65,42 +59,9 @@ export default function ImageSearchDialog({
   const [imageSearchHistory, setImageSearchHistory] = useState<SearchHistory[]>([]);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'pexels' | 'pixabay' | 'shopify_media' | 'product_image' | 'variant_image'>('all');
   const [availableSources, setAvailableSources] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'search' | 'selected'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'search' | 'selected'>('search');
   const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
   const { toast } = useToast();
-
-  // Auto-search when dialog opens with search query
-  useEffect(() => {
-    if (open && autoSearch && initialSearchQuery) {
-      console.log("Auto-searching images with query:", initialSearchQuery);
-      setImageSearchQuery(initialSearchQuery);
-      // Start on search tab during search, unless initialTab is specifically 'selected'
-      if (initialTab !== 'selected') {
-        setActiveTab('search');
-      }
-      // Trigger search after a short delay to ensure state is set
-      setTimeout(async () => {
-        await handleImageSearch(initialSearchQuery);
-        // If initialTab was 'selected', switch to it after search completes
-        if (initialTab === 'selected') {
-          setTimeout(() => {
-            setActiveTab('selected');
-          }, 300);
-        }
-      }, 100);
-    }
-  }, [open, autoSearch, initialSearchQuery, initialTab]);
-
-  // Reset active tab when dialog opens with new initialTab
-  useEffect(() => {
-    if (open) {
-      setActiveTab(initialTab);
-      // If initial search query is provided, set it
-      if (initialSearchQuery) {
-        setImageSearchQuery(initialSearchQuery);
-      }
-    }
-  }, [open, initialTab, initialSearchQuery]);
 
   // Reset selected images when initialSelectedImages changes
   useEffect(() => {

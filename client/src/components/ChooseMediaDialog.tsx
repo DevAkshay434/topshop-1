@@ -43,8 +43,6 @@ interface ChooseMediaDialogProps {
   allowMultiple?: boolean;
   title?: string;
   description?: string;
-  initialSearchQuery?: string;
-  autoSearchPexels?: boolean;
 }
 
 export function ChooseMediaDialog({
@@ -55,14 +53,10 @@ export function ChooseMediaDialog({
   maxImages = 10,
   allowMultiple = true,
   title = "Choose Media",
-  description = "Select images from your Shopify store or other sources.",
-  initialSearchQuery = '',
-  autoSearchPexels = false
+  description = "Select images from your Shopify store or other sources."
 }: ChooseMediaDialogProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>('primary_images');
-  const [primarySubTab, setPrimarySubTab] = useState<string>('pexels');
-  const [secondarySubTab, setSecondarySubTab] = useState<string>('pexels');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
@@ -104,30 +98,11 @@ export function ChooseMediaDialog({
     }
   };
 
-  // Auto-search Pexels when dialog opens with search query
-  useEffect(() => {
-    if (open && autoSearchPexels && initialSearchQuery) {
-      console.log("Auto-searching Pexels with query:", initialSearchQuery);
-      setSearchQuery(initialSearchQuery);
-      setActiveTab('primary_images'); // Set to primary images tab
-      setPrimarySubTab('pexels'); // Set pexels sub-tab as active
-      // Trigger search after a short delay to ensure state is set
-      setTimeout(() => {
-        searchPexelsImages();
-      }, 100);
-    }
-  }, [open, autoSearchPexels, initialSearchQuery]);
-
   // Load appropriate images when dialog is opened
   useEffect(() => {
     if (open) {
       // Reset UI state for new dialog
       setIsLoading(false);
-      
-      // If initial search query is provided, set it
-      if (initialSearchQuery) {
-        setSearchQuery(initialSearchQuery);
-      }
 
       if (activeTab === 'products') {
         // For product tab, load product-specific images if we have a product ID
@@ -458,11 +433,9 @@ export function ChooseMediaDialog({
 
   // Function to get appropriate message when no images are available
   const getEmptyStateMessage = () => {
-    const currentSubTab = activeTab === 'primary_images' ? primarySubTab : secondarySubTab;
-    
-    if (currentSubTab === 'products') {
+    if (activeTab === 'products') {
       return "No product images found. Please select a different product.";
-    } else if (currentSubTab === 'pexels') {
+    } else if (activeTab === 'pexels') {
       return searchInProgress 
         ? "No images found. Try a different search term." 
         : "Enter search terms above to find images on Pexels.";
@@ -474,16 +447,13 @@ export function ChooseMediaDialog({
 
   // Determine which images to display based on active tab
   const getActiveImages = () => {
-    if (activeTab === 'uploaded') {
-      return uploadedImages;
-    }
-    
-    const currentSubTab = activeTab === 'primary_images' ? primarySubTab : secondarySubTab;
-    switch (currentSubTab) {
+    switch (activeTab) {
       case 'products':
         return productImages;
       case 'pexels':
         return pexelsImages;
+      case 'uploaded':
+        return uploadedImages;
       default:
         return [];
     }
@@ -492,12 +462,11 @@ export function ChooseMediaDialog({
   // Function to render the content for the active tab
   const renderTabContent = () => {
     const images = getActiveImages();
-    const currentSubTab = activeTab === 'primary_images' ? primarySubTab : secondarySubTab;
 
     return (
       <div className="relative">
-        {/* Show search bar for Pexels sub-tab */}
-        {currentSubTab === 'pexels' && (
+        {/* Show search bar for Pexels tab */}
+        {activeTab === 'pexels' && (
           <div className="mb-4 flex gap-2">
             <div className="relative flex-1">
               <Input
@@ -686,7 +655,7 @@ export function ChooseMediaDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="primary_images" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="primary_images">
               Primary Images
@@ -722,7 +691,7 @@ export function ChooseMediaDialog({
             </div>
 
             {/* Tab selection for image sources */}
-            <Tabs value={primarySubTab} onValueChange={setPrimarySubTab} className="w-full">
+            <Tabs defaultValue="pexels" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
                 <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
                   Pexels Images
@@ -757,7 +726,7 @@ export function ChooseMediaDialog({
             </div>
 
             {/* Tab selection for image sources */}
-            <Tabs value={secondarySubTab} onValueChange={setSecondarySubTab} className="w-full">
+            <Tabs defaultValue="pexels" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
                 <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
                   Pexels Images
