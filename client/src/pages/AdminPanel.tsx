@@ -8600,10 +8600,10 @@ export default function AdminPanel() {
         initialSelectedImages={imageTab === 'primary' ? primaryImages : secondaryImages}
         maxImages={10}
         allowMultiple={true}
-        title="Choose Media"
+        title={imageTab === 'primary' ? "Choose Featured Images" : "Choose Content Images"}
         description={imageTab === 'primary' 
-          ? "Select images for the top of your content" 
-          : "Select images to appear throughout your article body"}
+          ? "Select emotionally compelling images for the top of your content" 
+          : "Select product images to appear throughout your article body"}
         initialSearchQuery={imageSearchQuery}
         autoSearchPexels={!!imageSearchQuery}
       />
