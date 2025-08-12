@@ -293,6 +293,7 @@ export default function AdminPanel() {
   const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
   const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
+  const [chooseMediaInitialQuery, setChooseMediaInitialQuery] = useState<string>('');
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
   
