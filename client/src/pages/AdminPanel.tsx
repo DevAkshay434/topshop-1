@@ -3667,6 +3667,8 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
+                                        console.log("🔍 Search Pexels button clicked");
+                                        
                                         // Ensure ImageSearchDialog is closed
                                         setShowImageDialog(false);
                                         
@@ -3676,8 +3678,11 @@ export default function AdminPanel() {
                                           ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
                                           : 'happy customer';
                                         
+                                        console.log("🔍 Setting up ChooseMediaDialog with searchTerm:", searchTerm);
                                         setChooseMediaInitialQuery(searchTerm);
-                                        setShowChooseMediaDialog(true); // Open ChooseMediaDialog with Pexels search
+                                        setShowChooseMediaDialog(true);
+                                        
+                                        console.log("🔍 ChooseMediaDialog should open now");
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
@@ -5979,12 +5984,10 @@ export default function AdminPanel() {
           }
         }
         
-        // Ensure only one dialog is open at a time
-        if (open && showChooseMediaDialog) {
-          setShowChooseMediaDialog(false); // Close the other dialog first
-          setTimeout(() => setShowImageDialog(open), 300); // Then open this one after a short delay
-        } else {
-          setShowImageDialog(open);
+        setShowImageDialog(open);
+        // When ImageSearchDialog opens, ensure ChooseMediaDialog is closed
+        if (open) {
+          setShowChooseMediaDialog(false);
         }
       }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
@@ -8421,14 +8424,12 @@ export default function AdminPanel() {
 
       {/* Choose Media Dialog - New improved component */}
       <ChooseMediaDialog
-        open={showChooseMediaDialog && !showImageDialog} 
+        open={showChooseMediaDialog} 
         onOpenChange={(open) => {
-          // Ensure only one dialog is open at a time
-          if (open && showImageDialog) {
-            setShowImageDialog(false); // Close the other dialog first
-            setTimeout(() => setShowChooseMediaDialog(open), 300); // Then open this one after a short delay
-          } else {
-            setShowChooseMediaDialog(open);
+          setShowChooseMediaDialog(open);
+          // When ChooseMediaDialog opens, ensure ImageSearchDialog is closed
+          if (open) {
+            setShowImageDialog(false);
           }
         }}
         onImagesSelected={(images) => {
