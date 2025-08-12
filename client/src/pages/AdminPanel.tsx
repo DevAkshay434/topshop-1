@@ -3883,14 +3883,32 @@ export default function AdminPanel() {
                                         {/* YouTube Video */}
                                         {selectedMediaContent.youtubeEmbed && (
                                           <div className="relative group">
-                                            <div className="w-full h-24 bg-red-100 border-2 border-green-300 rounded-md flex items-center justify-center shadow-sm">
-                                              <div className="text-center">
-                                                <div className="w-8 h-8 mx-auto bg-red-600 rounded-full flex items-center justify-center mb-1">
-                                                  <span className="text-white text-xs">▶️</span>
+                                            <div className="w-full h-24 border-2 border-green-300 rounded-md overflow-hidden shadow-sm relative">
+                                              {selectedMediaContent.youtubeEmbed.thumbnail ? (
+                                                <img 
+                                                  src={selectedMediaContent.youtubeEmbed.thumbnail} 
+                                                  alt={selectedMediaContent.youtubeEmbed.title || "YouTube video"} 
+                                                  className="w-full h-full object-cover"
+                                                />
+                                              ) : (
+                                                <div className="w-full h-full bg-red-100 flex items-center justify-center">
+                                                  <div className="text-center">
+                                                    <div className="w-8 h-8 mx-auto bg-red-600 rounded-full flex items-center justify-center mb-1">
+                                                      <span className="text-white text-xs">▶️</span>
+                                                    </div>
+                                                    <p className="text-xs text-red-700 font-medium">YouTube</p>
+                                                  </div>
                                                 </div>
-                                                <p className="text-xs text-red-700 font-medium">YouTube</p>
+                                              )}
+                                              
+                                              {/* Play button overlay */}
+                                              <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-8 h-8 bg-red-600 bg-opacity-80 rounded-full flex items-center justify-center shadow-lg">
+                                                  <span className="text-white text-xs ml-0.5">▶</span>
+                                                </div>
                                               </div>
                                             </div>
+                                            
                                             <div className="absolute top-1 right-1">
                                               <Button
                                                 type="button"
