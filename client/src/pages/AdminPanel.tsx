@@ -3658,7 +3658,7 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setImageSource('pexels');
+                                        setImageSource('unified_search');
                                         setImageSearchQuery(`happy ${selectedProducts.length > 0 ? selectedProducts[0].title.split(' ')[0] : 'customer'}`);
                                         setShowImageDialog(true);
                                       }}
@@ -3773,6 +3773,7 @@ export default function AdminPanel() {
                                             onClick={() => {
                                               // Replace featured image functionality
                                               setImageTab('primary');
+                                              setImageSource('unified_search');
                                               setShowImageDialog(true);
                                             }}
                                           >
@@ -3799,6 +3800,7 @@ export default function AdminPanel() {
                                         size="sm"
                                         onClick={() => {
                                           setImageTab('primary');
+                                          setImageSource('unified_search');
                                           setShowImageDialog(true);
                                         }}
                                         className="border-blue-300 text-blue-600 hover:bg-blue-50"
@@ -4475,6 +4477,7 @@ export default function AdminPanel() {
                             size="sm"
                             onClick={() => {
                               setImageTab('primary');
+                              setImageSource('unified_search');
                               setShowImageDialog(true);
                             }}
                           >
