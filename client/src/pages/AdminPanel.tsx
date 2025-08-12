@@ -5948,7 +5948,7 @@ export default function AdminPanel() {
 
       
       {/* Image Search Dialog */}
-      <Dialog open={showImageDialog && !showChooseMediaDialog} onOpenChange={(open) => {
+      <Dialog open={showImageDialog} onOpenChange={(open) => {
         // When dialog closes, always reset the UI to a clean state
         if (!open) {
           // Reset loading state if dialog is closed during a search
@@ -5957,13 +5957,7 @@ export default function AdminPanel() {
           }
         }
         
-        // Ensure only one dialog is open at a time
-        if (open && showChooseMediaDialog) {
-          setShowChooseMediaDialog(false); // Close the other dialog first
-          setTimeout(() => setShowImageDialog(open), 300); // Then open this one after a short delay
-        } else {
-          setShowImageDialog(open);
-        }
+        setShowImageDialog(open);
       }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
