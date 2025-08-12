@@ -1603,33 +1603,81 @@ Place this at a logical position in the content, typically after introducing a c
         });
       }
       
-      // 3. Generate content with Claude
-      const generatedContent = await generateBlogContentWithClaude({
-        topic: requestData.title,
-        tone: requestData.toneOfVoice,
-        length: contentLength,
-        customPrompt: claudeUserPrompt,
-        systemPrompt: claudeSystemPrompt,
-        includeProducts: productsInfo.length > 0,
-        includeCollections: collectionsInfo.length > 0,
-        // Add content style information if available
-        contentStyleToneId: requestData.contentStyleToneId,
-        contentStyleDisplayName: requestData.contentStyleDisplayName,
-        includeKeywords: requestData.keywords && requestData.keywords.length > 0,
-        // Add selected media from Choose Media step
-        primaryImage: requestData.primaryImage,
-        secondaryImages: requestData.secondaryImages,
-        youtubeEmbed: requestData.youtubeEmbed,
-        // Add product information for secondary image linking
-        productIds: productsInfo.map(p => String(p.id)),
-        productsInfo: productsInfo,
-        // Add audience targeting fields
-        targetAudience: requestData.targetAudience,
-        buyerPersona: requestData.buyerPersona,
-        // Add keyword data for alignment
-        keywords: requestData.keywords,
-        keywordData: selectedKeywordData
-      });
+      // 3. Generate content with Claude, fallback to OpenAI if Claude fails
+      let generatedContent;
+      try {
+        generatedContent = await generateBlogContentWithClaude({
+          topic: requestData.title,
+          tone: requestData.toneOfVoice,
+          length: contentLength,
+          customPrompt: claudeUserPrompt,
+          systemPrompt: claudeSystemPrompt,
+          includeProducts: productsInfo.length > 0,
+          includeCollections: collectionsInfo.length > 0,
+          // Add content style information if available
+          contentStyleToneId: requestData.contentStyleToneId,
+          contentStyleDisplayName: requestData.contentStyleDisplayName,
+          includeKeywords: requestData.keywords && requestData.keywords.length > 0,
+          // Add selected media from Choose Media step
+          primaryImage: requestData.primaryImage,
+          secondaryImages: requestData.secondaryImages,
+          youtubeEmbed: requestData.youtubeEmbed,
+          // Add product information for secondary image linking
+          productIds: productsInfo.map(p => String(p.id)),
+          productsInfo: productsInfo,
+          // Add audience targeting fields
+          targetAudience: requestData.targetAudience,
+          buyerPersona: requestData.buyerPersona,
+          // Add keyword data for alignment
+          keywords: requestData.keywords,
+          keywordData: selectedKeywordData
+        });
+      } catch (claudeError: any) {
+        console.log("Claude API failed, attempting OpenAI fallback...");
+        console.log("Claude error:", claudeError.message);
+        
+        // Check if it's a 529 overload error or rate limit
+        const isTemporaryError = claudeError.message?.includes('529') || 
+                                claudeError.message?.includes('Overloaded') ||
+                                claudeError.message?.includes('rate_limit') ||
+                                claudeError.status === 529;
+        
+        if (isTemporaryError) {
+          try {
+            // Import OpenAI service
+            const { generateBlogContent } = await import('../services/openai.js');
+            
+            // Create a simplified prompt for OpenAI
+            let openaiPrompt = `Write a comprehensive blog post about "${requestData.title}"`;
+            if (requestData.toneOfVoice) {
+              openaiPrompt += ` in a ${requestData.toneOfVoice} tone`;
+            }
+            if (requestData.keywords && requestData.keywords.length > 0) {
+              openaiPrompt += `. Include these keywords naturally: ${requestData.keywords.join(', ')}`;
+            }
+            openaiPrompt += `. Make it ${contentLength} length with proper headings, engaging content, and SEO optimization.`;
+            
+            console.log("Generating content with OpenAI fallback...");
+            const openaiContent = await generateBlogContent(requestData.title, openaiPrompt);
+            
+            // Transform OpenAI response to match Claude format
+            generatedContent = {
+              title: openaiContent.title,
+              content: openaiContent.content,
+              tags: openaiContent.tags || [],
+              metaDescription: openaiContent.content.replace(/<[^>]*>/g, '').substring(0, 155) + '...'
+            };
+            
+            console.log("✅ OpenAI fallback successful - Generated content length:", generatedContent.content?.length || 0);
+          } catch (openaiError: any) {
+            console.error("OpenAI fallback also failed:", openaiError.message);
+            throw new Error(`Content generation failed: Claude API is temporarily overloaded (${claudeError.message}) and OpenAI fallback failed (${openaiError.message}). Please try again in a few minutes.`);
+          }
+        } else {
+          // Re-throw non-temporary errors
+          throw claudeError;
+        }
+      }
       
       console.log("✅ CLAUDE SERVICE COMPLETED - Generated content length:", generatedContent.content?.length || 0);
       console.log("🔍 CLAUDE SERVICE DEBUGGING - Data sent to Claude:");
