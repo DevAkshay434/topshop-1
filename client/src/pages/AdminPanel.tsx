@@ -621,9 +621,35 @@ export default function AdminPanel() {
   // Project management functions
   const handleCreateProject = (project: any) => {
     setCurrentProject(project);
+    
+    // Immediately save current form data to the newly created project
+    const formState = extractFormStateForSaving();
+    
+    // Update the project with current form data using mutation
+    const updateProjectMutation = {
+      mutationFn: (projectData: any) => 
+        apiRequest('PUT', `/api/projects/${project.id}`, {
+          projectData: JSON.stringify(projectData)
+        }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+        console.log('Project automatically saved with current form data');
+      },
+      onError: (error: any) => {
+        console.error('Error auto-saving project:', error);
+      },
+    };
+    
+    // Execute the auto-save
+    updateProjectMutation.mutationFn(formState).then(() => {
+      updateProjectMutation.onSuccess();
+    }).catch((error) => {
+      updateProjectMutation.onError(error);
+    });
+    
     toast({
       title: "Project created",
-      description: `"${project.name}" is now your active project.`,
+      description: `"${project.name}" is now your active project and has been saved with your current settings.`,
     });
   };
 
@@ -906,11 +932,8 @@ export default function AdminPanel() {
 
   const handleSaveProject = () => {
     if (!currentProject) {
-      toast({
-        title: "No active project",
-        description: "Please create or load a project first.",
-        variant: "destructive",
-      });
+      // Show create project dialog instead of error message
+      setShowCreateProjectDialog(true);
       return;
     }
 
@@ -5195,11 +5218,11 @@ export default function AdminPanel() {
                             )}
                           </Button>
 
-                          {/* Save Project Button - Moved from left side */}
+                          {/* Save Project Button - Always enabled */}
                           <Button
                             variant="outline"
                             onClick={handleSaveProject}
-                            disabled={!currentProject || saveProjectMutation.isPending}
+                            disabled={saveProjectMutation.isPending}
                             className="w-full flex items-center gap-2 mt-3"
                           >
                             {saveProjectMutation.isPending ? (
