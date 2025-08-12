@@ -293,6 +293,7 @@ export default function AdminPanel() {
   const [primaryImages, setPrimaryImages] = useState<PexelsImage[]>([]);
   const [secondaryImages, setSecondaryImages] = useState<PexelsImage[]>([]);
   const [showChooseMediaDialog, setShowChooseMediaDialog] = useState(false);
+  const [mediaDialogInitialTab, setMediaDialogInitialTab] = useState<string>('pexels-pixabay');
   const [isLoadingMedia, setIsLoadingMedia] = useState(false);
   const [shopifyFiles, setShopifyFiles] = useState<PexelsImage[]>([]);
   
@@ -3659,6 +3660,7 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
+                                        setMediaDialogInitialTab('pexels-pixabay');
                                         setShowChooseMediaDialog(true);
                                       }}
                                     >
@@ -3686,17 +3688,8 @@ export default function AdminPanel() {
                                           className="w-full" 
                                           size="sm"
                                           onClick={() => {
-                                            setImageSource('product_images');
-                                            if (selectedProducts[0]?.id) {
-                                              fetchProductImages(selectedProducts[0].id);
-                                            } else {
-                                              toast({
-                                                title: "No product selected",
-                                                description: "Please select a product first",
-                                                variant: "destructive"
-                                              });
-                                            }
-                                            setShowImageDialog(true);
+                                            setMediaDialogInitialTab('product-images');
+                                            setShowChooseMediaDialog(true);
                                           }}
                                         >
                                           <ImageIcon className="mr-2 h-4 w-4" />
@@ -3720,8 +3713,8 @@ export default function AdminPanel() {
                                       className="w-full" 
                                       size="sm"
                                       onClick={() => {
-                                        setImageSource('upload');
-                                        setShowImageDialog(true);
+                                        setMediaDialogInitialTab('upload');
+                                        setShowChooseMediaDialog(true);
                                       }}
                                     >
                                       <Upload className="mr-2 h-4 w-4" />
@@ -8383,7 +8376,7 @@ export default function AdminPanel() {
             setShowChooseMediaDialog(open);
           }
         }}
-        initialTab="pexels-pixabay"
+        initialTab={mediaDialogInitialTab}
         onImagesSelected={(images) => {
           // When user confirms selected images
           if (images.length > 0) {
