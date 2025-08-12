@@ -2393,6 +2393,83 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Generate dynamic title suggestions using ChatGPT based on keywords and products
+  apiRouter.post("/dynamic-title-suggestions", async (req: Request, res: Response) => {
+    try {
+      const { keywords = [], products = [], count = 12, targetAudience } = req.body;
+      
+      console.log(`Generating ${count} dynamic title suggestions with keywords:`, keywords);
+      
+      // Validate input
+      if (!Array.isArray(keywords) || keywords.length === 0) {
+        return res.status(400).json({ 
+          error: "At least one keyword is required for dynamic title generation" 
+        });
+      }
+      
+      // Import the OpenAI service
+      const { generateDynamicTitles } = await import("./services/openai");
+      
+      try {
+        const titles = await generateDynamicTitles(
+          keywords, 
+          products, 
+          parseInt(count.toString()), 
+          targetAudience
+        );
+        
+        console.log(`Successfully generated ${titles.length} dynamic titles`);
+        
+        res.json({ 
+          success: true, 
+          titles,
+          context: {
+            keywordCount: keywords.length,
+            productCount: products.length,
+            targetAudience: targetAudience || 'general audience'
+          }
+        });
+      } catch (serviceError: any) {
+        console.error("Service error generating dynamic titles:", serviceError);
+        
+        // Create smart fallback titles based on keywords and products
+        const keywordFallbacks = keywords.slice(0, count).map((keyword: string, index: number) => {
+          const templates = [
+            `The Ultimate Guide to ${keyword}`,
+            `Why ${keyword} Matters for Your Business`,
+            `How to Master ${keyword} in 2024`,
+            `${keyword}: Complete Beginner's Guide`,
+            `Best Practices for ${keyword}`,
+            `${keyword} vs Alternatives: What You Need to Know`,
+            `Top 10 ${keyword} Tips for Success`,
+            `Everything You Need to Know About ${keyword}`,
+            `${keyword} Explained: A Comprehensive Overview`,
+            `How ${keyword} Can Transform Your Business`
+          ];
+          return templates[index % templates.length];
+        });
+        
+        console.log(`Using ${keywordFallbacks.length} keyword-based fallback titles`);
+        res.json({ 
+          success: true, 
+          titles: keywordFallbacks,
+          usedFallback: true,
+          context: {
+            keywordCount: keywords.length,
+            productCount: products.length,
+            targetAudience: targetAudience || 'general audience'
+          }
+        });
+      }
+    } catch (error: any) {
+      console.error("Error generating dynamic title suggestions:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to generate dynamic title suggestions" 
+      });
+    }
+  });
+
   // AI-powered Auto Optimize for meta title and description
   apiRouter.post("/optimize-meta-fields", async (req: Request, res: Response) => {
     try {

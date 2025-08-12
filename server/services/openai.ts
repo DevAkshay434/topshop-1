@@ -225,6 +225,106 @@ export async function generateTopicSuggestions(
 }
 
 /**
+ * Generate dynamic title suggestions using ChatGPT based on keywords and products
+ * @param keywords Array of selected keywords
+ * @param products Array of selected products
+ * @param count Number of titles to generate (default: 12)
+ * @param targetAudience Optional target audience
+ * @returns Array of dynamic title suggestions
+ */
+export async function generateDynamicTitles(
+  keywords: string[],
+  products: any[] = [],
+  count: number = 12,
+  targetAudience?: string
+): Promise<string[]> {
+  try {
+    console.log(`Generating ${count} dynamic titles with OpenAI using keywords:`, keywords);
+    
+    // Build context from keywords and products
+    const keywordContext = keywords.length > 0 ? keywords.join(', ') : '';
+    const productTitles = products.map(p => p.title || p.name).filter(Boolean);
+    const productContext = productTitles.length > 0 ? productTitles.join(', ') : '';
+    
+    // Create a comprehensive prompt for dynamic title generation
+    let systemPrompt = `You are an expert SEO content strategist specializing in creating compelling, keyword-optimized blog titles.
+
+Generate ${count} dynamic, engaging blog post titles that:
+
+KEYWORD REQUIREMENTS (MANDATORY):
+- EVERY title MUST include at least one of these exact keywords: ${keywordContext}
+- Use keywords exactly as provided - do not modify them
+- Distribute different keywords across titles for maximum SEO coverage
+- Ensure keyword usage feels natural and compelling
+
+${productContext ? `PRODUCT CONTEXT:
+- Incorporate these products when relevant: ${productContext}
+- Create titles that highlight product benefits, comparisons, or guides
+- Focus on how these products solve customer problems
+
+` : ''}${targetAudience ? `TARGET AUDIENCE:
+- Create titles that appeal specifically to: ${targetAudience}
+- Use language and messaging that resonates with this audience
+- Address their specific needs, pain points, and interests
+
+` : ''}TITLE STYLE REQUIREMENTS:
+- Mix of formats: "How to", "Best", "Ultimate Guide", "Top X", "Why", "What", etc.
+- 50-65 characters for optimal SEO performance
+- Evergreen content (no dates, years, or time-specific references)
+- Compelling and click-worthy
+- Professional but engaging tone
+- Include numbers where appropriate (e.g., "7 Best", "10 Ways")
+
+RESPONSE FORMAT:
+Return a JSON object with a "titles" array containing exactly ${count} title strings.
+
+Example structure:
+{
+  "titles": [
+    "Title 1 with keyword",
+    "Title 2 with different keyword",
+    ...
+  ]
+}`;
+
+    const userPrompt = `Generate ${count} SEO-optimized blog titles using the provided keywords${productContext ? ' and products' : ''}. Every title must include at least one keyword and be compelling for the target audience.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: 0.8,
+      response_format: { type: "json_object" }
+    });
+
+    const content = response.choices[0].message.content;
+    
+    if (!content) {
+      throw new Error("OpenAI returned an empty response");
+    }
+
+    try {
+      const parsedResponse = JSON.parse(content);
+      
+      if (Array.isArray(parsedResponse.titles)) {
+        console.log(`Successfully generated ${parsedResponse.titles.length} dynamic titles`);
+        return parsedResponse.titles;
+      }
+      
+      throw new Error("Invalid response format - missing titles array");
+    } catch (parseError) {
+      console.error("Error parsing title suggestions:", parseError);
+      throw new Error("Failed to parse dynamic title suggestions");
+    }
+  } catch (error: any) {
+    console.error("OpenAI API error for dynamic titles:", error);
+    throw new Error(`Failed to generate dynamic titles: ${error.message}`);
+  }
+}
+
+/**
  * Generate default tags based on a topic
  * @param topic The blog post topic
  * @returns Array of default tags

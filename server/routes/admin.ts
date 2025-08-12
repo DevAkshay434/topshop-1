@@ -293,68 +293,96 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
         }
       }
       
-      // Evergreen Claude prompt - no dates, audience-focused, product-relevant
       const audience = targetAudience || buyerPersona || 'customers seeking quality solutions';
-      const claudeRequest = {
-        prompt: `Generate 12 evergreen SEO-optimized blog post titles about "${cleanProductTitle || topKeywords[0]}" that incorporate these specific keywords: ${topKeywords.join(", ")}
-        
-        EVERGREEN CONTENT REQUIREMENTS:
-        - Subject: ${cleanProductTitle || topKeywords[0]}
-        - Target Keywords (MANDATORY): ${topKeywords.join(", ")}
-        - Target Audience: ${audience}
-        - NO dates, years, or time-specific references (evergreen content)
-        
-        CRITICAL KEYWORD REQUIREMENTS - NO EXCEPTIONS:
-        - EVERY title MUST include at least ONE of these exact keywords: ${topKeywords.join(", ")}
-        - Use keywords exactly as provided - do not modify them
-        - NO titles without keywords will be accepted
-        - Distribute different keywords across the 12 titles for maximum SEO coverage
-        - Place keywords naturally and prominently in titles
-        
-        AUDIENCE-TARGETED TITLE GUIDELINES:
-        - Create titles that speak directly to: ${audience}
-        - Address the specific needs, problems, and interests of this audience
-        - Use language and tone that resonates with this target group
-        - Focus on benefits and solutions relevant to this audience
-        - Consider the audience's expertise level and preferences
-        
-        PRODUCT-RELEVANT EVERGREEN GUIDELINES:
-        - Create engaging titles about the specific product: ${cleanProductTitle || topKeywords[0]}
-        - Use powerful conversion words: "Ultimate", "Complete", "Best", "Expert"
-        - Create mix of informational, commercial, and comparison intent titles
-        - Use numbers for list titles: "7 Best...", "10 Ways...", "5 Top..."
-        - Include question formats: "What is...", "How to choose...", "Why..."
-        - Keep titles 50-65 characters for optimal SEO performance
-        - NO dates, years, months, or seasonal references
-        - Focus on timeless value and benefits
-        
-        REQUIRED EVERGREEN TITLE FORMATS (distribute across 12 titles):
-        - 2 numbered list titles with keywords (e.g., "7 Best [keyword] for [audience]")
-        - 2 "How to" informational titles with keywords and audience focus
-        - 2 comparison titles with keywords (e.g., "[keyword] vs Alternatives")
-        - 2 question format titles with keywords (e.g., "What is [keyword]")
-        - 2 ultimate guide titles with keywords and audience benefits
-        - 2 benefit/feature titles with keywords for target audience
-        
-        Format response as JSON array of exactly 12 evergreen title strings only.`,
-        responseFormat: "json",
-        targetAudience: audience,
-        keywords: topKeywords,
-        keywordData: keywordData
-      };
       
-      // Log the Claude request for debugging
-      console.log("Sending title generation request to Claude with data:", {
-        productTitle: cleanProductTitle || topKeywords[0],
-        keywords: topKeywords,
-        yearContext: new Date().getFullYear(),
-        targetAudience: audience
-      });
-      
-      const claudeService = require("../services/claude");
-      const claudeResponse = await claudeService.generateTitles(claudeRequest);
-      
-      if (claudeResponse && claudeResponse.titles && Array.isArray(claudeResponse.titles)) {
+      // First try dynamic OpenAI title generation
+      try {
+        console.log("Attempting dynamic OpenAI title generation...");
+        
+        // Create a mock product object if we have a productTitle
+        const products = cleanProductTitle ? [{
+          title: cleanProductTitle,
+          description: `Quality ${cleanProductTitle} for ${audience}`
+        }] : [];
+        
+        const { generateDynamicTitles } = await import("../services/openai");
+        
+        const dynamicTitles = await generateDynamicTitles(
+          topKeywords,
+          products,
+          12,
+          audience
+        );
+        
+        if (dynamicTitles && dynamicTitles.length > 0) {
+          titles = dynamicTitles;
+          console.log(`Successfully generated ${titles.length} dynamic titles using OpenAI`);
+        } else {
+          throw new Error("OpenAI returned empty titles array");
+        }
+      } catch (openaiError: any) {
+        console.log("OpenAI title generation failed, falling back to Claude:", openaiError.message);
+        
+        // Fallback to Claude title generation
+        const claudeRequest = {
+          prompt: `Generate 12 evergreen SEO-optimized blog post titles about "${cleanProductTitle || topKeywords[0]}" that incorporate these specific keywords: ${topKeywords.join(", ")}
+          
+          EVERGREEN CONTENT REQUIREMENTS:
+          - Subject: ${cleanProductTitle || topKeywords[0]}
+          - Target Keywords (MANDATORY): ${topKeywords.join(", ")}
+          - Target Audience: ${audience}
+          - NO dates, years, or time-specific references (evergreen content)
+          
+          CRITICAL KEYWORD REQUIREMENTS - NO EXCEPTIONS:
+          - EVERY title MUST include at least ONE of these exact keywords: ${topKeywords.join(", ")}
+          - Use keywords exactly as provided - do not modify them
+          - NO titles without keywords will be accepted
+          - Distribute different keywords across the 12 titles for maximum SEO coverage
+          - Place keywords naturally and prominently in titles
+          
+          AUDIENCE-TARGETED TITLE GUIDELINES:
+          - Create titles that speak directly to: ${audience}
+          - Address the specific needs, problems, and interests of this audience
+          - Use language and tone that resonates with this target group
+          - Focus on benefits and solutions relevant to this audience
+          - Consider the audience's expertise level and preferences
+          
+          PRODUCT-RELEVANT EVERGREEN GUIDELINES:
+          - Create engaging titles about the specific product: ${cleanProductTitle || topKeywords[0]}
+          - Use powerful conversion words: "Ultimate", "Complete", "Best", "Expert"
+          - Create mix of informational, commercial, and comparison intent titles
+          - Use numbers for list titles: "7 Best...", "10 Ways...", "5 Top..."
+          - Include question formats: "What is...", "How to choose...", "Why..."
+          - Keep titles 50-65 characters for optimal SEO performance
+          - NO dates, years, months, or seasonal references
+          - Focus on timeless value and benefits
+          
+          REQUIRED EVERGREEN TITLE FORMATS (distribute across 12 titles):
+          - 2 numbered list titles with keywords (e.g., "7 Best [keyword] for [audience]")
+          - 2 "How to" informational titles with keywords and audience focus
+          - 2 comparison titles with keywords (e.g., "[keyword] vs Alternatives")
+          - 2 question format titles with keywords (e.g., "What is [keyword]")
+          - 2 ultimate guide titles with keywords and audience benefits
+          - 2 benefit/feature titles with keywords for target audience
+          
+          Format response as JSON array of exactly 12 evergreen title strings only.`,
+          responseFormat: "json",
+          targetAudience: audience,
+          keywords: topKeywords,
+          keywordData: keywordData
+        };
+        
+        // Log the Claude request for debugging
+        console.log("Sending fallback title generation request to Claude with data:", {
+          productTitle: cleanProductTitle || topKeywords[0],
+          keywords: topKeywords,
+          targetAudience: audience
+        });
+        
+        const claudeService = require("../services/claude");
+        const claudeResponse = await claudeService.generateTitles(claudeRequest);
+        
+        if (claudeResponse && claudeResponse.titles && Array.isArray(claudeResponse.titles)) {
         console.log("Claude generated title suggestions:", claudeResponse.titles);
         
         // Validate that every title contains at least one keyword
@@ -397,8 +425,9 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
             index++;
           }
         }
-      } else {
-        console.error("Claude response missing titles array:", claudeResponse);
+        } else {
+          console.error("Claude response missing titles array:", claudeResponse);
+        }
       }
     } catch (claudeError) {
       console.error("Claude title generation failed:", claudeError);

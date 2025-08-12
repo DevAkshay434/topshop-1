@@ -5825,6 +5825,7 @@ export default function AdminPanel() {
                 onOpenChange={setShowTitleSelector}
                 onTitleSelected={handleTitleSelected}
                 selectedKeywords={selectedKeywords}
+                selectedProducts={selectedProducts}
                 productTitle={productTitle}
                 targetAudience={form.watch('buyerPersonas')}
                 buyerPersona={form.watch('buyerPersonas')}

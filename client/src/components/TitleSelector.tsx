@@ -10,6 +10,7 @@ export interface TitleSelectionProps {
   onOpenChange: (open: boolean) => void;
   onTitleSelected: (title: string) => void;
   selectedKeywords: any[];
+  selectedProducts?: any[];
   productTitle?: string;
   targetAudience?: string;
   buyerPersona?: string;
@@ -20,6 +21,7 @@ export default function TitleSelector({
   onOpenChange,
   onTitleSelected,
   selectedKeywords,
+  selectedProducts = [],
   productTitle,
   targetAudience,
   buyerPersona
@@ -40,46 +42,94 @@ export default function TitleSelector({
     setIsLoading(true);
     setError(null);
     
+    // Prepare keywords array from selectedKeywords
+    const keywords = selectedKeywords.map(k => k.keyword).filter(Boolean);
+    
+    // Prepare products array for enhanced context
+    const products = selectedProducts.map(p => ({
+      title: p.title,
+      id: p.id,
+      description: p.description || ''
+    }));
+    
     // Log the request data for debugging
     const requestData = {
-      keywords: selectedKeywords.map(k => k.keyword),
-      keywordData: selectedKeywords,
-      productTitle: productTitle,
-      targetAudience: targetAudience,
-      buyerPersona: buyerPersona
+      keywords,
+      products,
+      count: 12,
+      targetAudience: targetAudience || buyerPersona
     };
     
-    console.log("Generating title suggestions with data:", requestData);
+    console.log("Generating dynamic AI titles with data:", requestData);
     
     try {
+      // First try the new dynamic title generation endpoint
       const response = await apiRequest({
-        url: '/api/admin/title-suggestions',
+        url: '/api/dynamic-title-suggestions',
         method: 'POST',
         data: requestData
       });
       
-      console.log("Title suggestions response:", response);
+      console.log("Dynamic title suggestions response:", response);
       
       if (response.success && response.titles && response.titles.length > 0) {
-        console.log("Setting new title suggestions:", response.titles);
+        console.log("Setting new dynamic AI-generated titles:", response.titles);
         setTitleSuggestions(response.titles);
+        
+        if (response.usedFallback) {
+          toast({
+            title: 'Titles Generated',
+            description: 'Using keyword-based suggestions (AI service temporarily unavailable)',
+            variant: 'default'
+          });
+        } else {
+          toast({
+            title: 'AI Titles Generated',
+            description: `${response.titles.length} dynamic titles created using ChatGPT`,
+            variant: 'default'
+          });
+        }
       } else {
-        console.error("Failed to get valid title suggestions:", response);
-        setError('Could not generate title suggestions');
+        throw new Error('Failed to generate dynamic titles');
+      }
+    } catch (err: any) {
+      console.error('Dynamic title generation failed, falling back to original endpoint:', err);
+      
+      // Fallback to original title suggestions endpoint
+      try {
+        const fallbackData = {
+          keywords: selectedKeywords.map(k => k.keyword),
+          keywordData: selectedKeywords,
+          productTitle: productTitle,
+          targetAudience: targetAudience,
+          buyerPersona: buyerPersona
+        };
+        
+        const fallbackResponse = await apiRequest({
+          url: '/api/admin/title-suggestions',
+          method: 'POST',
+          data: fallbackData
+        });
+        
+        if (fallbackResponse.success && fallbackResponse.titles && fallbackResponse.titles.length > 0) {
+          setTitleSuggestions(fallbackResponse.titles);
+          toast({
+            title: 'Titles Generated',
+            description: 'Using fallback title generation',
+            variant: 'default'
+          });
+        } else {
+          throw new Error('Both title generation methods failed');
+        }
+      } catch (fallbackErr: any) {
+        console.error('All title generation methods failed:', fallbackErr);
+        setError('Could not generate title suggestions. Please try again.');
         toast({
           title: 'Error',
-          description: 'Failed to generate title suggestions',
+          description: 'Failed to generate title suggestions. Please try again.',
           variant: 'destructive'
         });
       }
-    } catch (err: any) {
-      console.error('Title suggestion error:', err);
-      setError(err.message || 'An unexpected error occurred');
-      toast({
-        title: 'Error',
-        description: err.message || 'Failed to generate title suggestions',
-        variant: 'destructive'
-      });
     } finally {
       setIsLoading(false);
     }
