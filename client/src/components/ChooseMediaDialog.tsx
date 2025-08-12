@@ -16,7 +16,7 @@ export interface MediaImage {
   alt?: string;
   title?: string;
   filename?: string;
-  source: 'product' | 'variant' | 'shopify' | 'pexels' | 'product_image' | 'theme_asset' | 'article_image' | 'collection_image' | 'shopify_media' | 'variant_image' | 'uploaded';
+  source: 'product' | 'variant' | 'shopify' | 'pexels' | 'pixabay' | 'product_image' | 'theme_asset' | 'article_image' | 'collection_image' | 'shopify_media' | 'variant_image' | 'uploaded';
   selected?: boolean;
   isPrimary?: boolean;
   product_id?: string | number;
@@ -114,9 +114,9 @@ export function ChooseMediaDialog({
           console.log("No product ID found, showing default product images");
           // You could load featured products or recent products here
         }
-      } else if (activeTab === 'pexels') {
-        // Pexels tab is handled separately
-        console.log("Pexels tab selected");
+      } else if (activeTab === 'pexels-pixabay') {
+        // Pexels + Pixabay tab is handled separately
+        console.log("Pexels + Pixabay tab selected");
       }
     }
   }, [open, activeTab]);
@@ -300,12 +300,12 @@ export function ChooseMediaDialog({
     }
   };
 
-  // Search for images on Pexels
-  const searchPexelsImages = async () => {
+  // Search for images on Pexels + Pixabay
+  const searchPexelsPixabayImages = async () => {
     if (!searchQuery.trim()) {
       toast({
         title: "Please enter a search term",
-        description: "Enter keywords to search for images on Pexels",
+        description: "Enter keywords to search for images on Pexels + Pixabay",
         variant: "destructive"
       });
       return;
@@ -315,17 +315,17 @@ export function ChooseMediaDialog({
     setSearchInProgress(true);
 
     try {
-      console.log(`Searching Pexels for: ${searchQuery}`);
+      console.log(`Searching Pexels + Pixabay for: ${searchQuery}`);
 
       const response = await apiRequest({
-        url: `/api/media/search-pexels?query=${encodeURIComponent(searchQuery)}`,
+        url: `/api/media/pexels-pixabay-search?query=${encodeURIComponent(searchQuery)}`,
         method: 'GET'
       });
 
       if (!response.success || !response.images) {
         toast({
           title: "Search failed",
-          description: "Could not search for images on Pexels",
+          description: "Could not search for images on Pexels + Pixabay",
           variant: "destructive"
         });
         setIsLoading(false);
@@ -333,7 +333,7 @@ export function ChooseMediaDialog({
         return;
       }
 
-      console.log(`Got ${response.images.length} images from Pexels search`);
+      console.log(`Got ${response.images.length} images from Pexels + Pixabay search`);
 
       // Format received images into our standard format with proper selection handling
       const formattedImages = response.images.map((image: any) => {
@@ -347,7 +347,7 @@ export function ChooseMediaDialog({
           url: image.src.large || image.src.medium || image.src.original,
           alt: image.alt || `${searchQuery} image`,
           title: image.photographer ? `Photo by ${image.photographer}` : `${searchQuery} image`,
-          source: 'pexels',
+          source: image.source || 'pexels', // Use the source from the API response
           selected: isAlreadySelected,
           src: image.src
         };
@@ -357,10 +357,10 @@ export function ChooseMediaDialog({
       setPexelsImages(formattedImages);
 
     } catch (error) {
-      console.error('Error searching Pexels:', error);
+      console.error('Error searching Pexels + Pixabay:', error);
       toast({
         title: "Error",
-        description: "Could not search for images on Pexels",
+        description: "Could not search for images on Pexels + Pixabay",
         variant: "destructive",
       });
     } finally {
@@ -435,10 +435,10 @@ export function ChooseMediaDialog({
   const getEmptyStateMessage = () => {
     if (activeTab === 'products') {
       return "No product images found. Please select a different product.";
-    } else if (activeTab === 'pexels') {
+    } else if (activeTab === 'pexels-pixabay') {
       return searchInProgress 
         ? "No images found. Try a different search term." 
-        : "Enter search terms above to find images on Pexels.";
+        : "Enter search terms above to find images on Pexels + Pixabay.";
     } else if (activeTab === 'uploaded') {
       return "No uploaded images yet. Upload images using the button above.";
     }
@@ -450,7 +450,7 @@ export function ChooseMediaDialog({
     switch (activeTab) {
       case 'products':
         return productImages;
-      case 'pexels':
+      case 'pexels-pixabay':
         return pexelsImages;
       case 'uploaded':
         return uploadedImages;
@@ -465,8 +465,8 @@ export function ChooseMediaDialog({
 
     return (
       <div className="relative">
-        {/* Show search bar for Pexels tab */}
-        {activeTab === 'pexels' && (
+        {/* Show search bar for Pexels + Pixabay tab */}
+        {activeTab === 'pexels-pixabay' && (
           <div className="mb-4 flex gap-2">
             <div className="relative flex-1">
               <Input
@@ -477,14 +477,14 @@ export function ChooseMediaDialog({
                 className="pr-10"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    searchPexelsImages();
+                    searchPexelsPixabayImages();
                   }
                 }}
               />
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
             <Button 
-              onClick={searchPexelsImages} 
+              onClick={searchPexelsPixabayImages} 
               disabled={isLoading || !searchQuery.trim()}
             >
               {isLoading ? (
@@ -520,8 +520,8 @@ export function ChooseMediaDialog({
               // Check if this image is selected
               const isSelected = selectedImages.some(img => img.id === image.id);
 
-              // For Pexels images, we might want to show different sizes
-              const imageUrl = image.source === 'pexels' && image.src?.medium
+              // For Pexels and Pixabay images, we might want to show different sizes
+              const imageUrl = (image.source === 'pexels' || image.source === 'pixabay') && image.src?.medium
                 ? image.src.medium
                 : image.url;
 
@@ -558,12 +558,14 @@ export function ChooseMediaDialog({
                           image.source === 'product' ? 'bg-green-500' : 
                           image.source === 'variant' ? 'bg-purple-500' : 
                           image.source === 'uploaded' ? 'bg-orange-500' :
+                          image.source === 'pixabay' ? 'bg-teal-500' :
                           'bg-blue-500'
                         }`}
                       >
                         {image.source === 'product' ? 'Product' : 
                          image.source === 'variant' ? 'Variant' : 
                          image.source === 'uploaded' ? 'Uploaded' :
+                         image.source === 'pixabay' ? 'Pixabay' :
                          'Pexels'}
                       </span>
                     </div>
@@ -691,17 +693,17 @@ export function ChooseMediaDialog({
             </div>
 
             {/* Tab selection for image sources */}
-            <Tabs defaultValue="pexels" className="w-full">
+            <Tabs defaultValue="pexels-pixabay" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
-                <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
-                  Pexels Images
+                <TabsTrigger value="pexels-pixabay" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
+                  Pexels + Pixabay Search Images
                 </TabsTrigger>
                 <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500">
                   Product Images
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="pexels">
+              <TabsContent value="pexels-pixabay">
                 {renderTabContent()}
               </TabsContent>
 
@@ -726,17 +728,17 @@ export function ChooseMediaDialog({
             </div>
 
             {/* Tab selection for image sources */}
-            <Tabs defaultValue="pexels" className="w-full">
+            <Tabs defaultValue="pexels-pixabay" className="w-full">
               <TabsList className="w-full flex justify-start border-b mb-4">
-                <TabsTrigger value="pexels" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
-                  Pexels Images
+                <TabsTrigger value="pexels-pixabay" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
+                  Pexels + Pixabay Search Images
                 </TabsTrigger>
                 <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-green-500">
                   Product Images
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="pexels">
+              <TabsContent value="pexels-pixabay">
                 {renderTabContent()}
               </TabsContent>
 

@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { shopifyService } from '../services/shopify';
 import { storage } from '../storage';
+import { pixabayService } from '../services/pixabay';
 import axios from 'axios';
 import multer from 'multer';
 import path from 'path';
@@ -503,6 +504,150 @@ mediaRouter.get('/pexels-search', async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Error searching Pexels',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Search for images on both Pexels and Pixabay
+ */
+mediaRouter.get('/pexels-pixabay-search', async (req: Request, res: Response) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query is required'
+      });
+    }
+
+    console.log(`Searching both Pexels and Pixabay for: "${query}"`);
+
+    let allImages: any[] = [];
+    const searchPromises: Promise<any>[] = [];
+
+    // Pexels search
+    const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+    if (PEXELS_API_KEY) {
+      const pexelsPromise = axios.get('https://api.pexels.com/v1/search', {
+        headers: {
+          'Authorization': PEXELS_API_KEY
+        },
+        params: {
+          query: query,
+          per_page: 15,
+          orientation: 'landscape'
+        }
+      }).then((response) => {
+        const pexelsImages = response.data.photos.map((photo: any) => ({
+          id: `pexels-${photo.id}`,
+          width: photo.width,
+          height: photo.height,
+          url: photo.url,
+          src: {
+            original: photo.src.original,
+            large: photo.src.large,
+            medium: photo.src.medium,
+            small: photo.src.small,
+            thumbnail: photo.src.tiny
+          },
+          photographer: photo.photographer,
+          photographer_url: photo.photographer_url,
+          alt: photo.alt || query,
+          source: 'pexels'
+        }));
+        console.log(`Pexels returned ${pexelsImages.length} images`);
+        return pexelsImages;
+      }).catch((error) => {
+        console.error('Pexels search failed:', error.message);
+        return [];
+      });
+      
+      searchPromises.push(pexelsPromise);
+    }
+
+    // Pixabay search
+    try {
+      const pixabayResult = await pixabayService.safeGenerateImages(query as string, 15);
+      const pixabayImages = pixabayResult.images.map((image: any) => ({
+        id: `pixabay-${image.id}`,
+        width: image.width,
+        height: image.height,
+        url: image.url,
+        src: {
+          original: image.url,
+          large: image.url,
+          medium: image.url,
+          small: image.url,
+          thumbnail: image.url
+        },
+        photographer: 'Pixabay',
+        photographer_url: 'https://pixabay.com/',
+        alt: image.alt || query,
+        source: 'pixabay'
+      }));
+      console.log(`Pixabay returned ${pixabayImages.length} images`);
+      allImages.push(...pixabayImages);
+    } catch (pixabayError) {
+      console.error('Pixabay search failed:', pixabayError);
+    }
+
+    // Wait for Pexels results if the API key is available
+    if (searchPromises.length > 0) {
+      try {
+        const results = await Promise.all(searchPromises);
+        results.forEach(result => {
+          if (Array.isArray(result)) {
+            allImages.push(...result);
+          }
+        });
+      } catch (error) {
+        console.error('Error with search promises:', error);
+      }
+    }
+
+    // If no images found and no API keys, return demo data
+    if (allImages.length === 0) {
+      console.log('No images found from either service, using demo data');
+      allImages = [
+        {
+          id: 'demo-combined-1',
+          width: 800,
+          height: 600,
+          url: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg',
+          photographer: 'Demo Photographer',
+          alt: 'Demo image',
+          source: 'demo',
+          src: {
+            original: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg',
+            large: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+            medium: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&h=350',
+            small: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&h=130',
+            thumbnail: 'https://images.pexels.com/photos/1619317/pexels-photo-1619317.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=200&w=280'
+          }
+        }
+      ];
+    }
+
+    // Shuffle the combined results to mix Pexels and Pixabay images
+    const shuffledImages = allImages.sort(() => Math.random() - 0.5);
+
+    console.log(`Returning ${shuffledImages.length} total images from combined search`);
+
+    return res.json({
+      success: true,
+      images: shuffledImages,
+      count: shuffledImages.length,
+      message: `Found ${shuffledImages.length} images from Pexels + Pixabay`
+    });
+
+  } catch (error: any) {
+    console.error('Error in combined search:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error searching Pexels + Pixabay',
       error: error.message
     });
   }
