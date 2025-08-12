@@ -5959,8 +5959,8 @@ export default function AdminPanel() {
         
         setShowImageDialog(open);
       }}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-3 border-b mb-4">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto flex flex-col">
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-3 border-b mb-4 flex-shrink-0">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-3">
                 <DialogTitle className="text-xl">Choose Media</DialogTitle>
@@ -6003,7 +6003,9 @@ export default function AdminPanel() {
                 </div>
               )}
             </DialogDescription>
-            
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto px-1">
             {/* Image source tabs */}
             <div className="flex gap-2 mt-3">
               <Button 
@@ -6213,7 +6215,7 @@ export default function AdminPanel() {
             
             {/* Unified Selected Images Preview - Single Row Layout */}
             {(primaryImages.length > 0 || secondaryImages.length > 0) && (
-              <div className="mt-4 mb-16 bg-slate-50 p-3 rounded-md border">
+              <div className="mt-4 mb-4 bg-slate-50 p-3 rounded-md border">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-sm font-medium">
                     Your Selected Images ({primaryImages.length + secondaryImages.length} total)
@@ -6417,7 +6419,6 @@ export default function AdminPanel() {
                 </div>
               </div>
             )}
-          </DialogHeader>
           
           {/* Image edit dialog */}
           <Dialog open={isEditingImage} onOpenChange={setIsEditingImage}>
@@ -8316,8 +8317,9 @@ export default function AdminPanel() {
               )}
             </div>
           )}
+          </div>
           
-          <DialogFooter>
+          <DialogFooter className="sticky bottom-0 bg-white border-t pt-4 mt-4 z-20 flex-shrink-0">
             <Button 
               variant="ghost" 
               onClick={() => setShowImageDialog(false)}>
