@@ -3666,23 +3666,29 @@ export default function AdminPanel() {
                                       variant="outline" 
                                       className="w-full" 
                                       size="sm"
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         console.log("🔍 Search Pexels button clicked");
                                         
-                                        // Ensure ImageSearchDialog is closed
+                                        // Force close all dialogs first
                                         setShowImageDialog(false);
+                                        setShowChooseMediaDialog(false);
                                         
-                                        // Set up ChooseMediaDialog
-                                        setImageSource('pexels');
-                                        const searchTerm = selectedProducts.length > 0 
-                                          ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
-                                          : 'happy customer';
-                                        
-                                        console.log("🔍 Setting up ChooseMediaDialog with searchTerm:", searchTerm);
-                                        setChooseMediaInitialQuery(searchTerm);
-                                        setShowChooseMediaDialog(true);
-                                        
-                                        console.log("🔍 ChooseMediaDialog should open now");
+                                        // Add a small delay to ensure state is reset
+                                        setTimeout(() => {
+                                          // Set up ChooseMediaDialog
+                                          setImageSource('pexels');
+                                          const searchTerm = selectedProducts.length > 0 
+                                            ? `happy ${selectedProducts[0].title.split(' ')[0]}` 
+                                            : 'happy customer';
+                                          
+                                          console.log("🔍 Setting up ChooseMediaDialog with searchTerm:", searchTerm);
+                                          setChooseMediaInitialQuery(searchTerm);
+                                          setShowChooseMediaDialog(true);
+                                          
+                                          console.log("🔍 ChooseMediaDialog should open now");
+                                        }, 100);
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
@@ -5976,6 +5982,7 @@ export default function AdminPanel() {
       
       {/* Image Search Dialog */}
       <Dialog open={showImageDialog && !showChooseMediaDialog} onOpenChange={(open) => {
+        console.log("🔍 ImageSearchDialog onOpenChange:", open);
         // When dialog closes, always reset the UI to a clean state
         if (!open) {
           // Reset loading state if dialog is closed during a search
@@ -8426,6 +8433,7 @@ export default function AdminPanel() {
       <ChooseMediaDialog
         open={showChooseMediaDialog} 
         onOpenChange={(open) => {
+          console.log("🔍 ChooseMediaDialog onOpenChange:", open);
           setShowChooseMediaDialog(open);
           // When ChooseMediaDialog opens, ensure ImageSearchDialog is closed
           if (open) {
