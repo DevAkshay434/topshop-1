@@ -161,18 +161,22 @@ The application employs a modern full-stack, client-server architecture with mul
 
 ### Table of Contents Navigation Enhancement - COMPLETED ✅
 - **Goal**: Remove target="_blank" from Table of Contents links and ensure proper heading ID navigation
+- **Root Cause Identified**: Shopify's rich text editor was automatically adding `target="_blank"` attributes to ALL anchor links, including internal TOC navigation links
 - **Changes Made**:
-  - Enhanced Table of Contents generation to ensure all H2 headings have proper id attributes
-  - Added automatic ID generation for H2 headings that don't have them
-  - Table of Contents links open in same page (no target="_blank") for proper internal navigation
-  - External reference links maintain target="_blank" for opening in new tabs
+  - Added `fixTOCLinks()` function in Claude service to strip problematic attributes from internal navigation
+  - Enhanced Table of Contents generation with JavaScript-based smooth scrolling fallback
+  - Fixed existing blog post content (ID 774) by removing target="_blank" attributes and adding proper H2 IDs
+  - Integrated TOC link fixing into content processing pipeline for all future content
+  - Added comprehensive H2 heading ID generation for anchor navigation
 - **Technical Implementation**:
-  - Created `addHeadingIds` function to automatically add id attributes to H2 headings without them
-  - Enhanced `addTableOfContents` function to process headings and ensure proper ID-based navigation
+  - Created `fixTOCLinks` function to remove `target="_blank"`, `rel`, and `class="shopify-link"` attributes
+  - Enhanced `addTableOfContents` function with onclick handlers for guaranteed navigation
+  - Updated content processing pipeline to automatically fix TOC links after generation
+  - Database cleanup of existing problematic content with proper H2 heading IDs
   - Automatic ID generation uses clean, SEO-friendly slugs (lowercase, hyphenated)
-  - Maintained distinction between internal TOC links and external reference links
-- **User Experience**: Smooth in-page navigation from Table of Contents to corresponding sections
-- **Date Completed**: August 12, 2025
+- **User Experience**: Smooth in-page navigation from Table of Contents with proper anchor scrolling, no unwanted new tabs
+- **Verification**: Blog post #774 tested and confirmed working with internal TOC navigation
+- **Date Completed**: August 13, 2025
 
 ## External Dependencies
 

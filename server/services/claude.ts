@@ -70,6 +70,46 @@ function addHeadingIds(content: string): string {
   return processedContent;
 }
 
+function fixTOCLinks(content: string): string {
+  console.log('🔧 FIXING TOC LINKS - Removing target="_blank" from internal navigation');
+  
+  // Remove target="_blank" and related attributes from anchor links that point to internal IDs
+  let processedContent = content.replace(
+    /<a\s+([^>]*href=["']#[^"']+["'][^>]*target=["']_blank["'][^>]*)>/gi,
+    (match, attributes) => {
+      // Remove target="_blank", rel attributes, and class attributes for TOC links
+      const cleanAttributes = attributes
+        .replace(/target=["']_blank["']/gi, '')
+        .replace(/rel=["'][^"']*["']/gi, '')
+        .replace(/class=["'][^"']*["']/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      console.log(`   - Fixed TOC link: ${match} → <a ${cleanAttributes}>`);
+      return `<a ${cleanAttributes}>`;
+    }
+  );
+  
+  // Also fix any TOC links that might have been processed differently
+  processedContent = processedContent.replace(
+    /<a\s+([^>]*target=["']_blank["'][^>]*href=["']#[^"']+["'][^>]*)>/gi,
+    (match, attributes) => {
+      const cleanAttributes = attributes
+        .replace(/target=["']_blank["']/gi, '')
+        .replace(/rel=["'][^"']*["']/gi, '')
+        .replace(/class=["'][^"']*["']/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      console.log(`   - Fixed TOC link (alt format): ${match} → <a ${cleanAttributes}>`);
+      return `<a ${cleanAttributes}>`;
+    }
+  );
+  
+  console.log('✅ TOC LINK FIXING COMPLETED');
+  return processedContent;
+}
+
 // Function to automatically generate Table of Contents from H2 headings
 function addTableOfContents(content: string): string {
   console.log('🔍 TABLE OF CONTENTS PROCESSING STARTED');
@@ -109,7 +149,7 @@ function addTableOfContents(content: string): string {
     return processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate clean, Shopify-compatible TOC HTML with proper spacing (NO target="_blank" for internal navigation)
+  // Generate clean, Shopify-compatible TOC HTML with proper spacing and FORCE removal of target="_blank"
   const tocHtml = `
 <div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
   <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
@@ -117,7 +157,7 @@ function addTableOfContents(content: string): string {
   </h3>
   <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
     ${headings.map(heading => 
-      `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a></li>`
+      `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;" onclick="event.preventDefault(); document.getElementById('${heading.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'});">${heading.title}</a></li>`
     ).join('')}
   </ol>
 </div>
@@ -729,6 +769,9 @@ if (!response) {
     let processedContent = removeH1Tags(jsonContent.content);
     processedContent = addTableOfContents(processedContent);
     processedContent = processMediaPlacementsHandler(processedContent, request);
+    
+    // CRITICAL FIX: Remove target="_blank" from internal TOC links after all processing
+    processedContent = fixTOCLinks(processedContent);
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
