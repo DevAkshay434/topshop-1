@@ -326,6 +326,8 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     const availableProducts = request.productIds || [];
     
     console.log("Available products for interlinking:", availableProducts);
+    console.log("Request.productsInfo:", request.productsInfo);
+    console.log("Secondary images available:", request.secondaryImages?.length || 0);
     
     // Process each marker location with a unique image (using filtered secondary images)
     for (let i = 0; i < finalAvailableMarkers && i < filteredSecondaryImages.length; i++) {
@@ -774,9 +776,6 @@ if (!response) {
     processedContent = addTableOfContents(processedContent);
     processedContent = processMediaPlacementsHandler(processedContent, request);
     
-    // CRITICAL FIX: Remove target="_blank" from internal TOC links after all processing
-    processedContent = fixTOCLinks(processedContent);
-    
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
     if (cleanMetaDescription) {
@@ -796,6 +795,10 @@ if (!response) {
       console.log(`✓ Cleaned meta description: "${cleanMetaDescription}"`);
     }
     
+    // Apply final content fixes to ensure TOC links work properly
+    processedContent = fixTOCLinks(processedContent);
+    console.log('✅ Final content processing completed with TOC link fixes');
+
     return {
       title: jsonContent.title,
       content: processedContent,
