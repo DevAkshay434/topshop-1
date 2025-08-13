@@ -4776,14 +4776,24 @@ export default function AdminPanel() {
                         </div>
                       </div>
 
-                      {/* Raw HTML Content Display (preserved exactly as server sends it) */}
+                      {/* Editable Content Area with Raw HTML Preservation */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
                         <div className="p-4">
-                          <div 
-                            className="prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ 
-                              __html: generatedContent.rawContent || generatedContent.content || ''
+                          <textarea
+                            className="w-full h-80 p-3 border-0 resize-none font-mono text-sm focus:outline-none"
+                            value={generatedContent.rawContent || generatedContent.content || ''}
+                            onChange={(e) => {
+                              console.log("Content updated in raw HTML editor:", e.target.value.length, "characters");
+                              setGeneratedContent(prev => ({
+                                ...prev,
+                                rawContent: e.target.value,
+                                content: prev.content // Keep original processed content
+                              }));
+                              setEnhancedContentForEditor(e.target.value);
+                              // Trigger immediate real-time preview update
+                              setContentUpdateCounter(prev => prev + 1);
                             }}
+                            placeholder="Generated content will appear here..."
                           />
                         </div>
                       </div>

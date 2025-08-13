@@ -215,6 +215,61 @@ function removeH1Tags(content: string): string {
   return content.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '');
 }
 
+// Function to apply content formatting rules
+function applyContentFormatting(content: string): string {
+  console.log('🎨 APPLYING CONTENT FORMATTING RULES');
+  let formattedContent = content;
+  
+  // Rule 1: Make the first line after any heading bold and add line break
+  console.log('📝 Rule 1: Bold first line after headings + line break');
+  formattedContent = formattedContent.replace(
+    /(<h[2-6][^>]*>.*?<\/h[2-6]>)\s*<p>(.*?)<\/p>/gi,
+    (match, heading, paragraph) => {
+      // Split paragraph into sentences or logical breaks
+      const sentences = paragraph.split(/(?<=[.!?])\s+/);
+      if (sentences.length > 0 && sentences[0].trim()) {
+        const firstSentence = sentences[0].trim();
+        const remainingSentences = sentences.slice(1).join(' ');
+        
+        if (remainingSentences.trim()) {
+          return `${heading}\n\n<p><strong>${firstSentence}</strong></p>\n\n<p>${remainingSentences}</p>`;
+        } else {
+          return `${heading}\n\n<p><strong>${firstSentence}</strong></p>`;
+        }
+      }
+      return match;
+    }
+  );
+  
+  // Rule 2: Make sentences ending with : or ? bold
+  console.log('📝 Rule 2: Bold sentences ending with : or ?');
+  formattedContent = formattedContent.replace(
+    /<p>(.*?[?:])\s*([^<]*?)<\/p>/gi,
+    (match, questionOrColon, remaining) => {
+      if (remaining.trim()) {
+        return `<p><strong>${questionOrColon}</strong> ${remaining}</p>`;
+      } else {
+        return `<p><strong>${questionOrColon}</strong></p>`;
+      }
+    }
+  );
+  
+  // Also handle sentences within paragraphs that end with : or ?
+  formattedContent = formattedContent.replace(
+    /([^<>]*?[?:])(\s+)([^<>]*?)/gi,
+    (match, questionOrColon, space, remaining) => {
+      // Only apply if it's within paragraph content and not already bold
+      if (!match.includes('<strong>') && !match.includes('<b>')) {
+        return `<strong>${questionOrColon}</strong>${space}${remaining}`;
+      }
+      return match;
+    }
+  );
+  
+  console.log('✅ Content formatting rules applied');
+  return formattedContent;
+}
+
 // Function to process media placements and prevent duplicate secondary images
 function processMediaPlacementsHandler(content: string, request: BlogContentRequest): string {
   let processedContent = content;
@@ -386,10 +441,10 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productHandle = productInfo.handle;
         const productTitle = productInfo.title || "View Product Details";
         
-        // Create product-linked image HTML matching the user's required format
+        // Create product-linked image HTML with exact 600×600px sizing
         imageHtml = `<div style="text-align: center; margin: 20px 0;">
   <a href="/products/${productHandle}" title="${productTitle}" style="text-decoration: none;">
-    <img src="${image.url}" alt="${image.alt || ''}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+    <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
   </a>
 </div>`;
         
@@ -399,20 +454,20 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productIndex = i % availableProducts.length;
         const productId = availableProducts[productIndex];
         
-        // Create product-linked image HTML with product ID (less ideal but functional)
+        // Create product-linked image HTML with exact 600×600px sizing
         imageHtml = `<div style="text-align: center; margin: 20px 0;">
   <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
-    <img src="${image.url}" alt="${image.alt || ''}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+    <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
   </a>
 </div>`;
         
         console.log(`⚠ Secondary image ${i + 1} linked to product ID: ${productId} (no handle available)`);
       } else {
-        // Fallback without product link if no products available
+        // Fallback without product link with exact 600×600px sizing
         imageHtml = `
 <div style="margin: 20px 0; text-align: center;">
   <img src="${image.url}" alt="${image.alt || ''}" 
-    style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+    style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 </div>`;
         
         console.log(`❌ Secondary image ${i + 1} added without product link (no products selected)`);
@@ -824,9 +879,13 @@ if (!response) {
     processedContent = addTableOfContents(processedContent);
     console.log('✅ Step 3: Generated Table of Contents');
     
-    // Step 4: Final TOC link fixes to remove target="_blank"
+    // Step 4: Apply content formatting rules (bold first lines, bold : and ? sentences)
+    processedContent = applyContentFormatting(processedContent);
+    console.log('✅ Step 4: Applied content formatting rules');
+    
+    // Step 5: Final TOC link fixes to remove target="_blank"
     processedContent = fixTOCLinks(processedContent);
-    console.log('✅ Step 4: Fixed TOC links (removed target="_blank")');
+    console.log('✅ Step 5: Fixed TOC links (removed target="_blank")');
     
     // CAPTURE CONTENT BEFORE MEDIA PROCESSING (this is what the editor should show)
     const rawContentForEditor = processedContent;
