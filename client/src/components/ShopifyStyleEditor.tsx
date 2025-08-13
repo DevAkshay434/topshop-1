@@ -82,6 +82,10 @@ export function ShopifyStyleEditor({
             class: 'shopify-code-block',
           },
         },
+        // Prevent automatic content processing
+        heading: {
+          HTMLAttributes: {},
+        },
       }),
       // Table extensions temporarily removed due to import issues
       // Table.configure({
@@ -112,6 +116,9 @@ export function ShopifyStyleEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {},
+        // Prevent Tiptap from modifying link attributes
+        validate: (href) => true,
+        autolink: false,
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -119,6 +126,16 @@ export function ShopifyStyleEditor({
     ],
     content,
     editable,
+    // Disable automatic parsing that might modify content structure
+    parseOptions: {
+      preserveWhitespace: 'full',
+    },
+    // Add specific editor options to preserve content
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none',
+      },
+    },
     onUpdate: ({ editor }) => {
       // Only call onChange for user-initiated changes, not programmatic content updates
       if (onChange && userInitiatedChange.current && !isInitialLoad.current) {
@@ -142,8 +159,10 @@ export function ShopifyStyleEditor({
       console.log("  H2 headings with IDs:", (content?.match(/<h2[^>]*id[^>]*>/g) || []).length);
       console.log("  TOC links with target=_blank:", (content?.match(/href="#[^"]*"[^>]*target="_blank"/g) || []).length);
       
-      // Set content without triggering update events
-      editor.commands.setContent(content);
+      // Set content without triggering update events - preserve exact HTML structure
+      editor.commands.setContent(content, false, {
+        preserveWhitespace: 'full',
+      });
       
       // Verify content after setting
       setTimeout(() => {
