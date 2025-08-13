@@ -1764,13 +1764,13 @@ export async function registerRoutes(app: Express): Promise<void> {
                       const formattedDescription = author.description ? formatAuthorDescription(author.description) : '';
 
                       return `
-                        <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff; text-align: center;">
+                        <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px auto; max-width: 500px; background: #ffffff; text-align: center;">
                           <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
                             ${avatarImg}
-                            <div>
-                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
-                              ${formattedDescription ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${formattedDescription}</p>` : ''}
-                              ${linkedinButton}
+                            <div style="text-align: center;">
+                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0; text-align: center;">${author.name}</h3>
+                              ${formattedDescription ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0; text-align: center;">${formattedDescription}</p>` : ''}
+                              <div style="text-align: center;">${linkedinButton}</div>
                             </div>
                           </div>
                         </div>
