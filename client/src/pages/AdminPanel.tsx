@@ -4776,26 +4776,25 @@ export default function AdminPanel() {
                         </div>
                       </div>
 
-                      {/* Editable Content Area with Raw HTML Preservation */}
+                      {/* Visual Rich Text Editor (WYSIWYG) */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
-                        <div className="p-4">
-                          <textarea
-                            className="w-full h-80 p-3 border-0 resize-none font-mono text-sm focus:outline-none"
-                            value={generatedContent.rawContent || generatedContent.content || ''}
-                            onChange={(e) => {
-                              console.log("Content updated in raw HTML editor:", e.target.value.length, "characters");
-                              setGeneratedContent(prev => ({
-                                ...prev,
-                                rawContent: e.target.value,
-                                content: prev.content // Keep original processed content
-                              }));
-                              setEnhancedContentForEditor(e.target.value);
-                              // Trigger immediate real-time preview update
-                              setContentUpdateCounter(prev => prev + 1);
-                            }}
-                            placeholder="Generated content will appear here..."
-                          />
-                        </div>
+                        <ShopifyStyleEditor
+                          content={generatedContent.rawContent || generatedContent.content || ''}
+                          onChange={(newContent) => {
+                            console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
+                            // Update both the raw content and processed content
+                            setGeneratedContent(prev => ({
+                              ...prev,
+                              rawContent: newContent,
+                              content: prev.content // Keep original processed content
+                            }));
+                            setEnhancedContentForEditor(newContent);
+                            // Trigger immediate real-time preview update
+                            setContentUpdateCounter(prev => prev + 1);
+                          }}
+                          className="w-full border-none"
+                          editable={true}
+                        />
                       </div>
                     </div>
 

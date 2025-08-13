@@ -328,8 +328,8 @@ export function ShopifyStyleEditor({
       console.log("  H2 headings with IDs:", (content?.match(/<h2[^>]*id[^>]*>/g) || []).length);
       console.log("  TOC links with target=_blank:", (content?.match(/href="#[^"]*"[^>]*target="_blank"/g) || []).length);
       
-      // Set content without triggering update events - preserve exact HTML structure
-      editor.commands.setContent(content, { emitUpdate: false });
+      // Set content directly without triggering update events
+      editor.commands.setContent(content, false);
       
       // Verify content after setting
       setTimeout(() => {

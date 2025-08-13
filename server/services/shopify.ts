@@ -1286,6 +1286,14 @@ export class ShopifyService {
         console.log('Page - DRAFT: Setting published=false with no publish date');
       }
       
+      // DEBUG: Log content structure for HTML validation
+      console.log(`🔍 DEBUGGING PAGE CONTENT STRUCTURE:`);
+      console.log(`   - Content length: ${processedContent.length} characters`);
+      console.log(`   - Content preview (first 500 chars):`, processedContent.substring(0, 500));
+      console.log(`   - Contains HTML tags: ${processedContent.includes('<')}`);
+      console.log(`   - Contains opening div: ${processedContent.includes('<div')}`);
+      console.log(`   - Contains paragraph tags: ${processedContent.includes('<p>')}`);
+      
       // Send the page creation request to Shopify
       console.log(`Sending page data to Shopify:`, {
         title: pageData.page.title,

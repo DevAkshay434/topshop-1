@@ -2348,7 +2348,7 @@ Place this at a logical position in the content, typically after introducing a c
         // IMPORTANT: Content generation should NEVER automatically publish pages to Shopify
         // Pages should only be pushed to Shopify when user explicitly clicks publish buttons
         // This prevents automatic publishing during content generation
-        if (false) { // Disabled automatic Shopify page publishing during content generation
+        if (true) { // Enable Shopify page publishing when user selects publish
         // Create page in Shopify
         try {
           // CRITICAL: Check if this is a scheduled page - publicationType takes precedence
