@@ -62,10 +62,10 @@ export function SimpleHTMLEditor({
         </div>
       )}
 
-      <div className="p-4">
+      <div className="p-2">
         {viewMode === 'visual' ? (
           <div 
-            className="prose prose-sm max-w-none min-h-[400px] p-4 border rounded bg-background"
+            className="prose prose-sm max-w-none h-64 overflow-y-auto p-3 border rounded bg-background"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
             style={{
               fontSize: '14px',
@@ -77,10 +77,9 @@ export function SimpleHTMLEditor({
             value={htmlContent}
             onChange={(e) => handleContentChange(e.target.value)}
             disabled={!editable}
-            className="min-h-[400px] font-mono text-sm"
+            className="h-64 font-mono text-sm resize-none"
             placeholder="Enter HTML content here..."
             style={{
-              resize: 'vertical',
               fontFamily: 'Monaco, Consolas, "Courier New", monospace'
             }}
           />

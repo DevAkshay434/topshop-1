@@ -4791,7 +4791,7 @@ export default function AdminPanel() {
                           // Trigger immediate real-time preview update
                           setContentUpdateCounter(prev => prev + 1);
                         }}
-                        className="max-h-96 border rounded-lg"
+                        className="max-h-80 border rounded-lg"
                       />
                     </div>
 
@@ -5374,7 +5374,7 @@ export default function AdminPanel() {
                           // Force preview re-render
                           setContentUpdateCounter(prev => prev + 1);
                         }}
-                        className="border-t-0 rounded-t-none"
+                        className="border-t-0 rounded-t-none max-h-80"
                       />
                       
                       {/* Word Count */}
