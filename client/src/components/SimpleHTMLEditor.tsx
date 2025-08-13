@@ -65,8 +65,22 @@ export function SimpleHTMLEditor({
       <div className="p-2">
         {viewMode === 'visual' ? (
           <div 
-            className="prose prose-sm max-w-none h-64 overflow-y-auto p-3 border rounded bg-background"
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
+            ref={(el) => {
+              if (el && el.innerHTML !== htmlContent) {
+                el.innerHTML = htmlContent;
+              }
+            }}
+            className="prose prose-sm max-w-none h-64 overflow-y-auto p-3 border rounded bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+            contentEditable={editable}
+            suppressContentEditableWarning={true}
+            onInput={(e) => {
+              const target = e.target as HTMLDivElement;
+              handleContentChange(target.innerHTML);
+            }}
+            onBlur={(e) => {
+              const target = e.target as HTMLDivElement;
+              handleContentChange(target.innerHTML);
+            }}
             style={{
               fontSize: '14px',
               lineHeight: '1.6'
