@@ -1752,12 +1752,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                     const generateAuthorBoxHTML = (author: any, content?: string) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                       const avatarImg = author.profileImage 
-                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
-                        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
-
-                      // Calculate reading time if content is provided
-                      const readingTime = content ? calculateReadingTime(content) : null;
-                      const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
+                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;" />`
+                        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px; margin: 0 auto;">${avatarInitials}</div>`;
 
                       // LinkedIn "Learn More" button if LinkedIn URL is available
                       const linkedinButton = author.linkedinUrl 
@@ -1768,11 +1764,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                       const formattedDescription = author.description ? formatAuthorDescription(author.description) : '';
 
                       return `
-                        <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
-                          <div style="display: flex; gap: 16px; align-items: flex-start;">
+                        <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff; text-align: center;">
+                          <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
                             ${avatarImg}
-                            <div style="flex: 1;">
-                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}${readingTimeText}</h3>
+                            <div>
+                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
                               ${formattedDescription ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${formattedDescription}</p>` : ''}
                               ${linkedinButton}
                             </div>
@@ -1792,7 +1788,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                       const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
 
                       return `
-                        <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0; padding: 8px 0; text-align: center;">
                           ${avatarImg}
                           <span style="color: #6b7280; font-size: 14px;">
                             Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
