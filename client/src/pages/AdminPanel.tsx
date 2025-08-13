@@ -5355,10 +5355,19 @@ export default function AdminPanel() {
                         ref={(el) => {
                           // Only set content on initial load, never re-process during editing
                           if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
+                            console.log("🔧 Setting content to editor. Content length:", generatedContent.content.length);
+                            console.log("🔧 Content preview (first 500 chars):", generatedContent.content.substring(0, 500));
+                            
                             // Use content exactly as provided by server - no additional client-side processing
                             // This ensures editor displays the same content as "Copy HTML"
                             el.innerHTML = generatedContent.content;
                             el.setAttribute('data-content-loaded', 'true');
+                            
+                            // Debug: Check what actually got set
+                            setTimeout(() => {
+                              console.log("🔍 After setting, editor content (first 500 chars):", el.innerHTML.substring(0, 500));
+                              console.log("🔍 Does editor content match server content?", el.innerHTML === generatedContent.content);
+                            }, 100);
                           } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
                             // Clear content and reset when no content
                             el.removeAttribute('data-content-loaded');
