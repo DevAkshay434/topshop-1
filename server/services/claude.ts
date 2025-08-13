@@ -30,6 +30,7 @@ interface BlogContentRequest {
 interface BlogContent {
   title: string;
   content: string;
+  rawContent?: string; // Unprocessed content for the editor
   tags: string[];
   metaDescription: string;
 }
@@ -811,6 +812,10 @@ if (!response) {
     // CRITICAL STEP-BY-STEP CONTENT PROCESSING
     console.log('🔧 STARTING COMPREHENSIVE CONTENT PROCESSING PIPELINE');
     
+    // Store the original unprocessed content for the editor
+    const unprocessedContent = removeH1Tags(jsonContent.content);
+    console.log('📝 Content before final processing:', unprocessedContent.substring(0, 500) + '...');
+    
     // Step 1: Remove H1 tags to prevent title duplication
     let processedContent = removeH1Tags(jsonContent.content);
     console.log('✅ Step 1: Removed H1 tags');
@@ -855,6 +860,7 @@ if (!response) {
     return {
       title: jsonContent.title,
       content: processedContent,
+      rawContent: unprocessedContent, // Add the unprocessed content for the editor
       tags: jsonContent.tags,
       metaDescription: cleanMetaDescription
     };

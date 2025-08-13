@@ -2603,106 +2603,8 @@ export default function AdminPanel() {
           shopifyUrl: response.contentUrl // Map contentUrl to shopifyUrl for button compatibility
         });
         
-        // Set enhanced content for editor immediately after API response
-        // This will be used by the editor instead of the processed server content
-        if (response.content) {
-          // Create enhanced content that matches "Content before final processing"
-          // This is the same processing done in the preview section
-          let enhancedContent = response.content;
-          
-          // Get secondary images from selected media
-          const secondaryImages = selectedMediaContent.secondaryImages || [];
-          
-          // Get YouTube data if exists
-          const youtubeUrl = form.watch("youtubeUrl");
-          let youtubeVideoId: string | null = null;
-          if (youtubeUrl) {
-            youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
-          }
-          
-          // If content has YouTube placeholder, replace it with proper iframe
-          if (youtubeVideoId && enhancedContent.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
-            const youtubeEmbed = `<div class="video-container" style="text-align: center; margin: 20px 0;">
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/${youtubeVideoId}" 
-          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen style="max-width: 560px;"></iframe>
-</div>`;
-            enhancedContent = enhancedContent.replace('[YOUTUBE_EMBED_PLACEHOLDER]', youtubeEmbed);
-          }
-          
-          // Process all <a> tags with embedded images to ensure they display properly and are clickable
-          enhancedContent = enhancedContent.replace(
-            /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
-            (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
-              // Ensure src is absolute URL
-              let fixedSrc = src;
-              if (!src.startsWith('http')) {
-                fixedSrc = 'https://' + src;
-              } else if (src.startsWith('//')) {
-                fixedSrc = 'https:' + src;
-              }
-              
-              // Make sure the image is inside an <a> tag and properly styled
-              return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
-            }
-          );
-          
-          // Fix relative image URLs to absolute URLs
-          enhancedContent = enhancedContent
-            .replace(
-              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-              '<img$1src="https://$2"$3>'
-            )
-            .replace(
-              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-              '<img$1src="https://$3"$4>'
-            );
-            
-          // Wrap standalone images with clickable links
-          const imgRegexStandalone = /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
-          enhancedContent = enhancedContent.replace(
-            imgRegexStandalone,
-            (match, imgTag, imgSrc) => {
-              return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
-            }
-          );
-          
-          // Add styling to all remaining images that don't already have style
-          enhancedContent = enhancedContent.replace(
-            /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi, 
-            '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
-          );
-          
-          // Ensure all images have cursor pointer
-          enhancedContent = enhancedContent.replace(
-            /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
-            (match, before, style, after) => {
-              // Add cursor: pointer if it's not already there
-              const updatedStyle = style.includes('cursor:') ? style : style + '; cursor: pointer;';
-              return `<img${before}style="${updatedStyle}"${after}>`;
-            }
-          );
-          
-          console.log("🎯 ENHANCED CONTENT FOR EDITOR (Content before final processing):", {
-            originalLength: response.content.length,
-            enhancedLength: enhancedContent.length,
-            hasYouTube: enhancedContent.includes('<iframe'),
-            hasImages: enhancedContent.includes('<img'),
-            hasStyledImages: enhancedContent.includes('max-width: 100%'),
-            hasClickableImages: enhancedContent.includes('class="image-link"'),
-            youtubeVideoId,
-            preview: enhancedContent.substring(0, 500)
-          });
-          
-          console.log("🚀 SETTING ENHANCED CONTENT FOR EDITOR - THIS IS WHAT SHOPIFY EDITOR SHOULD RECEIVE:");
-          console.log("Enhanced content length:", enhancedContent.length);
-          console.log("Enhanced content preview:", enhancedContent.substring(0, 800));
-          
-          setEnhancedContentForEditor(enhancedContent);
-          
-          // Force a re-render of the ShopifyStyleEditor by updating a key
-          setContentEditorKey(prev => prev + 1);
-        }
+        // No longer need client-side processing - raw content will come from server
+        // The editor will now display the unprocessed rawContent directly from the API response
         
         // Force content editor to re-render with new content
         setContentEditorKey(prev => prev + 1);
@@ -4860,7 +4762,7 @@ export default function AdminPanel() {
                             size="sm"
                             onClick={() => {
                               // Copy raw HTML content to clipboard (unprocessed)
-                              const contentToCopy = generatedContent.content || '';
+                              const contentToCopy = generatedContent.rawContent || generatedContent.content || '';
                               navigator.clipboard.writeText(contentToCopy);
                               toast({
                                 title: "Content copied",
@@ -4877,13 +4779,14 @@ export default function AdminPanel() {
                       {/* Advanced Shopify-Style Rich Text Editor with Limited Height */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
                         <ShopifyStyleEditor
-                          content={generatedContent.content || ''}
+                          content={generatedContent.rawContent || generatedContent.content || ''}
                           onChange={(newContent) => {
                             console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
-                            // Update both the raw content and the enhanced version
+                            // Update both the raw content and processed content
                             setGeneratedContent(prev => ({
                               ...prev,
-                              content: newContent
+                              rawContent: newContent,
+                              content: prev.content // Keep original processed content
                             }));
                             setEnhancedContentForEditor(newContent);
                             // Trigger immediate real-time preview update
