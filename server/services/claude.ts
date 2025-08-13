@@ -157,7 +157,7 @@ function addTableOfContents(content: string): string {
   </h3>
   <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
     ${headings.map(heading => 
-      `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;" onclick="event.preventDefault(); document.getElementById('${heading.id}')?.scrollIntoView({behavior: 'smooth', block: 'start'});">${heading.title}</a></li>`
+      `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a></li>`
     ).join('')}
   </ol>
 </div>
@@ -349,9 +349,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productTitle = productInfo.title || "View Product Details";
         
         // Create product-linked image HTML matching the user's required format
-        imageHtml = `  <a href="/products/${productHandle}" title="${productTitle}" style="text-decoration: none;">
-    <div style="text-align: center; margin: 20px 0;"><img src="${image.url}" alt="${image.alt || ''}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"></div>
-  </a>`;
+        imageHtml = `<div style="text-align: center; margin: 20px 0;">
+  <a href="/products/${productHandle}" title="${productTitle}" style="text-decoration: none;">
+    <img src="${image.url}" alt="${image.alt || ''}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+  </a>
+</div>`;
         
         console.log(`✓ Secondary image ${i + 1} linked to product: ${productTitle} (handle: ${productHandle})`);
       } else if (availableProducts.length > 0) {
@@ -360,9 +362,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productId = availableProducts[productIndex];
         
         // Create product-linked image HTML with product ID (less ideal but functional)
-        imageHtml = `  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
-    <div style="text-align: center; margin: 20px 0;"><img src="${image.url}" alt="${image.alt || ''}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"></div>
-  </a>`;
+        imageHtml = `<div style="text-align: center; margin: 20px 0;">
+  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
+    <img src="${image.url}" alt="${image.alt || ''}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+  </a>
+</div>`;
         
         console.log(`⚠ Secondary image ${i + 1} linked to product ID: ${productId} (no handle available)`);
       } else {

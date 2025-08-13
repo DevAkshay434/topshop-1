@@ -3,10 +3,11 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import TextAlign from '@tiptap/extension-text-align'
-import { Table } from '@tiptap/extension-table'
-import { TableRow } from '@tiptap/extension-table-row'
-import { TableCell } from '@tiptap/extension-table-cell'
-import { TableHeader } from '@tiptap/extension-table-header'
+// Table extensions temporarily removed due to import issues
+// import Table from '@tiptap/extension-table'
+// import TableRow from '@tiptap/extension-table-row'
+// import TableHeader from '@tiptap/extension-table-header'
+// import TableCell from '@tiptap/extension-table-cell'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -82,23 +83,24 @@ export function ShopifyStyleEditor({
           },
         },
       }),
-      Table.configure({
-        resizable: true,
-        HTMLAttributes: {
-          class: 'shopify-table',
-        },
-      }),
-      TableRow,
-      TableHeader.configure({
-        HTMLAttributes: {
-          class: 'shopify-table-header',
-        },
-      }),
-      TableCell.configure({
-        HTMLAttributes: {
-          class: 'shopify-table-cell',
-        },
-      }),
+      // Table extensions temporarily removed due to import issues
+      // Table.configure({
+      //   resizable: true,
+      //   HTMLAttributes: {
+      //     class: 'shopify-table',
+      //   },
+      // }),
+      // TableRow,
+      // TableHeader.configure({
+      //   HTMLAttributes: {
+      //     class: 'shopify-table-header',
+      //   },
+      // }),
+      // TableCell.configure({
+      //   HTMLAttributes: {
+      //     class: 'shopify-table-cell',
+      //   },
+      // }),
       Image.configure({
         inline: false,
         allowBase64: false,
