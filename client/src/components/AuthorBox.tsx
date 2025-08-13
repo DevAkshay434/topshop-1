@@ -120,11 +120,15 @@ export function generateWrittenByHTML(author: {
     ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
     : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
 
+  // Calculate reading time if content is provided
+  const readingTime = content ? calculateReadingTime(content) : null;
+  const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
+
   return `
     <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0; padding: 8px 0; text-align: center;">
       ${avatarImg}
       <span style="color: #6b7280; font-size: 14px;">
-        Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
+        Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
       </span>
     </div>
   `;
