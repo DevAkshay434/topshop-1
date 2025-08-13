@@ -54,7 +54,7 @@ export function AuthorBox({ author, className = "" }: AuthorBoxProps) {
   return (
     <Card className={`author-box ${className}`} id={`author-${author.id}`}>
       <CardContent className="p-6">
-        <div className="flex items-start gap-4">
+        <div className="flex flex-col items-center text-center gap-4">
           <Avatar className="h-16 w-16 flex-shrink-0">
             <AvatarImage src={author.profileImage} alt={author.name} />
             <AvatarFallback className="text-lg">
@@ -87,12 +87,8 @@ export function generateAuthorBoxHTML(author: {
 }, content?: string): string {
   const avatarInitials = author.name.split(' ').map(n => n[0]).join('').toUpperCase();
   const avatarImg = author.profileImage 
-    ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
-    : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
-
-  // Calculate reading time if content is provided
-  const readingTime = content ? calculateReadingTime(content) : null;
-  const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
+    ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto;" />`
+    : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; margin: 0 auto;">${avatarInitials}</div>`;
 
   // LinkedIn "Learn More" button if LinkedIn URL is available
   const linkedinButton = author.linkedinUrl 
@@ -100,11 +96,11 @@ export function generateAuthorBoxHTML(author: {
     : '';
 
   return `
-    <div id="author-${author.id}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
-      <div style="display: flex; gap: 16px; align-items: flex-start;">
+    <div id="author-${author.id}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff; text-align: center;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
         ${avatarImg}
-        <div style="flex: 1;">
-          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}${readingTimeText}</h3>
+        <div>
+          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
           ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${author.description}</p>` : ''}
           ${linkedinButton}
         </div>
@@ -124,15 +120,11 @@ export function generateWrittenByHTML(author: {
     ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
     : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
 
-  // Calculate reading time if content is provided
-  const readingTime = content ? calculateReadingTime(content) : null;
-  const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
-
   return `
-    <div style="display: flex; align-items: center; gap: 8px; margin: 16px 0; padding: 8px 0;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0; padding: 8px 0; text-align: center;">
       ${avatarImg}
       <span style="color: #6b7280; font-size: 14px;">
-        Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
+        Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
       </span>
     </div>
   `;
