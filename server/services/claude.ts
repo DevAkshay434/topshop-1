@@ -48,6 +48,12 @@ function addHeadingIds(content: string): string {
   let processedContent = content;
   let addedIds = 0;
   
+  // CRITICAL FIX: First, clean up any headings with duplicate IDs
+  processedContent = processedContent.replace(/<h2([^>]*id\s*=\s*["'][^"']*["'][^>]*)(id\s*=\s*["'][^"']*["'][^>]*)/gi, (match, firstPart, duplicateId) => {
+    console.log(`🔧 REMOVING DUPLICATE ID: ${match}`);
+    return '<h2' + firstPart.replace(/id\s*=\s*["'][^"']*["']/, '') + '>';
+  });
+  
   // Find all H2 headings without id attributes
   const h2WithoutIdRegex = /<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi;
   
