@@ -4877,7 +4877,6 @@ export default function AdminPanel() {
                       {/* Advanced Shopify-Style Rich Text Editor with Limited Height */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
                         <ShopifyStyleEditor
-                          key={contentEditorKey}
                           content={enhancedContentForEditor || ''}
                           onChange={(newContent) => {
                             console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
