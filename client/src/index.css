@@ -152,6 +152,95 @@
   text-decoration: none;
 }
 
+/* Enhanced table rendering - TipTap Table Extension Support */
+.ProseMirror table,
+.ProseMirror .shopify-table {
+  border-collapse: collapse !important;
+  margin: 1.5rem 0 !important;
+  width: 100% !important;
+  border: 1px solid #e1e3e5 !important;
+  display: table !important;
+  table-layout: auto !important;
+  overflow: visible !important;
+}
+
+.ProseMirror table tr,
+.ProseMirror .shopify-table tr {
+  display: table-row !important;
+  border-bottom: 1px solid #e1e3e5 !important;
+}
+
+.ProseMirror table td,
+.ProseMirror table th,
+.ProseMirror .shopify-table td,
+.ProseMirror .shopify-table th,
+.ProseMirror .shopify-table-cell,
+.ProseMirror .shopify-table-header {
+  border: 1px solid #e1e3e5 !important;
+  padding: 0.75rem !important;
+  text-align: left !important;
+  vertical-align: top !important;
+  display: table-cell !important;
+  position: relative !important;
+}
+
+.ProseMirror table thead,
+.ProseMirror .shopify-table thead,
+.ProseMirror table th,
+.ProseMirror .shopify-table-header {
+  background-color: #f8f9fa !important;
+  font-weight: 600 !important;
+}
+
+.ProseMirror table tbody,
+.ProseMirror .shopify-table tbody {
+  display: table-row-group !important;
+}
+
+.ProseMirror table caption,
+.ProseMirror .shopify-table caption {
+  caption-side: top !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  color: #374151 !important;
+}
+
+/* TipTap table specific styles */
+.ProseMirror .tableWrapper {
+  overflow-x: auto !important;
+  margin: 1rem 0 !important;
+}
+
+.ProseMirror .resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
+}
+
+/* Table selection highlights */
+.ProseMirror .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: #adf;
+  pointer-events: none;
+}
+
+.ProseMirror table .column-resize-handle {
+  background-color: #adf;
+}
+
 /* Image alignment styles */
 .ProseMirror .shopify-image {
   max-width: 100%;

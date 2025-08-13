@@ -4819,21 +4819,23 @@ export default function AdminPanel() {
                         </div>
                       </div>
 
-                      {/* Advanced Shopify-Style Rich Text Editor */}
-                      <ShopifyStyleEditor
-                        content={generatedContent.content || ''}
-                        onChange={(newContent) => {
-                          console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
-                          setGeneratedContent(prev => ({
-                            ...prev,
-                            content: newContent
-                          }));
-                          // Trigger immediate real-time preview update
-                          setContentUpdateCounter(prev => prev + 1);
-                        }}
-                        className="w-full"
-                        editable={true}
-                      />
+                      {/* Advanced Shopify-Style Rich Text Editor with Limited Height */}
+                      <div className="max-h-96 overflow-y-auto border rounded-lg">
+                        <ShopifyStyleEditor
+                          content={generatedContent.content || ''}
+                          onChange={(newContent) => {
+                            console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
+                            setGeneratedContent(prev => ({
+                              ...prev,
+                              content: newContent
+                            }));
+                            // Trigger immediate real-time preview update
+                            setContentUpdateCounter(prev => prev + 1);
+                          }}
+                          className="w-full border-none"
+                          editable={true}
+                        />
+                      </div>
                     </div>
 
                     {/* Content Tags Section */}
