@@ -812,10 +812,6 @@ if (!response) {
     // CRITICAL STEP-BY-STEP CONTENT PROCESSING
     console.log('🔧 STARTING COMPREHENSIVE CONTENT PROCESSING PIPELINE');
     
-    // Store the original unprocessed content for the editor
-    const unprocessedContent = removeH1Tags(jsonContent.content);
-    console.log('📝 Content before final processing:', unprocessedContent.substring(0, 500) + '...');
-    
     // Step 1: Remove H1 tags to prevent title duplication
     let processedContent = removeH1Tags(jsonContent.content);
     console.log('✅ Step 1: Removed H1 tags');
@@ -828,13 +824,17 @@ if (!response) {
     processedContent = addTableOfContents(processedContent);
     console.log('✅ Step 3: Generated Table of Contents');
     
-    // Step 4: Handle media placements
-    processedContent = processMediaPlacementsHandler(processedContent, request);
-    console.log('✅ Step 4: Processed media placements');
-    
-    // Step 5: Final TOC link fixes to remove target="_blank"
+    // Step 4: Final TOC link fixes to remove target="_blank"
     processedContent = fixTOCLinks(processedContent);
-    console.log('✅ Step 5: Fixed TOC links (removed target="_blank")');
+    console.log('✅ Step 4: Fixed TOC links (removed target="_blank")');
+    
+    // CAPTURE CONTENT BEFORE MEDIA PROCESSING (this is what the editor should show)
+    const rawContentForEditor = processedContent;
+    console.log('📝 Content before final processing (for editor):', rawContentForEditor.substring(0, 500) + '...');
+    
+    // Step 5: Handle media placements (final step - converts placeholders to actual embeds)
+    processedContent = processMediaPlacementsHandler(processedContent, request);
+    console.log('✅ Step 5: Processed media placements');
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
@@ -859,8 +859,8 @@ if (!response) {
 
     return {
       title: jsonContent.title,
-      content: processedContent,
-      rawContent: unprocessedContent, // Add the unprocessed content for the editor
+      content: processedContent, // Fully processed content
+      rawContent: rawContentForEditor, // Content with IDs and TOC but before media processing
       tags: jsonContent.tags,
       metaDescription: cleanMetaDescription
     };
