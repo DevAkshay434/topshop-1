@@ -2606,10 +2606,11 @@ export default function AdminPanel() {
         // Set enhanced content for editor immediately after API response
         // This will be used by the editor instead of the processed server content
         if (response.content) {
-          // Process the content to create enhanced version with YouTube embeds and secondary images
+          // Create enhanced content that matches "Content before final processing"
+          // This is the same processing done in the preview section
           let enhancedContent = response.content;
           
-          // Get secondary images from selectedMediaContent
+          // Get secondary images from selected media
           const secondaryImages = selectedMediaContent.secondaryImages || [];
           
           // Get YouTube data if exists
@@ -2629,21 +2630,66 @@ export default function AdminPanel() {
             enhancedContent = enhancedContent.replace('[YOUTUBE_EMBED_PLACEHOLDER]', youtubeEmbed);
           }
           
-          // Add secondary images styling and processing
-          if (secondaryImages.length > 0) {
-            // Process images to ensure proper styling
-            enhancedContent = enhancedContent.replace(
-              /<img([^>]*?)>/gi, 
-              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
-            );
-          }
+          // Process all <a> tags with embedded images to ensure they display properly and are clickable
+          enhancedContent = enhancedContent.replace(
+            /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
+            (match, href, prespace, imgAttr, src, imgAttrEnd, postspace) => {
+              // Ensure src is absolute URL
+              let fixedSrc = src;
+              if (!src.startsWith('http')) {
+                fixedSrc = 'https://' + src;
+              } else if (src.startsWith('//')) {
+                fixedSrc = 'https:' + src;
+              }
+              
+              // Make sure the image is inside an <a> tag and properly styled
+              return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
+            }
+          );
           
-          console.log("🎯 ENHANCED CONTENT FOR EDITOR:", {
+          // Fix relative image URLs to absolute URLs
+          enhancedContent = enhancedContent
+            .replace(
+              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+              '<img$1src="https://$2"$3>'
+            )
+            .replace(
+              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+              '<img$1src="https://$3"$4>'
+            );
+            
+          // Wrap standalone images with clickable links
+          const imgRegexStandalone = /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
+          enhancedContent = enhancedContent.replace(
+            imgRegexStandalone,
+            (match, imgTag, imgSrc) => {
+              return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
+            }
+          );
+          
+          // Add styling to all remaining images that don't already have style
+          enhancedContent = enhancedContent.replace(
+            /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi, 
+            '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
+          );
+          
+          // Ensure all images have cursor pointer
+          enhancedContent = enhancedContent.replace(
+            /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
+            (match, before, style, after) => {
+              // Add cursor: pointer if it's not already there
+              const updatedStyle = style.includes('cursor:') ? style : style + '; cursor: pointer;';
+              return `<img${before}style="${updatedStyle}"${after}>`;
+            }
+          );
+          
+          console.log("🎯 ENHANCED CONTENT FOR EDITOR (Content before final processing):", {
             originalLength: response.content.length,
             enhancedLength: enhancedContent.length,
             hasYouTube: enhancedContent.includes('<iframe'),
             hasImages: enhancedContent.includes('<img'),
-            youtubeVideoId
+            youtubeVideoId,
+            preview: enhancedContent.substring(0, 500)
           });
           
           setEnhancedContentForEditor(enhancedContent);
