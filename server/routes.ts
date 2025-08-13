@@ -1943,11 +1943,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                   const readingTime = calculateReadingTime(completePost.content);
                   const readingTimeText = ` • ${readingTime.display}`;
 
-                  // Author box with LinkedIn integration - matching page author box sizing
+                  // Author box with LinkedIn integration - small avatar sizing
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const avatarElement = author.avatarUrl 
-                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
-                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px; flex-shrink: 0;">${avatarInitials}</div>`;
+                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
+                    : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
                   
                   // LinkedIn "Learn More" button if LinkedIn URL is available
                   const linkedinButton = author.linkedinUrl 
@@ -1973,7 +1973,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                       <div style="display: flex; gap: 16px; align-items: flex-start;">
                         ${avatarElement}
                         <div style="flex: 1;">
-                          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+                          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}${readingTimeText}</h3>
                           ${formattedDescriptionBlog ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${formattedDescriptionBlog}</p>` : ''}
                           ${linkedinButton}
                         </div>
