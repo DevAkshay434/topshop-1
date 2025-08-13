@@ -180,20 +180,19 @@ function addTableOfContents(content: string): string {
     return processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
   
-  // Generate clean, Shopify-compatible TOC HTML with proper spacing and FORCE removal of target="_blank"
-  const tocHtml = `
-<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
-  <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
-    📋 Table of Contents
-  </h3>
+  // Generate clean, Shopify-compatible TOC HTML with proper closing tags
+  const tocItems = headings.map(heading => 
+    `<li style="margin: 6px 0; line-height: 1.4;">
+      <a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a>
+    </li>`
+  ).join('\n    ');
+  
+  const tocHtml = `<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
+  <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">📋 Table of Contents</h3>
   <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
-    ${headings.map(heading => 
-      `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a></li>`
-    ).join('')}
+    ${tocItems}
   </ol>
-</div>
-
-`;
+</div>`;
   
   console.log('🎨 Generated TOC HTML (internal links without target="_blank")');
   console.log(`   - TOC HTML length: ${tocHtml.length} characters`);
@@ -223,46 +222,33 @@ function applyContentFormatting(content: string): string {
   // Rule 1: Make the first line after any heading bold and add line break
   console.log('📝 Rule 1: Bold first line after headings + line break');
   formattedContent = formattedContent.replace(
-    /(<h[2-6][^>]*>.*?<\/h[2-6]>)\s*<p>(.*?)<\/p>/gi,
-    (match, heading, paragraph) => {
-      // Split paragraph into sentences or logical breaks
-      const sentences = paragraph.split(/(?<=[.!?])\s+/);
-      if (sentences.length > 0 && sentences[0].trim()) {
-        const firstSentence = sentences[0].trim();
-        const remainingSentences = sentences.slice(1).join(' ');
-        
-        if (remainingSentences.trim()) {
-          return `${heading}\n\n<p><strong>${firstSentence}</strong></p>\n\n<p>${remainingSentences}</p>`;
+    /(<h[2-6][^>]*>.*?<\/h[2-6]>)\s*<p>([^<]*?)(?:\.|!|\?)\s*([^<]*?)<\/p>/gi,
+    (match, heading, firstSentence, remaining) => {
+      if (firstSentence.trim()) {
+        const boldFirstSentence = `<strong>${firstSentence.trim()}.</strong>`;
+        if (remaining.trim()) {
+          return `${heading}\n\n<p>${boldFirstSentence}<br>\n${remaining.trim()}</p>`;
         } else {
-          return `${heading}\n\n<p><strong>${firstSentence}</strong></p>`;
+          return `${heading}\n\n<p>${boldFirstSentence}</p>`;
         }
       }
       return match;
     }
   );
   
-  // Rule 2: Make sentences ending with : or ? bold
+  // Rule 2: Make sentences ending with : or ? bold (only within paragraphs)
   console.log('📝 Rule 2: Bold sentences ending with : or ?');
   formattedContent = formattedContent.replace(
-    /<p>(.*?[?:])\s*([^<]*?)<\/p>/gi,
+    /<p>([^<]*?[?:])([^<]*?)<\/p>/gi,
     (match, questionOrColon, remaining) => {
+      // Don't apply if already has strong tags
+      if (match.includes('<strong>')) return match;
+      
       if (remaining.trim()) {
-        return `<p><strong>${questionOrColon}</strong> ${remaining}</p>`;
+        return `<p><strong>${questionOrColon}</strong>${remaining}</p>`;
       } else {
         return `<p><strong>${questionOrColon}</strong></p>`;
       }
-    }
-  );
-  
-  // Also handle sentences within paragraphs that end with : or ?
-  formattedContent = formattedContent.replace(
-    /([^<>]*?[?:])(\s+)([^<>]*?)/gi,
-    (match, questionOrColon, space, remaining) => {
-      // Only apply if it's within paragraph content and not already bold
-      if (!match.includes('<strong>') && !match.includes('<b>')) {
-        return `<strong>${questionOrColon}</strong>${space}${remaining}`;
-      }
-      return match;
     }
   );
   
