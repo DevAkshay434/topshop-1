@@ -48,11 +48,35 @@ function addHeadingIds(content: string): string {
   let processedContent = content;
   let addedIds = 0;
   
-  // CRITICAL FIX: First, clean up any headings with duplicate IDs
-  processedContent = processedContent.replace(/<h2([^>]*id\s*=\s*["'][^"']*["'][^>]*)(id\s*=\s*["'][^"']*["'][^>]*)/gi, (match, firstPart, duplicateId) => {
-    console.log(`🔧 REMOVING DUPLICATE ID: ${match}`);
-    return '<h2' + firstPart.replace(/id\s*=\s*["'][^"']*["']/, '') + '>';
+  // COMPREHENSIVE HEADING CLEANUP - Multiple fixes applied in sequence
+  console.log('🔧 COMPREHENSIVE HEADING CLEANUP STARTED');
+  
+  // Fix 1: Clean up malformed headings with escaped quotes and extra characters
+  processedContent = processedContent.replace(/<h2([^>]*?)\\?"([^"]*?)\\?"([^>]*?)>/gi, (match, before, content, after) => {
+    console.log(`🔧 FIXING MALFORMED HEADING: ${match}`);
+    return `<h2${before}"${content}"${after}>`;
   });
+  
+  // Fix 2: Remove duplicate '>' characters  
+  processedContent = processedContent.replace(/<h2([^>]*?)>>+/gi, '<h2$1>');
+  
+  // Fix 3: Clean up any headings with duplicate IDs (first pattern)
+  processedContent = processedContent.replace(/<h2([^>]*)(id\s*=\s*["'][^"']*["'])([^>]*)(id\s*=\s*["'][^"']*["'])([^>]*)>/gi, (match, before1, firstId, between, secondId, after) => {
+    console.log(`🔧 REMOVING DUPLICATE ID PATTERN 1: ${match}`);
+    // Keep only the second ID (usually the more specific one like "faq")
+    return `<h2${before1}${between}${secondId}${after}>`;
+  });
+  
+  // Fix 4: Alternative duplicate ID pattern
+  processedContent = processedContent.replace(/<h2\s+id\s*=\s*["']([^"']*?)["']\s+id\s*=\s*["']([^"']*?)["']([^>]*)>/gi, (match, firstId, secondId, rest) => {
+    console.log(`🔧 REMOVING DUPLICATE ID PATTERN 2: ${match}`);
+    return `<h2 id="${secondId}"${rest}>`;
+  });
+  
+  // Fix 5: Clean up extra spaces around id attributes
+  processedContent = processedContent.replace(/<h2(\s+)id\s*=\s*["']([^"']*?)["'](\s+)>/gi, '<h2 id="$2">');
+  
+  console.log('✅ COMPREHENSIVE HEADING CLEANUP COMPLETED');
   
   // Find all H2 headings without id attributes
   const h2WithoutIdRegex = /<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi;
@@ -784,10 +808,28 @@ if (!response) {
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
     
-    // Process the content to remove H1 tags, add automatic Table of Contents and handle media placement
+    // CRITICAL STEP-BY-STEP CONTENT PROCESSING
+    console.log('🔧 STARTING COMPREHENSIVE CONTENT PROCESSING PIPELINE');
+    
+    // Step 1: Remove H1 tags to prevent title duplication
     let processedContent = removeH1Tags(jsonContent.content);
+    console.log('✅ Step 1: Removed H1 tags');
+    
+    // Step 2: Fix heading IDs BEFORE TOC generation (critical for duplicate ID fixes)
+    processedContent = addHeadingIds(processedContent);
+    console.log('✅ Step 2: Added/fixed heading IDs');
+    
+    // Step 3: Generate Table of Contents based on fixed headings
     processedContent = addTableOfContents(processedContent);
+    console.log('✅ Step 3: Generated Table of Contents');
+    
+    // Step 4: Handle media placements
     processedContent = processMediaPlacementsHandler(processedContent, request);
+    console.log('✅ Step 4: Processed media placements');
+    
+    // Step 5: Final TOC link fixes to remove target="_blank"
+    processedContent = fixTOCLinks(processedContent);
+    console.log('✅ Step 5: Fixed TOC links (removed target="_blank")');
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
@@ -808,9 +850,7 @@ if (!response) {
       console.log(`✓ Cleaned meta description: "${cleanMetaDescription}"`);
     }
     
-    // Apply final content fixes to ensure TOC links work properly
-    processedContent = fixTOCLinks(processedContent);
-    console.log('✅ Final content processing completed with TOC link fixes');
+    console.log('🎉 CONTENT PROCESSING PIPELINE COMPLETED SUCCESSFULLY');
 
     return {
       title: jsonContent.title,
