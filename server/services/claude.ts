@@ -342,6 +342,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       
       let imageHtml = '';
       
+      console.log(`🔧 PROCESSING SECONDARY IMAGE ${i + 1}:`);
+      console.log(`   - Image URL: ${image.url}`);
+      console.log(`   - request.productsInfo: ${request.productsInfo ? JSON.stringify(request.productsInfo) : 'undefined'}`);
+      console.log(`   - availableProducts: ${JSON.stringify(availableProducts)}`);
+      
       // Try to link the image to a product using product handle from productsInfo
       if (request.productsInfo && request.productsInfo.length > 0) {
         // Cycle through available products to ensure each secondary image links to a product
@@ -379,7 +384,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 </div>`;
         
-        console.log(`Secondary image ${i + 1} added without product link (no products selected)`);
+        console.log(`❌ Secondary image ${i + 1} added without product link (no products selected)`);
+        console.log(`   - request.productsInfo: ${request.productsInfo ? request.productsInfo.length : 'undefined'}`);
+        console.log(`   - availableProducts: ${availableProducts.length}`);
       }
       
       // Replace only the first remaining marker to ensure even distribution

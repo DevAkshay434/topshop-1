@@ -1446,16 +1446,23 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
         console.log(`🔍 EXTRACTED PRODUCT IDS FROM SECONDARY IMAGES: ${Array.from(productIdsFromImages).join(', ')}`);
       }
         
-      if (effectiveProductIds.length > 0) {
-        // For simplicity, we'll use the product search API
+      // CRITICAL FIX: First try to use selectedProducts if available (most reliable)
+      if (requestData.selectedProducts && requestData.selectedProducts.length > 0) {
+        productsInfo = requestData.selectedProducts;
+        console.log(`✅ USING SELECTED PRODUCTS FROM REQUEST:`, productsInfo.map(p => ({ id: p.id, title: p.title, handle: p.handle })));
+      } else if (effectiveProductIds.length > 0) {
+        // Fallback: use the product search API only if no selectedProducts
         const allProducts = await shopifyService.getProducts(store, 100);
         productsInfo = allProducts.filter(p => effectiveProductIds.includes(String(p.id)));
         console.log(`✅ LOADED ${productsInfo.length} PRODUCTS FOR MEDIA INTERLINKING:`, productsInfo.map(p => ({ id: p.id, title: p.title, handle: p.handle })));
-      } else {
-        console.log(`❌ NO PRODUCT IDS FOUND - Secondary images will not be linked to products`);
+      }
+      
+      if (productsInfo.length === 0) {
+        console.log(`❌ NO PRODUCTS FOUND FOR LINKING - Secondary images will not be linked to products`);
         console.log(`   - requestData.productIds:`, requestData.productIds);
         console.log(`   - requestData.selectedProducts:`, requestData.selectedProducts);
         console.log(`   - requestData.secondaryImages.length:`, requestData.secondaryImages?.length || 0);
+        console.log(`   - effectiveProductIds:`, effectiveProductIds);
       }
       
       if (requestData.collectionIds && requestData.collectionIds.length > 0) {
