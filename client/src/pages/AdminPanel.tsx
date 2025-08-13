@@ -142,62 +142,7 @@ import ImageSearchSuggestions from '@/components/ImageSearchSuggestions';
 import CreatePostModal from '@/components/CreatePostModal';
 import { ImageUpload } from '@/components/ImageUpload';
 
-// Simple client-side TOC processing function
-function applyTocProcessingToPreview(content: string): string {
-  console.log('🔧 CLIENT-SIDE TOC PROCESSING STARTED');
-  
-  try {
-    // Step 1: Add IDs to H2 headings that don't have them
-    let processedContent = content.replace(/<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi, (match, attributes, title) => {
-      const cleanTitle = title.replace(/<[^>]*>/g, '').trim();
-      const id = cleanTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      
-      console.log(`   - Added id="${id}" to H2: "${cleanTitle}"`);
-      return `<h2${attributes} id="${id}">${title}</h2>`;
-    });
-
-    // Step 2: Process TOC if marker exists
-    if (processedContent.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')) {
-      // Extract H2 headings with IDs
-      const h2Regex = /<h2[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h2>/gi;
-      const headings = [];
-      let match;
-      
-      while ((match = h2Regex.exec(processedContent)) !== null) {
-        const id = match[1];
-        const title = match[2].replace(/<[^>]*>/g, '').trim();
-        headings.push({ id, title });
-      }
-      
-      if (headings.length > 0) {
-        const tocHtml = `
-<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
-  <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
-    📋 Table of Contents
-  </h3>
-  <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
-    ${headings.map(h => `<li style="margin: 6px 0; line-height: 1.4;"><a href="#${h.id}" style="color: #007bff; text-decoration: underline;">${h.title}</a></li>`).join('')}
-  </ol>
-</div>
-
-`;
-        processedContent = processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
-        console.log(`✅ Generated TOC with ${headings.length} links (no target="_blank")`);
-      }
-    }
-
-    console.log('✅ CLIENT-SIDE TOC PROCESSING COMPLETED');
-    return processedContent;
-  } catch (error) {
-    console.error('❌ CLIENT-SIDE TOC PROCESSING ERROR:', error);
-    return content; // Return original content if processing fails
-  }
-}
+// Client-side TOC processing function removed - server-side processing handles this correctly
 
 // Define the form schema for content generation
 const contentFormSchema = z.object({
@@ -5413,8 +5358,8 @@ export default function AdminPanel() {
                             // Process content to render embedded images and videos properly
                             let processedContent = generatedContent.content;
                             
-                            // CRITICAL FIX: Apply TOC processing to preview (same as database processing)
-                            processedContent = applyTocProcessingToPreview(processedContent);
+                            // REMOVED: Client-side TOC processing to prevent double-processing
+                            // Server-side processing already handles TOC links and heading IDs correctly
                             
                             // Ensure images have proper styling and are visible
                             processedContent = processedContent.replace(
