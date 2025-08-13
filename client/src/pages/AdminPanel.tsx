@@ -5461,8 +5461,12 @@ export default function AdminPanel() {
                                   fixedSrc = 'https:' + src;
                                 }
                                 
-                                // Make sure the image is inside an <a> tag and properly styled
-                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">${postspace}</a>`;
+                                // Make sure the image is inside an <a> tag and properly styled - preserve 600x600 for secondary images
+                                const isSecondaryImage = imgAttr.includes('width: 600px') || imgAttr.includes('height: 600px');
+                                const imageStyle = isSecondaryImage 
+                                  ? "width: 600px; height: 600px; object-fit: cover; margin: 0 auto; display: block; border-radius: 8px; cursor: pointer;"
+                                  : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;";
+                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="${imageStyle}">${postspace}</a>`;
                               }
                             );
                             
@@ -5524,8 +5528,12 @@ export default function AdminPanel() {
                                          (typeof normalizedImgSrc === 'string' && normalizedImgSrc.includes(normalizedProductImg));
                                 });
                                 
-                                // Style the image regardless of product match
-                                const styledImg = imgElement.replace(/<img/, '<img style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;"');
+                                // Style the image regardless of product match - preserve 600x600 for secondary images
+                                const isSecondaryImage = imgElement.includes('width: 600px') || imgElement.includes('height: 600px');
+                                const imageStyle = isSecondaryImage 
+                                  ? "width: 600px; height: 600px; object-fit: cover; margin: 0 auto; display: block; border-radius: 8px; cursor: pointer;"
+                                  : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;";
+                                const styledImg = imgElement.replace(/<img/, `<img style="${imageStyle}"`);
                                 
                                 if (matchingProduct) {
                                   // Replace the image with a linked version
@@ -5563,10 +5571,16 @@ export default function AdminPanel() {
                             // Log for debugging - DO NOT set state here to avoid infinite re-renders
                             console.log("Content before final processing:", enhancedContent);
                             
-                            // Add styling to all remaining images that don't already have style
+                            // Add styling to all remaining images that don't already have style - preserve 600×600 for secondary images
                             enhancedContent = enhancedContent.replace(
                               /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi, 
-                              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
+                              (match, imgAttrs) => {
+                                const isSecondaryImage = imgAttrs.includes('width="600"') || imgAttrs.includes('height="600"');
+                                const imageStyle = isSecondaryImage 
+                                  ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block; cursor: pointer;"
+                                  : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;";
+                                return `<img${imgAttrs} style="${imageStyle}">`;
+                              }
                             );
                             
                             // Ensure all images have cursor pointer
@@ -5695,10 +5709,16 @@ export default function AdminPanel() {
                                     /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
                                     '<img$1src="https://$3"$4>'
                                   )
-                                  // Add styling to all images for proper display
+                                  // Add styling to all images for proper display - preserve 600×600 for secondary images
                                   .replace(
                                     /<img([^>]*?)>/gi, 
-                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                    (match, imgAttrs) => {
+                                      const isSecondaryImage = imgAttrs.includes('width: 600px') || imgAttrs.includes('height: 600px');
+                                      const imageStyle = isSecondaryImage 
+                                        ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
+                                        : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
+                                      return `<img${imgAttrs} style="${imageStyle}">`;
+                                    }
                                   )
                               }} />
                               <YouTubeEmbed />
@@ -5714,10 +5734,16 @@ export default function AdminPanel() {
                                     /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
                                     '<img$1src="https://$3"$4>'
                                   )
-                                  // Add styling to all images for proper display
+                                  // Add styling to all images for proper display - preserve 600×600 for secondary images
                                   .replace(
                                     /<img([^>]*?)>/gi, 
-                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                                    (match, imgAttrs) => {
+                                      const isSecondaryImage = imgAttrs.includes('width: 600px') || imgAttrs.includes('height: 600px');
+                                      const imageStyle = isSecondaryImage 
+                                        ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
+                                        : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
+                                      return `<img${imgAttrs} style="${imageStyle}">`;
+                                    }
                                   )
                               }} />
                             </div>
@@ -5736,10 +5762,16 @@ export default function AdminPanel() {
                             /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
                             '<img$1src="https://$3"$4>'
                           )
-                          // Add styling to all images for proper display
+                          // Add styling to all images for proper display - preserve 600×600 for secondary images
                           .replace(
                             /<img([^>]*?)>/gi, 
-                            '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">'
+                            (match, imgAttrs) => {
+                              const isSecondaryImage = imgAttrs.includes('width: 600px') || imgAttrs.includes('height: 600px');
+                              const imageStyle = isSecondaryImage 
+                                ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
+                                : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
+                              return `<img${imgAttrs} style="${imageStyle}">`;
+                            }
                           );
                         
                         // Return enhanced content with all embedded images properly displayed
