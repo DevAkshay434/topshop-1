@@ -4776,25 +4776,16 @@ export default function AdminPanel() {
                         </div>
                       </div>
 
-                      {/* Advanced Shopify-Style Rich Text Editor with Limited Height */}
+                      {/* Raw HTML Content Display (preserved exactly as server sends it) */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
-                        <ShopifyStyleEditor
-                          content={generatedContent.rawContent || generatedContent.content || ''}
-                          onChange={(newContent) => {
-                            console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
-                            // Update both the raw content and processed content
-                            setGeneratedContent(prev => ({
-                              ...prev,
-                              rawContent: newContent,
-                              content: prev.content // Keep original processed content
-                            }));
-                            setEnhancedContentForEditor(newContent);
-                            // Trigger immediate real-time preview update
-                            setContentUpdateCounter(prev => prev + 1);
-                          }}
-                          className="w-full border-none"
-                          editable={true}
-                        />
+                        <div className="p-4">
+                          <div 
+                            className="prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ 
+                              __html: generatedContent.rawContent || generatedContent.content || ''
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
 

@@ -3,6 +3,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import TextAlign from '@tiptap/extension-text-align'
+import { Extension, Node } from '@tiptap/core'
 // Table extensions temporarily removed due to import issues
 // import Table from '@tiptap/extension-table'
 // import TableRow from '@tiptap/extension-table-row'
@@ -41,6 +42,166 @@ import {
   Rows
 } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
+
+// Custom extension to preserve raw HTML elements that TipTap might strip
+const PreserveRawHTML = Extension.create({
+  name: 'preserveRawHTML',
+  
+  addGlobalAttributes() {
+    return [
+      {
+        // Preserve all attributes on all elements
+        types: ['heading', 'paragraph', 'link'],
+        attributes: {
+          id: {
+            default: null,
+            parseHTML: element => element.getAttribute('id'),
+            renderHTML: attributes => {
+              if (!attributes.id) return {}
+              return { id: attributes.id }
+            },
+          },
+          target: {
+            default: null,
+            parseHTML: element => element.getAttribute('target'),
+            renderHTML: attributes => {
+              if (!attributes.target) return {}
+              return { target: attributes.target }
+            },
+          },
+          rel: {
+            default: null,
+            parseHTML: element => element.getAttribute('rel'),
+            renderHTML: attributes => {
+              if (!attributes.rel) return {}
+              return { rel: attributes.rel }
+            },
+          },
+          class: {
+            default: null,
+            parseHTML: element => element.getAttribute('class'),
+            renderHTML: attributes => {
+              if (!attributes.class) return {}
+              return { class: attributes.class }
+            },
+          },
+          style: {
+            default: null,
+            parseHTML: element => element.getAttribute('style'),
+            renderHTML: attributes => {
+              if (!attributes.style) return {}
+              return { style: attributes.style }
+            },
+          },
+        },
+      },
+    ]
+  },
+  
+  addProseMirrorPlugins() {
+    return []
+  }
+})
+
+// Custom iframe node to preserve YouTube embeds and other iframes
+const IframeNode = Node.create({
+  name: 'iframe',
+  
+  group: 'block',
+  
+  parseHTML() {
+    return [
+      {
+        tag: 'iframe',
+      },
+      {
+        tag: 'div[class*="video-container"]',
+        getAttrs: (dom) => {
+          const iframe = dom.querySelector('iframe')
+          return iframe ? { src: iframe.src } : false
+        },
+      }
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['iframe', {
+      ...HTMLAttributes,
+      loading: 'lazy',
+      allowfullscreen: 'true',
+      frameborder: '0',
+    }, 0]
+  },
+
+  addAttributes() {
+    return {
+      src: {
+        default: null,
+        parseHTML: element => {
+          // Handle both direct iframe and wrapped iframe in div
+          if (element.tagName === 'IFRAME') {
+            return element.getAttribute('src')
+          } else if (element.tagName === 'DIV') {
+            const iframe = element.querySelector('iframe')
+            return iframe ? iframe.getAttribute('src') : null
+          }
+          return null
+        },
+      },
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('width'),
+      },
+      height: {
+        default: null,
+        parseHTML: element => element.getAttribute('height'),
+      },
+      allow: {
+        default: null,
+        parseHTML: element => element.getAttribute('allow'),
+      },
+      class: {
+        default: null,
+        parseHTML: element => element.getAttribute('class'),
+      },
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+      },
+    }
+  },
+})
+
+// Custom table node to preserve table structure
+const TableNode = Node.create({
+  name: 'customTable',
+  
+  group: 'block',
+  content: 'block+',
+  
+  parseHTML() {
+    return [
+      { tag: 'table' },
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['table', HTMLAttributes, 0]
+  },
+
+  addAttributes() {
+    return {
+      class: {
+        default: null,
+        parseHTML: element => element.getAttribute('class'),
+      },
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+      },
+    }
+  },
+})
 
 interface ShopifyStyleEditorProps {
   content?: string
@@ -82,11 +243,13 @@ export function ShopifyStyleEditor({
             class: 'shopify-code-block',
           },
         },
-        // Prevent automatic content processing
+        // Preserve heading attributes including IDs
         heading: {
           HTMLAttributes: {},
         },
       }),
+      // Add custom extension to preserve attributes
+      PreserveRawHTML,
       // Table extensions temporarily removed due to import issues
       // Table.configure({
       //   resizable: true,
@@ -115,8 +278,11 @@ export function ShopifyStyleEditor({
       }),
       Link.configure({
         openOnClick: false,
-        HTMLAttributes: {},
-        // Prevent Tiptap from modifying link attributes
+        HTMLAttributes: {
+          rel: null,
+          target: null,
+        },
+        // Prevent Tiptap from modifying link attributes - preserve all attributes
         validate: (href) => true,
         autolink: false,
       }),
@@ -163,9 +329,7 @@ export function ShopifyStyleEditor({
       console.log("  TOC links with target=_blank:", (content?.match(/href="#[^"]*"[^>]*target="_blank"/g) || []).length);
       
       // Set content without triggering update events - preserve exact HTML structure
-      editor.commands.setContent(content, false, {
-        preserveWhitespace: 'full',
-      });
+      editor.commands.setContent(content, { emitUpdate: false });
       
       // Verify content after setting
       setTimeout(() => {
