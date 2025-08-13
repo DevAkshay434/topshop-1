@@ -2410,6 +2410,15 @@ export default function AdminPanel() {
         contentStyleDisplayName: selectedContentDisplayName || "",
         // CRITICAL: Include selected author ID from workflow
         authorId: selectedAuthorId ? parseInt(selectedAuthorId) : null,
+        // CRITICAL FIX: Include products info for secondary image product linking
+        productsInfo: selectedProducts.map(product => ({
+          id: String(product.id),
+          title: product.title,
+          handle: product.handle,
+          description: product.description || '',
+          images: product.images || [],
+          variants: product.variants || []
+        })),
         // Add selected media from selectedMediaContent state (the correct source)
         // CRITICAL FIX: Handle async state issue by using both selectedMediaContent and fallback state
         primaryImage: selectedMediaContent.primaryImage || primaryImages[0] || null,

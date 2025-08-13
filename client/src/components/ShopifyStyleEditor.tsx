@@ -62,6 +62,18 @@ export function ShopifyStyleEditor({
         HTMLAttributes: {
           class: 'shopify-link',
         },
+        // Custom link handling to avoid interfering with TOC navigation
+        renderHTML({ HTMLAttributes }) {
+          const { href, ...rest } = HTMLAttributes;
+          
+          // If this is a TOC link (starts with #), don't add shopify-link class
+          if (href && href.startsWith('#')) {
+            return ['a', { ...rest, href, class: 'toc-link' }];
+          }
+          
+          // For all other links, use shopify-link class
+          return ['a', { ...rest, href, class: 'shopify-link' }];
+        }
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],

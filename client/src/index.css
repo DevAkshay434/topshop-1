@@ -74,6 +74,28 @@
   vertical-align: top;
 }
 
+/* TOC Link Styles */
+.ProseMirror .toc-link {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror .toc-link:hover {
+  color: #0056b3;
+  text-decoration: none;
+}
+
+/* Shopify Link Styles */
+.ProseMirror .shopify-link {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+.ProseMirror .shopify-link:hover {
+  color: #0056b3;
+}
+
 /* Image alignment styles */
 .ProseMirror .shopify-image {
   max-width: 100%;
