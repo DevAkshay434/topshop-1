@@ -136,8 +136,24 @@ export function ShopifyStyleEditor({
     if (editor && content !== editor.getHTML()) {
       userInitiatedChange.current = false;
       
+      console.log("🔍 SHOPIFY EDITOR CONTENT UPDATE:");
+      console.log("  New content length:", content?.length || 0);
+      console.log("  First 300 chars:", content?.substring(0, 300));
+      console.log("  H2 headings with IDs:", (content?.match(/<h2[^>]*id[^>]*>/g) || []).length);
+      console.log("  TOC links with target=_blank:", (content?.match(/href="#[^"]*"[^>]*target="_blank"/g) || []).length);
+      
       // Set content without triggering update events
       editor.commands.setContent(content);
+      
+      // Verify content after setting
+      setTimeout(() => {
+        const editorHTML = editor.getHTML();
+        console.log("🔍 EDITOR CONTENT AFTER SETTING:");
+        console.log("  Editor HTML length:", editorHTML?.length || 0);
+        console.log("  Editor first 300 chars:", editorHTML?.substring(0, 300));
+        console.log("  Editor H2 headings with IDs:", (editorHTML?.match(/<h2[^>]*id[^>]*>/g) || []).length);
+        console.log("  Editor TOC links with target=_blank:", (editorHTML?.match(/href="#[^"]*"[^>]*target="_blank"/g) || []).length);
+      }, 100);
     }
   }, [content, editor])
 

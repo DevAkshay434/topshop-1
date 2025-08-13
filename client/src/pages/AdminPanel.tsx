@@ -2644,6 +2644,13 @@ export default function AdminPanel() {
         }
         
         // Store the API response with proper URL mapping for frontend access
+        console.log("🔍 API RESPONSE CONTENT DEBUG:");
+        console.log("  Content length:", response.content?.length || 0);
+        console.log("  First 500 chars:", response.content?.substring(0, 500));
+        console.log("  Has H2 headings:", response.content?.includes('<h2'));
+        console.log("  H2 headings with IDs:", (response.content?.match(/<h2[^>]*id[^>]*>/g) || []).length);
+        console.log("  TOC links with target=_blank:", (response.content?.match(/href="#[^"]*"[^>]*target="_blank"/g) || []).length);
+        
         setGeneratedContent({
           ...response,
           contentUrl: response.contentUrl,
