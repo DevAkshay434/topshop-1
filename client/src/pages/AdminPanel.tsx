@@ -2688,11 +2688,20 @@ export default function AdminPanel() {
             enhancedLength: enhancedContent.length,
             hasYouTube: enhancedContent.includes('<iframe'),
             hasImages: enhancedContent.includes('<img'),
+            hasStyledImages: enhancedContent.includes('max-width: 100%'),
+            hasClickableImages: enhancedContent.includes('class="image-link"'),
             youtubeVideoId,
             preview: enhancedContent.substring(0, 500)
           });
           
+          console.log("🚀 SETTING ENHANCED CONTENT FOR EDITOR - THIS IS WHAT SHOPIFY EDITOR SHOULD RECEIVE:");
+          console.log("Enhanced content length:", enhancedContent.length);
+          console.log("Enhanced content preview:", enhancedContent.substring(0, 800));
+          
           setEnhancedContentForEditor(enhancedContent);
+          
+          // Force a re-render of the ShopifyStyleEditor by updating a key
+          setContentEditorKey(prev => prev + 1);
         }
         
         // Force content editor to re-render with new content
@@ -4851,7 +4860,7 @@ export default function AdminPanel() {
                             size="sm"
                             onClick={() => {
                               // Copy enhanced HTML to clipboard for Shopify compatibility
-                              const contentToCopy = enhancedContentForEditor || generatedContent.content || '';
+                              const contentToCopy = enhancedContentForEditor || '';
                               navigator.clipboard.writeText(contentToCopy);
                               toast({
                                 title: "Content copied",
@@ -4868,7 +4877,8 @@ export default function AdminPanel() {
                       {/* Advanced Shopify-Style Rich Text Editor with Limited Height */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
                         <ShopifyStyleEditor
-                          content={enhancedContentForEditor || generatedContent.content || ''}
+                          key={contentEditorKey}
+                          content={enhancedContentForEditor || ''}
                           onChange={(newContent) => {
                             console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
                             setEnhancedContentForEditor(newContent);
