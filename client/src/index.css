@@ -74,6 +74,50 @@
   vertical-align: top;
 }
 
+.ProseMirror .shopify-table-row {
+  border-bottom: 1px solid #e1e3e5;
+}
+
+.ProseMirror .shopify-table-header {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.ProseMirror .shopify-table-cell {
+  padding: 0.75rem;
+  border-right: 1px solid #e1e3e5;
+}
+
+/* Table rendering - ensure tables display as tables */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  width: 100%;
+  border: 1px solid #e1e3e5;
+  display: table !important;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid #e1e3e5;
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  display: table-cell !important;
+}
+
+.ProseMirror table tr {
+  display: table-row !important;
+}
+
+.ProseMirror table thead {
+  display: table-header-group !important;
+}
+
+.ProseMirror table tbody {
+  display: table-row-group !important;
+}
+
 /* TOC Link Styles */
 .ProseMirror .toc-link {
   color: #007bff;
@@ -94,6 +138,18 @@
 
 .ProseMirror .shopify-link:hover {
   color: #0056b3;
+}
+
+/* Preserve original link classes in content */
+.ProseMirror a[href^="#"] {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror a[href^="#"]:hover {
+  color: #0056b3;
+  text-decoration: none;
 }
 
 /* Image alignment styles */
