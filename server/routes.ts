@@ -1805,9 +1805,9 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedin_url || undefined
                     };
                     
-                    // Generate author HTML components with reading time
+                    // Generate author HTML components with reading time for "Written by" section only
                     const writtenByHTML = generateWrittenByHTML(authorFormatted, pageContent);
-                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted, pageContent);
+                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted); // No content parameter = no reading time
                     
                     // Find the first image or paragraph in content to inject "Written by" after it
                     const imageMatch = pageContent.match(/<img[^>]*>/i);

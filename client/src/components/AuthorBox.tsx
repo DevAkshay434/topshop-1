@@ -77,14 +77,14 @@ export function AuthorBox({ author, className = "" }: AuthorBoxProps) {
   );
 }
 
-// Function to generate author box HTML for inclusion in Shopify content
+// Function to generate author box HTML for inclusion in Shopify content (bottom author box - no reading time)
 export function generateAuthorBoxHTML(author: {
   id: string;
   name: string;
   description?: string;
   profileImage?: string;
   linkedinUrl?: string;
-}, content?: string): string {
+}): string {
   const avatarInitials = author.name.split(' ').map(n => n[0]).join('').toUpperCase();
   const avatarImg = author.profileImage 
     ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
