@@ -90,9 +90,9 @@ export function generateAuthorBoxHTML(author: {
     ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
     : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px; flex-shrink: 0;">${avatarInitials}</div>`;
 
-  // LinkedIn "Learn More" button if LinkedIn URL is available
+  // LinkedIn "Read More" button if LinkedIn URL is available
   const linkedinButton = author.linkedinUrl 
-    ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Learn More</a>`
+    ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Read More</a>`
     : '';
 
   return `
