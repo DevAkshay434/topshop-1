@@ -1,48 +1,22 @@
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import Link from '@tiptap/extension-link'
-import TextAlign from '@tiptap/extension-text-align'
-import { Extension, Node } from '@tiptap/core'
-// Table extensions temporarily removed due to import issues
-// import Table from '@tiptap/extension-table'
-// import TableRow from '@tiptap/extension-table-row'
-// import TableHeader from '@tiptap/extension-table-header'
-// import TableCell from '@tiptap/extension-table-cell'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { 
   Bold, 
   Italic, 
-  Underline, 
-  Strikethrough,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   List,
   ListOrdered,
-  Quote,
   Code,
   Link as LinkIcon,
   Image as ImageIcon,
-  Minus,
-  Undo,
-  Redo,
   Type,
-  MoreHorizontal,
-  MoveLeft,
-  MoveRight,
-  Maximize,
-  Trash,
-  Table as TableIcon,
-  Plus,
-  Columns,
-  Rows
+  Eye,
+  EyeOff,
+  Save
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { protectComplexHTML, restoreComplexHTML, preserveHeadingIds, cleanInternalLinks } from '@/utils/contentPreservation'
 
 // Custom extension to preserve raw HTML elements that TipTap might strip
 const PreserveRawHTML = Extension.create({
