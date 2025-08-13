@@ -4776,26 +4776,23 @@ export default function AdminPanel() {
                         </div>
                       </div>
 
-                      {/* Visual Rich Text Editor (WYSIWYG) */}
-                      <div className="max-h-96 overflow-y-auto border rounded-lg">
-                        <ShopifyStyleEditor
-                          content={generatedContent.rawContent || generatedContent.content || ''}
-                          onChange={(newContent) => {
-                            console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
-                            // Update both the raw content and processed content
-                            setGeneratedContent(prev => ({
-                              ...prev,
-                              rawContent: newContent,
-                              content: prev.content // Keep original processed content
-                            }));
-                            setEnhancedContentForEditor(newContent);
-                            // Trigger immediate real-time preview update
-                            setContentUpdateCounter(prev => prev + 1);
-                          }}
-                          className="w-full border-none"
-                          editable={true}
-                        />
-                      </div>
+                      {/* HTML-Preserving Content Editor */}
+                      <SimpleHTMLEditor
+                        content={generatedContent.rawContent || generatedContent.content || ''}
+                        onChange={(newContent) => {
+                          console.log("SimpleHTMLEditor content updated:", newContent.length, "characters");
+                          // Update both the raw content and processed content
+                          setGeneratedContent(prev => ({
+                            ...prev,
+                            rawContent: newContent,
+                            content: newContent // Use the same content for both
+                          }));
+                          setEnhancedContentForEditor(newContent);
+                          // Trigger immediate real-time preview update
+                          setContentUpdateCounter(prev => prev + 1);
+                        }}
+                        className="max-h-96 border rounded-lg"
+                      />
                     </div>
 
                     {/* Content Tags Section */}
