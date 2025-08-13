@@ -2603,6 +2603,12 @@ export default function AdminPanel() {
           shopifyUrl: response.contentUrl // Map contentUrl to shopifyUrl for button compatibility
         });
         
+        // Set enhanced content for editor immediately after API response
+        // This will be used by the editor instead of the processed server content
+        if (response.content) {
+          setEnhancedContentForEditor(response.content);
+        }
+        
         // Force content editor to re-render with new content
         setContentEditorKey(prev => prev + 1);
         
@@ -5612,9 +5618,8 @@ export default function AdminPanel() {
                               }
                             );
                             
-                            // Log for debugging and store enhanced content for editor
+                            // Log for debugging - DO NOT set state here to avoid infinite re-renders
                             console.log("Content before final processing:", enhancedContent);
-                            setEnhancedContentForEditor(enhancedContent);
                             
                             // Add styling to all remaining images that don't already have style
                             enhancedContent = enhancedContent.replace(
@@ -5631,6 +5636,9 @@ export default function AdminPanel() {
                                 return `<img${before}style="${updatedStyle}"${after}>`;
                               }
                             );
+                            
+                            // Store enhanced content for potential editor use (but don't set state during render)
+                            // The enhanced content is already set in the API response handler
                             
                             // Return the enhanced content with proper image styling
                             return <div className="content-preview prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: enhancedContent }} />;
