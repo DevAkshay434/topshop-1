@@ -284,6 +284,7 @@ export default function AdminPanel() {
   const [isOptimizingMeta, setIsOptimizingMeta] = useState(false);
   const [publicationMethod, setPublicationMethod] = useState<'draft' | 'publish' | 'schedule'>('draft');
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [enhancedContentForEditor, setEnhancedContentForEditor] = useState<string>(''); // Store enhanced content with YouTube and images
   const [contentUpdateCounter, setContentUpdateCounter] = useState(0);
   const [contentEditorKey, setContentEditorKey] = useState(0); // Force re-render of editor
   const [isSearchingImages, setIsSearchingImages] = useState(false);
@@ -4757,11 +4758,12 @@ export default function AdminPanel() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Copy HTML to clipboard for Shopify compatibility
-                              navigator.clipboard.writeText(generatedContent.content || '');
+                              // Copy enhanced HTML to clipboard for Shopify compatibility
+                              const contentToCopy = enhancedContentForEditor || generatedContent.content || '';
+                              navigator.clipboard.writeText(contentToCopy);
                               toast({
                                 title: "Content copied",
-                                description: "Shopify-compatible HTML copied to clipboard",
+                                description: "Enhanced Shopify-compatible HTML copied to clipboard",
                               });
                             }}
                           >
@@ -4774,9 +4776,10 @@ export default function AdminPanel() {
                       {/* Advanced Shopify-Style Rich Text Editor with Limited Height */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
                         <ShopifyStyleEditor
-                          content={generatedContent.content || ''}
+                          content={enhancedContentForEditor || generatedContent.content || ''}
                           onChange={(newContent) => {
                             console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
+                            setEnhancedContentForEditor(newContent);
                             setGeneratedContent(prev => ({
                               ...prev,
                               content: newContent
@@ -5428,8 +5431,8 @@ export default function AdminPanel() {
                       
                       {/* Word Count */}
                       <div className="text-xs text-gray-500 text-right">
-                        Words: {generatedContent.content ? 
-                          generatedContent.content.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
+                        Words: {enhancedContentForEditor || generatedContent.content ? 
+                          (enhancedContentForEditor || generatedContent.content).replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length 
                           : 0}
                       </div>
                     </div>
@@ -5609,8 +5612,9 @@ export default function AdminPanel() {
                               }
                             );
                             
-                            // Log for debugging
+                            // Log for debugging and store enhanced content for editor
                             console.log("Content before final processing:", enhancedContent);
+                            setEnhancedContentForEditor(enhancedContent);
                             
                             // Add styling to all remaining images that don't already have style
                             enhancedContent = enhancedContent.replace(
