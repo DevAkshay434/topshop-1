@@ -5363,10 +5363,22 @@ export default function AdminPanel() {
                             el.innerHTML = generatedContent.content;
                             el.setAttribute('data-content-loaded', 'true');
                             
-                            // Debug: Check what actually got set
+                            // Fix browser auto-adding target="_blank" to same-page links
                             setTimeout(() => {
-                              console.log("🔍 After setting, editor content (first 500 chars):", el.innerHTML.substring(0, 500));
-                              console.log("🔍 Does editor content match server content?", el.innerHTML === generatedContent.content);
+                              // Remove target="_blank" from TOC links (same-page navigation)
+                              const tocLinks = el.querySelectorAll('a[href^="#"]');
+                              tocLinks.forEach(link => {
+                                link.removeAttribute('target');
+                                link.removeAttribute('rel');
+                                // Ensure proper styling is maintained
+                                link.style.color = '#007bff';
+                                link.style.textDecoration = 'underline';
+                              });
+                              
+                              console.log("🔧 Fixed", tocLinks.length, "TOC links - removed target='_blank'");
+                              console.log("🔍 After fixing, editor content matches server?", 
+                                el.innerHTML.replace(/\s+target="_blank"[^>]*/g, '') === 
+                                generatedContent.content.replace(/\s+target="_blank"[^>]*/g, ''));
                             }, 100);
                           } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
                             // Clear content and reset when no content
@@ -5386,11 +5398,22 @@ export default function AdminPanel() {
                         }}
                         onInput={(e) => {
                           const target = e.target as HTMLDivElement;
+                          
+                          // Fix any TOC links that might have gotten target="_blank" added during editing
+                          const tocLinks = target.querySelectorAll('a[href^="#"]');
+                          tocLinks.forEach(link => {
+                            if (link.getAttribute('target') === '_blank') {
+                              link.removeAttribute('target');
+                              link.removeAttribute('rel');
+                            }
+                          });
+                          
                           const newContent = target.innerHTML;
                           console.log("Rich text editor content updated:", {
                             contentLength: newContent?.length || 0,
                             hasImages: newContent.includes('<img'),
-                            hasIframes: newContent.includes('<iframe')
+                            hasIframes: newContent.includes('<iframe'),
+                            tocLinksFixed: tocLinks.length
                           });
                           
                           setGeneratedContent(prev => ({

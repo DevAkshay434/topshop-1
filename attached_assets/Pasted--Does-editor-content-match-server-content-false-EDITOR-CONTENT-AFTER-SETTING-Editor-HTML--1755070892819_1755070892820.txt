@@ -1,0 +1,122 @@
+🔍 Does editor content match server content? false
+ 🔍 EDITOR CONTENT AFTER SETTING:
+   Editor HTML length: 14525
+   Editor first 300 chars: <h3><strong>📋 Table of Contents</strong></h3><ol class="shopify-ordered-list"><li><p><a target="_blank" rel="noopener noreferrer nofollow" href="#understanding-hard-water"><u>Understanding Hard Water: Why Your Home Deserves Better</u></a></p></li><li><p><a target="_blank" rel="noopener noreferrer n
+   Editor H2 headings with IDs: 0
+   Editor TOC links with target=_blank: 0
+ Current selectedMediaContent state: Object
+ 🔍 BUYER PERSONA STATE CHECK: Object
+ 🎯 RENDERING BUYER PERSONA SUGGESTIONS:
+ 🎯 buyerPersonaSuggestions: Array(8)
+ 🎯 suggestionsRef.current: Array(0)
+ 🎯 suggestionsGenerated: false
+ 🎯 suggestionsLoading: false
+ Content before final processing: 
+<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
+  <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
+    📋 Table of Contents
+  </h3>
+  <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
+    <li style="margin: 6px 0; line-height: 1.4;"><a href="#understanding-hard-water" style="color: #007bff; text-decoration: underline;">Understanding Hard Water: Why Your Home Deserves Better</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#how-water-softeners-work" style="color: #007bff; text-decoration: underline;">How Water Softeners Work: The Science of Softer, Kinder Water</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#benefits-of-water-softeners" style="color: #007bff; text-decoration: underline;">Benefits of Water Softeners: Transforming Everyday Experiences</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#choosing-the-right-water-softener" style="color: #007bff; text-decoration: underline;">Choosing the Right Water Softener: A Decision That Matters</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#installation-and-maintenance" style="color: #007bff; text-decoration: underline;">Installation and Maintenance: Setting Your System Up for Success</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#faq" style="color: #007bff; text-decoration: underline;">Frequently Asked Questions</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#conclusion" style="color: #007bff; text-decoration: underline;">Conclusion: Your Family's Water Journey</a></li>
+  </ol>
+</div>
+
+
+
+<p><strong>Imagine starting each day with water that truly supports your family's wellbeing.</strong><br>Just like that couple enjoying their peaceful morning coffee without worrying about the quality of water in their home.<br>Hard water issues affect millions of American households, creating frustrations that ripple through our daily lives.<br>As parents focused on creating the healthiest environment possible, understanding water softening isn't just about appliance maintenance—it's about caring for what matters most.</p>
+
+<h2 id="understanding-hard-water">Understanding Hard Water: Why Your Home Deserves Better</h2>
+
+<p>Hard water isn't just a minor inconvenience—it's a silent disruptor of home harmony that affects nearly 85% of American households, according to the <a href="https://www.usgs.gov/special-topics/water-science-school/science/hardness-water" target="_blank" rel="noopener noreferrer">U.S. Geological Survey</a>. When we talk about hard water, we're referring to water containing high concentrations of minerals like calcium and magnesium that accumulate as water travels through soil and rock.</p>
+
+<p>For health-conscious families, understanding these mineral implications becomes particularly important. While these minerals aren't harmful to consume, their effects on your home, appliances, and daily life can be substantial.</p>
+
+<h3>Common Signs Your Family Is Living With Hard Water</h3>
+
+<ul>
+  <li>Stubborn white residue on faucets, showerheads, and appliances</li>
+  <li>Stiff, dull laundry that never feels truly clean</li>
+  <li>Dry, itchy skin and lackluster hair after showering</li>
+  <li>Reduced water pressure due to pipe buildup</li>
+  <li>Frequent appliance repairs and shortened lifespans</li>
+  <li>Higher energy bills from inefficient water heating</li>
+</ul>
+
+<p>For families investing in premium home environments, these issues represent more than inconveniences—they undermine the sanctuary you've worked so hard to create. When mineral deposits accumulate in pipes and appliances, they force these systems to work harder, consuming more energy and ultimately leading to premature breakdowns.</p>
+
+<h2 id="how-water-softeners-work">How Water Softeners Work: The Science of Softer, Kinder Water</h2>
+<div class="video-container" style="text-align: center; margin: 20px 0;">
+  <iframe width="100%" height="315" src="https://www.youtube.com/embed/G9bFD66DYGo" 
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen style="max-width: 560px;"></iframe>
+</div>
+
+<p>At its heart, a water softener performs a remarkable transformation through a process called ion exchange. This elegant solution works by replacing the problematic calcium and magnesium ions with sodium ions, effectively neutralizing the hardness that causes so many household challenges.</p>
+
+<p>The science may seem complex, but the results are beautifully simple: water that works in harmony with your home rather than against it. When hard water passes through the resin bed inside a water softener, mineral ions are captured and exchanged, creating water that's gentler on everything it touches—from your skin to your expensive appliances.</p>
+
+
+
+<h3>The Three Essential Components</h3>
+
+<p>Modern water softening syst
+ ContentStyleSelector useEffect triggered: Object
+ ContentStyleSelector: Setting up from tone: Object
+ ContentStyleSelector: Notifying parent with displayName: Authentic, Heart-Centered (Brand & Ethical Storytelling )
+ ContentStyleSelector selection changed: Object
+ Current selectedMediaContent state: Object
+ 🔍 BUYER PERSONA STATE CHECK: Object
+ 🎯 RENDERING BUYER PERSONA SUGGESTIONS:
+ 🎯 buyerPersonaSuggestions: Array(8)
+ 🎯 suggestionsRef.current: Array(0)
+ 🎯 suggestionsGenerated: false
+ 🎯 suggestionsLoading: false
+ Content before final processing: 
+<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
+  <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">
+    📋 Table of Contents
+  </h3>
+  <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
+    <li style="margin: 6px 0; line-height: 1.4;"><a href="#understanding-hard-water" style="color: #007bff; text-decoration: underline;">Understanding Hard Water: Why Your Home Deserves Better</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#how-water-softeners-work" style="color: #007bff; text-decoration: underline;">How Water Softeners Work: The Science of Softer, Kinder Water</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#benefits-of-water-softeners" style="color: #007bff; text-decoration: underline;">Benefits of Water Softeners: Transforming Everyday Experiences</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#choosing-the-right-water-softener" style="color: #007bff; text-decoration: underline;">Choosing the Right Water Softener: A Decision That Matters</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#installation-and-maintenance" style="color: #007bff; text-decoration: underline;">Installation and Maintenance: Setting Your System Up for Success</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#faq" style="color: #007bff; text-decoration: underline;">Frequently Asked Questions</a></li><li style="margin: 6px 0; line-height: 1.4;"><a href="#conclusion" style="color: #007bff; text-decoration: underline;">Conclusion: Your Family's Water Journey</a></li>
+  </ol>
+</div>
+
+
+
+<p><strong>Imagine starting each day with water that truly supports your family's wellbeing.</strong><br>Just like that couple enjoying their peaceful morning coffee without worrying about the quality of water in their home.<br>Hard water issues affect millions of American households, creating frustrations that ripple through our daily lives.<br>As parents focused on creating the healthiest environment possible, understanding water softening isn't just about appliance maintenance—it's about caring for what matters most.</p>
+
+<h2 id="understanding-hard-water">Understanding Hard Water: Why Your Home Deserves Better</h2>
+
+<p>Hard water isn't just a minor inconvenience—it's a silent disruptor of home harmony that affects nearly 85% of American households, according to the <a href="https://www.usgs.gov/special-topics/water-science-school/science/hardness-water" target="_blank" rel="noopener noreferrer">U.S. Geological Survey</a>. When we talk about hard water, we're referring to water containing high concentrations of minerals like calcium and magnesium that accumulate as water travels through soil and rock.</p>
+
+<p>For health-conscious families, understanding these mineral implications becomes particularly important. While these minerals aren't harmful to consume, their effects on your home, appliances, and daily life can be substantial.</p>
+
+<h3>Common Signs Your Family Is Living With Hard Water</h3>
+
+<ul>
+  <li>Stubborn white residue on faucets, showerheads, and appliances</li>
+  <li>Stiff, dull laundry that never feels truly clean</li>
+  <li>Dry, itchy skin and lackluster hair after showering</li>
+  <li>Reduced water pressure due to pipe buildup</li>
+  <li>Frequent appliance repairs and shortened lifespans</li>
+  <li>Higher energy bills from inefficient water heating</li>
+</ul>
+
+<p>For families investing in premium home environments, these issues represent more than inconveniences—they undermine the sanctuary you've worked so hard to create. When mineral deposits accumulate in pipes and appliances, they force these systems to work harder, consuming more energy and ultimately leading to premature breakdowns.</p>
+
+<h2 id="how-water-softeners-work">How Water Softeners Work: The Science of Softer, Kinder Water</h2>
+<div class="video-container" style="text-align: center; margin: 20px 0;">
+  <iframe width="100%" height="315" src="https://www.youtube.com/embed/G9bFD66DYGo" 
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen style="max-width: 560px;"></iframe>
+</div>
+
+<p>At its heart, a water softener performs a remarkable transformation through a process called ion exchange. This elegant solution works by replacing the problematic calcium and magnesium ions with sodium ions, effectively neutralizing the hardness that causes so many household challenges.</p>
+
+<p>The science may seem complex, but the results are beautifully simple: water that works in harmony with your home rather than against it. When hard water passes through the resin bed inside a water softener, mineral ions are captured and exchanged, creating water that's gentler on everything it touches—from your skin to your expensive appliances.</p>
+
+
+
+<h3>The Three Essential Components</h3>
+
+<p>Modern water softening syst
