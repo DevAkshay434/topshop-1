@@ -5355,32 +5355,9 @@ export default function AdminPanel() {
                         ref={(el) => {
                           // Only set content on initial load, never re-process during editing
                           if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
-                            // Process content to render embedded images and videos properly
-                            let processedContent = generatedContent.content;
-                            
-                            // REMOVED: Client-side TOC processing to prevent double-processing
-                            // Server-side processing already handles TOC links and heading IDs correctly
-                            
-                            // Ensure images have proper styling and are visible
-                            processedContent = processedContent.replace(
-                              /<img([^>]*?)>/gi,
-                              '<img$1 style="max-width: 100%; height: auto; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
-                            );
-                            
-                            // Ensure iframes (YouTube videos) have proper styling
-                            processedContent = processedContent.replace(
-                              /<iframe([^>]*?)>/gi,
-                              '<div style="margin: 30px 0; text-align: center;"><iframe$1 style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">'
-                            );
-                            
-                            // Close the wrapper div for iframes
-                            processedContent = processedContent.replace(
-                              /<\/iframe>/gi,
-                              '</iframe></div>'
-                            );
-                            
-                            // Set content once and mark as loaded
-                            el.innerHTML = processedContent;
+                            // Use content exactly as provided by server - no additional client-side processing
+                            // This ensures editor displays the same content as "Copy HTML"
+                            el.innerHTML = generatedContent.content;
                             el.setAttribute('data-content-loaded', 'true');
                           } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
                             // Clear content and reset when no content
