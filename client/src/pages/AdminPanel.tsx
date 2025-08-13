@@ -4859,12 +4859,12 @@ export default function AdminPanel() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Copy enhanced HTML to clipboard for Shopify compatibility
-                              const contentToCopy = enhancedContentForEditor || '';
+                              // Copy raw HTML content to clipboard (unprocessed)
+                              const contentToCopy = generatedContent.content || '';
                               navigator.clipboard.writeText(contentToCopy);
                               toast({
                                 title: "Content copied",
-                                description: "Enhanced Shopify-compatible HTML copied to clipboard",
+                                description: "Raw HTML content copied to clipboard",
                               });
                             }}
                           >
@@ -4877,14 +4877,15 @@ export default function AdminPanel() {
                       {/* Advanced Shopify-Style Rich Text Editor with Limited Height */}
                       <div className="max-h-96 overflow-y-auto border rounded-lg">
                         <ShopifyStyleEditor
-                          content={enhancedContentForEditor || ''}
+                          content={generatedContent.content || ''}
                           onChange={(newContent) => {
                             console.log("ShopifyStyleEditor content updated:", newContent.length, "characters");
-                            setEnhancedContentForEditor(newContent);
+                            // Update both the raw content and the enhanced version
                             setGeneratedContent(prev => ({
                               ...prev,
                               content: newContent
                             }));
+                            setEnhancedContentForEditor(newContent);
                             // Trigger immediate real-time preview update
                             setContentUpdateCounter(prev => prev + 1);
                           }}
