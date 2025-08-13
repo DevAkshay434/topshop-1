@@ -14,7 +14,7 @@ import { AuthorSelector } from '../components/AuthorSelector';
 import { useStore } from '../contexts/StoreContext';
 import { ProjectCreationDialog } from '../components/ProjectCreationDialog';
 import { ProjectLoadDialog } from '../components/ProjectLoadDialog';
-import { ShopifyStyleEditor } from '../components/ShopifyStyleEditor';
+import { SimpleHTMLEditor } from '../components/SimpleHTMLEditor';
 import { 
   Card, 
   CardContent, 
@@ -5357,71 +5357,16 @@ export default function AdminPanel() {
                         </button>
                       </div>
 
-                      {/* Content Editor with Inline Media */}
-                      <div
+                      {/* HTML-Preserving Content Editor */}
+                      <SimpleHTMLEditor
                         key={contentEditorKey}
-                        ref={(el) => {
-                          // Only set content on initial load, never re-process during editing
-                          if (el && generatedContent.content && !el.hasAttribute('data-content-loaded')) {
-                            console.log("🔧 Setting content to editor. Content length:", generatedContent.content.length);
-                            console.log("🔧 Content preview (first 500 chars):", generatedContent.content.substring(0, 500));
-                            
-                            // Use content exactly as provided by server - no additional client-side processing
-                            // This ensures editor displays the same content as "Copy HTML"
-                            el.innerHTML = generatedContent.content;
-                            el.setAttribute('data-content-loaded', 'true');
-                            
-                            // Fix browser auto-adding target="_blank" to same-page links
-                            setTimeout(() => {
-                              // Remove target="_blank" from TOC links (same-page navigation)
-                              const tocLinks = el.querySelectorAll('a[href^="#"]');
-                              tocLinks.forEach(link => {
-                                link.removeAttribute('target');
-                                link.removeAttribute('rel');
-                                // Ensure proper styling is maintained
-                                link.style.color = '#007bff';
-                                link.style.textDecoration = 'underline';
-                              });
-                              
-                              console.log("🔧 Fixed", tocLinks.length, "TOC links - removed target='_blank'");
-                              console.log("🔍 After fixing, editor content matches server?", 
-                                el.innerHTML.replace(/\s+target="_blank"[^>]*/g, '') === 
-                                generatedContent.content.replace(/\s+target="_blank"[^>]*/g, ''));
-                            }, 100);
-                          } else if (el && !generatedContent.content && el.hasAttribute('data-content-loaded')) {
-                            // Clear content and reset when no content
-                            el.removeAttribute('data-content-loaded');
-                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
-                          } else if (el && !generatedContent.content && !el.hasAttribute('data-content-loaded')) {
-                            el.innerHTML = '<p>Your generated content will appear here for editing...</p>';
-                          }
-                        }}
-                        contentEditable
-                        suppressContentEditableWarning={true}
-                        className="min-h-[400px] max-h-[60vh] overflow-y-auto p-5 border border-gray-200 rounded-b-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent prose prose-blue max-w-none"
-                        style={{ 
-                          borderTop: 'none',
-                          lineHeight: '1.6',
-                          fontSize: '16px'
-                        }}
-                        onInput={(e) => {
-                          const target = e.target as HTMLDivElement;
-                          
-                          // Fix any TOC links that might have gotten target="_blank" added during editing
-                          const tocLinks = target.querySelectorAll('a[href^="#"]');
-                          tocLinks.forEach(link => {
-                            if (link.getAttribute('target') === '_blank') {
-                              link.removeAttribute('target');
-                              link.removeAttribute('rel');
-                            }
-                          });
-                          
-                          const newContent = target.innerHTML;
-                          console.log("Rich text editor content updated:", {
+                        content={generatedContent.content || ''}
+                        onChange={(newContent) => {
+                          console.log("SimpleHTMLEditor content updated:", {
                             contentLength: newContent?.length || 0,
                             hasImages: newContent.includes('<img'),
                             hasIframes: newContent.includes('<iframe'),
-                            tocLinksFixed: tocLinks.length
+                            hasTOC: newContent.includes('Table of Contents')
                           });
                           
                           setGeneratedContent(prev => ({
@@ -5432,6 +5377,7 @@ export default function AdminPanel() {
                           // Force preview re-render
                           setContentUpdateCounter(prev => prev + 1);
                         }}
+                        className="border-t-0 rounded-t-none"
                       />
                       
                       {/* Word Count */}
