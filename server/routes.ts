@@ -1809,22 +1809,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                     const writtenByHTML = generateWrittenByHTML(authorFormatted, pageContent);
                     const authorBoxHTML = generateAuthorBoxHTML(authorFormatted, pageContent);
                     
-                    // Find the first image or paragraph in content to inject "Written by" after it
-                    const imageMatch = pageContent.match(/<img[^>]*>/i);
-                    const paragraphMatch = pageContent.match(/<p[^>]*>.*?<\/p>/i);
-                    
-                    if (imageMatch) {
-                      // Insert "Written by" after first image
-                      const imageEndIndex = pageContent.indexOf(imageMatch[0]) + imageMatch[0].length;
-                      pageContent = pageContent.slice(0, imageEndIndex) + writtenByHTML + pageContent.slice(imageEndIndex);
-                    } else if (paragraphMatch) {
-                      // Insert "Written by" after first paragraph
-                      const paragraphEndIndex = pageContent.indexOf(paragraphMatch[0]) + paragraphMatch[0].length;
-                      pageContent = pageContent.slice(0, paragraphEndIndex) + writtenByHTML + pageContent.slice(paragraphEndIndex);
-                    } else {
-                      // Fallback: add at beginning of content
-                      pageContent = writtenByHTML + pageContent;
-                    }
+                    // Insert "Written by" at the very beginning, before all content
+                    pageContent = writtenByHTML + pageContent;
                     
                     // Add author box at the end of content
                     pageContent += authorBoxHTML;
@@ -1995,22 +1981,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                     </div>
                   `;
                   
-                  // Find the first image or paragraph to inject "Written by" after it
-                  const imageMatch = completePost.content.match(/<img[^>]*>/i);
-                  const paragraphMatch = completePost.content.match(/<p[^>]*>.*?<\/p>/i);
-                  
-                  if (imageMatch) {
-                    // Insert "Written by" after first image
-                    const imageEndIndex = completePost.content.indexOf(imageMatch[0]) + imageMatch[0].length;
-                    completePost.content = completePost.content.slice(0, imageEndIndex) + writtenBySection + completePost.content.slice(imageEndIndex);
-                  } else if (paragraphMatch) {
-                    // Insert "Written by" after first paragraph
-                    const paragraphEndIndex = completePost.content.indexOf(paragraphMatch[0]) + paragraphMatch[0].length;
-                    completePost.content = completePost.content.slice(0, paragraphEndIndex) + writtenBySection + completePost.content.slice(paragraphEndIndex);
-                  } else {
-                    // Fallback: add at beginning of content
-                    completePost.content = writtenBySection + completePost.content;
-                  }
+                  // Insert "Written by" at the very beginning, before all content
+                  completePost.content = writtenBySection + completePost.content;
                   
                   // Add author box at the end
                   completePost.content += authorBox;
