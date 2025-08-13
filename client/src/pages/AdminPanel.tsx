@@ -2606,7 +2606,47 @@ export default function AdminPanel() {
         // Set enhanced content for editor immediately after API response
         // This will be used by the editor instead of the processed server content
         if (response.content) {
-          setEnhancedContentForEditor(response.content);
+          // Process the content to create enhanced version with YouTube embeds and secondary images
+          let enhancedContent = response.content;
+          
+          // Get secondary images from selectedMediaContent
+          const secondaryImages = selectedMediaContent.secondaryImages || [];
+          
+          // Get YouTube data if exists
+          const youtubeUrl = form.watch("youtubeUrl");
+          let youtubeVideoId: string | null = null;
+          if (youtubeUrl) {
+            youtubeVideoId = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] || null;
+          }
+          
+          // If content has YouTube placeholder, replace it with proper iframe
+          if (youtubeVideoId && enhancedContent.includes('[YOUTUBE_EMBED_PLACEHOLDER]')) {
+            const youtubeEmbed = `<div class="video-container" style="text-align: center; margin: 20px 0;">
+  <iframe width="100%" height="315" src="https://www.youtube.com/embed/${youtubeVideoId}" 
+          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen style="max-width: 560px;"></iframe>
+</div>`;
+            enhancedContent = enhancedContent.replace('[YOUTUBE_EMBED_PLACEHOLDER]', youtubeEmbed);
+          }
+          
+          // Add secondary images styling and processing
+          if (secondaryImages.length > 0) {
+            // Process images to ensure proper styling
+            enhancedContent = enhancedContent.replace(
+              /<img([^>]*?)>/gi, 
+              '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;">'
+            );
+          }
+          
+          console.log("🎯 ENHANCED CONTENT FOR EDITOR:", {
+            originalLength: response.content.length,
+            enhancedLength: enhancedContent.length,
+            hasYouTube: enhancedContent.includes('<iframe'),
+            hasImages: enhancedContent.includes('<img'),
+            youtubeVideoId
+          });
+          
+          setEnhancedContentForEditor(enhancedContent);
         }
         
         // Force content editor to re-render with new content
