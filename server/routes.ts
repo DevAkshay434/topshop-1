@@ -1735,7 +1735,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                             ${avatarImg}
                             <div style="flex: 1;">
                               <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
-                              ${formattedDescription ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${formattedDescription}</p>` : ''}
+                              ${formattedDescription ? `<div style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${formattedDescription}</div>` : ''}
                               ${linkedinButton}
                             </div>
                           </div>
@@ -1869,7 +1869,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                             <span style="color: #6b7280; font-size: 14px;">Written by </span>
                             <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
                           </div>
-                          ${fullDescription ? `<p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0;">${fullDescription}</p>` : ''}
+                          ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
                         </div>
                       </div>
                     </div>
