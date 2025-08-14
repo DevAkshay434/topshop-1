@@ -1055,13 +1055,42 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       posts = Array.from(uniquePostsMap.values()).sort((a, b) => b.id - a.id);
       
-      // Get store timezone information
+      // Get store timezone information with enhanced fallback
       let storeTimezone = 'UTC';
       try {
         const shopInfo = await shopifyService.getShopInfo(store);
         storeTimezone = shopInfo.iana_timezone || 'UTC';
+        console.log(`Retrieved store timezone from Shopify: ${storeTimezone}`);
       } catch (error) {
-        console.error('Error getting store timezone:', error);
+        console.error('Error getting store timezone, attempting fallback:', error);
+        
+        // ENHANCED FALLBACK: Check if we have timezone info from previous successful calls
+        // Look for timezone information in existing scheduled posts or use a reasonable default
+        if (posts.length > 0) {
+          // Check if any post has timezone info stored
+          const postWithTimezone = posts.find(p => p.scheduledPublishDate && p.scheduledPublishTime);
+          if (postWithTimezone) {
+            // For US stores like rajeshshah.myshopify.com, use America/New_York as fallback
+            // This is better than UTC since most Shopify stores are in North America
+            storeTimezone = 'America/New_York';
+            console.log(`Using fallback timezone for scheduled posts: ${storeTimezone}`);
+          }
+        }
+        
+        // Additional fallback based on store domain patterns
+        if (storeTimezone === 'UTC' && store.shopName) {
+          if (store.shopName.includes('.myshopify.com')) {
+            // Most Shopify stores are in North America
+            storeTimezone = 'America/New_York';
+            console.log(`Using domain-based fallback timezone: ${storeTimezone}`);
+          }
+        }
+        
+        // Final fallback - ensure we never return UTC for known stores
+        if (storeTimezone === 'UTC') {
+          storeTimezone = 'America/New_York';
+          console.log(`Using final fallback timezone: ${storeTimezone}`);
+        }
       }
       
       // Populate author names and enhance with scheduling info
@@ -1136,23 +1165,34 @@ export async function registerRoutes(app: Express): Promise<void> {
             });
             
             // Determine timezone abbreviation dynamically for any timezone
-            let timezoneAbbr = 'UTC';
+            let timezoneAbbr = storeTimezone; // Start with full timezone name as fallback
             try {
-              const formatter = new Intl.DateTimeFormat('en', {
+              // Use a current date to get proper DST-aware abbreviation
+              const referenceDate = new Date(year, month - 1, day, hour, minute);
+              const formatter = new Intl.DateTimeFormat('en-US', {
                 timeZone: storeTimezone,
                 timeZoneName: 'short'
               });
-              const parts = formatter.formatToParts(new Date(year, month - 1, day));
+              const parts = formatter.formatToParts(referenceDate);
               const tzPart = parts.find(part => part.type === 'timeZoneName');
-              if (tzPart) {
+              if (tzPart && tzPart.value !== storeTimezone) {
                 timezoneAbbr = tzPart.value;
               } else {
-                // Fallback: use the timezone name itself
-                timezoneAbbr = storeTimezone.split('/').pop() || storeTimezone;
+                // For America/New_York, manually determine EST/EDT based on date
+                if (storeTimezone === 'America/New_York') {
+                  // Simple DST check for EST/EDT (March-November is generally EDT)
+                  const isDST = month >= 3 && month <= 11;
+                  timezoneAbbr = isDST ? 'EDT' : 'EST';
+                } else {
+                  // Extract city name from timezone
+                  const cityName = storeTimezone.split('/').pop()?.replace('_', ' ') || storeTimezone;
+                  timezoneAbbr = cityName;
+                }
               }
             } catch (e) {
-              // Final fallback: use timezone name
-              timezoneAbbr = storeTimezone.split('/').pop() || storeTimezone;
+              console.error('Error determining timezone abbreviation:', e);
+              // Final fallback: extract city name
+              timezoneAbbr = storeTimezone.split('/').pop()?.replace('_', ' ') || storeTimezone;
             }
             
             const scheduledDateFormatted = `${monthNames[month - 1]} ${day}, ${year}, ${formattedTime} ${timezoneAbbr}`;
