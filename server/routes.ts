@@ -639,7 +639,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         uninstalledAt: null,
         planName: null,
         chargeId: null,
-        trialEndsAt: null
+        trialEndsAt: null,
+        currentMonthlyUsage: 0,
+        lastUsageReset: new Date()
       };
       
       // Get shop info with timezone directly from the shopifyService singleton
@@ -713,8 +715,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         // Test the connection
         if (connection.accessToken && connection.isConnected) {
           try {
-            shopifyService.setConnection(connection);
-            await shopifyService.testConnection();
+            const tempStore = {
+              shopName: connection.storeName,
+              accessToken: connection.accessToken
+            } as any;
+            await shopifyService.testConnection(tempStore);
           } catch (error) {
             return res.status(400).json({ error: "Failed to connect to Shopify API" });
           }
@@ -728,8 +733,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         // Test the connection
         if (connection.accessToken && connection.isConnected) {
           try {
-            shopifyService.setConnection(connection);
-            await shopifyService.testConnection();
+            const tempStore = {
+              shopName: connection.storeName,
+              accessToken: connection.accessToken
+            } as any;
+            await shopifyService.testConnection(tempStore);
           } catch (error) {
             return res.status(400).json({ error: "Failed to connect to Shopify API" });
           }
@@ -774,14 +782,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: "Not connected to Shopify" });
       }
       
-      // Use the compatibility functions with the legacy connection
-      const { setConnection, getBlogsLegacy } = shopifyService;
+      // Create a temporary store object from the connection
+      const tempStore = {
+        shopName: connection.storeName,
+        accessToken: connection.accessToken
+      } as any;
       
-      // Set the connection using our wrapper method
-      setConnection(connection);
-      
-      // Get blogs using the legacy method that doesn't require a store parameter
-      const blogs = await getBlogsLegacy();
+      // Get blogs using the proper method
+      const blogs = await shopifyService.getBlogs(tempStore);
       
       res.json({ blogs });
     } catch (error: any) {
@@ -861,13 +869,6 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       // Set up Shopify connection
       console.log(`Using Shopify connection: store=${connection.storeName}, blogId=${connection.defaultBlogId}`);
-      shopifyService.setConnection(connection);
-      
-      // Get function references
-      const { setConnection, createArticle, updateArticle } = shopifyService;
-      
-      // Set connection first
-      setConnection(connection);
       
       // Create a temporary store object for using with the new API
       const tempStore = {
@@ -882,7 +883,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         uninstalledAt: null,
         planName: null,
         chargeId: null,
-        trialEndsAt: null
+        trialEndsAt: null,
+        currentMonthlyUsage: 0,
+        lastUsageReset: new Date()
       };
       
       // Sync each post
@@ -894,12 +897,11 @@ export async function registerRoutes(app: Express): Promise<void> {
           if (post.shopifyPostId) {
             // Update existing article
             console.log(`Updating existing Shopify post ${post.shopifyPostId} for post ${post.id}: "${post.title}"`);
-            // The updateArticle function expects (store, blogId, articleId, post) but is being passed (store, blogId, post)
-            shopifyArticle = await updateArticle(tempStore, connection.defaultBlogId, post.shopifyPostId, post);
+            shopifyArticle = await shopifyService.updateArticle(tempStore, connection.defaultBlogId, post.shopifyPostId, post);
           } else {
             // Create new article
             console.log(`Creating new Shopify post for post ${post.id}: "${post.title}"`);
-            shopifyArticle = await createArticle(tempStore, connection.defaultBlogId, post);
+            shopifyArticle = await shopifyService.createArticle(tempStore, connection.defaultBlogId, post);
             
             // Update post with Shopify ID
             await storage.updateBlogPost(post.id, {
@@ -1802,7 +1804,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                       name: author.name,
                       description: author.description || '',
                       profileImage: author.avatarUrl || undefined,
-                      linkedinUrl: author.linkedin_url || undefined
+                      linkedinUrl: author.linkedinUrl || undefined
                     };
                     
                     // Generate author HTML components with reading time for "Written by" section only
@@ -1945,7 +1947,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
                   // Author box with LinkedIn integration - small avatar sizing
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                  const avatarElement = author. 
+                  const avatarElement = author.avatarUrl 
                     ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
                     : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
                   
@@ -2112,11 +2114,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            // Get function references
-            const { setConnection, updateArticle } = shopifyService;
-            
-            // Set connection first
-            setConnection(connection);
+            // Update the article in Shopify using the tempStore object
             
             // Create a temporary store object for using with the new API
             const tempStore = {
@@ -2134,7 +2132,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               trialEndsAt: null
             };
             
-            await updateArticle(tempStore, connection.defaultBlogId, post.shopifyPostId, postData);
+            await shopifyService.updateArticle(tempStore, connection.defaultBlogId, post.shopifyPostId, postData);
             
             // Create sync activity
             await storage.createSyncActivity({
@@ -2161,11 +2159,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            // Get function references
-            const { setConnection, createArticle } = shopifyService;
-            
-            // Set connection first
-            setConnection(connection);
+            // Create article using shopifyService directly
             
             // Create a temporary store object for using with the new API
             const tempStore = {
