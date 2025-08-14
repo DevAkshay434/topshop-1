@@ -8,9 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
-import { Clock, Calendar, Edit, ExternalLink, AlertCircle } from "lucide-react";
+import { Clock, Calendar, Edit, ExternalLink, AlertCircle, FileText, BookOpen } from "lucide-react";
 
 interface ScheduledPost {
   id: number;
@@ -284,41 +285,43 @@ export function ScheduledPostsList() {
 
   const { posts, storeTimezone, store } = scheduledData || { posts: [], storeTimezone: "UTC", store: { name: "", id: 0 } };
 
+  // Separate posts by content type
+  const blogPosts = posts.filter(post => getContentType(post) === "Post");
+  const pages = posts.filter(post => getContentType(post) === "Page");
+
   if (posts.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Scheduled Posts
+            Scheduled Content
           </CardTitle>
           <CardDescription>
-            No scheduled posts found for {store.name}
+            No scheduled content found for {store.name}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Posts scheduled for future publication will appear here. You can update their schedule times and monitor their status.
+            Blog posts and pages scheduled for future publication will appear here. You can update their schedule times and monitor their status.
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Scheduled Posts ({posts.length})
-        </h3>
-        <Badge variant="outline" className="text-xs">
-          {store.name} • {storeTimezone}
-        </Badge>
-      </div>
-
+  const renderPostList = (postList: ScheduledPost[]) => {
+    if (postList.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          No scheduled content in this category
+        </div>
+      );
+    }
+    
+    return (
       <div className="grid gap-4">
-        {posts.map((post) => (
+        {postList.map((post) => (
           <Card key={post.id} className="relative">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -471,11 +474,54 @@ export function ScheduledPostsList() {
             )}
           </Card>
         ))}
+        
+        <div className="text-xs text-muted-foreground text-center">
+          Times shown in {storeTimezone} • Updates every 30 seconds
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Scheduled Content ({posts.length})
+        </h3>
+        <Badge variant="outline" className="text-xs">
+          {store.name} • {storeTimezone}
+        </Badge>
       </div>
 
-      <div className="text-xs text-muted-foreground text-center">
-        Times shown in {storeTimezone} • Updates every 30 seconds
-      </div>
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            All ({posts.length})
+          </TabsTrigger>
+          <TabsTrigger value="posts" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Blog Posts ({blogPosts.length})
+          </TabsTrigger>
+          <TabsTrigger value="pages" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            Pages ({pages.length})
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="mt-4">
+          {renderPostList(posts)}
+        </TabsContent>
+        
+        <TabsContent value="posts" className="mt-4">
+          {renderPostList(blogPosts)}
+        </TabsContent>
+        
+        <TabsContent value="pages" className="mt-4">
+          {renderPostList(pages)}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
