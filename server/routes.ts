@@ -1624,6 +1624,30 @@ export async function registerRoutes(app: Express): Promise<void> {
         });
       }
       
+      // PREVENT DUPLICATES: Check for existing scheduled content with same shopifyPostId
+      if (postData.shopifyPostId && postData.status === 'scheduled') {
+        console.log(`Checking for duplicates with shopifyPostId: ${postData.shopifyPostId}`);
+        
+        // Get store context for proper multi-store support  
+        const store = await getStoreFromRequest(req);
+        if (store) {
+          const existingPosts = await storage.getScheduledPostsByStore(store.id);
+          const duplicate = existingPosts.find(p => 
+            p.shopifyPostId === postData.shopifyPostId && 
+            p.status === 'scheduled' &&
+            p.id !== postData.id // Allow updates to existing post
+          );
+          
+          if (duplicate) {
+            console.log(`Duplicate found: Post ${duplicate.id} already scheduled for shopifyPostId ${postData.shopifyPostId}`);
+            return res.status(400).json({ 
+              error: "Content already scheduled",
+              details: `This ${duplicate.contentType || 'content'} is already scheduled. Please update the existing schedule instead.`
+            });
+          }
+        }
+      }
+      
       // Save post to storage
       console.log("Saving post to storage with data:", {
         status: postData.status,
