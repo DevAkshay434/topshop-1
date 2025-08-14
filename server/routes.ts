@@ -1923,20 +1923,14 @@ export async function registerRoutes(app: Express): Promise<void> {
                     return { minutes, seconds, display };
                   };
 
-                  // Calculate reading time for the content
-                  const readingTime = calculateReadingTime(completePost.content);
-                  const readingTimeText = ` • ${readingTime.display}`;
-
-                  // Author box with 64x64px rounded avatar with description (same design for both blog posts and pages)
+                  // Author box with 64x64px rounded avatar with full description (same design for both blog posts and pages)
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const smallAvatarElement = (author.profileImage || author.avatarUrl)
                     ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
                     : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
-                  // Truncate author description to first 150 characters
-                  const shortDescription = author.description 
-                    ? (author.description.length > 150 ? author.description.substring(0, 150) + '...' : author.description)
-                    : '';
+                  // Use full author description without truncation
+                  const fullDescription = author.description || '';
 
                   const writtenBySection = `
                     <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
@@ -1948,9 +1942,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                           <div style="margin-bottom: 8px;">
                             <span style="color: #6b7280; font-size: 14px;">Written by </span>
                             <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
-                            <span style="color: #6b7280; font-size: 14px;">${readingTimeText}</span>
                           </div>
-                          ${shortDescription ? `<p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0;">${shortDescription}</p>` : ''}
+                          ${fullDescription ? `<p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0;">${fullDescription}</p>` : ''}
                         </div>
                       </div>
                     </div>
@@ -1959,7 +1952,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                   // Add "Written by" section at the END of content for both blog posts and pages
                   completePost.content = completePost.content + writtenBySection;
                   completePost.author = author.name;
-                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);

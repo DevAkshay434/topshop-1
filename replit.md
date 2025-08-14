@@ -30,7 +30,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Multi-Store Support**: Ensures complete data isolation between connected Shopify stores, with automatic store detection and proper routing of API requests.
 - **URL Generation**: Implements SEO-friendly URL generation using Shopify handles for both blog posts and pages, with robust fallback mechanisms.
 - **Content Preview Optimization**: Intelligent featured image handling in admin panel previews prevents duplication.
-- **Author Description Formatting**: Preserves formatting (spaces, line breaks) in author descriptions when saving to Shopify.
+- **Author Description Formatting**: Preserves formatting (spaces, line breaks) in author descriptions when saving to Shopify. Author descriptions now display in full without truncation, and reading time has been removed from the author box for cleaner presentation.
 
 ## External Dependencies
 
