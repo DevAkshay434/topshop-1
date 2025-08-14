@@ -640,7 +640,14 @@ export class ShopifyService {
             });
             
             // Return properly formatted image
-            return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 64px; height:64px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            // Apply different styling based on image context
+            if (altText && (altText.toLowerCase().includes('avatar') || altText.toLowerCase().includes('author') || match.includes('author'))) {
+              // Author avatars: small and rounded
+              return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            } else {
+              // Secondary blog images: normal size and rectangular
+              return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 600px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            }
           }
         );
         
