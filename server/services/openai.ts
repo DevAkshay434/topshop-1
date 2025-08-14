@@ -239,63 +239,88 @@ export async function generateDynamicTitles(
   targetAudience?: string
 ): Promise<string[]> {
   try {
-    console.log(`Generating ${count} dynamic titles with OpenAI using keywords:`, keywords);
+    console.log(`Generating ${count} unique, trending SEO titles with OpenAI using keywords:`, keywords);
     
     // Build context from keywords and products
     const keywordContext = keywords.length > 0 ? keywords.join(', ') : '';
     const productTitles = products.map(p => p.title || p.name).filter(Boolean);
     const productContext = productTitles.length > 0 ? productTitles.join(', ') : '';
     
-    // Create a comprehensive prompt for dynamic title generation
-    let systemPrompt = `You are an expert SEO content strategist specializing in creating compelling, keyword-optimized blog titles.
+    // Create an advanced prompt for trending, unique SEO title generation
+    let systemPrompt = `You are a world-class SEO content strategist and viral content creator specializing in crafting compelling, high-converting blog titles that drive traffic and engagement.
 
-Generate ${count} dynamic, engaging blog post titles that:
+Generate EXACTLY ${count} completely UNIQUE, trending, and SEO-optimized blog post titles that:
 
-KEYWORD REQUIREMENTS (MANDATORY):
-- EVERY title MUST include at least one of these exact keywords: ${keywordContext}
-- Use keywords exactly as provided - do not modify them
-- Distribute different keywords across titles for maximum SEO coverage
-- Ensure keyword usage feels natural and compelling
+🎯 MANDATORY KEYWORD REQUIREMENTS:
+- EVERY title MUST include at least one of these EXACT keywords: ${keywordContext}
+- Use keywords naturally and prominently (preferably at the beginning)
+- Distribute different keywords across ALL ${count} titles for maximum SEO coverage
+- Never repeat the same keyword combination twice
 
-${productContext ? `PRODUCT CONTEXT:
-- Incorporate these products when relevant: ${productContext}
-- Create titles that highlight product benefits, comparisons, or guides
-- Focus on how these products solve customer problems
+${productContext ? `🏷️ PRODUCT INTEGRATION:
+- Strategically incorporate these products: ${productContext}
+- Focus on benefits, solutions, comparisons, and actionable insights
+- Create titles that solve real customer problems and drive conversions
 
-` : ''}${targetAudience ? `TARGET AUDIENCE:
-- Create titles that appeal specifically to: ${targetAudience}
-- Use language and messaging that resonates with this audience
-- Address their specific needs, pain points, and interests
+` : ''}${targetAudience ? `👥 TARGET AUDIENCE OPTIMIZATION:
+- Create titles specifically for: ${targetAudience}
+- Use psychology-driven language that resonates deeply with this audience
+- Address their pain points, aspirations, and specific interests
+- Match their knowledge level and communication style
 
-` : ''}TITLE STYLE REQUIREMENTS:
-- Mix of formats: "How to", "Best", "Ultimate Guide", "Top X", "Why", "What", etc.
-- 50-65 characters for optimal SEO performance
-- Evergreen content (no dates, years, or time-specific references)
-- Compelling and click-worthy
-- Professional but engaging tone
-- Include numbers where appropriate (e.g., "7 Best", "10 Ways")
+` : ''}🔥 TRENDING TITLE FORMULAS (Must use variety):
+1. "Ultimate Guide to [keyword]" - Authority positioning
+2. "[Number] Best [keyword] That Actually Work" - Social proof + specificity  
+3. "Why [keyword] is Changing Everything in 2025" - Urgency + relevance
+4. "How to [action] with [keyword] (Complete Step-by-Step)" - Tutorial + completeness
+5. "[keyword] vs [alternative]: Which is Better?" - Comparison + decision help
+6. "Secret [keyword] Strategies That [benefit]" - Exclusivity + benefit
+7. "Beginner's Guide to [keyword] (No Experience Required)" - Accessibility
+8. "[keyword] Mistakes That Are Costing You [outcome]" - Problem awareness
+
+📊 SEO & ENGAGEMENT OPTIMIZATION:
+- 50-65 characters for perfect Google snippet display
+- Include power words: "Ultimate", "Complete", "Secret", "Proven", "Essential"
+- Use numbers and brackets strategically: "7 Best", "[2025 Guide]", "(Step-by-Step)"
+- Create emotional hooks: curiosity, urgency, benefit-driven
+- Ensure uniqueness - no similar titles or repeated patterns
+- Make each title irresistible to click
+
+🚀 TRENDING ELEMENTS TO INCLUDE:
+- Current relevance (without specific dates)
+- Problem-solution framework
+- Benefit-driven language
+- Specificity and actionability
+- Social proof indicators
+- Curiosity gaps that demand clicks
+
+CRITICAL: Each title must be completely UNIQUE in structure, approach, and appeal. No repetitive patterns or similar formulations.
 
 RESPONSE FORMAT:
-Return a JSON object with a "titles" array containing exactly ${count} title strings.
+Return a JSON object with a "titles" array containing exactly ${count} unique title strings.
 
-Example structure:
 {
   "titles": [
-    "Title 1 with keyword",
-    "Title 2 with different keyword",
-    ...
+    "Ultimate Guide to [keyword]: Transform Your [outcome] in 30 Days",
+    "7 Secret [keyword] Strategies That [specific benefit]",
+    "Why [keyword] is the Game-Changer Everyone's Talking About",
+    "[keyword] vs [alternative]: Complete Comparison Guide",
+    "How to Master [keyword] (Even as a Complete Beginner)",
+    "The Science Behind [keyword]: What You Need to Know",
+    "Common [keyword] Mistakes That Cost You [outcome]",
+    "[keyword] Essentials: Everything You Need to Get Started"
   ]
 }`;
 
-    const userPrompt = `Generate ${count} SEO-optimized blog titles using the provided keywords${productContext ? ' and products' : ''}. Every title must include at least one keyword and be compelling for the target audience.`;
+    const userPrompt = `Create ${count} completely unique, trending, and SEO-optimized blog titles using the provided keywords${productContext ? ' and products' : ''}. Each title must be distinct, keyword-optimized, and irresistibly clickable for maximum traffic and engagement.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      temperature: 0.8,
+      temperature: 0.9, // Higher creativity for more unique and trending titles
       response_format: { type: "json_object" }
     });
 
@@ -308,12 +333,27 @@ Example structure:
     try {
       const parsedResponse = JSON.parse(content);
       
-      if (Array.isArray(parsedResponse.titles)) {
-        console.log(`Successfully generated ${parsedResponse.titles.length} dynamic titles`);
-        return parsedResponse.titles;
+      if (Array.isArray(parsedResponse.titles) && parsedResponse.titles.length >= count) {
+        // Validate that each title contains at least one keyword
+        const validatedTitles = parsedResponse.titles.filter(title => {
+          const containsKeyword = keywords.some(keyword => 
+            title.toLowerCase().includes(keyword.toLowerCase())
+          );
+          if (!containsKeyword) {
+            console.warn(`Title "${title}" does not contain any keywords, excluding it`);
+          }
+          return containsKeyword;
+        });
+
+        if (validatedTitles.length < count) {
+          console.warn(`Only ${validatedTitles.length} of ${parsedResponse.titles.length} titles contain keywords`);
+        }
+        
+        console.log(`Successfully generated ${validatedTitles.length} unique, trending SEO titles`);
+        return validatedTitles.slice(0, count); // Ensure we return exactly the requested count
       }
       
-      throw new Error("Invalid response format - missing titles array");
+      throw new Error("Invalid response format - missing titles array or insufficient titles");
     } catch (parseError) {
       console.error("Error parsing title suggestions:", parseError);
       throw new Error("Failed to parse dynamic title suggestions");
