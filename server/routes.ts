@@ -1718,8 +1718,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                     const generateAuthorBoxHTML = (author: any, content?: string) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                       const avatarImg = author.profileImage 
-                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
-                        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px; flex-shrink: 0;">${avatarInitials}</div>`;
+                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
+                        : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 16px; flex-shrink: 0;">${avatarInitials}</div>`;
 
                       // LinkedIn "Learn More" button if LinkedIn URL is available
                       const linkedinButton = author.linkedinUrl 
@@ -1849,11 +1849,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                   
                   // Add author box to BOTH blog posts and pages with same design - no reading time
 
-                  // Author box with 64x64px rounded avatar with full description (same design for both blog posts and pages)
+                  // Author box with 48x48px rounded avatar with full description (same design for both blog posts and pages)
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const smallAvatarElement = (author.profileImage || author.avatarUrl)
-                    ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+                    ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 48px !important; height: 48px !important; max-width: 48px !important; max-height: 48px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                    : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 16px;">${avatarInitials}</div>`;
 
                   // Use full author description without truncation
                   const fullDescription = author.description || '';
