@@ -2542,17 +2542,40 @@ Place this at a logical position in the content, typically after introducing a c
         
         // Final safety check - ensure we have valid meta fields
         if (!optimizedMetaTitle || optimizedMetaTitle.trim() === '') {
-          optimizedMetaTitle = requestData.title || 'Untitled Article';
+          optimizedMetaTitle = requestData.title || generatedContent.title || 'Untitled Article';
           console.log('Applied fallback meta title:', optimizedMetaTitle);
         }
         
+        // Ensure meta title is properly truncated for SEO
+        if (optimizedMetaTitle.length > 60) {
+          const lastSpace = optimizedMetaTitle.lastIndexOf(' ', 60);
+          optimizedMetaTitle = lastSpace > 45 ? optimizedMetaTitle.substring(0, lastSpace) : optimizedMetaTitle.substring(0, 60);
+        }
+        
         if (!optimizedMetaDescription || optimizedMetaDescription.trim() === '') {
-          // Create a basic meta description from content if available
+          // Create a proper meta description from content if available
           if (generatedContent.content) {
             const plainText = generatedContent.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-            optimizedMetaDescription = plainText.substring(0, 150) + '...';
+            const sentences = plainText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            if (sentences.length > 0) {
+              let description = sentences[0].trim();
+              if (description.length < 120 && sentences.length > 1) {
+                description += '. ' + sentences[1].trim();
+              }
+              if (description.length > 160) {
+                const lastSpace = description.lastIndexOf(' ', 155);
+                description = lastSpace > 140 ? description.substring(0, lastSpace) : description.substring(0, 155);
+              }
+              optimizedMetaDescription = description;
+            } else {
+              optimizedMetaDescription = plainText.substring(0, 155);
+            }
           } else {
-            optimizedMetaDescription = `Learn about ${optimizedMetaTitle.toLowerCase()} and discover valuable insights.`;
+            optimizedMetaDescription = `Discover valuable insights about ${optimizedMetaTitle.toLowerCase()}. Get expert guidance and practical tips to help you succeed.`;
+            if (optimizedMetaDescription.length > 160) {
+              const lastSpace = optimizedMetaDescription.lastIndexOf(' ', 155);
+              optimizedMetaDescription = lastSpace > 140 ? optimizedMetaDescription.substring(0, lastSpace) : optimizedMetaDescription.substring(0, 155);
+            }
           }
           console.log('Applied fallback meta description:', optimizedMetaDescription.substring(0, 50) + '...');
         }
