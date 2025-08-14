@@ -2597,23 +2597,10 @@ export default function AdminPanel() {
         console.log("  H2 headings with IDs:", (response.content?.match(/<h2[^>]*id[^>]*>/g) || []).length);
         console.log("  TOC links with target=_blank:", (response.content?.match(/href="#[^"]*"[^>]*target="_blank"/g) || []).length);
         
-        // Preserve any manually optimized meta fields before overwriting with content generation response
-        const currentMetaTitle = generatedContent.metaTitle;
-        const currentMetaDescription = generatedContent.metaDescription;
-        
-        console.log('Preserving existing meta fields during content generation:', {
-          existingMetaTitle: currentMetaTitle ? currentMetaTitle.substring(0, 50) + '...' : 'none',
-          existingMetaDescription: currentMetaDescription ? currentMetaDescription.substring(0, 50) + '...' : 'none',
-          newMetaDescription: response.metaDescription ? response.metaDescription.substring(0, 50) + '...' : 'none'
-        });
-        
         setGeneratedContent({
           ...response,
           contentUrl: response.contentUrl,
-          shopifyUrl: response.contentUrl, // Map contentUrl to shopifyUrl for button compatibility
-          // Preserve manually optimized meta fields if they exist and are different from auto-generated ones
-          metaTitle: currentMetaTitle && currentMetaTitle !== response.title ? currentMetaTitle : response.metaTitle,
-          metaDescription: currentMetaDescription && currentMetaDescription.length > 100 ? currentMetaDescription : response.metaDescription
+          shopifyUrl: response.contentUrl // Map contentUrl to shopifyUrl for button compatibility
         });
         
         // No longer need client-side processing - raw content will come from server
