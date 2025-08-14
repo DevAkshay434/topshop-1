@@ -1885,81 +1885,88 @@ export async function registerRoutes(app: Express): Promise<void> {
                 if (authorToUse && completePost) {
                   const author = authorToUse;
                   
-                  // Calculate reading time for blog post content
-                  const calculateReadingTime = (content: string): { minutes: number; seconds: number; display: string } => {
-                    if (!content || typeof content !== 'string') {
-                      return { minutes: 0, seconds: 0, display: '1 min read' };
-                    }
+                  // Only add author box to PAGES, not blog posts
+                  if (isPage) {
+                    // Calculate reading time for page content
+                    const calculateReadingTime = (content: string): { minutes: number; seconds: number; display: string } => {
+                      if (!content || typeof content !== 'string') {
+                        return { minutes: 0, seconds: 0, display: '1 min read' };
+                      }
 
-                    // Remove HTML tags and get plain text
-                    const plainText = content.replace(/<[^>]*>/g, '').trim();
-                    
-                    // Count words (split by whitespace and filter out empty strings)
-                    const words = plainText.split(/\s+/).filter(word => word.length > 0);
-                    const wordCount = words.length;
-                    
-                    // Average reading speed is 200-250 words per minute, we'll use 225
-                    const wordsPerMinute = 225;
-                    
-                    // Calculate total minutes as decimal
-                    const totalMinutes = wordCount / wordsPerMinute;
-                    
-                    // Convert to minutes and seconds
-                    const minutes = Math.floor(totalMinutes);
-                    const seconds = Math.round((totalMinutes - minutes) * 60);
-                    
-                    // Create display string
-                    let display: string;
-                    if (minutes === 0) {
-                      display = '1 min read'; // Minimum 1 minute for very short content
-                    } else if (minutes === 1 && seconds < 30) {
-                      display = '1 min read';
-                    } else if (minutes > 0 && seconds >= 30) {
-                      display = `${minutes + 1} min read`; // Round up if seconds >= 30
-                    } else {
-                      display = `${minutes} min read`;
-                    }
-                    
-                    return { minutes, seconds, display };
-                  };
+                      // Remove HTML tags and get plain text
+                      const plainText = content.replace(/<[^>]*>/g, '').trim();
+                      
+                      // Count words (split by whitespace and filter out empty strings)
+                      const words = plainText.split(/\s+/).filter(word => word.length > 0);
+                      const wordCount = words.length;
+                      
+                      // Average reading speed is 200-250 words per minute, we'll use 225
+                      const wordsPerMinute = 225;
+                      
+                      // Calculate total minutes as decimal
+                      const totalMinutes = wordCount / wordsPerMinute;
+                      
+                      // Convert to minutes and seconds
+                      const minutes = Math.floor(totalMinutes);
+                      const seconds = Math.round((totalMinutes - minutes) * 60);
+                      
+                      // Create display string
+                      let display: string;
+                      if (minutes === 0) {
+                        display = '1 min read'; // Minimum 1 minute for very short content
+                      } else if (minutes === 1 && seconds < 30) {
+                        display = '1 min read';
+                      } else if (minutes > 0 && seconds >= 30) {
+                        display = `${minutes + 1} min read`; // Round up if seconds >= 30
+                      } else {
+                        display = `${minutes} min read`;
+                      }
+                      
+                      return { minutes, seconds, display };
+                    };
 
-                  // Calculate reading time for the blog content
-                  const readingTime = calculateReadingTime(completePost.content);
-                  const readingTimeText = ` • ${readingTime.display}`;
+                    // Calculate reading time for the page content
+                    const readingTime = calculateReadingTime(completePost.content);
+                    const readingTimeText = ` • ${readingTime.display}`;
 
-                  // Small "Written by" section for blog posts - 64x64px rounded avatar with description
-                  const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                  const smallAvatarElement = (author.profileImage || author.avatarUrl)
-                    ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+                    // Author box for pages - 64x64px rounded avatar with description
+                    const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                    const smallAvatarElement = (author.profileImage || author.avatarUrl)
+                      ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                      : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
-                  // Truncate author description to first 150 characters for blog posts
-                  const shortDescription = author.description 
-                    ? (author.description.length > 150 ? author.description.substring(0, 150) + '...' : author.description)
-                    : '';
+                    // Truncate author description to first 150 characters for pages
+                    const shortDescription = author.description 
+                      ? (author.description.length > 150 ? author.description.substring(0, 150) + '...' : author.description)
+                      : '';
 
-                  const writtenBySection = `
-                    <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
-                      <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
-                        <div style="flex-shrink: 0;">
-                          ${smallAvatarElement}
-                        </div>
-                        <div style="flex: 1;">
-                          <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280; font-size: 14px;">Written by </span>
-                            <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
-                            <span style="color: #6b7280; font-size: 14px;">${readingTimeText}</span>
+                    const writtenBySection = `
+                      <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
+                          <div style="flex-shrink: 0;">
+                            ${smallAvatarElement}
                           </div>
-                          ${shortDescription ? `<p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0;">${shortDescription}</p>` : ''}
+                          <div style="flex: 1;">
+                            <div style="margin-bottom: 8px;">
+                              <span style="color: #6b7280; font-size: 14px;">Written by </span>
+                              <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
+                              <span style="color: #6b7280; font-size: 14px;">${readingTimeText}</span>
+                            </div>
+                            ${shortDescription ? `<p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0;">${shortDescription}</p>` : ''}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  `;
-                  
-                  // For blog posts, add "Written by" at the END of content
-                  completePost.content = completePost.content + writtenBySection;
-                  completePost.author = author.name;
-                  console.log(`Added centered "Written by ${author.name}" with 64×64px rounded avatar at BOTTOM of blog content${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                    `;
+                    
+                    // For PAGES only, add "Written by" at the END of content
+                    completePost.content = completePost.content + writtenBySection;
+                    completePost.author = author.name;
+                    console.log(`Added author box to PAGE: "Written by ${author.name}" with 64×64px rounded avatar at BOTTOM of page content${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  } else {
+                    // For blog posts, just set the author name (no author box)
+                    completePost.author = author.name;
+                    console.log(`Set author name for BLOG POST: "${author.name}" (no author box added to blog posts)`);
+                  }
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);
