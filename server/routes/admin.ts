@@ -2479,7 +2479,8 @@ Place this at a logical position in the content, typically after introducing a c
       }
       
       // 8. Automatically optimize meta title and description with Claude AI
-      let optimizedMetaTitle = generatedContent.title;
+      // Ensure we always have a valid meta title - use request title as fallback
+      let optimizedMetaTitle = generatedContent.title || requestData.title || 'Untitled Article';
       let optimizedMetaDescription = generatedContent.metaDescription || '';
       
       try {
@@ -2493,14 +2494,14 @@ Place this at a logical position in the content, typically after introducing a c
         console.log(`Meta optimization check: Claude API key = ${hasClaudeKey}, Keywords = ${hasKeywords} (${availableKeywords.length} keywords)`);
         
         // Automatic meta optimization is temporarily disabled due to function availability
-        if (false && hasClaudeKey && (hasKeywords || generatedContent.title)) {
+        if (false && hasClaudeKey && (hasKeywords || optimizedMetaTitle)) {
           // const { optimizeMetaData } = await import("../services/claude");
           
           // Optimize Meta Title
-          if (generatedContent.title) {
+          if (optimizedMetaTitle) {
             console.log("Optimizing meta title with keywords:", availableKeywords);
             const metaTitleOptimization = await optimizeMetaData(
-              generatedContent.title, 
+              optimizedMetaTitle, 
               availableKeywords, 
               "title"
             );
@@ -2539,7 +2540,24 @@ Place this at a logical position in the content, typically after introducing a c
             }
           }
         } else {
-          console.log(`Skipping automatic meta optimization: Claude API key = ${hasClaudeKey}, Keywords available = ${hasKeywords}, Title available = ${!!generatedContent.title}`);
+          console.log(`Skipping automatic meta optimization: Claude API key = ${hasClaudeKey}, Keywords available = ${hasKeywords}, Title available = ${!!optimizedMetaTitle}`);
+        }
+        
+        // Final safety check - ensure we have valid meta fields
+        if (!optimizedMetaTitle || optimizedMetaTitle.trim() === '') {
+          optimizedMetaTitle = requestData.title || 'Untitled Article';
+          console.log('Applied fallback meta title:', optimizedMetaTitle);
+        }
+        
+        if (!optimizedMetaDescription || optimizedMetaDescription.trim() === '') {
+          // Create a basic meta description from content if available
+          if (generatedContent.content) {
+            const plainText = generatedContent.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            optimizedMetaDescription = plainText.substring(0, 150) + '...';
+          } else {
+            optimizedMetaDescription = `Learn about ${optimizedMetaTitle.toLowerCase()} and discover valuable insights.`;
+          }
+          console.log('Applied fallback meta description:', optimizedMetaDescription.substring(0, 50) + '...');
         }
       } catch (metaOptimizationError) {
         console.error("Automatic meta optimization failed, keeping original values:", metaOptimizationError);
