@@ -2410,7 +2410,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         contentSnippet: content ? content.substring(0, 500) : ''
       };
 
-      const prompt = `You are an SEO expert specializing in meta optimization. Generate an optimized meta title and meta description for this content:
+      const prompt = `You are an expert SEO copywriter specializing in high-converting meta optimization. Generate an optimized meta title and meta description for this content:
 
 CONTENT DETAILS:
 Title: ${optimizationContext.mainTitle}
@@ -2422,27 +2422,33 @@ ${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.c
 
 STRICT REQUIREMENTS:
 - Meta Title (50-60 characters max):
-  * MUST include at least one keyword from the provided keywords list
-  * MUST be directly relevant to the article content
-  * NO ellipsis (...) anywhere in the title
-  * NO month/year references (avoid 2023, 2024, 2025, etc.)
-  * Should be compelling and click-worthy
+  * MUST include primary keyword naturally
+  * MUST be directly relevant and compelling
+  * NO ellipsis (...) anywhere
+  * NO year references (2023, 2024, 2025, etc.)
+  * Focus on benefits or outcomes
   * Use ${optimizationContext.tone} tone
 
-- Meta Description (150-160 characters max):
-  * MUST summarize the actual content value
-  * Include relevant keywords naturally
-  * NO ellipsis (...) anywhere in the description
-  * NO month/year references or dates
-  * Should encourage clicks with clear value proposition
+- Meta Description (140-160 characters max):
+  * MUST highlight key benefits and value proposition
+  * Include 2-3 relevant keywords naturally
+  * NO ellipsis (...) anywhere
+  * NO dates or year references
+  * Create urgency or curiosity
+  * Include action-oriented language
+  * End with compelling reason to click
   * Target ${optimizationContext.targetAudience}
+
+EXAMPLES OF EFFECTIVE META DESCRIPTIONS:
+- "Discover proven strategies to boost your sales by 40%. Get expert tips, case studies, and actionable insights to transform your business today."
+- "Learn essential techniques that save hours of work daily. Step-by-step guide with real examples and immediate results you can implement now."
 
 Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. No additional text or formatting.`;
 
       console.log('Sending meta optimization request to Claude AI');
       
       const response = await anthropic.messages.create({
-        model: 'claude-3-7-sonnet-20250219',
+        model: 'claude-sonnet-4-20250514', // Using the newest Claude model
         max_tokens: 300,
         messages: [{ role: 'user', content: prompt }],
       });
