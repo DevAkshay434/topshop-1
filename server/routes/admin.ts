@@ -2570,7 +2570,7 @@ Place this at a logical position in the content, typically after introducing a c
         contentId,
         contentUrl,
         content: finalContent, // Use finalContent which includes embedded secondary media
-        title: generatedContent.title,
+        title: optimizedMetaTitle, // Use the safe optimized title instead of potentially null generatedContent.title
         tags: generatedContent.tags,
         metaDescription: optimizedMetaDescription,
         metaTitle: optimizedMetaTitle, // Include the optimized meta title
