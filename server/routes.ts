@@ -1150,12 +1150,32 @@ export async function registerRoutes(app: Express): Promise<void> {
             
             const scheduledDateFormatted = `${monthNames[month - 1]} ${day}, ${year}, ${formattedTime} ${timezoneAbbr}`;
             
+            // Calculate minutesUntilPublish using store timezone comparison
+            let minutesUntilPublish = 0;
+            if (!isPastDue) {
+              // Create comparable times in store timezone for accurate minute calculation
+              const currentMinutesFromMidnight = currentHour * 60 + currentMinute;
+              const scheduledMinutesFromMidnight = schedHour * 60 + schedMinute;
+              
+              // Calculate the difference considering date boundaries
+              let minuteDiff = scheduledMinutesFromMidnight - currentMinutesFromMidnight;
+              
+              // If scheduled for a future date, add full days
+              const dateDiff = (schedYear - currentYear) * 365 + (schedMonth - currentMonth) * 30 + (schedDay - currentDay);
+              if (dateDiff > 0) {
+                minuteDiff += dateDiff * 24 * 60;
+              }
+              
+
+              minutesUntilPublish = Math.max(0, minuteDiff);
+            }
+            
             enrichedPost.schedulingInfo = {
               scheduledDate: scheduledDateInTimezone.toISOString(),
               scheduledDateLocal: scheduledDateFormatted,
               timezone: storeTimezone,
               isPastDue,
-              minutesUntilPublish: isPastDue ? 0 : Math.floor((scheduledDateInTimezone.getTime() - new Date().getTime()) / (1000 * 60))
+              minutesUntilPublish
             };
           } else if (post.scheduledDate) {
             // Fallback for posts that only have the old scheduledDate field
