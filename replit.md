@@ -30,9 +30,6 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Multi-Store Support**: Ensures complete data isolation between connected Shopify stores, with automatic store detection and proper routing of API requests.
 - **URL Generation**: Implements SEO-friendly URL generation using Shopify handles for both blog posts and pages, with robust fallback mechanisms.
 - **Content Preview Optimization**: Intelligent featured image handling in admin panel previews prevents duplication.
-- **Author Avatar Sizing Issue Resolved (August 14, 2025)**: Fixed image sizing conflict by reordering processing logic to add avatars BEFORE image optimization. Author avatars now maintain proper 40px sizing while secondary images stay at 600×600px, with protection logic preventing conflicts.
-- **Meta Description AI Optimization Fixed (August 14, 2025)**: Resolved issue where content generation was overwriting manually AI-optimized meta descriptions. The system now preserves user-optimized meta fields during content generation, ensuring Claude AI optimization results are retained.
-- **Null Meta Title Error Completely Resolved (August 14, 2025)**: Fixed critical variable scoping issue causing "Cannot access 'optimizedMetaTitle' before initialization" errors. Restructured logic flow to create blog posts first, run meta optimization second, then update with optimized fields. Implemented three-level fallback system (AI title → request title → "Untitled Article") and enhanced database storage to ensure both content generation requests and blog posts store optimized meta fields consistently.
 - **Author Description Formatting**: Preserves formatting (spaces, line breaks) in author descriptions when saving to Shopify. Author descriptions now display in full without truncation, and reading time has been removed from the author box for cleaner presentation.
 
 ## External Dependencies

@@ -1742,8 +1742,11 @@ Place this at a logical position in the content, typically after introducing a c
         productsInfoSample: productsInfo?.slice(0, 2).map(p => ({ id: p.id, handle: p.handle, title: p.title })) || []
       });
       
-      // 4. Update content generation request - temporarily defer until after meta optimization
-      // We'll update this after meta optimization to include the corrected meta fields
+      // 4. Update content generation request
+      await storage.updateContentGenRequest(contentRequest.id, {
+        status: "completed",
+        generatedContent: JSON.stringify(generatedContent)
+      });
       
       // 5. Handle media from Choose Media step
       let featuredImage = null;
@@ -2218,7 +2221,7 @@ Place this at a logical position in the content, typically after introducing a c
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           storeId: store.id, // CRITICAL: Associate post with the correct store
-          title: generatedContent.title || requestData.title, // Use safe title fallback
+          title: generatedContent.title || requestData.title,
           content: finalContent,
           status: postStatus,
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
@@ -2476,8 +2479,7 @@ Place this at a logical position in the content, typically after introducing a c
       }
       
       // 8. Automatically optimize meta title and description with Claude AI
-      // Ensure we always have a valid meta title - use request title as fallback
-      let optimizedMetaTitle = generatedContent.title || requestData.title || 'Untitled Article';
+      let optimizedMetaTitle = generatedContent.title;
       let optimizedMetaDescription = generatedContent.metaDescription || '';
       
       try {
@@ -2491,14 +2493,14 @@ Place this at a logical position in the content, typically after introducing a c
         console.log(`Meta optimization check: Claude API key = ${hasClaudeKey}, Keywords = ${hasKeywords} (${availableKeywords.length} keywords)`);
         
         // Automatic meta optimization is temporarily disabled due to function availability
-        if (false && hasClaudeKey && (hasKeywords || optimizedMetaTitle)) {
+        if (false && hasClaudeKey && (hasKeywords || generatedContent.title)) {
           // const { optimizeMetaData } = await import("../services/claude");
           
           // Optimize Meta Title
-          if (optimizedMetaTitle) {
+          if (generatedContent.title) {
             console.log("Optimizing meta title with keywords:", availableKeywords);
             const metaTitleOptimization = await optimizeMetaData(
-              optimizedMetaTitle, 
+              generatedContent.title, 
               availableKeywords, 
               "title"
             );
@@ -2537,70 +2539,11 @@ Place this at a logical position in the content, typically after introducing a c
             }
           }
         } else {
-          console.log(`Skipping automatic meta optimization: Claude API key = ${hasClaudeKey}, Keywords available = ${hasKeywords}, Title available = ${!!optimizedMetaTitle}`);
-        }
-        
-        // Final safety check - ensure we have valid meta fields
-        if (!optimizedMetaTitle || optimizedMetaTitle.trim() === '') {
-          optimizedMetaTitle = requestData.title || 'Untitled Article';
-          console.log('Applied fallback meta title:', optimizedMetaTitle);
-        }
-        
-        if (!optimizedMetaDescription || optimizedMetaDescription.trim() === '') {
-          // Create a basic meta description from content if available
-          if (generatedContent.content) {
-            const plainText = generatedContent.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-            optimizedMetaDescription = plainText.substring(0, 150) + '...';
-          } else {
-            optimizedMetaDescription = `Learn about ${optimizedMetaTitle.toLowerCase()} and discover valuable insights.`;
-          }
-          console.log('Applied fallback meta description:', optimizedMetaDescription.substring(0, 50) + '...');
+          console.log(`Skipping automatic meta optimization: Claude API key = ${hasClaudeKey}, Keywords available = ${hasKeywords}, Title available = ${!!generatedContent.title}`);
         }
       } catch (metaOptimizationError) {
         console.error("Automatic meta optimization failed, keeping original values:", metaOptimizationError);
         // Continue with original values if optimization fails
-      }
-      
-      // 8.5. Update content generation request with optimized meta data
-      try {
-        // Update the generatedContent with optimized meta fields before saving to database
-        const updatedGeneratedContent = {
-          ...generatedContent,
-          title: optimizedMetaTitle,
-          metaDescription: optimizedMetaDescription,
-          metaTitle: optimizedMetaTitle
-        };
-        
-        await storage.updateContentGenRequest(contentRequest.id, {
-          status: "completed",
-          generatedContent: JSON.stringify(updatedGeneratedContent)
-        });
-        
-        console.log('✅ Database updated with optimized meta fields:', {
-          title: optimizedMetaTitle?.substring(0, 50) + '...',
-          metaDescription: optimizedMetaDescription?.substring(0, 50) + '...'
-        });
-        
-        // Update blog post with optimized meta fields if it was created
-        if (contentId && requestData.articleType === 'blog') {
-          try {
-            await storage.updateBlogPost(contentId, {
-              title: optimizedMetaTitle,
-              metaTitle: optimizedMetaTitle,
-              metaDescription: optimizedMetaDescription
-            });
-            console.log('✅ Blog post updated with optimized meta fields:', {
-              id: contentId,
-              title: optimizedMetaTitle?.substring(0, 30) + '...',
-              metaDescription: optimizedMetaDescription?.substring(0, 50) + '...'
-            });
-          } catch (blogUpdateError) {
-            console.error("Failed to update blog post with optimized meta fields:", blogUpdateError);
-          }
-        }
-      } catch (dbUpdateError) {
-        console.error("Failed to update database with optimized meta fields:", dbUpdateError);
-        // Continue even if database update fails - API response will still have correct values
       }
       
       // 9. Return the result with optimized meta data and selected media included for preview
@@ -2609,7 +2552,7 @@ Place this at a logical position in the content, typically after introducing a c
         contentId,
         contentUrl,
         content: finalContent, // Use finalContent which includes embedded secondary media
-        title: optimizedMetaTitle, // Use the safe optimized title instead of potentially null generatedContent.title
+        title: generatedContent.title,
         tags: generatedContent.tags,
         metaDescription: optimizedMetaDescription,
         metaTitle: optimizedMetaTitle, // Include the optimized meta title
