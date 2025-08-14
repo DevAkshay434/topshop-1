@@ -1940,7 +1940,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
                   const writtenBySection = `
                     <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
-                      <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
+                      <div style="display: flex; align-items: flex-start; gap: 16px;max-width:64px; margin: 0 auto;">
                         <div style="flex-shrink: 0;">
                           ${smallAvatarElement}
                         </div>
@@ -1948,7 +1948,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                           <div style="margin-bottom: 8px;">
                             <span style="color: #6b7280; font-size: 14px;">Written by </span>
                             <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
-                            <span style="color: #6b7280; font-size: 14px;">${readingTimeText}</span>
+                         
                           </div>
                           ${shortDescription ? `<p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0;">${shortDescription}</p>` : ''}
                         </div>
