@@ -2215,13 +2215,10 @@ Place this at a logical position in the content, typically after introducing a c
           console.log(`AUTHOR SYNC INFO - No authorId provided, no author will be assigned`);
         }
 
-        // Ensure we have a valid title for metaTitle fallback
-        const safeTitle = generatedContent.title || requestData.title || 'Untitled Article';
-        
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           storeId: store.id, // CRITICAL: Associate post with the correct store
-          title: safeTitle, // Use safe title fallback
+          title: generatedContent.title || requestData.title, // Use safe title fallback
           content: finalContent,
           status: postStatus,
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
@@ -2236,10 +2233,7 @@ Place this at a logical position in the content, typically after introducing a c
           shopifyPostId: null,
           shopifyBlogId: blogId,
           // Add primary image as featured image for blog posts
-          featuredImage: requestData.primaryImage?.url || featuredImage?.url,
-          // CRITICAL: Set metaTitle and metaDescription on initial creation to prevent null values
-          metaTitle: safeTitle,
-          metaDescription: generatedContent.metaDescription || `Discover valuable insights about ${safeTitle.toLowerCase()}. Get expert guidance and practical tips to help you succeed.`
+          featuredImage: requestData.primaryImage?.url || featuredImage?.url
         });
         
         contentId = post.id;
@@ -2496,9 +2490,9 @@ Place this at a logical position in the content, typically after introducing a c
         
         console.log(`Meta optimization check: Claude API key = ${hasClaudeKey}, Keywords = ${hasKeywords} (${availableKeywords.length} keywords)`);
         
-        // Always run meta optimization if we have Claude API key and content
-        if (hasClaudeKey && optimizedMetaTitle) {
-          const { optimizeMetaData } = await import("../services/claude");
+        // Automatic meta optimization is temporarily disabled due to function availability
+        if (false && hasClaudeKey && (hasKeywords || optimizedMetaTitle)) {
+          // const { optimizeMetaData } = await import("../services/claude");
           
           // Optimize Meta Title
           if (optimizedMetaTitle) {
@@ -2548,40 +2542,17 @@ Place this at a logical position in the content, typically after introducing a c
         
         // Final safety check - ensure we have valid meta fields
         if (!optimizedMetaTitle || optimizedMetaTitle.trim() === '') {
-          optimizedMetaTitle = requestData.title || generatedContent.title || 'Untitled Article';
+          optimizedMetaTitle = requestData.title || 'Untitled Article';
           console.log('Applied fallback meta title:', optimizedMetaTitle);
         }
         
-        // Ensure meta title is properly truncated for SEO
-        if (optimizedMetaTitle.length > 60) {
-          const lastSpace = optimizedMetaTitle.lastIndexOf(' ', 60);
-          optimizedMetaTitle = lastSpace > 45 ? optimizedMetaTitle.substring(0, lastSpace) : optimizedMetaTitle.substring(0, 60);
-        }
-        
         if (!optimizedMetaDescription || optimizedMetaDescription.trim() === '') {
-          // Create a proper meta description from content if available
+          // Create a basic meta description from content if available
           if (generatedContent.content) {
             const plainText = generatedContent.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-            const sentences = plainText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-            if (sentences.length > 0) {
-              let description = sentences[0].trim();
-              if (description.length < 120 && sentences.length > 1) {
-                description += '. ' + sentences[1].trim();
-              }
-              if (description.length > 160) {
-                const lastSpace = description.lastIndexOf(' ', 155);
-                description = lastSpace > 140 ? description.substring(0, lastSpace) : description.substring(0, 155);
-              }
-              optimizedMetaDescription = description;
-            } else {
-              optimizedMetaDescription = plainText.substring(0, 155);
-            }
+            optimizedMetaDescription = plainText.substring(0, 150) + '...';
           } else {
-            optimizedMetaDescription = `Discover valuable insights about ${optimizedMetaTitle.toLowerCase()}. Get expert guidance and practical tips to help you succeed.`;
-            if (optimizedMetaDescription.length > 160) {
-              const lastSpace = optimizedMetaDescription.lastIndexOf(' ', 155);
-              optimizedMetaDescription = lastSpace > 140 ? optimizedMetaDescription.substring(0, lastSpace) : optimizedMetaDescription.substring(0, 155);
-            }
+            optimizedMetaDescription = `Learn about ${optimizedMetaTitle.toLowerCase()} and discover valuable insights.`;
           }
           console.log('Applied fallback meta description:', optimizedMetaDescription.substring(0, 50) + '...');
         }

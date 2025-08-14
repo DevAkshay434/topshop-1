@@ -40,8 +40,8 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// the newest Anthropic model is "claude-sonnet-4-20250514", not "claude-3-7-sonnet-20250219"
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
 // Function to automatically add id attributes to H2 headings that don't have them
 function addHeadingIds(content: string): string {
@@ -703,14 +703,9 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     
     while (retryCount < maxRetries) {
       try {
-        // Add timeout wrapper to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Claude API timeout after 60 seconds')), 60000);
-        });
-        
-        const apiPromise = anthropic.messages.create({
+        response = await anthropic.messages.create({
           model: CLAUDE_MODEL,
-          max_tokens: 5000, // Reduced from 8000 for faster generation
+          max_tokens: 8000,
           system: request.contentStyleToneId 
             ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
             : undefined,
@@ -731,8 +726,6 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
         }
       ],
     });
-    
-    response = await Promise.race([apiPromise, timeoutPromise]);
     
     // If successful, break out of retry loop
     break;
@@ -1061,73 +1054,6 @@ export async function generateTitles(request: {
 }
 
 // Test function to check if Claude API is working
-export async function optimizeMetaData(
-  content: string, 
-  keywords: string[] = [], 
-  type: 'title' | 'description'
-): Promise<string> {
-  try {
-    const keywordText = keywords.length > 0 ? keywords.join(', ') : '';
-    
-    let prompt = '';
-    if (type === 'title') {
-      prompt = `Optimize this title for SEO while keeping it compelling and under 60 characters:
-      
-Original title: "${content}"
-Keywords to include: ${keywordText}
-
-Requirements:
-- Maximum 60 characters
-- Include primary keywords naturally
-- Make it compelling and clickable
-- Focus on user intent and benefits
-- Avoid keyword stuffing
-
-Return only the optimized title, nothing else.`;
-    } else {
-      prompt = `Optimize this meta description for SEO while keeping it compelling and under 160 characters:
-
-Original description: "${content}"
-Keywords to include: ${keywordText}
-
-Requirements:
-- Maximum 160 characters
-- Include primary keywords naturally
-- Make it compelling with a clear call-to-action
-- Focus on benefits and value proposition
-- Avoid keyword stuffing
-
-Return only the optimized meta description, nothing else.`;
-    }
-
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 100,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const optimizedText = response.content[0].type === 'text' 
-      ? response.content[0].text.trim() 
-      : content;
-
-    // Validate length constraints
-    if (type === 'title' && optimizedText.length > 60) {
-      const lastSpace = optimizedText.lastIndexOf(' ', 60);
-      return lastSpace > 45 ? optimizedText.substring(0, lastSpace) : optimizedText.substring(0, 60);
-    }
-    
-    if (type === 'description' && optimizedText.length > 160) {
-      const lastSpace = optimizedText.lastIndexOf(' ', 160);
-      return lastSpace > 140 ? optimizedText.substring(0, lastSpace) : optimizedText.substring(0, 160);
-    }
-
-    return optimizedText;
-  } catch (error: any) {
-    console.error(`Meta ${type} optimization failed:`, error);
-    return content; // Return original content if optimization fails
-  }
-}
-
 export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
   try {
     const response = await anthropic.messages.create({
