@@ -105,8 +105,8 @@ export async function schedulePost(
       scheduledPublishTime = post.scheduledPublishTime;
     } else {
       // Otherwise format the date using the store's timezone
-      scheduledPublishDate = formatDate(scheduledDate);
-      scheduledPublishTime = formatTime(scheduledDate);
+      scheduledPublishDate = formatDateInTimezone(scheduledDate, storeTimezone);
+      scheduledPublishTime = formatTimeInTimezone(scheduledDate, storeTimezone);
     }
     
     console.log(`Using store timezone ${storeTimezone} for scheduled publish date: ${scheduledPublishDate} at ${scheduledPublishTime}`);
@@ -164,6 +164,30 @@ export function formatTime(date: Date): string {
 }
 
 /**
+ * Format a date as YYYY-MM-DD in the specified timezone
+ */
+export function formatDateInTimezone(date: Date, timezone: string): string {
+  return date.toLocaleDateString('en-CA', { 
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit'
+  });
+}
+
+/**
+ * Format a time as HH:MM in the specified timezone
+ */
+export function formatTimeInTimezone(date: Date, timezone: string): string {
+  return date.toLocaleTimeString('en-CA', { 
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
+/**
  * Schedule a page for future publishing
  * @param store Shopify store details
  * @param title Page title
@@ -186,8 +210,8 @@ export async function schedulePage(
       shopInfo = await shopifyService.getShopInfo(store);
       console.log(`Shop timezone for ${store.shopName}: ${shopInfo.iana_timezone}`);
     } catch (shopError: any) {
-      console.error(`Failed to get shop timezone, using America/New_York as fallback: ${shopError.message}`);
-      shopInfo = { iana_timezone: 'America/New_York' }; // Use store's known timezone as fallback
+      console.error(`Failed to get shop timezone, using UTC as fallback: ${shopError.message}`);
+      shopInfo = { iana_timezone: 'UTC' }; // Use UTC as fallback instead of hardcoded timezone
     }
 
     // Create a client for the Shopify API
@@ -223,9 +247,9 @@ export async function schedulePage(
     // Format dates in the store's timezone for accurate scheduling
     const storeTimezone = shopInfo.iana_timezone || 'UTC';
     
-    // Get the formatted date and time strings
-    const scheduledPublishDate = formatDate(scheduledDate);
-    const scheduledPublishTime = formatTime(scheduledDate);
+    // Get the formatted date and time strings using the store's timezone
+    const scheduledPublishDate = formatDateInTimezone(scheduledDate, storeTimezone);
+    const scheduledPublishTime = formatTimeInTimezone(scheduledDate, storeTimezone);
     
     console.log(`Using store timezone ${storeTimezone} for scheduled publish date: ${scheduledPublishDate} at ${scheduledPublishTime}`);
 
@@ -335,20 +359,20 @@ export async function publishScheduledPage(
       shopInfo = await shopifyService.getShopInfo(store);
       console.log(`Shop timezone: ${shopInfo.iana_timezone}`);
     } catch (shopError: any) {
-      console.error(`Failed to get shop timezone, using America/New_York as fallback: ${shopError.message}`);
-      shopInfo = { iana_timezone: 'America/New_York' };
+      console.error(`Failed to get shop timezone, using UTC as fallback: ${shopError.message}`);
+      shopInfo = { iana_timezone: 'UTC' };
       
       // Log the error for tracking
       await storage.createSyncActivity({
         storeId: store.id,
         activity: `Warning: Timezone fetch failed when publishing page`,
         status: 'warning',
-        details: `Using America/New_York as fallback. Error: ${shopError.message}`
+        details: `Using UTC as fallback. Error: ${shopError.message}`
       });
     }
     
     // Get the store's timezone
-    const storeTimezone = shopInfo.iana_timezone || 'America/New_York';
+    const storeTimezone = shopInfo.iana_timezone || 'UTC';
     
     // Create a client for the Shopify API
     const client = axios.create({

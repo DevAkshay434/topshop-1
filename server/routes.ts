@@ -1118,34 +1118,24 @@ export async function registerRoutes(app: Express): Promise<void> {
               hour12: true 
             });
             
-            // Determine timezone abbreviation
+            // Determine timezone abbreviation dynamically for any timezone
             let timezoneAbbr = 'UTC';
-            if (storeTimezone === 'America/New_York') {
-              // Check if the scheduled date is during DST (March-November approximately)
-              // DST in US starts on second Sunday of March and ends on first Sunday of November
-              const testDate = new Date(year, month - 1, day);
-              const janOffset = new Date(year, 0, 1).getTimezoneOffset();
-              const julOffset = new Date(year, 6, 1).getTimezoneOffset();
-              const testOffset = testDate.getTimezoneOffset();
-              
-              // During DST, offset is less (closer to UTC)
-              const isDST = testOffset < Math.max(janOffset, julOffset);
-              timezoneAbbr = isDST ? 'EDT' : 'EST';
-              
-
-            } else {
-              // For other timezones, try to get the abbreviation
-              try {
-                const formatter = new Intl.DateTimeFormat('en', {
-                  timeZone: storeTimezone,
-                  timeZoneName: 'short'
-                });
-                const parts = formatter.formatToParts(new Date(year, month - 1, day));
-                const tzPart = parts.find(part => part.type === 'timeZoneName');
-                if (tzPart) timezoneAbbr = tzPart.value;
-              } catch (e) {
-                timezoneAbbr = storeTimezone;
+            try {
+              const formatter = new Intl.DateTimeFormat('en', {
+                timeZone: storeTimezone,
+                timeZoneName: 'short'
+              });
+              const parts = formatter.formatToParts(new Date(year, month - 1, day));
+              const tzPart = parts.find(part => part.type === 'timeZoneName');
+              if (tzPart) {
+                timezoneAbbr = tzPart.value;
+              } else {
+                // Fallback: use the timezone name itself
+                timezoneAbbr = storeTimezone.split('/').pop() || storeTimezone;
               }
+            } catch (e) {
+              // Final fallback: use timezone name
+              timezoneAbbr = storeTimezone.split('/').pop() || storeTimezone;
             }
             
             const scheduledDateFormatted = `${monthNames[month - 1]} ${day}, ${year}, ${formattedTime} ${timezoneAbbr}`;

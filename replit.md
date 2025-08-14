@@ -22,7 +22,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Authentication**: Shopify OAuth 2.0 with multi-store support.
 - **Content Generation**: AI-powered blog post creation, including SEO optimization and multiple AI provider support, with automatic meta optimization. Dynamic AI title generation system using OpenAI/Claude with keyword-based fallbacks.
 - **Media Management**: Integration with Shopify media library, Pexels, and Pixabay for image assets, including a 3-step staged upload process directly to Shopify CDN.
-- **Scheduling**: Custom system for future content publication with robust timezone handling for both blog posts and pages.
+- **Scheduling**: Custom system for future content publication with comprehensive dynamic timezone handling for both blog posts and pages. All timezone calculations automatically use each connected store's specific timezone (fetched from Shopify API) rather than hardcoded values, ensuring accurate scheduling across different geographic regions.
 - **Analytics**: Tracking and reporting on content performance.
 - **UI/UX**: Utilizes Shadcn UI for a consistent look, TailwindCSS for responsive design, focusing on a streamlined workflow with standardized navigation and enhanced loading indicators. Improved workflow step indicators show completion status and allow navigation.
 - **SEO Enhancements**: Generates relevant keywords, includes comprehensive title generation with keyword integration, supports separate SEO meta titles for pages and blog posts, and focuses on evergreen content strategies. Implemented manual keyword input that preserves exact user input without external processing. Table of Contents links are optimized for in-page navigation without unwanted new tabs.
