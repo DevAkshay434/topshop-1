@@ -653,46 +653,8 @@ export class ShopifyService {
         console.log(`✓ Content processing complete. Preserved ${imageMarkers.length} secondary images. Content length: ${articleData.body_html.length}`);
       }
 
-      // Add author information with avatar at the very beginning if author is specified
-      if (authorName && articleData.body_html) {
-        const authorId = (post as any).authorId || 'author';
-        
-        // Get author avatar from database if available
-        let authorAvatar = '';
-        try {
-          if ((post as any).authorId) {
-            const { storage } = await import('../storage');
-            const authors = await storage.getAuthors();
-            const author = authors.find(a => parseInt(a.id) === parseInt((post as any).authorId.toString()));
-            if (author && author.avatarUrl) {
-              authorAvatar = `<img src="${author.avatarUrl}" alt="${authorName}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px;" />`;
-            } else {
-              // Create initials avatar if no image
-              const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-              authorAvatar = `<div style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; margin-right: 12px;">${initials}</div>`;
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching author avatar:', error);
-          // Fallback to initials
-          const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-          authorAvatar = `<div style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; margin-right: 12px;">${initials}</div>`;
-        }
-        
-        const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
-          <div style="display: inline-flex; align-items: center; justify-content: center;">
-            ${authorAvatar}
-            <span style="color: #6b7280; font-size: 16px;">
-              Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
-            </span>
-          </div>
-        </div>`;
-        
-        // Add at the very beginning of content
-        articleData.body_html = writtenByHTML + articleData.body_html;
-        
-        console.log(`Added centered "Written by ${authorName}" with avatar at very beginning of content`);
-      }
+      // Author information is now handled in routes.ts at the bottom of content
+      // No need to add author box at the beginning of content
 
       // Validate content before sending to Shopify
       if (articleData.body_html && articleData.body_html.length > 65000) {
