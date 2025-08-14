@@ -2218,7 +2218,7 @@ Place this at a logical position in the content, typically after introducing a c
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           storeId: store.id, // CRITICAL: Associate post with the correct store
-          title: optimizedMetaTitle, // Use optimized title instead of potentially null generatedContent.title
+          title: generatedContent.title || requestData.title, // Use safe title fallback
           content: finalContent,
           status: postStatus,
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
@@ -2227,8 +2227,6 @@ Place this at a logical position in the content, typically after introducing a c
           scheduledPublishTime: isScheduled ? requestData.scheduleTime : undefined,
           author: authorName,
           authorId: finalAuthorId, // CRITICAL: Store the properly converted author ID
-          metaTitle: optimizedMetaTitle, // Add optimized meta title to database
-          metaDescription: optimizedMetaDescription, // Add optimized meta description to database
           tags: generatedContent.tags?.join(',') || '',
           category: categoryValue,
           categories: categoriesString,
@@ -2582,6 +2580,24 @@ Place this at a logical position in the content, typically after introducing a c
           title: optimizedMetaTitle?.substring(0, 50) + '...',
           metaDescription: optimizedMetaDescription?.substring(0, 50) + '...'
         });
+        
+        // Update blog post with optimized meta fields if it was created
+        if (contentId && requestData.articleType === 'blog') {
+          try {
+            await storage.updateBlogPost(contentId, {
+              title: optimizedMetaTitle,
+              metaTitle: optimizedMetaTitle,
+              metaDescription: optimizedMetaDescription
+            });
+            console.log('✅ Blog post updated with optimized meta fields:', {
+              id: contentId,
+              title: optimizedMetaTitle?.substring(0, 30) + '...',
+              metaDescription: optimizedMetaDescription?.substring(0, 50) + '...'
+            });
+          } catch (blogUpdateError) {
+            console.error("Failed to update blog post with optimized meta fields:", blogUpdateError);
+          }
+        }
       } catch (dbUpdateError) {
         console.error("Failed to update database with optimized meta fields:", dbUpdateError);
         // Continue even if database update fails - API response will still have correct values
