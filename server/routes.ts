@@ -1945,11 +1945,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                   const readingTime = calculateReadingTime(completePost.content);
                   const readingTimeText = ` • ${readingTime.display}`;
 
-                  // Author box with LinkedIn integration - small avatar sizing
+                  // Author box with LinkedIn integration - 64x64px avatar sizing for blog posts
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const avatarElement = author.avatarUrl 
-                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
-                    : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
+                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
+                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px; flex-shrink: 0;">${avatarInitials}</div>`;
                   
                   // LinkedIn "Learn More" button if LinkedIn URL is available
                   const linkedinButton = author.linkedinUrl 
