@@ -1807,28 +1807,10 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedinUrl || undefined
                     };
                     
-                    // Generate author HTML components with reading time for "Written by" section only
-                    const writtenByHTML = generateWrittenByHTML(authorFormatted, pageContent);
-                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted); // No content parameter = no reading time
+                    // For pages, only add the large author box at the end (no "Written by" section)
+                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted);
                     
-                    // Find the first image or paragraph in content to inject "Written by" after it
-                    const imageMatch = pageContent.match(/<img[^>]*>/i);
-                    const paragraphMatch = pageContent.match(/<p[^>]*>.*?<\/p>/i);
-                    
-                    if (imageMatch) {
-                      // Insert "Written by" after first image
-                      const imageEndIndex = pageContent.indexOf(imageMatch[0]) + imageMatch[0].length;
-                      pageContent = pageContent.slice(0, imageEndIndex) + writtenByHTML + pageContent.slice(imageEndIndex);
-                    } else if (paragraphMatch) {
-                      // Insert "Written by" after first paragraph
-                      const paragraphEndIndex = pageContent.indexOf(paragraphMatch[0]) + paragraphMatch[0].length;
-                      pageContent = pageContent.slice(0, paragraphEndIndex) + writtenByHTML + pageContent.slice(paragraphEndIndex);
-                    } else {
-                      // Fallback: add at beginning of content
-                      pageContent = writtenByHTML + pageContent;
-                    }
-                    
-                    // Add author box at the end of content
+                    // Add author box at the end of content for pages
                     pageContent += authorBoxHTML;
                     
                     // Add author name to the post object for Shopify API
@@ -1945,47 +1927,25 @@ export async function registerRoutes(app: Express): Promise<void> {
                   const readingTime = calculateReadingTime(completePost.content);
                   const readingTimeText = ` • ${readingTime.display}`;
 
-                  // Author box with LinkedIn integration - 64x64px avatar sizing for blog posts
+                  // Small "Written by" section for blog posts - 64x64px rounded avatar
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                  const avatarElement = author.avatarUrl 
-                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
-                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px; flex-shrink: 0;">${avatarInitials}</div>`;
-                  
-                  // LinkedIn "Learn More" button if LinkedIn URL is available
-                  const linkedinButton = author.linkedinUrl 
-                    ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Learn More</a>`
-                    : '';
-                  
-                  // Utility function to format author description preserving line breaks for blog posts
-                  const formatAuthorDescriptionBlog = (description: string): string => {
-                    if (!description) return '';
-                    // Convert line breaks to HTML <br> tags to preserve formatting
-                    // Also handle both \n and \r\n line endings
-                    return description
-                      .replace(/\r\n/g, '<br>')
-                      .replace(/\n/g, '<br>')
-                      .replace(/\r/g, '<br>');
-                  };
+                  const smallAvatarElement = author.avatarUrl 
+                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
+                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
-                  // Format description with proper line break preservation
-                  const formattedDescriptionBlog = author.description ? formatAuthorDescriptionBlog(author.description) : '';
-
-                  const authorBox = `
-                    <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
-                      <div style="display: flex; gap: 16px; align-items: flex-start;">
-                        ${avatarElement}
-                        <div style="flex: 1;">
-                          <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}${readingTimeText}</h3>
-                          ${formattedDescriptionBlog ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${formattedDescriptionBlog}</p>` : ''}
-                          ${linkedinButton}
-                        </div>
-                      </div>
+                  const writtenBySection = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin: 20px 0; padding: 16px 0; text-align: center;">
+                      ${smallAvatarElement}
+                      <span style="color: #6b7280; font-size: 16px;">
+                        Written by <strong style="color: #374151;">${author.name}</strong>${readingTimeText}
+                      </span>
                     </div>
                   `;
                   
-                  completePost.content += authorBox;
+                  // For blog posts, add "Written by" at the beginning of content
+                  completePost.content = writtenBySection + completePost.content;
                   completePost.author = author.name;
-                  console.log(`Added author with LinkedIn integration and reading time: ${author.name}${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  console.log(`Added centered "Written by ${author.name}" with 64×64px rounded avatar at beginning of blog content${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);
