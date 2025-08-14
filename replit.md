@@ -31,6 +31,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **URL Generation**: Implements SEO-friendly URL generation using Shopify handles for both blog posts and pages, with robust fallback mechanisms.
 - **Content Preview Optimization**: Intelligent featured image handling in admin panel previews prevents duplication.
 - **Author Description Formatting**: Preserves formatting (spaces, line breaks) in author descriptions when saving to Shopify. Author descriptions now display in full without truncation, and reading time has been removed from the author box for cleaner presentation.
+- **Duplicate Prevention System**: Comprehensive duplicate prevention for scheduled content at database level, checking both Shopify ID and title matches. AdminPanel content generation disabled from creating Shopify content directly to prevent double scheduling when users use both form submission and publish buttons.
 
 ## External Dependencies
 
