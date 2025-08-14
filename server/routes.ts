@@ -1624,26 +1624,48 @@ export async function registerRoutes(app: Express): Promise<void> {
         });
       }
       
-      // PREVENT DUPLICATES: Check for existing scheduled content with same shopifyPostId
-      if (postData.shopifyPostId && postData.status === 'scheduled') {
-        console.log(`Checking for duplicates with shopifyPostId: ${postData.shopifyPostId}`);
+      // PREVENT DUPLICATES: Check for existing scheduled content with same shopifyPostId or similar title
+      if (postData.status === 'scheduled') {
+        console.log(`Checking for duplicates - shopifyPostId: ${postData.shopifyPostId}, title: ${postData.title}`);
         
         // Get store context for proper multi-store support  
         const store = await getStoreFromRequest(req);
         if (store) {
           const existingPosts = await storage.getScheduledPostsByStore(store.id);
-          const duplicate = existingPosts.find(p => 
-            p.shopifyPostId === postData.shopifyPostId && 
-            p.status === 'scheduled' &&
-            p.id !== postData.id // Allow updates to existing post
-          );
           
-          if (duplicate) {
-            console.log(`Duplicate found: Post ${duplicate.id} already scheduled for shopifyPostId ${postData.shopifyPostId}`);
-            return res.status(400).json({ 
-              error: "Content already scheduled",
-              details: `This ${duplicate.contentType || 'content'} is already scheduled. Please update the existing schedule instead.`
-            });
+          // Check for shopifyPostId duplicate
+          if (postData.shopifyPostId) {
+            const duplicate = existingPosts.find(p => 
+              p.shopifyPostId === postData.shopifyPostId && 
+              p.status === 'scheduled' &&
+              p.id !== postData.id // Allow updates to existing post
+            );
+            
+            if (duplicate) {
+              console.log(`Duplicate found: Post ${duplicate.id} already scheduled for shopifyPostId ${postData.shopifyPostId}`);
+              return res.status(400).json({ 
+                error: "Content already scheduled",
+                details: `This ${duplicate.contentType || 'content'} is already scheduled. Please update the existing schedule instead.`
+              });
+            }
+          }
+          
+          // Also check for very similar titles (exact match) for new content without shopifyPostId
+          if (postData.title) {
+            const titleDuplicate = existingPosts.find(p => 
+              p.title && 
+              p.title.toLowerCase().trim() === postData.title.toLowerCase().trim() &&
+              p.status === 'scheduled' &&
+              p.id !== postData.id // Allow updates to existing post
+            );
+            
+            if (titleDuplicate) {
+              console.log(`Title duplicate found: Post ${titleDuplicate.id} with same title "${postData.title}"`);
+              return res.status(400).json({ 
+                error: "Similar content already scheduled",
+                details: `Content with the same title is already scheduled. Please check your scheduled content.`
+              });
+            }
           }
         }
       }
