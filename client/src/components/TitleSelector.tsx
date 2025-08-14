@@ -63,73 +63,45 @@ export default function TitleSelector({
     console.log("Generating dynamic AI titles with data:", requestData);
     
     try {
-      // First try the new dynamic title generation endpoint
+      // Use the enhanced title suggestions endpoint with AI support
+      const enhancedData = {
+        keywords: selectedKeywords.map(k => k.keyword),
+        keywordData: selectedKeywords,
+        productTitle: productTitle,
+        targetAudience: targetAudience,
+        buyerPersona: buyerPersona
+      };
+      
+      console.log("Generating AI titles with enhanced endpoint:", enhancedData);
+      
       const response = await apiRequest({
-        url: '/api/dynamic-title-suggestions',
+        url: '/api/admin/title-suggestions',
         method: 'POST',
-        data: requestData
+        data: enhancedData
       });
       
-      console.log("Dynamic title suggestions response:", response);
+      console.log("AI title suggestions response:", response);
       
       if (response.success && response.titles && response.titles.length > 0) {
-        console.log("Setting new dynamic AI-generated titles:", response.titles);
+        console.log("Setting AI-generated titles:", response.titles);
         setTitleSuggestions(response.titles);
         
-        if (response.usedFallback) {
-          toast({
-            title: 'Titles Generated',
-            description: 'Using keyword-based suggestions (AI service temporarily unavailable)',
-            variant: 'default'
-          });
-        } else {
-          toast({
-            title: 'AI Titles Generated',
-            description: `${response.titles.length} dynamic titles created using ChatGPT`,
-            variant: 'default'
-          });
-        }
+        toast({
+          title: 'AI Titles Generated',
+          description: `${response.titles.length} titles created using Claude/OpenAI`,
+          variant: 'default'
+        });
       } else {
-        throw new Error('Failed to generate dynamic titles');
+        throw new Error('Failed to generate AI titles');
       }
     } catch (err: any) {
-      console.error('Dynamic title generation failed, falling back to original endpoint:', err);
-      
-      // Fallback to original title suggestions endpoint
-      try {
-        const fallbackData = {
-          keywords: selectedKeywords.map(k => k.keyword),
-          keywordData: selectedKeywords,
-          productTitle: productTitle,
-          targetAudience: targetAudience,
-          buyerPersona: buyerPersona
-        };
-        
-        const fallbackResponse = await apiRequest({
-          url: '/api/admin/title-suggestions',
-          method: 'POST',
-          data: fallbackData
-        });
-        
-        if (fallbackResponse.success && fallbackResponse.titles && fallbackResponse.titles.length > 0) {
-          setTitleSuggestions(fallbackResponse.titles);
-          toast({
-            title: 'Titles Generated',
-            description: 'Using fallback title generation',
-            variant: 'default'
-          });
-        } else {
-          throw new Error('Both title generation methods failed');
-        }
-      } catch (fallbackErr: any) {
-        console.error('All title generation methods failed:', fallbackErr);
-        setError('Could not generate title suggestions. Please try again.');
-        toast({
-          title: 'Error',
-          description: 'Failed to generate title suggestions. Please try again.',
-          variant: 'destructive'
-        });
-      }
+      console.error('AI title generation failed:', err);
+      setError('Could not generate title suggestions. Please try again.');
+      toast({
+        title: 'Error',
+        description: 'Failed to generate title suggestions. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }

@@ -1929,8 +1929,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
                   // Small "Written by" section for blog posts - 64x64px rounded avatar
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                  const smallAvatarElement = author.avatarUrl 
-                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
+                  const smallAvatarElement = (author.profileImage || author.avatarUrl)
+                    ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
                     : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
                   const writtenBySection = `
@@ -1942,10 +1942,10 @@ export async function registerRoutes(app: Express): Promise<void> {
                     </div>
                   `;
                   
-                  // For blog posts, add "Written by" at the beginning of content
-                  completePost.content = writtenBySection + completePost.content;
+                  // For blog posts, add "Written by" at the END of content
+                  completePost.content = completePost.content + writtenBySection;
                   completePost.author = author.name;
-                  console.log(`Added centered "Written by ${author.name}" with 64×64px rounded avatar at beginning of blog content${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  console.log(`Added centered "Written by ${author.name}" with 64×64px rounded avatar at BOTTOM of blog content${readingTimeText}${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);
