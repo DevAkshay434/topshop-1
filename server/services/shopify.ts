@@ -580,10 +580,14 @@ export class ShopifyService {
           }
         );
         
-        // Now optimize remaining images with size constraints
+        // Now optimize remaining images with size constraints (but preserve author avatars)
         tempContent = tempContent.replace(
           /<img[^>]*src="([^"]*?)"[^>]*>/gi,
           (match: string, url: string) => {
+            // Skip author avatars - they should maintain their original sizing
+            if (match.includes('margin-right: 12px') || match.includes('alt="' + authorName + '"') || match.includes('width: 40px') || match.includes('width: 48px')) {
+              return match; // Return unchanged
+            }
             // Extract alt text from original image tag
             const altMatch = match.match(/alt="([^"]*)"/i);
             const altText = altMatch ? altMatch[1] : '';
