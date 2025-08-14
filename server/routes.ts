@@ -1701,43 +1701,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                   if (authorData.length > 0) {
                     const author = authorData[0];
                     
-                    // Utility function to calculate reading time for content
-                    const calculateReadingTime = (content: string): { minutes: number; seconds: number; display: string } => {
-                      if (!content || typeof content !== 'string') {
-                        return { minutes: 0, seconds: 0, display: '1 min read' };
-                      }
-
-                      // Remove HTML tags and get plain text
-                      const plainText = content.replace(/<[^>]*>/g, '').trim();
-                      
-                      // Count words (split by whitespace and filter out empty strings)
-                      const words = plainText.split(/\s+/).filter(word => word.length > 0);
-                      const wordCount = words.length;
-                      
-                      // Average reading speed is 200-250 words per minute, we'll use 225
-                      const wordsPerMinute = 225;
-                      
-                      // Calculate total minutes as decimal
-                      const totalMinutes = wordCount / wordsPerMinute;
-                      
-                      // Convert to minutes and seconds
-                      const minutes = Math.floor(totalMinutes);
-                      const seconds = Math.round((totalMinutes - minutes) * 60);
-                      
-                      // Create display string
-                      let display: string;
-                      if (minutes === 0) {
-                        display = '1 min read'; // Minimum 1 minute for very short content
-                      } else if (minutes === 1 && seconds < 30) {
-                        display = '1 min read';
-                      } else if (minutes > 0 && seconds >= 30) {
-                        display = `${minutes + 1} min read`; // Round up if seconds >= 30
-                      } else {
-                        display = `${minutes} min read`;
-                      }
-                      
-                      return { minutes, seconds, display };
-                    };
+                    // Reading time removed from author box for cleaner presentation
 
                     // Utility function to format author description preserving line breaks
                     const formatAuthorDescription = (description: string): string => {
@@ -1785,15 +1749,13 @@ export async function registerRoutes(app: Express): Promise<void> {
                         ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />`
                         : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
 
-                      // Calculate reading time if content is provided
-                      const readingTime = content ? calculateReadingTime(content) : null;
-                      const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
+                      // Reading time removed for cleaner author box presentation
 
                       return `
                         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0; padding: 8px 0; text-align: center;">
                           ${avatarImg}
                           <span style="color: #6b7280; font-size: 14px;">
-                            Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
+                            Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>
                           </span>
                         </div>
                       `;
@@ -1885,43 +1847,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                 if (authorToUse && completePost) {
                   const author = authorToUse;
                   
-                  // Add author box to BOTH blog posts and pages with same design
-                  const calculateReadingTime = (content: string): { minutes: number; seconds: number; display: string } => {
-                    if (!content || typeof content !== 'string') {
-                      return { minutes: 0, seconds: 0, display: '1 min read' };
-                    }
-
-                    // Remove HTML tags and get plain text
-                    const plainText = content.replace(/<[^>]*>/g, '').trim();
-                    
-                    // Count words (split by whitespace and filter out empty strings)
-                    const words = plainText.split(/\s+/).filter(word => word.length > 0);
-                    const wordCount = words.length;
-                    
-                    // Average reading speed is 200-250 words per minute, we'll use 225
-                    const wordsPerMinute = 225;
-                    
-                    // Calculate total minutes as decimal
-                    const totalMinutes = wordCount / wordsPerMinute;
-                    
-                    // Convert to minutes and seconds
-                    const minutes = Math.floor(totalMinutes);
-                    const seconds = Math.round((totalMinutes - minutes) * 60);
-                    
-                    // Create display string
-                    let display: string;
-                    if (minutes === 0) {
-                      display = '1 min read'; // Minimum 1 minute for very short content
-                    } else if (minutes === 1 && seconds < 30) {
-                      display = '1 min read';
-                    } else if (minutes > 0 && seconds >= 30) {
-                      display = `${minutes + 1} min read`; // Round up if seconds >= 30
-                    } else {
-                      display = `${minutes} min read`;
-                    }
-                    
-                    return { minutes, seconds, display };
-                  };
+                  // Add author box to BOTH blog posts and pages with same design - no reading time
 
                   // Author box with 64x64px rounded avatar with full description (same design for both blog posts and pages)
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
