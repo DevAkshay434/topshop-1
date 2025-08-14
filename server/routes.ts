@@ -2422,29 +2422,39 @@ export async function registerRoutes(app: Express): Promise<void> {
       } catch (serviceError: any) {
         console.error("Service error generating dynamic titles:", serviceError);
         
-        // Create smart fallback titles based on keywords and products (exactly 8 titles)
+        // Create sophisticated fallback titles based on keywords and products (exactly 8 titles)
         const keywordFallbacks = [];
-        const primaryKeyword = keywords[0] || 'Quality Products';
         
-        const templates = [
-          `The Ultimate Guide to ${primaryKeyword}`,
-          `Why ${primaryKeyword} Matters for Your Business`,
-          `How to Choose the Best ${primaryKeyword}`,
-          `${primaryKeyword}: Complete Beginner's Guide`,
-          `Best Practices for ${primaryKeyword}`,
-          `${primaryKeyword} vs Alternatives: What You Need to Know`,
-          `Top 7 ${primaryKeyword} Tips for Success`,
-          `Everything You Need to Know About ${primaryKeyword}`
+        // Advanced title templates with trending SEO formulas
+        const trendingTemplates = [
+          // Ultimate/Complete authority positioning
+          (keyword) => `Ultimate Guide to ${keyword}: Everything You Need to Know`,
+          // Number-based social proof
+          (keyword) => `7 Best ${keyword} That Actually Work in 2025`,
+          // How-to instructional
+          (keyword) => `How to Choose the Perfect ${keyword} (Complete Guide)`,
+          // Problem-solution framework
+          (keyword) => `${keyword} Mistakes That Are Costing You Results`,
+          // Comparison-based decision help
+          (keyword) => `${keyword} vs Alternatives: Which is Right for You?`,
+          // Secret/exclusive content
+          (keyword) => `Secret ${keyword} Strategies That Experts Use`,
+          // Beginner-friendly accessibility
+          (keyword) => `${keyword} for Beginners: No Experience Required`,
+          // Benefits-focused outcome
+          (keyword) => `Why ${keyword} is the Game-Changer You've Been Looking For`
         ];
         
-        // Generate exactly 8 titles using different keywords if available
+        // Generate exactly 8 sophisticated titles using different keywords and templates
         for (let i = 0; i < 8; i++) {
-          const keyword = keywords[i % keywords.length] || primaryKeyword;
-          const baseTemplate = templates[i];
+          const keyword = keywords[i % keywords.length] || 'Quality Products';
+          const templateFunction = trendingTemplates[i % trendingTemplates.length];
           
-          // Replace the primary keyword with the current keyword for variety
-          let finalTitle = baseTemplate.replace(primaryKeyword, keyword);
-          keywordFallbacks.push(finalTitle);
+          // Generate sophisticated title with proper capitalization
+          const sophisticatedTitle = templateFunction(keyword)
+            .replace(/\b\w/g, letter => letter.toUpperCase()); // Title case
+          
+          keywordFallbacks.push(sophisticatedTitle);
         }
         
         console.log(`Using ${keywordFallbacks.length} keyword-based fallback titles`);

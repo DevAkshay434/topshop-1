@@ -392,8 +392,8 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
           targetAudience: audience
         });
         
-        const claudeService = require("../services/claude");
-        const claudeResponse = await claudeService.generateTitles(claudeRequest);
+        const { generateTitles } = await import("../services/claude");
+        const claudeResponse = await generateTitles(claudeRequest);
         
         if (claudeResponse && claudeResponse.titles && Array.isArray(claudeResponse.titles)) {
         console.log("Claude generated title suggestions:", claudeResponse.titles);
@@ -469,34 +469,40 @@ adminRouter.post("/title-suggestions", async (req: Request, res: Response) => {
       // Extract a short product name for more compact titles
       const productShortName = cleanProductTitle.split(' ').slice(0, 2).join(' ');
       
-      // Evergreen universal title generation for any store type and audience
+      // Enhanced sophisticated fallback titles (exactly 8 titles)
       const evergreenTitles: string[] = [];
       
-      // Create evergreen titles using each available keyword with audience focus
-      topKeywords.forEach((keyword, index) => {
-        const evergreenTemplates = [
-          `${keyword}: Complete Guide`,
-          `Best ${keyword} Options: Expert Review`,
-          `How to Choose the Right ${keyword}`,
-          `${keyword}: Everything You Need to Know`,
-          `Top ${keyword} Benefits and Features`,
-          `${keyword} vs Alternatives: Complete Comparison`,
-          `Ultimate ${keyword} Buying Guide`,
-          `Why ${keyword} is Worth Considering`,
-          `${keyword} Selection: What to Look For`,
-          `${keyword} Review and Analysis`,
-          `${keyword} Features: Complete Breakdown`,
-          `${keyword} Solutions: Professional Approach`
-        ];
+      // Advanced title templates with trending SEO formulas
+      const trendingTemplates = [
+        // Ultimate/Complete authority positioning
+        (keyword) => `Ultimate Guide to ${keyword}: Everything You Need to Know`,
+        // Number-based social proof
+        (keyword) => `7 Best ${keyword} That Actually Work in 2025`,
+        // How-to instructional
+        (keyword) => `How to Choose the Perfect ${keyword} (Complete Guide)`,
+        // Problem-solution framework
+        (keyword) => `${keyword} Mistakes That Are Costing You Results`,
+        // Comparison-based decision help
+        (keyword) => `${keyword} vs Alternatives: Which is Right for You?`,
+        // Secret/exclusive content
+        (keyword) => `Secret ${keyword} Strategies That Experts Use`,
+        // Beginner-friendly accessibility
+        (keyword) => `${keyword} for Beginners: No Experience Required`,
+        // Benefits-focused outcome
+        (keyword) => `Why ${keyword} is the Game-Changer You've Been Looking For`
+      ];
+      
+      // Generate exactly 8 sophisticated titles using different keywords and templates
+      for (let i = 0; i < 8; i++) {
+        const keyword = topKeywords[i % topKeywords.length] || 'Quality Products';
+        const templateFunction = trendingTemplates[i % trendingTemplates.length];
         
-        // Add 2 titles per keyword to ensure good coverage
-        if (index < 6) { // Limit to prevent too many titles
-          evergreenTitles.push(evergreenTemplates[index * 2]);
-          if (evergreenTitles.length < 12 && (index * 2 + 1) < evergreenTemplates.length) {
-            evergreenTitles.push(evergreenTemplates[index * 2 + 1]);
-          }
-        }
-      });
+        // Generate sophisticated title with proper capitalization
+        const sophisticatedTitle = templateFunction(keyword)
+          .replace(/\b\w/g, letter => letter.toUpperCase()); // Title case
+        
+        evergreenTitles.push(sophisticatedTitle);
+      }
       
       // Ensure we have at least 8 evergreen titles
       if (evergreenTitles.length < 8) {
