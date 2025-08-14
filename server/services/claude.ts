@@ -1061,6 +1061,73 @@ export async function generateTitles(request: {
 }
 
 // Test function to check if Claude API is working
+export async function optimizeMetaData(
+  content: string, 
+  keywords: string[] = [], 
+  type: 'title' | 'description'
+): Promise<string> {
+  try {
+    const keywordText = keywords.length > 0 ? keywords.join(', ') : '';
+    
+    let prompt = '';
+    if (type === 'title') {
+      prompt = `Optimize this title for SEO while keeping it compelling and under 60 characters:
+      
+Original title: "${content}"
+Keywords to include: ${keywordText}
+
+Requirements:
+- Maximum 60 characters
+- Include primary keywords naturally
+- Make it compelling and clickable
+- Focus on user intent and benefits
+- Avoid keyword stuffing
+
+Return only the optimized title, nothing else.`;
+    } else {
+      prompt = `Optimize this meta description for SEO while keeping it compelling and under 160 characters:
+
+Original description: "${content}"
+Keywords to include: ${keywordText}
+
+Requirements:
+- Maximum 160 characters
+- Include primary keywords naturally
+- Make it compelling with a clear call-to-action
+- Focus on benefits and value proposition
+- Avoid keyword stuffing
+
+Return only the optimized meta description, nothing else.`;
+    }
+
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 100,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const optimizedText = response.content[0].type === 'text' 
+      ? response.content[0].text.trim() 
+      : content;
+
+    // Validate length constraints
+    if (type === 'title' && optimizedText.length > 60) {
+      const lastSpace = optimizedText.lastIndexOf(' ', 60);
+      return lastSpace > 45 ? optimizedText.substring(0, lastSpace) : optimizedText.substring(0, 60);
+    }
+    
+    if (type === 'description' && optimizedText.length > 160) {
+      const lastSpace = optimizedText.lastIndexOf(' ', 160);
+      return lastSpace > 140 ? optimizedText.substring(0, lastSpace) : optimizedText.substring(0, 160);
+    }
+
+    return optimizedText;
+  } catch (error: any) {
+    console.error(`Meta ${type} optimization failed:`, error);
+    return content; // Return original content if optimization fails
+  }
+}
+
 export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
   try {
     const response = await anthropic.messages.create({
