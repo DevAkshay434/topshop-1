@@ -1742,11 +1742,8 @@ Place this at a logical position in the content, typically after introducing a c
         productsInfoSample: productsInfo?.slice(0, 2).map(p => ({ id: p.id, handle: p.handle, title: p.title })) || []
       });
       
-      // 4. Update content generation request
-      await storage.updateContentGenRequest(contentRequest.id, {
-        status: "completed",
-        generatedContent: JSON.stringify(generatedContent)
-      });
+      // 4. Update content generation request - temporarily defer until after meta optimization
+      // We'll update this after meta optimization to include the corrected meta fields
       
       // 5. Handle media from Choose Media step
       let featuredImage = null;
@@ -2221,7 +2218,7 @@ Place this at a logical position in the content, typically after introducing a c
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           storeId: store.id, // CRITICAL: Associate post with the correct store
-          title: generatedContent.title || requestData.title,
+          title: optimizedMetaTitle, // Use optimized title instead of potentially null generatedContent.title
           content: finalContent,
           status: postStatus,
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
@@ -2230,6 +2227,8 @@ Place this at a logical position in the content, typically after introducing a c
           scheduledPublishTime: isScheduled ? requestData.scheduleTime : undefined,
           author: authorName,
           authorId: finalAuthorId, // CRITICAL: Store the properly converted author ID
+          metaTitle: optimizedMetaTitle, // Add optimized meta title to database
+          metaDescription: optimizedMetaDescription, // Add optimized meta description to database
           tags: generatedContent.tags?.join(',') || '',
           category: categoryValue,
           categories: categoriesString,
@@ -2562,6 +2561,30 @@ Place this at a logical position in the content, typically after introducing a c
       } catch (metaOptimizationError) {
         console.error("Automatic meta optimization failed, keeping original values:", metaOptimizationError);
         // Continue with original values if optimization fails
+      }
+      
+      // 8.5. Update content generation request with optimized meta data
+      try {
+        // Update the generatedContent with optimized meta fields before saving to database
+        const updatedGeneratedContent = {
+          ...generatedContent,
+          title: optimizedMetaTitle,
+          metaDescription: optimizedMetaDescription,
+          metaTitle: optimizedMetaTitle
+        };
+        
+        await storage.updateContentGenRequest(contentRequest.id, {
+          status: "completed",
+          generatedContent: JSON.stringify(updatedGeneratedContent)
+        });
+        
+        console.log('✅ Database updated with optimized meta fields:', {
+          title: optimizedMetaTitle?.substring(0, 50) + '...',
+          metaDescription: optimizedMetaDescription?.substring(0, 50) + '...'
+        });
+      } catch (dbUpdateError) {
+        console.error("Failed to update database with optimized meta fields:", dbUpdateError);
+        // Continue even if database update fails - API response will still have correct values
       }
       
       // 9. Return the result with optimized meta data and selected media included for preview
