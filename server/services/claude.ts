@@ -40,8 +40,8 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
-const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
+// the newest Anthropic model is "claude-sonnet-4-20250514", not "claude-3-7-sonnet-20250219"
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 
 // Function to automatically add id attributes to H2 headings that don't have them
 function addHeadingIds(content: string): string {
@@ -703,9 +703,14 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     
     while (retryCount < maxRetries) {
       try {
-        response = await anthropic.messages.create({
+        // Add timeout wrapper to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Claude API timeout after 60 seconds')), 60000);
+        });
+        
+        const apiPromise = anthropic.messages.create({
           model: CLAUDE_MODEL,
-          max_tokens: 8000,
+          max_tokens: 5000, // Reduced from 8000 for faster generation
           system: request.contentStyleToneId 
             ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
             : undefined,
@@ -726,6 +731,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
         }
       ],
     });
+    
+    response = await Promise.race([apiPromise, timeoutPromise]);
     
     // If successful, break out of retry loop
     break;
