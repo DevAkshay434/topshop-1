@@ -640,7 +640,7 @@ export class ShopifyService {
             });
             
             // Return properly formatted image
-            return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 64px; height:64px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
           }
         );
         
