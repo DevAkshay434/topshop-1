@@ -1055,42 +1055,21 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       posts = Array.from(uniquePostsMap.values()).sort((a, b) => b.id - a.id);
       
-      // Get store timezone information with enhanced fallback
-      let storeTimezone = 'UTC';
+      // Get store timezone information - must be dynamic per store
+      let storeTimezone = 'UTC'; // Only use UTC as absolute last resort
       try {
         const shopInfo = await shopifyService.getShopInfo(store);
-        storeTimezone = shopInfo.iana_timezone || 'UTC';
-        console.log(`Retrieved store timezone from Shopify: ${storeTimezone}`);
+        if (shopInfo && shopInfo.iana_timezone) {
+          storeTimezone = shopInfo.iana_timezone;
+          console.log(`Retrieved store timezone from Shopify API: ${storeTimezone} for store: ${store.shopName}`);
+        } else {
+          console.warn(`No timezone information available from Shopify API for store: ${store.shopName}`);
+          throw new Error('No timezone from Shopify API');
+        }
       } catch (error) {
-        console.error('Error getting store timezone, attempting fallback:', error);
-        
-        // ENHANCED FALLBACK: Check if we have timezone info from previous successful calls
-        // Look for timezone information in existing scheduled posts or use a reasonable default
-        if (posts.length > 0) {
-          // Check if any post has timezone info stored
-          const postWithTimezone = posts.find(p => p.scheduledPublishDate && p.scheduledPublishTime);
-          if (postWithTimezone) {
-            // For US stores like rajeshshah.myshopify.com, use America/New_York as fallback
-            // This is better than UTC since most Shopify stores are in North America
-            storeTimezone = 'America/New_York';
-            console.log(`Using fallback timezone for scheduled posts: ${storeTimezone}`);
-          }
-        }
-        
-        // Additional fallback based on store domain patterns
-        if (storeTimezone === 'UTC' && store.shopName) {
-          if (store.shopName.includes('.myshopify.com')) {
-            // Most Shopify stores are in North America
-            storeTimezone = 'America/New_York';
-            console.log(`Using domain-based fallback timezone: ${storeTimezone}`);
-          }
-        }
-        
-        // Final fallback - ensure we never return UTC for known stores
-        if (storeTimezone === 'UTC') {
-          storeTimezone = 'America/New_York';
-          console.log(`Using final fallback timezone: ${storeTimezone}`);
-        }
+        console.error(`Error getting store timezone for ${store.shopName}:`, error);
+        console.warn(`WARNING: Using UTC fallback for store ${store.shopName} - timezone display may be incorrect`);
+        console.warn('This indicates an authentication or API access issue that should be resolved');
       }
       
       // Populate author names and enhance with scheduling info

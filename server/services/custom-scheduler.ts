@@ -47,7 +47,9 @@ export async function schedulePost(
       shopInfo = shopResponse.data.shop;
       console.log(`Shop timezone for ${store.shopName}: ${shopInfo.iana_timezone}`);
     } catch (shopError: any) {
-      console.error(`Failed to get shop timezone, using UTC: ${shopError.message}`);
+      console.error(`Failed to get shop timezone for store ${store.shopName}: ${shopError.message}`);
+      console.warn('WARNING: Unable to get dynamic timezone - this may affect scheduling accuracy');
+      // Only use UTC as absolute last resort and warn about it
       shopInfo = { iana_timezone: 'UTC' };
     }
     
@@ -210,8 +212,10 @@ export async function schedulePage(
       shopInfo = await shopifyService.getShopInfo(store);
       console.log(`Shop timezone for ${store.shopName}: ${shopInfo.iana_timezone}`);
     } catch (shopError: any) {
-      console.error(`Failed to get shop timezone, using UTC as fallback: ${shopError.message}`);
-      shopInfo = { iana_timezone: 'UTC' }; // Use UTC as fallback instead of hardcoded timezone
+      console.error(`Failed to get shop timezone for store ${store.shopName}: ${shopError.message}`);
+      console.warn('WARNING: Unable to get dynamic timezone for page scheduling - this may affect scheduling accuracy');
+      // Only use UTC as absolute last resort and warn about it
+      shopInfo = { iana_timezone: 'UTC' };
     }
 
     // Create a client for the Shopify API
