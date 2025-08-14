@@ -1927,18 +1927,32 @@ export async function registerRoutes(app: Express): Promise<void> {
                   const readingTime = calculateReadingTime(completePost.content);
                   const readingTimeText = ` • ${readingTime.display}`;
 
-                  // Small "Written by" section for blog posts - 64x64px rounded avatar
+                  // Small "Written by" section for blog posts - 64x64px rounded avatar with description
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const smallAvatarElement = (author.profileImage || author.avatarUrl)
-                    ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" />`
+                    ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
                     : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
+                  // Truncate author description to first 150 characters for blog posts
+                  const shortDescription = author.description 
+                    ? (author.description.length > 150 ? author.description.substring(0, 150) + '...' : author.description)
+                    : '';
+
                   const writtenBySection = `
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin: 20px 0; padding: 16px 0; text-align: center;">
-                      ${smallAvatarElement}
-                      <span style="color: #6b7280; font-size: 16px;">
-                        Written by <strong style="color: #374151;">${author.name}</strong>${readingTimeText}
-                      </span>
+                    <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                      <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
+                        <div style="flex-shrink: 0;">
+                          ${smallAvatarElement}
+                        </div>
+                        <div style="flex: 1;">
+                          <div style="margin-bottom: 8px;">
+                            <span style="color: #6b7280; font-size: 14px;">Written by </span>
+                            <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
+                            <span style="color: #6b7280; font-size: 14px;">${readingTimeText}</span>
+                          </div>
+                          ${shortDescription ? `<p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0;">${shortDescription}</p>` : ''}
+                        </div>
+                      </div>
                     </div>
                   `;
                   
