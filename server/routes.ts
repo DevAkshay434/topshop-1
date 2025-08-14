@@ -1065,46 +1065,103 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
           
           // Add timezone-aware scheduling information
-          if (post.scheduledDate) {
-            const scheduledDate = new Date(post.scheduledDate);
+          if (post.scheduledPublishDate && post.scheduledPublishTime) {
+            // Create scheduled date using the store timezone from scheduledPublishDate and scheduledPublishTime
+            const { createDateInTimezone } = await import('../shared/timezone');
+            const scheduledDateInTimezone = createDateInTimezone(
+              post.scheduledPublishDate, 
+              post.scheduledPublishTime, 
+              storeTimezone
+            );
             
-            // Calculate isPastDue using store timezone comparison
-            let isPastDue = false;
-            if (post.scheduledPublishDate && post.scheduledPublishTime) {
-              // Get current time in store timezone
-              const nowFormatted = new Date().toLocaleString("en-CA", { 
-                timeZone: storeTimezone,
-                year: 'numeric',
-                month: '2-digit', 
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-              });
+            // Get current time in store timezone
+            const nowFormatted = new Date().toLocaleString("en-CA", { 
+              timeZone: storeTimezone,
+              year: 'numeric',
+              month: '2-digit', 
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            });
+            
+            // Parse current time in store timezone
+            const [currentDate, currentTime] = nowFormatted.split(', ');
+            const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number);
+            const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+            
+            // Parse scheduled time
+            const [schedYear, schedMonth, schedDay] = post.scheduledPublishDate.split('-').map(Number);
+            const [schedHour, schedMinute] = post.scheduledPublishTime.split(':').map(Number);
+            
+            // Compare dates and times within the store timezone
+            const isPastDue = (
+              schedYear < currentYear ||
+              (schedYear === currentYear && schedMonth < currentMonth) ||
+              (schedYear === currentYear && schedMonth === currentMonth && schedDay < currentDay) ||
+              (schedYear === currentYear && schedMonth === currentMonth && schedDay === currentDay && 
+               (schedHour < currentHour || (schedHour === currentHour && schedMinute < currentMinute)))
+            );
+            
+            // Format the scheduled time properly by parsing the date/time values directly
+            // Parse the scheduled date and time components
+            const [year, month, day] = post.scheduledPublishDate.split('-').map(Number);
+            const [hour, minute] = post.scheduledPublishTime.split(':').map(Number);
+            
+            // Create date object and format it showing the store timezone
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const formattedTime = new Date(2000, 0, 1, hour, minute).toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: true 
+            });
+            
+            // Determine timezone abbreviation
+            let timezoneAbbr = 'UTC';
+            if (storeTimezone === 'America/New_York') {
+              // Check if the scheduled date is during DST (March-November approximately)
+              // DST in US starts on second Sunday of March and ends on first Sunday of November
+              const testDate = new Date(year, month - 1, day);
+              const janOffset = new Date(year, 0, 1).getTimezoneOffset();
+              const julOffset = new Date(year, 6, 1).getTimezoneOffset();
+              const testOffset = testDate.getTimezoneOffset();
               
-              // Parse current time in store timezone
-              const [currentDate, currentTime] = nowFormatted.split(', ');
-              const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number);
-              const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+              // During DST, offset is less (closer to UTC)
+              const isDST = testOffset < Math.max(janOffset, julOffset);
+              timezoneAbbr = isDST ? 'EDT' : 'EST';
               
-              // Parse scheduled time
-              const [schedYear, schedMonth, schedDay] = post.scheduledPublishDate.split('-').map(Number);
-              const [schedHour, schedMinute] = post.scheduledPublishTime.split(':').map(Number);
-              
-              // Compare dates and times within the store timezone
-              isPastDue = (
-                schedYear < currentYear ||
-                (schedYear === currentYear && schedMonth < currentMonth) ||
-                (schedYear === currentYear && schedMonth === currentMonth && schedDay < currentDay) ||
-                (schedYear === currentYear && schedMonth === currentMonth && schedDay === currentDay && 
-                 (schedHour < currentHour || (schedHour === currentHour && schedMinute < currentMinute)))
-              );
+
             } else {
-              // Fallback to UTC comparison if no date/time fields
-              const now = new Date();
-              isPastDue = scheduledDate < now;
+              // For other timezones, try to get the abbreviation
+              try {
+                const formatter = new Intl.DateTimeFormat('en', {
+                  timeZone: storeTimezone,
+                  timeZoneName: 'short'
+                });
+                const parts = formatter.formatToParts(new Date(year, month - 1, day));
+                const tzPart = parts.find(part => part.type === 'timeZoneName');
+                if (tzPart) timezoneAbbr = tzPart.value;
+              } catch (e) {
+                timezoneAbbr = storeTimezone;
+              }
             }
+            
+            const scheduledDateFormatted = `${monthNames[month - 1]} ${day}, ${year}, ${formattedTime} ${timezoneAbbr}`;
+            
+            enrichedPost.schedulingInfo = {
+              scheduledDate: scheduledDateInTimezone.toISOString(),
+              scheduledDateLocal: scheduledDateFormatted,
+              timezone: storeTimezone,
+              isPastDue,
+              minutesUntilPublish: isPastDue ? 0 : Math.floor((scheduledDateInTimezone.getTime() - new Date().getTime()) / (1000 * 60))
+            };
+          } else if (post.scheduledDate) {
+            // Fallback for posts that only have the old scheduledDate field
+            const scheduledDate = new Date(post.scheduledDate);
+            const now = new Date();
+            const isPastDue = scheduledDate < now;
             
             enrichedPost.schedulingInfo = {
               scheduledDate: scheduledDate.toISOString(),
