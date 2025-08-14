@@ -67,6 +67,7 @@ function Router() {
           </Route>
           <Route path="/blog-posts" component={BlogPosts} />
           <Route path="/scheduled-posts" component={ScheduledPosts} />
+          <Route path="/scheduled" component={ScheduledPosts} />
           <Route path="/content-templates" component={ContentTemplates} />
           <Route path="/simple-bulk-generation" component={SimpleBulkGeneration} />
           <Route path="/bulk-generation" component={SimpleBulkGeneration} />

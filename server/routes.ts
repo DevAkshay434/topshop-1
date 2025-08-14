@@ -1033,10 +1033,27 @@ export async function registerRoutes(app: Express): Promise<void> {
       const allPosts = await storage.getScheduledPostsByStore(store.id);
       // Include all scheduled content - both blog posts and pages
       // Users need to see and manage all their scheduled content in one place
-      const posts = allPosts.filter(post => {
+      let posts = allPosts.filter(post => {
         // Only filter: must be scheduled status
         return post.status === 'scheduled';
       });
+      
+      // DUPLICATE PREVENTION: Remove duplicate shopify_post_id entries
+      // Keep the most recent entry (highest ID) for each unique shopify_post_id
+      const uniquePostsMap = new Map();
+      posts.forEach(post => {
+        if (post.shopifyPostId) {
+          const existing = uniquePostsMap.get(post.shopifyPostId);
+          if (!existing || post.id > existing.id) {
+            uniquePostsMap.set(post.shopifyPostId, post);
+          }
+        } else {
+          // For posts without shopify_post_id, use the post ID as unique key
+          uniquePostsMap.set(`local_${post.id}`, post);
+        }
+      });
+      
+      posts = Array.from(uniquePostsMap.values()).sort((a, b) => b.id - a.id);
       
       // Get store timezone information
       let storeTimezone = 'UTC';
