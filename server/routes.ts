@@ -1945,7 +1945,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
                   // Author box with LinkedIn integration - small avatar sizing
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                  const avatarElement = author.avatarUrl 
+                  const avatarElement = author. 
                     ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" />`
                     : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
                   
