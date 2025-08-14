@@ -2215,10 +2215,13 @@ Place this at a logical position in the content, typically after introducing a c
           console.log(`AUTHOR SYNC INFO - No authorId provided, no author will be assigned`);
         }
 
+        // Ensure we have a valid title for metaTitle fallback
+        const safeTitle = generatedContent.title || requestData.title || 'Untitled Article';
+        
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           storeId: store.id, // CRITICAL: Associate post with the correct store
-          title: generatedContent.title || requestData.title, // Use safe title fallback
+          title: safeTitle, // Use safe title fallback
           content: finalContent,
           status: postStatus,
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
@@ -2233,7 +2236,10 @@ Place this at a logical position in the content, typically after introducing a c
           shopifyPostId: null,
           shopifyBlogId: blogId,
           // Add primary image as featured image for blog posts
-          featuredImage: requestData.primaryImage?.url || featuredImage?.url
+          featuredImage: requestData.primaryImage?.url || featuredImage?.url,
+          // CRITICAL: Set metaTitle and metaDescription on initial creation to prevent null values
+          metaTitle: safeTitle,
+          metaDescription: generatedContent.metaDescription || `Discover valuable insights about ${safeTitle.toLowerCase()}. Get expert guidance and practical tips to help you succeed.`
         });
         
         contentId = post.id;
@@ -2490,9 +2496,9 @@ Place this at a logical position in the content, typically after introducing a c
         
         console.log(`Meta optimization check: Claude API key = ${hasClaudeKey}, Keywords = ${hasKeywords} (${availableKeywords.length} keywords)`);
         
-        // Automatic meta optimization is temporarily disabled due to function availability
-        if (false && hasClaudeKey && (hasKeywords || optimizedMetaTitle)) {
-          // const { optimizeMetaData } = await import("../services/claude");
+        // Always run meta optimization if we have Claude API key and content
+        if (hasClaudeKey && optimizedMetaTitle) {
+          const { optimizeMetaData } = await import("../services/claude");
           
           // Optimize Meta Title
           if (optimizedMetaTitle) {
