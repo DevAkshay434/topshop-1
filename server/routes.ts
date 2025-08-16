@@ -2054,8 +2054,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                   // Author box with 48x48px rounded avatar with full description (same design for both blog posts and pages)
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const smallAvatarElement = author.avatarUrl
-                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 32px !important; height: 32px !important; max-width: 32px !important; max-height: 32px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                    : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px;">${avatarInitials}</div>`;
+                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 24px !important; height: 24px !important; max-width: 24px !important; max-height: 24px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                    : `<div style="width: 24px; height: 24px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 10px;">${avatarInitials}</div>`;
 
                   // Use full author description without truncation
                   const fullDescription = author.description || '';
@@ -2081,7 +2081,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                   // Add "Written by" section at the END of content for both blog posts and pages
                   completePost.content = completePost.content + writtenBySection;
                   completePost.author = author.name;
-                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 32×32px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 24×24px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);
