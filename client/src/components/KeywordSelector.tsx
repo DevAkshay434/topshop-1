@@ -728,11 +728,11 @@ export default function KeywordSelector({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {keyword.searchVolume !== undefined ? keyword.searchVolume.toLocaleString() : 'N/A'}
+                        {keyword.intent === "Manual" ? "N/A" : (keyword.searchVolume !== undefined ? keyword.searchVolume.toLocaleString() : 'N/A')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getCompetitionColor(keyword.competitionLevel)}>
-                          {keyword.competitionLevel || 'Unknown'}
+                        <Badge variant="outline" className={keyword.intent === "Manual" ? "bg-purple-100 text-purple-800 border-purple-300" : getCompetitionColor(keyword.competitionLevel)}>
+                          {keyword.intent === "Manual" ? "Manual" : (keyword.competitionLevel || 'Unknown')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -749,10 +749,10 @@ export default function KeywordSelector({
                           </div>
                           <div className="flex flex-col items-end text-xs min-w-[50px]">
                             <span className={`font-medium ${getDifficultyTextColor(keyword.difficulty)}`}>
-                              {keyword.difficulty || 0}
+                              {keyword.intent === "Manual" ? "N/A" : (keyword.difficulty || 0)}
                             </span>
                             <span className={`text-[10px] ${getDifficultyTextColor(keyword.difficulty)}`}>
-                              {getDifficultyLabel(keyword.difficulty)}
+                              {keyword.intent === "Manual" ? "Manual" : getDifficultyLabel(keyword.difficulty)}
                             </span>
                           </div>
                         </div>
