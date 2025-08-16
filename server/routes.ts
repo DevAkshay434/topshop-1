@@ -1866,9 +1866,9 @@ export async function registerRoutes(app: Express): Promise<void> {
                     // Generate author box HTML inline with LinkedIn integration
                     const generateAuthorBoxHTML = (author: any, content?: string) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                      const avatarImg = author.profileImage 
-                        ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
-                        : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 16px; flex-shrink: 0;">${avatarInitials}</div>`;
+                      const avatarImg = author.avatarUrl 
+                        ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
+                        : `<div style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
 
                       // LinkedIn "Learn More" button if LinkedIn URL is available
                       const linkedinButton = author.linkedinUrl 
@@ -2053,9 +2053,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
                   // Author box with 48x48px rounded avatar with full description (same design for both blog posts and pages)
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                  const smallAvatarElement = (author.profileImage || author.avatarUrl)
-                    ? `<img src="${author.profileImage || author.avatarUrl}" alt="${author.name}" style="width: 48px !important; height: 48px !important; max-width: 48px !important; max-height: 48px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                    : `<div style="width: 48px; height: 48px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 16px;">${avatarInitials}</div>`;
+                  const smallAvatarElement = author.avatarUrl
+                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 40px !important; height: 40px !important; max-width: 40px !important; max-height: 40px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                    : `<div style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px;">${avatarInitials}</div>`;
 
                   // Use full author description without truncation
                   const fullDescription = author.description || '';
@@ -2071,7 +2071,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                             <span style="color: #6b7280; font-size: 14px;">Written by </span>
                             <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
                           </div>
-                          ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
+                          ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
+                          ${author.linkedinUrl ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500;">LinkedIn</a>` : ''}
                         </div>
                       </div>
                     </div>
@@ -2080,7 +2081,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                   // Add "Written by" section at the END of content for both blog posts and pages
                   completePost.content = completePost.content + writtenBySection;
                   completePost.author = author.name;
-                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 40×40px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);

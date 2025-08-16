@@ -573,18 +573,18 @@ export class ShopifyService {
             const authors = await storage.getAuthors();
             const author = authors.find(a => parseInt(a.id) === parseInt((post as any).authorId.toString()));
             if (author && author.avatarUrl) {
-              authorAvatar = `<img src="${author.avatarUrl}" alt="${authorName}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px;" />`;
+              authorAvatar = `<img src="${author.avatarUrl}" alt="${authorName}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px;" />`;
             } else {
               // Create initials avatar if no image
               const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-              authorAvatar = `<div style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; margin-right: 12px;">${initials}</div>`;
+              authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
             }
           }
         } catch (error) {
           console.error('Error fetching author avatar:', error);
           // Fallback to initials
           const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-          authorAvatar = `<div style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; margin-right: 12px;">${initials}</div>`;
+          authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
         }
         
         const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">

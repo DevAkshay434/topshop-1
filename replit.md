@@ -51,6 +51,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Content Introduction Formatting Enhancement**: Updated Claude AI prompt to add an extra line break after the first bold sentence in content introduction paragraphs for improved readability and visual separation.
 - **Manual Keywords Display Improvement**: Removed misleading "0" values from manual keywords in both the keyword selector table and selected keywords display section. Manual keywords now display "N/A" for search volume and difficulty in the table, "Manual" for competition level, and "(Manual)" label instead of "(0)" in the selected keywords badges, providing cleaner visual representation.
 - **Meta Fields Border Color Enhancement**: Updated Meta Title and Meta Description border colors in Content Preview. Meta Title now shows green border when ≤60 characters (was yellow), Meta Description shows green border when ≤160 characters (was yellow). Only exceeding limits shows red borders, providing clearer visual feedback for optimal SEO lengths.
+- **Author Avatar Image Sizing Fix**: Fixed oversized author avatar images in blog posts by reducing size from 48px to 40px in the main author box and from 40px to 32px in the "Written by" header section. Also fixed LinkedIn integration to properly use avatarUrl field instead of profileImage, ensuring consistent author display with proper social media links.
 
 ## External Dependencies
 
