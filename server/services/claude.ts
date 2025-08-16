@@ -637,7 +637,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
-    - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add <br> after each sentence in the intro paragraph
+    - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add an extra line break (<br><br>) after the first bold sentence, then continue with regular spacing for remaining sentences
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
     
     CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:

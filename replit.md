@@ -48,6 +48,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Project Load Secondary Images Duplication Fix**: Fixed Pexels image duplication issue when loading projects by implementing clean state reset and deduplication logic. Removed multiple state synchronization attempts that were causing duplicate entries in Selected Secondary Content. Added unique image filtering based on ID and URL to prevent duplicate secondary images during project restoration.
 - **External Links NoFollow Attribute Fix**: Enhanced Claude AI content generation to automatically add `rel="nofollow noopener noreferrer"` attribute to all external links for SEO compliance. Updated Claude prompts to specify nofollow requirements and added post-processing function to ensure all external links include proper SEO attributes regardless of Claude's output format.
 - **Workflow Step Validation Implementation**: Added proper workflow step validation to Generate Content button requiring users to complete Step 8 (Style & Formatting) before generating content. Enhanced workflow progression with "Next to Style & Formatting" button from Author step and proper step header for Style & Formatting section. Generate Content button now requires reaching step 9 (content generation step) in the workflow sequence.
+- **Content Introduction Formatting Enhancement**: Updated Claude AI prompt to add an extra line break after the first bold sentence in content introduction paragraphs for improved readability and visual separation.
 
 ## External Dependencies
 
