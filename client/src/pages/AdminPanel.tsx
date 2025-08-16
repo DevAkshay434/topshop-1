@@ -1408,7 +1408,18 @@ export default function AdminPanel() {
     const hasFeaturedImage = primaryImages && primaryImages.length > 0;
     const hasAuthor = !!selectedAuthorId; // Use selectedAuthorId state instead of form field
     
-    return hasTitle && hasArticleType && hasBlog && hasKeywords && hasFeaturedImage && hasAuthor;
+    // Check Style & Formatting step completion (required fields)
+    const hasArticleLength = !!formValues.articleLength;
+    const hasHeadingsCount = !!formValues.headingsCount;
+    const hasWritingPerspective = !!formValues.writingPerspective;
+    const hasToneOfVoice = !!formValues.toneOfVoice;
+    const hasIntroType = !!formValues.introType;
+    const hasFaqType = !!formValues.faqType;
+    
+    const hasStyleAndFormatting = hasArticleLength && hasHeadingsCount && hasWritingPerspective && 
+                                  hasToneOfVoice && hasIntroType && hasFaqType;
+    
+    return hasTitle && hasArticleType && hasBlog && hasKeywords && hasFeaturedImage && hasAuthor && hasStyleAndFormatting;
   };
 
   // Get incomplete steps for tooltip
@@ -1422,6 +1433,19 @@ export default function AdminPanel() {
     if (!selectedKeywords || selectedKeywords.length === 0) missing.push("Keywords");
     if (!primaryImages || primaryImages.length === 0) missing.push("Featured Image");
     if (!selectedAuthorId) missing.push("Author"); // Use selectedAuthorId state instead of form field
+    
+    // Check Style & Formatting step completion
+    const styleFormatMissing = [];
+    if (!formValues.articleLength) styleFormatMissing.push("Article Length");
+    if (!formValues.headingsCount) styleFormatMissing.push("Headings Count");
+    if (!formValues.writingPerspective) styleFormatMissing.push("Writing Perspective");
+    if (!formValues.toneOfVoice) styleFormatMissing.push("Tone of Voice");
+    if (!formValues.introType) styleFormatMissing.push("Introduction Type");
+    if (!formValues.faqType) styleFormatMissing.push("FAQ Type");
+    
+    if (styleFormatMissing.length > 0) {
+      missing.push(`Style & Formatting (${styleFormatMissing.join(', ')})`);
+    }
     
     return missing;
   };
