@@ -14,6 +14,7 @@ import { AuthorSelector } from '../components/AuthorSelector';
 import { useStore } from '../contexts/StoreContext';
 import { ProjectCreationDialog } from '../components/ProjectCreationDialog';
 import { ProjectLoadDialog } from '../components/ProjectLoadDialog';
+import { ProjectSaveDialog } from '../components/ProjectSaveDialog';
 import { SimpleHTMLEditor } from '../components/SimpleHTMLEditor';
 import { 
   Card, 
@@ -493,6 +494,7 @@ export default function AdminPanel() {
   const [currentProject, setCurrentProject] = useState<any | null>(null);
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [showLoadProjectDialog, setShowLoadProjectDialog] = useState(false);
+  const [showProjectSaveDialog, setShowProjectSaveDialog] = useState(false);
   
   // Function to fetch product images for selected products
   const fetchProductImages = async (includeVariants: boolean = false) => {
@@ -933,14 +935,8 @@ export default function AdminPanel() {
   });
 
   const handleSaveProject = () => {
-    if (!currentProject) {
-      // Show create project dialog instead of error message
-      setShowCreateProjectDialog(true);
-      return;
-    }
-
-    const formState = extractFormStateForSaving();
-    saveProjectMutation.mutate(formState);
+    // Always show the new save dialog, regardless of whether there's a current project
+    setShowProjectSaveDialog(true);
   };
 
   // Function to fetch product and variant images from selected products
@@ -5248,7 +5244,7 @@ export default function AdminPanel() {
                             ) : (
                               <CheckCircle className="h-4 w-4" />
                             )}
-                            Save Project
+                            Save as Project
                           </Button>
                         </div>
                       </CardContent>
@@ -8330,6 +8326,17 @@ export default function AdminPanel() {
         isOpen={showLoadProjectDialog}
         onClose={() => setShowLoadProjectDialog(false)}
         onProjectSelected={handleLoadProject}
+      />
+
+      <ProjectSaveDialog
+        isOpen={showProjectSaveDialog}
+        onClose={() => setShowProjectSaveDialog(false)}
+        onProjectSaved={(project) => {
+          setCurrentProject(project);
+          queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+        }}
+        projectData={extractFormStateForSaving()}
+        currentProject={currentProject}
       />
 
     </div>
