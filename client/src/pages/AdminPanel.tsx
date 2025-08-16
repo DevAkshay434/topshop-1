@@ -3861,15 +3861,16 @@ export default function AdminPanel() {
                                       </div>
                                       <h4 className="text-sm font-semibold text-green-800">Secondary Content</h4>
                                       <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                        {secondaryImages.length + (youtubeEmbed ? 1 : 0)} Selected
+                                        {selectedMediaContent.secondaryImages.length + (youtubeEmbed ? 1 : 0)} Selected
                                       </span>
                                     </div>
-                                    {(secondaryImages.length > 0 || youtubeEmbed) && (
+                                    {(selectedMediaContent.secondaryImages.length > 0 || youtubeEmbed) && (
                                       <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
+                                          setSelectedMediaContent(prev => ({ ...prev, secondaryImages: [] }));
                                           setSecondaryImages([]);
                                           setYoutubeEmbed(null);
                                         }}
@@ -3880,14 +3881,14 @@ export default function AdminPanel() {
                                     )}
                                   </div>
                                   
-                                  {(secondaryImages.length > 0 || youtubeEmbed) ? (
+                                  {(selectedMediaContent.secondaryImages.length > 0 || youtubeEmbed) ? (
                                     <div className="space-y-3">
                                       <div className="text-xs text-green-600 bg-green-50 p-2 rounded border">
                                         💡 These images and videos will appear throughout your content to support the main topic
                                       </div>
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        {/* Secondary Images */}
-                                        {secondaryImages.map((image, index) => (
+                                        {/* Secondary Images - FIXED: Use selectedMediaContent.secondaryImages to prevent duplication */}
+                                        {selectedMediaContent.secondaryImages.map((image, index) => (
                                           <div key={image.id} className="relative group">
                                             <ShopifyImageViewer 
                                               src={image.src?.medium || image.url} 
@@ -3900,7 +3901,15 @@ export default function AdminPanel() {
                                                 variant="destructive"
                                                 size="icon"
                                                 className="h-5 w-5 rounded-full opacity-80 hover:opacity-100"
-                                                onClick={() => setSecondaryImages(prev => prev.filter(img => img.id !== image.id))}
+                                                onClick={() => {
+                                                  // FIXED: Remove from selectedMediaContent instead of secondaryImages to prevent duplication
+                                                  setSelectedMediaContent(prev => ({
+                                                    ...prev,
+                                                    secondaryImages: prev.secondaryImages.filter(img => img.id !== image.id)
+                                                  }));
+                                                  // Also sync the secondaryImages state
+                                                  setSecondaryImages(prev => prev.filter(img => img.id !== image.id));
+                                                }}
                                               >
                                                 <X className="h-3 w-3" />
                                               </Button>
@@ -6909,19 +6918,7 @@ export default function AdminPanel() {
                                   isSecondary ? "opacity-100" : "opacity-90 hover:opacity-100"
                                 )}
                                 onClick={() => {
-                                  // Add this image to secondary images
-                                  setSecondaryImages(prev => {
-                                    // Check if image is already in the list
-                                    const exists = prev.some(img => img.id === image.id);
-                                    if (exists) {
-                                      return prev; // Already added
-                                    }
-                                    // Add it to the list
-                                    return [...prev, { ...image, isPrimary: false }];
-                                  });
-                                  
-                                  // Update selectedMediaContent state immediately
-                                  // FIXED: Check for duplicates before adding to prevent duplicate Pexels images
+                                  // FIXED: Only update selectedMediaContent to prevent duplication - remove setSecondaryImages call
                                   setSelectedMediaContent(prev => {
                                     const isDuplicate = prev.secondaryImages.some(existing => 
                                       existing.id === image.id || existing.url === image.url
@@ -6932,6 +6929,7 @@ export default function AdminPanel() {
                                       return prev;
                                     }
                                     
+                                    console.log("✅ ADDING UNIQUE SECONDARY IMAGE:", image.id);
                                     return {
                                       ...prev,
                                       secondaryImages: [...prev.secondaryImages, {
@@ -6943,6 +6941,15 @@ export default function AdminPanel() {
                                         source: image.source || 'pexels'
                                       }]
                                     };
+                                  });
+                                  
+                                  // Also sync the secondaryImages state to match selectedMediaContent
+                                  setSecondaryImages(prev => {
+                                    const exists = prev.some(img => img.id === image.id);
+                                    if (!exists) {
+                                      return [...prev, { ...image, isPrimary: false }];
+                                    }
+                                    return prev;
                                   });
                                   
                                   toast({
