@@ -50,6 +50,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Workflow Step Validation Implementation**: Added proper workflow step validation to Generate Content button requiring users to complete Step 8 (Style & Formatting) before generating content. Enhanced workflow progression with "Next to Style & Formatting" button from Author step and proper step header for Style & Formatting section. Generate Content button now requires reaching step 9 (content generation step) in the workflow sequence.
 - **Content Introduction Formatting Enhancement**: Updated Claude AI prompt to add an extra line break after the first bold sentence in content introduction paragraphs for improved readability and visual separation.
 - **Manual Keywords Display Improvement**: Removed misleading "0" values from manual keywords in both the keyword selector table and selected keywords display section. Manual keywords now display "N/A" for search volume and difficulty in the table, "Manual" for competition level, and "(Manual)" label instead of "(0)" in the selected keywords badges, providing cleaner visual representation.
+- **Meta Fields Border Color Enhancement**: Updated Meta Title and Meta Description border colors in Content Preview. Meta Title now shows green border when ≤60 characters (was yellow), Meta Description shows green border when ≤160 characters (was yellow). Only exceeding limits shows red borders, providing clearer visual feedback for optimal SEO lengths.
 
 ## External Dependencies
 

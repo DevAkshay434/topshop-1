@@ -4933,8 +4933,6 @@ export default function AdminPanel() {
                               isOptimizingMetaTitle ? 'bg-gray-50' :
                               (generatedContent.metaTitle || generatedContent.title || "").length > 60 
                                 ? 'border-red-300 focus:border-red-500' 
-                                : (generatedContent.metaTitle || generatedContent.title || "").length > 50
-                                ? 'border-yellow-300 focus:border-yellow-500'
                                 : 'border-green-300 focus:border-green-500'
                             }`}
                           />
@@ -4946,8 +4944,6 @@ export default function AdminPanel() {
                           <div className={`absolute right-3 top-2.5 text-xs font-medium ${
                             (generatedContent.metaTitle || generatedContent.title || "").length > 60 
                               ? 'text-red-500' 
-                              : (generatedContent.metaTitle || generatedContent.title || "").length > 50
-                              ? 'text-yellow-600'
                               : 'text-green-600'
                           }`}>
                             {(generatedContent.metaTitle || generatedContent.title || "").length}/60
@@ -5070,10 +5066,8 @@ export default function AdminPanel() {
                             rows={3}
                             className={`w-full pr-16 resize-none ${
                               isOptimizingMetaDescription ? 'bg-gray-50' :
-                              (generatedContent.metaDescription || "").length > 155 
+                              (generatedContent.metaDescription || "").length > 160 
                                 ? 'border-red-300 focus:border-red-500' 
-                                : (generatedContent.metaDescription || "").length > 140
-                                ? 'border-yellow-300 focus:border-yellow-500'
                                 : 'border-green-300 focus:border-green-500'
                             } rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500`}
                           />
@@ -5083,23 +5077,21 @@ export default function AdminPanel() {
                             </div>
                           )}
                           <div className={`absolute right-3 top-3 text-xs font-medium ${
-                            (generatedContent.metaDescription || "").length > 155 
+                            (generatedContent.metaDescription || "").length > 160 
                               ? 'text-red-500' 
-                              : (generatedContent.metaDescription || "").length > 140
-                              ? 'text-yellow-600'
                               : 'text-green-600'
                           }`}>
-                            {(generatedContent.metaDescription || "").length}/155
+                            {(generatedContent.metaDescription || "").length}/160
                           </div>
                         </div>
                         <div className="text-xs space-y-1">
-                          {(generatedContent.metaDescription || "").length > 155 && (
+                          {(generatedContent.metaDescription || "").length > 160 && (
                             <p className="text-red-600 flex items-center">
                               <AlertCircle className="h-3 w-3 mr-1" />
                               Too long for optimal SEO display
                             </p>
                           )}
-                          {(generatedContent.metaDescription || "").length >= 140 && (generatedContent.metaDescription || "").length <= 155 && (
+                          {(generatedContent.metaDescription || "").length <= 160 && (generatedContent.metaDescription || "").length > 0 && (
                             <p className="text-green-600 flex items-center">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Perfect length for SEO
