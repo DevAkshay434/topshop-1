@@ -38,6 +38,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **YouTube Video Integration Fix**: Resolved issue where YouTube videos were incorrectly being added as thumbnail images instead of just video embeds. YouTube videos now only add the video embed without creating separate image entries.
 - **Video Overlay Overlap Fix**: Fixed overlapping blue video overlay elements in YouTube thumbnails by conditionally rendering play button overlays only when appropriate, eliminating visual duplication.
 - **Individual Meta Optimization**: Separated Auto-Optimize functionality for Meta Title and Meta Description to work independently. Created individual API endpoints `/api/optimize-meta-title` and `/api/optimize-meta-description` that optimize only the specific field clicked, preventing unwanted optimization of both fields simultaneously. Each button now optimizes only its respective field using dedicated Claude AI prompts.
+- **YouTube URL Parsing Fix**: Fixed malformed YouTube iframe URLs in generated content. The regex pattern in `server/services/claude.ts` was incorrectly capturing full URLs instead of just video IDs, causing iframe src to show `https://www.youtube.com/embed/https://youtu.be/VIDEO_ID` instead of `https://www.youtube.com/embed/VIDEO_ID`. Improved URL parsing to correctly extract 11-character video IDs from both youtu.be and youtube.com formats.
 
 ## External Dependencies
 

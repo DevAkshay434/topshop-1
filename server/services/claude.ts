@@ -262,7 +262,23 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
   
   // Handle YouTube video placement under second H2 heading
   if (request.youtubeEmbed) {
-    const videoId = request.youtubeEmbed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+    console.log('🎬 YOUTUBE PROCESSING - Original URL:', request.youtubeEmbed);
+    
+    // Extract video ID from various YouTube URL formats
+    let videoId = null;
+    
+    // Handle youtu.be format: https://youtu.be/VIDEO_ID or https://youtu.be/VIDEO_ID?si=xxx
+    if (request.youtubeEmbed.includes('youtu.be/')) {
+      const match = request.youtubeEmbed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+      videoId = match?.[1];
+    }
+    // Handle youtube.com formats: watch?v=VIDEO_ID, embed/VIDEO_ID, v/VIDEO_ID
+    else if (request.youtubeEmbed.includes('youtube.com')) {
+      const match = request.youtubeEmbed.match(/(?:watch\?v=|embed\/|v\/)([a-zA-Z0-9_-]{11})/);
+      videoId = match?.[1];
+    }
+    
+    console.log('🎬 YOUTUBE PROCESSING - Extracted Video ID:', videoId);
     
     if (videoId) {
       const videoHtml = `
