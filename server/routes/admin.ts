@@ -1933,33 +1933,10 @@ Place this at a logical position in the content, typically after introducing a c
         }
       }
       
-      // Handle YouTube video placement under second H2 heading
-      if (requestData.youtubeEmbed) {
-        console.log(`Embedding YouTube video: ${requestData.youtubeEmbed}`);
-        
-        const videoHtml = `
-<div class="video-container" style="text-align: center; margin: 20px 0;">
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/${requestData.youtubeEmbed}" 
-          frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen style="max-width: 560px;"></iframe>
-</div>`;
-        
-        // Place video under SECOND H2 heading
-        const h2Pattern = /<\/h2>/gi;
-        const h2Matches = [...finalContent.matchAll(h2Pattern)];
-        
-        if (h2Matches.length >= 2) {
-          // Insert after the second H2 heading
-          const insertPosition = h2Matches[1].index + h2Matches[1][0].length;
-          finalContent = finalContent.slice(0, insertPosition) + videoHtml + finalContent.slice(insertPosition);
-          console.log(`Embedded YouTube video under second H2 heading`);
-        } else if (h2Matches.length === 1) {
-          // If only one H2, insert after it
-          const insertPosition = h2Matches[0].index + h2Matches[0][0].length;
-          finalContent = finalContent.slice(0, insertPosition) + videoHtml + finalContent.slice(insertPosition);
-          console.log(`Embedded YouTube video under first H2 heading (only one available)`);
-        }
-      }
+      // REMOVED DUPLICATE YOUTUBE PROCESSING: 
+      // YouTube video embedding is now handled exclusively by server/services/claude.ts
+      // This prevents duplicate videos and malformed iframe URLs
+      // The Claude service handles proper video ID extraction and placement
       
       // Remove any remaining placement markers to prevent empty placeholders
       finalContent = finalContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
