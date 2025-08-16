@@ -282,7 +282,8 @@ export default function AdminPanel() {
   const [selectedContentDisplayName, setSelectedContentDisplayName] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isOptimizingMeta, setIsOptimizingMeta] = useState(false);
+  const [isOptimizingMetaTitle, setIsOptimizingMetaTitle] = useState(false);
+  const [isOptimizingMetaDescription, setIsOptimizingMetaDescription] = useState(false);
   const [publicationMethod, setPublicationMethod] = useState<'draft' | 'publish' | 'schedule'>('draft');
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [enhancedContentForEditor, setEnhancedContentForEditor] = useState<string>(''); // Store enhanced content with YouTube and images
@@ -4844,10 +4845,10 @@ export default function AdminPanel() {
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={isOptimizingMeta}
+                            disabled={isOptimizingMetaTitle}
                             onClick={async () => {
                               try {
-                                setIsOptimizingMeta(true);
+                                setIsOptimizingMetaTitle(true);
                                 
                                 // Gather context for AI optimization
                                 const formData = form.getValues();
@@ -4906,11 +4907,11 @@ export default function AdminPanel() {
                                 
                                 setGeneratedContent(prev => ({ ...prev, metaTitle: optimizedTitle }));
                               } finally {
-                                setIsOptimizingMeta(false);
+                                setIsOptimizingMetaTitle(false);
                               }
                             }}
                           >
-                            {isOptimizingMeta ? (
+                            {isOptimizingMetaTitle ? (
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
                                 Optimizing...
@@ -4932,10 +4933,10 @@ export default function AdminPanel() {
                               const value = e.target.value.slice(0, 70); // Hard limit at 70 chars
                               setGeneratedContent(prev => ({ ...prev, metaTitle: value }));
                             }}
-                            placeholder={isOptimizingMeta ? "AI is optimizing your meta title..." : "Enter SEO-optimized meta title..."}
-                            disabled={isOptimizingMeta}
+                            placeholder={isOptimizingMetaTitle ? "AI is optimizing your meta title..." : "Enter SEO-optimized meta title..."}
+                            disabled={isOptimizingMetaTitle}
                             className={`pr-16 ${
-                              isOptimizingMeta ? 'bg-gray-50' :
+                              isOptimizingMetaTitle ? 'bg-gray-50' :
                               (generatedContent.metaTitle || generatedContent.title || "").length > 60 
                                 ? 'border-red-300 focus:border-red-500' 
                                 : (generatedContent.metaTitle || generatedContent.title || "").length > 50
@@ -4983,10 +4984,10 @@ export default function AdminPanel() {
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={isOptimizingMeta}
+                            disabled={isOptimizingMetaDescription}
                             onClick={async () => {
                               try {
-                                setIsOptimizingMeta(true);
+                                setIsOptimizingMetaDescription(true);
                                 
                                 // Gather context for AI optimization
                                 const formData = form.getValues();
@@ -5045,11 +5046,11 @@ export default function AdminPanel() {
                                 
                                 setGeneratedContent(prev => ({ ...prev, metaDescription: description }));
                               } finally {
-                                setIsOptimizingMeta(false);
+                                setIsOptimizingMetaDescription(false);
                               }
                             }}
                           >
-                            {isOptimizingMeta ? (
+                            {isOptimizingMetaDescription ? (
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
                                 Optimizing...
@@ -5071,11 +5072,11 @@ export default function AdminPanel() {
                               const value = e.target.value.slice(0, 160); // Hard limit at 160 chars
                               setGeneratedContent(prev => ({ ...prev, metaDescription: value }));
                             }}
-                            placeholder={isOptimizingMeta ? "AI is optimizing your meta description..." : "Enter SEO-optimized meta description..."}
-                            disabled={isOptimizingMeta}
+                            placeholder={isOptimizingMetaDescription ? "AI is optimizing your meta description..." : "Enter SEO-optimized meta description..."}
+                            disabled={isOptimizingMetaDescription}
                             rows={3}
                             className={`w-full pr-16 resize-none ${
-                              isOptimizingMeta ? 'bg-gray-50' :
+                              isOptimizingMetaDescription ? 'bg-gray-50' :
                               (generatedContent.metaDescription || "").length > 155 
                                 ? 'border-red-300 focus:border-red-500' 
                                 : (generatedContent.metaDescription || "").length > 140
@@ -5083,7 +5084,7 @@ export default function AdminPanel() {
                                 : 'border-green-300 focus:border-green-500'
                             } rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500`}
                           />
-                          {isOptimizingMeta && (
+                          {isOptimizingMetaDescription && (
                             <div className="absolute left-3 top-3">
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
                             </div>
