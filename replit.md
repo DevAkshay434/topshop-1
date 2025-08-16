@@ -32,6 +32,8 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Content Preview Optimization**: Intelligent featured image handling in admin panel previews prevents duplication.
 - **Author Description Formatting**: Preserves formatting (spaces, line breaks) in author descriptions when saving to Shopify. Author descriptions now display in full without truncation, and reading time has been removed from the author box for cleaner presentation.
 - **Duplicate Prevention System**: Comprehensive duplicate prevention for scheduled content at database level, checking both Shopify ID and title matches. AdminPanel content generation disabled from creating Shopify content directly to prevent double scheduling when users use both form submission and publish buttons.
+- **Enhanced Project Management**: Implemented ProjectSaveDialog with popup-driven workflow offering "Save as New Project" and "Save into Existing Project" options with dropdown selection. This replaced the direct save functionality with a more user-friendly dialog interface.
+- **UI Consistency Improvements**: Updated video icons in Secondary Selected Content section from red (bg-red-600) to blue (bg-blue-600) to avoid danger color indication for non-error elements. Improved step indicators to use green numbers instead of checkmarks for better visual consistency.
 
 ## External Dependencies
 

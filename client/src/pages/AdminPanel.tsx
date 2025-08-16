@@ -6114,7 +6114,7 @@ export default function AdminPanel() {
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-red-600 text-white rounded-full p-2 shadow-lg">
+                            <div className="bg-blue-600 text-white rounded-full p-2 shadow-lg">
                               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
                               </svg>
