@@ -2573,7 +2573,193 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // AI-powered Auto Optimize for meta title and description
+  // INDIVIDUAL AI-powered meta title optimization endpoint
+  apiRouter.post("/optimize-meta-title", async (req: Request, res: Response) => {
+    try {
+      const optimizeSchema = z.object({
+        title: z.string().min(1, "Title is required"),
+        content: z.string().optional(),
+        keywords: z.array(z.string()).optional(),
+        targetAudience: z.string().optional(),
+        tone: z.string().optional(),
+        region: z.string().optional()
+      });
+
+      const { title, content, keywords = [], targetAudience, tone, region } = optimizeSchema.parse(req.body);
+
+      console.log('Optimizing META TITLE ONLY with AI:', {
+        title: title.substring(0, 50) + '...',
+        hasContent: !!content,
+        keywordCount: keywords.length,
+        targetAudience,
+        tone,
+        region
+      });
+
+      // Use Claude AI for meta title optimization only
+      const Anthropic = await import('@anthropic-ai/sdk');
+      const anthropic = new Anthropic.default({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+
+      // Create context for meta title optimization
+      const optimizationContext = {
+        mainTitle: title,
+        keywords: keywords.join(', '),
+        targetAudience: targetAudience || 'general audience',
+        tone: tone || 'professional',
+        region: region || 'US',
+        contentSnippet: content ? content.substring(0, 500) : ''
+      };
+
+      const prompt = `You are an SEO expert. Generate ONLY an optimized meta title for this content:
+
+CONTENT DETAILS:
+Title: ${optimizationContext.mainTitle}
+Keywords: ${optimizationContext.keywords}
+Target Audience: ${optimizationContext.targetAudience}
+Tone: ${optimizationContext.tone}
+Region: ${optimizationContext.region}
+${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}` : ''}
+
+STRICT REQUIREMENTS FOR META TITLE:
+- 50-60 characters max
+- MUST include at least one keyword from the provided keywords list
+- MUST be directly relevant to the article content
+- NO ellipsis (...) anywhere in the title
+- NO month/year references (avoid 2023, 2024, 2025, etc.)
+- Should be compelling and click-worthy
+- Use ${optimizationContext.tone} tone
+
+Please respond with ONLY the optimized meta title, no other text or explanation.`;
+
+      const message = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 150,
+        temperature: 0.3,
+        messages: [{
+          role: "user",
+          content: prompt
+        }]
+      });
+
+      const responseText = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+      
+      if (!responseText) {
+        throw new Error('Empty response from AI');
+      }
+
+      console.log('AI meta title optimization response:', responseText);
+
+      res.json({
+        success: true,
+        metaTitle: responseText
+      });
+
+    } catch (error) {
+      console.error('Error optimizing meta title:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to optimize meta title',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // INDIVIDUAL AI-powered meta description optimization endpoint
+  apiRouter.post("/optimize-meta-description", async (req: Request, res: Response) => {
+    try {
+      const optimizeSchema = z.object({
+        title: z.string().min(1, "Title is required"),
+        content: z.string().optional(),
+        keywords: z.array(z.string()).optional(),
+        targetAudience: z.string().optional(),
+        tone: z.string().optional(),
+        region: z.string().optional()
+      });
+
+      const { title, content, keywords = [], targetAudience, tone, region } = optimizeSchema.parse(req.body);
+
+      console.log('Optimizing META DESCRIPTION ONLY with AI:', {
+        title: title.substring(0, 50) + '...',
+        hasContent: !!content,
+        keywordCount: keywords.length,
+        targetAudience,
+        tone,
+        region
+      });
+
+      // Use Claude AI for meta description optimization only
+      const Anthropic = await import('@anthropic-ai/sdk');
+      const anthropic = new Anthropic.default({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+
+      // Create context for meta description optimization
+      const optimizationContext = {
+        mainTitle: title,
+        keywords: keywords.join(', '),
+        targetAudience: targetAudience || 'general audience',
+        tone: tone || 'professional',
+        region: region || 'US',
+        contentSnippet: content ? content.substring(0, 500) : ''
+      };
+
+      const prompt = `You are an SEO expert. Generate ONLY an optimized meta description for this content:
+
+CONTENT DETAILS:
+Title: ${optimizationContext.mainTitle}
+Keywords: ${optimizationContext.keywords}
+Target Audience: ${optimizationContext.targetAudience}
+Tone: ${optimizationContext.tone}
+Region: ${optimizationContext.region}
+${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}` : ''}
+
+STRICT REQUIREMENTS FOR META DESCRIPTION:
+- 150-160 characters max
+- MUST summarize the actual content value
+- Include relevant keywords naturally
+- NO ellipsis (...) anywhere in the description
+- NO month/year references or dates
+- Should encourage clicks with clear value proposition
+- Target ${optimizationContext.targetAudience}
+
+Please respond with ONLY the optimized meta description, no other text or explanation.`;
+
+      const message = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 200,
+        temperature: 0.3,
+        messages: [{
+          role: "user",
+          content: prompt
+        }]
+      });
+
+      const responseText = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+      
+      if (!responseText) {
+        throw new Error('Empty response from AI');
+      }
+
+      console.log('AI meta description optimization response:', responseText);
+
+      res.json({
+        success: true,
+        metaDescription: responseText
+      });
+
+    } catch (error) {
+      console.error('Error optimizing meta description:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to optimize meta description',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // ORIGINAL combined meta field optimization endpoint (kept for backward compatibility)
   apiRouter.post("/optimize-meta-fields", async (req: Request, res: Response) => {
     try {
       const optimizeSchema = z.object({

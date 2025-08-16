@@ -37,6 +37,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Secondary Images Deduplication Fix**: Completely resolved Pexels image duplication in Secondary Selected Content by centralizing data source to use only `selectedMediaContent.secondaryImages` instead of dual state management. Updated secondary content display, removal, and counting logic to prevent duplicate image entries. Enhanced duplicate detection logic in image selection to check both ID and URL matches. Added comprehensive duplicate prevention for both primary and secondary image selection from Pexels with improved debugging logs.
 - **YouTube Video Integration Fix**: Resolved issue where YouTube videos were incorrectly being added as thumbnail images instead of just video embeds. YouTube videos now only add the video embed without creating separate image entries.
 - **Video Overlay Overlap Fix**: Fixed overlapping blue video overlay elements in YouTube thumbnails by conditionally rendering play button overlays only when appropriate, eliminating visual duplication.
+- **Individual Meta Optimization**: Separated Auto-Optimize functionality for Meta Title and Meta Description to work independently. Created individual API endpoints `/api/optimize-meta-title` and `/api/optimize-meta-description` that optimize only the specific field clicked, preventing unwanted optimization of both fields simultaneously. Each button now optimizes only its respective field using dedicated Claude AI prompts.
 
 ## External Dependencies
 

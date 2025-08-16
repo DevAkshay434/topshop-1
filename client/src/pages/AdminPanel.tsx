@@ -4858,10 +4858,10 @@ export default function AdminPanel() {
                                 const tone = formData.toneOfVoice || "professional";
                                 const region = "us"; // Default region
 
-                                console.log('Triggering AI meta optimization...');
+                                console.log('Triggering AI meta title optimization...');
 
-                                // Call the AI optimization endpoint
-                                const response = await fetch('/api/optimize-meta-fields', {
+                                // Call the AI optimization endpoint for META TITLE ONLY
+                                const response = await fetch('/api/optimize-meta-title', {
                                   method: 'POST',
                                   headers: {
                                     'Content-Type': 'application/json'
@@ -4877,17 +4877,16 @@ export default function AdminPanel() {
                                 });
 
                                 if (!response.ok) {
-                                  throw new Error('Failed to optimize meta fields');
+                                  throw new Error('Failed to optimize meta title');
                                 }
 
                                 const result = await response.json();
                                 
                                 if (result.success) {
-                                  // Update both meta title and description from AI response
+                                  // Update ONLY meta title from AI response
                                   setGeneratedContent(prev => ({
                                     ...prev,
-                                    metaTitle: result.metaTitle,
-                                    metaDescription: result.metaDescription
+                                    metaTitle: result.metaTitle
                                   }));
                                   console.log('AI optimization successful');
                                 } else {
@@ -5000,8 +4999,8 @@ export default function AdminPanel() {
 
                                 console.log('Triggering AI meta description optimization...');
 
-                                // Call the AI optimization endpoint
-                                const response = await fetch('/api/optimize-meta-fields', {
+                                // Call the AI optimization endpoint for META DESCRIPTION ONLY
+                                const response = await fetch('/api/optimize-meta-description', {
                                   method: 'POST',
                                   headers: {
                                     'Content-Type': 'application/json'
@@ -5017,16 +5016,15 @@ export default function AdminPanel() {
                                 });
 
                                 if (!response.ok) {
-                                  throw new Error('Failed to optimize meta fields');
+                                  throw new Error('Failed to optimize meta description');
                                 }
 
                                 const result = await response.json();
                                 
                                 if (result.success) {
-                                  // Update both meta title and description from AI response
+                                  // Update ONLY meta description from AI response
                                   setGeneratedContent(prev => ({
                                     ...prev,
-                                    metaTitle: result.metaTitle,
                                     metaDescription: result.metaDescription
                                   }));
                                   console.log('AI meta description optimization successful');
