@@ -1400,7 +1400,7 @@ export default function AdminPanel() {
   const isReadyToGenerateContent = () => {
     const formValues = form.getValues();
     
-    // Check required fields (Style & Formatting fields have default values so don't need validation)
+    // Check required fields
     const hasTitle = !!formValues.title;
     const hasArticleType = !!formValues.articleType;
     const hasBlog = formValues.articleType !== 'blog' || !!formValues.blogId;
@@ -1408,7 +1408,10 @@ export default function AdminPanel() {
     const hasFeaturedImage = primaryImages && primaryImages.length > 0;
     const hasAuthor = !!selectedAuthorId; // Use selectedAuthorId state instead of form field
     
-    return hasTitle && hasArticleType && hasBlog && hasKeywords && hasFeaturedImage && hasAuthor;
+    // Check workflow step progression - must complete Style & Formatting step (step 8) before generating content
+    const hasCompletedStyleStep = getStepOrder(workflowStep) >= getStepOrder('content'); // Step 9 or higher
+    
+    return hasTitle && hasArticleType && hasBlog && hasKeywords && hasFeaturedImage && hasAuthor && hasCompletedStyleStep;
   };
 
   // Get incomplete steps for tooltip
@@ -1422,6 +1425,11 @@ export default function AdminPanel() {
     if (!selectedKeywords || selectedKeywords.length === 0) missing.push("Keywords");
     if (!primaryImages || primaryImages.length === 0) missing.push("Featured Image");
     if (!selectedAuthorId) missing.push("Author"); // Use selectedAuthorId state instead of form field
+    
+    // Check workflow step progression
+    if (getStepOrder(workflowStep) < getStepOrder('content')) {
+      missing.push("Complete Style & Formatting Step");
+    }
     
     return missing;
   };
@@ -4080,30 +4088,29 @@ export default function AdminPanel() {
                         
                         <Button
                           type="button"
+                          disabled={!selectedAuthorId}
                           onClick={() => {
-                            // Final validation before content generation
-                            if (selectedProducts.length === 0) {
-                              toast({
-                                title: "Products Required",
-                                description: "Cannot proceed to content generation without products. Please select at least one product.",
-                                variant: "destructive"
-                              });
-                              setWorkflowStep('product');
-                              scrollToCurrentStep();
-                              return;
-                            }
+                            // Move to Style & Formatting step
+                            setWorkflowStep('content');
+                            scrollToCurrentStep();
                             
-                            handleAuthorSelectionComplete();
+                            toast({
+                              title: "Author Selected",
+                              description: "Now review and customize your style and formatting options.",
+                            });
                           }}
                         >
-                          Next
+                          Next to Style & Formatting
                         </Button>
                       </div>
                     </div>
                     
-                    {/* Style and formatting section - Only shown in content step */}
+                    {/* Step 8: Style and formatting section - Only shown in content step */}
                     <div className={`space-y-4 pt-4 ${workflowStep === 'content' ? 'block' : 'hidden'}`} data-step="content">
-                      <h3 className="text-lg font-medium">Style & Formatting</h3>
+                      <div className="p-4 bg-blue-50 rounded-md mb-4">
+                        <h4 className="font-medium text-blue-700 mb-1">Step 8: Style & Formatting</h4>
+                        <p className="text-sm text-blue-600">Customize how your content will look and feel</p>
+                      </div>
                       
                       {/* Content Generation Options */}
                       
