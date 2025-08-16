@@ -2715,14 +2715,21 @@ Tone: ${optimizationContext.tone}
 Region: ${optimizationContext.region}
 ${optimizationContext.contentSnippet ? `Content Preview: ${optimizationContext.contentSnippet}` : ''}
 
-STRICT REQUIREMENTS FOR META DESCRIPTION:
-- 150-160 characters max
+CRITICAL CHARACTER LIMIT REQUIREMENT:
+- MAXIMUM 160 characters - this is a HARD LIMIT that must never be exceeded
+- Aim for 150-160 characters for optimal SEO performance
+- Count every character including spaces and punctuation
+- If your description is over 160 characters, it will be cut off in search results
+
+ADDITIONAL REQUIREMENTS:
 - MUST summarize the actual content value
 - Include relevant keywords naturally
 - NO ellipsis (...) anywhere in the description
 - NO month/year references or dates
 - Should encourage clicks with clear value proposition
 - Target ${optimizationContext.targetAudience}
+
+IMPORTANT: Check your character count before responding. The description MUST be 160 characters or less.
 
 Please respond with ONLY the optimized meta description, no other text or explanation.`;
 
@@ -2736,13 +2743,23 @@ Please respond with ONLY the optimized meta description, no other text or explan
         }]
       });
 
-      const responseText = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+      let responseText = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
       
       if (!responseText) {
         throw new Error('Empty response from AI');
       }
 
+      // CRITICAL: Enforce 160 character limit server-side as a safety measure
+      if (responseText.length > 160) {
+        console.warn(`Generated meta description too long (${responseText.length} chars), truncating to 160`);
+        // Smart truncation - cut at last complete word before 160 chars
+        const truncated = responseText.substring(0, 157);
+        const lastSpace = truncated.lastIndexOf(' ');
+        responseText = lastSpace > 140 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
+      }
+
       console.log('AI meta description optimization response:', responseText);
+      console.log(`Final meta description length: ${responseText.length} characters`);
 
       res.json({
         success: true,

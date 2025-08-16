@@ -43,6 +43,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **YouTube Secondary Images Prevention**: Fixed root cause of YouTube video duplication by preventing YouTube videos from being incorrectly added to the `secondaryImages` array. YouTube videos are now exclusively stored in `youtubeEmbed` field only. Added safety filters to remove any existing YouTube entries from secondary images when a video is added, and explicit `type: 'image'` marking for all actual images to prevent type confusion.
 - **YouTube Second H2 Placement Enhancement**: Reinforced YouTube video placement logic to ensure videos are always inserted under the second H2 heading specifically. Enhanced prompt instructions with critical placement rules and added debugging logs to track marker detection and video embedding confirmation.
 - **Independent Meta Optimization Fix**: Fixed the auto-optimize buttons for Meta Title and Meta Description to work completely independently. Separated loading states (`isOptimizingMetaTitle` and `isOptimizingMetaDescription`) so clicking one button doesn't interfere with the other button's functionality.
+- **Meta Description SEO Character Limit Fix**: Enhanced meta description optimization to strictly enforce the 160-character SEO limit. Improved Claude prompts with explicit character counting instructions and added server-side validation to truncate descriptions that exceed 160 characters, ensuring optimal search engine display.
 
 ## External Dependencies
 
