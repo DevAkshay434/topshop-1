@@ -3931,11 +3931,19 @@ export default function AdminPanel() {
                                                 const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
                                                 
                                                 return thumbnailUrl ? (
-                                                  <img 
-                                                    src={thumbnailUrl} 
-                                                    alt="YouTube video thumbnail" 
-                                                    className="w-full h-full object-cover"
-                                                  />
+                                                  <>
+                                                    <img 
+                                                      src={thumbnailUrl} 
+                                                      alt="YouTube video thumbnail" 
+                                                      className="w-full h-full object-cover"
+                                                    />
+                                                    {/* Play button overlay - only show when thumbnail exists */}
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                      <div className="w-8 h-8 bg-blue-600 bg-opacity-80 rounded-full flex items-center justify-center shadow-lg">
+                                                        <span className="text-white text-xs ml-0.5">▶</span>
+                                                      </div>
+                                                    </div>
+                                                  </>
                                                 ) : (
                                                   <div className="w-full h-full bg-blue-100 flex items-center justify-center">
                                                     <div className="text-center">
@@ -3947,13 +3955,6 @@ export default function AdminPanel() {
                                                   </div>
                                                 );
                                               })()}
-                                              
-                                              {/* Play button overlay */}
-                                              <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-8 h-8 bg-blue-600 bg-opacity-80 rounded-full flex items-center justify-center shadow-lg">
-                                                  <span className="text-white text-xs ml-0.5">▶</span>
-                                                </div>
-                                              </div>
                                             </div>
                                             
                                             <div className="absolute top-1 right-1">
@@ -6050,30 +6051,14 @@ export default function AdminPanel() {
                           
                           if (videoId) {
                             setYoutubeVideoId(videoId);
-                            // Create a PexelsImage-like object to store the YouTube video info
-                            const youtubeImage: PexelsImage = {
-                              id: `youtube-${videoId}`,
-                              url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                              width: 1280,
-                              height: 720,
-                              alt: `YouTube video ${videoId}`,
-                              type: 'youtube',
-                              videoId: videoId
-                            };
                             
-                            if (imageTab === 'primary') {
-                              setPrimaryImages([...primaryImages, youtubeImage]);
-                            } else {
-                              setSecondaryImages([...secondaryImages, youtubeImage]);
-                            }
-                            
-                            // Update selectedMediaContent state immediately
+                            // FIXED: Don't add YouTube videos as images - only set the video embed
                             // Update both selectedMediaContent and the main youtubeEmbed state
                             setSelectedMediaContent(prev => ({
                               ...prev,
-                              youtubeEmbed: videoId
+                              youtubeEmbed: youtubeUrl // Store the full URL instead of just videoId
                             }));
-                            setYoutubeEmbed(videoId); // Also update the main state that secondary content uses
+                            setYoutubeEmbed(youtubeUrl); // Also update the main state that secondary content uses
                             
                             toast({
                               title: "YouTube Video Added",
@@ -6878,11 +6863,35 @@ export default function AdminPanel() {
                                   isPrimary ? "opacity-100" : "opacity-90 hover:opacity-100"
                                 )}
                                 onClick={() => {
-                                  // Select this image as primary
+                                  // FIXED: Add duplicate prevention for primary images
                                   setPrimaryImages(prev => {
+                                    // Check if this image is already the primary
+                                    const isDuplicate = prev.some(existing => 
+                                      existing.id === image.id || existing.url === image.url
+                                    );
+                                    
+                                    if (isDuplicate) {
+                                      console.log("🚫 PREVENTING DUPLICATE PRIMARY: Image already exists", image.id);
+                                      return prev;
+                                    }
+                                    
                                     // Create a new array with this image as the primary
                                     return [{ ...image, isPrimary: true }];
                                   });
+                                  
+                                  // Update selectedMediaContent state for primary image
+                                  setSelectedMediaContent(prev => ({
+                                    ...prev,
+                                    primaryImage: {
+                                      id: image.id,
+                                      url: image.url,
+                                      alt: image.alt || '',
+                                      width: image.width || 0,
+                                      height: image.height || 0,
+                                      source: image.source || 'pexels'
+                                    }
+                                  }));
+                                  
                                   toast({
                                     title: "Primary image selected",
                                     description: "Image has been set as the primary featured image"
@@ -6912,17 +6921,29 @@ export default function AdminPanel() {
                                   });
                                   
                                   // Update selectedMediaContent state immediately
-                                  setSelectedMediaContent(prev => ({
-                                    ...prev,
-                                    secondaryImages: [...prev.secondaryImages, {
-                                      id: image.id,
-                                      url: image.url,
-                                      alt: image.alt || '',
-                                      width: image.width || 0,
-                                      height: image.height || 0,
-                                      source: image.source || 'pexels'
-                                    }]
-                                  }));
+                                  // FIXED: Check for duplicates before adding to prevent duplicate Pexels images
+                                  setSelectedMediaContent(prev => {
+                                    const isDuplicate = prev.secondaryImages.some(existing => 
+                                      existing.id === image.id || existing.url === image.url
+                                    );
+                                    
+                                    if (isDuplicate) {
+                                      console.log("🚫 PREVENTING DUPLICATE: Image already exists", image.id);
+                                      return prev;
+                                    }
+                                    
+                                    return {
+                                      ...prev,
+                                      secondaryImages: [...prev.secondaryImages, {
+                                        id: image.id,
+                                        url: image.url,
+                                        alt: image.alt || '',
+                                        width: image.width || 0,
+                                        height: image.height || 0,
+                                        source: image.source || 'pexels'
+                                      }]
+                                    };
+                                  });
                                   
                                   toast({
                                     title: "Secondary image added",
