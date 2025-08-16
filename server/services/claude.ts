@@ -290,7 +290,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
 </div>`;
       
       // Replace only the first occurrence (under second H2)
+      const markerCount = (processedContent.match(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g) || []).length;
+      console.log(`🎬 YOUTUBE PLACEMENT - Found ${markerCount} video markers in content`);
+      
       processedContent = processedContent.replace('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->', videoHtml);
+      console.log('🎬 YOUTUBE PLACEMENT - Video embedded under second H2 heading');
       
       // Remove any additional video placement markers
       processedContent = processedContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
@@ -613,6 +617,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - IMPORTANT: You MUST include at least 3-4 secondary image placement markers: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     - Place one marker under each major H2 section to ensure even distribution
     - These markers are REQUIRED for image functionality - do not skip them
+    - CRITICAL: Always place YouTube video marker under the SECOND H2 heading, never the first or any other
     - Example structure:
       <h2>First Section</h2>
       <p>Content...</p>
