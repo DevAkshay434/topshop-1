@@ -6134,24 +6134,25 @@ export default function AdminPanel() {
               </div>
             )}
             
-            {/* Unified Selected Images Preview - Single Row Layout */}
-            {(primaryImages.length > 0 || secondaryImages.length > 0) && (
+            {/* Unified Selected Images Preview - Single Row Layout - FIXED: Use selectedMediaContent to prevent duplication */}
+            {(selectedMediaContent.primaryImage || selectedMediaContent.secondaryImages.length > 0) && (
               <div className="mt-4 mb-4 bg-slate-50 p-3 rounded-md border">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-sm font-medium">
-                    Your Selected Images ({primaryImages.length + secondaryImages.length} total)
+                    Your Selected Images ({(selectedMediaContent.primaryImage ? 1 : 0) + selectedMediaContent.secondaryImages.length} total)
                   </h4>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => {
+                      // FIXED: Clear selectedMediaContent as primary source and sync other states
+                      setSelectedMediaContent({
+                        primaryImage: null,
+                        secondaryImages: [],
+                        youtubeEmbed: null
+                      });
                       setPrimaryImages([]);
                       setSecondaryImages([]);
-                      setSelectedMediaContent(prev => ({
-                        ...prev,
-                        primaryImage: null,
-                        secondaryImages: []
-                      }));
                       toast({
                         title: "All images cleared",
                         description: "All selected images have been removed"
@@ -6164,10 +6165,54 @@ export default function AdminPanel() {
                   </Button>
                 </div>
                 
-                {/* Single Row Layout for All Images */}
+                {/* Single Row Layout for All Images - FIXED: Use selectedMediaContent to prevent duplication */}
                 <div className="flex gap-3 overflow-x-auto pb-2">
-                  {/* Featured Images */}
-                  {primaryImages.map((img) => (
+                  {/* Featured Image */}
+                  {selectedMediaContent.primaryImage && (
+                    <div key={`featured-${selectedMediaContent.primaryImage.id}`} className="relative group flex-shrink-0">
+                      <div className="relative w-24 h-24 rounded-md overflow-hidden border-2 border-blue-500 shadow-sm">
+                        <ShopifyImageViewer 
+                          src={selectedMediaContent.primaryImage.url} 
+                          alt={selectedMediaContent.primaryImage.alt || "Featured image"} 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-0 left-0 bg-blue-600 text-white px-1 py-0.5 text-xs font-medium">
+                          Featured
+                        </div>
+                        {selectedMediaContent.primaryImage.source && (
+                          <div className="absolute top-0 right-0">
+                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                              {selectedMediaContent.primaryImage.source}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-4 w-4 bg-white shadow-sm"
+                          onClick={() => {
+                            setSelectedMediaContent(prev => ({
+                              ...prev,
+                              primaryImage: null
+                            }));
+                            setPrimaryImages([]);
+                            toast({
+                              title: "Featured image removed",
+                              description: "Featured image has been removed"
+                            });
+                          }}
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Secondary Images - FIXED: Use selectedMediaContent.secondaryImages to prevent duplication */}
+                  {selectedMediaContent.secondaryImages.map((img, index) => (
                     <div key={`featured-${img.id}`} className="relative group flex-shrink-0">
                       <div className="relative w-24 h-24 rounded-md overflow-hidden border-2 border-blue-500 shadow-sm">
                         {img.type === 'youtube' ? (
@@ -6192,87 +6237,11 @@ export default function AdminPanel() {
                             className="w-full h-full object-cover"
                           />
                         )}
-                        <div className="absolute top-0 left-0 bg-blue-600 text-white px-1 py-0.5 text-xs font-medium">
-                          Featured
+                        <div className="absolute top-0 left-0 bg-green-600 text-white px-1 py-0.5 text-xs font-medium">
+                          #{index + 1}
                         </div>
                         {img.source && (
                           <div className="absolute top-0 right-0">
-                            <Badge variant="secondary" className="text-xs px-1 py-0">
-                              {img.source}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <Button 
-                          variant="secondary" 
-                          size="icon" 
-                          className="h-5 w-5 bg-white shadow-sm"
-                          onClick={() => {
-                            setCurrentImageEdit({
-                              id: img.id,
-                              alt: img.alt || ""
-                            });
-                            setIsEditingImage(true);
-                          }}
-                        >
-                          <Pencil className="h-2 w-2" />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
-                          className="h-5 w-5 shadow-sm" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPrimaryImages([]);
-                            setSelectedMediaContent(prev => ({
-                              ...prev,
-                              primaryImage: null
-                            }));
-                            toast({
-                              title: "Featured image removed",
-                              description: "Featured image has been removed",
-                            });
-                          }}
-                        >
-                          <X className="h-2 w-2" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Secondary Images */}
-                  {secondaryImages.map((img, index) => (
-                    <div key={`secondary-${img.id}`} className="relative group flex-shrink-0">
-                      <div className="relative w-20 h-20 rounded-md overflow-hidden border-2 border-green-500 shadow-sm">
-                        {img.type === 'youtube' ? (
-                          <div className="w-full h-full relative">
-                            <ShopifyImageViewer 
-                              src={img.url} 
-                              alt={img.alt || "YouTube video thumbnail"} 
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="bg-blue-600 text-white rounded-full p-1 shadow-lg opacity-90">
-                                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
-                                </svg>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <ShopifyImageViewer 
-                            src={img.src?.medium || img.url} 
-                            alt={img.alt || "Secondary image"} 
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        <div className="absolute top-0 left-0 bg-green-600 text-white px-1 py-0.5 text-xs">
-                          {index + 1}
-                        </div>
-                        {img.source && (
-                          <div className="absolute bottom-0 right-0">
                             <Badge variant="secondary" className="text-xs px-1 py-0">
                               {img.source}
                             </Badge>
@@ -6301,14 +6270,16 @@ export default function AdminPanel() {
                           className="h-4 w-4 shadow-sm" 
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
+                            // FIXED: Remove from selectedMediaContent.secondaryImages to prevent duplication
                             setSelectedMediaContent(prev => ({
                               ...prev,
                               secondaryImages: prev.secondaryImages.filter(i => i.id !== img.id)
                             }));
+                            // Also sync secondaryImages state
+                            setSecondaryImages(prev => prev.filter(i => i.id !== img.id));
                             toast({
                               title: "Secondary image removed",
-                              description: "Image has been removed from secondary images",
+                              description: "Secondary image has been removed",
                             });
                           }}
                         >
