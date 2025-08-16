@@ -43,6 +43,35 @@ const anthropic = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
+// Function to ensure all external links have nofollow attribute
+function addNoFollowToExternalLinks(content: string): string {
+  console.log('🔗 Adding nofollow attribute to external links');
+  
+  // Match external links that don't already have rel="nofollow"
+  const externalLinkRegex = /<a\s+([^>]*?)href\s*=\s*["']https?:\/\/[^"']*["']([^>]*?)(?<!rel\s*=\s*["'][^"']*nofollow[^"']*["'])>/gi;
+  
+  let processedContent = content.replace(externalLinkRegex, (match, beforeHref, afterHref) => {
+    // Check if rel attribute already exists
+    if (beforeHref.includes('rel=') || afterHref.includes('rel=')) {
+      // Add nofollow to existing rel attribute
+      let updatedMatch = match.replace(/rel\s*=\s*["']([^"']*?)["']/i, (relMatch, relValue) => {
+        if (!relValue.includes('nofollow')) {
+          return `rel="${relValue.trim()} nofollow"`;
+        }
+        return relMatch;
+      });
+      return updatedMatch;
+    } else {
+      // Add new rel attribute with nofollow
+      const insertPos = match.indexOf('>');
+      return match.slice(0, insertPos) + ' rel="nofollow noopener noreferrer"' + match.slice(insertPos);
+    }
+  });
+  
+  console.log('✅ Added nofollow attribute to external links');
+  return processedContent;
+}
+
 // Function to automatically add id attributes to H2 headings that don't have them
 function addHeadingIds(content: string): string {
   console.log('🔧 HEADING ID PROCESSING STARTED');
@@ -587,7 +616,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
       * Organizations: wikipedia.org, who.int, un.org, redcross.org, acs.org, ieee.org
       * Research: ncbi.nlm.nih.gov, nature.com, sciencedirect.com, jstor.org
     - Place these links naturally within the content where they support specific claims, statistics, or provide additional credible information
-    - Use proper link formatting: <a href="URL" target="_blank" rel="noopener noreferrer">descriptive anchor text</a>
+    - Use proper link formatting: <a href="URL" target="_blank" rel="nofollow noopener noreferrer">descriptive anchor text</a>
     - Make anchor text descriptive and specific (e.g., "EPA water quality standards" not "click here")
     - Distribute links across different sections of the content for better SEO value
     - Links should enhance credibility and provide readers with additional authoritative information
@@ -657,6 +686,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
     - NEVER reference competitor websites or external commercial domains in any links or image sources
     - DO NOT include ANY external links except to trusted reference sites like .gov, .edu, or wikipedia.org
+    - ALL external links must include rel="nofollow noopener noreferrer" for SEO compliance
     - DO NOT include external images from third-party domains - the system will automatically insert optimized images
     - All images will be center-aligned and properly linked to product pages
     - Do not include any image placeholders or special markup except for the placement markers mentioned above
@@ -894,13 +924,17 @@ if (!response) {
     processedContent = fixTOCLinks(processedContent);
     console.log('✅ Step 5: Fixed TOC links (removed target="_blank")');
     
+    // Step 6: Add nofollow attribute to external links for SEO compliance
+    processedContent = addNoFollowToExternalLinks(processedContent);
+    console.log('✅ Step 6: Added nofollow attribute to external links');
+    
     // CAPTURE CONTENT BEFORE MEDIA PROCESSING (this is what the editor should show)
     const rawContentForEditor = processedContent;
     console.log('📝 Content before final processing (for editor):', rawContentForEditor.substring(0, 500) + '...');
     
-    // Step 5: Handle media placements (final step - converts placeholders to actual embeds)
+    // Step 7: Handle media placements (final step - converts placeholders to actual embeds)
     processedContent = processMediaPlacementsHandler(processedContent, request);
-    console.log('✅ Step 5: Processed media placements');
+    console.log('✅ Step 7: Processed media placements');
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
