@@ -671,7 +671,7 @@ export function ChooseMediaDialog({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="pexels-pixabay">
-              Search Images
+              Search Free Images
             </TabsTrigger>
             <TabsTrigger value="primary_images">
               Product Images

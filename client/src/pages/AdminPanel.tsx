@@ -3688,7 +3688,7 @@ export default function AdminPanel() {
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                 <Card className="overflow-hidden">
                                   <CardHeader className="p-3 bg-slate-100">
-                                    <CardTitle className="text-sm">Pexels Images</CardTitle>
+                                    <CardTitle className="text-sm">Search Free Images</CardTitle>
                                     <CardDescription className="text-xs">
                                       Search free stock photos
                                     </CardDescription>
@@ -3705,7 +3705,7 @@ export default function AdminPanel() {
                                       }}
                                     >
                                       <Search className="mr-2 h-4 w-4" />
-                                      Search Pexels
+                                      Search Free Images
                                     </Button>
                                   </CardContent>
                                 </Card>
