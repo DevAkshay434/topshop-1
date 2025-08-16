@@ -5034,17 +5034,16 @@ export default function AdminPanel() {
                                 }
                               } catch (error) {
                                 console.error('Meta description optimization error:', error);
-                                // Fallback: create basic description from content
-                                const content = generatedContent.content || generatedContent.title || "";
-                                const plainText = content.replace(/<[^>]*>/g, ' ').trim();
-                                let description = plainText.substring(0, 155);
                                 
-                                if (description.length === 155) {
-                                  const lastSpace = description.lastIndexOf(' ');
-                                  description = lastSpace > 0 ? description.substring(0, lastSpace) + '...' : description + '...';
-                                }
+                                // Show user that AI optimization failed and they should try again or manually edit
+                                toast({
+                                  title: "AI Optimization Failed",
+                                  description: "Unable to optimize meta description with AI. Please try again or edit manually.",
+                                  variant: "destructive"
+                                });
                                 
-                                setGeneratedContent(prev => ({ ...prev, metaDescription: description }));
+                                // Don't set a poor fallback - let user know they need to handle it manually
+                                console.log('AI meta description optimization failed, user should try again or edit manually');
                               } finally {
                                 setIsOptimizingMetaDescription(false);
                               }

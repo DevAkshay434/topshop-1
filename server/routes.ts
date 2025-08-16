@@ -2724,7 +2724,8 @@ CRITICAL CHARACTER LIMIT REQUIREMENT:
 ADDITIONAL REQUIREMENTS:
 - MUST summarize the actual content value
 - Include relevant keywords naturally
-- NO ellipsis (...) anywhere in the description
+- NO ellipsis (...) anywhere in the description - write complete, concise sentences
+- End with complete sentences or phrases, never cut off mid-word
 - NO month/year references or dates
 - Should encourage clicks with clear value proposition
 - Target ${optimizationContext.targetAudience}
@@ -2752,10 +2753,19 @@ Please respond with ONLY the optimized meta description, no other text or explan
       // CRITICAL: Enforce 160 character limit server-side as a safety measure
       if (responseText.length > 160) {
         console.warn(`Generated meta description too long (${responseText.length} chars), truncating to 160`);
-        // Smart truncation - cut at last complete word before 160 chars
+        // Smart truncation - cut at last complete word before 157 chars to avoid ellipsis
         const truncated = responseText.substring(0, 157);
         const lastSpace = truncated.lastIndexOf(' ');
-        responseText = lastSpace > 140 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
+        // Only add ellipsis if we're cutting mid-word, prefer complete sentences
+        responseText = lastSpace > 140 ? truncated.substring(0, lastSpace) : truncated;
+        
+        // Try to end with complete word/sentence, avoid ellipsis per prompt requirements
+        if (responseText.length < 160 && !responseText.endsWith('.') && !responseText.endsWith('!')) {
+          // Only add period if there's space and it makes sense
+          if (responseText.length < 160) {
+            responseText = responseText.trim();
+          }
+        }
       }
 
       console.log('AI meta description optimization response:', responseText);
