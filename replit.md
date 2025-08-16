@@ -45,6 +45,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Independent Meta Optimization Fix**: Fixed the auto-optimize buttons for Meta Title and Meta Description to work completely independently. Separated loading states (`isOptimizingMetaTitle` and `isOptimizingMetaDescription`) so clicking one button doesn't interfere with the other button's functionality.
 - **Meta Description SEO Character Limit Fix**: Enhanced meta description optimization to strictly enforce the 160-character SEO limit. Improved Claude prompts with explicit character counting instructions and added server-side validation to truncate descriptions that exceed 160 characters, ensuring optimal search engine display.
 - **Auto-Optimize Fallback Logic Fix**: Removed poor-quality fallback logic that simply truncated content with "..." when AI optimization failed. Now displays proper error notification encouraging users to retry AI optimization or manually edit, ensuring only high-quality AI-generated descriptions are used.
+- **Project Load Secondary Images Duplication Fix**: Fixed Pexels image duplication issue when loading projects by implementing clean state reset and deduplication logic. Removed multiple state synchronization attempts that were causing duplicate entries in Selected Secondary Content. Added unique image filtering based on ID and URL to prevent duplicate secondary images during project restoration.
 
 ## External Dependencies
 

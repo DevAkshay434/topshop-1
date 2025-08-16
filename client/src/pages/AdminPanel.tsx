@@ -684,78 +684,60 @@ export default function AdminPanel() {
         setSelectedContentDisplayName(projectData.selectedContentDisplayName);
       }
       
-      // 2. Restore media content
+      // 2. Restore media content with clean state management to prevent duplication
       if (projectData.mediaContent) {
-        if (projectData.mediaContent.primaryImage) {
-          setPrimaryImages([projectData.mediaContent.primaryImage]);
-        }
-        if (projectData.mediaContent.secondaryImages) {
-          setSecondaryImages(projectData.mediaContent.secondaryImages);
-        }
-        if (projectData.mediaContent.youtubeEmbed) {
-          setYoutubeEmbed(projectData.mediaContent.youtubeEmbed);
-        }
+        // CLEAN PROJECT LOAD: Reset all media states first to prevent duplication
+        console.log("🔄 PROJECT LOAD: Resetting all media states to prevent duplication");
+        setPrimaryImages([]);
+        setSecondaryImages([]);
+        setYoutubeEmbed(null);
+        setSelectedMediaContent({
+          primaryImage: null,
+          secondaryImages: [],
+          youtubeEmbed: null
+        });
         
-        // CRITICAL FIX: Ensure selectedMediaContent is properly synced with restored data
+        // SINGLE STATE UPDATE: Restore media content with one consolidated update
         const restoredMediaContent = {
           primaryImage: projectData.mediaContent.primaryImage || null,
           secondaryImages: projectData.mediaContent.secondaryImages || [],
           youtubeEmbed: projectData.mediaContent.youtubeEmbed || null
         };
         
-        setSelectedMediaContent(restoredMediaContent);
-        
-        // CRITICAL FIX: Immediate state synchronization without timeout
-        // This ensures that selectedMediaContent reflects the correct state for content generation
-        console.log("🔄 IMMEDIATE STATE SYNC: Setting selectedMediaContent synchronously");
-        setSelectedMediaContent(restoredMediaContent);
-        
-        // ADDITIONAL FIX: Force multiple state sync attempts to handle React timing
-        const forceStateSync = () => {
-          setSelectedMediaContent(prevState => ({
-            ...prevState,
-            secondaryImages: projectData.mediaContent.secondaryImages || []
-          }));
-        };
-        
-        // Execute sync immediately and with backoff intervals
-        forceStateSync();
-        setTimeout(forceStateSync, 10);
-        setTimeout(forceStateSync, 50);
-        setTimeout(forceStateSync, 100);
-        
-        // CRITICAL FIX: Sync the secondaryImages state with the restored data for proper UI display
-        if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
-          console.log("🔄 RESTORING SECONDARY IMAGES: Found", projectData.mediaContent.secondaryImages.length, "secondary images in project");
-          console.log("🔍 SECONDARY IMAGES DATA STRUCTURE:", projectData.mediaContent.secondaryImages);
-          setSecondaryImages(projectData.mediaContent.secondaryImages);
-          console.log("✅ Project load: Synced secondaryImages state with restored data", projectData.mediaContent.secondaryImages.length, "images");
-        } else {
-          console.log("⚠️ NO SECONDARY IMAGES IN PROJECT: mediaContent.secondaryImages =", projectData.mediaContent.secondaryImages);
-          setSecondaryImages([]); // Ensure clean state
-        }
-        
-        // Also sync primary images if available
+        // Set individual states once only
         if (projectData.mediaContent.primaryImage) {
           setPrimaryImages([projectData.mediaContent.primaryImage]);
-          console.log("Project load: Synced primaryImages state with restored data", projectData.mediaContent.primaryImage);
-        } else {
-          setPrimaryImages([]); // Ensure clean state
+          console.log("✅ Project load: Restored primary image");
         }
+        
+        if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
+          // Ensure no duplicates in restored secondary images
+          const uniqueSecondaryImages = projectData.mediaContent.secondaryImages.filter((img: any, index: number, self: any[]) => 
+            self.findIndex((i: any) => (i.id === img.id && i.url === img.url)) === index
+          );
+          
+          setSecondaryImages(uniqueSecondaryImages);
+          console.log("✅ Project load: Restored", uniqueSecondaryImages.length, "unique secondary images");
+          console.log("🔍 SECONDARY IMAGES:", uniqueSecondaryImages);
+          
+          // Update restoredMediaContent with deduplicated images
+          restoredMediaContent.secondaryImages = uniqueSecondaryImages;
+        }
+        
+        if (projectData.mediaContent.youtubeEmbed) {
+          setYoutubeEmbed(projectData.mediaContent.youtubeEmbed);
+          console.log("✅ Project load: Restored YouTube embed");
+        }
+        
+        // FINAL SINGLE UPDATE: Set selectedMediaContent once with all restored data
+        setSelectedMediaContent(restoredMediaContent);
+        console.log("✅ Project load: Final selectedMediaContent update completed");
         
         console.log("Project load: Restored media content", {
           primaryImage: !!projectData.mediaContent.primaryImage,
-          secondaryImagesCount: projectData.mediaContent.secondaryImages?.length || 0,
-          youtubeEmbed: !!projectData.mediaContent.youtubeEmbed,
-          restoredSecondaryImages: restoredMediaContent.secondaryImages
+          secondaryImagesCount: restoredMediaContent.secondaryImages?.length || 0,
+          youtubeEmbed: !!projectData.mediaContent.youtubeEmbed
         });
-        
-        // Force state update verification after project load
-        setTimeout(() => {
-          console.log("Project load verification: selectedMediaContent after setState", selectedMediaContent);
-          console.log("Project load verification: secondaryImages state", secondaryImages);
-          console.log("Project load verification: primaryImages state", primaryImages);
-        }, 100);
       }
       
       // 3. Build complete form data object with all saved values
