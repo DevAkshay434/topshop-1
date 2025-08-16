@@ -3486,27 +3486,6 @@ export default function AdminPanel() {
                             </div>
                           )}
                           
-                          <Button 
-                            onClick={() => {
-                              // Check if products are selected before allowing keyword generation
-                              if (selectedProducts.length === 0) {
-                                toast({
-                                  title: "Products Required",
-                                  description: "Please select at least one product before generating keywords. Keywords are based on your product selection.",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-                              setShowKeywordSelector(true);
-                            }}
-                            size="lg"
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                            disabled={selectedProducts.length === 0}
-                          >
-                            <Sparkles className="mr-2 h-4 w-4" /> 
-                            Generate Keywords
-                          </Button>
-                          
                           {/* Manual Keyword Entry */}
                           <div className="mt-4 space-y-2">
                             <Label htmlFor="manualKeyword" className="text-sm font-medium text-slate-700">
@@ -3545,7 +3524,6 @@ export default function AdminPanel() {
                               Enter specific keywords exactly as you want to target them. Keywords will be added as-is without modification.
                             </p>
                           </div>
-                        </div>
                         
                         {Array.isArray(selectedKeywords) && selectedKeywords.length > 0 && (
                           <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2 mb-3">
@@ -3561,6 +3539,28 @@ export default function AdminPanel() {
                             ))}
                           </div>
                         )}
+                        
+                        <Button 
+                          onClick={() => {
+                            // Check if products are selected before allowing keyword generation
+                            if (selectedProducts.length === 0) {
+                              toast({
+                                title: "Products Required",
+                                description: "Please select at least one product before generating keywords. Keywords are based on your product selection.",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+                            setShowKeywordSelector(true);
+                          }}
+                          size="lg"
+                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                          disabled={selectedProducts.length === 0}
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" /> 
+                          Generate Keywords
+                        </Button>
+                        </div>
                         
                         <div className="flex justify-between">
                           <Button
