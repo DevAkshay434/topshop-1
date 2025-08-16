@@ -2776,13 +2776,7 @@ export default function AdminPanel() {
                                         ? 'bg-gray-300 text-gray-600 group-hover:bg-gray-400 group-hover:text-gray-700'
                                         : 'bg-gray-200 text-gray-400'
                                 }`}>
-                                  {isCompleted ? (
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  ) : (
-                                    item.number
-                                  )}
+                                  {item.number}
                                 </div>
                                 
                                 {/* Step Label */}
