@@ -6059,11 +6059,13 @@ export default function AdminPanel() {
                           if (videoId) {
                             setYoutubeVideoId(videoId);
                             
-                            // FIXED: Don't add YouTube videos as images - only set the video embed
+                            // CRITICAL FIX: Only set YouTube embed, never add to secondary images
                             // Update both selectedMediaContent and the main youtubeEmbed state
                             setSelectedMediaContent(prev => ({
                               ...prev,
-                              youtubeEmbed: youtubeUrl // Store the full URL instead of just videoId
+                              youtubeEmbed: youtubeUrl, // Store the full URL instead of just videoId
+                              // CRITICAL: Ensure no YouTube videos are in secondaryImages array
+                              secondaryImages: prev.secondaryImages.filter(img => img.type !== 'youtube')
                             }));
                             setYoutubeEmbed(youtubeUrl); // Also update the main state that secondary content uses
                             
@@ -6149,6 +6151,8 @@ export default function AdminPanel() {
                         secondaryImages: [],
                         youtubeEmbed: null
                       });
+                      // Also clear YouTube video ID state
+                      setYoutubeVideoId('');
                       setPrimaryImages([]);
                       setSecondaryImages([]);
                       toast({
@@ -6647,7 +6651,8 @@ export default function AdminPanel() {
                                   alt: image.alt || '',
                                   width: image.width || 0,
                                   height: image.height || 0,
-                                  source: image.source || 'pexels'
+                                  source: image.source || 'pexels',
+                                  type: 'image' // CRITICAL: Explicitly mark as image, never 'youtube'
                                 }]
                               };
                             });
