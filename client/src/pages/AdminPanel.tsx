@@ -6658,25 +6658,39 @@ export default function AdminPanel() {
                             // Remove from primary if already set as primary
                             setPrimaryImages(prev => prev.filter(img => img.id !== image.id));
                             
-                            // Add to secondary images collection (prevent duplicates)
-                            setSecondaryImages(prev => {
-                              const exists = prev.some(img => img.id === image.id);
-                              if (exists) return prev;
-                              return [...prev, {...image, selected: true, isPrimary: false}];
+                            // Update selectedMediaContent state immediately with duplicate check
+                            setSelectedMediaContent(prev => {
+                              const isDuplicate = prev.secondaryImages.some(existing => 
+                                existing.id === image.id || existing.url === image.url
+                              );
+                              
+                              if (isDuplicate) {
+                                console.log("🚫 PREVENTING DUPLICATE in search dialog: Image already exists", image.id);
+                                return prev;
+                              }
+                              
+                              console.log("✅ ADDING UNIQUE SECONDARY IMAGE in search:", image.id);
+                              return {
+                                ...prev,
+                                secondaryImages: [...prev.secondaryImages, {
+                                  id: image.id,
+                                  url: image.url,
+                                  alt: image.alt || '',
+                                  width: image.width || 0,
+                                  height: image.height || 0,
+                                  source: image.source || 'pexels'
+                                }]
+                              };
                             });
                             
-                            // Update selectedMediaContent state immediately
-                            setSelectedMediaContent(prev => ({
-                              ...prev,
-                              secondaryImages: [...prev.secondaryImages, {
-                                id: image.id,
-                                url: image.url,
-                                alt: image.alt || '',
-                                width: image.width || 0,
-                                height: image.height || 0,
-                                source: image.source || 'pexels'
-                              }]
-                            }));
+                            // Sync secondaryImages state for UI consistency
+                            setSecondaryImages(prev => {
+                              const exists = prev.some(img => img.id === image.id);
+                              if (!exists) {
+                                return [...prev, {...image, selected: true, isPrimary: false}];
+                              }
+                              return prev;
+                            });
                             
                             toast({
                               title: "Secondary image selected",
