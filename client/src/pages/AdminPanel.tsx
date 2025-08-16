@@ -4944,7 +4944,7 @@ export default function AdminPanel() {
                                 : 'border-green-300 focus:border-green-500'
                             }`}
                           />
-                          {isOptimizingMeta && (
+                          {isOptimizingMetaTitle && (
                             <div className="absolute left-3 top-2.5">
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
                             </div>
