@@ -2436,13 +2436,16 @@ export default function AdminPanel() {
               source: img.source || 'pexels'
             }));
             
-            // Enhanced duplicate and primary image filtering
+            // FIXED: Enhanced duplicate and primary image filtering with proper deduplication
             formattedSecondaryImages.forEach(img => {
-              const isDuplicate = allSecondaryImages.some(existing => existing.id === img.id);
+              const isDuplicate = allSecondaryImages.some(existing => existing.id === img.id || existing.url === img.url);
               const isPrimaryImage = primaryImageIds.has(img.id) || primaryImageIds.has(img.url);
               
               if (!isDuplicate && !isPrimaryImage) {
                 allSecondaryImages.push(img);
+                console.log("✅ ADDED unique secondary image:", img.id);
+              } else {
+                console.log("🚫 SKIPPED duplicate or primary image:", img.id, { isDuplicate, isPrimaryImage });
               }
             });
             console.log("🔍 SECONDARY IMAGES STATE: Added", formattedSecondaryImages.length - (formattedSecondaryImages.length - allSecondaryImages.length), "images after filtering");
@@ -2468,13 +2471,16 @@ export default function AdminPanel() {
                   source: img.source || 'product_image'
                 }));
                 
-                // Enhanced primary image filtering for emergency fallback
+                // FIXED: Enhanced primary image filtering for emergency fallback with proper deduplication
                 emergencySecondaryImages.forEach((img: any) => {
-                  const isDuplicate = allSecondaryImages.some(existing => existing.id === img.id);
+                  const isDuplicate = allSecondaryImages.some(existing => existing.id === img.id || existing.url === img.url);
                   const isPrimaryImage = primaryImageIds.has(img.id) || primaryImageIds.has(img.url);
                   
                   if (!isDuplicate && !isPrimaryImage) {
                     allSecondaryImages.push(img);
+                    console.log("✅ EMERGENCY: Added unique secondary image:", img.id);
+                  } else {
+                    console.log("🚫 EMERGENCY: Skipped duplicate or primary image:", img.id, { isDuplicate, isPrimaryImage });
                   }
                 });
                 console.log("✅ EMERGENCY FALLBACK COMPLETE: Using", allSecondaryImages.length, "secondary images from project data");
@@ -3931,12 +3937,12 @@ export default function AdminPanel() {
                                                     className="w-full h-full object-cover"
                                                   />
                                                 ) : (
-                                                  <div className="w-full h-full bg-red-100 flex items-center justify-center">
+                                                  <div className="w-full h-full bg-blue-100 flex items-center justify-center">
                                                     <div className="text-center">
-                                                      <div className="w-8 h-8 mx-auto bg-red-600 rounded-full flex items-center justify-center mb-1">
+                                                      <div className="w-8 h-8 mx-auto bg-blue-600 rounded-full flex items-center justify-center mb-1">
                                                         <span className="text-white text-xs">▶️</span>
                                                       </div>
-                                                      <p className="text-xs text-red-700 font-medium">YouTube</p>
+                                                      <p className="text-xs text-blue-700 font-medium">YouTube</p>
                                                     </div>
                                                   </div>
                                                 );
@@ -3944,7 +3950,7 @@ export default function AdminPanel() {
                                               
                                               {/* Play button overlay */}
                                               <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-8 h-8 bg-red-600 bg-opacity-80 rounded-full flex items-center justify-center shadow-lg">
+                                                <div className="w-8 h-8 bg-blue-600 bg-opacity-80 rounded-full flex items-center justify-center shadow-lg">
                                                   <span className="text-white text-xs ml-0.5">▶</span>
                                                 </div>
                                               </div>
@@ -3962,7 +3968,7 @@ export default function AdminPanel() {
                                               </Button>
                                             </div>
                                             <div className="absolute bottom-1 left-1">
-                                              <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded font-medium">
+                                              <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded font-medium">
                                                 Video
                                               </span>
                                             </div>
@@ -6178,7 +6184,7 @@ export default function AdminPanel() {
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="bg-red-600 text-white rounded-full p-1 shadow-lg opacity-90">
+                              <div className="bg-blue-600 text-white rounded-full p-1 shadow-lg opacity-90">
                                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
                                 </svg>
@@ -6254,7 +6260,7 @@ export default function AdminPanel() {
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="bg-red-600 text-white rounded-full p-1 shadow-lg opacity-90">
+                              <div className="bg-blue-600 text-white rounded-full p-1 shadow-lg opacity-90">
                                 <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M6 4L18 12L6 20V4Z" fill="currentColor" />
                                 </svg>
