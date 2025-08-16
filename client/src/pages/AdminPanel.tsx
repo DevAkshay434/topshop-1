@@ -3517,9 +3517,14 @@ export default function AdminPanel() {
                             {selectedKeywords.map((keyword, idx) => (
                               <Badge key={idx} variant="secondary" className="flex items-center gap-1">
                                 {keyword?.keyword || ''}
-                                {keyword?.searchVolume && (
+                                {keyword?.searchVolume && keyword?.searchVolume > 0 && !keyword?.isManual && (
                                   <span className="text-xs text-muted-foreground ml-1">
                                     ({keyword.searchVolume.toLocaleString()})
+                                  </span>
+                                )}
+                                {keyword?.isManual && (
+                                  <span className="text-xs text-purple-600 ml-1">
+                                    (Manual)
                                   </span>
                                 )}
                               </Badge>
