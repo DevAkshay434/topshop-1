@@ -686,8 +686,13 @@ export class ShopifyService {
             });
             
             // Return properly formatted image
-            // Default: Secondary blog images should be normal size and rectangular
-            return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 600px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            // For secondary images, maintain 600x600 square dimensions for consistency
+            const isSecondaryImage = !match.includes('object-fit: cover; margin-right'); // Not an author avatar
+            if (isSecondaryImage) {
+              return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            } else {
+              return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 600px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+            }
           }
         );
         

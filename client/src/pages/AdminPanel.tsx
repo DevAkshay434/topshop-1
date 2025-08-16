@@ -707,7 +707,12 @@ export default function AdminPanel() {
         // Set individual states once only
         if (projectData.mediaContent.primaryImage) {
           setPrimaryImages([projectData.mediaContent.primaryImage]);
-          console.log("✅ Project load: Restored primary image");
+          // CRITICAL: Also set selectedMediaContent.primaryImage for proper display
+          setSelectedMediaContent(prev => ({
+            ...prev,
+            primaryImage: projectData.mediaContent.primaryImage
+          }));
+          console.log("✅ Project load: Restored primary image and selectedMediaContent");
         }
         
         if (projectData.mediaContent.secondaryImages && projectData.mediaContent.secondaryImages.length > 0) {
