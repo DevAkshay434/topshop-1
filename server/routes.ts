@@ -1863,29 +1863,28 @@ export async function registerRoutes(app: Express): Promise<void> {
                         .replace(/\r/g, '<br>');
                     };
 
-                    // Generate author box HTML inline with LinkedIn integration
-                    const generateAuthorBoxHTML = (author: any, content?: string) => {
+                    // Generate bottom author section with small avatar (same as blog posts)
+                    const generateBottomAuthorSection = (author: any) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                      const avatarImg = author.avatarUrl 
-                        ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
-                        : `<div style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 14px; flex-shrink: 0;">${avatarInitials}</div>`;
+                      const smallAvatarElement = author.avatarUrl
+                        ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 20px !important; height: 20px !important; max-width: 20px !important; max-height: 20px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                        : `<div style="width: 20px; height: 20px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 9px;">${avatarInitials}</div>`;
 
-                      // LinkedIn "Learn More" button if LinkedIn URL is available
-                      const linkedinButton = author.linkedinUrl 
-                        ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Learn More</a>`
-                        : '';
-
-                      // Format description with proper line break preservation
-                      const formattedDescription = author.description ? formatAuthorDescription(author.description) : '';
+                      const fullDescription = author.description || '';
 
                       return `
-                        <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
-                          <div style="display: flex; gap: 16px; align-items: flex-start;">
-                            ${avatarImg}
+                        <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                          <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
+                            <div style="flex-shrink: 0;">
+                              ${smallAvatarElement}
+                            </div>
                             <div style="flex: 1;">
-                              <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
-                              ${formattedDescription ? `<div style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${formattedDescription}</div>` : ''}
-                              ${linkedinButton}
+                              <div style="margin-bottom: 8px;">
+                                <span style="color: #6b7280; font-size: 14px;">Written by </span>
+                                <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
+                              </div>
+                              ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
+                              ${author.linkedinUrl ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500;">LinkedIn</a>` : ''}
                             </div>
                           </div>
                         </div>
@@ -1958,29 +1957,16 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedinUrl || undefined
                     };
                     
-                    // For pages, add both "Written by" section after the featured image and the full author box at the end
-                    const writtenByHTML = generateWrittenByHTML(authorFormatted, pageContent);
-                    const authorBoxHTML = generateAuthorBoxHTML(authorFormatted);
+                    // For pages, add only the bottom "Written by" section (same as blog posts)
+                    const bottomAuthorSection = generateBottomAuthorSection(author);
                     
-                    // Insert "Written by" section after the featured image (look for first image tag)
-                    const firstImageRegex = /<img[^>]*>/i;
-                    if (firstImageRegex.test(pageContent)) {
-                      // Find the first image and insert "Written by" section after it
-                      pageContent = pageContent.replace(firstImageRegex, (match) => {
-                        return match + writtenByHTML;
-                      });
-                    } else {
-                      // If no featured image, add "Written by" at the beginning of content
-                      pageContent = writtenByHTML + pageContent;
-                    }
-                    
-                    // Add author box at the end of content for pages
-                    pageContent += authorBoxHTML;
+                    // Add bottom author section at the END of content for pages (same as blog posts)
+                    pageContent += bottomAuthorSection;
                     
                     // Add author name to the post object for Shopify API
                     completePost.author = author.name;
                     
-                    console.log(`Added author information to page for: ${author.name}`);
+                    console.log(`Added author box to PAGE: "Written by ${author.name}" with 20×20px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                   }
                 } catch (authorError) {
                   console.error("Error adding author information to page:", authorError);
