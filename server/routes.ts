@@ -1689,13 +1689,25 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
       }
       
+      // CRITICAL FIX: Ensure featuredImage is properly set from primaryImage
+      if ((!postData.featuredImage || postData.featuredImage.trim() === '') && req.body.primaryImage) {
+        console.log("Mapping primaryImage to featuredImage:", req.body.primaryImage);
+        if (typeof req.body.primaryImage === 'object' && req.body.primaryImage.url) {
+          postData.featuredImage = req.body.primaryImage.url;
+        } else if (typeof req.body.primaryImage === 'string') {
+          postData.featuredImage = req.body.primaryImage;
+        }
+        console.log("Featured image set to:", postData.featuredImage);
+      }
+      
       // Save post to storage
       console.log("Saving post to storage with data:", {
         status: postData.status,
         authorId: postData.authorId,
         scheduledDate: postData.scheduledDate ? postData.scheduledDate.toISOString() : null,
         scheduledPublishDate: postData.scheduledPublishDate,
-        scheduledPublishTime: postData.scheduledPublishTime
+        scheduledPublishTime: postData.scheduledPublishTime,
+        featuredImage: postData.featuredImage
       });
       
       console.log("Full postData being saved:", JSON.stringify(postData, null, 2));
@@ -1867,8 +1879,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                     const generateBottomAuthorSection = (author: any) => {
                       const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                       const smallAvatarElement = author.avatarUrl
-                        ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 20px !important; height: 20px !important; max-width: 20px !important; max-height: 20px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                        : `<div style="width: 20px; height: 20px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 9px;">${avatarInitials}</div>`;
+                        ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
                       const fullDescription = author.description || '';
 
@@ -1966,7 +1978,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                     // Add author name to the post object for Shopify API
                     completePost.author = author.name;
                     
-                    console.log(`Added author box to PAGE: "Written by ${author.name}" with 20×20px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                    console.log(`Added author box to PAGE: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                   }
                 } catch (authorError) {
                   console.error("Error adding author information to page:", authorError);
@@ -2040,8 +2052,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                   // Author box with 48x48px rounded avatar with full description (same design for both blog posts and pages)
                   const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
                   const smallAvatarElement = author.avatarUrl
-                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 20px !important; height: 20px !important; max-width: 20px !important; max-height: 20px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                    : `<div style="width: 20px; height: 20px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 9px;">${avatarInitials}</div>`;
+                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
                   // Use full author description without truncation
                   const fullDescription = author.description || '';
@@ -2067,7 +2079,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                   // Add "Written by" section at the END of content for both blog posts and pages
                   completePost.content = completePost.content + writtenBySection;
                   completePost.author = author.name;
-                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 20×20px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);
