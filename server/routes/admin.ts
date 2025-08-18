@@ -2218,6 +2218,53 @@ Place this at a logical position in the content, typically after introducing a c
         
         contentId = post.id;
         
+        // Add author information with avatar to the content if author is selected
+        if (finalAuthorId && authorName) {
+          try {
+            const { db } = await import('../db');
+            const { authors } = await import('../../shared/schema');
+            const { eq } = await import('drizzle-orm');
+            
+            const authorData = await db.select().from(authors).where(eq(authors.id, finalAuthorId)).limit(1);
+            if (authorData.length > 0) {
+              const author = authorData[0];
+              
+              // Add author box to the content with 64x64px rounded avatar
+              const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+              const avatarElement = author.avatarUrl
+                ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+
+              // Use full author description without truncation
+              const fullDescription = author.description || '';
+
+              const writtenBySection = `
+                <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                  <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
+                    <div style="flex-shrink: 0;">
+                      ${avatarElement}
+                    </div>
+                    <div style="flex: 1;">
+                      <div style="margin-bottom: 8px;">
+                        <span style="color: #6b7280; font-size: 14px;">Written by </span>
+                        <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
+                      </div>
+                      ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
+                      ${author.linkedinUrl ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500;">LinkedIn</a>` : ''}
+                    </div>
+                  </div>
+                </div>
+              `;
+              
+              // Add "Written by" section at the END of content
+              finalContent = finalContent + writtenBySection;
+              console.log(`Added author box to content: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+            }
+          } catch (authorError) {
+            console.error("Error adding author information to content:", authorError);
+          }
+        }
+        
         // IMPORTANT: Content generation should NEVER automatically publish to Shopify
         // Content should only be pushed to Shopify when user explicitly clicks publish buttons
         // This prevents automatic publishing during content generation
@@ -2453,6 +2500,53 @@ Place this at a logical position in the content, typically after introducing a c
           throw new Error(`Failed to create page: ${pageError?.message || 'Unknown error'}`);
         }
         } // End of disabled automatic page creation
+        
+        // Add author information with avatar to page content if author is selected
+        if (finalAuthorId && authorName) {
+          try {
+            const { db } = await import('../db');
+            const { authors } = await import('../../shared/schema');
+            const { eq } = await import('drizzle-orm');
+            
+            const authorData = await db.select().from(authors).where(eq(authors.id, finalAuthorId)).limit(1);
+            if (authorData.length > 0) {
+              const author = authorData[0];
+              
+              // Add author box to the page content with 64x64px rounded avatar
+              const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+              const avatarElement = author.avatarUrl
+                ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
+                : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+
+              // Use full author description without truncation
+              const fullDescription = author.description || '';
+
+              const writtenBySection = `
+                <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                  <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
+                    <div style="flex-shrink: 0;">
+                      ${avatarElement}
+                    </div>
+                    <div style="flex: 1;">
+                      <div style="margin-bottom: 8px;">
+                        <span style="color: #6b7280; font-size: 14px;">Written by </span>
+                        <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
+                      </div>
+                      ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
+                      ${author.linkedinUrl ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500;">LinkedIn</a>` : ''}
+                    </div>
+                  </div>
+                </div>
+              `;
+              
+              // Add "Written by" section at the END of content
+              finalContent = finalContent + writtenBySection;
+              console.log(`Added author box to page content: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+            }
+          } catch (authorError) {
+            console.error("Error adding author information to page content:", authorError);
+          }
+        }
       }
       
       // 8. Automatically optimize meta title and description with Claude AI
