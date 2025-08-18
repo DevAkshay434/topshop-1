@@ -877,27 +877,30 @@ export class ShopifyService {
               (match: string, url: string) => {
                 let optimizedUrl = url;
                 
-                // ONLY optimize URLs for 25MP limit - preserve all original styling
+                // AGGRESSIVE optimization for 25MP limit - much smaller sizes
                 if (url.includes('images.pexels.com')) {
-                  // Use smaller Pexels size to stay under 25MP but keep original CSS
-                  optimizedUrl = url.replace('/original/', '/large/'); // Use large instead of small
-                  optimizedUrl = optimizedUrl.replace('/large2x/', '/large/');
+                  // Use very small Pexels size to stay well under 25MP
+                  optimizedUrl = url.replace('/original/', '/small/');
+                  optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
+                  optimizedUrl = optimizedUrl.replace('/large/', '/small/');
+                  optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
                   
-                  // More conservative size constraints to preserve quality while staying under 25MP
+                  // Very aggressive size constraints to avoid 25MP limit completely
                   const separator = optimizedUrl.includes('?') ? '&' : '?';
-                  optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb&q=80`;
+                  optimizedUrl = optimizedUrl + `${separator}w=400&h=300&fit=crop&auto=compress&cs=tinysrgb&q=60`;
                 }
                 else if (url.includes('cdn.shopify.com')) {
-                  // Use smaller Shopify image sizes but not too aggressive
-                  optimizedUrl = url.replace('_master', '_800x800');
-                  optimizedUrl = optimizedUrl.replace('_original', '_800x800');
-                  optimizedUrl = optimizedUrl.replace('_2048x2048', '_800x800');
-                  optimizedUrl = optimizedUrl.replace('_1024x1024', '_800x800');
+                  // Use much smaller Shopify image sizes
+                  optimizedUrl = url.replace('_master', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_original', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_2048x2048', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_1024x1024', '_400x400');
+                  optimizedUrl = optimizedUrl.replace('_800x800', '_400x400');
                 }
                 else if (url.startsWith('http') && !url.includes('youtube.com')) {
-                  // Conservative size constraints for external images
+                  // Very aggressive size constraints for external images
                   const separator = optimizedUrl.includes('?') ? '&' : '?';
-                  optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&q=80&auto=compress`;
+                  optimizedUrl = optimizedUrl + `${separator}w=400&h=300&fit=crop&q=60&auto=compress`;
                 }
                 
                 // ✅ PRESERVE ORIGINAL STYLING - Only replace the URL, keep all CSS intact
@@ -913,11 +916,23 @@ export class ShopifyService {
               handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || ''
             };
 
-            // CRITICAL FIX: Add featured image to fallback data (was missing!)
+            // CRITICAL FIX: Add optimized featured image to fallback data
             if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
-              const featuredImageUrl = post.featuredImage.trim();
+              let featuredImageUrl = post.featuredImage.trim();
+              
+              // Apply same aggressive optimization to featured image
+              if (featuredImageUrl.includes('images.pexels.com')) {
+                featuredImageUrl = featuredImageUrl.replace('/original/', '/small/');
+                featuredImageUrl = featuredImageUrl.replace('/large2x/', '/small/');
+                featuredImageUrl = featuredImageUrl.replace('/large/', '/small/');
+                featuredImageUrl = featuredImageUrl.replace('/medium/', '/small/');
+                
+                const separator = featuredImageUrl.includes('?') ? '&' : '?';
+                featuredImageUrl = featuredImageUrl + `${separator}w=400&h=300&fit=crop&auto=compress&cs=tinysrgb&q=60`;
+              }
+              
               fallbackData.image = { src: featuredImageUrl };
-              console.log(`✓ Added featured image to fallback article: ${featuredImageUrl}`);
+              console.log(`✓ Added optimized featured image to fallback article: ${featuredImageUrl}`);
             } else {
               console.log(`✗ No featured image found in fallback retry`);
             }
