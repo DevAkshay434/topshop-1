@@ -247,10 +247,53 @@
   height: auto;
   display: block;
   margin: 1rem 0;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 2px solid transparent;
+}
+
+/* Ensure secondary images maintain their specified dimensions and rectangular shape */
+.ProseMirror img[style*="width: 600px"] {
+  width: 600px !important;
+  height: 600px !important;
+  border-radius: 8px !important;
+  object-fit: cover !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* Ensure author avatar images maintain their correct size and circular shape */
+img[style*="width: 64px"][style*="height: 64px"] {
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+}
+
+/* General content images should not be circular unless specifically styled */
+.ProseMirror img:not([style*="border-radius: 50%"]) {
+  border-radius: 8px !important;
+}
+
+/* Responsive adjustments for secondary images on smaller screens */
+@media (max-width: 768px) {
+  .ProseMirror img[style*="width: 600px"] {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    max-width: 500px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ProseMirror img[style*="width: 600px"] {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    max-width: 350px !important;
+  }
 }
 
 .ProseMirror .shopify-image:hover {
