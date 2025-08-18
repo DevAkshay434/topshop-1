@@ -2047,39 +2047,49 @@ export async function registerRoutes(app: Express): Promise<void> {
                 if (authorToUse && completePost) {
                   const author = authorToUse;
                   
-                  // Add author box to BOTH blog posts and pages with same design - no reading time
+                  // Check if author box already exists in content to prevent duplication
+                  const hasExistingAuthorBox = completePost.content.includes('Written by') && 
+                                               (completePost.content.includes(author.name) || 
+                                                completePost.content.includes('border-top: 1px solid #e5e7eb'));
+                  
+                  if (!hasExistingAuthorBox) {
+                    // Add author box to BOTH blog posts and pages with same design - no reading time
 
-                  // Author box with 48x48px rounded avatar with full description (same design for both blog posts and pages)
-                  const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                  const smallAvatarElement = author.avatarUrl
-                    ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                    : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+                    // Author box with 64x64px rounded avatar with full description (same design for both blog posts and pages)
+                    const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+                    const smallAvatarElement = author.avatarUrl
+                      ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important; box-sizing: border-box !important;" />`
+                      : `<div style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; border-radius: 50% !important; background: #e5e7eb !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; color: #374151 !important; font-size: 18px !important; box-sizing: border-box !important;">${avatarInitials}</div>`;
 
-                  // Use full author description without truncation
-                  const fullDescription = author.description || '';
+                    // Use full author description without truncation
+                    const fullDescription = author.description || '';
 
-                  const writtenBySection = `
-                    <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
-                      <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
-                        <div style="flex-shrink: 0;">
-                          ${smallAvatarElement}
-                        </div>
-                        <div style="flex: 1;">
-                          <div style="margin-bottom: 8px;">
-                            <span style="color: #6b7280; font-size: 14px;">Written by </span>
-                            <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
+                    const writtenBySection = `
+                      <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
+                          <div style="flex-shrink: 0;">
+                            ${smallAvatarElement}
                           </div>
-                          ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
-                          ${author.linkedinUrl ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500;">LinkedIn</a>` : ''}
+                          <div style="flex: 1;">
+                            <div style="margin-bottom: 8px;">
+                              <span style="color: #6b7280; font-size: 14px;">Written by </span>
+                              <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
+                            </div>
+                            ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
+                            ${author.linkedinUrl ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500;">LinkedIn</a>` : ''}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  `;
+                    `;
+                    
+                    // Add "Written by" section at the END of content for both blog posts and pages
+                    completePost.content = completePost.content + writtenBySection;
+                    console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  } else {
+                    console.log(`Author box already exists for ${author.name} - skipping duplicate addition`);
+                  }
                   
-                  // Add "Written by" section at the END of content for both blog posts and pages
-                  completePost.content = completePost.content + writtenBySection;
                   completePost.author = author.name;
-                  console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);

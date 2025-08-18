@@ -1906,7 +1906,7 @@ Place this at a logical position in the content, typically after introducing a c
                 imageHtml = `
 <div class="image-container" style="text-align: center; margin: 20px 0;">
   <a href="${productUrl}" title="View ${product.title}">
-    <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto; border-radius: 8px;">
+    <img src="${imageUrl}" alt="${imageAlt}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; display: block; margin: 0 auto;">
   </a>
   <p style="margin-top: 8px; font-size: 0.9em; color: #666;">
     <a href="${productUrl}" style="text-decoration: none; color: #2563eb; font-weight: 500;">${product.title}</a>
@@ -1916,7 +1916,7 @@ Place this at a logical position in the content, typically after introducing a c
                 console.log(`No products available for linking secondary image ${imageIndex + 1}`);
                 imageHtml = `
 <div class="image-container" style="text-align: center; margin: 20px 0;">
-  <img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto; border-radius: 8px;">
+  <img src="${imageUrl}" alt="${imageAlt}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; display: block; margin: 0 auto;">
 </div>`;
               }
               
@@ -2057,7 +2057,7 @@ Place this at a logical position in the content, typically after introducing a c
                   console.log(`Inserting image with URL: ${imageUrl} linking to product: ${productUrl}`);
                   
                   // Create center-aligned div with link to product - Using direct image URL
-                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><a href="${productUrl}" title="${product.title}"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></a>
+                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><a href="${productUrl}" title="${product.title}"><img src="${imageUrl}" alt="${imageAlt}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; display: block; margin: 0 auto;"></a>
 <p style="margin-top: 5px; font-size: 0.9em;"><a href="${productUrl}">${product.title}</a></p></div>\n`;
                 } else {
                   // No product to link to - just insert the image
@@ -2065,7 +2065,7 @@ Place this at a logical position in the content, typically after introducing a c
                   console.log(`Inserting standalone image with URL: ${imageUrl}`);
                   
                   // Create center-aligned div without product link - Using direct image URL
-                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="max-width: 100%; height: auto;"></div>\n`;
+                  imageHtml = `\n<div class="image-container" style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="${imageAlt}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; display: block; margin: 0 auto;"></div>\n`;
                 }
                 
                 // Insert the image HTML at the position
@@ -2232,8 +2232,8 @@ Place this at a logical position in the content, typically after introducing a c
               // Add author box to the content with 64x64px rounded avatar
               const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
               const avatarElement = author.avatarUrl
-                ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+                ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important; box-sizing: border-box !important;" />`
+                : `<div style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; border-radius: 50% !important; background: #e5e7eb !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; color: #374151 !important; font-size: 18px !important; box-sizing: border-box !important;">${avatarInitials}</div>`;
 
               // Use full author description without truncation
               const fullDescription = author.description || '';
