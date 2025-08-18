@@ -588,11 +588,9 @@ export class ShopifyService {
           authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
         }
         
-        // CRITICAL FIX: Only add top "Written by" if it doesn't already exist in content
+        // PRESERVE "Written by" for pages - only add if missing and not already present
         const hasTopWrittenBy = articleData.body_html.includes('Written by') && 
-                                articleData.body_html.includes(authorName) &&
-                                (articleData.body_html.includes('text-align: center') || 
-                                 articleData.body_html.includes('inline-flex'));
+                                articleData.body_html.includes(authorName);
         
         if (!hasTopWrittenBy) {
           const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
@@ -609,10 +607,8 @@ export class ShopifyService {
           
           console.log(`Added centered "Written by ${authorName}" with avatar at very beginning of content`);
         } else {
-          console.log(`Top "Written by" section already exists for ${authorName} - skipping duplicate`);
+          console.log(`"Written by" section already exists for ${authorName} - preserving existing`);
         }
-        
-        console.log(`Added centered "Written by ${authorName}" with avatar at very beginning of content`);
       }
 
       // CRITICAL FIX: Properly handle images for Shopify while avoiding 25MP limit issues

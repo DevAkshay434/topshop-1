@@ -2055,8 +2055,8 @@ export async function registerRoutes(app: Express): Promise<void> {
                                                 completePost.content.includes('64px') ||
                                                 completePost.content.includes(author.avatarUrl || 'avatar'));
                   
-                  if (!hasExistingAuthorBox) {
-                    // Add author box to BOTH blog posts and pages with same design - no reading time
+                  if (!hasExistingAuthorBox && !isPage) {
+                    // Add author box ONLY to blog posts - pages get author boxes automatically from Shopify
 
                     // Author box with 64x64px rounded avatar with full description (same design for both blog posts and pages)
                     const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
@@ -2085,9 +2085,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                       </div>
                     `;
                     
-                    // Add "Written by" section at the END of content for both blog posts and pages
+                    // Add "Written by" section at the END of content for blog posts only
                     completePost.content = completePost.content + writtenBySection;
-                    console.log(`Added author box to ${isPage ? 'PAGE' : 'BLOG POST'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                    console.log(`Added author box to BLOG POST: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                  } else if (isPage) {
+                    console.log(`Skipping author box for PAGE - Shopify adds author information automatically`);
                   } else {
                     console.log(`Author box already exists for ${author.name} - skipping duplicate addition`);
                   }
