@@ -686,7 +686,19 @@ export class ShopifyService {
               return numValue > 400 ? `${prefix}${param}=400` : match;
             });
             
-            // Return properly formatted image
+            // CRITICAL FIX: Check if this image already has proper styling from Claude service
+            // If it has proper styling (600×600px secondary or 64×64px author), preserve it
+            if (match.includes('width: 600px') && match.includes('height: 600px') && match.includes('!important')) {
+              // This is a properly styled secondary image - only update URL, keep all styling
+              console.log(`🔒 PRESERVING secondary image styling (600×600px): ${altText || 'No alt'}`);
+              return match.replace(url, optimizedUrl);
+            } else if (match.includes('width: 64px') && match.includes('height: 64px') && match.includes('border-radius: 50%')) {
+              // This is a properly styled author avatar - only update URL, keep all styling
+              console.log(`🔒 PRESERVING author avatar styling (64×64px): ${altText || 'No alt'}`);
+              return match.replace(url, optimizedUrl);
+            }
+            
+            // Return properly formatted image ONLY for images without existing proper styling
             // For secondary images, maintain 600x600 square dimensions for consistency
             const isSecondaryImage = !match.includes('object-fit: cover; margin-right'); // Not an author avatar
             if (isSecondaryImage) {
@@ -858,49 +870,38 @@ export class ShopifyService {
             // Create optimized article data with smaller images
             let optimizedContent = post.content || '';
             
-            // Apply aggressive image optimization to stay under 25MP limit
+            // CRITICAL FIX: Apply URL optimization while preserving original CSS styling
+            // This prevents destroying the 600×600px secondary images and 64×64px author avatars
             optimizedContent = optimizedContent.replace(
               /<img[^>]*src="([^"]*?)"[^>]*>/gi,
               (match: string, url: string) => {
-                // Extract alt text from original image tag
-                const altMatch = match.match(/alt="([^"]*)"/i);
-                const altText = altMatch ? altMatch[1] : 'Article image';
-                
                 let optimizedUrl = url;
                 
-                // Apply aggressive size limits for Shopify compatibility
+                // ONLY optimize URLs for 25MP limit - preserve all original styling
                 if (url.includes('images.pexels.com')) {
-                  // Use small size for Pexels to stay under 25MP
-                  optimizedUrl = url.replace('/original/', '/small/');
-                  optimizedUrl = optimizedUrl.replace('/large2x/', '/small/');
-                  optimizedUrl = optimizedUrl.replace('/large/', '/small/');
-                  optimizedUrl = optimizedUrl.replace('/medium/', '/small/');
+                  // Use smaller Pexels size to stay under 25MP but keep original CSS
+                  optimizedUrl = url.replace('/original/', '/large/'); // Use large instead of small
+                  optimizedUrl = optimizedUrl.replace('/large2x/', '/large/');
                   
-                  // Add aggressive size constraints
+                  // More conservative size constraints to preserve quality while staying under 25MP
                   const separator = optimizedUrl.includes('?') ? '&' : '?';
-                  optimizedUrl = optimizedUrl + `${separator}w=400&h=300&fit=crop&auto=compress&cs=tinysrgb&q=60`;
+                  optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&auto=compress&cs=tinysrgb&q=80`;
                 }
                 else if (url.includes('cdn.shopify.com')) {
-                  // Use smaller Shopify image sizes
-                  optimizedUrl = url.replace('_master', '_400x400');
-                  optimizedUrl = optimizedUrl.replace('_original', '_400x400');
-                  optimizedUrl = optimizedUrl.replace('_2048x2048', '_400x400');
-                  optimizedUrl = optimizedUrl.replace('_1024x1024', '_400x400');
-                  optimizedUrl = optimizedUrl.replace('_800x800', '_400x400');
-                }
-                else if (url.startsWith('/uploads/')) {
-                  // Handle uploaded images - don't add query parameters to relative URLs
-                  // These should be served from the local server without transformation
-                  optimizedUrl = url;
+                  // Use smaller Shopify image sizes but not too aggressive
+                  optimizedUrl = url.replace('_master', '_800x800');
+                  optimizedUrl = optimizedUrl.replace('_original', '_800x800');
+                  optimizedUrl = optimizedUrl.replace('_2048x2048', '_800x800');
+                  optimizedUrl = optimizedUrl.replace('_1024x1024', '_800x800');
                 }
                 else if (url.startsWith('http') && !url.includes('youtube.com')) {
-                  // Add aggressive size constraints for external images
+                  // Conservative size constraints for external images
                   const separator = optimizedUrl.includes('?') ? '&' : '?';
-                  optimizedUrl = optimizedUrl + `${separator}w=400&h=300&fit=crop&q=60&auto=compress`;
+                  optimizedUrl = optimizedUrl + `${separator}w=800&h=600&fit=crop&q=80&auto=compress`;
                 }
                 
-                // Return properly formatted optimized image
-                return `<div style="text-align: center; margin: 20px 0;"><img src="${optimizedUrl}" alt="${altText}" style="max-width: 100%; height: auto; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" /></div>`;
+                // ✅ PRESERVE ORIGINAL STYLING - Only replace the URL, keep all CSS intact
+                return match.replace(url, optimizedUrl);
               }
             );
             
