@@ -588,17 +588,29 @@ export class ShopifyService {
           authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
         }
         
-        const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
-          <div style="display: inline-flex; align-items: center; justify-content: center;">
-            ${authorAvatar}
-            <span style="color: #6b7280; font-size: 16px;">
-              Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
-            </span>
-          </div>
-        </div>`;
+        // CRITICAL FIX: Only add top "Written by" if it doesn't already exist in content
+        const hasTopWrittenBy = articleData.body_html.includes('Written by') && 
+                                articleData.body_html.includes(authorName) &&
+                                (articleData.body_html.includes('text-align: center') || 
+                                 articleData.body_html.includes('inline-flex'));
         
-        // Add at the very beginning of content BEFORE image processing
-        articleData.body_html = writtenByHTML + articleData.body_html;
+        if (!hasTopWrittenBy) {
+          const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: inline-flex; align-items: center; justify-content: center;">
+              ${authorAvatar}
+              <span style="color: #6b7280; font-size: 16px;">
+                Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
+              </span>
+            </div>
+          </div>`;
+          
+          // Add at the very beginning of content BEFORE image processing
+          articleData.body_html = writtenByHTML + articleData.body_html;
+          
+          console.log(`Added centered "Written by ${authorName}" with avatar at very beginning of content`);
+        } else {
+          console.log(`Top "Written by" section already exists for ${authorName} - skipping duplicate`);
+        }
         
         console.log(`Added centered "Written by ${authorName}" with avatar at very beginning of content`);
       }

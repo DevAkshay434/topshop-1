@@ -2047,10 +2047,13 @@ export async function registerRoutes(app: Express): Promise<void> {
                 if (authorToUse && completePost) {
                   const author = authorToUse;
                   
-                  // Check if author box already exists in content to prevent duplication
+                  // ENHANCED: Better duplicate prevention - check for multiple author box indicators
                   const hasExistingAuthorBox = completePost.content.includes('Written by') && 
-                                               (completePost.content.includes(author.name) || 
-                                                completePost.content.includes('border-top: 1px solid #e5e7eb'));
+                                               completePost.content.includes(author.name) &&
+                                               (completePost.content.includes('border-top: 1px solid #e5e7eb') ||
+                                                completePost.content.includes('flex-shrink: 0') ||
+                                                completePost.content.includes('64px') ||
+                                                completePost.content.includes(author.avatarUrl || 'avatar'));
                   
                   if (!hasExistingAuthorBox) {
                     // Add author box to BOTH blog posts and pages with same design - no reading time
