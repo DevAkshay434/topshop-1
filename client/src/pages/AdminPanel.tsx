@@ -3688,7 +3688,7 @@ export default function AdminPanel() {
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                 <Card className="overflow-hidden">
                                   <CardHeader className="p-3 bg-slate-100">
-                                    <CardTitle className="text-sm">Search Free Images</CardTitle>
+                                    <CardTitle className="text-xs font-medium truncate">Search Free Images</CardTitle>
                                     <CardDescription className="text-xs">
                                       Search free stock photos
                                     </CardDescription>
@@ -3704,8 +3704,8 @@ export default function AdminPanel() {
                                         setShowImageDialog(true);
                                       }}
                                     >
-                                      <Search className="mr-2 h-4 w-4" />
-                                      Search Free Images
+                                      <Search className="mr-1 h-3 w-3" />
+                                      <span className="text-xs truncate">Search Free Images</span>
                                     </Button>
                                   </CardContent>
                                 </Card>
