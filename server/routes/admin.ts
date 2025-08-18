@@ -2181,7 +2181,7 @@ Place this at a logical position in the content, typically after introducing a c
               if (authorData.length > 0) {
                 authorName = authorData[0].name;
                 finalAuthorId = authorIdNum;
-                console.log(`AUTHOR SYNC SUCCESS - Using selected author: ${authorName} (ID: ${authorIdNum})`);
+                console.log(`${requestData.articleType?.toUpperCase() || 'POST'} AUTHOR SYNC SUCCESS - Using selected author: ${authorName} (ID: ${authorIdNum})`);
               } else {
                 console.log(`AUTHOR SYNC WARNING - Author ID ${authorIdNum} not found in database`);
               }
@@ -2195,11 +2195,14 @@ Place this at a logical position in the content, typically after introducing a c
           console.log(`AUTHOR SYNC INFO - No authorId provided, no author will be assigned`);
         }
 
+        // First, temporarily store content without author box for processing
+        let contentForDatabase = finalContent;
+        
         // @ts-ignore - Categories field is supported in the database but might not be in the type yet
         const post = await storage.createBlogPost({
           storeId: store.id, // CRITICAL: Associate post with the correct store
           title: generatedContent.title || requestData.title,
-          content: finalContent,
+          content: contentForDatabase, // Will be updated after author processing
           status: postStatus,
           publishedDate: requestData.postStatus === 'publish' ? new Date() : undefined,
           // Add scheduled date information if applicable
@@ -2256,9 +2259,17 @@ Place this at a logical position in the content, typically after introducing a c
                 </div>
               `;
               
-              // Add "Written by" section at the END of content
-              finalContent = finalContent + writtenBySection;
-              console.log(`Added author box to content: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+              // CRITICAL: Add "Written by" section at the END of content ONLY for blog posts, NOT for pages
+              // Pages get author information automatically from Shopify when published
+              if (requestData.articleType !== 'page') {
+                contentForDatabase = contentForDatabase + writtenBySection;
+                console.log(`Added author box to BLOG POST content: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+              } else {
+                console.log(`Skipping author box for PAGE - Shopify will add author information automatically`);
+              }
+              
+              // Update the post with the correct content (with or without author box)
+              await storage.updateBlogPost(post.id, { content: contentForDatabase });
             }
           } catch (authorError) {
             console.error("Error adding author information to content:", authorError);

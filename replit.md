@@ -33,6 +33,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Author Information Management**: Preserves formatting in author descriptions, displays full descriptions, and ensures consistent author avatar sizing (64x64px) across blog posts and pages, including during project loads. Enhanced CSS specificity with !important declarations to override Shopify theme CSS.
 - **Image Sizing System**: Comprehensive image sizing with 600×600px for secondary images and 64×64px for author avatars. Enhanced CSS specificity with !important declarations, min/max constraints, and box-sizing to override Shopify theme CSS overrides.
 - **Duplicate Prevention**: Enhanced author box duplication prevention checks existing content before adding new author boxes to prevent multiple author sections.
+- **Blog Posts vs Pages Author Handling**: Blog posts receive both top "Written by" section and bottom author box with full description; Pages only get top "Written by" section as Shopify adds author information automatically during publishing.
 - **Workflow Step Validation**: Requires completion of preceding steps before content generation, enhancing workflow progression.
 
 ## External Dependencies

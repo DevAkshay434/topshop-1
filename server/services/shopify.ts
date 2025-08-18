@@ -563,7 +563,12 @@ export class ShopifyService {
       });
       
       // Add author information with avatar FIRST, before any image processing
-      if (authorName && articleData.body_html) {
+      // CRITICAL: Skip adding "Written by" for pages - Shopify handles this automatically
+      const isPageContent = articleData.template_suffix === 'page' || 
+                            (post as any).contentType === 'page' || 
+                            !articleData.blog_id;
+      
+      if (authorName && articleData.body_html && !isPageContent) {
         const authorId = (post as any).authorId || 'author';
         
         // Get author avatar from database if available

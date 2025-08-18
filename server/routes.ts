@@ -2044,9 +2044,10 @@ export async function registerRoutes(app: Express): Promise<void> {
                   console.log(`No author specified for post ${post.id} - skipping author information`);
                 }
                 
-                if (authorToUse && completePost) {
+                if (authorToUse && completePost && !isPage) {
                   const author = authorToUse;
                   
+                  // ONLY process author boxes for BLOG POSTS - skip pages entirely
                   // ENHANCED: Better duplicate prevention - check for multiple author box indicators
                   const hasExistingAuthorBox = completePost.content.includes('Written by') && 
                                                completePost.content.includes(author.name) &&
@@ -2055,7 +2056,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                                                 completePost.content.includes('64px') ||
                                                 completePost.content.includes(author.avatarUrl || 'avatar'));
                   
-                  if (!hasExistingAuthorBox && !isPage) {
+                  if (!hasExistingAuthorBox) {
                     // Add author box ONLY to blog posts - pages get author boxes automatically from Shopify
 
                     // Author box with 64x64px rounded avatar with full description (same design for both blog posts and pages)
@@ -2088,13 +2089,14 @@ export async function registerRoutes(app: Express): Promise<void> {
                     // Add "Written by" section at the END of content for blog posts only
                     completePost.content = completePost.content + writtenBySection;
                     console.log(`Added author box to BLOG POST: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
-                  } else if (isPage) {
-                    console.log(`Skipping author box for PAGE - Shopify adds author information automatically`);
                   } else {
                     console.log(`Author box already exists for ${author.name} - skipping duplicate addition`);
                   }
                   
                   completePost.author = author.name;
+                } else if (isPage && authorToUse) {
+                  console.log(`Skipping ALL author box processing for PAGE - Shopify adds author information automatically`);
+                  completePost.author = authorToUse.name;
                 }
               } catch (authorError) {
                 console.error("Error adding author information:", authorError);
