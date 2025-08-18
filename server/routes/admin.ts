@@ -2501,22 +2501,50 @@ Place this at a logical position in the content, typically after introducing a c
         }
         } // End of disabled automatic page creation
         
+        // Determine author information for pages (similar to blog posts)
+        let pageAuthorName = ''; 
+        let pageFinalAuthorId: number | null = null;
+        
+        // Convert authorId to number if provided for pages
+        if (requestData.authorId) {
+          try {
+            const authorIdNum = typeof requestData.authorId === 'string' 
+              ? parseInt(requestData.authorId, 10) 
+              : requestData.authorId;
+            
+            if (!isNaN(authorIdNum)) {
+              const { db } = await import('../db');
+              const { authors } = await import('../../shared/schema');
+              const { eq } = await import('drizzle-orm');
+              
+              const authorData = await db.select().from(authors).where(eq(authors.id, authorIdNum)).limit(1);
+              if (authorData.length > 0) {
+                pageAuthorName = authorData[0].name;
+                pageFinalAuthorId = authorIdNum;
+                console.log(`PAGE AUTHOR SYNC SUCCESS - Using selected author: ${pageAuthorName} (ID: ${authorIdNum})`);
+              }
+            }
+          } catch (error) {
+            console.error('PAGE AUTHOR SYNC ERROR:', error);
+          }
+        }
+        
         // Add author information with avatar to page content if author is selected
-        if (finalAuthorId && authorName) {
+        if (pageFinalAuthorId && pageAuthorName) {
           try {
             const { db } = await import('../db');
             const { authors } = await import('../../shared/schema');
             const { eq } = await import('drizzle-orm');
             
-            const authorData = await db.select().from(authors).where(eq(authors.id, finalAuthorId)).limit(1);
+            const authorData = await db.select().from(authors).where(eq(authors.id, pageFinalAuthorId)).limit(1);
             if (authorData.length > 0) {
               const author = authorData[0];
               
               // Add author box to the page content with 64x64px rounded avatar
               const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
               const avatarElement = author.avatarUrl
-                ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
+                ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important; box-sizing: border-box !important;" />`
+                : `<div style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; background: #e5e7eb !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; color: #374151 !important; font-size: 18px !important; box-sizing: border-box !important;">${avatarInitials}</div>`;
 
               // Use full author description without truncation
               const fullDescription = author.description || '';
