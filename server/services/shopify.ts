@@ -913,6 +913,15 @@ export class ShopifyService {
               handle: post.title?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || ''
             };
 
+            // CRITICAL FIX: Add featured image to fallback data (was missing!)
+            if (post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.trim()) {
+              const featuredImageUrl = post.featuredImage.trim();
+              fallbackData.image = { src: featuredImageUrl };
+              console.log(`✓ Added featured image to fallback article: ${featuredImageUrl}`);
+            } else {
+              console.log(`✗ No featured image found in fallback retry`);
+            }
+
             // Add meta description as summary if available
             if ((post as any).metaDescription) {
               fallbackData.summary = (post as any).metaDescription;
