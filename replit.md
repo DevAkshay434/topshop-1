@@ -30,7 +30,9 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Multi-Store Support**: Ensures complete data isolation between connected Shopify stores, with automatic store detection and proper routing of API requests.
 - **URL Generation**: Implements SEO-friendly URL generation using Shopify handles for both blog posts and pages, with robust fallback mechanisms.
 - **Duplicate Prevention System**: Comprehensive duplicate prevention for scheduled content at the database level, checking both Shopify ID and title matches. Includes image deduplication for Pexels and prevents YouTube video duplication.
-- **Author Information Management**: Preserves formatting in author descriptions, displays full descriptions, and ensures consistent author avatar sizing (64x64px) across blog posts and pages, including during project loads.
+- **Author Information Management**: Preserves formatting in author descriptions, displays full descriptions, and ensures consistent author avatar sizing (64x64px) across blog posts and pages, including during project loads. Enhanced CSS specificity with !important declarations to override Shopify theme CSS.
+- **Image Sizing System**: Comprehensive image sizing with 600×600px for secondary images and 64×64px for author avatars. Enhanced CSS specificity with !important declarations, min/max constraints, and box-sizing to override Shopify theme CSS overrides.
+- **Duplicate Prevention**: Enhanced author box duplication prevention checks existing content before adding new author boxes to prevent multiple author sections.
 - **Workflow Step Validation**: Requires completion of preceding steps before content generation, enhancing workflow progression.
 
 ## External Dependencies

@@ -477,9 +477,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productTitle = productInfo.title || "View Product Details";
         
         // Create product-linked image HTML with exact 600×600px sizing
-        imageHtml = `<div style="text-align: center; margin: 20px 0;">
-  <a href="/products/${productHandle}" title="${productTitle}" style="text-decoration: none;">
-    <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+        imageHtml = `<div style="text-align: center !important; margin: 20px 0 !important;">
+  <a href="/products/${productHandle}" title="${productTitle}" style="text-decoration: none !important;">
+    <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
   </a>
 </div>`;
         
@@ -490,9 +490,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productId = availableProducts[productIndex];
         
         // Create product-linked image HTML with exact 600×600px sizing
-        imageHtml = `<div style="text-align: center; margin: 20px 0;">
-  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none;">
-    <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+        imageHtml = `<div style="text-align: center !important; margin: 20px 0 !important;">
+  <a href="/products/${productId}" title="View Product Details" style="text-decoration: none !important;">
+    <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
   </a>
 </div>`;
         
@@ -500,9 +500,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       } else {
         // Fallback without product link with exact 600×600px sizing
         imageHtml = `
-<div style="margin: 20px 0; text-align: center;">
+<div style="margin: 20px 0 !important; text-align: center !important;">
   <img src="${image.url}" alt="${image.alt || ''}" 
-    style="width: 600px; height: 600px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+    style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
 </div>`;
         
         console.log(`❌ Secondary image ${i + 1} added without product link (no products selected)`);
