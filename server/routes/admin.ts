@@ -2578,9 +2578,14 @@ Place this at a logical position in the content, typically after introducing a c
                 </div>
               `;
               
-              // Add "Written by" section at the END of content
-              finalContent = finalContent + writtenBySection;
-              console.log(`Added author box to page content: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+              // CRITICAL: For pages, DO NOT add author box - Shopify handles this automatically
+              // Only add author boxes to blog posts, never to pages
+              if (requestData.articleType !== 'page') {
+                finalContent = finalContent + writtenBySection;
+                console.log(`Added author box to BLOG POST content: "Written by ${author.name}" with 64×64px rounded avatar at bottom`);
+              } else {
+                console.log(`Skipping author box for PAGE - Shopify handles author info automatically for: ${author.name}`);
+              }
             }
           } catch (authorError) {
             console.error("Error adding author information to page content:", authorError);

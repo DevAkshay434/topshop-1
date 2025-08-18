@@ -1969,16 +1969,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedinUrl || undefined
                     };
                     
-                    // For pages, add only the bottom "Written by" section (same as blog posts)
-                    const bottomAuthorSection = generateBottomAuthorSection(author);
-                    
-                    // Add bottom author section at the END of content for pages (same as blog posts)
-                    pageContent += bottomAuthorSection;
-                    
-                    // Add author name to the post object for Shopify API
+                    // CRITICAL: Pages should NOT get author boxes - Shopify handles author info automatically
+                    // Only set the author name for Shopify API, but don't add visual author box to content
                     completePost.author = author.name;
                     
-                    console.log(`Added author box to PAGE: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                    console.log(`Skipping author box for PAGE - Shopify will add author information automatically. Author: ${author.name}`);
                   }
                 } catch (authorError) {
                   console.error("Error adding author information to page:", authorError);
