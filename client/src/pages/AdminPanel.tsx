@@ -4064,6 +4064,18 @@ export default function AdminPanel() {
                                 return;
                               }
                               
+                              // Show YouTube video prompt alert if no YouTube video is currently selected
+                              if (!youtubeEmbed) {
+                                const shouldAddYouTube = window.confirm("Do you also want to add a YouTube video?\n\nYouTube videos can enhance engagement and provide additional value to your content.");
+                                
+                                if (shouldAddYouTube) {
+                                  // Open the Choose Media Dialog with YouTube tab
+                                  setImageTab('youtube');
+                                  setShowImageDialog(true);
+                                  return; // Don't proceed to next step yet
+                                }
+                              }
+                              
                               // Continue to author selection step
                               setWorkflowStep('author');
                               scrollToCurrentStep();
