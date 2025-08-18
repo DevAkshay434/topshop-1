@@ -456,8 +456,9 @@ export class ShopifyService {
         handle: (() => {
           if (!post.title) return 'untitled';
           const baseHandle = post.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-          const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
-          return `${baseHandle}-${timestamp}`;
+          const timestamp = Date.now().toString().slice(-4); // Last 4 digits of timestamp
+          const randomSuffix = Math.random().toString(36).substring(2, 6); // 4 random characters
+          return `${baseHandle}-${timestamp}-${randomSuffix}`;
         })()
       };
 

@@ -4234,8 +4234,8 @@ export default function AdminPanel() {
                         )}
                       />
                       
-                      {/* Content Style Selector - New Feature */}
-                      <div className="mb-6">
+                      {/* Content Style Selector - HIDDEN PER USER REQUEST */}
+                      <div className="mb-6" style={{ display: 'none' }}>
                         <FormLabel className="mb-2 block">Content Style</FormLabel>
                         <ContentStyleSelector 
                           key={`content-style-${selectedContentToneId || 'empty'}-${formKey}`}
