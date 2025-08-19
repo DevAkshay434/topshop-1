@@ -562,13 +562,14 @@ export class ShopifyService {
         status: post.status
       });
       
-      // Add author information with avatar FIRST, before any image processing
-      // CRITICAL: Skip adding "Written by" for pages - Shopify handles this automatically
+      // CRITICAL: NEVER add author information to content - Shopify API handles this automatically
+      // Both blog posts and pages get author info from the API, adding it here creates duplicates
       const isPageContent = articleData.template_suffix === 'page' || 
                             (post as any).contentType === 'page' || 
                             !articleData.blog_id;
       
-      if (authorName && articleData.body_html && !isPageContent) {
+      // COMPLETELY DISABLE author box insertion - Shopify API handles ALL author information
+      if (false && authorName && articleData.body_html && !isPageContent) {
         const authorId = (post as any).authorId || 'author';
         
         // Get author avatar from database if available

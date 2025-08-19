@@ -2259,14 +2259,10 @@ Place this at a logical position in the content, typically after introducing a c
                 </div>
               `;
               
-              // CRITICAL: Add "Written by" section at the END of content ONLY for blog posts, NOT for pages
-              // Pages get author information automatically from Shopify when published
-              if (requestData.articleType !== 'page') {
-                contentForDatabase = contentForDatabase + writtenBySection;
-                console.log(`Added author box to BLOG POST content: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
-              } else {
-                console.log(`Skipping author box for PAGE - Shopify will add author information automatically`);
-              }
+              // CRITICAL: NEVER add author boxes to content that goes to Shopify
+              // Shopify API automatically handles author information for BOTH blog posts AND pages
+              // Adding author boxes here creates duplicates when content is published
+              console.log(`Skipping author box for ${requestData.articleType?.toUpperCase() || 'CONTENT'} - Shopify API handles author information automatically to prevent duplicates`);
               
               // Update the post with the correct content (with or without author box)
               await storage.updateBlogPost(post.id, { content: contentForDatabase });
@@ -2578,14 +2574,10 @@ Place this at a logical position in the content, typically after introducing a c
                 </div>
               `;
               
-              // CRITICAL: For pages, DO NOT add author box - Shopify handles this automatically
-              // Only add author boxes to blog posts, never to pages
-              if (requestData.articleType !== 'page') {
-                finalContent = finalContent + writtenBySection;
-                console.log(`Added author box to BLOG POST content: "Written by ${author.name}" with 64×64px rounded avatar at bottom`);
-              } else {
-                console.log(`Skipping author box for PAGE - Shopify handles author info automatically for: ${author.name}`);
-              }
+              // CRITICAL: NEVER add author boxes to content that goes to Shopify
+              // Shopify API automatically handles author information for BOTH blog posts AND pages
+              // Adding author boxes here creates duplicates when content is published
+              console.log(`Skipping author box for ${requestData.articleType?.toUpperCase() || 'CONTENT'} - Shopify API handles author information automatically to prevent duplicates for: ${author.name}`);
             }
           } catch (authorError) {
             console.error("Error adding author information to page content:", authorError);
