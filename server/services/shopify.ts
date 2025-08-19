@@ -595,27 +595,20 @@ export class ShopifyService {
           authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
         }
         
-        // PRESERVE "Written by" for pages - only add if missing and not already present
-        const hasTopWrittenBy = articleData.body_html.includes('Written by') && 
-                                articleData.body_html.includes(authorName);
+        // ALWAYS add "Written by" at the top for pages - this is the primary author attribution
+        const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
+          <div style="display: inline-flex; align-items: center; justify-content: center;">
+            ${authorAvatar}
+            <span style="color: #6b7280; font-size: 16px;">
+              Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
+            </span>
+          </div>
+        </div>`;
         
-        if (!hasTopWrittenBy) {
-          const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: inline-flex; align-items: center; justify-content: center;">
-              ${authorAvatar}
-              <span style="color: #6b7280; font-size: 16px;">
-                Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
-              </span>
-            </div>
-          </div>`;
-          
-          // Add at the very beginning of content BEFORE image processing
-          articleData.body_html = writtenByHTML + articleData.body_html;
-          
-          console.log(`Added centered "Written by ${authorName}" with avatar at very beginning of content`);
-        } else {
-          console.log(`"Written by" section already exists for ${authorName} - preserving existing`);
-        }
+        // Add at the very beginning of content BEFORE image processing
+        articleData.body_html = writtenByHTML + articleData.body_html;
+        
+        console.log(`✅ Added centered "Written by ${authorName}" with avatar at very beginning of content`);
       }
 
       // CRITICAL FIX: Properly handle images for Shopify while avoiding 25MP limit issues
@@ -1296,6 +1289,47 @@ export class ShopifyService {
         // For pages, we can add categories as a hidden meta section in the content
         const categoryMeta = `<!-- Categories: ${categoryTags} -->`;
         processedContent = categoryMeta + '\n' + content;
+      }
+
+      // CRITICAL: Add "Written by" section at the TOP of page content for author attribution
+      if (post && (post as any).authorId && (post as any).author) {
+        const authorName = (post as any).author;
+        const authorId = (post as any).authorId;
+        
+        // Get author avatar from database if available
+        let authorAvatar = '';
+        try {
+          const { storage } = await import('../storage');
+          const authors = await storage.getAuthors();
+          const author = authors.find(a => parseInt(a.id) === parseInt(authorId.toString()));
+          if (author && author.avatarUrl) {
+            authorAvatar = `<img src="${author.avatarUrl}" alt="${authorName}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px;" />`;
+          } else {
+            // Create initials avatar if no image
+            const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
+            authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
+          }
+        } catch (error) {
+          console.error('Error fetching author avatar for page:', error);
+          // Fallback to initials
+          const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
+          authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
+        }
+        
+        // Add "Written by" at the top for pages - this is the primary author attribution
+        const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
+          <div style="display: inline-flex; align-items: center; justify-content: center;">
+            ${authorAvatar}
+            <span style="color: #6b7280; font-size: 16px;">
+              Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
+            </span>
+          </div>
+        </div>`;
+        
+        // Add at the very beginning of content
+        processedContent = writtenByHTML + processedContent;
+        
+        console.log(`✅ Added "Written by ${authorName}" with avatar at top of page content`);
       }
       
       // Set up the basic page data with SEO meta fields

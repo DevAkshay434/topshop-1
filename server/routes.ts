@@ -1969,16 +1969,13 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedinUrl || undefined
                     };
                     
-                    // For pages, add the bottom "Written by" section (same as blog posts)
-                    const bottomAuthorSection = generateBottomAuthorSection(author);
-                    
-                    // Add bottom author section at the END of content for pages (same as blog posts)
-                    pageContent += bottomAuthorSection;
+                    // CRITICAL: Do NOT add author boxes here - they're already added during content generation
+                    // This prevents duplicate author boxes at the bottom of pages
                     
                     // Add author name to the post object for Shopify API
                     completePost.author = author.name;
                     
-                    console.log(`Added author box to PAGE: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
+                    console.log(`PAGE PUBLISH: Author "${author.name}" will be handled by Shopify API - no duplicate author boxes added`);
                   }
                 } catch (authorError) {
                   console.error("Error adding author information to page:", authorError);
@@ -2002,6 +1999,17 @@ export async function registerRoutes(app: Express): Promise<void> {
                 // For immediate publish or draft
                 const shouldPublish = post.status === 'published';
                 console.log(`Creating page with immediate publish: ${shouldPublish}`);
+                
+                // Debug: log the post object being passed to createPage
+                console.log(`📋 PAGE CREATION DEBUG - Post object:`, {
+                  id: post.id,
+                  title: post.title,
+                  author: post.author,
+                  authorId: post.authorId,
+                  hasAuthor: !!post.author,
+                  hasAuthorId: !!post.authorId
+                });
+                
                 shopifyArticle = await shopifyService.createPage(
                   tempStore,
                   post.title,
