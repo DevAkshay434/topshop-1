@@ -2259,10 +2259,10 @@ Place this at a logical position in the content, typically after introducing a c
                 </div>
               `;
               
-              // CRITICAL: NEVER add author boxes to content that goes to Shopify
-              // Shopify API automatically handles author information for BOTH blog posts AND pages
-              // Adding author boxes here creates duplicates when content is published
-              console.log(`Skipping author box for ${requestData.articleType?.toUpperCase() || 'CONTENT'} - Shopify API handles author information automatically to prevent duplicates`);
+              // Add "Written by" section at the END of content for blog posts and pages
+              // This provides proper author attribution in the content itself
+              contentForDatabase = contentForDatabase + writtenBySection;
+              console.log(`Added author box to ${requestData.articleType?.toUpperCase() || 'CONTENT'}: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
               
               // Update the post with the correct content (with or without author box)
               await storage.updateBlogPost(post.id, { content: contentForDatabase });
@@ -2574,10 +2574,10 @@ Place this at a logical position in the content, typically after introducing a c
                 </div>
               `;
               
-              // CRITICAL: NEVER add author boxes to content that goes to Shopify
-              // Shopify API automatically handles author information for BOTH blog posts AND pages
-              // Adding author boxes here creates duplicates when content is published
-              console.log(`Skipping author box for ${requestData.articleType?.toUpperCase() || 'CONTENT'} - Shopify API handles author information automatically to prevent duplicates for: ${author.name}`);
+              // Add "Written by" section at the END of content for pages
+              // This provides proper author attribution in the content itself
+              finalContent = finalContent + writtenBySection;
+              console.log(`Added author box to PAGE: "Written by ${author.name}" with 64×64px rounded avatar at bottom of content${author.linkedinUrl ? ' (LinkedIn: ' + author.linkedinUrl + ')' : ''}`);
             }
           } catch (authorError) {
             console.error("Error adding author information to page content:", authorError);

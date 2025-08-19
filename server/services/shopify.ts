@@ -568,8 +568,9 @@ export class ShopifyService {
                             (post as any).contentType === 'page' || 
                             !articleData.blog_id;
       
-      // COMPLETELY DISABLE author box insertion - Shopify API handles ALL author information
-      if (false && authorName && articleData.body_html && !isPageContent) {
+      // Add "Written by" section at the TOP of content for better user experience
+      // This complements the author box at the bottom added during content generation
+      if (authorName && articleData.body_html) {
         const authorId = (post as any).authorId || 'author';
         
         // Get author avatar from database if available
