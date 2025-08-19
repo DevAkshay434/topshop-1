@@ -2626,14 +2626,24 @@ export async function registerRoutes(app: Express): Promise<void> {
         apiKey: process.env.ANTHROPIC_API_KEY,
       });
 
+      // Sanitize content to prevent JSON parsing errors
+      const sanitizeText = (text: string) => {
+        return text
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+          .replace(/[\uD800-\uDFFF]/g, '') // Remove unpaired surrogates
+          .replace(/[""'']/g, '"') // Normalize quotes
+          .replace(/[—–]/g, '-') // Normalize dashes
+          .trim();
+      };
+
       // Create context for meta title optimization
       const optimizationContext = {
-        mainTitle: title,
-        keywords: keywords.join(', '),
-        targetAudience: targetAudience || 'general audience',
-        tone: tone || 'professional',
-        region: region || 'US',
-        contentSnippet: content ? content.substring(0, 500) : ''
+        mainTitle: sanitizeText(title),
+        keywords: keywords.map(k => sanitizeText(k)).join(', '),
+        targetAudience: sanitizeText(targetAudience || 'general audience'),
+        tone: sanitizeText(tone || 'professional'),
+        region: sanitizeText(region || 'US'),
+        contentSnippet: content ? sanitizeText(content.substring(0, 500)) : ''
       };
 
       const prompt = `You are an SEO expert. Generate ONLY an optimized meta title for this content:
@@ -2719,14 +2729,24 @@ Please respond with ONLY the optimized meta title, no other text or explanation.
         apiKey: process.env.ANTHROPIC_API_KEY,
       });
 
+      // Sanitize content to prevent JSON parsing errors
+      const sanitizeText = (text: string) => {
+        return text
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+          .replace(/[\uD800-\uDFFF]/g, '') // Remove unpaired surrogates
+          .replace(/[""'']/g, '"') // Normalize quotes
+          .replace(/[—–]/g, '-') // Normalize dashes
+          .trim();
+      };
+
       // Create context for meta description optimization
       const optimizationContext = {
-        mainTitle: title,
-        keywords: keywords.join(', '),
-        targetAudience: targetAudience || 'general audience',
-        tone: tone || 'professional',
-        region: region || 'US',
-        contentSnippet: content ? content.substring(0, 500) : ''
+        mainTitle: sanitizeText(title),
+        keywords: keywords.map(k => sanitizeText(k)).join(', '),
+        targetAudience: sanitizeText(targetAudience || 'general audience'),
+        tone: sanitizeText(tone || 'professional'),
+        region: sanitizeText(region || 'US'),
+        contentSnippet: content ? sanitizeText(content.substring(0, 500)) : ''
       };
 
       const prompt = `You are an SEO expert. Generate ONLY an optimized meta description for this content:
