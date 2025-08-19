@@ -39,7 +39,7 @@ The application employs a modern full-stack, client-server architecture with mul
   - **Database Resolution**: Fetches author names from database when author field is null but authorId exists
   - **Seamless Linking**: "Written by" links to author box at bottom using `id="author-box"`
   - **Professional Layout**: Enhanced visual design with proper spacing and typography
-- **Blog Posts vs Pages Author Handling**: Blog posts receive both top "Written by" section and bottom author box with full description; Pages only get top "Written by" section as Shopify adds author information automatically during publishing.
+- **Blog Posts vs Pages Author Handling**: Both blog posts and pages receive top "Written by" section and bottom author box with full description. Enhanced duplicate prevention ensures author boxes are only added when not already present in content.
 - **Project Management System**: Complete project save/load functionality with proper database storage and popup-driven workflow. Supports saving complete project configurations including content settings, selected products, collections, keywords, and media.
 - **Workflow Step Validation**: Requires completion of preceding steps before content generation, enhancing workflow progression.
 

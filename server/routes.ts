@@ -1969,13 +1969,24 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedinUrl || undefined
                     };
                     
-                    // CRITICAL: Do NOT add author boxes here - they're already added during content generation
-                    // This prevents duplicate author boxes at the bottom of pages
+                    // Check if author box already exists in content to prevent duplicates
+                    const hasAuthorBox = pageContent.includes('id="author-box"') || pageContent.includes('class="author-box"');
+                    
+                    if (!hasAuthorBox) {
+                      // Import the generateAuthorBoxHTML function
+                      const { generateAuthorBoxHTML } = await import('../client/src/components/AuthorBox');
+                      
+                      // Add author box at the end of content for pages 
+                      const authorBoxHtml = generateAuthorBoxHTML(authorFormatted);
+                      pageContent += authorBoxHtml;
+                      
+                      console.log(`✅ Added author box to page for author: ${author.name}`);
+                    } else {
+                      console.log(`📋 Author box already exists in page content for: ${author.name}`);
+                    }
                     
                     // Add author name to the post object for Shopify API
                     completePost.author = author.name;
-                    
-                    console.log(`PAGE PUBLISH: Author "${author.name}" will be handled by Shopify API - no duplicate author boxes added`);
                   }
                 } catch (authorError) {
                   console.error("Error adding author information to page:", authorError);
