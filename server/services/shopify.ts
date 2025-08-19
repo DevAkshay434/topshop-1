@@ -1330,20 +1330,38 @@ export class ShopifyService {
         
         // Only add "Written by" section if we have an author name
         if (authorName) {
-          // Add "Written by" at the top for pages - this is the primary author attribution
+          // Calculate estimated reading time (average 200 words per minute)
+          const wordCount = processedContent.replace(/<[^>]*>/g, '').split(/\s+/).length;
+          const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+          
+          // Create "Written by" section with reading time
           const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: inline-flex; align-items: center; justify-content: center;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
               ${authorAvatar}
-              <span style="color: #6b7280; font-size: 16px;">
-                Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
-              </span>
+              <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <span style="color: #6b7280; font-size: 16px;">
+                  Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
+                </span>
+                <span style="color: #9ca3af; font-size: 14px; margin-top: 2px;">
+                  ${readingTime} min read
+                </span>
+              </div>
             </div>
           </div>`;
           
-          // Add at the very beginning of content
-          processedContent = writtenByHTML + processedContent;
+          // Position "Written by" section after the first featured image
+          if (processedContent.includes('class="featured-image-container"')) {
+            // Use a simpler approach - find and replace the featured image container
+            processedContent = processedContent.replace(
+              /(<div[^>]*class="featured-image-container"[^>]*>[\s\S]*?<\/div>)/,
+              '$1' + writtenByHTML
+            );
+          } else {
+            // If no featured image, add at the beginning
+            processedContent = writtenByHTML + processedContent;
+          }
           
-          console.log(`✅ Added "Written by ${authorName}" with avatar at top of page content`);
+          console.log(`✅ Added "Written by ${authorName}" with ${readingTime} min reading time after featured image`);
         } else {
           console.log(`⚠️ Skipping "Written by" section - no author name available for authorId: ${authorId}`);
         }

@@ -96,7 +96,7 @@ export function generateAuthorBoxHTML(author: {
     : '';
 
   return `
-    <div id="author-${author.id}" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
+    <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
       <div style="display: flex; gap: 16px; align-items: flex-start;">
         ${avatarImg}
         <div style="flex: 1;">
