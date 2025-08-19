@@ -1292,44 +1292,61 @@ export class ShopifyService {
       }
 
       // CRITICAL: Add "Written by" section at the TOP of page content for author attribution
-      if (post && (post as any).authorId && (post as any).author) {
-        const authorName = (post as any).author;
+      if (post && (post as any).authorId) {
         const authorId = (post as any).authorId;
+        let authorName = (post as any).author;
         
-        // Get author avatar from database if available
+        // Get author data from database - fetch both name and avatar
         let authorAvatar = '';
         try {
           const { storage } = await import('../storage');
           const authors = await storage.getAuthors();
           const author = authors.find(a => parseInt(a.id) === parseInt(authorId.toString()));
-          if (author && author.avatarUrl) {
-            authorAvatar = `<img src="${author.avatarUrl}" alt="${authorName}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px;" />`;
+          
+          if (author) {
+            // Use author name from database if not provided in post object
+            if (!authorName) {
+              authorName = author.name;
+              console.log(`📋 Fetched author name from database: ${authorName} (ID: ${authorId})`);
+            }
+            
+            if (author.avatarUrl) {
+              authorAvatar = `<img src="${author.avatarUrl}" alt="${authorName}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px;" />`;
+            } else {
+              // Create initials avatar if no image
+              const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
+              authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
+            }
           } else {
-            // Create initials avatar if no image
-            const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-            authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
+            console.error(`Author with ID ${authorId} not found in database`);
+            // Continue without author info if not found
+            authorName = null;
           }
         } catch (error) {
-          console.error('Error fetching author avatar for page:', error);
-          // Fallback to initials
-          const initials = authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-          authorAvatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 12px; margin-right: 12px;">${initials}</div>`;
+          console.error('Error fetching author data for page:', error);
+          // Continue without author info if error
+          authorName = null;
         }
         
-        // Add "Written by" at the top for pages - this is the primary author attribution
-        const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
-          <div style="display: inline-flex; align-items: center; justify-content: center;">
-            ${authorAvatar}
-            <span style="color: #6b7280; font-size: 16px;">
-              Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
-            </span>
-          </div>
-        </div>`;
-        
-        // Add at the very beginning of content
-        processedContent = writtenByHTML + processedContent;
-        
-        console.log(`✅ Added "Written by ${authorName}" with avatar at top of page content`);
+        // Only add "Written by" section if we have an author name
+        if (authorName) {
+          // Add "Written by" at the top for pages - this is the primary author attribution
+          const writtenByHTML = `<div style="text-align: center; margin: 20px 0; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: inline-flex; align-items: center; justify-content: center;">
+              ${authorAvatar}
+              <span style="color: #6b7280; font-size: 16px;">
+                Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${authorName}</a>
+              </span>
+            </div>
+          </div>`;
+          
+          // Add at the very beginning of content
+          processedContent = writtenByHTML + processedContent;
+          
+          console.log(`✅ Added "Written by ${authorName}" with avatar at top of page content`);
+        } else {
+          console.log(`⚠️ Skipping "Written by" section - no author name available for authorId: ${authorId}`);
+        }
       }
       
       // Set up the basic page data with SEO meta fields
