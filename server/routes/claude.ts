@@ -40,16 +40,12 @@ claudeRouter.post("/generate", async (req: Request, res: Response) => {
       topic: z.string().min(1),
       tone: z.string().default("professional"),
       length: z.string().default("medium"),
-      customPrompt: z.string().optional(),
-      authorId: z.string().optional()
+      customPrompt: z.string().optional()
     });
     
-    const { topic, tone, length, customPrompt, authorId } = schema.parse(req.body);
+    const { topic, tone, length, customPrompt } = schema.parse(req.body);
     
     console.log(`Generating content with Claude for topic: "${topic}"`);
-    if (authorId) {
-      console.log(`Including author ID: ${authorId} in content generation`);
-    }
     
     // Check for API key
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -64,8 +60,7 @@ claudeRouter.post("/generate", async (req: Request, res: Response) => {
       topic,
       tone,
       length,
-      customPrompt,
-      authorId
+      customPrompt
     });
     
     res.json({

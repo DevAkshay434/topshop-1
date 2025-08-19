@@ -66,13 +66,12 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
     // Validate request body with custom prompt support
     const reqSchema = z.object({
       topic: z.string().min(1),
-      customPrompt: z.string().optional(),
-      authorId: z.string().optional()
+      customPrompt: z.string().optional()
     });
     
-    const { topic, customPrompt, authorId } = reqSchema.parse(req.body);
+    const { topic, customPrompt } = reqSchema.parse(req.body);
     
-    console.log(`Generating content for topic: "${topic}" ${customPrompt ? 'with custom prompt' : ''} ${authorId ? `with author ID: ${authorId}` : ''}`);
+    console.log(`Generating content for topic: "${topic}" ${customPrompt ? 'with custom prompt' : ''}`);
     
     // Create a record of the content generation request
     const contentRequest = await storage.createContentGenRequest({
@@ -91,8 +90,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         topic,
         tone: "professional",
         length: "medium",
-        customPrompt,
-        authorId
+        customPrompt
       });
       
       // Log the returned content (truncated for readability)
