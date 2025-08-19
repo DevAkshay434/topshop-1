@@ -25,6 +25,8 @@ interface BlogContentRequest {
   // Keyword optimization fields
   keywords?: string[];
   keywordData?: any[];
+  // Author field
+  authorId?: string;
 }
 
 interface BlogContent {
@@ -935,6 +937,51 @@ if (!response) {
     // Step 7: Handle media placements (final step - converts placeholders to actual embeds)
     processedContent = processMediaPlacementsHandler(processedContent, request);
     console.log('✅ Step 7: Processed media placements');
+    
+    // Step 8: Add author box at the bottom if author information is provided
+    if (request.authorId) {
+      try {
+        const { storage } = await import('../storage');
+        const authors = await storage.getAuthors();
+        const author = authors.find(a => a.id === request.authorId || parseInt(a.id) === parseInt(request.authorId || ''));
+        
+        if (author) {
+          // Generate author box HTML directly (matching AuthorBox.tsx generateAuthorBoxHTML function)
+          const avatarInitials = author.name.split(' ').map(n => n[0]).join('').toUpperCase();
+          const avatarImg = author.avatarUrl 
+            ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />`
+            : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px; flex-shrink: 0;">${avatarInitials}</div>`;
+
+          // LinkedIn "Learn More" button if LinkedIn URL is available
+          const linkedinButton = author.linkedinUrl 
+            ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 8px 16px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 500;">Learn More</a>`
+            : '';
+
+          const authorBoxHtml = `
+            <div id="author-box" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin: 24px 0; background: #ffffff;">
+              <div style="display: flex; gap: 16px; align-items: flex-start;">
+                ${avatarImg}
+                <div style="flex: 1;">
+                  <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px 0;">${author.name}</h3>
+                  ${author.description ? `<p style="color: #4b5563; line-height: 1.6; margin: 0 0 12px 0;">${author.description}</p>` : ''}
+                  ${linkedinButton}
+                </div>
+              </div>
+            </div>
+          `;
+          
+          // Add author box at the end of content
+          processedContent += authorBoxHtml;
+          console.log(`✅ Step 8: Added author box with id="author-box" for ${author.name} (ID: ${author.id})`);
+        } else {
+          console.log(`⚠️ Step 8: Author ID ${request.authorId} not found in database`);
+        }
+      } catch (error) {
+        console.error('Error adding author box:', error);
+      }
+    } else {
+      console.log('✅ Step 8: No author ID provided - skipping author box');
+    }
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';

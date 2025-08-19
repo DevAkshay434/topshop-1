@@ -1885,7 +1885,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                       const fullDescription = author.description || '';
 
                       return `
-                        <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                        <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;" id="author-box">
                           <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
                             <div style="flex-shrink: 0;">
                               ${smallAvatarElement}
@@ -2077,7 +2077,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                     const fullDescription = author.description || '';
 
                     const writtenBySection = `
-                      <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                      <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;" id="author-box">
                         <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
                           <div style="flex-shrink: 0;">
                             ${smallAvatarElement}
