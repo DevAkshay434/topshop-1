@@ -1875,33 +1875,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                         .replace(/\r/g, '<br>');
                     };
 
-                    // Generate bottom author section with small avatar (same as blog posts)
-                    const generateBottomAuthorSection = (author: any) => {
-                      const avatarInitials = author.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-                      const smallAvatarElement = author.avatarUrl
-                        ? `<img src="${author.avatarUrl}" alt="${author.name}" style="width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; display: block !important;" />`
-                        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #374151; font-size: 18px;">${avatarInitials}</div>`;
 
-                      const fullDescription = author.description || '';
-
-                      return `
-                        <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
-                          <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
-                            <div style="flex-shrink: 0;">
-                              ${smallAvatarElement}
-                            </div>
-                            <div style="flex: 1;">
-                              <div style="margin-bottom: 8px;">
-                                <span style="color: #6b7280; font-size: 14px;">Written by </span>
-                                <strong style="color: #374151; font-size: 16px;">${author.name}</strong>
-                              </div>
-                              ${fullDescription ? `<div style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 8px 0; white-space: pre-wrap; word-wrap: break-word; max-width: none; overflow: visible; text-overflow: clip;">${fullDescription}</div>` : ''}
-                              ${author.linkedinUrl ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #0077b5; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500;">LinkedIn</a>` : ''}
-                            </div>
-                          </div>
-                        </div>
-                      `;
-                    };
 
                     // Function to calculate reading time for content
                     const calculateReadingTime = (content: string) => {
@@ -1969,8 +1943,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                       linkedinUrl: author.linkedinUrl || undefined
                     };
                     
-                    // Check if author box already exists in content to prevent duplicates
-                    const hasAuthorBox = pageContent.includes('id="author-box"') || pageContent.includes('class="author-box"');
+                    // Enhanced check for existing author boxes to prevent duplicates
+                    const hasAuthorBox = pageContent.includes('id="author-box"') || 
+                                        pageContent.includes('class="author-box"') ||
+                                        pageContent.includes('border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0') ||
+                                        (pageContent.includes('Written by') && pageContent.includes(author.name) && pageContent.includes('64px'));
                     
                     if (!hasAuthorBox) {
                       // Import the generateAuthorBoxHTML function
@@ -1982,7 +1959,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                       
                       console.log(`✅ Added author box to page for author: ${author.name}`);
                     } else {
-                      console.log(`📋 Author box already exists in page content for: ${author.name}`);
+                      console.log(`📋 Author box already exists in page content for: ${author.name} - skipping duplicate`);
                     }
                     
                     // Add author name to the post object for Shopify API
