@@ -4234,8 +4234,8 @@ export default function AdminPanel() {
                         )}
                       />
                       
-                      {/* Content Style Selector - HIDDEN PER USER REQUEST */}
-                      <div className="mb-6" style={{ display: 'none' }}>
+                      {/* Content Style Selector - RESTORED */}
+                      <div className="mb-6">
                         <FormLabel className="mb-2 block">Content Style</FormLabel>
                         <ContentStyleSelector 
                           key={`content-style-${selectedContentToneId || 'empty'}-${formKey}`}
@@ -4247,10 +4247,11 @@ export default function AdminPanel() {
                           }}
                           className="mt-2"
                         />
-                        <div className="text-xs text-gray-500 mt-2">
-                          Debug: selectedContentToneId = {selectedContentToneId || 'null'}, selectedContentDisplayName = {selectedContentDisplayName || 'null'}
-                        </div>
-
+                        {selectedContentDisplayName && (
+                          <div className="text-sm text-blue-600 mt-2 font-medium">
+                            Selected: {selectedContentDisplayName}
+                          </div>
+                        )}
                       </div>
                       
                       <FormField
