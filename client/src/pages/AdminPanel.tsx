@@ -3744,18 +3744,35 @@ export default function AdminPanel() {
                                     });
                                   }}
                                   value={field.value || ""}
+                                  defaultValue=""
                                 >
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select blog" />
+                                      <SelectValue placeholder={
+                                        blogsQuery.isLoading 
+                                          ? "Loading blogs..." 
+                                          : field.value 
+                                            ? blogsQuery.data?.blogs?.find(blog => blog.id === field.value)?.title || "Select blog"
+                                            : "Select blog"
+                                      } />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {blogsQuery.data?.blogs?.map((blog) => (
-                                      <SelectItem key={blog.id} value={blog.id}>
-                                        {blog.title}
+                                    {blogsQuery.isLoading ? (
+                                      <SelectItem value="loading" disabled>
+                                        Loading blogs...
                                       </SelectItem>
-                                    ))}
+                                    ) : blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 ? (
+                                      blogsQuery.data.blogs.map((blog) => (
+                                        <SelectItem key={blog.id} value={blog.id}>
+                                          {blog.title}
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <SelectItem value="no-blogs" disabled>
+                                        No blogs available
+                                      </SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -3764,6 +3781,50 @@ export default function AdminPanel() {
                           />
                         </div>
                       )}
+
+                      {/* Navigation buttons for Step 1 */}
+                      <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            // Validate that content type is selected
+                            const contentType = form.getValues("articleType");
+                            
+                            if (!contentType) {
+                              toast({
+                                title: "Content Type Required",
+                                description: "Please select a content type before continuing",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
+                            // If blog is selected, validate blog selection
+                            if (contentType === "blog") {
+                              const blogId = form.getValues("blogId");
+                              if (!blogId) {
+                                toast({
+                                  title: "Blog Selection Required",
+                                  description: "Please select a blog before continuing",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                            }
+
+                            // Proceed to Step 2: Choose Products
+                            setWorkflowStep("product");
+                            scrollToCurrentStep();
+                            
+                            toast({
+                              title: "Step Completed",
+                              description: "Now select products to feature in your content",
+                            });
+                          }}
+                        >
+                          Next <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Step 2: Choose Products (formerly Step 1) */}
