@@ -3384,7 +3384,7 @@ export default function AdminPanel() {
 
                   {/* Basic information section */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Basic Information</h3>
+                    <h3 className="text-lg font-medium">Choose Content Type</h3>
 
                     {/* Content type selection - always visible regardless of step */}
                     <FormField
@@ -3410,7 +3410,7 @@ export default function AdminPanel() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="blog">Blog Post</SelectItem>
-                              <SelectItem value="page">Shopify Page</SelectItem>
+                              <SelectItem value="page">Page</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -3813,7 +3813,7 @@ export default function AdminPanel() {
                       />
                     </div>
 
-                    {/* Step 1: Choose Product (formerly Related Products) */}
+                    {/* Step 1: Content Type (formerly Related Products) */}
                     <div
                       className={
                         workflowStep === "product" ? "block" : "hidden"
@@ -3822,7 +3822,7 @@ export default function AdminPanel() {
                     >
                       <div className="p-4 bg-blue-50 rounded-md mb-4">
                         <h4 className="font-medium text-blue-700 mb-1">
-                          Step 1: Choose Product
+                          Step 1: Content Type
                         </h4>
                         <p className="text-sm text-blue-600 mb-4">
                           Select products to feature in your content. Products
