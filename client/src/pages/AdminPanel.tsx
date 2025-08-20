@@ -1399,6 +1399,7 @@ export default function AdminPanel() {
   const [productId, setProductId] = useState<string>("");
   const [productDescription, setProductDescription] = useState<string>("");
   type WorkflowStep =
+    | "content-type"
     | "product"
     | "related-products"
     | "related-collections"
@@ -1413,24 +1414,25 @@ export default function AdminPanel() {
   // Helper function to determine step order for progress indicator
   const getStepOrder = (step: string): number => {
     const stepOrder = {
-      product: 1,
-      "related-collections": 2,
-      persona: 3,
-      keyword: 4,
-      title: 5,
-      media: 6,
-      author: 7,
-      style: 8,
-      content: 9,
-      post: 10,
+      "content-type": 1,
+      product: 2,
+      "related-collections": 3,
+      persona: 4,
+      keyword: 5,
+      title: 6,
+      media: 7,
+      author: 8,
+      style: 9,
+      content: 10,
+      post: 11,
       // Legacy step mappings for backward compatibility
-      "related-products": 2,
-      "buying-avatars": 3,
+      "related-products": 3,
+      "buying-avatars": 4,
     };
     return stepOrder[step as keyof typeof stepOrder] || 0;
   };
 
-  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("product");
+  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("content-type");
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
 
   // Track completion status for Generate and Post steps
@@ -3239,62 +3241,68 @@ export default function AdminPanel() {
                     <div className="flex items-center justify-start gap-1 overflow-x-auto pb-2">
                       {[
                         {
-                          step: "product",
+                          step: "content-type",
                           number: 1,
+                          label: "Choose Content",
+                          shortLabel: "Content",
+                        },
+                        {
+                          step: "product",
+                          number: 2,
                           label: "Products",
                           shortLabel: "Products",
                         },
                         {
                           step: "related-collections",
-                          number: 2,
+                          number: 3,
                           label: "Collections",
                           shortLabel: "Collections",
                         },
                         {
                           step: "persona",
-                          number: 3,
+                          number: 4,
                           label: "Personas",
                           shortLabel: "Personas",
                         },
                         {
                           step: "keyword",
-                          number: 4,
+                          number: 5,
                           label: "Keywords",
                           shortLabel: "Keywords",
                         },
                         {
                           step: "title",
-                          number: 5,
+                          number: 6,
                           label: "Title",
                           shortLabel: "Title",
                         },
                         {
                           step: "media",
-                          number: 6,
+                          number: 7,
                           label: "Media",
                           shortLabel: "Media",
                         },
                         {
                           step: "author",
-                          number: 7,
+                          number: 8,
                           label: "Author",
                           shortLabel: "Author",
                         },
                         {
                           step: "style",
-                          number: 8,
+                          number: 9,
                           label: "Style",
                           shortLabel: "Style",
                         },
                         {
                           step: "content",
-                          number: 9,
+                          number: 10,
                           label: "Generate",
                           shortLabel: "Generate",
                         },
                         {
                           step: "post",
-                          number: 10,
+                          number: 11,
                           label: "Post",
                           shortLabel: "Post",
                         },
@@ -3382,151 +3390,8 @@ export default function AdminPanel() {
                     </div>
                   </div>
 
-                  {/* Basic information section */}
+                  {/* Selected Items Display - appears after blog selection */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Choose Content Type</h3>
-
-                    {/* Content type selection - always visible regardless of step */}
-                    <FormField
-                      control={form.control}
-                      name="articleType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Content Type</FormLabel>
-                          <Select
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              // Immediately update the form to show/hide the blog selection
-                              if (value === "blog" || value === "page") {
-                                form.setValue("articleType", value);
-                              }
-                            }}
-                            value={field.value || "blog"}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select content type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="blog">Blog Post</SelectItem>
-                              <SelectItem value="page">Page</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* Blog ID selection if blog type is selected */}
-                    {form.watch("articleType") === "blog" && (
-                      <FormField
-                        control={form.control}
-                        name="blogId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Selected Blog</FormLabel>
-                            <Select
-                              onValueChange={(value) => {
-                                console.log("Blog changed to:", value);
-                                // Update both the field and form state to ensure consistent updates
-                                field.onChange(value);
-                                // Force update the form with setValue to ensure React picks up the change
-                                form.setValue("blogId", value, {
-                                  shouldValidate: true,
-                                  shouldDirty: true,
-                                  shouldTouch: true,
-                                });
-
-                                // Force a re-render since the select value might not update immediately
-                                setTimeout(() => {
-                                  const formState = form.getValues();
-                                  console.log("Current form state:", formState);
-                                  // Force a re-render to update UI
-                                  setForceUpdate((prev) => prev + 1);
-                                }, 100);
-                              }}
-                              key={`blog-select-${field.value ? String(field.value) : "default"}-${forceUpdate}`}
-                              value={field.value ? String(field.value) : ""} // Convert to string to fix type issues
-                              defaultValue=""
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-full border border-gray-300">
-                                  {/* We use a direct component to ensure it re-renders on selection change */}
-                                  {(() => {
-                                    // Get blog title from the current value
-                                    const currentBlogId = field.value;
-
-                                    if (blogsQuery.isLoading) {
-                                      return (
-                                        <SelectValue placeholder="Loading blogs..." />
-                                      );
-                                    }
-
-                                    // If no blogs are loaded, use a default value
-                                    if (
-                                      !blogsQuery.data?.blogs ||
-                                      blogsQuery.data.blogs.length === 0
-                                    ) {
-                                      return (
-                                        <SelectValue placeholder="Default Blog" />
-                                      );
-                                    }
-
-                                    // Find the selected blog by ID (convert to string for comparison)
-                                    const selectedBlog =
-                                      blogsQuery.data.blogs.find(
-                                        (blog) =>
-                                          String(blog.id) ===
-                                          String(currentBlogId),
-                                      );
-
-                                    // Get blog title to display
-                                    const displayTitle =
-                                      selectedBlog?.title ||
-                                      blogsQuery.data.blogs[0]?.title ||
-                                      "News";
-
-                                    return (
-                                      <SelectValue placeholder={displayTitle}>
-                                        {displayTitle}
-                                      </SelectValue>
-                                    );
-                                  })()}
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {blogsQuery.isLoading ? (
-                                  <SelectItem value="loading" disabled>
-                                    Loading blogs...
-                                  </SelectItem>
-                                ) : blogsQuery.data?.blogs &&
-                                  blogsQuery.data.blogs.length > 0 ? (
-                                  blogsQuery.data.blogs.map((blog: Blog) => (
-                                    <SelectItem
-                                      key={blog.id}
-                                      value={String(blog.id)}
-                                    >
-                                      {blog.title}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem value="default">
-                                    Default Blog
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription className="sr-only">
-                              Select the blog where this post will be published
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-
-                    {/* Selected Items Display - appears after blog selection */}
                     {(selectedProducts.length > 0 ||
                       selectedCollections.length > 0 ||
                       form.watch("buyerPersonas") ||
@@ -3782,7 +3647,7 @@ export default function AdminPanel() {
                     {/* Title field (hidden initially, made visible and populated in title step) */}
                     <div
                       className={
-                        workflowStep === "content" ? "block" : "hidden"
+                        workflowStep === "title" ? "block" : "hidden"
                       }
                     >
                       <FormField
@@ -3812,8 +3677,96 @@ export default function AdminPanel() {
                         )}
                       />
                     </div>
+                  
+                  {/* Step 1: Choose Content */}
+                  <div
+                    className={
+                      workflowStep === "content-type" ? "block" : "hidden"
+                    }
+                    data-step="content-type"
+                    >
+                      <div className="p-4 bg-blue-50 rounded-md mb-4">
+                        <h4 className="font-medium text-blue-700 mb-1">
+                          Step 1: Choose Content
+                        </h4>
+                        <p className="text-sm text-blue-600 mb-4">
+                          Select the type of content you want to create and configure basic settings.
+                        </p>
+                      </div>
 
-                    {/* Step 1: Content Type (formerly Related Products) */}
+                      {/* Content type selection */}
+                      <FormField
+                        control={form.control}
+                        name="articleType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Content Type</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                if (value === "blog" || value === "page") {
+                                  form.setValue("articleType", value);
+                                }
+                              }}
+                              value={field.value || "blog"}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select content type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="blog">Blog Post</SelectItem>
+                                <SelectItem value="page">Page</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Blog ID selection if blog type is selected */}
+                      {form.watch("articleType") === "blog" && (
+                        <div className="mt-4">
+                          <FormField
+                            control={form.control}
+                            name="blogId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Selected Blog</FormLabel>
+                                <Select
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    form.setValue("blogId", value, {
+                                      shouldValidate: true,
+                                      shouldDirty: true,
+                                      shouldTouch: true,
+                                    });
+                                  }}
+                                  value={field.value || ""}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select blog" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {blogsQuery.data?.blogs?.map((blog) => (
+                                      <SelectItem key={blog.id} value={blog.id}>
+                                        {blog.title}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 2: Choose Products (formerly Step 1) */}
                     <div
                       className={
                         workflowStep === "product" ? "block" : "hidden"
@@ -3822,7 +3775,7 @@ export default function AdminPanel() {
                     >
                       <div className="p-4 bg-blue-50 rounded-md mb-4">
                         <h4 className="font-medium text-blue-700 mb-1">
-                          Step 1: Content Type
+                          Step 2: Choose Products
                         </h4>
                         <p className="text-sm text-blue-600 mb-4">
                           Select products to feature in your content. Products
