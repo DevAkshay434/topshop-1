@@ -3731,57 +3731,54 @@ export default function AdminPanel() {
                           <FormField
                             control={form.control}
                             name="blogId"
-                            render={({ field }) => {
-                              // Auto-select first blog if no blog is selected and blogs are available
-                              React.useEffect(() => {
-                                if (!field.value && blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0) {
-                                  const firstBlog = blogsQuery.data.blogs[0];
-                                  field.onChange(firstBlog.id);
-                                  form.setValue("blogId", firstBlog.id);
-                                }
-                              }, [blogsQuery.data?.blogs, field]);
-
-                              return (
-                                <FormItem>
-                                  <FormLabel>Selected Blog</FormLabel>
-                                  <Select
-                                    onValueChange={(value) => {
-                                      field.onChange(value);
-                                      form.setValue("blogId", value, {
-                                        shouldValidate: true,
-                                        shouldDirty: true,
-                                        shouldTouch: true,
-                                      });
-                                    }}
-                                    value={field.value || ""}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select blog" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {blogsQuery.isLoading ? (
-                                        <SelectItem value="loading" disabled>
-                                          Loading blogs...
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Selected Blog</FormLabel>
+                                <Select
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    form.setValue("blogId", value, {
+                                      shouldValidate: true,
+                                      shouldDirty: true,
+                                      shouldTouch: true,
+                                    });
+                                  }}
+                                  value={field.value || ""}
+                                  key={field.value} // Force re-render when value changes
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue 
+                                        placeholder={blogsQuery.isLoading ? "Loading blogs..." : "Select blog"}
+                                      >
+                                        {field.value && blogsQuery.data?.blogs ? 
+                                          blogsQuery.data.blogs.find(blog => String(blog.id) === String(field.value))?.title || "Select blog"
+                                          : blogsQuery.isLoading ? "Loading blogs..." : "Select blog"
+                                        }
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {blogsQuery.isLoading ? (
+                                      <SelectItem value="loading" disabled>
+                                        Loading blogs...
+                                      </SelectItem>
+                                    ) : blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 ? (
+                                      blogsQuery.data.blogs.map((blog) => (
+                                        <SelectItem key={blog.id} value={String(blog.id)}>
+                                          {blog.title}
                                         </SelectItem>
-                                      ) : blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 ? (
-                                        blogsQuery.data.blogs.map((blog) => (
-                                          <SelectItem key={blog.id} value={blog.id}>
-                                            {blog.title}
-                                          </SelectItem>
-                                        ))
-                                      ) : (
-                                        <SelectItem value="no-blogs" disabled>
-                                          No blogs available
-                                        </SelectItem>
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              );
-                            }}
+                                      ))
+                                    ) : (
+                                      <SelectItem value="no-blogs" disabled>
+                                        No blogs available
+                                      </SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
                         </div>
                       )}
