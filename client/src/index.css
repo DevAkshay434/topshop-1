@@ -520,3 +520,12 @@ img[style*="width: 64px"][style*="height: 64px"] {
 .post-content div[dangerouslySetInnerHTML] h3 {
   @apply text-xl font-medium mt-6 mb-3;
 }
+
+/* Custom tab styling for Choose Media dialog */
+[data-active-color="dark-green"][data-state="active"] {
+  background-color: hsl(160 100% 25% / 1) !important;
+}
+
+[data-active-color="dark-green"][data-state="active"]:hover {
+  background-color: hsl(160 100% 20% / 1) !important;
+}

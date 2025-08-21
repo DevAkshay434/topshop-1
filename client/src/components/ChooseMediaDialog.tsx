@@ -671,19 +671,20 @@ export function ChooseMediaDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4 bg-gray-100 p-1 rounded-lg">
-            <TabsTrigger value="pexels-pixabay" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
+            <TabsTrigger value="pexels-pixabay" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white" data-active-color="dark-green">
               Search Free Images
             </TabsTrigger>
-            <TabsTrigger value="primary_images" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
+            <TabsTrigger value="primary_images" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white" data-active-color="dark-green">
               Product Images
             </TabsTrigger>
-            <TabsTrigger value="uploaded" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
+            <TabsTrigger value="uploaded" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white" data-active-color="dark-green">
               Uploaded Images
             </TabsTrigger>
-            <TabsTrigger value="upload" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
+            <TabsTrigger value="upload" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white" data-active-color="dark-green">
               Upload Image
             </TabsTrigger>
-            <TabsTrigger value="youtube" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
+            <TabsTrigger value="youtube" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white" data-active-color="dark-green">
+
               YouTube Video
             </TabsTrigger>
           </TabsList>
