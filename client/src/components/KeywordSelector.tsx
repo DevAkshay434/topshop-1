@@ -168,6 +168,7 @@ export default function KeywordSelector({
   const [directTopic, setDirectTopic] = useState(productTitle || ""); // Pre-populate with product title if available
   const [sortBy, setSortBy] = useState<'searchVolume' | 'competition' | 'cpc' | 'difficulty' | 'keyword'>('searchVolume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isFetchingVolumes, setIsFetchingVolumes] = useState(false);
   
 
 
@@ -282,7 +283,70 @@ export default function KeywordSelector({
     setKeywords(updatedKeywords);
   };
 
-  // Note: Removed automatic keyword fetching on mount to require explicit user search
+  // Fetch search volumes for existing manual keywords when component mounts
+  useEffect(() => {
+    const manualKeywords = initialKeywords.filter(kw => kw.isManual && kw.searchVolume === 0);
+    if (manualKeywords.length > 0) {
+      fetchSearchVolumesForManualKeywords(manualKeywords);
+    }
+  }, [initialKeywords]);
+
+  // Function to fetch search volumes for manual keywords
+  const fetchSearchVolumesForManualKeywords = async (manualKeywords: KeywordData[]) => {
+    if (manualKeywords.length === 0) return;
+
+    setIsFetchingVolumes(true);
+    console.log('Fetching search volumes for manual keywords:', manualKeywords.map(kw => kw.keyword));
+
+    try {
+      // Extract just the keyword strings
+      const keywordStrings = manualKeywords.map(kw => kw.keyword);
+      
+      const response = await apiRequest<{ success: boolean; keywords: KeywordData[] }>({
+        url: `/api/admin/keywords-for-product?t=${Date.now()}`,
+        method: "POST",
+        data: {
+          directTopic: keywordStrings.join(', '), // Pass manual keywords as search terms
+          includeProductData: false // Don't include product data for this request
+        }
+      });
+
+      if (response.success && response.keywords && response.keywords.length > 0) {
+        console.log('Received search volumes for manual keywords:', response.keywords);
+        
+        // Update existing keywords with search volume data
+        setKeywords(prevKeywords => {
+          return prevKeywords.map(existingKeyword => {
+            if (existingKeyword.isManual) {
+              // Find matching keyword from API response
+              const matchedKeyword = response.keywords.find(
+                apiKeyword => apiKeyword.keyword.toLowerCase() === existingKeyword.keyword.toLowerCase()
+              );
+              
+              if (matchedKeyword) {
+                // Update manual keyword with search volume data while preserving its manual flag
+                return {
+                  ...existingKeyword,
+                  searchVolume: matchedKeyword.searchVolume || 0,
+                  competition: matchedKeyword.competition,
+                  competitionLevel: matchedKeyword.competitionLevel,
+                  cpc: matchedKeyword.cpc,
+                  difficulty: matchedKeyword.difficulty,
+                  intent: matchedKeyword.intent,
+                  isManual: true // Keep the manual flag
+                };
+              }
+            }
+            return existingKeyword;
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching search volumes for manual keywords:', error);
+    } finally {
+      setIsFetchingVolumes(false);
+    }
+  };
   
   // Fetch keywords based on product URL or direct topic
   const fetchKeywords = async () => {
@@ -552,6 +616,16 @@ export default function KeywordSelector({
             
 
           </div>
+
+          {/* Loading indicator for fetching manual keyword search volumes */}
+          {isFetchingVolumes && (
+            <div className="flex items-center justify-center py-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Fetching search volumes for manual keywords...</span>
+              </div>
+            </div>
+          )}
 
           {/* Difficulty Legend */}
           {keywords.length > 0 && (
