@@ -306,7 +306,7 @@ export default function KeywordSelector({
         url: `/api/admin/keywords-for-product?t=${Date.now()}`,
         method: "POST",
         data: {
-          directTopic: keywordStrings.join(', '), // Pass manual keywords as search terms
+          topic: keywordStrings.join(', '), // Pass manual keywords as search terms
           includeProductData: false // Don't include product data for this request
         }
       });
