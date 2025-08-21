@@ -7275,7 +7275,7 @@ export default function AdminPanel() {
                 }}
                 className="flex-1"
               >
-                <Search className="mr-2 h-4 w-4" />
+                <Search className="mr-0.5 h-4 w-4" />
                 Search Images
                 <Badge variant="secondary" className="ml-2 text-xs">
                   Pexels + Pixabay
@@ -7301,9 +7301,13 @@ export default function AdminPanel() {
                   // Load selected product images
                   fetchProductAndVariantImages();
                 }}
-                className="flex-1"
+                className={`flex-1 ${
+                  imageSource === "product_images" 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                }`}
               >
-                <Package className="mr-2 h-4 w-4" />
+                <Package className="mr-0.5 h-4 w-4" />
                 Product Images
               </Button>
 
@@ -7313,9 +7317,13 @@ export default function AdminPanel() {
                   imageSource === "uploaded_images" ? "default" : "outline"
                 }
                 onClick={() => setImageSource("uploaded_images")}
-                className="flex-1"
+                className={`flex-1 ${
+                  imageSource === "uploaded_images" 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                }`}
               >
-                <ImageIcon className="mr-2 h-4 w-4" />
+                <ImageIcon className="mr-0.5 h-4 w-4" />
                 Uploaded Images
                 {searchedImages.filter((img) => img.source === "uploaded")
                   .length > 0 && (
@@ -7333,18 +7341,26 @@ export default function AdminPanel() {
                   size="sm"
                   variant={imageSource === "upload" ? "default" : "outline"}
                   onClick={() => setImageSource("upload")}
-                  className="w-full"
+                  className={`w-full ${
+                    imageSource === "upload" 
+                      ? "bg-green-600 hover:bg-green-700 text-white" 
+                      : "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                  }`}
                 >
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Upload className="mr-0.5 h-4 w-4" />
                   Upload Image
                 </Button>
                 <Button
                   size="sm"
                   variant={imageSource === "youtube" ? "default" : "outline"}
                   onClick={() => setImageSource("youtube")}
-                  className="w-full"
+                  className={`w-full ${
+                    imageSource === "youtube" 
+                      ? "bg-green-600 hover:bg-green-700 text-white" 
+                      : "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                  }`}
                 >
-                  <FileText className="mr-2 h-4 w-4" />
+                  <FileText className="mr-0.5 h-4 w-4" />
                   YouTube Video
                 </Button>
               </div>
@@ -9409,8 +9425,9 @@ export default function AdminPanel() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setShopifyMediaType("products")}
+                                className="bg-green-600 hover:bg-green-700 text-white border-green-600"
                               >
-                                <ArrowLeft className="mr-2 h-3 w-3" />
+                                <ArrowLeft className="mr-0.5 h-3 w-3" />
                                 Switch to Product Images
                               </Button>
                             </div>
