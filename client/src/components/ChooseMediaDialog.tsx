@@ -497,10 +497,11 @@ export function ChooseMediaDialog({
             <Button 
               onClick={searchPexelsPixabayImages} 
               disabled={isLoading || !searchQuery.trim()}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                   Searching...
                 </>
               ) : 'Search'}
@@ -746,7 +747,7 @@ export function ChooseMediaDialog({
                 onChange={handleFileUpload}
               />
               <label htmlFor="upload-images-dialog" className="cursor-pointer">
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="border-green-600 text-green-700 hover:bg-green-50">
                   <span>Choose Files</span>
                 </Button>
               </label>
@@ -881,6 +882,7 @@ export function ChooseMediaDialog({
                     });
                   }}
                   disabled={!youtubeVideoId}
+                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   Add Video
                 </Button>
@@ -919,9 +921,9 @@ export function ChooseMediaDialog({
                 variant="outline" 
                 size="sm"
                 onClick={() => setSelectedImages([])}
-                className="h-7 text-xs"
+                className="h-7 text-xs border-red-600 text-red-700 hover:bg-red-50"
               >
-                <X className="h-3 w-3 mr-1" /> Clear All
+                <X className="h-3 w-3 mr-0.5" /> Clear All
               </Button>
             )}
           </div>
@@ -998,12 +1000,14 @@ export function ChooseMediaDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
+            className="border-gray-300 text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </Button>
           <Button 
             onClick={confirmSelection}
             disabled={selectedImages.length === 0}
+            className="bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-300 disabled:text-gray-500"
           >
             Confirm Selection
           </Button>
