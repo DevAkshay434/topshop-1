@@ -4531,7 +4531,10 @@ export default function AdminPanel() {
                                 <CardContent className="p-3">
                                   <Button
                                     variant="outline"
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                    className="w-full text-white border-green-600"
+                                    style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                                     size="sm"
                                     onClick={() => {
                                       setImageSource("unified_search");
@@ -4564,7 +4567,10 @@ export default function AdminPanel() {
                                     {selectedProducts.length > 0 && (
                                       <Button
                                         variant="outline"
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                        className="w-full text-white border-green-600"
+                                        style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                                         size="sm"
                                         onClick={() => {
                                           setImageSource("product_images");
@@ -4603,7 +4609,10 @@ export default function AdminPanel() {
                                 <CardContent className="p-3">
                                   <Button
                                     variant="outline"
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                    className="w-full text-white border-green-600"
+                                    style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                                     size="sm"
                                     onClick={() => {
                                       setImageSource("upload");
@@ -7301,11 +7310,10 @@ export default function AdminPanel() {
                   // Load selected product images
                   fetchProductAndVariantImages();
                 }}
-                className={`flex-1 ${
-                  imageSource === "product_images" 
-                    ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                }`}
+                className="flex-1 text-white border-green-600"
+                style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
               >
                 <Package className="mr-0.5 h-4 w-4" />
                 Product Images
@@ -7317,11 +7325,10 @@ export default function AdminPanel() {
                   imageSource === "uploaded_images" ? "default" : "outline"
                 }
                 onClick={() => setImageSource("uploaded_images")}
-                className={`flex-1 ${
-                  imageSource === "uploaded_images" 
-                    ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                }`}
+                className="flex-1 text-white border-green-600"
+                style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
               >
                 <ImageIcon className="mr-0.5 h-4 w-4" />
                 Uploaded Images
@@ -7341,11 +7348,10 @@ export default function AdminPanel() {
                   size="sm"
                   variant={imageSource === "upload" ? "default" : "outline"}
                   onClick={() => setImageSource("upload")}
-                  className={`w-full ${
-                    imageSource === "upload" 
-                      ? "bg-green-600 hover:bg-green-700 text-white" 
-                      : "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                  }`}
+                  className="w-full text-white border-green-600"
+                  style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                 >
                   <Upload className="mr-0.5 h-4 w-4" />
                   Upload Image
@@ -7354,11 +7360,10 @@ export default function AdminPanel() {
                   size="sm"
                   variant={imageSource === "youtube" ? "default" : "outline"}
                   onClick={() => setImageSource("youtube")}
-                  className={`w-full ${
-                    imageSource === "youtube" 
-                      ? "bg-green-600 hover:bg-green-700 text-white" 
-                      : "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                  }`}
+                  className="w-full text-white border-green-600"
+                  style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                 >
                   <FileText className="mr-0.5 h-4 w-4" />
                   YouTube Video
@@ -8120,7 +8125,10 @@ export default function AdminPanel() {
 
                                   <Button
                                     size="sm"
-                                    className="w-3/4 bg-green-600 hover:bg-green-700 text-white"
+                                    className="w-3/4 text-white border-green-600"
+                                    style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                                     onClick={() => {
                                       // Mark as secondary image
                                       const updatedImages = searchedImages.map(
@@ -8486,11 +8494,14 @@ export default function AdminPanel() {
                                   size="sm"
                                   variant={isSecondary ? "default" : "outline"}
                                   className={cn(
-                                    "bg-green-500 hover:bg-green-600 text-white",
+                                    "text-white border-green-600",
                                     isSecondary
                                       ? "opacity-100"
                                       : "opacity-90 hover:opacity-100",
                                   )}
+                                  style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                                   onClick={() => {
                                     // FIXED: Only update selectedMediaContent to prevent duplication - remove setSecondaryImages call
                                     setSelectedMediaContent((prev) => {
@@ -9179,7 +9190,10 @@ export default function AdminPanel() {
                                             "Image added for use in content body",
                                         });
                                       }}
-                                      className="w-4/5 bg-green-600 hover:bg-green-700 text-white"
+                                      className="w-4/5 text-white border-green-600"
+                                      style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                                     >
                                       <LayoutGrid className="mr-2 h-4 w-4" />
                                       Add to Content
@@ -9425,7 +9439,10 @@ export default function AdminPanel() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setShopifyMediaType("products")}
-                                className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                className="text-white border-green-600"
+                                style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                               >
                                 <ArrowLeft className="mr-0.5 h-3 w-3" />
                                 Switch to Product Images
@@ -9591,11 +9608,14 @@ export default function AdminPanel() {
                                                 : "outline"
                                             }
                                             className={cn(
-                                              "bg-green-500 hover:bg-green-600 text-white",
+                                              "text-white border-green-600",
                                               isSecondarySelected
                                                 ? "opacity-100"
                                                 : "opacity-90 hover:opacity-100",
                                             )}
+                                            style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
                                             onClick={() => {
                                               // Create a Pexels-compatible image object
                                               const imageForSelection: PexelsImage =
