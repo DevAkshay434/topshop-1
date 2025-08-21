@@ -615,7 +615,7 @@ export function ChooseMediaDialog({
                         });
                       }}
                     >
-                      <Check className="h-4 w-4 mr-1" />
+                      <Check className="h-4 w-4 mr-0.5" />
                       Select as Primary
                     </Button>
                     <Button 
@@ -640,7 +640,7 @@ export function ChooseMediaDialog({
                         });
                       }}
                     >
-                      <ImagePlus className="h-4 w-4 mr-1" />
+                      <ImagePlus className="h-4 w-4 mr-0.5" />
                       Add as Secondary
                     </Button>
                   </div>
@@ -670,20 +670,20 @@ export function ChooseMediaDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
-            <TabsTrigger value="pexels-pixabay">
+          <TabsList className="grid w-full grid-cols-5 mb-4 bg-gray-100 p-1 rounded-lg">
+            <TabsTrigger value="pexels-pixabay" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
               Search Free Images
             </TabsTrigger>
-            <TabsTrigger value="primary_images">
+            <TabsTrigger value="primary_images" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
               Product Images
             </TabsTrigger>
-            <TabsTrigger value="uploaded">
+            <TabsTrigger value="uploaded" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
               Uploaded Images
             </TabsTrigger>
-            <TabsTrigger value="upload">
+            <TabsTrigger value="upload" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
               Upload Image
             </TabsTrigger>
-            <TabsTrigger value="youtube">
+            <TabsTrigger value="youtube" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">
               YouTube Video
             </TabsTrigger>
           </TabsList>
