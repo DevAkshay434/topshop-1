@@ -4268,7 +4268,7 @@ export default function AdminPanel() {
                             htmlFor="manualKeyword"
                             className="text-sm font-medium text-slate-700"
                           >
-                            Add Manual Keywords
+                            Add keywords manually
                           </Label>
                           <div className="flex space-x-2">
                             <Input
@@ -4286,12 +4286,11 @@ export default function AdminPanel() {
                               className="flex-1"
                             />
                             <Button
-                              variant="outline"
                               onClick={addManualKeyword}
                               disabled={
                                 !manualKeyword.trim() || isAddingManualKeyword
                               }
-                              className="flex-shrink-0"
+                              className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white"
                             >
                               {isAddingManualKeyword ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -4335,6 +4334,12 @@ export default function AdminPanel() {
                               ))}
                             </div>
                           )}
+
+                        <div className="flex items-center justify-center my-4">
+                          <div className="border-t border-gray-200 flex-1"></div>
+                          <span className="px-3 text-sm text-gray-500">or</span>
+                          <div className="border-t border-gray-200 flex-1"></div>
+                        </div>
 
                         <Button
                           onClick={() => {
