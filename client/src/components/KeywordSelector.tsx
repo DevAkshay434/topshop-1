@@ -378,7 +378,9 @@ export default function KeywordSelector({
     }
 
     setIsLoading(true);
-    setKeywords([]); // Clear previous keywords when starting a new search
+    
+    // Preserve existing manual keywords (with their selection state) before fetching new ones
+    const existingManualKeywords = keywords.filter(kw => kw.isManual);
     
     // Invalidate any cached keyword queries to ensure fresh data
     queryClient.invalidateQueries({ queryKey: ['/api/admin/keywords-for-product'] });
@@ -429,7 +431,11 @@ export default function KeywordSelector({
         console.log("Keywords after sanitization:", keywordsWithSelection.length);
         console.log("Filtered keywords sample:", keywordsWithSelection.slice(0, 3));
         
-        setKeywords(keywordsWithSelection);
+        // Merge preserved manual keywords with newly fetched keywords
+        const mergedKeywords = [...existingManualKeywords, ...keywordsWithSelection];
+        console.log(`Merging ${existingManualKeywords.length} manual keywords with ${keywordsWithSelection.length} fetched keywords`);
+        
+        setKeywords(mergedKeywords);
         console.log(`✅ Successfully set ${keywordsWithSelection.length} keywords in state`);
       } else {
         console.log("❌ No valid keywords returned from API");
@@ -438,24 +444,25 @@ export default function KeywordSelector({
           keywords: response.keywords,
           keywordCount: response.keywords?.length || 0
         });
-        setKeywords([]);
+        // Keep manual keywords even if API fails
+        setKeywords(existingManualKeywords);
       }
     } catch (error: any) {
       console.error("Error fetching keywords:", error);
       
-      // Handle different types of errors
+      // Handle different types of errors - preserve manual keywords
       if (error.response?.status === 408) {
-        // DataForSEO API timeout
-        setKeywords([]);
+        // DataForSEO API timeout - keep manual keywords
+        setKeywords(existingManualKeywords);
         alert("The keyword search is taking longer than expected. Please try a simpler search term or try again later.");
       } else if (error.response?.status === 500) {
-        // API configuration error
-        setKeywords([]);
+        // API configuration error - keep manual keywords
+        setKeywords(existingManualKeywords);
         alert("Unable to fetch authentic keyword data. Please check your API configuration.");
       } else {
-        // For any other error, clear keywords and show error message
-        console.log("Error occurred, clearing keywords:", error.message);
-        setKeywords([]);
+        // For any other error, keep manual keywords and show error message
+        console.log("Error occurred, preserving manual keywords:", error.message);
+        setKeywords(existingManualKeywords);
         
         // Show user-friendly error message
         const errorMessage = error.response?.data?.message || error.message || "Failed to fetch keywords";
