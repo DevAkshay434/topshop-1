@@ -318,10 +318,33 @@ export default function KeywordSelector({
         setKeywords(prevKeywords => {
           return prevKeywords.map(existingKeyword => {
             if (existingKeyword.isManual) {
-              // Find matching keyword from API response
-              const matchedKeyword = response.keywords.find(
+              // First try exact match (case insensitive)
+              let matchedKeyword = response.keywords.find(
                 apiKeyword => apiKeyword.keyword.toLowerCase() === existingKeyword.keyword.toLowerCase()
               );
+              
+              // If no exact match, try to find the best matching keyword
+              if (!matchedKeyword) {
+                const manualKeywordLower = existingKeyword.keyword.toLowerCase();
+                
+                // Find keywords that contain the manual keyword or vice versa
+                const possibleMatches = response.keywords.filter(apiKeyword => {
+                  const apiKeywordLower = apiKeyword.keyword.toLowerCase();
+                  return apiKeywordLower.includes(manualKeywordLower) || 
+                         manualKeywordLower.includes(apiKeywordLower);
+                });
+                
+                // If we have matches, pick the one with highest search volume
+                if (possibleMatches.length > 0) {
+                  matchedKeyword = possibleMatches.reduce((best, current) => 
+                    (current.searchVolume || 0) > (best.searchVolume || 0) ? current : best
+                  );
+                  
+                  console.log(`Found best match for "${existingKeyword.keyword}": "${matchedKeyword.keyword}" with ${matchedKeyword.searchVolume} volume`);
+                }
+              } else {
+                console.log(`Found exact match for "${existingKeyword.keyword}": ${matchedKeyword.searchVolume} volume`);
+              }
               
               if (matchedKeyword) {
                 // Update manual keyword with search volume data while preserving its manual flag
