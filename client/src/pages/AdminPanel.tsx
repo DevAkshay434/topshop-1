@@ -130,6 +130,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import KeywordSelector from "@/components/KeywordSelector";
 import TitleSelector from "@/components/TitleSelector";
 import ImageSearchDialog from "@/components/ImageSearchDialog";
@@ -3836,27 +3842,31 @@ export default function AdminPanel() {
                       data-step="product"
                     >
                       <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">
-                          Step 2: Choose Products
-                        </h4>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-blue-700">
+                            Step 2: Choose Products
+                          </h4>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-4 w-4 text-blue-500 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="max-w-xs">
+                                  <p className="font-medium mb-1">Products Required</p>
+                                  <p className="text-sm">
+                                    You must select at least one product to proceed with 
+                                    content generation. Products are essential for 
+                                    creating relevant, targeted content.
+                                  </p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                         <p className="text-sm text-blue-600 mb-4">
                           Select products to feature in your content. Products
                           are required for content generation.
-                        </p>
-                      </div>
-
-                      {/* Mandatory Product Warning */}
-                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mb-4">
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4 text-amber-600" />
-                          <span className="text-sm font-medium text-amber-800">
-                            Products Required
-                          </span>
-                        </div>
-                        <p className="text-sm text-amber-700 mt-1">
-                          You must select at least one product to proceed with
-                          content generation. Products are essential for
-                          creating relevant, targeted content.
                         </p>
                       </div>
 
