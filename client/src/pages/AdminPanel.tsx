@@ -4531,7 +4531,7 @@ export default function AdminPanel() {
                                 <CardContent className="p-3">
                                   <Button
                                     variant="outline"
-                                    className="w-full"
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600"
                                     size="sm"
                                     onClick={() => {
                                       setImageSource("unified_search");
@@ -4541,7 +4541,7 @@ export default function AdminPanel() {
                                       setShowImageDialog(true);
                                     }}
                                   >
-                                    <Search className="mr-1 h-3 w-3" />
+                                    <Search className="mr-0.5 h-3 w-3" />
                                     <span className="text-xs truncate">
                                       Search Free Images
                                     </span>
@@ -4564,7 +4564,7 @@ export default function AdminPanel() {
                                     {selectedProducts.length > 0 && (
                                       <Button
                                         variant="outline"
-                                        className="w-full"
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600"
                                         size="sm"
                                         onClick={() => {
                                           setImageSource("product_images");
@@ -4583,7 +4583,7 @@ export default function AdminPanel() {
                                           setShowImageDialog(true);
                                         }}
                                       >
-                                        <ImageIcon className="mr-2 h-4 w-4" />
+                                        <ImageIcon className="mr-0.5 h-4 w-4" />
                                         Product Images
                                       </Button>
                                     )}
@@ -4603,14 +4603,14 @@ export default function AdminPanel() {
                                 <CardContent className="p-3">
                                   <Button
                                     variant="outline"
-                                    className="w-full"
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white border-green-600"
                                     size="sm"
                                     onClick={() => {
                                       setImageSource("upload");
                                       setShowImageDialog(true);
                                     }}
                                   >
-                                    <Upload className="mr-2 h-4 w-4" />
+                                    <Upload className="mr-0.5 h-4 w-4" />
                                     Upload Image
                                   </Button>
                                 </CardContent>
