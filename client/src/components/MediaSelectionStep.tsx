@@ -696,11 +696,11 @@ export default function MediaSelectionStep({
       )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="primary">Primary Image</TabsTrigger>
-          <TabsTrigger value="secondary">Secondary Images</TabsTrigger>
-          <TabsTrigger value="uploaded">Uploaded Images</TabsTrigger>
-          <TabsTrigger value="youtube">YouTube Video</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1 rounded-lg">
+          <TabsTrigger value="primary" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">Primary Image</TabsTrigger>
+          <TabsTrigger value="secondary" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">Secondary Images</TabsTrigger>
+          <TabsTrigger value="uploaded" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">Uploaded Images</TabsTrigger>
+          <TabsTrigger value="youtube" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">YouTube Video</TabsTrigger>
         </TabsList>
         
         {/* PRIMARY IMAGE SELECTION */}
@@ -713,8 +713,8 @@ export default function MediaSelectionStep({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && searchPexelsImages()}
               />
-              <Button onClick={searchPexelsImages} className="flex-shrink-0">
-                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              <Button onClick={searchPexelsImages} className="flex-shrink-0 bg-green-600 hover:bg-green-700 text-white">
+                {isSearching ? <Loader2 className="h-4 w-4 animate-spin mr-0.5" /> : <Search className="h-4 w-4 mr-0.5" />}
                 Search
               </Button>
             </div>
@@ -1072,10 +1072,10 @@ export default function MediaSelectionStep({
       </Tabs>
       
       <div className="flex justify-between pt-4">
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="outline" onClick={onBack} className="border-gray-300 text-gray-700 hover:bg-gray-50">
           Back
         </Button>
-        <Button onClick={handleComplete}>
+        <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700 text-white">
           Continue
         </Button>
       </div>
