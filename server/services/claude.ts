@@ -593,9 +593,20 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Ensure keyword usage feels natural and not forced`;
     }
 
-let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone.
+let promptText = `🚨 ABSOLUTE PRIORITY - WORD COUNT REQUIREMENT 🚨
+The content you generate MUST be ${contentLength}. This is the #1 requirement that cannot be compromised.
 
-CRITICAL WORD COUNT REQUIREMENT: The content MUST be ${contentLength}. This is not optional - count the words and ensure the final content meets this exact word count range. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+WORD COUNT ENFORCEMENT:
+- Count every single word in your response
+- If your content is below the target, expand each section with more detailed explanations, examples, and information
+- Add more subsections, more detailed explanations, and comprehensive coverage of the topic
+- Include additional relevant information, case studies, examples, and detailed explanations to reach the target
+- NEVER submit content that is shorter than the specified word count range
+- This requirement overrides all other considerations
+
+Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+
+🔄 REMINDER: Your content MUST be ${contentLength}. Expand sections as needed to meet this requirement.
     
     CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
     
@@ -694,7 +705,18 @@ CRITICAL WORD COUNT REQUIREMENT: The content MUST be ${contentLength}. This is n
     - The system will handle image insertion automatically at the marked locations
     - Each image will include a caption with a link back to the relevant product to enhance SEO value
     
-    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
+    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.
+
+🚨 FINAL WORD COUNT CHECK 🚨
+Before submitting your response, verify that your content is ${contentLength}:
+- Count the total words in your blog post content
+- If it's too short, expand existing sections with more details, examples, and comprehensive information
+- Add more subsections under your H2 headings
+- Include more thorough explanations, benefits, and detailed information
+- Remember: ${contentLength} is MANDATORY - no exceptions allowed
+- Quality AND quantity are both required - meet the word count while maintaining high quality
+
+YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     
     // Add media information if provided from Choose Media step
     if (request.primaryImage || (request.secondaryImages && request.secondaryImages.length > 0) || request.youtubeEmbed) {
