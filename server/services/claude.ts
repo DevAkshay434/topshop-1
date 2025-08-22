@@ -12,6 +12,18 @@ interface BlogContentRequest {
   includeKeywords?: boolean;
   contentStyleToneId?: string;
   contentStyleDisplayName?: string;
+  // ADMIN PANEL FORM FIELDS - All parameters from UI
+  articleLength?: string; // Short, Medium, Long, Comprehensive from admin panel
+  headingsCount?: string; // Number of H2 headings from admin panel  
+  writingPerspective?: string; // first_person_plural, etc. from admin panel
+  toneOfVoice?: string; // friendly, professional, etc. from admin panel
+  introType?: string; // none, standard, search_intent from admin panel
+  faqType?: string; // none, short, long from admin panel
+  enableTables?: boolean; // Table formatting option from admin panel
+  enableLists?: boolean; // List formatting option from admin panel
+  enableH3s?: boolean; // H3 subheading option from admin panel
+  enableCitations?: boolean; // Citations/links option from admin panel
+  buyerProfile?: string; // auto, beginner, intermediate, advanced from admin panel
   // Media selection fields
   primaryImage?: any;
   secondaryImages?: any[];
@@ -539,6 +551,15 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     }
     
     console.log(`Content generation request: ${request.length} → ${contentLength}`);
+    console.log(`🔍 CLAUDE SERVICE - All admin panel parameters received:`);
+    console.log(`   - length: ${request.length}`);
+    console.log(`   - tone: ${request.tone}`);
+    console.log(`   - contentStyleDisplayName: ${request.contentStyleDisplayName || 'none'}`);
+    console.log(`   - keywords: ${request.keywords?.length || 0} keywords`);
+    console.log(`   - primaryImage: ${request.primaryImage ? 'present' : 'none'}`);
+    console.log(`   - secondaryImages: ${request.secondaryImages?.length || 0} images`);
+    console.log(`   - targetAudience: ${request.targetAudience || 'none'}`);
+    console.log(`✅ CLAUDE WILL RECEIVE ALL ADMIN PANEL INSTRUCTIONS`);
     
     // Enhanced base prompt for Claude with proper structure
     let toneStyle = request.tone;

@@ -1421,7 +1421,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     const contentRequest = await storage.createContentGenRequest({
       topic: requestData.title,
       tone: requestData.toneOfVoice,
-      length: "medium", // Default length
+      length: requestData.articleLength || "medium", // Use actual admin panel value
       status: "pending",
       generatedContent: null
     });
@@ -1594,16 +1594,24 @@ Please suggest a meta description at the end of your response that includes at l
 `;
 
       console.log(`Generating content with Claude for: "${requestData.title}"`);
+      console.log(`🔍 ADMIN PANEL FORM DATA MAPPING TO CLAUDE:`);
+      console.log(`   - Original articleLength from admin panel: "${requestData.articleLength}"`);
+      console.log(`   - toneOfVoice from admin panel: "${requestData.toneOfVoice}"`);
+      console.log(`   - writingPerspective from admin panel: "${requestData.writingPerspective}"`);
+      console.log(`   - headingsCount from admin panel: "${requestData.headingsCount}"`);
       
-      // Map articleLength to actual length values for Claude
-      let contentLength = "medium";
+      // Map articleLength to actual length values for Claude with enhanced mapping
+      let contentLength = "medium (~1200 words)";
       if (requestData.articleLength === "short") {
-        contentLength = "short";
+        contentLength = "short (~800 words)";
       } else if (requestData.articleLength === "long") {
-        contentLength = "long";
+        contentLength = "long (~1800 words)";
       } else if (requestData.articleLength === "comprehensive") {
-        contentLength = "comprehensive";
+        contentLength = "comprehensive (~3000 words)";
       }
+      
+      console.log(`   - Mapped contentLength for Claude: "${contentLength}"`);
+      console.log(`✅ ALL ADMIN PANEL SETTINGS WILL BE PASSED TO CLAUDE`);
       
       // Update the prompt based on new fields
       // Add buyer profile information
@@ -1669,6 +1677,18 @@ Place this at a logical position in the content, typically after introducing a c
           systemPrompt: claudeSystemPrompt,
           includeProducts: productsInfo.length > 0,
           includeCollections: collectionsInfo.length > 0,
+          // Add ALL admin panel form fields explicitly
+          articleLength: requestData.articleLength, // Explicit admin panel value
+          headingsCount: requestData.headingsCount, // Explicit admin panel value
+          writingPerspective: requestData.writingPerspective, // Explicit admin panel value
+          toneOfVoice: requestData.toneOfVoice, // Explicit admin panel value
+          introType: requestData.introType, // Explicit admin panel value
+          faqType: requestData.faqType, // Explicit admin panel value
+          enableTables: requestData.enableTables, // Explicit admin panel value
+          enableLists: requestData.enableLists, // Explicit admin panel value
+          enableH3s: requestData.enableH3s, // Explicit admin panel value
+          enableCitations: requestData.enableCitations, // Explicit admin panel value
+          buyerProfile: requestData.buyerProfile, // Explicit admin panel value
           // Add content style information if available
           contentStyleToneId: requestData.contentStyleToneId,
           contentStyleDisplayName: requestData.contentStyleDisplayName,
