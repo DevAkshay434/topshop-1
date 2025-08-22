@@ -1,5 +1,5 @@
-// Integration with Anthropic's Claude API
-import Anthropic from '@anthropic-ai/sdk';
+// Integration with Claude via OpenRouter API
+import openRouterService from './openrouter';
 
 interface BlogContentRequest {
   topic: string;
@@ -35,13 +35,8 @@ interface BlogContent {
   metaDescription: string;
 }
 
-// Initialize the Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
-const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
+// Using Claude via OpenRouter - no direct client needed
+// OpenRouter will use Claude 3.5 Sonnet for content generation
 
 // Function to ensure all external links have nofollow attribute
 function addNoFollowToExternalLinks(content: string): string {
@@ -754,13 +749,14 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     
     while (retryCount < maxRetries) {
       try {
-        response = await anthropic.messages.create({
-          model: CLAUDE_MODEL,
-          max_tokens: 8000,
-          system: request.contentStyleToneId 
-            ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
-            : undefined,
+        response = await openRouterService.createClaudeCompletion({
           messages: [
+            {
+              role: 'system',
+              content: request.contentStyleToneId 
+                ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
+                : 'You are a professional blog writer creating high-quality, SEO-optimized content.'
+            },
             {
               role: 'user',
               content: `${promptText}
@@ -774,9 +770,11 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
           }
           
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
-        }
-      ],
-    });
+            }
+          ],
+          max_tokens: 8000,
+          temperature: 0.7
+        });
     
     // If successful, break out of retry loop
     break;
@@ -805,9 +803,7 @@ if (!response) {
 }
     
     // Extract and parse the JSON response
-    const responseText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : JSON.stringify(response.content[0]);
+    const responseText = response.choices[0].message.content || '';
     
     console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
     
@@ -982,7 +978,7 @@ export async function generateTitles(request: {
   keywordData?: any[]
 }): Promise<{ titles: string[] }> {
   try {
-    console.log("Generating title suggestions with Claude model:", CLAUDE_MODEL);
+    console.log("Generating title suggestions with Claude via OpenRouter");
     
     // Build audience-aware and keyword-optimized prompt
     let enhancedPrompt = request.prompt;
@@ -1020,22 +1016,20 @@ export async function generateTitles(request: {
     - Create titles that remain relevant and valuable over time
     - Focus on benefits, solutions, and guidance rather than trends`;
     
-    // Make API call to Claude
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 2000,
+    // Make API call to Claude via OpenRouter
+    const response = await openRouterService.createClaudeCompletion({
       messages: [
         {
           role: 'user',
           content: enhancedPrompt
         }
       ],
+      max_tokens: 2000,
+      temperature: 0.7
     });
     
     // Extract response text
-    const responseText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : JSON.stringify(response.content[0]);
+    const responseText = response.choices[0].message.content || '';
     
     console.log("Claude raw response:", responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
     
@@ -1108,23 +1102,21 @@ export async function generateTitles(request: {
   }
 }
 
-// Test function to check if Claude API is working
+// Test function to check if Claude API via OpenRouter is working
 export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 50,
+    const response = await openRouterService.createClaudeCompletion({
       messages: [
         {
           role: 'user',
           content: 'Hello, please respond with "Claude API is connected successfully!" if you receive this message.'
         }
       ],
+      max_tokens: 50,
+      temperature: 0.7
     });
     
-    const responseText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : JSON.stringify(response.content[0]);
+    const responseText = response.choices[0].message.content || '';
       
     return {
       success: true,
@@ -1134,7 +1126,7 @@ export async function testClaudeConnection(): Promise<{ success: boolean; messag
     console.error("Claude connection test failed:", error);
     return {
       success: false,
-      message: error.message || "Failed to connect to Claude API"
+      message: error.message || "Failed to connect to Claude via OpenRouter"
     };
   }
 }

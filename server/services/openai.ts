@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-
-// Initialize the OpenAI client with API key from environment
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Integration with OpenAI via OpenRouter API
+import openRouterService from './openrouter';
 
 // Define the structure of blog content
 export interface BlogContent {
@@ -70,8 +68,7 @@ Respond with JSON that includes the following fields:
       userPrompt = `Write a blog post about "${topic}"`;
     }
     
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const response = await openRouterService.createOpenAICompletion({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -163,9 +160,8 @@ export async function generateTopicSuggestions(
   count: number = 10
 ): Promise<string[]> {
   try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // Using OpenAI via OpenRouter for search and topic generation tasks
+    const response = await openRouterService.createOpenAICompletion({
       messages: [
         { 
           role: "system", 
@@ -314,8 +310,7 @@ Return a JSON object with a "titles" array containing exactly ${count} unique ti
 
     const userPrompt = `Create ${count} completely unique, trending, and SEO-optimized blog titles using the provided keywords${productContext ? ' and products' : ''}. Each title must be distinct, keyword-optimized, and irresistibly clickable for maximum traffic and engagement.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+    const response = await openRouterService.createOpenAICompletion({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -335,7 +330,7 @@ Return a JSON object with a "titles" array containing exactly ${count} unique ti
       
       if (Array.isArray(parsedResponse.titles) && parsedResponse.titles.length >= count) {
         // Validate that each title contains at least one keyword
-        const validatedTitles = parsedResponse.titles.filter(title => {
+        const validatedTitles = parsedResponse.titles.filter((title: string) => {
           const containsKeyword = keywords.some(keyword => 
             title.toLowerCase().includes(keyword.toLowerCase())
           );

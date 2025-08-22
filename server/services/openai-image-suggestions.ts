@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-
-// Initialize the OpenAI client with API key from environment
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Integration with OpenAI via OpenRouter API
+import openRouterService from './openrouter';
 
 /**
  * Generate image search term suggestions specifically tailored to products
@@ -49,9 +47,8 @@ DO NOT suggest terms for:
 The terms should be highly specific and focused on ${productTitle} and its use cases.
 Respond ONLY with a JSON array containing your suggestions.`;
 
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // Using OpenAI via OpenRouter for search tasks
+    const response = await openRouterService.createOpenAICompletion({
       messages: [
         { 
           role: "system", 
@@ -153,9 +150,8 @@ Generate ${count} specific image search terms for high-quality product photos th
  */
 export async function testOpenAIConnection(): Promise<{ success: boolean; message: string }> {
   try {
-    // Make a simple API call to test the connection
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // Make a simple API call to test the connection via OpenRouter
+    const response = await openRouterService.createOpenAICompletion({
       messages: [
         { role: "user", content: "Hello, is the connection working? Respond with just yes or no." }
       ],
