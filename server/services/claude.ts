@@ -528,13 +528,15 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
   try {
     console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
     
-    // Determine content length based on request
-    let contentLength = "approximately 800-1000 words";
+    // Determine content length based on request - matching UI exactly
+    let contentLength = "approximately 500-800 words (Medium length)";
     if (request.length.toLowerCase().includes("short")) {
-      contentLength = "approximately 500-700 words";
+      contentLength = "approximately 300-500 words (Short length)";
     } else if (request.length.toLowerCase().includes("long")) {
-      contentLength = "approximately 1500-2000 words";
+      contentLength = "approximately 800-1200 words (Long length)";
     }
+    
+    console.log(`Content generation request: ${request.length} → ${contentLength}`);
     
     // Enhanced base prompt for Claude with proper structure
     let toneStyle = request.tone;
@@ -589,7 +591,9 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Ensure keyword usage feels natural and not forced`;
     }
 
-let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone.
+
+CRITICAL WORD COUNT REQUIREMENT: The content MUST be ${contentLength}. This is not optional - count the words and ensure the final content meets this exact word count range. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
     
     CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
     
