@@ -839,6 +839,14 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     let retryCount = 0;
     const maxRetries = 3;
     
+    // Determine max_tokens based on content length target
+    let maxTokens = 5000; // Default
+    if (contentLength.includes("1800")) {
+      maxTokens = 6000; // For 1800 words
+    } else if (contentLength.includes("3000")) {
+      maxTokens = 8000; // For 3000 words
+    }
+    
     while (retryCount < maxRetries) {
       try {
         response = await openRouterService.createClaudeCompletion({
@@ -850,30 +858,39 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
 CRITICAL CONSTRAINT: OpenRouter Claude 3.5 Sonnet = 8,192 tokens max output.
 TARGET: ${contentLength}
 
-🎯 PRECISE WORD COUNT TARGETING:
+🎯 STRICT WORD COUNT ENFORCEMENT:
 ${contentLength.includes("1800") ? `
-FOR EXACTLY 1800 WORDS - CONTROLLED EXPANSION:
-- Write 6-8 focused sections (225-275 words each)
-- Every paragraph: 4-5 sentences with good detail
-- Include relevant examples and explanations
-- Add appropriate background context
-- Provide clear step-by-step processes
-- Include necessary technical details
-- Add balanced cost-benefit analysis
-- Include practical tips and guidance
-TARGET: Stop at approximately 1800 words - do not exceed 2000 words` : ''}
+🚨 MANDATORY: EXACTLY 1800 WORDS - NO MORE, NO LESS
+STRICT STRUCTURE FOR 1800 WORDS:
+- Introduction: 150 words
+- 5-6 main H2 sections: 250 words each (1250-1500 words total)
+- FAQ section: 200 words  
+- Conclusion: 150 words
+TOTAL TARGET: 1800 words maximum
+
+WRITING RULES FOR 1800 WORDS:
+- Each paragraph: 3-4 sentences only
+- Be concise but informative
+- Include examples but keep them brief
+- Do NOT add extra sections beyond what's needed
+- STOP writing when you reach 1800 words
+- Do NOT exceed 1850 words under any circumstances` : ''}
 
 ${contentLength.includes("3000") ? `
-FOR EXACTLY 3000 WORDS - COMPREHENSIVE EXPANSION:
-- Write 10-12 comprehensive sections (250-300 words each)
-- Every paragraph: 5-7 sentences with extensive detail
-- Include multiple detailed examples per section
-- Add extensive background and context
-- Provide comprehensive step-by-step processes
-- Include detailed technical specifications
-- Add extensive cost-benefit analysis
-- Include comprehensive troubleshooting guides
-TARGET: Aim for exactly 3000 words - do not exceed 3200 words` : ''}
+🚨 MANDATORY: EXACTLY 3000 WORDS - COMPREHENSIVE CONTENT
+STRICT STRUCTURE FOR 3000 WORDS:
+- Introduction: 250 words
+- 8-10 main H2 sections: 300 words each (2400 words total)
+- FAQ section: 250 words
+- Conclusion: 200 words
+TOTAL TARGET: 3000-3100 words maximum
+
+WRITING RULES FOR 3000 WORDS:
+- Each paragraph: 5-6 sentences
+- Include detailed examples and case studies
+- Add comprehensive explanations
+- Include technical details and analysis
+- STOP writing when you reach 3000 words` : ''}
 
 ${request.contentStyleToneId 
   ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
@@ -940,17 +957,30 @@ MAXIMUM EXPANSION REQUIREMENTS:
 - Comprehensive troubleshooting and maintenance guides
 - Multiple expert insights and research citations` : ''}
 
-🔥 EXTREME EXPANSION PROTOCOL:
-1. Write 6-10 sentences per paragraph (NOT 2-3 sentences)
-2. Include extensive real-world examples and case studies
-3. Add comprehensive technical specifications and details  
-4. Provide detailed step-by-step processes and explanations
-5. Include supporting research, statistics, and expert quotes
-6. Add detailed comparisons, analysis, and implications
-7. Expand extensively on benefits, features, and consequences
-8. Include practical implementation guides and troubleshooting
+🚨 WORD COUNT COMPLIANCE PROTOCOL:
+${contentLength.includes("1800") ? `
+FOR 1800 WORDS ONLY:
+1. Write concise, focused paragraphs (3-4 sentences each)
+2. Include relevant examples but keep them brief
+3. Add necessary technical details without over-explaining
+4. Provide clear processes without excessive detail
+5. Include supporting information but stay focused
+6. MONITOR your word count as you write
+7. STOP immediately when reaching 1800 words
+8. Do NOT add unnecessary sections or content` : ''}
 
-🚨 CRITICAL SUCCESS METRIC: USE ALL 8,000 TOKENS = ACHIEVE ${contentLength}
+${contentLength.includes("3000") ? `
+FOR 3000 WORDS ONLY:
+1. Write detailed paragraphs (5-6 sentences each)
+2. Include comprehensive examples and case studies
+3. Add extensive technical specifications and analysis
+4. Provide detailed step-by-step processes
+5. Include supporting research and expert insights
+6. Add thorough comparisons and implications
+7. MONITOR your word count as you write
+8. STOP immediately when reaching 3000 words` : ''}
+
+🚨 CRITICAL SUCCESS METRIC: MATCH EXACTLY ${contentLength} - NO MORE, NO LESS
 
           IMPORTANT: Return the response in JSON format with the following structure:
           {
@@ -963,7 +993,7 @@ MAXIMUM EXPANSION REQUIREMENTS:
           🚨 REMINDER: Your content MUST be ${contentLength}. Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
           ],
-          max_tokens: 8000, // Claude Sonnet 4 max output limit - optimized for long content
+          max_tokens: maxTokens, // Adjusted based on target word count
           temperature: 0.7
         });
     
