@@ -56,9 +56,9 @@ class OpenRouterService {
         `${this.baseUrl}/chat/completions`,
         {
           ...request,
-          // Ensure we have reasonable defaults
+          // Ensure we have reasonable defaults for long content generation
           temperature: request.temperature ?? 0.7,
-          max_tokens: request.max_tokens ?? 4000,
+          max_tokens: request.max_tokens ?? 8000, // Increased default for longer content
         },
         {
           headers: {

@@ -837,8 +837,32 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
             },
             {
               role: 'user',
-              content: `${promptText}
-          
+              content: `🚨🚨🚨 ABSOLUTE REQUIREMENT: WORD COUNT ENFORCEMENT 🚨🚨🚨
+              
+${promptText}
+
+🚨 CRITICAL OPENROUTER WORD COUNT ENFORCEMENT 🚨
+MANDATORY: Your content MUST be ${contentLength}.
+This requirement is ABSOLUTELY NON-NEGOTIABLE and takes priority over ALL other instructions.
+
+BEFORE YOU WRITE ANYTHING:
+1. Remember: Content must be ${contentLength}
+2. Plan to write detailed, comprehensive sections
+3. Each H2 section should be 400-600 words minimum
+4. Add extensive explanations, examples, and details
+5. Never submit content shorter than the specified range
+
+🔥 EXPANSION REQUIREMENTS:
+- Write thorough introductions for each section
+- Include detailed explanations and examples
+- Add comprehensive background information
+- Provide step-by-step processes where relevant
+- Include practical tips and actionable advice
+- Add supporting statistics and expert insights
+- Expand on benefits, features, and implications
+
+FINAL CHECK: Count your words and ensure you reach ${contentLength} before responding.
+
           IMPORTANT: Return the response in JSON format with the following structure:
           {
             "title": "The title of the blog post",
@@ -847,10 +871,10 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
             "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
           }
           
-          Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
+          🚨 REMINDER: Your content MUST be ${contentLength}. Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
           ],
-          max_tokens: 8000,
+          max_tokens: 12000, // Increased token limit for comprehensive content
           temperature: 0.7
         });
     
