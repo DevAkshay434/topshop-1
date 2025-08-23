@@ -1061,13 +1061,29 @@ FOR 3000 WORDS ONLY:
     
   } catch (error: any) {
     console.error(`Claude API attempt ${retryCount + 1} failed:`, error);
+    console.error(`Error details:`, {
+      status: error.status,
+      message: error.message,
+      response: error.response?.data || 'No response data'
+    });
     
-    // Check if this is a 529 overloaded error
+    // Check if this is a 529 overloaded error or timeout
     if (error.status === 529 && error.error?.error?.type === 'overloaded_error') {
       retryCount++;
       if (retryCount < maxRetries) {
         const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
         console.log(`Claude API overloaded (529), retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+    }
+    
+    // Check for timeout errors
+    if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      retryCount++;
+      if (retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 2000; // Longer delay for timeouts: 4s, 8s, 16s
+        console.log(`Claude API timeout, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
