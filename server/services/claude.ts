@@ -840,8 +840,12 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     const maxRetries = 3;
     
     // Determine max_tokens based on content length target
-    let maxTokens = 5000; // Default
-    if (contentLength.includes("1800")) {
+    let maxTokens = 4000; // Default
+    if (contentLength.includes("800")) {
+      maxTokens = 3000; // For 800 words
+    } else if (contentLength.includes("1200")) {
+      maxTokens = 4500; // For 1200 words  
+    } else if (contentLength.includes("1800")) {
       maxTokens = 6000; // For 1800 words
     } else if (contentLength.includes("3000")) {
       maxTokens = 8000; // For 3000 words
@@ -859,8 +863,42 @@ CRITICAL CONSTRAINT: OpenRouter Claude 3.5 Sonnet = 8,192 tokens max output.
 TARGET: ${contentLength}
 
 🎯 STRICT WORD COUNT ENFORCEMENT:
+${contentLength.includes("800") ? `
+🚨 MANDATORY: EXACTLY 800 WORDS - SHORT & FOCUSED
+STRICT STRUCTURE FOR 800 WORDS:
+- Introduction: 100 words
+- 3-4 main H2 sections: 150-175 words each (450-700 words total)
+- FAQ section: 100 words
+- Conclusion: 50 words
+TOTAL TARGET: 800 words maximum
+
+WRITING RULES FOR 800 WORDS:
+- Each paragraph: 2-3 sentences only
+- Be very concise and focused
+- Include only essential information
+- Do NOT add extra sections
+- STOP writing when you reach 800 words
+- Do NOT exceed 820 words under any circumstances` : ''}
+
+${contentLength.includes("1200") ? `
+🚨 MANDATORY: EXACTLY 1200 WORDS - MEDIUM LENGTH
+STRICT STRUCTURE FOR 1200 WORDS:
+- Introduction: 120 words
+- 4-5 main H2 sections: 200 words each (800-1000 words total)
+- FAQ section: 150 words
+- Conclusion: 80 words
+TOTAL TARGET: 1200 words maximum
+
+WRITING RULES FOR 1200 WORDS:
+- Each paragraph: 3 sentences
+- Be informative but concise
+- Include relevant examples
+- Do NOT add unnecessary sections
+- STOP writing when you reach 1200 words
+- Do NOT exceed 1250 words under any circumstances` : ''}
+
 ${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - NO MORE, NO LESS
+🚨 MANDATORY: EXACTLY 1800 WORDS - LONG CONTENT
 STRICT STRUCTURE FOR 1800 WORDS:
 - Introduction: 150 words
 - 5-6 main H2 sections: 250 words each (1250-1500 words total)
@@ -869,9 +907,9 @@ STRICT STRUCTURE FOR 1800 WORDS:
 TOTAL TARGET: 1800 words maximum
 
 WRITING RULES FOR 1800 WORDS:
-- Each paragraph: 3-4 sentences only
-- Be concise but informative
-- Include examples but keep them brief
+- Each paragraph: 3-4 sentences
+- Be informative with good detail
+- Include examples but keep them focused
 - Do NOT add extra sections beyond what's needed
 - STOP writing when you reach 1800 words
 - Do NOT exceed 1850 words under any circumstances` : ''}
@@ -883,14 +921,15 @@ STRICT STRUCTURE FOR 3000 WORDS:
 - 8-10 main H2 sections: 300 words each (2400 words total)
 - FAQ section: 250 words
 - Conclusion: 200 words
-TOTAL TARGET: 3000-3100 words maximum
+TOTAL TARGET: 3000 words maximum
 
 WRITING RULES FOR 3000 WORDS:
 - Each paragraph: 5-6 sentences
 - Include detailed examples and case studies
 - Add comprehensive explanations
 - Include technical details and analysis
-- STOP writing when you reach 3000 words` : ''}
+- STOP writing when you reach 3000 words
+- Do NOT exceed 3100 words under any circumstances` : ''}
 
 ${request.contentStyleToneId 
   ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
@@ -958,10 +997,30 @@ MAXIMUM EXPANSION REQUIREMENTS:
 - Multiple expert insights and research citations` : ''}
 
 🚨 WORD COUNT COMPLIANCE PROTOCOL:
+${contentLength.includes("800") ? `
+FOR 800 WORDS ONLY:
+1. Write very concise paragraphs (2-3 sentences each)
+2. Include only essential information
+3. Keep examples brief and relevant
+4. Focus on key points only
+5. MONITOR your word count as you write
+6. STOP immediately when reaching 800 words
+7. Do NOT add unnecessary content` : ''}
+
+${contentLength.includes("1200") ? `
+FOR 1200 WORDS ONLY:
+1. Write focused paragraphs (3 sentences each)
+2. Include relevant examples
+3. Add necessary details without over-explaining
+4. Keep sections balanced
+5. MONITOR your word count as you write
+6. STOP immediately when reaching 1200 words
+7. Do NOT add extra sections` : ''}
+
 ${contentLength.includes("1800") ? `
 FOR 1800 WORDS ONLY:
-1. Write concise, focused paragraphs (3-4 sentences each)
-2. Include relevant examples but keep them brief
+1. Write informative paragraphs (3-4 sentences each)
+2. Include relevant examples but keep them focused
 3. Add necessary technical details without over-explaining
 4. Provide clear processes without excessive detail
 5. Include supporting information but stay focused
