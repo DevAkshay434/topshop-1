@@ -15,6 +15,7 @@ import { ProjectCreationDialog } from "../components/ProjectCreationDialog";
 import { ProjectLoadDialog } from "../components/ProjectLoadDialog";
 import { ProjectSaveDialog } from "../components/ProjectSaveDialog";
 import { SimpleHTMLEditor } from "../components/SimpleHTMLEditor";
+import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
 import {
   Card,
   CardContent,
@@ -3219,9 +3220,10 @@ export default function AdminPanel() {
       <div className="space-y-6">
         {/* Content Generation Section - Always visible */}
         {/* Main Content Grid - Selection and Content Preview side by side */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Selection Section - Left Column */}
-          <Card className="lg:col-span-1">
+        <PanelGroup direction="horizontal" className="min-h-[800px]">
+          {/* Selection Section - Left Panel */}
+          <Panel defaultSize={50} minSize={30} maxSize={70}>
+            <Card className="h-full">
             <CardHeader>
               <CardTitle>Content Generator</CardTitle>
               <CardDescription>
@@ -5607,8 +5609,13 @@ export default function AdminPanel() {
               </Form>
             </CardContent>
           </Card>
+          </Panel>
 
-          <Card className="lg:col-span-1" data-content-preview>
+          <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-col-resize" />
+
+          {/* Content Preview - Right Panel */}
+          <Panel defaultSize={50} minSize={30} maxSize={70}>
+            <Card className="h-full" data-content-preview>
             <CardHeader>
               <CardTitle>Content Preview</CardTitle>
               <CardDescription>
@@ -7143,7 +7150,8 @@ export default function AdminPanel() {
               )}
             </CardContent>
           </Card>
-        </div>
+          </Panel>
+        </PanelGroup>
 
         {/* Keyword Selector Dialog */}
         <Dialog
