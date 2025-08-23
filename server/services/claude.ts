@@ -1,5 +1,5 @@
-// Integration with Claude via OpenRouter API
-import openRouterService from './openrouter';
+// Direct Anthropic Claude API integration (reverted from OpenRouter for better performance)
+import Anthropic from '@anthropic-ai/sdk';
 
 interface BlogContentRequest {
   topic: string;
@@ -853,11 +853,19 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     
     while (retryCount < maxRetries) {
       try {
-        response = await openRouterService.createClaudeCompletion({
+        // Initialize Anthropic client with API key
+        const anthropic = new Anthropic({
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        });
+
+        response = await anthropic.messages.create({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: maxTokens,
+          temperature: 0.7,
           messages: [
             {
-              role: 'system',
-              content: `🚨🚨🚨 ULTIMATE WORD COUNT ENFORCEMENT - CLAUDE 3.7 🚨🚨🚨
+              role: 'user',
+              content: `🚨🚨🚨 ULTIMATE WORD COUNT ENFORCEMENT - CLAUDE 3.5 🚨🚨🚨
 
 ⚠️ CRITICAL SUCCESS REQUIREMENT: GENERATE EXACTLY ${contentLength} ⚠️
 🔴 ANYTHING SHORTER THAN TARGET = COMPLETE FAILURE 🔴
@@ -1079,9 +1087,7 @@ FOR 3000 WORDS ONLY:
           
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
-          ],
-          max_tokens: maxTokens, // Adjusted based on target word count
-          temperature: 0.7
+          ]
         });
     
     // If successful, break out of retry loop
@@ -1095,12 +1101,12 @@ FOR 3000 WORDS ONLY:
       response: error.response?.data || 'No response data'
     });
     
-    // Check if this is a 529 overloaded error or timeout
-    if (error.status === 529 && error.error?.error?.type === 'overloaded_error') {
+    // Check for Anthropic API specific errors
+    if (error.status === 529 || error.message?.includes('overloaded')) {
       retryCount++;
       if (retryCount < maxRetries) {
         const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
-        console.log(`Claude API overloaded (529), retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        console.log(`Claude API overloaded, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -1122,12 +1128,13 @@ FOR 3000 WORDS ONLY:
   }
 }
 
+// Check if we got a valid response
 if (!response) {
   throw new Error("Failed to get response from Claude API after all retries");
 }
-    
-    // Extract and parse the JSON response
-    const responseText = response.choices[0].message.content || '';
+
+// Extract and parse the JSON response - fix for direct Anthropic API
+const responseText = response.content?.[0]?.text || '';
     
     console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
     
@@ -1357,20 +1364,26 @@ export async function generateTitles(request: {
     - Create titles that remain relevant and valuable over time
     - Focus on benefits, solutions, and guidance rather than trends`;
     
-    // Make API call to Claude via OpenRouter
-    const response = await openRouterService.createClaudeCompletion({
+    // Initialize Anthropic client
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+    
+    // Make API call to Claude directly
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2000,
+      temperature: 0.7,
       messages: [
         {
           role: 'user',
           content: enhancedPrompt
         }
-      ],
-      max_tokens: 2000,
-      temperature: 0.7
+      ]
     });
     
     // Extract response text
-    const responseText = response.choices[0].message.content || '';
+    const responseText = response.content?.[0]?.text || '';
     
     console.log("Claude raw response:", responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
     
@@ -1446,18 +1459,24 @@ export async function generateTitles(request: {
 // Test function to check if Claude API via OpenRouter is working
 export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await openRouterService.createClaudeCompletion({
+    // Initialize Anthropic client
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+    
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 50,
+      temperature: 0.7,
       messages: [
         {
           role: 'user',
           content: 'Hello, please respond with "Claude API is connected successfully!" if you receive this message.'
         }
-      ],
-      max_tokens: 50,
-      temperature: 0.7
+      ]
     });
     
-    const responseText = response.choices[0].message.content || '';
+    const responseText = response.content?.[0]?.text || '';
       
     return {
       success: true,
