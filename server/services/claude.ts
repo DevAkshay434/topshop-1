@@ -831,9 +831,26 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
           messages: [
             {
               role: 'system',
-              content: request.contentStyleToneId 
-                ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
-                : 'You are a professional blog writer creating high-quality, SEO-optimized content.'
+              content: `🚨 CRITICAL SYSTEM INSTRUCTION: WORD COUNT IS MANDATORY 🚨
+              
+Your ABSOLUTE PRIORITY is generating content that meets the specified word count: ${contentLength}.
+This requirement overrides ALL other considerations and cannot be compromised under any circumstances.
+
+${request.contentStyleToneId 
+  ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
+  : 'You are a professional blog writer creating high-quality, SEO-optimized content.'}
+
+MANDATORY WORD COUNT ENFORCEMENT:
+- Content MUST be ${contentLength}
+- Write extensively detailed sections
+- Include comprehensive explanations and examples
+- Never cut content short due to space constraints
+- Expand every topic thoroughly
+- Add detailed background information
+- Include step-by-step processes
+- Provide extensive analysis and insights
+
+FAILURE to meet the word count requirement is unacceptable.`
             },
             {
               role: 'user',
@@ -874,7 +891,7 @@ FINAL CHECK: Count your words and ensure you reach ${contentLength} before respo
           🚨 REMINDER: Your content MUST be ${contentLength}. Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
           ],
-          max_tokens: 12000, // Increased token limit for comprehensive content
+          max_tokens: 20000, // Maximum token limit for comprehensive long-form content
           temperature: 0.7
         });
     
