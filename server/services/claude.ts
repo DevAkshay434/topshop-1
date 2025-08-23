@@ -845,26 +845,26 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
           messages: [
             {
               role: 'system',
-              content: `🚨 CRITICAL SYSTEM INSTRUCTION: WORD COUNT IS MANDATORY 🚨
-              
-Your ABSOLUTE PRIORITY is generating content that meets the specified word count: ${contentLength}.
-This requirement overrides ALL other considerations and cannot be compromised under any circumstances.
+              content: `🚨🚨🚨 OPENROUTER CLAUDE 3.5 SONNET OPTIMIZATION 🚨🚨🚨
+
+CRITICAL: OpenRouter Claude 3.5 Sonnet has 8,192 token output limit = ~6,000 words max.
+Your ABSOLUTE PRIORITY: Generate ${contentLength} using EVERY available token.
 
 ${request.contentStyleToneId 
   ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
   : 'You are a professional blog writer creating high-quality, SEO-optimized content.'}
 
-MANDATORY WORD COUNT ENFORCEMENT:
-- Content MUST be ${contentLength}
-- Write extensively detailed sections
+🎯 OPENROUTER OPTIMIZATION STRATEGY:
+- Use 7,500-8,000 tokens for ${contentLength}
+- Write extensively detailed sections (300+ words each)
+- Each paragraph: 4-6 sentences minimum
 - Include comprehensive explanations and examples
-- Never cut content short due to space constraints
-- Expand every topic thoroughly
-- Add detailed background information
-- Include step-by-step processes
-- Provide extensive analysis and insights
+- Never cut content short - use ALL available tokens
+- Expand every topic thoroughly with case studies
+- Add detailed background information and analysis
+- Include step-by-step processes and technical details
 
-FAILURE to meet the word count requirement is unacceptable.`
+❌ FAILURE to use maximum tokens = FAILURE to meet word count.`
             },
             {
               role: 'user',
@@ -925,7 +925,7 @@ CRITICAL: Count your words as you write. Do not stop until you reach ${contentLe
           🚨 REMINDER: Your content MUST be ${contentLength}. Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
           ],
-          max_tokens: 20000, // Maximum token limit for comprehensive long-form content
+          max_tokens: 8000, // OpenRouter Claude 3.5 Sonnet max output limit
           temperature: 0.7
         });
     
