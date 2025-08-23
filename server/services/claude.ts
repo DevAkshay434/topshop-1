@@ -850,29 +850,30 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
 CRITICAL CONSTRAINT: OpenRouter Claude 3.5 Sonnet = 8,192 tokens max output.
 TARGET: ${contentLength}
 
-🎯 ULTRA-AGGRESSIVE EXPANSION PROTOCOL:
+🎯 PRECISE WORD COUNT TARGETING:
 ${contentLength.includes("1800") ? `
-FOR 1800+ WORDS - USE ALL 8,000 TOKENS:
-- Write 8-10 comprehensive sections (200+ words each)
-- Every paragraph: 6-8 sentences with extensive detail
-- Include detailed examples, case studies, statistics
-- Add comprehensive background context
-- Provide step-by-step processes with explanations
-- Include technical specifications and analysis
-- Add cost-benefit analysis with real numbers
-- Include troubleshooting guides and tips` : ''}
+FOR EXACTLY 1800 WORDS - CONTROLLED EXPANSION:
+- Write 6-8 focused sections (225-275 words each)
+- Every paragraph: 4-5 sentences with good detail
+- Include relevant examples and explanations
+- Add appropriate background context
+- Provide clear step-by-step processes
+- Include necessary technical details
+- Add balanced cost-benefit analysis
+- Include practical tips and guidance
+TARGET: Stop at approximately 1800 words - do not exceed 2000 words` : ''}
 
 ${contentLength.includes("3000") ? `
-FOR 3000+ WORDS - MAXIMUM TOKEN EXPLOITATION:
-- Write 10-15 comprehensive sections (250+ words each)
-- Every paragraph: 7-10 sentences with maximum detail
+FOR EXACTLY 3000 WORDS - COMPREHENSIVE EXPANSION:
+- Write 10-12 comprehensive sections (250-300 words each)
+- Every paragraph: 5-7 sentences with extensive detail
 - Include multiple detailed examples per section
-- Add extensive background, history, and context
+- Add extensive background and context
 - Provide comprehensive step-by-step processes
-- Include detailed technical specifications and comparisons
-- Add extensive cost-benefit analysis with calculations
-- Include comprehensive troubleshooting and maintenance guides
-- Add multiple case studies and real-world applications` : ''}
+- Include detailed technical specifications
+- Add extensive cost-benefit analysis
+- Include comprehensive troubleshooting guides
+TARGET: Aim for exactly 3000 words - do not exceed 3200 words` : ''}
 
 ${request.contentStyleToneId 
   ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
