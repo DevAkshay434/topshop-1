@@ -839,16 +839,16 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     let retryCount = 0;
     const maxRetries = 3;
     
-    // Determine max_tokens based on content length target
-    let maxTokens = 4000; // Default
+    // Determine max_tokens based on content length target - increased for better compliance
+    let maxTokens = 6000; // Default increased
     if (contentLength.includes("800")) {
-      maxTokens = 3000; // For 800 words
+      maxTokens = 4000; // For 800 words - increased
     } else if (contentLength.includes("1200")) {
-      maxTokens = 4500; // For 1200 words  
+      maxTokens = 6000; // For 1200 words - increased  
     } else if (contentLength.includes("1800")) {
-      maxTokens = 6000; // For 1800 words
+      maxTokens = 8000; // For 1800 words - increased
     } else if (contentLength.includes("3000")) {
-      maxTokens = 8000; // For 3000 words
+      maxTokens = 8000; // For 3000 words - max limit
     }
     
     while (retryCount < maxRetries) {
@@ -857,62 +857,59 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
           messages: [
             {
               role: 'system',
-              content: `🚨🚨🚨 MAXIMUM TOKEN UTILIZATION MANDATE 🚨🚨🚨
+              content: `🚨🚨🚨 ABSOLUTE WORD COUNT MANDATE - NO EXCEPTIONS 🚨🚨🚨
 
-CRITICAL CONSTRAINT: OpenRouter Claude 3.5 Sonnet = 8,192 tokens max output.
-TARGET: ${contentLength}
+CRITICAL REQUIREMENT: You MUST generate EXACTLY ${contentLength} - NO SHORTCUTS ALLOWED!
+🔴 FAILURE TO MEET WORD COUNT = COMPLETE FAILURE 🔴
 
 🎯 STRICT WORD COUNT ENFORCEMENT:
 ${contentLength.includes("800") ? `
-🚨 MANDATORY: EXACTLY 800 WORDS - SHORT & FOCUSED
-STRICT STRUCTURE FOR 800 WORDS:
-- Introduction: 100 words
-- 3-4 main H2 sections: 150-175 words each (450-700 words total)
-- FAQ section: 100 words
-- Conclusion: 50 words
-TOTAL TARGET: 800 words maximum
+🚨 MANDATORY: EXACTLY 800 WORDS - NO SHORTCUTS!
+REQUIRED STRUCTURE FOR 800 WORDS:
+- Introduction: 100 words minimum
+- 4-5 main H2 sections: 140-160 words each (560-800 words total)
+- FAQ section: 100 words minimum  
+- Conclusion: 40 words minimum
+TOTAL TARGET: 800 words EXACTLY - NOT 500, NOT 600, BUT 800!
 
 WRITING RULES FOR 800 WORDS:
-- Each paragraph: 2-3 sentences only
-- Be very concise and focused
-- Include only essential information
-- Do NOT add extra sections
-- STOP writing when you reach 800 words
-- Do NOT exceed 820 words under any circumstances` : ''}
+- Each paragraph: 3-4 sentences (NOT 1-2!)
+- Include examples, details, explanations
+- ADD MORE CONTENT if falling short
+- Keep writing until you reach 800 words
+- Count words as you go - DO NOT STOP SHORT!` : ''}
 
 ${contentLength.includes("1200") ? `
-🚨 MANDATORY: EXACTLY 1200 WORDS - MEDIUM LENGTH
-STRICT STRUCTURE FOR 1200 WORDS:
-- Introduction: 120 words
-- 4-5 main H2 sections: 200 words each (800-1000 words total)
-- FAQ section: 150 words
-- Conclusion: 80 words
-TOTAL TARGET: 1200 words maximum
+🚨 MANDATORY: EXACTLY 1200 WORDS - NO SHORTCUTS!
+REQUIRED STRUCTURE FOR 1200 WORDS:
+- Introduction: 150 words minimum
+- 5-6 main H2 sections: 180-200 words each (900-1200 words total)
+- FAQ section: 100 words minimum
+- Conclusion: 50 words minimum
+TOTAL TARGET: 1200 words EXACTLY - NOT 800, NOT 900, BUT 1200!
 
 WRITING RULES FOR 1200 WORDS:
-- Each paragraph: 3 sentences
-- Be informative but concise
-- Include relevant examples
-- Do NOT add unnecessary sections
-- STOP writing when you reach 1200 words
-- Do NOT exceed 1250 words under any circumstances` : ''}
+- Each paragraph: 4-5 sentences with details
+- Include examples, case studies, explanations
+- ADD MORE CONTENT if falling short of 1200
+- Keep writing until you reach 1200 words
+- Count words as you go - DO NOT STOP SHORT!` : ''}
 
 ${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - LONG CONTENT
-STRICT STRUCTURE FOR 1800 WORDS:
-- Introduction: 150 words
-- 5-6 main H2 sections: 250 words each (1250-1500 words total)
-- FAQ section: 200 words  
-- Conclusion: 150 words
-TOTAL TARGET: 1800 words maximum
+🚨 MANDATORY: EXACTLY 1800 WORDS - NO SHORTCUTS!
+REQUIRED STRUCTURE FOR 1800 WORDS:
+- Introduction: 200 words minimum
+- 6-7 main H2 sections: 220-250 words each (1320-1750 words total)
+- FAQ section: 150 words minimum
+- Conclusion: 100 words minimum
+TOTAL TARGET: 1800 words EXACTLY - NOT 1000, NOT 1200, BUT 1800!
 
 WRITING RULES FOR 1800 WORDS:
-- Each paragraph: 3-4 sentences
-- Be informative with good detail
-- Include examples but keep them focused
-- Do NOT add extra sections beyond what's needed
-- STOP writing when you reach 1800 words
-- Do NOT exceed 1850 words under any circumstances` : ''}
+- Each paragraph: 5-6 sentences with detailed content
+- Include comprehensive examples, case studies, details
+- ADD MORE SECTIONS if falling short of 1800
+- Keep writing until you reach 1800 words
+- Count words as you go - DO NOT STOP SHORT!` : ''}
 
 ${contentLength.includes("3000") ? `
 🚨 MANDATORY: EXACTLY 3000 WORDS - COMPREHENSIVE CONTENT
@@ -1039,7 +1036,10 @@ FOR 3000 WORDS ONLY:
 7. MONITOR your word count as you write
 8. STOP immediately when reaching 3000 words` : ''}
 
-🚨 CRITICAL SUCCESS METRIC: MATCH EXACTLY ${contentLength} - NO MORE, NO LESS
+🚨 ABSOLUTE SUCCESS REQUIREMENT: YOU MUST WRITE EXACTLY ${contentLength}
+🔴 WRITE EVERY SINGLE WORD NEEDED TO REACH THE TARGET
+🔴 DO NOT STOP UNTIL YOU REACH THE EXACT WORD COUNT
+🔴 ADD MORE CONTENT, MORE EXAMPLES, MORE DETAILS UNTIL YOU HIT THE TARGET
 
           IMPORTANT: Return the response in JSON format with the following structure:
           {
@@ -1049,7 +1049,15 @@ FOR 3000 WORDS ONLY:
             "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
           }
           
-          🚨 REMINDER: Your content MUST be ${contentLength}. Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
+          🚨🚨🚨 FINAL WARNING: Your content MUST be EXACTLY ${contentLength}. 
+          
+          COUNT YOUR WORDS AS YOU WRITE. DO NOT STOP SHORT. 
+          IF YOU'RE AT 500 WORDS BUT NEED 1200, KEEP WRITING!
+          ADD MORE SECTIONS, MORE EXAMPLES, MORE EXPLANATIONS!
+          
+          DO NOT SUBMIT CONTENT THAT IS TOO SHORT - EXPAND UNTIL YOU REACH THE TARGET!
+          
+          Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
           ],
           max_tokens: maxTokens, // Adjusted based on target word count
