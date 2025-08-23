@@ -236,7 +236,12 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
               <div className="flex-1">
                 <h4 className="font-medium">{selectedAuthor.name}</h4>
                 {selectedAuthor.description && (
-                  <p className="text-sm text-gray-600 mt-1">{selectedAuthor.description}</p>
+                  <p 
+                    className="text-sm text-gray-600 mt-1"
+                    dangerouslySetInnerHTML={{
+                      __html: selectedAuthor.description.replace(/\n/g, '<br>')
+                    }}
+                  />
                 )}
               </div>
               <Button 
@@ -288,9 +293,12 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                         )}
                       </div>
                       {author.description && (
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2 leading-relaxed">
-                          {author.description}
-                        </p>
+                        <p 
+                          className="text-xs text-gray-600 mt-1 line-clamp-2 leading-relaxed"
+                          dangerouslySetInnerHTML={{
+                            __html: author.description.replace(/\n/g, '<br>')
+                          }}
+                        />
                       )}
                       {author.linkedinUrl && (
                         <p className="text-xs text-blue-600 mt-1">LinkedIn Profile Available</p>
