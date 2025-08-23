@@ -21,7 +21,7 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
   const { toast } = useToast();
   const [topic, setTopic] = useState("");
   const [tone, setTone] = useState("Professional");
-  const [length, setLength] = useState("Medium (~1200 words)");
+  const [length, setLength] = useState("Medium (500-800 words)");
   const [isGenerating, setIsGenerating] = useState(false);
   
   const generateContent = useCallback(async () => {
@@ -125,10 +125,9 @@ export default function ContentGenerator({ onContentGenerated }: ContentGenerato
                 <SelectValue placeholder="Select length" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Short (~800 words)">Short (~800 words)</SelectItem>
-                <SelectItem value="Medium (~1200 words)">Medium (~1200 words)</SelectItem>
-                <SelectItem value="Long (~1800 words)">Long (~1800 words)</SelectItem>
-                <SelectItem value="Comprehensive (~3000 words)">Comprehensive (~3000 words)</SelectItem>
+                <SelectItem value="Short (300-500 words)">Short (300-500 words)</SelectItem>
+                <SelectItem value="Medium (500-800 words)">Medium (500-800 words)</SelectItem>
+                <SelectItem value="Long (800-1200 words)">Long (800-1200 words)</SelectItem>
               </SelectContent>
             </Select>
           </div>

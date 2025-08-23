@@ -46,10 +46,10 @@ const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 // Function to ensure all external links have nofollow attribute
 function addNoFollowToExternalLinks(content: string): string {
   console.log('🔗 Adding nofollow attribute to external links');
-
+  
   // Match external links that don't already have rel="nofollow"
   const externalLinkRegex = /<a\s+([^>]*?)href\s*=\s*["']https?:\/\/[^"']*["']([^>]*?)(?<!rel\s*=\s*["'][^"']*nofollow[^"']*["'])>/gi;
-
+  
   let processedContent = content.replace(externalLinkRegex, (match, beforeHref, afterHref) => {
     // Check if rel attribute already exists
     if (beforeHref.includes('rel=') || afterHref.includes('rel=')) {
@@ -67,7 +67,7 @@ function addNoFollowToExternalLinks(content: string): string {
       return match.slice(0, insertPos) + ' rel="nofollow noopener noreferrer"' + match.slice(insertPos);
     }
   });
-
+  
   console.log('✅ Added nofollow attribute to external links');
   return processedContent;
 }
@@ -77,40 +77,40 @@ function addHeadingIds(content: string): string {
   console.log('🔧 HEADING ID PROCESSING STARTED');
   let processedContent = content;
   let addedIds = 0;
-
+  
   // COMPREHENSIVE HEADING CLEANUP - Multiple fixes applied in sequence
   console.log('🔧 COMPREHENSIVE HEADING CLEANUP STARTED');
-
+  
   // Fix 1: Clean up malformed headings with escaped quotes and extra characters
   processedContent = processedContent.replace(/<h2([^>]*?)\\?"([^"]*?)\\?"([^>]*?)>/gi, (match, before, content, after) => {
     console.log(`🔧 FIXING MALFORMED HEADING: ${match}`);
     return `<h2${before}"${content}"${after}>`;
   });
-
+  
   // Fix 2: Remove duplicate '>' characters  
   processedContent = processedContent.replace(/<h2([^>]*?)>>+/gi, '<h2$1>');
-
+  
   // Fix 3: Clean up any headings with duplicate IDs (first pattern)
   processedContent = processedContent.replace(/<h2([^>]*)(id\s*=\s*["'][^"']*["'])([^>]*)(id\s*=\s*["'][^"']*["'])([^>]*)>/gi, (match, before1, firstId, between, secondId, after) => {
     console.log(`🔧 REMOVING DUPLICATE ID PATTERN 1: ${match}`);
     // Keep only the second ID (usually the more specific one like "faq")
     return `<h2${before1}${between}${secondId}${after}>`;
   });
-
+  
   // Fix 4: Alternative duplicate ID pattern
   processedContent = processedContent.replace(/<h2\s+id\s*=\s*["']([^"']*?)["']\s+id\s*=\s*["']([^"']*?)["']([^>]*)>/gi, (match, firstId, secondId, rest) => {
     console.log(`🔧 REMOVING DUPLICATE ID PATTERN 2: ${match}`);
     return `<h2 id="${secondId}"${rest}>`;
   });
-
+  
   // Fix 5: Clean up extra spaces around id attributes
   processedContent = processedContent.replace(/<h2(\s+)id\s*=\s*["']([^"']*?)["'](\s+)>/gi, '<h2 id="$2">');
-
+  
   console.log('✅ COMPREHENSIVE HEADING CLEANUP COMPLETED');
-
+  
   // Find all H2 headings without id attributes
   const h2WithoutIdRegex = /<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi;
-
+  
   processedContent = processedContent.replace(h2WithoutIdRegex, (match, attributes, title) => {
     // Generate a clean id from the title
     const cleanTitle = title.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
@@ -120,19 +120,19 @@ function addHeadingIds(content: string): string {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-') // Replace multiple hyphens with single
       .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-
+    
     addedIds++;
     console.log(`   - Added id="${id}" to H2: "${cleanTitle}"`);
     return `<h2${attributes} id="${id}">${title}</h2>`;
   });
-
+  
   console.log(`✅ HEADING ID PROCESSING COMPLETED: Added ${addedIds} IDs to H2 headings`);
   return processedContent;
 }
 
 function fixTOCLinks(content: string): string {
   console.log('🔧 FIXING TOC LINKS - Removing target="_blank" from internal navigation');
-
+  
   // Remove target="_blank" and related attributes from anchor links that point to internal IDs
   let processedContent = content.replace(
     /<a\s+([^>]*href=["']#[^"']+["'][^>]*target=["']_blank["'][^>]*)>/gi,
@@ -144,12 +144,12 @@ function fixTOCLinks(content: string): string {
         .replace(/class=["'][^"']*["']/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
-
+      
       console.log(`   - Fixed TOC link: ${match} → <a ${cleanAttributes}>`);
       return `<a ${cleanAttributes}>`;
     }
   );
-
+  
   // Also fix any TOC links that might have been processed differently
   processedContent = processedContent.replace(
     /<a\s+([^>]*target=["']_blank["'][^>]*href=["']#[^"']+["'][^>]*)>/gi,
@@ -160,12 +160,12 @@ function fixTOCLinks(content: string): string {
         .replace(/class=["'][^"']*["']/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
-
+      
       console.log(`   - Fixed TOC link (alt format): ${match} → <a ${cleanAttributes}>`);
       return `<a ${cleanAttributes}>`;
     }
   );
-
+  
   console.log('✅ TOC LINK FIXING COMPLETED');
   return processedContent;
 }
@@ -175,65 +175,65 @@ function addTableOfContents(content: string): string {
   console.log('🔍 TABLE OF CONTENTS PROCESSING STARTED');
   console.log(`   - Content length: ${content.length} characters`);
   console.log(`   - Has TOC marker: ${content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')}`);
-
+  
   // Check if content has TOC placement marker
   if (!content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')) {
     console.log('❌ No TOC placement marker found - returning content as-is');
     return content; // No TOC marker, return content as-is
   }
-
+  
   // First, ensure all H2 headings have id attributes
   let processedContent = addHeadingIds(content);
   console.log('✅ Added missing heading IDs to H2 elements');
-
+  
   // Extract all H2 headings with their id attributes
   const h2Regex = /<h2[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h2>/gi;
   const headings: { id: string; title: string }[] = [];
   let match;
-
+  
   while ((match = h2Regex.exec(processedContent)) !== null) {
     const id = match[1];
     const title = match[2].replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags from title
     headings.push({ id, title });
     console.log(`   - Found H2 heading: "${title}" with id="${id}"`);
   }
-
+  
   // Reset regex lastIndex to avoid issues with global regex
   h2Regex.lastIndex = 0;
-
+  
   console.log(`📊 TOC STATISTICS: Found ${headings.length} H2 headings with IDs`);
-
+  
   // If no headings found, remove the TOC marker
   if (headings.length === 0) {
     console.log('⚠️ No H2 headings with IDs found - removing TOC marker');
     return processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
-
+  
   // Generate clean, Shopify-compatible TOC HTML with proper closing tags
   const tocItems = headings.map(heading => 
     `<li style="margin: 6px 0; line-height: 1.4;">
       <a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a>
     </li>`
   ).join('\n    ');
-
+  
   const tocHtml = `<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
   <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">📋 Table of Contents</h3>
   <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
     ${tocItems}
   </ol>
 </div>`;
-
+  
   console.log('🎨 Generated TOC HTML (internal links without target="_blank")');
   console.log(`   - TOC HTML length: ${tocHtml.length} characters`);
-
+  
   // Replace the TOC marker with the generated TOC and ensure proper spacing
   // This regex handles cases where there might not be proper paragraph breaks after the marker
   const finalContent = processedContent.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
                 .replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
-
+  
   console.log('✅ TABLE OF CONTENTS PROCESSING COMPLETED');
   console.log(`   - Final content length: ${finalContent.length} characters`);
-
+  
   return finalContent;
 }
 
@@ -247,7 +247,7 @@ function removeH1Tags(content: string): string {
 function applyContentFormatting(content: string): string {
   console.log('🎨 APPLYING CONTENT FORMATTING RULES');
   let formattedContent = content;
-
+  
   // Rule 1: Make the first line after any heading bold and add line break
   console.log('📝 Rule 1: Bold first line after headings + line break');
   formattedContent = formattedContent.replace(
@@ -264,7 +264,7 @@ function applyContentFormatting(content: string): string {
       return match;
     }
   );
-
+  
   // Rule 2: Make sentences ending with : or ? bold (only within paragraphs)
   console.log('📝 Rule 2: Bold sentences ending with : or ?');
   formattedContent = formattedContent.replace(
@@ -272,7 +272,7 @@ function applyContentFormatting(content: string): string {
     (match, questionOrColon, remaining) => {
       // Don't apply if already has strong tags
       if (match.includes('<strong>')) return match;
-
+      
       if (remaining.trim()) {
         return `<p><strong>${questionOrColon}</strong>${remaining}</p>`;
       } else {
@@ -280,7 +280,7 @@ function applyContentFormatting(content: string): string {
       }
     }
   );
-
+  
   console.log('✅ Content formatting rules applied');
   return formattedContent;
 }
@@ -288,14 +288,14 @@ function applyContentFormatting(content: string): string {
 // Function to process media placements and prevent duplicate secondary images
 function processMediaPlacementsHandler(content: string, request: BlogContentRequest): string {
   let processedContent = content;
-
+  
   // Handle YouTube video placement under second H2 heading
   if (request.youtubeEmbed) {
     console.log('🎬 YOUTUBE PROCESSING - Original URL:', request.youtubeEmbed);
-
+    
     // Extract video ID from various YouTube URL formats
     let videoId = null;
-
+    
     // Handle youtu.be format: https://youtu.be/VIDEO_ID or https://youtu.be/VIDEO_ID?si=xxx
     if (request.youtubeEmbed.includes('youtu.be/')) {
       const match = request.youtubeEmbed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
@@ -306,9 +306,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       const match = request.youtubeEmbed.match(/(?:watch\?v=|embed\/|v\/)([a-zA-Z0-9_-]{11})/);
       videoId = match?.[1];
     }
-
+    
     console.log('🎬 YOUTUBE PROCESSING - Extracted Video ID:', videoId);
-
+    
     if (videoId) {
       const videoHtml = `
 <div style="margin: 20px 0; text-align: center;">
@@ -317,19 +317,19 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     allowfullscreen style="max-width: 100%; border-radius: 8px;">
   </iframe>
 </div>`;
-
+      
       // Replace only the first occurrence (under second H2)
       const markerCount = (processedContent.match(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g) || []).length;
       console.log(`🎬 YOUTUBE PLACEMENT - Found ${markerCount} video markers in content`);
-
+      
       processedContent = processedContent.replace('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->', videoHtml);
       console.log('🎬 YOUTUBE PLACEMENT - Video embedded under second H2 heading');
-
+      
       // Remove any additional video placement markers
       processedContent = processedContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
     }
   }
-
+  
   // Handle secondary images placement - ensure no duplicates and proper distribution with product links
   console.log("🔍 CLAUDE SERVICE - Secondary images processing:", {
     hasSecondaryImages: !!request.secondaryImages,
@@ -352,7 +352,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     console.log("⚠️ NO PRODUCTS INFO: Secondary images will be embedded without product links");
     // Continue processing secondary images even without products info
   }
-
+  
   if (request.secondaryImages && request.secondaryImages.length > 0) {
     console.log("✅ SECONDARY IMAGES FOUND - Processing for product interlinking");
     console.log("🔍 SECONDARY IMAGES DETAILS:", request.secondaryImages.map(img => ({
@@ -361,11 +361,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       source: img.source,
       alt: img.alt
     })));
-
+    
     // CRITICAL FIX: Filter out primary image from secondary images to prevent duplication
     const primaryImageId = request.primaryImage?.id;
     const primaryImageUrl = request.primaryImage?.url;
-
+    
     const filteredSecondaryImages = request.secondaryImages.filter(img => {
       const isDuplicatePrimary = (img.id === primaryImageId) || (img.url === primaryImageUrl);
       if (isDuplicatePrimary) {
@@ -373,23 +373,23 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       }
       return !isDuplicatePrimary;
     });
-
+    
     console.log(`🔧 PRIMARY IMAGE DUPLICATION FIX: Filtered ${request.secondaryImages.length} → ${filteredSecondaryImages.length} secondary images`);
-
+    
     if (filteredSecondaryImages.length === 0) {
       console.log("⚠️ No secondary images remaining after primary image filtering");
       return processedContent;
     }
-
+    
     // Find all secondary image placement markers
     const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const availableMarkers = markers ? markers.length : 0;
-
+    
     console.log(`🔍 MARKER SEARCH RESULTS:`);
     console.log(`   - Found ${availableMarkers} placement markers for ${filteredSecondaryImages.length} secondary images`);
     console.log(`   - Content length: ${processedContent.length} characters`);
     console.log(`   - Content preview (first 500 chars):`, processedContent.substring(0, 500));
-
+    
     if (availableMarkers === 0) {
       console.log(`🔍 SEARCHING FOR H2 HEADINGS IN CONTENT:`);
       const h2Matches = processedContent.match(/<h2[^>]*>.*?<\/h2>/gi);
@@ -400,11 +400,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         });
       }
     }
-
+    
     // FALLBACK SYSTEM: If no markers found, automatically insert them after H2 headings
     if (availableMarkers === 0) {
       console.log("⚠️ No secondary image markers found in content - implementing fallback system");
-
+      
       // Find all H2 headings and add markers after them (skip first 2 H2s for intro and video)
       const h2Regex = /<h2[^>]*>.*?<\/h2>/gi;
       const h2Matches: RegExpExecArray[] = [];
@@ -412,62 +412,62 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       while ((h2Match = h2Regex.exec(processedContent)) !== null) {
         h2Matches.push(h2Match);
       }
-
+      
       if (h2Matches.length > 1) {
         console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #2 and beyond`);
-
+        
         // Start from the 2nd H2 (index 1) and add markers after each one
         let insertOffset = 0;
         for (let i = 1; i < h2Matches.length && i < 1 + filteredSecondaryImages.length; i++) {
           const h2Match = h2Matches[i];
           const insertPosition = h2Match.index + h2Match[0].length + insertOffset;
           const marker = '\n<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->\n';
-
+          
           processedContent = processedContent.slice(0, insertPosition) + marker + processedContent.slice(insertPosition);
           insertOffset += marker.length;
-
+          
           console.log(`Added fallback marker after H2 #${i + 1}`);
         }
-
+        
         // Update markers count after fallback insertion
         const newMarkers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
         const newAvailableMarkers = newMarkers ? newMarkers.length : 0;
         console.log(`Fallback system added ${newAvailableMarkers} markers`);
       }
     }
-
+    
     // Re-check markers after potential fallback
     const finalMarkers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const finalAvailableMarkers = finalMarkers ? finalMarkers.length : 0;
-
+    
     // Create a set to track used image URLs to prevent duplicates
     const usedImages = new Set<string>();
-
+    
     // Get products information for linking (from request or from secondary image metadata)
     const availableProducts = request.productIds || [];
-
+    
     console.log("Available products for interlinking:", availableProducts);
     console.log("Request.productsInfo:", request.productsInfo);
     console.log("Secondary images available:", request.secondaryImages?.length || 0);
-
+    
     // Process each marker location with a unique image (using filtered secondary images)
     for (let i = 0; i < finalAvailableMarkers && i < filteredSecondaryImages.length; i++) {
       const image = filteredSecondaryImages[i];
-
+      
       // Skip if this image URL has already been used
       if (usedImages.has(image.url)) {
         continue;
       }
-
+      
       usedImages.add(image.url);
-
+      
       let imageHtml = '';
-
+      
       console.log(`🔧 PROCESSING SECONDARY IMAGE ${i + 1}:`);
       console.log(`   - Image URL: ${image.url}`);
       console.log(`   - request.productsInfo: ${request.productsInfo ? JSON.stringify(request.productsInfo) : 'undefined'}`);
       console.log(`   - availableProducts: ${JSON.stringify(availableProducts)}`);
-
+      
       // Try to link the image to a product using product handle from productsInfo
       if (request.productsInfo && request.productsInfo.length > 0) {
         // Cycle through available products to ensure each secondary image links to a product
@@ -475,27 +475,27 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productInfo = request.productsInfo[productIndex];
         const productHandle = productInfo.handle;
         const productTitle = productInfo.title || "View Product Details";
-
+        
         // Create product-linked image HTML with exact 600×600px sizing
         imageHtml = `<div style="text-align: center !important; margin: 20px 0 !important;">
   <a href="/products/${productHandle}" title="${productTitle}" style="text-decoration: none !important;">
     <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
   </a>
 </div>`;
-
+        
         console.log(`✓ Secondary image ${i + 1} linked to product: ${productTitle} (handle: ${productHandle})`);
       } else if (availableProducts.length > 0) {
         // Fallback: try to use product ID if no productsInfo available
         const productIndex = i % availableProducts.length;
         const productId = availableProducts[productIndex];
-
+        
         // Create product-linked image HTML with exact 600×600px sizing
         imageHtml = `<div style="text-align: center !important; margin: 20px 0 !important;">
   <a href="/products/${productId}" title="View Product Details" style="text-decoration: none !important;">
     <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
   </a>
 </div>`;
-
+        
         console.log(`⚠ Secondary image ${i + 1} linked to product ID: ${productId} (no handle available)`);
       } else {
         // Fallback without product link with exact 600×600px sizing
@@ -504,19 +504,19 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
   <img src="${image.url}" alt="${image.alt || ''}" 
     style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
 </div>`;
-
+        
         console.log(`❌ Secondary image ${i + 1} added without product link (no products selected)`);
         console.log(`   - request.productsInfo: ${request.productsInfo ? request.productsInfo.length : 'undefined'}`);
         console.log(`   - availableProducts: ${availableProducts.length}`);
       }
-
+      
       // Replace only the first remaining marker to ensure even distribution
       processedContent = processedContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', imageHtml);
     }
-
+    
     // Remove any remaining unused markers
     processedContent = processedContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
-
+    
     console.log(`✅ SECONDARY IMAGES PROCESSING COMPLETE:`);
     console.log(`   - Original secondary images: ${request.secondaryImages.length}`);
     console.log(`   - After primary image filtering: ${filteredSecondaryImages.length}`);
@@ -524,7 +524,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     console.log(`   - Images successfully embedded: ${Math.min(finalAvailableMarkers, filteredSecondaryImages.length)}`);
     console.log(`   - Content length after processing: ${processedContent.length} characters`);
   }
-
+  
   return processedContent;
 }
 
@@ -532,7 +532,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
 export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
   try {
     console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
-
+    
     // Determine content length based on request
     let contentLength = "approximately 800-1000 words";
     if (request.length.toLowerCase().includes("short")) {
@@ -540,7 +540,7 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     } else if (request.length.toLowerCase().includes("long")) {
       contentLength = "approximately 1500-2000 words";
     }
-
+    
     // Enhanced base prompt for Claude with proper structure
     let toneStyle = request.tone;
     // If content style display name is provided, use it instead of the default tone
@@ -548,7 +548,7 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       toneStyle = request.contentStyleDisplayName;
       console.log(`Using custom content style: ${request.contentStyleDisplayName} (ID: ${request.contentStyleToneId || 'none'})`);
     }
-
+    
     // Get copywriter persona if available
 const copywriterPersona = request.contentStyleDisplayName ? `Write this content in the style of ${request.contentStyleDisplayName}.` : '';
 
@@ -569,7 +569,7 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     if (request.targetAudience || request.buyerPersona) {
       const audience = request.targetAudience || request.buyerPersona;
       audienceContext = `
-
+    
     TARGET AUDIENCE FOCUS: This article is intended for the following audience: ${audience}
     - Tailor all content, tone, examples, and messaging specifically for this target audience
     - Use language, terminology, and depth appropriate for this audience level
@@ -577,13 +577,13 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Include relevant examples and use cases that resonate with this audience
     - Ensure the call-to-action appeals directly to this audience segment`;
     }
-
+    
     // Build keyword optimization context
     let keywordContext = '';
     if (request.keywords && request.keywords.length > 0) {
       const keywordList = request.keywords.join(', ');
       keywordContext = `
-
+    
     KEYWORD OPTIMIZATION: Use these specific keywords naturally throughout the content:
     Keywords: ${keywordList}
     - Incorporate these keywords in the title (at least 1 primary keyword)
@@ -595,9 +595,9 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     }
 
 let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
-
+    
     CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
-
+    
     The blog post MUST follow this exact structure:
     1. Use the provided title "${request.topic}" exactly as given (no modifications allowed)
     2. Multiple clearly defined sections with H2 headings that incorporate important keywords
@@ -606,7 +606,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
     6. Lists and tables where appropriate to improve readability
     7. A conclusion with a clear call to action
-
+    
     EXTERNAL AUTHORITATIVE LINK REQUIREMENTS:
     - Include 3-5 external links to authoritative sources throughout the content
     - Prioritize links to: .edu (universities/research), .gov (government agencies), .wikipedia.org (Wikipedia articles), .org (established organizations)
@@ -621,14 +621,14 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - Distribute links across different sections of the content for better SEO value
     - Links should enhance credibility and provide readers with additional authoritative information
     - When mentioning statistics, studies, or facts, link to the authoritative source when possible
-
+    
     MEDIA PLACEMENT RULES:
     - Selected YouTube video MUST be placed under the SECOND H2 heading only
     - Secondary images MUST be placed under H2 headings that come AFTER the video
     - Each secondary image should be placed under a different H2 heading
     - Never repeat the same secondary image multiple times
     - Distribute secondary images evenly across remaining H2 sections
-
+    
     IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
     - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
     - Start the content with the Table of Contents placement marker, followed by a paragraph break, then the introduction
@@ -639,7 +639,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add an extra line break (<br><br>) after the first bold sentence, then continue with regular spacing for remaining sentences
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
-
+    
     CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
     - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
     - Under EVERY OTHER H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
@@ -650,19 +650,19 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - Example structure:
       <h2>First Section</h2>
       <p>Content...</p>
-
+      
       <h2>Second Section</h2>
       <p>Content...</p>
       <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
-
+      
       <h2>Third Section</h2>
       <p>Content...</p>
       <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
-
+      
       <h2>Fourth Section</h2>
       <p>Content...</p>  
       <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
-
+    
     TABLE OF CONTENTS REQUIREMENTS:
     - AUTOMATICALLY include a Table of Contents at the very beginning of the content
     - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
@@ -675,13 +675,13 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - The TOC will be styled with a clean, professional appearance and will improve user navigation
     - Ensure clean separation between TOC and the introduction paragraph
     - MANDATORY: Do not create any H2 heading without an id attribute - the TOC will fail without proper IDs
-
+    
     FAQ SECTION FORMATTING (if FAQ is enabled):
     - Format all FAQ questions with "Q:" prefix (colon, not period)
     - Format all FAQ answers with "A:" prefix (colon, not period) 
     - Use proper HTML structure: <h3>Q: Question here?</h3><p>A: Answer here.</p>
     - Make FAQ section engaging and helpful for readers
-
+    
     IMPORTANT IMAGE AND LINK GUIDELINES:
     - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
     - NEVER reference competitor websites or external commercial domains in any links or image sources
@@ -692,26 +692,26 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - Do not include any image placeholders or special markup except for the placement markers mentioned above
     - The system will handle image insertion automatically at the marked locations
     - Each image will include a caption with a link back to the relevant product to enhance SEO value
-
+    
     Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
-
+    
     // Add media information if provided from Choose Media step
     if (request.primaryImage || (request.secondaryImages && request.secondaryImages.length > 0) || request.youtubeEmbed) {
       promptText += `
-
+      
       SELECTED MEDIA CONTEXT (from Choose Media step):`;
-
+      
       if (request.primaryImage) {
         promptText += `
-
+      
       PRIMARY/FEATURED IMAGE: "${request.primaryImage.alt}" (${request.primaryImage.url})
       - This will be used as the featured image at the top of the content
       - Reference this image context in your introduction to create cohesion`;
       }
-
+      
       if (request.secondaryImages && request.secondaryImages.length > 0) {
         promptText += `
-
+      
       SECONDARY IMAGES (${request.secondaryImages.length} selected):`;
         request.secondaryImages.forEach((img, index) => {
           promptText += `
@@ -721,37 +721,37 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
       - These images will be placed under H2 headings after the video
       - Reference these images in your content to create natural flow`;
       }
-
+      
       if (request.youtubeEmbed) {
         promptText += `
-
+      
       YOUTUBE VIDEO: ${request.youtubeEmbed}
       - This video MUST be embedded under the SECOND H2 heading only
       - Use the marker: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
       - Reference this video content in your structure to create natural integration`;
       }
-
+      
       promptText += `
-
+      
       IMPORTANT: Structure your content to naturally incorporate these selected media elements. Make sure the content flows logically with the media placements.`;
     }
-
+    
     // Add custom prompt if provided
     if (request.customPrompt) {
       const customPromptFormatted = request.customPrompt.replace(/\[TOPIC\]/g, request.topic);
       promptText = `${promptText}
-
+      
       IMPORTANT: Follow these specific instructions for the content:
       ${customPromptFormatted}
-
+      
       The content must directly address these instructions while maintaining a ${toneStyle} tone and proper blog structure.`;
     }
-
+    
     // Make API call to Claude with retry logic for overloaded errors
     let response;
     let retryCount = 0;
     const maxRetries = 3;
-
+    
     while (retryCount < maxRetries) {
       try {
         response = await anthropic.messages.create({
@@ -764,7 +764,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
             {
               role: 'user',
               content: `${promptText}
-
+          
           IMPORTANT: Return the response in JSON format with the following structure:
           {
             "title": "The title of the blog post",
@@ -772,18 +772,18 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
             "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
             "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
           }
-
+          
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
         }
       ],
     });
-
+    
     // If successful, break out of retry loop
     break;
-
+    
   } catch (error: any) {
     console.error(`Claude API attempt ${retryCount + 1} failed:`, error);
-
+    
     // Check if this is a 529 overloaded error
     if (error.status === 529 && error.error?.error?.type === 'overloaded_error') {
       retryCount++;
@@ -794,7 +794,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
         continue;
       }
     }
-
+    
     // If not overloaded error or max retries reached, throw the error
     throw error;
   }
@@ -803,27 +803,27 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
 if (!response) {
   throw new Error("Failed to get response from Claude API after all retries");
 }
-
+    
     // Extract and parse the JSON response
     const responseText = response.content[0].type === 'text' 
       ? response.content[0].text 
       : JSON.stringify(response.content[0]);
-
+    
     console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
-
+    
     // Try different strategies to extract valid JSON from Claude's response
     let jsonContent;
-
+    
     try {
       // Strategy 1: Find the most complete JSON object in the response
       const jsonObjectRegex = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}/g;
       const jsonMatches = responseText.match(jsonObjectRegex);
-
+      
       if (jsonMatches && jsonMatches.length > 0) {
         // Find the longest match, which is likely the complete JSON
         const longestMatch = jsonMatches.reduce((longest, current) => 
           current.length > longest.length ? current : longest, "");
-
+        
         if (longestMatch) {
           console.log("Found JSON object match:", longestMatch.substring(0, 100) + "...");
           jsonContent = JSON.parse(longestMatch);
@@ -832,24 +832,24 @@ if (!response) {
     } catch (jsonError: any) {
       console.log("Error parsing complete JSON object:", jsonError?.message || "Unknown error");
     }
-
+    
     // Strategy 2: If strategy 1 fails, try to extract JSON by matching braces
     if (!jsonContent) {
       try {
         let braceCount = 0;
         let startIndex = -1;
         let jsonCandidate = "";
-
+        
         // Find the opening brace
         startIndex = responseText.indexOf('{');
-
+        
         if (startIndex >= 0) {
           for (let i = startIndex; i < responseText.length; i++) {
             jsonCandidate += responseText[i];
-
+            
             if (responseText[i] === '{') braceCount++;
             if (responseText[i] === '}') braceCount--;
-
+            
             // When braces are balanced, we've found a complete JSON object
             if (braceCount === 0 && jsonCandidate.length > 2) {
               console.log("Found balanced JSON via brace counting:", jsonCandidate.substring(0, 100) + "...");
@@ -862,33 +862,33 @@ if (!response) {
         console.log("Error parsing balanced braces JSON:", balancedError?.message || "Unknown error");
       }
     }
-
+    
     // Strategy 3: Manual extraction of key fields if JSON parsing fails
     if (!jsonContent) {
       console.log("Attempting manual extraction of content components...");
-
+      
       // Extract title
       const titleMatch = responseText.match(/"title"\s*:\s*"([^"]+)"/);
       const title = titleMatch ? titleMatch[1] : "Blog Post";
-
+      
       // Extract content - look for content field followed by a large HTML block
       const contentMatch = responseText.match(/"content"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*})/);
       let content = contentMatch ? contentMatch[1] : "";
-
+      
       // Unescape content string
       content = content.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-
+      
       // Extract tags
       const tagsMatch = responseText.match(/"tags"\s*:\s*\[([\s\S]+?)\]/);
       const tagsString = tagsMatch ? tagsMatch[1] : "";
       const tags = tagsString.split(',').map(tag => 
         tag.trim().replace(/^"|"$/g, '')
       ).filter(Boolean);
-
+      
       // Extract meta description
       const metaMatch = responseText.match(/"metaDescription"\s*:\s*"([^"]+)"/);
       const metaDescription = metaMatch ? metaMatch[1] : "";
-
+      
       jsonContent = {
         title,
         content,
@@ -896,46 +896,46 @@ if (!response) {
         metaDescription
       };
     }
-
+    
     if (!jsonContent) {
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
-
+    
     // CRITICAL STEP-BY-STEP CONTENT PROCESSING
     console.log('🔧 STARTING COMPREHENSIVE CONTENT PROCESSING PIPELINE');
-
+    
     // Step 1: Remove H1 tags to prevent title duplication
     let processedContent = removeH1Tags(jsonContent.content);
     console.log('✅ Step 1: Removed H1 tags');
-
+    
     // Step 2: Fix heading IDs BEFORE TOC generation (critical for duplicate ID fixes)
     processedContent = addHeadingIds(processedContent);
     console.log('✅ Step 2: Added/fixed heading IDs');
-
+    
     // Step 3: Generate Table of Contents based on fixed headings
     processedContent = addTableOfContents(processedContent);
     console.log('✅ Step 3: Generated Table of Contents');
-
+    
     // Step 4: Apply content formatting rules (bold first lines, bold : and ? sentences)
     processedContent = applyContentFormatting(processedContent);
     console.log('✅ Step 4: Applied content formatting rules');
-
+    
     // Step 5: Final TOC link fixes to remove target="_blank"
     processedContent = fixTOCLinks(processedContent);
     console.log('✅ Step 5: Fixed TOC links (removed target="_blank")');
-
+    
     // Step 6: Add nofollow attribute to external links for SEO compliance
     processedContent = addNoFollowToExternalLinks(processedContent);
     console.log('✅ Step 6: Added nofollow attribute to external links');
-
+    
     // CAPTURE CONTENT BEFORE MEDIA PROCESSING (this is what the editor should show)
     const rawContentForEditor = processedContent;
     console.log('📝 Content before final processing (for editor):', rawContentForEditor.substring(0, 500) + '...');
-
+    
     // Step 7: Handle media placements (final step - converts placeholders to actual embeds)
     processedContent = processMediaPlacementsHandler(processedContent, request);
     console.log('✅ Step 7: Processed media placements');
-
+    
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
     if (cleanMetaDescription) {
@@ -946,15 +946,15 @@ if (!response) {
         .replace(/📋/g, '')
         .replace(/\s+/g, ' ')
         .trim();
-
+      
       // Ensure meta description is within 155-160 character limit
       if (cleanMetaDescription.length > 160) {
         cleanMetaDescription = cleanMetaDescription.substring(0, 157) + '...';
       }
-
+      
       console.log(`✓ Cleaned meta description: "${cleanMetaDescription}"`);
     }
-
+    
     console.log('🎉 CONTENT PROCESSING PIPELINE COMPLETED SUCCESSFULLY');
 
     return {
@@ -983,10 +983,10 @@ export async function generateTitles(request: {
 }): Promise<{ titles: string[] }> {
   try {
     console.log("Generating title suggestions with Claude model:", CLAUDE_MODEL);
-
+    
     // Build audience-aware and keyword-optimized prompt
     let enhancedPrompt = request.prompt;
-
+    
     // Add target audience context if provided
     if (request.targetAudience) {
       enhancedPrompt += `\n\nTARGET AUDIENCE FOCUS: These titles must clearly appeal to and engage the following audience: ${request.targetAudience}
@@ -994,13 +994,13 @@ export async function generateTitles(request: {
       - Address their pain points, interests, and needs in the titles
       - Ensure titles are compelling and relevant to this audience segment`;
     }
-
+    
     // Add keyword optimization context if provided
     if (request.keywords && request.keywords.length > 0) {
       const keywordList = request.keywords.join(', ');
       enhancedPrompt += `\n\nKEYWORD OPTIMIZATION REQUIREMENTS (MANDATORY): Use these specific keywords in the titles:
       Keywords: ${keywordList}
-
+      
       CRITICAL REQUIREMENT: EVERY SINGLE TITLE MUST include at least one of these provided keywords
       - Each title MUST contain at least one keyword from the provided list
       - DO NOT generate titles without keywords - this is absolutely required
@@ -1009,7 +1009,7 @@ export async function generateTitles(request: {
       - Ensure keyword usage feels natural and engaging while being mandatory
       - Prioritize high-value keywords in title suggestions`;
     }
-
+    
     enhancedPrompt += `\n\nEVERGREEN TITLE REQUIREMENTS:
     - Clear and engaging for the defined audience
     - MUST incorporate keywords - this is mandatory, not optional
@@ -1019,7 +1019,7 @@ export async function generateTitles(request: {
     - Each title must use at least one provided keyword exactly as given
     - Create titles that remain relevant and valuable over time
     - Focus on benefits, solutions, and guidance rather than trends`;
-
+    
     // Make API call to Claude
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
@@ -1031,21 +1031,21 @@ export async function generateTitles(request: {
         }
       ],
     });
-
+    
     // Extract response text
     const responseText = response.content[0].type === 'text' 
       ? response.content[0].text 
       : JSON.stringify(response.content[0]);
-
+    
     console.log("Claude raw response:", responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-
+    
     // Parse the response based on format
     if (request.responseFormat === 'json') {
       try {
         // Find JSON content - handle any wrapping text Claude might add
         const jsonRegex = /\[[\s\S]*\]/;
         const match = responseText.match(jsonRegex);
-
+        
         if (match) {
           console.log("Found JSON array in Claude response:", match[0]);
           const titles = JSON.parse(match[0]);
@@ -1069,7 +1069,7 @@ export async function generateTitles(request: {
         // Fall back to extracting titles from text
       }
     }
-
+    
     // If parsing fails or format is not JSON, extract titles from text
     // Look for numbered lines, bullet points, or line breaks
     const lines = responseText.split(/[\n\r]+/);
@@ -1084,12 +1084,12 @@ export async function generateTitles(request: {
         /^["'].*["']$/.test(line.trim()) // quoted text
       )
     );
-
+    
     // Clean up the titles
     const titles = titleCandidates.map(title => 
       title.replace(/^\d+[\.\)]\s+|^[-*•]\s+|^["']|["']$/g, '').trim()
     ).filter(title => title.length > 0);
-
+    
     // Return at least some titles
     if (titles.length === 0) {
       // If we couldn't extract any titles, just return 5 lines that look like titles
@@ -1100,7 +1100,7 @@ export async function generateTitles(request: {
           .map(line => line.trim())
       };
     }
-
+    
     return { titles };
   } catch (error: any) {
     console.error("Error generating titles with Claude:", error);
@@ -1121,11 +1121,11 @@ export async function testClaudeConnection(): Promise<{ success: boolean; messag
         }
       ],
     });
-
+    
     const responseText = response.content[0].type === 'text' 
       ? response.content[0].text 
       : JSON.stringify(response.content[0]);
-
+      
     return {
       success: true,
       message: responseText.trim()

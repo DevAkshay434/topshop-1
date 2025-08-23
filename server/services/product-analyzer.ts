@@ -1,4 +1,11 @@
-import openRouterService from './openrouter';
+import Anthropic from '@anthropic-ai/sdk';
+import { shopifyApiRequest } from './shopify-api';
+import { logger } from '../logger';
+
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 /**
  * Interface for product analysis results
@@ -36,9 +43,19 @@ export async function analyzeProduct(
   productId: string
 ): Promise<ProductAnalysisResult> {
   try {
-    // Note: Product analysis feature would require proper Shopify API integration
-    // This is a placeholder implementation
-    throw new Error('Product analysis feature requires Shopify API integration');
+    // Fetch the product details from Shopify
+    const productResponse = await shopifyApiRequest(
+      storeUrl,
+      accessToken,
+      `GET`,
+      `/products/${productId}.json`
+    );
+
+    if (!productResponse.success || !productResponse.data.product) {
+      throw new Error('Failed to fetch product details');
+    }
+
+    const product = productResponse.data.product;
     const title = product.title;
     const description = product.body_html?.replace(/<[^>]*>/g, ' ').trim() || '';
     const price = product.variants[0]?.price || 'N/A';
@@ -56,12 +73,11 @@ export async function analyzeProduct(
       Number of Images: ${images}
     `;
 
-    // Create the prompt for Claude via OpenRouter
-    const response = await openRouterService.createClaudeCompletion({
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert e-commerce and SEO consultant specializing in Shopify product listings. 
+    // Create the prompt for Claude
+    const response = await anthropic.messages.create({
+      model: 'claude-3-7-sonnet-20250219',
+      max_tokens: 1500,
+      system: `You are an expert e-commerce and SEO consultant specializing in Shopify product listings. 
       Analyze the following product details and provide constructive feedback to improve sales and SEO.
       Format your response as valid JSON with the following structure:
       {
@@ -79,19 +95,17 @@ export async function analyzeProduct(
           "keywords": [array of recommended keywords],
           "callToAction": "string with effective call to action"
         }
-      }`
-        },
+      }`,
+      messages: [
         {
           role: 'user', 
           content: `Please analyze this Shopify product listing and provide detailed feedback with specific improvements:\n\n${productInfo}`
         }
       ],
-      max_tokens: 1500,
-      temperature: 0.3
     });
 
     // Parse the JSON response
-    const jsonResponseText = response.choices[0].message.content || '';
+    const jsonResponseText = response.content[0].text;
     const jsonResponse = JSON.parse(jsonResponseText);
 
     // Return the analysis result
@@ -103,8 +117,8 @@ export async function analyzeProduct(
       analysis: jsonResponse.analysis,
       suggestions: jsonResponse.suggestions,
     };
-  } catch (error: any) {
-    console.error('Error analyzing product:', error);
+  } catch (error) {
+    logger.error('Error analyzing product:', error);
     throw new Error(`Failed to analyze product: ${error.message}`);
   }
 }
@@ -186,8 +200,8 @@ export async function applyProductImprovements(
       success: true,
       message: 'Product improvements applied successfully',
     };
-  } catch (error: any) {
-    console.error('Error applying product improvements:', error);
+  } catch (error) {
+    logger.error('Error applying product improvements:', error);
     return {
       success: false,
       message: `Failed to apply improvements: ${error.message}`,

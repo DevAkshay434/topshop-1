@@ -1274,17 +1274,6 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
 
 // Enhanced content generation endpoint with all new parameters
 adminRouter.post("/generate-content", async (req: Request, res: Response) => {
-  // Set extended timeout for comprehensive content generation (5 minutes)
-  req.setTimeout(300000, () => {
-    console.log('⚠️ Request timeout reached for content generation');
-    if (!res.headersSent) {
-      res.status(408).json({
-        success: false,
-        error: 'Content generation timeout - please try a shorter article length'
-      });
-    }
-  });
-  
   console.log("Content generation request received with body:", JSON.stringify(req.body));
   console.log("🔍 CRITICAL DEBUG: Secondary images in request:", {
     hasSecondaryImages: !!req.body.secondaryImages,
@@ -1432,7 +1421,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     const contentRequest = await storage.createContentGenRequest({
       topic: requestData.title,
       tone: requestData.toneOfVoice,
-      length: requestData.articleLength || "medium", // Use actual admin panel value
+      length: "medium", // Default length
       status: "pending",
       generatedContent: null
     });
@@ -1605,24 +1594,16 @@ Please suggest a meta description at the end of your response that includes at l
 `;
 
       console.log(`Generating content with Claude for: "${requestData.title}"`);
-      console.log(`🔍 ADMIN PANEL FORM DATA MAPPING TO CLAUDE:`);
-      console.log(`   - Original articleLength from admin panel: "${requestData.articleLength}"`);
-      console.log(`   - toneOfVoice from admin panel: "${requestData.toneOfVoice}"`);
-      console.log(`   - writingPerspective from admin panel: "${requestData.writingPerspective}"`);
-      console.log(`   - headingsCount from admin panel: "${requestData.headingsCount}"`);
       
-      // Map articleLength to actual length values for Claude with enhanced mapping
-      let contentLength = "medium (~1200 words)";
+      // Map articleLength to actual length values for Claude
+      let contentLength = "medium";
       if (requestData.articleLength === "short") {
-        contentLength = "short (~800 words)";
+        contentLength = "short";
       } else if (requestData.articleLength === "long") {
-        contentLength = "long (~1800 words)";
+        contentLength = "long";
       } else if (requestData.articleLength === "comprehensive") {
-        contentLength = "comprehensive (~3000 words)";
+        contentLength = "comprehensive";
       }
-      
-      console.log(`   - Mapped contentLength for Claude: "${contentLength}"`);
-      console.log(`✅ ALL ADMIN PANEL SETTINGS WILL BE PASSED TO CLAUDE`);
       
       // Update the prompt based on new fields
       // Add buyer profile information
@@ -1688,18 +1669,6 @@ Place this at a logical position in the content, typically after introducing a c
           systemPrompt: claudeSystemPrompt,
           includeProducts: productsInfo.length > 0,
           includeCollections: collectionsInfo.length > 0,
-          // Add ALL admin panel form fields explicitly
-          articleLength: requestData.articleLength, // Explicit admin panel value
-          headingsCount: requestData.headingsCount, // Explicit admin panel value
-          writingPerspective: requestData.writingPerspective, // Explicit admin panel value
-          toneOfVoice: requestData.toneOfVoice, // Explicit admin panel value
-          introType: requestData.introType, // Explicit admin panel value
-          faqType: requestData.faqType, // Explicit admin panel value
-          enableTables: requestData.enableTables, // Explicit admin panel value
-          enableLists: requestData.enableLists, // Explicit admin panel value
-          enableH3s: requestData.enableH3s, // Explicit admin panel value
-          enableCitations: requestData.enableCitations, // Explicit admin panel value
-          buyerProfile: requestData.buyerProfile, // Explicit admin panel value
           // Add content style information if available
           contentStyleToneId: requestData.contentStyleToneId,
           contentStyleDisplayName: requestData.contentStyleDisplayName,

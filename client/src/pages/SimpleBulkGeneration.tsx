@@ -582,10 +582,10 @@ export default function SimpleBulkGeneration() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="short">Short (~800 words)</SelectItem>
-                            <SelectItem value="medium">Medium (~1200 words)</SelectItem>
-                            <SelectItem value="long">Long (~1800 words)</SelectItem>
-                            <SelectItem value="comprehensive">Comprehensive (~3000 words)</SelectItem>
+                            <SelectItem value="short">Short (300-500 words)</SelectItem>
+                            <SelectItem value="medium">Medium (500-800 words)</SelectItem>
+                            <SelectItem value="long">Long (800-1200 words)</SelectItem>
+                            <SelectItem value="extended">Extended (1200+ words)</SelectItem>
                           </SelectContent>
                         </Select>
                       </FormItem>
