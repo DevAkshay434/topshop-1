@@ -1353,7 +1353,9 @@ export default function AdminPanel() {
     | "product_images"
     | "upload"
     | "youtube"
-  >("pexels");
+    | "uploaded_images"
+    | "unified_search"
+  >("uploaded_images");
   const [mediaTypeSelection, setMediaTypeSelection] = useState<
     "products" | "variants" | "media"
   >("products");
@@ -7248,119 +7250,52 @@ export default function AdminPanel() {
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center mb-2">
-                  <Info className="h-4 w-4 text-green-500 mr-2" />
-                  <span className="text-green-700 text-sm">
-                    Select additional product images to appear throughout your
-                    article body
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center mb-2">
+                    <Info className="h-4 w-4 text-green-500 mr-2" />
+                    <span className="text-green-700 text-sm">
+                      Select additional images to appear throughout your
+                      article body
+                    </span>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded-md border border-green-200">
+                    <h5 className="text-green-800 font-medium text-sm mb-1">
+                      Recommended number of images:
+                    </h5>
+                    <ul className="text-green-700 text-xs space-y-1">
+                      <li>• <strong>Small article:</strong> 2–3 images</li>
+                      <li>• <strong>Medium article:</strong> 3–4 images</li>
+                      <li>• <strong>Large article:</strong> 4+ images</li>
+                    </ul>
+                    <p className="text-green-600 text-xs mt-2">
+                      Current selection: <strong>{articleLength}</strong> article
+                    </p>
+                  </div>
                 </div>
               )}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-1">
-            {/* Image source tabs */}
-            <div className="flex gap-2 mt-3">
-              <Button
-                size="sm"
-                variant={
-                  imageSource === "unified_search" ? "default" : "outline"
-                }
-                onClick={() => {
-                  setImageSource("unified_search");
-                  if (searchedImages.length === 0 && !imageSearchQuery) {
-                    // Set a default search query based on selected tab
-                    if (imageTab === "primary") {
-                      setImageSearchQuery("happy woman using product");
-                    } else {
-                      setImageSearchQuery(
-                        selectedProducts.length > 0
-                          ? `${selectedProducts[0].title} in use`
-                          : "product in use",
-                      );
-                    }
-                  }
-                }}
-                className="flex-1"
-              >
-                <Search className="mr-0.5 h-4 w-4" />
-                Search Images
-                <Badge variant="secondary" className="ml-2 text-xs">
-                  Pexels + Pixabay
-                </Badge>
-              </Button>
-
-              <Button
-                size="sm"
-                variant={
-                  imageSource === "product_images" ? "default" : "outline"
-                }
-                onClick={() => {
-                  if (selectedProducts.length === 0) {
-                    toast({
-                      title: "No products selected",
-                      description:
-                        "Please select at least one product in Step 2 first.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  setImageSource("product_images");
-                  // Load selected product images
-                  fetchProductAndVariantImages();
-                }}
-                className="flex-1"
-              >
-                <Package className="mr-0.5 h-4 w-4" />
-                Product Images
-              </Button>
-
-              <Button
-                size="sm"
-                variant={
-                  imageSource === "uploaded_images" ? "default" : "outline"
-                }
-                onClick={() => setImageSource("uploaded_images")}
-                className="flex-1"
-              >
-                <ImageIcon className="mr-0.5 h-4 w-4" />
-                Uploaded Images
+            {/* Image source tabs - Uploaded images only */}
+            <div className="flex justify-center mt-3">
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg border border-green-200">
+                <ImageIcon className="h-4 w-4 text-green-600" />
+                <span className="text-green-800 font-medium">Uploaded Images Only</span>
                 {searchedImages.filter((img) => img.source === "uploaded")
                   .length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
+                  <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-800">
                     {
                       searchedImages.filter((img) => img.source === "uploaded")
                         .length
-                    }
+                    } images
                   </Badge>
                 )}
-              </Button>
-
-              <div className="flex-1 flex flex-col gap-1">
-                <Button
-                  size="sm"
-                  variant={imageSource === "upload" ? "default" : "outline"}
-                  onClick={() => setImageSource("upload")}
-                  className="w-full"
-                >
-                  <Upload className="mr-0.5 h-4 w-4" />
-                  Upload Image
-                </Button>
-                <Button
-                  size="sm"
-                  variant={imageSource === "youtube" ? "default" : "outline"}
-                  onClick={() => setImageSource("youtube")}
-                  className="w-full"
-                >
-                  <FileText className="mr-0.5 h-4 w-4" />
-                  YouTube Video
-                </Button>
               </div>
             </div>
 
-            {/* YouTube video embedding section */}
-            {imageSource === "youtube" && (
+            {/* YouTube video embedding section - DISABLED for uploaded images only */}
+            {false && imageSource === "youtube" && (
               <div className="mt-4 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <AlertCircle className="h-4 w-4 text-green-500" />
@@ -7795,7 +7730,7 @@ export default function AdminPanel() {
               </DialogContent>
             </Dialog>
 
-            {imageSource === "unified_search" && (
+            {false && imageSource === "unified_search" && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Input
@@ -8237,7 +8172,7 @@ export default function AdminPanel() {
               </div>
             )}
 
-            {imageSource === "product_images" && (
+            {false && imageSource === "product_images" && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-medium">
@@ -9747,7 +9682,7 @@ export default function AdminPanel() {
               </div>
             )}
 
-            {imageSource === "upload" && (
+            {false && imageSource === "upload" && (
               <div className="space-y-4">
                 <div
                   className="border-2 border-dashed border-slate-300 rounded-md p-8 text-center cursor-pointer"
@@ -10030,7 +9965,7 @@ export default function AdminPanel() {
                     <ImageIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                     <p className="text-sm">No uploaded images yet</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Use the "Upload Image" tab to add your own images
+                      Upload images directly to your Shopify store first, then return here to select them
                     </p>
                   </div>
                 ) : (
