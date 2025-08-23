@@ -96,9 +96,9 @@ class OpenRouterService {
     temperature?: number;
     max_tokens?: number;
   }): Promise<ChatCompletionResponse> {
-    // Use Claude 3.5 Sonnet for content generation
+    // Use Claude Sonnet 4 for content generation - much better for long-form content
     return this.createChatCompletion({
-      model: 'anthropic/claude-3.5-sonnet',
+      model: 'anthropic/claude-sonnet-4',
       ...request,
     });
   }

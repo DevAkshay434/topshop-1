@@ -962,7 +962,7 @@ MAXIMUM EXPANSION REQUIREMENTS:
           🚨 REMINDER: Your content MUST be ${contentLength}. Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
           ],
-          max_tokens: 8000, // OpenRouter Claude 3.5 Sonnet max output limit
+          max_tokens: 8000, // Claude Sonnet 4 max output limit - optimized for long content
           temperature: 0.7
         });
     
