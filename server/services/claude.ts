@@ -845,26 +845,50 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
           messages: [
             {
               role: 'system',
-              content: `🚨🚨🚨 OPENROUTER CLAUDE 3.5 SONNET OPTIMIZATION 🚨🚨🚨
+              content: `🚨🚨🚨 MAXIMUM TOKEN UTILIZATION MANDATE 🚨🚨🚨
 
-CRITICAL: OpenRouter Claude 3.5 Sonnet has 8,192 token output limit = ~6,000 words max.
-Your ABSOLUTE PRIORITY: Generate ${contentLength} using EVERY available token.
+CRITICAL CONSTRAINT: OpenRouter Claude 3.5 Sonnet = 8,192 tokens max output.
+TARGET: ${contentLength}
+
+🎯 ULTRA-AGGRESSIVE EXPANSION PROTOCOL:
+${contentLength.includes("1800") ? `
+FOR 1800+ WORDS - USE ALL 8,000 TOKENS:
+- Write 8-10 comprehensive sections (200+ words each)
+- Every paragraph: 6-8 sentences with extensive detail
+- Include detailed examples, case studies, statistics
+- Add comprehensive background context
+- Provide step-by-step processes with explanations
+- Include technical specifications and analysis
+- Add cost-benefit analysis with real numbers
+- Include troubleshooting guides and tips` : ''}
+
+${contentLength.includes("3000") ? `
+FOR 3000+ WORDS - MAXIMUM TOKEN EXPLOITATION:
+- Write 10-15 comprehensive sections (250+ words each)
+- Every paragraph: 7-10 sentences with maximum detail
+- Include multiple detailed examples per section
+- Add extensive background, history, and context
+- Provide comprehensive step-by-step processes
+- Include detailed technical specifications and comparisons
+- Add extensive cost-benefit analysis with calculations
+- Include comprehensive troubleshooting and maintenance guides
+- Add multiple case studies and real-world applications` : ''}
 
 ${request.contentStyleToneId 
   ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
   : 'You are a professional blog writer creating high-quality, SEO-optimized content.'}
 
-🎯 OPENROUTER OPTIMIZATION STRATEGY:
-- Use 7,500-8,000 tokens for ${contentLength}
-- Write extensively detailed sections (300+ words each)
-- Each paragraph: 4-6 sentences minimum
-- Include comprehensive explanations and examples
-- Never cut content short - use ALL available tokens
-- Expand every topic thoroughly with case studies
-- Add detailed background information and analysis
-- Include step-by-step processes and technical details
+🔥 MANDATORY EXPANSION RULES:
+- NEVER write short paragraphs - minimum 6 sentences each
+- Add extensive examples and detailed explanations for every concept  
+- Include comprehensive background and historical context
+- Provide detailed step-by-step processes with explanations
+- Add supporting statistics, research, and expert insights
+- Include detailed comparisons, analysis, and implications
+- Expand on benefits, features, costs, and consequences
+- Add practical implementation guidance and troubleshooting tips
 
-❌ FAILURE to use maximum tokens = FAILURE to meet word count.`
+ABSOLUTE REQUIREMENT: Use EVERY available token to maximize word count.`
             },
             {
               role: 'user',
@@ -872,47 +896,60 @@ ${request.contentStyleToneId
               
 ${promptText}
 
-🚨🚨🚨 ULTRA-CRITICAL WORD COUNT MANDATE 🚨🚨🚨
-ABSOLUTE REQUIREMENT: Your content MUST be ${contentLength}.
+🚨🚨🚨 EXTREME WORD COUNT ENFORCEMENT 🚨🚨🚨
+ABSOLUTE NON-NEGOTIABLE REQUIREMENT: ${contentLength}
 
-🎯 SPECIFIC LENGTH REQUIREMENTS:
+OpenRouter limits you to 8,192 tokens. You MUST use EVERY SINGLE TOKEN to achieve maximum word count.
+
 ${contentLength.includes("1800") ? `
-YOUR CONTENT MUST BE EXACTLY 1800+ WORDS. THIS IS MANDATORY.
-- Write 6-8 detailed H2 sections
-- Each H2 section must be 250-400 words minimum
-- Include comprehensive introductions (100+ words)
-- Add detailed explanations for every point
-- Include extensive examples and case studies
-- Provide step-by-step processes
-- Add comprehensive FAQs (200+ words)
-- Include detailed technical specifications
-- Add cost-benefit analysis sections
-- Include user testimonials or case studies` : ''}
+🎯 1800+ WORDS = USE ALL 8,000 TOKENS:
+MANDATORY STRUCTURE:
+- Comprehensive introduction (150+ words, 8+ sentences)
+- 8-10 main H2 sections (200+ words each, 12+ sentences per section)
+- Each section must have 3-4 detailed paragraphs 
+- Every paragraph: 6-8 sentences with extensive detail
+- Comprehensive conclusion (150+ words, 8+ sentences)
+- Extensive FAQ section (300+ words, 6+ detailed Q&As)
+
+EXPANSION REQUIREMENTS:
+- Include detailed case studies with specific examples
+- Add comprehensive background and historical context
+- Provide step-by-step processes with detailed explanations
+- Include technical specifications and performance metrics
+- Add cost-benefit analysis with real calculations
+- Include troubleshooting guides and maintenance tips
+- Add expert insights and industry statistics` : ''}
 
 ${contentLength.includes("3000") ? `
-YOUR CONTENT MUST BE EXACTLY 3000+ WORDS. THIS IS MANDATORY.
-- Write 8-12 detailed H2 sections
-- Each H2 section must be 300-500 words minimum
-- Include extensive background information
-- Add multiple detailed examples per section
-- Include comprehensive analysis and comparisons
-- Provide detailed technical specifications
-- Add extensive FAQs (400+ words)
-- Include multiple case studies
-- Add detailed cost-benefit analysis
-- Include extensive troubleshooting guides` : ''}
+🎯 3000+ WORDS = EXPLOIT EVERY TOKEN:
+MANDATORY STRUCTURE:
+- Comprehensive introduction (200+ words, 12+ sentences)
+- 12-15 main H2 sections (250+ words each, 15+ sentences per section)
+- Each section must have 4-5 detailed paragraphs
+- Every paragraph: 7-10 sentences with maximum detail
+- Comprehensive conclusion (200+ words, 12+ sentences)
+- Extensive FAQ section (400+ words, 8+ detailed Q&As)
 
-🔥 MANDATORY EXPANSION STRATEGIES:
-1. Each paragraph must be 4-6 sentences minimum
-2. Add detailed examples for every claim
-3. Include comprehensive background context
-4. Provide step-by-step explanations
-5. Add supporting evidence and statistics
-6. Include detailed comparisons and analysis
-7. Expand on implications and benefits
-8. Add practical implementation guidance
+MAXIMUM EXPANSION REQUIREMENTS:
+- Multiple detailed case studies per section
+- Extensive background, history, and industry context
+- Comprehensive step-by-step processes with explanations
+- Detailed technical specifications and comparisons
+- Extensive cost-benefit analysis with calculations
+- Comprehensive troubleshooting and maintenance guides
+- Multiple expert insights and research citations` : ''}
 
-CRITICAL: Count your words as you write. Do not stop until you reach ${contentLength}.
+🔥 EXTREME EXPANSION PROTOCOL:
+1. Write 6-10 sentences per paragraph (NOT 2-3 sentences)
+2. Include extensive real-world examples and case studies
+3. Add comprehensive technical specifications and details  
+4. Provide detailed step-by-step processes and explanations
+5. Include supporting research, statistics, and expert quotes
+6. Add detailed comparisons, analysis, and implications
+7. Expand extensively on benefits, features, and consequences
+8. Include practical implementation guides and troubleshooting
+
+🚨 CRITICAL SUCCESS METRIC: USE ALL 8,000 TOKENS = ACHIEVE ${contentLength}
 
           IMPORTANT: Return the response in JSON format with the following structure:
           {
