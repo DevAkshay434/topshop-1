@@ -540,9 +540,23 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
   try {
     console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
     
-    // Determine content length based on request - matching user requirements exactly
+    // Determine content length based on request - PRIORITIZE direct admin panel value
     let contentLength = "approximately 1200 words (Medium length)";
-    if (request.length.toLowerCase().includes("short")) {
+    
+    // First check the direct admin panel articleLength field
+    if (request.articleLength) {
+      if (request.articleLength === "short") {
+        contentLength = "approximately 800 words (Short length)";
+      } else if (request.articleLength === "long") {
+        contentLength = "approximately 1800 words (Long length)";
+      } else if (request.articleLength === "comprehensive") {
+        contentLength = "approximately 3000 words (Comprehensive length)";
+      } else if (request.articleLength === "medium") {
+        contentLength = "approximately 1200 words (Medium length)";
+      }
+    } 
+    // Fallback to checking the processed length field
+    else if (request.length.toLowerCase().includes("short")) {
       contentLength = "approximately 800 words (Short length)";
     } else if (request.length.toLowerCase().includes("long")) {
       contentLength = "approximately 1800 words (Long length)";
@@ -553,12 +567,17 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     console.log(`Content generation request: ${request.length} → ${contentLength}`);
     console.log(`🔍 CLAUDE SERVICE - All admin panel parameters received:`);
     console.log(`   - length: ${request.length}`);
+    console.log(`   - articleLength: ${request.articleLength || 'none'}`);
     console.log(`   - tone: ${request.tone}`);
+    console.log(`   - toneOfVoice: ${request.toneOfVoice || 'none'}`);
+    console.log(`   - writingPerspective: ${request.writingPerspective || 'none'}`);
+    console.log(`   - headingsCount: ${request.headingsCount || 'none'}`);
     console.log(`   - contentStyleDisplayName: ${request.contentStyleDisplayName || 'none'}`);
     console.log(`   - keywords: ${request.keywords?.length || 0} keywords`);
     console.log(`   - primaryImage: ${request.primaryImage ? 'present' : 'none'}`);
     console.log(`   - secondaryImages: ${request.secondaryImages?.length || 0} images`);
     console.log(`   - targetAudience: ${request.targetAudience || 'none'}`);
+    console.log(`🚨 CRITICAL: Final contentLength being sent to Claude: "${contentLength}"`);
     console.log(`✅ CLAUDE WILL RECEIVE ALL ADMIN PANEL INSTRUCTIONS`);
     
     // Enhanced base prompt for Claude with proper structure
@@ -614,20 +633,28 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Ensure keyword usage feels natural and not forced`;
     }
 
-let promptText = `🚨 ABSOLUTE PRIORITY - WORD COUNT REQUIREMENT 🚨
-The content you generate MUST be ${contentLength}. This is the #1 requirement that cannot be compromised.
+let promptText = `🚨🚨🚨 CRITICAL WORD COUNT REQUIREMENT 🚨🚨🚨
+MANDATORY: Your content MUST be ${contentLength}.
+🚨 THIS IS ABSOLUTELY NON-NEGOTIABLE 🚨
 
-WORD COUNT ENFORCEMENT:
-- Count every single word in your response
-- If your content is below the target, expand each section with more detailed explanations, examples, and information
-- Add more subsections, more detailed explanations, and comprehensive coverage of the topic
-- Include additional relevant information, case studies, examples, and detailed explanations to reach the target
-- NEVER submit content that is shorter than the specified word count range
-- This requirement overrides all other considerations
+WORD COUNT ENFORCEMENT (READ CAREFULLY):
+🔥 TARGET: ${contentLength}
+🔥 MINIMUM ACCEPTABLE: Never less than the specified range
+🔥 YOUR CONTENT WILL BE REJECTED IF TOO SHORT
+
+SPECIFIC EXPANSION STRATEGIES:
+- Add detailed explanations for every point
+- Include specific examples, case studies, and scenarios
+- Expand each H2 section to 300-500 words minimum
+- Add comprehensive background information
+- Include step-by-step processes and detailed descriptions
+- Add relevant statistics, facts, and supporting information
+- Provide in-depth analysis and expert insights
+- Include practical tips, best practices, and actionable advice
 
 Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
 
-🔄 REMINDER: Your content MUST be ${contentLength}. Expand sections as needed to meet this requirement.
+🚨 FINAL REMINDER: Your response MUST be ${contentLength}. Count your words and expand sections until you reach the target.
     
     CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
     
@@ -654,6 +681,8 @@ Generate a well-structured, SEO-optimized blog post with the EXACT title "${requ
     - Distribute links across different sections of the content for better SEO value
     - Links should enhance credibility and provide readers with additional authoritative information
     - When mentioning statistics, studies, or facts, link to the authoritative source when possible
+    
+    🚨 CRITICAL WORD COUNT REMINDER: Your content MUST be ${contentLength} 🚨
     
     MEDIA PLACEMENT RULES:
     - Selected YouTube video MUST be placed under the SECOND H2 heading only
