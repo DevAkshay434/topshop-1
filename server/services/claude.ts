@@ -1,4 +1,4 @@
-// Direct Anthropic Claude API integration (reverted from OpenRouter for better performance)
+// Integration with Anthropic's Claude API
 import Anthropic from '@anthropic-ai/sdk';
 
 interface BlogContentRequest {
@@ -12,18 +12,6 @@ interface BlogContentRequest {
   includeKeywords?: boolean;
   contentStyleToneId?: string;
   contentStyleDisplayName?: string;
-  // ADMIN PANEL FORM FIELDS - All parameters from UI
-  articleLength?: string; // Short, Medium, Long, Comprehensive from admin panel
-  headingsCount?: string; // Number of H2 headings from admin panel  
-  writingPerspective?: string; // first_person_plural, etc. from admin panel
-  toneOfVoice?: string; // friendly, professional, etc. from admin panel
-  introType?: string; // none, standard, search_intent from admin panel
-  faqType?: string; // none, short, long from admin panel
-  enableTables?: boolean; // Table formatting option from admin panel
-  enableLists?: boolean; // List formatting option from admin panel
-  enableH3s?: boolean; // H3 subheading option from admin panel
-  enableCitations?: boolean; // Citations/links option from admin panel
-  buyerProfile?: string; // auto, beginner, intermediate, advanced from admin panel
   // Media selection fields
   primaryImage?: any;
   secondaryImages?: any[];
@@ -47,16 +35,21 @@ interface BlogContent {
   metaDescription: string;
 }
 
-// Using Claude via OpenRouter - no direct client needed
-// OpenRouter will use Claude 3.5 Sonnet for content generation
+// Initialize the Anthropic client
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
 // Function to ensure all external links have nofollow attribute
 function addNoFollowToExternalLinks(content: string): string {
   console.log('🔗 Adding nofollow attribute to external links');
-  
+
   // Match external links that don't already have rel="nofollow"
   const externalLinkRegex = /<a\s+([^>]*?)href\s*=\s*["']https?:\/\/[^"']*["']([^>]*?)(?<!rel\s*=\s*["'][^"']*nofollow[^"']*["'])>/gi;
-  
+
   let processedContent = content.replace(externalLinkRegex, (match, beforeHref, afterHref) => {
     // Check if rel attribute already exists
     if (beforeHref.includes('rel=') || afterHref.includes('rel=')) {
@@ -74,7 +67,7 @@ function addNoFollowToExternalLinks(content: string): string {
       return match.slice(0, insertPos) + ' rel="nofollow noopener noreferrer"' + match.slice(insertPos);
     }
   });
-  
+
   console.log('✅ Added nofollow attribute to external links');
   return processedContent;
 }
@@ -84,40 +77,40 @@ function addHeadingIds(content: string): string {
   console.log('🔧 HEADING ID PROCESSING STARTED');
   let processedContent = content;
   let addedIds = 0;
-  
+
   // COMPREHENSIVE HEADING CLEANUP - Multiple fixes applied in sequence
   console.log('🔧 COMPREHENSIVE HEADING CLEANUP STARTED');
-  
+
   // Fix 1: Clean up malformed headings with escaped quotes and extra characters
   processedContent = processedContent.replace(/<h2([^>]*?)\\?"([^"]*?)\\?"([^>]*?)>/gi, (match, before, content, after) => {
     console.log(`🔧 FIXING MALFORMED HEADING: ${match}`);
     return `<h2${before}"${content}"${after}>`;
   });
-  
+
   // Fix 2: Remove duplicate '>' characters  
   processedContent = processedContent.replace(/<h2([^>]*?)>>+/gi, '<h2$1>');
-  
+
   // Fix 3: Clean up any headings with duplicate IDs (first pattern)
   processedContent = processedContent.replace(/<h2([^>]*)(id\s*=\s*["'][^"']*["'])([^>]*)(id\s*=\s*["'][^"']*["'])([^>]*)>/gi, (match, before1, firstId, between, secondId, after) => {
     console.log(`🔧 REMOVING DUPLICATE ID PATTERN 1: ${match}`);
     // Keep only the second ID (usually the more specific one like "faq")
     return `<h2${before1}${between}${secondId}${after}>`;
   });
-  
+
   // Fix 4: Alternative duplicate ID pattern
   processedContent = processedContent.replace(/<h2\s+id\s*=\s*["']([^"']*?)["']\s+id\s*=\s*["']([^"']*?)["']([^>]*)>/gi, (match, firstId, secondId, rest) => {
     console.log(`🔧 REMOVING DUPLICATE ID PATTERN 2: ${match}`);
     return `<h2 id="${secondId}"${rest}>`;
   });
-  
+
   // Fix 5: Clean up extra spaces around id attributes
   processedContent = processedContent.replace(/<h2(\s+)id\s*=\s*["']([^"']*?)["'](\s+)>/gi, '<h2 id="$2">');
-  
+
   console.log('✅ COMPREHENSIVE HEADING CLEANUP COMPLETED');
-  
+
   // Find all H2 headings without id attributes
   const h2WithoutIdRegex = /<h2(?![^>]*id=)([^>]*)>(.*?)<\/h2>/gi;
-  
+
   processedContent = processedContent.replace(h2WithoutIdRegex, (match, attributes, title) => {
     // Generate a clean id from the title
     const cleanTitle = title.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
@@ -127,19 +120,19 @@ function addHeadingIds(content: string): string {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-') // Replace multiple hyphens with single
       .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-    
+
     addedIds++;
     console.log(`   - Added id="${id}" to H2: "${cleanTitle}"`);
     return `<h2${attributes} id="${id}">${title}</h2>`;
   });
-  
+
   console.log(`✅ HEADING ID PROCESSING COMPLETED: Added ${addedIds} IDs to H2 headings`);
   return processedContent;
 }
 
 function fixTOCLinks(content: string): string {
   console.log('🔧 FIXING TOC LINKS - Removing target="_blank" from internal navigation');
-  
+
   // Remove target="_blank" and related attributes from anchor links that point to internal IDs
   let processedContent = content.replace(
     /<a\s+([^>]*href=["']#[^"']+["'][^>]*target=["']_blank["'][^>]*)>/gi,
@@ -151,12 +144,12 @@ function fixTOCLinks(content: string): string {
         .replace(/class=["'][^"']*["']/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
-      
+
       console.log(`   - Fixed TOC link: ${match} → <a ${cleanAttributes}>`);
       return `<a ${cleanAttributes}>`;
     }
   );
-  
+
   // Also fix any TOC links that might have been processed differently
   processedContent = processedContent.replace(
     /<a\s+([^>]*target=["']_blank["'][^>]*href=["']#[^"']+["'][^>]*)>/gi,
@@ -167,12 +160,12 @@ function fixTOCLinks(content: string): string {
         .replace(/class=["'][^"']*["']/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
-      
+
       console.log(`   - Fixed TOC link (alt format): ${match} → <a ${cleanAttributes}>`);
       return `<a ${cleanAttributes}>`;
     }
   );
-  
+
   console.log('✅ TOC LINK FIXING COMPLETED');
   return processedContent;
 }
@@ -182,65 +175,65 @@ function addTableOfContents(content: string): string {
   console.log('🔍 TABLE OF CONTENTS PROCESSING STARTED');
   console.log(`   - Content length: ${content.length} characters`);
   console.log(`   - Has TOC marker: ${content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')}`);
-  
+
   // Check if content has TOC placement marker
   if (!content.includes('<!-- TABLE_OF_CONTENTS_PLACEMENT -->')) {
     console.log('❌ No TOC placement marker found - returning content as-is');
     return content; // No TOC marker, return content as-is
   }
-  
+
   // First, ensure all H2 headings have id attributes
   let processedContent = addHeadingIds(content);
   console.log('✅ Added missing heading IDs to H2 elements');
-  
+
   // Extract all H2 headings with their id attributes
   const h2Regex = /<h2[^>]*id=["']([^"']+)["'][^>]*>(.*?)<\/h2>/gi;
   const headings: { id: string; title: string }[] = [];
   let match;
-  
+
   while ((match = h2Regex.exec(processedContent)) !== null) {
     const id = match[1];
     const title = match[2].replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags from title
     headings.push({ id, title });
     console.log(`   - Found H2 heading: "${title}" with id="${id}"`);
   }
-  
+
   // Reset regex lastIndex to avoid issues with global regex
   h2Regex.lastIndex = 0;
-  
+
   console.log(`📊 TOC STATISTICS: Found ${headings.length} H2 headings with IDs`);
-  
+
   // If no headings found, remove the TOC marker
   if (headings.length === 0) {
     console.log('⚠️ No H2 headings with IDs found - removing TOC marker');
     return processedContent.replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', '');
   }
-  
+
   // Generate clean, Shopify-compatible TOC HTML with proper closing tags
   const tocItems = headings.map(heading => 
     `<li style="margin: 6px 0; line-height: 1.4;">
       <a href="#${heading.id}" style="color: #007bff; text-decoration: underline;">${heading.title}</a>
     </li>`
   ).join('\n    ');
-  
+
   const tocHtml = `<div style="background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 16px; margin: 24px 0; clear: both;">
   <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: bold; color: #333;">📋 Table of Contents</h3>
   <ol style="margin: 0; padding: 0 0 0 18px; list-style-type: decimal;">
     ${tocItems}
   </ol>
 </div>`;
-  
+
   console.log('🎨 Generated TOC HTML (internal links without target="_blank")');
   console.log(`   - TOC HTML length: ${tocHtml.length} characters`);
-  
+
   // Replace the TOC marker with the generated TOC and ensure proper spacing
   // This regex handles cases where there might not be proper paragraph breaks after the marker
   const finalContent = processedContent.replace(/<!-- TABLE_OF_CONTENTS_PLACEMENT -->\s*(<p>|<[^>]+>)/i, tocHtml + '\n\n$1')
                 .replace('<!-- TABLE_OF_CONTENTS_PLACEMENT -->', tocHtml);
-  
+
   console.log('✅ TABLE OF CONTENTS PROCESSING COMPLETED');
   console.log(`   - Final content length: ${finalContent.length} characters`);
-  
+
   return finalContent;
 }
 
@@ -254,7 +247,7 @@ function removeH1Tags(content: string): string {
 function applyContentFormatting(content: string): string {
   console.log('🎨 APPLYING CONTENT FORMATTING RULES');
   let formattedContent = content;
-  
+
   // Rule 1: Make the first line after any heading bold and add line break
   console.log('📝 Rule 1: Bold first line after headings + line break');
   formattedContent = formattedContent.replace(
@@ -271,7 +264,7 @@ function applyContentFormatting(content: string): string {
       return match;
     }
   );
-  
+
   // Rule 2: Make sentences ending with : or ? bold (only within paragraphs)
   console.log('📝 Rule 2: Bold sentences ending with : or ?');
   formattedContent = formattedContent.replace(
@@ -279,7 +272,7 @@ function applyContentFormatting(content: string): string {
     (match, questionOrColon, remaining) => {
       // Don't apply if already has strong tags
       if (match.includes('<strong>')) return match;
-      
+
       if (remaining.trim()) {
         return `<p><strong>${questionOrColon}</strong>${remaining}</p>`;
       } else {
@@ -287,7 +280,7 @@ function applyContentFormatting(content: string): string {
       }
     }
   );
-  
+
   console.log('✅ Content formatting rules applied');
   return formattedContent;
 }
@@ -295,14 +288,14 @@ function applyContentFormatting(content: string): string {
 // Function to process media placements and prevent duplicate secondary images
 function processMediaPlacementsHandler(content: string, request: BlogContentRequest): string {
   let processedContent = content;
-  
+
   // Handle YouTube video placement under second H2 heading
   if (request.youtubeEmbed) {
     console.log('🎬 YOUTUBE PROCESSING - Original URL:', request.youtubeEmbed);
-    
+
     // Extract video ID from various YouTube URL formats
     let videoId = null;
-    
+
     // Handle youtu.be format: https://youtu.be/VIDEO_ID or https://youtu.be/VIDEO_ID?si=xxx
     if (request.youtubeEmbed.includes('youtu.be/')) {
       const match = request.youtubeEmbed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
@@ -313,9 +306,9 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       const match = request.youtubeEmbed.match(/(?:watch\?v=|embed\/|v\/)([a-zA-Z0-9_-]{11})/);
       videoId = match?.[1];
     }
-    
+
     console.log('🎬 YOUTUBE PROCESSING - Extracted Video ID:', videoId);
-    
+
     if (videoId) {
       const videoHtml = `
 <div style="margin: 20px 0; text-align: center;">
@@ -324,19 +317,19 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     allowfullscreen style="max-width: 100%; border-radius: 8px;">
   </iframe>
 </div>`;
-      
+
       // Replace only the first occurrence (under second H2)
       const markerCount = (processedContent.match(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g) || []).length;
       console.log(`🎬 YOUTUBE PLACEMENT - Found ${markerCount} video markers in content`);
-      
+
       processedContent = processedContent.replace('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->', videoHtml);
       console.log('🎬 YOUTUBE PLACEMENT - Video embedded under second H2 heading');
-      
+
       // Remove any additional video placement markers
       processedContent = processedContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
     }
   }
-  
+
   // Handle secondary images placement - ensure no duplicates and proper distribution with product links
   console.log("🔍 CLAUDE SERVICE - Secondary images processing:", {
     hasSecondaryImages: !!request.secondaryImages,
@@ -359,7 +352,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     console.log("⚠️ NO PRODUCTS INFO: Secondary images will be embedded without product links");
     // Continue processing secondary images even without products info
   }
-  
+
   if (request.secondaryImages && request.secondaryImages.length > 0) {
     console.log("✅ SECONDARY IMAGES FOUND - Processing for product interlinking");
     console.log("🔍 SECONDARY IMAGES DETAILS:", request.secondaryImages.map(img => ({
@@ -368,11 +361,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       source: img.source,
       alt: img.alt
     })));
-    
+
     // CRITICAL FIX: Filter out primary image from secondary images to prevent duplication
     const primaryImageId = request.primaryImage?.id;
     const primaryImageUrl = request.primaryImage?.url;
-    
+
     const filteredSecondaryImages = request.secondaryImages.filter(img => {
       const isDuplicatePrimary = (img.id === primaryImageId) || (img.url === primaryImageUrl);
       if (isDuplicatePrimary) {
@@ -380,23 +373,23 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       }
       return !isDuplicatePrimary;
     });
-    
+
     console.log(`🔧 PRIMARY IMAGE DUPLICATION FIX: Filtered ${request.secondaryImages.length} → ${filteredSecondaryImages.length} secondary images`);
-    
+
     if (filteredSecondaryImages.length === 0) {
       console.log("⚠️ No secondary images remaining after primary image filtering");
       return processedContent;
     }
-    
+
     // Find all secondary image placement markers
     const markers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const availableMarkers = markers ? markers.length : 0;
-    
+
     console.log(`🔍 MARKER SEARCH RESULTS:`);
     console.log(`   - Found ${availableMarkers} placement markers for ${filteredSecondaryImages.length} secondary images`);
     console.log(`   - Content length: ${processedContent.length} characters`);
     console.log(`   - Content preview (first 500 chars):`, processedContent.substring(0, 500));
-    
+
     if (availableMarkers === 0) {
       console.log(`🔍 SEARCHING FOR H2 HEADINGS IN CONTENT:`);
       const h2Matches = processedContent.match(/<h2[^>]*>.*?<\/h2>/gi);
@@ -407,11 +400,11 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         });
       }
     }
-    
+
     // FALLBACK SYSTEM: If no markers found, automatically insert them after H2 headings
     if (availableMarkers === 0) {
       console.log("⚠️ No secondary image markers found in content - implementing fallback system");
-      
+
       // Find all H2 headings and add markers after them (skip first 2 H2s for intro and video)
       const h2Regex = /<h2[^>]*>.*?<\/h2>/gi;
       const h2Matches: RegExpExecArray[] = [];
@@ -419,62 +412,62 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       while ((h2Match = h2Regex.exec(processedContent)) !== null) {
         h2Matches.push(h2Match);
       }
-      
+
       if (h2Matches.length > 1) {
         console.log(`Found ${h2Matches.length} H2 headings - adding markers after H2 #2 and beyond`);
-        
+
         // Start from the 2nd H2 (index 1) and add markers after each one
         let insertOffset = 0;
         for (let i = 1; i < h2Matches.length && i < 1 + filteredSecondaryImages.length; i++) {
           const h2Match = h2Matches[i];
           const insertPosition = h2Match.index + h2Match[0].length + insertOffset;
           const marker = '\n<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->\n';
-          
+
           processedContent = processedContent.slice(0, insertPosition) + marker + processedContent.slice(insertPosition);
           insertOffset += marker.length;
-          
+
           console.log(`Added fallback marker after H2 #${i + 1}`);
         }
-        
+
         // Update markers count after fallback insertion
         const newMarkers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
         const newAvailableMarkers = newMarkers ? newMarkers.length : 0;
         console.log(`Fallback system added ${newAvailableMarkers} markers`);
       }
     }
-    
+
     // Re-check markers after potential fallback
     const finalMarkers = processedContent.match(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g);
     const finalAvailableMarkers = finalMarkers ? finalMarkers.length : 0;
-    
+
     // Create a set to track used image URLs to prevent duplicates
     const usedImages = new Set<string>();
-    
+
     // Get products information for linking (from request or from secondary image metadata)
     const availableProducts = request.productIds || [];
-    
+
     console.log("Available products for interlinking:", availableProducts);
     console.log("Request.productsInfo:", request.productsInfo);
     console.log("Secondary images available:", request.secondaryImages?.length || 0);
-    
+
     // Process each marker location with a unique image (using filtered secondary images)
     for (let i = 0; i < finalAvailableMarkers && i < filteredSecondaryImages.length; i++) {
       const image = filteredSecondaryImages[i];
-      
+
       // Skip if this image URL has already been used
       if (usedImages.has(image.url)) {
         continue;
       }
-      
+
       usedImages.add(image.url);
-      
+
       let imageHtml = '';
-      
+
       console.log(`🔧 PROCESSING SECONDARY IMAGE ${i + 1}:`);
       console.log(`   - Image URL: ${image.url}`);
       console.log(`   - request.productsInfo: ${request.productsInfo ? JSON.stringify(request.productsInfo) : 'undefined'}`);
       console.log(`   - availableProducts: ${JSON.stringify(availableProducts)}`);
-      
+
       // Try to link the image to a product using product handle from productsInfo
       if (request.productsInfo && request.productsInfo.length > 0) {
         // Cycle through available products to ensure each secondary image links to a product
@@ -482,27 +475,27 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
         const productInfo = request.productsInfo[productIndex];
         const productHandle = productInfo.handle;
         const productTitle = productInfo.title || "View Product Details";
-        
+
         // Create product-linked image HTML with exact 600×600px sizing
         imageHtml = `<div style="text-align: center !important; margin: 20px 0 !important;">
   <a href="/products/${productHandle}" title="${productTitle}" style="text-decoration: none !important;">
     <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
   </a>
 </div>`;
-        
+
         console.log(`✓ Secondary image ${i + 1} linked to product: ${productTitle} (handle: ${productHandle})`);
       } else if (availableProducts.length > 0) {
         // Fallback: try to use product ID if no productsInfo available
         const productIndex = i % availableProducts.length;
         const productId = availableProducts[productIndex];
-        
+
         // Create product-linked image HTML with exact 600×600px sizing
         imageHtml = `<div style="text-align: center !important; margin: 20px 0 !important;">
   <a href="/products/${productId}" title="View Product Details" style="text-decoration: none !important;">
     <img src="${image.url}" alt="${image.alt || ''}" style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
   </a>
 </div>`;
-        
+
         console.log(`⚠ Secondary image ${i + 1} linked to product ID: ${productId} (no handle available)`);
       } else {
         // Fallback without product link with exact 600×600px sizing
@@ -511,19 +504,19 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
   <img src="${image.url}" alt="${image.alt || ''}" 
     style="width: 600px !important; height: 600px !important; min-width: 600px !important; min-height: 600px !important; max-width: 600px !important; max-height: 600px !important; object-fit: cover !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; display: block !important; margin: 0 auto !important; box-sizing: border-box !important;" />
 </div>`;
-        
+
         console.log(`❌ Secondary image ${i + 1} added without product link (no products selected)`);
         console.log(`   - request.productsInfo: ${request.productsInfo ? request.productsInfo.length : 'undefined'}`);
         console.log(`   - availableProducts: ${availableProducts.length}`);
       }
-      
+
       // Replace only the first remaining marker to ensure even distribution
       processedContent = processedContent.replace('<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->', imageHtml);
     }
-    
+
     // Remove any remaining unused markers
     processedContent = processedContent.replace(/<!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->/g, '');
-    
+
     console.log(`✅ SECONDARY IMAGES PROCESSING COMPLETE:`);
     console.log(`   - Original secondary images: ${request.secondaryImages.length}`);
     console.log(`   - After primary image filtering: ${filteredSecondaryImages.length}`);
@@ -531,7 +524,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
     console.log(`   - Images successfully embedded: ${Math.min(finalAvailableMarkers, filteredSecondaryImages.length)}`);
     console.log(`   - Content length after processing: ${processedContent.length} characters`);
   }
-  
+
   return processedContent;
 }
 
@@ -539,61 +532,15 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
 export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
   try {
     console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
-    
-    // Determine content length based on request - PRIORITIZE direct admin panel value
-    let contentLength = "approximately 1200 words (Medium length)";
-    
-    // First check the direct admin panel articleLength field
-    if (request.articleLength) {
-      if (request.articleLength === "short") {
-        contentLength = "approximately 800 words (Short length)";
-      } else if (request.articleLength === "long") {
-        contentLength = "approximately 1800 words (Long length)";
-      } else if (request.articleLength === "comprehensive") {
-        contentLength = "approximately 3000 words (Comprehensive length)";
-      } else if (request.articleLength === "medium") {
-        contentLength = "approximately 1200 words (Medium length)";
-      }
-    } 
-    // Fallback to checking the processed length field
-    else if (request.length.toLowerCase().includes("short")) {
-      contentLength = "approximately 800 words (Short length)";
+
+    // Determine content length based on request
+    let contentLength = "approximately 800-1000 words";
+    if (request.length.toLowerCase().includes("short")) {
+      contentLength = "approximately 500-700 words";
     } else if (request.length.toLowerCase().includes("long")) {
-      contentLength = "approximately 1800 words (Long length)";
-    } else if (request.length.toLowerCase().includes("comprehensive")) {
-      contentLength = "approximately 3000 words (Comprehensive length)";
+      contentLength = "approximately 1500-2000 words";
     }
-    
-    console.log(`Content generation request: ${request.length} → ${contentLength}`);
-    console.log(`🔍 CLAUDE SERVICE - All admin panel parameters received:`);
-    console.log(`   - length: ${request.length}`);
-    console.log(`   - articleLength: ${request.articleLength || 'none'}`);
-    console.log(`   - tone: ${request.tone}`);
-    console.log(`   - toneOfVoice: ${request.toneOfVoice || 'none'}`);
-    console.log(`   - writingPerspective: ${request.writingPerspective || 'none'}`);
-    console.log(`   - headingsCount: ${request.headingsCount || 'none'}`);
-    console.log(`   - contentStyleDisplayName: ${request.contentStyleDisplayName || 'none'}`);
-    console.log(`   - keywords: ${request.keywords?.length || 0} keywords`);
-    console.log(`   - primaryImage: ${request.primaryImage ? 'present' : 'none'}`);
-    console.log(`   - secondaryImages: ${request.secondaryImages?.length || 0} images`);
-    console.log(`   - targetAudience: ${request.targetAudience || 'none'}`);
-    console.log(`🚨 CRITICAL: Final contentLength being sent to Claude: "${contentLength}"`);
-    console.log(`✅ CLAUDE WILL RECEIVE ALL ADMIN PANEL INSTRUCTIONS`);
-    
-    // Add detailed word count target logging
-    console.log(`🎯 WORD COUNT TARGET ANALYSIS:`);
-    if (contentLength.includes("800")) {
-      console.log(`   - Target: SHORT (800 words)`);
-    } else if (contentLength.includes("1200")) {
-      console.log(`   - Target: MEDIUM (1200 words)`);
-    } else if (contentLength.includes("1800")) {
-      console.log(`   - Target: LONG (1800 words) - USER SELECTED THIS`);
-    } else if (contentLength.includes("3000")) {
-      console.log(`   - Target: COMPREHENSIVE (3000 words)`);
-    }
-    console.log(`   - OpenRouter will receive 20,000 token limit`);
-    console.log(`   - Multiple word count enforcement layers active`);
-    
+
     // Enhanced base prompt for Claude with proper structure
     let toneStyle = request.tone;
     // If content style display name is provided, use it instead of the default tone
@@ -601,7 +548,7 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       toneStyle = request.contentStyleDisplayName;
       console.log(`Using custom content style: ${request.contentStyleDisplayName} (ID: ${request.contentStyleToneId || 'none'})`);
     }
-    
+
     // Get copywriter persona if available
 const copywriterPersona = request.contentStyleDisplayName ? `Write this content in the style of ${request.contentStyleDisplayName}.` : '';
 
@@ -622,7 +569,7 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     if (request.targetAudience || request.buyerPersona) {
       const audience = request.targetAudience || request.buyerPersona;
       audienceContext = `
-    
+
     TARGET AUDIENCE FOCUS: This article is intended for the following audience: ${audience}
     - Tailor all content, tone, examples, and messaging specifically for this target audience
     - Use language, terminology, and depth appropriate for this audience level
@@ -630,13 +577,13 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Include relevant examples and use cases that resonate with this audience
     - Ensure the call-to-action appeals directly to this audience segment`;
     }
-    
+
     // Build keyword optimization context
     let keywordContext = '';
     if (request.keywords && request.keywords.length > 0) {
       const keywordList = request.keywords.join(', ');
       keywordContext = `
-    
+
     KEYWORD OPTIMIZATION: Use these specific keywords naturally throughout the content:
     Keywords: ${keywordList}
     - Incorporate these keywords in the title (at least 1 primary keyword)
@@ -647,31 +594,10 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Ensure keyword usage feels natural and not forced`;
     }
 
-let promptText = `🚨🚨🚨 CRITICAL WORD COUNT REQUIREMENT 🚨🚨🚨
-MANDATORY: Your content MUST be ${contentLength}.
-🚨 THIS IS ABSOLUTELY NON-NEGOTIABLE 🚨
+let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
 
-WORD COUNT ENFORCEMENT (READ CAREFULLY):
-🔥 TARGET: ${contentLength}
-🔥 MINIMUM ACCEPTABLE: Never less than the specified range
-🔥 YOUR CONTENT WILL BE REJECTED IF TOO SHORT
-
-SPECIFIC EXPANSION STRATEGIES:
-- Add detailed explanations for every point
-- Include specific examples, case studies, and scenarios
-- Expand each H2 section to 300-500 words minimum
-- Add comprehensive background information
-- Include step-by-step processes and detailed descriptions
-- Add relevant statistics, facts, and supporting information
-- Provide in-depth analysis and expert insights
-- Include practical tips, best practices, and actionable advice
-
-Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
-
-🚨 FINAL REMINDER: Your response MUST be ${contentLength}. Count your words and expand sections until you reach the target.
-    
     CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
-    
+
     The blog post MUST follow this exact structure:
     1. Use the provided title "${request.topic}" exactly as given (no modifications allowed)
     2. Multiple clearly defined sections with H2 headings that incorporate important keywords
@@ -680,7 +606,7 @@ Generate a well-structured, SEO-optimized blog post with the EXACT title "${requ
     5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
     6. Lists and tables where appropriate to improve readability
     7. A conclusion with a clear call to action
-    
+
     EXTERNAL AUTHORITATIVE LINK REQUIREMENTS:
     - Include 3-5 external links to authoritative sources throughout the content
     - Prioritize links to: .edu (universities/research), .gov (government agencies), .wikipedia.org (Wikipedia articles), .org (established organizations)
@@ -695,16 +621,14 @@ Generate a well-structured, SEO-optimized blog post with the EXACT title "${requ
     - Distribute links across different sections of the content for better SEO value
     - Links should enhance credibility and provide readers with additional authoritative information
     - When mentioning statistics, studies, or facts, link to the authoritative source when possible
-    
-    🚨 CRITICAL WORD COUNT REMINDER: Your content MUST be ${contentLength} 🚨
-    
+
     MEDIA PLACEMENT RULES:
     - Selected YouTube video MUST be placed under the SECOND H2 heading only
     - Secondary images MUST be placed under H2 headings that come AFTER the video
     - Each secondary image should be placed under a different H2 heading
     - Never repeat the same secondary image multiple times
     - Distribute secondary images evenly across remaining H2 sections
-    
+
     IMPORTANT CONTENT STRUCTURE REQUIREMENTS:
     - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
     - Start the content with the Table of Contents placement marker, followed by a paragraph break, then the introduction
@@ -715,7 +639,7 @@ Generate a well-structured, SEO-optimized blog post with the EXACT title "${requ
     - Include a meta description of 155-160 characters that includes at least 2 primary keywords
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add an extra line break (<br><br>) after the first bold sentence, then continue with regular spacing for remaining sentences
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
-    
+
     CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
     - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
     - Under EVERY OTHER H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
@@ -726,19 +650,19 @@ Generate a well-structured, SEO-optimized blog post with the EXACT title "${requ
     - Example structure:
       <h2>First Section</h2>
       <p>Content...</p>
-      
+
       <h2>Second Section</h2>
       <p>Content...</p>
       <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
-      
+
       <h2>Third Section</h2>
       <p>Content...</p>
       <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
-      
+
       <h2>Fourth Section</h2>
       <p>Content...</p>  
       <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
-    
+
     TABLE OF CONTENTS REQUIREMENTS:
     - AUTOMATICALLY include a Table of Contents at the very beginning of the content
     - Add this TOC placement marker at the start: <!-- TABLE_OF_CONTENTS_PLACEMENT -->
@@ -751,13 +675,13 @@ Generate a well-structured, SEO-optimized blog post with the EXACT title "${requ
     - The TOC will be styled with a clean, professional appearance and will improve user navigation
     - Ensure clean separation between TOC and the introduction paragraph
     - MANDATORY: Do not create any H2 heading without an id attribute - the TOC will fail without proper IDs
-    
+
     FAQ SECTION FORMATTING (if FAQ is enabled):
     - Format all FAQ questions with "Q:" prefix (colon, not period)
     - Format all FAQ answers with "A:" prefix (colon, not period) 
     - Use proper HTML structure: <h3>Q: Question here?</h3><p>A: Answer here.</p>
     - Make FAQ section engaging and helpful for readers
-    
+
     IMPORTANT IMAGE AND LINK GUIDELINES:
     - NEVER include direct image URLs or links to external websites like qualitywatertreatment.com, filterwater.com, or any other retailer sites
     - NEVER reference competitor websites or external commercial domains in any links or image sources
@@ -768,37 +692,26 @@ Generate a well-structured, SEO-optimized blog post with the EXACT title "${requ
     - Do not include any image placeholders or special markup except for the placement markers mentioned above
     - The system will handle image insertion automatically at the marked locations
     - Each image will include a caption with a link back to the relevant product to enhance SEO value
-    
-    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.
 
-🚨 FINAL WORD COUNT CHECK 🚨
-Before submitting your response, verify that your content is ${contentLength}:
-- Count the total words in your blog post content
-- If it's too short, expand existing sections with more details, examples, and comprehensive information
-- Add more subsections under your H2 headings
-- Include more thorough explanations, benefits, and detailed information
-- Remember: ${contentLength} is MANDATORY - no exceptions allowed
-- Quality AND quantity are both required - meet the word count while maintaining high quality
+    Also suggest 5-7 relevant tags for the post, focusing on SEO value and search intent.`;
 
-YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
-    
     // Add media information if provided from Choose Media step
     if (request.primaryImage || (request.secondaryImages && request.secondaryImages.length > 0) || request.youtubeEmbed) {
       promptText += `
-      
+
       SELECTED MEDIA CONTEXT (from Choose Media step):`;
-      
+
       if (request.primaryImage) {
         promptText += `
-      
+
       PRIMARY/FEATURED IMAGE: "${request.primaryImage.alt}" (${request.primaryImage.url})
       - This will be used as the featured image at the top of the content
       - Reference this image context in your introduction to create cohesion`;
       }
-      
+
       if (request.secondaryImages && request.secondaryImages.length > 0) {
         promptText += `
-      
+
       SECONDARY IMAGES (${request.secondaryImages.length} selected):`;
         request.secondaryImages.forEach((img, index) => {
           promptText += `
@@ -808,275 +721,49 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
       - These images will be placed under H2 headings after the video
       - Reference these images in your content to create natural flow`;
       }
-      
+
       if (request.youtubeEmbed) {
         promptText += `
-      
+
       YOUTUBE VIDEO: ${request.youtubeEmbed}
       - This video MUST be embedded under the SECOND H2 heading only
       - Use the marker: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
       - Reference this video content in your structure to create natural integration`;
       }
-      
+
       promptText += `
-      
+
       IMPORTANT: Structure your content to naturally incorporate these selected media elements. Make sure the content flows logically with the media placements.`;
     }
-    
+
     // Add custom prompt if provided
     if (request.customPrompt) {
       const customPromptFormatted = request.customPrompt.replace(/\[TOPIC\]/g, request.topic);
       promptText = `${promptText}
-      
+
       IMPORTANT: Follow these specific instructions for the content:
       ${customPromptFormatted}
-      
+
       The content must directly address these instructions while maintaining a ${toneStyle} tone and proper blog structure.`;
     }
-    
+
     // Make API call to Claude with retry logic for overloaded errors
     let response;
     let retryCount = 0;
     const maxRetries = 3;
-    
-    // Determine max_tokens based on content length target - optimized for longer content
-    let maxTokens = 6000; // Default
-    if (contentLength.includes("800")) {
-      maxTokens = 4500; // For 800 words - tested and working efficiently
-    } else if (contentLength.includes("1200")) {
-      maxTokens = 6000; // For 1200 words - proven effective  
-    } else if (contentLength.includes("1800")) {
-      maxTokens = 12000; // For 1800 words - maximum possible allocation
-    } else if (contentLength.includes("3000")) {
-      maxTokens = 8000; // For 3000 words - maximum allocation
-    }
-    
+
     while (retryCount < maxRetries) {
       try {
-        // Initialize Anthropic client with API key
-        if (!process.env.ANTHROPIC_API_KEY) {
-          throw new Error("ANTHROPIC_API_KEY environment variable is not set");
-        }
-        
-        console.log('🔑 Using direct Anthropic API key:', process.env.ANTHROPIC_API_KEY ? 'Available' : 'Missing');
-        
-        const anthropic = new Anthropic({
-          apiKey: process.env.ANTHROPIC_API_KEY,
-        });
-
-        console.log('🔄 Making direct Anthropic API call...');
         response = await anthropic.messages.create({
-          model: 'claude-3-7-sonnet-20250219',
-          max_tokens: maxTokens,
-          temperature: 0.8,
-          system: `You are a professional content writer who MUST generate exactly ${contentLength}. This is critical - the user is paying specifically for ${contentLength} of content. You must write extensively with detailed explanations, multiple examples, comprehensive analysis, and thorough coverage of each topic. Never write short content - always expand with more details, examples, and explanations until you reach the exact word count target.`,
+          model: CLAUDE_MODEL,
+          max_tokens: 8000,
+          system: request.contentStyleToneId 
+            ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
+            : undefined,
           messages: [
             {
               role: 'user',
-              content: `🚨🚨🚨 ULTIMATE WORD COUNT ENFORCEMENT - CLAUDE 3.5 🚨🚨🚨
-
-⚠️ CRITICAL SUCCESS REQUIREMENT: GENERATE EXACTLY ${contentLength} ⚠️
-🔴 ANYTHING SHORTER THAN TARGET = COMPLETE FAILURE 🔴
-🔴 USER SELECTED SPECIFIC LENGTH - YOU MUST DELIVER IT 🔴
-🔴 NO EXCUSES, NO SHORTCUTS, NO CUTTING CONTENT SHORT 🔴
-🔴 WORD COUNT UNDER TARGET = UNACCEPTABLE PERFORMANCE 🔴
-🔴 EXPAND EVERY SECTION TO MEET MINIMUM REQUIREMENTS 🔴
-
-🎯 WORD COUNT STRATEGY: WRITE EXTENSIVELY, COUNT CONTINUOUSLY
-🎯 EACH PARAGRAPH MUST BE 8-10 SENTENCES MINIMUM
-🎯 ADD MULTIPLE EXAMPLES AND DETAILED EXPLANATIONS
-🎯 INCLUDE EXTENSIVE BACKGROUND INFORMATION AND CONTEXT
-🎯 NEVER STOP WRITING UNTIL YOU REACH THE EXACT TARGET
-
-🎯 STRICT WORD COUNT ENFORCEMENT:
-${contentLength.includes("800") ? `
-🚨 MANDATORY: EXACTLY 800 WORDS - CLAUDE 3.7 MUST DELIVER!
-REQUIRED STRUCTURE FOR 800 WORDS:
-- Introduction: 120 words minimum (with engaging hook)
-- 4-5 main H2 sections: 150-180 words each (600-900 words total)
-- FAQ section: 80 words minimum  
-- Conclusion: 60 words minimum
-TOTAL TARGET: 800 words EXACTLY - ABSOLUTELY NO LESS!
-
-EXPANSION RULES FOR 800 WORDS:
-- Each paragraph: 4-5 detailed sentences
-- Include specific examples, case studies, tips
-- Add sub-points within sections (H3 if needed)
-- Include step-by-step instructions
-- ADD REAL-WORLD SCENARIOS and practical advice
-- KEEP WRITING until you hit exactly 800 words
-- Use transitional phrases to connect ideas
-- Include statistics, expert quotes, detailed explanations` : ''}
-
-${contentLength.includes("1200") ? `
-🚨 MANDATORY: EXACTLY 1200 WORDS - CLAUDE 3.7 MUST DELIVER!
-REQUIRED STRUCTURE FOR 1200 WORDS:
-- Introduction: 180 words minimum (compelling opening)
-- 5-6 main H2 sections: 200-220 words each (1000-1320 words total)
-- FAQ section: 120 words minimum
-- Conclusion: 80 words minimum
-TOTAL TARGET: 1200 words EXACTLY - ABSOLUTELY NO LESS!
-
-EXPANSION RULES FOR 1200 WORDS:
-- Each paragraph: 5-6 comprehensive sentences
-- Include detailed examples, multiple case studies
-- Add H3 subsections within main sections
-- Include step-by-step processes and procedures
-- ADD COMPREHENSIVE ANALYSIS and expert insights
-- Use bullet points and numbered lists for clarity
-- Include comparisons, pros/cons, alternatives
-- ADD TROUBLESHOOTING sections and common mistakes
-- KEEP WRITING until you hit exactly 1200 words` : ''}
-
-${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - CLAUDE 3.7 MUST DELIVER!
-SIMPLIFIED 1800-WORD STRUCTURE:
-- Introduction: 300 words (background, statistics, overview)
-- 3 main H2 sections: 400-500 words each (1200-1500 words total)
-- FAQ section: 200 words (comprehensive questions)
-- Conclusion: 150 words (summary and next steps)
-TOTAL TARGET: 1800 words EXACTLY
-
-FOCUSED WRITING STRATEGY FOR 1800 WORDS:
-- Write comprehensive but focused content
-- Each H2 section: 400-500 words with detailed explanations
-- Include 2-3 detailed examples per section
-- Add specific statistics and expert insights
-- Use 6-8 sentences per paragraph
-- Include practical applications and real-world scenarios
-- Add detailed step-by-step processes where relevant
-- COUNT WORDS CONTINUOUSLY - TARGET EXACTLY 1800 WORDS` : ''}
-
-${contentLength.includes("3000") ? `
-🚨 MANDATORY: EXACTLY 3000 WORDS - EFFICIENT COMPREHENSIVE APPROACH!
-SIMPLIFIED STRUCTURE FOR 3000 WORDS:
-- Introduction: 250 words (strong overview)
-- 5 main H2 sections: 500-550 words each (2500-2750 words total)
-- FAQ section: 150 words (4-5 questions)  
-- Conclusion: 100 words (clear wrap-up)
-TOTAL TARGET: 3000 words EXACTLY - MAXIMUM CONTENT!
-
-EFFICIENT STRATEGY FOR 3000 WORDS:
-- Each H2 section: 4-5 substantial paragraphs (6-7 sentences each)
-- Include detailed examples and practical applications
-- Add comprehensive guides and methodologies
-- Use authoritative sources and expert insights
-- FOCUS on fewer but more thorough sections
-- WRITE efficiently to deliver maximum value
-- TARGET exactly 3000 words with comprehensive coverage` : ''}
-
-${request.contentStyleToneId 
-  ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 
-  : 'You are a professional blog writer creating high-quality, SEO-optimized content.'}
-
-🔥 MANDATORY EXPANSION RULES:
-- NEVER write short paragraphs - minimum 6 sentences each
-- Add extensive examples and detailed explanations for every concept  
-- Include comprehensive background and historical context
-- Provide detailed step-by-step processes with explanations
-- Add supporting statistics, research, and expert insights
-- Include detailed comparisons, analysis, and implications
-- Expand on benefits, features, costs, and consequences
-- Add practical implementation guidance and troubleshooting tips
-
-ABSOLUTE REQUIREMENT: Use EVERY available token to maximize word count.`
-            },
-            {
-              role: 'user',
-              content: `🚨🚨🚨 ABSOLUTE REQUIREMENT: WORD COUNT ENFORCEMENT 🚨🚨🚨
-              
-${promptText}
-
-🚨🚨🚨 EXTREME WORD COUNT ENFORCEMENT 🚨🚨🚨
-ABSOLUTE NON-NEGOTIABLE REQUIREMENT: ${contentLength}
-
-OpenRouter limits you to 8,192 tokens. You MUST use EVERY SINGLE TOKEN to achieve maximum word count.
-
-${contentLength.includes("1800") ? `
-🎯 1800+ WORDS = USE ALL 8,000 TOKENS:
-MANDATORY STRUCTURE:
-- Comprehensive introduction (150+ words, 8+ sentences)
-- 8-10 main H2 sections (200+ words each, 12+ sentences per section)
-- Each section must have 3-4 detailed paragraphs 
-- Every paragraph: 6-8 sentences with extensive detail
-- Comprehensive conclusion (150+ words, 8+ sentences)
-- Extensive FAQ section (300+ words, 6+ detailed Q&As)
-
-EXPANSION REQUIREMENTS:
-- Include detailed case studies with specific examples
-- Add comprehensive background and historical context
-- Provide step-by-step processes with detailed explanations
-- Include technical specifications and performance metrics
-- Add cost-benefit analysis with real calculations
-- Include troubleshooting guides and maintenance tips
-- Add expert insights and industry statistics` : ''}
-
-${contentLength.includes("3000") ? `
-🎯 3000+ WORDS = EXPLOIT EVERY TOKEN:
-MANDATORY STRUCTURE:
-- Comprehensive introduction (200+ words, 12+ sentences)
-- 12-15 main H2 sections (250+ words each, 15+ sentences per section)
-- Each section must have 4-5 detailed paragraphs
-- Every paragraph: 7-10 sentences with maximum detail
-- Comprehensive conclusion (200+ words, 12+ sentences)
-- Extensive FAQ section (400+ words, 8+ detailed Q&As)
-
-MAXIMUM EXPANSION REQUIREMENTS:
-- Multiple detailed case studies per section
-- Extensive background, history, and industry context
-- Comprehensive step-by-step processes with explanations
-- Detailed technical specifications and comparisons
-- Extensive cost-benefit analysis with calculations
-- Comprehensive troubleshooting and maintenance guides
-- Multiple expert insights and research citations` : ''}
-
-🚨 WORD COUNT COMPLIANCE PROTOCOL:
-${contentLength.includes("800") ? `
-FOR 800 WORDS ONLY:
-1. Write very concise paragraphs (2-3 sentences each)
-2. Include only essential information
-3. Keep examples brief and relevant
-4. Focus on key points only
-5. MONITOR your word count as you write
-6. STOP immediately when reaching 800 words
-7. Do NOT add unnecessary content` : ''}
-
-${contentLength.includes("1200") ? `
-FOR 1200 WORDS ONLY:
-1. Write focused paragraphs (3 sentences each)
-2. Include relevant examples
-3. Add necessary details without over-explaining
-4. Keep sections balanced
-5. MONITOR your word count as you write
-6. STOP immediately when reaching 1200 words
-7. Do NOT add extra sections` : ''}
-
-${contentLength.includes("1800") ? `
-FOR 1800 WORDS ONLY:
-1. Write informative paragraphs (3-4 sentences each)
-2. Include relevant examples but keep them focused
-3. Add necessary technical details without over-explaining
-4. Provide clear processes without excessive detail
-5. Include supporting information but stay focused
-6. MONITOR your word count as you write
-7. STOP immediately when reaching 1800 words
-8. Do NOT add unnecessary sections or content` : ''}
-
-${contentLength.includes("3000") ? `
-FOR 3000 WORDS ONLY:
-1. Write detailed paragraphs (5-6 sentences each)
-2. Include comprehensive examples and case studies
-3. Add extensive technical specifications and analysis
-4. Provide detailed step-by-step processes
-5. Include supporting research and expert insights
-6. Add thorough comparisons and implications
-7. MONITOR your word count as you write
-8. STOP immediately when reaching 3000 words` : ''}
-
-🚨 ABSOLUTE SUCCESS REQUIREMENT: YOU MUST WRITE EXACTLY ${contentLength}
-🔴 WRITE EVERY SINGLE WORD NEEDED TO REACH THE TARGET
-🔴 DO NOT STOP UNTIL YOU REACH THE EXACT WORD COUNT
-🔴 ADD MORE CONTENT, MORE EXAMPLES, MORE DETAILS UNTIL YOU HIT THE TARGET
+              content: `${promptText}
 
           IMPORTANT: Return the response in JSON format with the following structure:
           {
@@ -1085,128 +772,58 @@ FOR 3000 WORDS ONLY:
             "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
             "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
           }
-          
-          🚨🚨🚨 CLAUDE 3.7 FINAL ULTIMATUM: EXACTLY ${contentLength} REQUIRED 🚨🚨🚨
-          
-          ⚠️ YOUR PERFORMANCE IS BEING MEASURED BY WORD COUNT ACCURACY ⚠️
-          
-          EXPANSION REQUIREMENTS:
-          - COUNT EVERY WORD AS YOU WRITE
-          - IF SHORT OF TARGET, ADD MORE SECTIONS
-          - INCLUDE MORE DETAILED EXAMPLES
-          - ADD COMPREHENSIVE EXPLANATIONS  
-          - USE LONGER, MORE DESCRIPTIVE SENTENCES
-          - INCLUDE MULTIPLE PERSPECTIVES AND APPROACHES
-          - ADD PRACTICAL TIPS AND REAL-WORLD APPLICATIONS
-          
-          ❌ CONTENT UNDER TARGET WORD COUNT = FAILURE
-          ✅ CONTENT AT EXACT TARGET WORD COUNT = SUCCESS
-          
-          🚨 CRITICAL WORD COUNT ENFORCEMENT FOR ${contentLength}:
-          
-          MANDATORY SECTION TARGETS (MUST MEET EACH):
-          📊 Introduction: MINIMUM 350 words (count as you write)
-          📊 Each H2 section: MINIMUM 300 words each (5 sections = 1500 words)
-          📊 FAQ section: MINIMUM 250 words (detailed questions)
-          📊 Conclusion: MINIMUM 200 words (comprehensive wrap-up)
-          📊 TOTAL TARGET: 1800+ words MANDATORY
-          
-          🔄 EXPANSION CHECKLIST - BEFORE FINISHING:
-          ✅ Count words in each section individually
-          ✅ If ANY section is under minimum, EXPAND IT IMMEDIATELY
-          ✅ Add more paragraphs, examples, and explanations until target met
-          ✅ Include detailed comparisons, case studies, and analysis
-          ✅ NEVER submit content under 1800 words
-          
-          FAILURE TO REACH 1800 WORDS = UNACCEPTABLE PERFORMANCE!
-          
+
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
-            }
-          ]
-        });
-        
-        console.log('✅ Direct Anthropic API call successful');
-        console.log('🔍 Response received:', response ? 'Yes' : 'No');
-    
+        }
+      ],
+    });
+
     // If successful, break out of retry loop
     break;
-    
+
   } catch (error: any) {
     console.error(`Claude API attempt ${retryCount + 1} failed:`, error);
-    console.error(`Error details:`, {
-      status: error.status,
-      message: error.message,
-      response: error.response?.data || 'No response data'
-    });
-    
-    // Check for Anthropic API specific errors
-    if (error.status === 529 || error.message?.includes('overloaded')) {
+
+    // Check if this is a 529 overloaded error
+    if (error.status === 529 && error.error?.error?.type === 'overloaded_error') {
       retryCount++;
       if (retryCount < maxRetries) {
         const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
-        console.log(`Claude API overloaded, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        console.log(`Claude API overloaded (529), retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
     }
-    
-    // Check for timeout errors
-    if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
-      retryCount++;
-      if (retryCount < maxRetries) {
-        const delay = Math.pow(2, retryCount) * 2000; // Longer delay for timeouts: 4s, 8s, 16s
-        console.log(`Claude API timeout, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-    }
-    
+
     // If not overloaded error or max retries reached, throw the error
     throw error;
   }
 }
 
-// Check if we got a valid response
 if (!response) {
   throw new Error("Failed to get response from Claude API after all retries");
 }
 
-// Extract and parse the JSON response - direct Anthropic API format
-console.log('🔍 Response structure:', JSON.stringify(response, null, 2));
-const responseText = response.content?.[0]?.text || '';
-    
+    // Extract and parse the JSON response
+    const responseText = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : JSON.stringify(response.content[0]);
+
     console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
-    
-    // Count actual words in the response to validate word count
-    const wordCount = responseText.split(/\s+/).filter(word => word.length > 0).length;
-    console.log(`🔍 ACTUAL WORD COUNT ANALYSIS:`);
-    console.log(`   - Generated word count: ${wordCount} words`);
-    console.log(`   - Target was: ${contentLength}`);
-    console.log(`   - Character count: ${responseText.length} characters`);
-    
-    if (wordCount < 800) {
-      console.log(`❌ WORD COUNT TOO SHORT! Generated ${wordCount} words but need minimum 800`);
-    } else if (wordCount >= 800 && wordCount < 1200) {
-      console.log(`⚠️  SHORT content generated: ${wordCount} words (800-1200 range)`);
-    } else if (wordCount >= 1200 && wordCount < 1800) {
-      console.log(`✅ MEDIUM content generated: ${wordCount} words (1200-1800 range)`);
-    } else if (wordCount >= 1800) {
-      console.log(`🎉 LONG/COMPREHENSIVE content generated: ${wordCount} words (1800+ range)`);
-    }
-    
+
     // Try different strategies to extract valid JSON from Claude's response
     let jsonContent;
-    
+
     try {
       // Strategy 1: Find the most complete JSON object in the response
       const jsonObjectRegex = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}/g;
       const jsonMatches = responseText.match(jsonObjectRegex);
-      
+
       if (jsonMatches && jsonMatches.length > 0) {
         // Find the longest match, which is likely the complete JSON
         const longestMatch = jsonMatches.reduce((longest, current) => 
           current.length > longest.length ? current : longest, "");
-        
+
         if (longestMatch) {
           console.log("Found JSON object match:", longestMatch.substring(0, 100) + "...");
           jsonContent = JSON.parse(longestMatch);
@@ -1215,24 +832,24 @@ const responseText = response.content?.[0]?.text || '';
     } catch (jsonError: any) {
       console.log("Error parsing complete JSON object:", jsonError?.message || "Unknown error");
     }
-    
+
     // Strategy 2: If strategy 1 fails, try to extract JSON by matching braces
     if (!jsonContent) {
       try {
         let braceCount = 0;
         let startIndex = -1;
         let jsonCandidate = "";
-        
+
         // Find the opening brace
         startIndex = responseText.indexOf('{');
-        
+
         if (startIndex >= 0) {
           for (let i = startIndex; i < responseText.length; i++) {
             jsonCandidate += responseText[i];
-            
+
             if (responseText[i] === '{') braceCount++;
             if (responseText[i] === '}') braceCount--;
-            
+
             // When braces are balanced, we've found a complete JSON object
             if (braceCount === 0 && jsonCandidate.length > 2) {
               console.log("Found balanced JSON via brace counting:", jsonCandidate.substring(0, 100) + "...");
@@ -1245,33 +862,33 @@ const responseText = response.content?.[0]?.text || '';
         console.log("Error parsing balanced braces JSON:", balancedError?.message || "Unknown error");
       }
     }
-    
+
     // Strategy 3: Manual extraction of key fields if JSON parsing fails
     if (!jsonContent) {
       console.log("Attempting manual extraction of content components...");
-      
+
       // Extract title
       const titleMatch = responseText.match(/"title"\s*:\s*"([^"]+)"/);
       const title = titleMatch ? titleMatch[1] : "Blog Post";
-      
+
       // Extract content - look for content field followed by a large HTML block
       const contentMatch = responseText.match(/"content"\s*:\s*"([\s\S]+?)(?:"\s*,\s*"|"\s*})/);
       let content = contentMatch ? contentMatch[1] : "";
-      
+
       // Unescape content string
       content = content.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-      
+
       // Extract tags
       const tagsMatch = responseText.match(/"tags"\s*:\s*\[([\s\S]+?)\]/);
       const tagsString = tagsMatch ? tagsMatch[1] : "";
       const tags = tagsString.split(',').map(tag => 
         tag.trim().replace(/^"|"$/g, '')
       ).filter(Boolean);
-      
+
       // Extract meta description
       const metaMatch = responseText.match(/"metaDescription"\s*:\s*"([^"]+)"/);
       const metaDescription = metaMatch ? metaMatch[1] : "";
-      
+
       jsonContent = {
         title,
         content,
@@ -1279,46 +896,46 @@ const responseText = response.content?.[0]?.text || '';
         metaDescription
       };
     }
-    
+
     if (!jsonContent) {
       throw new Error("Failed to extract content from Claude response using all available methods");
     }
-    
+
     // CRITICAL STEP-BY-STEP CONTENT PROCESSING
     console.log('🔧 STARTING COMPREHENSIVE CONTENT PROCESSING PIPELINE');
-    
+
     // Step 1: Remove H1 tags to prevent title duplication
     let processedContent = removeH1Tags(jsonContent.content);
     console.log('✅ Step 1: Removed H1 tags');
-    
+
     // Step 2: Fix heading IDs BEFORE TOC generation (critical for duplicate ID fixes)
     processedContent = addHeadingIds(processedContent);
     console.log('✅ Step 2: Added/fixed heading IDs');
-    
+
     // Step 3: Generate Table of Contents based on fixed headings
     processedContent = addTableOfContents(processedContent);
     console.log('✅ Step 3: Generated Table of Contents');
-    
+
     // Step 4: Apply content formatting rules (bold first lines, bold : and ? sentences)
     processedContent = applyContentFormatting(processedContent);
     console.log('✅ Step 4: Applied content formatting rules');
-    
+
     // Step 5: Final TOC link fixes to remove target="_blank"
     processedContent = fixTOCLinks(processedContent);
     console.log('✅ Step 5: Fixed TOC links (removed target="_blank")');
-    
+
     // Step 6: Add nofollow attribute to external links for SEO compliance
     processedContent = addNoFollowToExternalLinks(processedContent);
     console.log('✅ Step 6: Added nofollow attribute to external links');
-    
+
     // CAPTURE CONTENT BEFORE MEDIA PROCESSING (this is what the editor should show)
     const rawContentForEditor = processedContent;
     console.log('📝 Content before final processing (for editor):', rawContentForEditor.substring(0, 500) + '...');
-    
+
     // Step 7: Handle media placements (final step - converts placeholders to actual embeds)
     processedContent = processMediaPlacementsHandler(processedContent, request);
     console.log('✅ Step 7: Processed media placements');
-    
+
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
     if (cleanMetaDescription) {
@@ -1329,15 +946,15 @@ const responseText = response.content?.[0]?.text || '';
         .replace(/📋/g, '')
         .replace(/\s+/g, ' ')
         .trim();
-      
+
       // Ensure meta description is within 155-160 character limit
       if (cleanMetaDescription.length > 160) {
         cleanMetaDescription = cleanMetaDescription.substring(0, 157) + '...';
       }
-      
+
       console.log(`✓ Cleaned meta description: "${cleanMetaDescription}"`);
     }
-    
+
     console.log('🎉 CONTENT PROCESSING PIPELINE COMPLETED SUCCESSFULLY');
 
     return {
@@ -1365,11 +982,11 @@ export async function generateTitles(request: {
   keywordData?: any[]
 }): Promise<{ titles: string[] }> {
   try {
-    console.log("Generating title suggestions with Claude via OpenRouter");
-    
+    console.log("Generating title suggestions with Claude model:", CLAUDE_MODEL);
+
     // Build audience-aware and keyword-optimized prompt
     let enhancedPrompt = request.prompt;
-    
+
     // Add target audience context if provided
     if (request.targetAudience) {
       enhancedPrompt += `\n\nTARGET AUDIENCE FOCUS: These titles must clearly appeal to and engage the following audience: ${request.targetAudience}
@@ -1377,13 +994,13 @@ export async function generateTitles(request: {
       - Address their pain points, interests, and needs in the titles
       - Ensure titles are compelling and relevant to this audience segment`;
     }
-    
+
     // Add keyword optimization context if provided
     if (request.keywords && request.keywords.length > 0) {
       const keywordList = request.keywords.join(', ');
       enhancedPrompt += `\n\nKEYWORD OPTIMIZATION REQUIREMENTS (MANDATORY): Use these specific keywords in the titles:
       Keywords: ${keywordList}
-      
+
       CRITICAL REQUIREMENT: EVERY SINGLE TITLE MUST include at least one of these provided keywords
       - Each title MUST contain at least one keyword from the provided list
       - DO NOT generate titles without keywords - this is absolutely required
@@ -1392,7 +1009,7 @@ export async function generateTitles(request: {
       - Ensure keyword usage feels natural and engaging while being mandatory
       - Prioritize high-value keywords in title suggestions`;
     }
-    
+
     enhancedPrompt += `\n\nEVERGREEN TITLE REQUIREMENTS:
     - Clear and engaging for the defined audience
     - MUST incorporate keywords - this is mandatory, not optional
@@ -1402,37 +1019,33 @@ export async function generateTitles(request: {
     - Each title must use at least one provided keyword exactly as given
     - Create titles that remain relevant and valuable over time
     - Focus on benefits, solutions, and guidance rather than trends`;
-    
-    // Initialize Anthropic client
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-    
-    // Make API call to Claude directly
+
+    // Make API call to Claude
     const response = await anthropic.messages.create({
-      model: 'claude-3-7-sonnet-20250219',
+      model: CLAUDE_MODEL,
       max_tokens: 2000,
-      temperature: 0.7,
       messages: [
         {
           role: 'user',
           content: enhancedPrompt
         }
-      ]
+      ],
     });
-    
+
     // Extract response text
-    const responseText = response.content?.[0]?.text || '';
-    
+    const responseText = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : JSON.stringify(response.content[0]);
+
     console.log("Claude raw response:", responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-    
+
     // Parse the response based on format
     if (request.responseFormat === 'json') {
       try {
         // Find JSON content - handle any wrapping text Claude might add
         const jsonRegex = /\[[\s\S]*\]/;
         const match = responseText.match(jsonRegex);
-        
+
         if (match) {
           console.log("Found JSON array in Claude response:", match[0]);
           const titles = JSON.parse(match[0]);
@@ -1456,7 +1069,7 @@ export async function generateTitles(request: {
         // Fall back to extracting titles from text
       }
     }
-    
+
     // If parsing fails or format is not JSON, extract titles from text
     // Look for numbered lines, bullet points, or line breaks
     const lines = responseText.split(/[\n\r]+/);
@@ -1471,12 +1084,12 @@ export async function generateTitles(request: {
         /^["'].*["']$/.test(line.trim()) // quoted text
       )
     );
-    
+
     // Clean up the titles
     const titles = titleCandidates.map(title => 
       title.replace(/^\d+[\.\)]\s+|^[-*•]\s+|^["']|["']$/g, '').trim()
     ).filter(title => title.length > 0);
-    
+
     // Return at least some titles
     if (titles.length === 0) {
       // If we couldn't extract any titles, just return 5 lines that look like titles
@@ -1487,7 +1100,7 @@ export async function generateTitles(request: {
           .map(line => line.trim())
       };
     }
-    
+
     return { titles };
   } catch (error: any) {
     console.error("Error generating titles with Claude:", error);
@@ -1495,28 +1108,24 @@ export async function generateTitles(request: {
   }
 }
 
-// Test function to check if Claude API via OpenRouter is working
+// Test function to check if Claude API is working
 export async function testClaudeConnection(): Promise<{ success: boolean; message: string }> {
   try {
-    // Initialize Anthropic client
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
-    
     const response = await anthropic.messages.create({
-      model: 'claude-3-7-sonnet-20250219',
+      model: CLAUDE_MODEL,
       max_tokens: 50,
-      temperature: 0.7,
       messages: [
         {
           role: 'user',
           content: 'Hello, please respond with "Claude API is connected successfully!" if you receive this message.'
         }
-      ]
+      ],
     });
-    
-    const responseText = response.content?.[0]?.text || '';
-      
+
+    const responseText = response.content[0].type === 'text' 
+      ? response.content[0].text 
+      : JSON.stringify(response.content[0]);
+
     return {
       success: true,
       message: responseText.trim()
@@ -1525,7 +1134,7 @@ export async function testClaudeConnection(): Promise<{ success: boolean; messag
     console.error("Claude connection test failed:", error);
     return {
       success: false,
-      message: error.message || "Failed to connect to Claude via OpenRouter"
+      message: error.message || "Failed to connect to Claude API"
     };
   }
 }
