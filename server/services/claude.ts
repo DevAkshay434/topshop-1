@@ -243,6 +243,62 @@ function removeH1Tags(content: string): string {
   return content.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '');
 }
 
+// Function to replace "and" with "&" in titles and headings
+function replaceAndWithAmpersand(content: string, title: string): { content: string, title: string } {
+  console.log('🔄 REPLACING "AND" WITH "&" IN TITLES AND HEADINGS');
+  let processedContent = content;
+  let processedTitle = title;
+  
+  // Replace "and" with "&" in title
+  const originalTitle = processedTitle;
+  processedTitle = processedTitle.replace(/\s+and\s+/gi, ' & ');
+  if (processedTitle !== originalTitle) {
+    console.log(`📝 Title updated: "${originalTitle}" → "${processedTitle}"`);
+  }
+  
+  // Replace "and" with "&" in H2 headings
+  processedContent = processedContent.replace(
+    /(<h2[^>]*>)(.*?)<\/h2>/gi,
+    (match, openTag, headingText) => {
+      const originalText = headingText;
+      const updatedText = headingText.replace(/\s+and\s+/gi, ' & ');
+      if (updatedText !== originalText) {
+        console.log(`📝 H2 heading updated: "${originalText}" → "${updatedText}"`);
+      }
+      return `${openTag}${updatedText}</h2>`;
+    }
+  );
+  
+  // Replace "and" with "&" in H3 headings
+  processedContent = processedContent.replace(
+    /(<h3[^>]*>)(.*?)<\/h3>/gi,
+    (match, openTag, headingText) => {
+      const originalText = headingText;
+      const updatedText = headingText.replace(/\s+and\s+/gi, ' & ');
+      if (updatedText !== originalText) {
+        console.log(`📝 H3 heading updated: "${originalText}" → "${updatedText}"`);
+      }
+      return `${openTag}${updatedText}</h3>`;
+    }
+  );
+  
+  // Replace "and" with "&" in H4, H5, H6 headings as well
+  processedContent = processedContent.replace(
+    /(<h[4-6][^>]*>)(.*?)(<\/h[4-6]>)/gi,
+    (match, openTag, headingText, closeTag) => {
+      const originalText = headingText;
+      const updatedText = headingText.replace(/\s+and\s+/gi, ' & ');
+      if (updatedText !== originalText) {
+        console.log(`📝 H4-H6 heading updated: "${originalText}" → "${updatedText}"`);
+      }
+      return `${openTag}${updatedText}${closeTag}`;
+    }
+  );
+  
+  console.log('✅ "And" to "&" replacement completed');
+  return { content: processedContent, title: processedTitle };
+}
+
 // Function to apply content formatting rules
 function applyContentFormatting(content: string): string {
   console.log('🎨 APPLYING CONTENT FORMATTING RULES');
@@ -909,33 +965,40 @@ if (!response) {
     let processedContent = removeH1Tags(jsonContent.content);
     console.log('✅ Step 1: Removed H1 tags');
     
-    // Step 2: Fix heading IDs BEFORE TOC generation (critical for duplicate ID fixes)
+    // Step 2: Replace "and" with "&" in titles and headings
+    let processedTitle = jsonContent.title;
+    const andReplacementResult = replaceAndWithAmpersand(processedContent, processedTitle);
+    processedContent = andReplacementResult.content;
+    processedTitle = andReplacementResult.title;
+    console.log('✅ Step 2: Replaced "and" with "&" in titles and headings');
+    
+    // Step 3: Fix heading IDs BEFORE TOC generation (critical for duplicate ID fixes)
     processedContent = addHeadingIds(processedContent);
-    console.log('✅ Step 2: Added/fixed heading IDs');
+    console.log('✅ Step 3: Added/fixed heading IDs');
     
-    // Step 3: Generate Table of Contents based on fixed headings
+    // Step 4: Generate Table of Contents based on fixed headings
     processedContent = addTableOfContents(processedContent);
-    console.log('✅ Step 3: Generated Table of Contents');
+    console.log('✅ Step 4: Generated Table of Contents');
     
-    // Step 4: Apply content formatting rules (bold first lines, bold : and ? sentences)
+    // Step 5: Apply content formatting rules (bold first lines, bold : and ? sentences)
     processedContent = applyContentFormatting(processedContent);
-    console.log('✅ Step 4: Applied content formatting rules');
+    console.log('✅ Step 5: Applied content formatting rules');
     
-    // Step 5: Final TOC link fixes to remove target="_blank"
+    // Step 6: Final TOC link fixes to remove target="_blank"
     processedContent = fixTOCLinks(processedContent);
-    console.log('✅ Step 5: Fixed TOC links (removed target="_blank")');
+    console.log('✅ Step 6: Fixed TOC links (removed target="_blank")');
     
-    // Step 6: Add nofollow attribute to external links for SEO compliance
+    // Step 7: Add nofollow attribute to external links for SEO compliance
     processedContent = addNoFollowToExternalLinks(processedContent);
-    console.log('✅ Step 6: Added nofollow attribute to external links');
+    console.log('✅ Step 7: Added nofollow attribute to external links');
     
     // CAPTURE CONTENT BEFORE MEDIA PROCESSING (this is what the editor should show)
     const rawContentForEditor = processedContent;
     console.log('📝 Content before final processing (for editor):', rawContentForEditor.substring(0, 500) + '...');
     
-    // Step 7: Handle media placements (final step - converts placeholders to actual embeds)
+    // Step 8: Handle media placements (final step - converts placeholders to actual embeds)
     processedContent = processMediaPlacementsHandler(processedContent, request);
-    console.log('✅ Step 7: Processed media placements');
+    console.log('✅ Step 8: Processed media placements');
     
     // CRITICAL FIX: Clean meta description to remove Table of Contents content
     let cleanMetaDescription = jsonContent.metaDescription || '';
@@ -959,7 +1022,7 @@ if (!response) {
     console.log('🎉 CONTENT PROCESSING PIPELINE COMPLETED SUCCESSFULLY');
 
     return {
-      title: jsonContent.title,
+      title: processedTitle, // Use the processed title with "and" → "&" replacements
       content: processedContent, // Fully processed content
       rawContent: rawContentForEditor, // Content with IDs and TOC but before media processing
       tags: jsonContent.tags,
