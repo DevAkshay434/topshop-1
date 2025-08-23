@@ -307,8 +307,8 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <div className="flex space-x-1">
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100 gap-2 min-w-0">
+                    <div className="flex space-x-1 flex-shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
@@ -316,7 +316,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                           e.stopPropagation();
                           handleEdit(author);
                         }}
-                        className="h-8 px-3 text-xs"
+                        className="h-8 px-2 text-xs"
                       >
                         <Edit3 className="w-3 h-3 mr-1" />
                         Edit
@@ -328,7 +328,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                           e.stopPropagation();
                           handleDelete(author.id);
                         }}
-                        className="h-8 px-3 text-xs text-red-600 hover:text-red-700"
+                        className="h-8 px-2 text-xs text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-3 h-3 mr-1" />
                         Delete
@@ -338,7 +338,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
                       variant={selectedAuthorId === author.id ? "default" : "ghost"}
                       size="sm"
                       onClick={() => onAuthorSelect(author.id)}
-                      className="h-8 px-3 text-xs"
+                      className="h-8 px-2 text-xs flex-shrink-0"
                     >
                       {selectedAuthorId === author.id ? "Selected" : "Select"}
                     </Button>
