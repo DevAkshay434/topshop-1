@@ -839,16 +839,16 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     let retryCount = 0;
     const maxRetries = 3;
     
-    // Determine max_tokens based on content length target - increased for better compliance
-    let maxTokens = 6000; // Default increased
+    // Determine max_tokens based on content length target - balanced for Claude 3.7 performance
+    let maxTokens = 6000; // Default
     if (contentLength.includes("800")) {
-      maxTokens = 4000; // For 800 words - increased
+      maxTokens = 4500; // For 800 words - tested and working efficiently
     } else if (contentLength.includes("1200")) {
-      maxTokens = 6000; // For 1200 words - increased  
+      maxTokens = 6000; // For 1200 words - proven effective  
     } else if (contentLength.includes("1800")) {
-      maxTokens = 8000; // For 1800 words - increased
+      maxTokens = 7000; // For 1800 words - balanced approach
     } else if (contentLength.includes("3000")) {
-      maxTokens = 8000; // For 3000 words - max limit
+      maxTokens = 7500; // For 3000 words - efficient allocation
     }
     
     while (retryCount < maxRetries) {
@@ -905,42 +905,40 @@ EXPANSION RULES FOR 1200 WORDS:
 - KEEP WRITING until you hit exactly 1200 words` : ''}
 
 ${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - CLAUDE 3.7 MUST DELIVER!
-REQUIRED STRUCTURE FOR 1800 WORDS:
-- Introduction: 250 words minimum (comprehensive opening)
-- 6-8 main H2 sections: 250-280 words each (1500-2240 words total)
-- FAQ section: 180 words minimum (6+ questions)
-- Conclusion: 120 words minimum
-TOTAL TARGET: 1800 words EXACTLY - ABSOLUTELY NO LESS!
+🚨 MANDATORY: EXACTLY 1800 WORDS - SIMPLIFIED BUT COMPREHENSIVE!
+STREAMLINED STRUCTURE FOR 1800 WORDS:
+- Introduction: 180 words (focused opening)
+- 4 main H2 sections: 350-400 words each (1400-1600 words total)  
+- FAQ section: 120 words (3-4 questions)
+- Conclusion: 100 words (strong finish)
+TOTAL TARGET: 1800 words EXACTLY - DELIVER FULL CONTENT!
 
-EXPANSION RULES FOR 1800 WORDS:
-- Each paragraph: 6-7 detailed, informative sentences
-- Include multiple examples, extensive case studies
-- Add H3 subsections with detailed explanations
-- Include comprehensive step-by-step guides
-- ADD ADVANCED TECHNIQUES and professional insights
-- Use detailed bullet points and comprehensive lists
-- Include charts/tables descriptions (if applicable)
-- ADD EXPERT OPINIONS and industry perspectives
-- Include troubleshooting, best practices, optimization tips
-- KEEP WRITING until you hit exactly 1800 words` : ''}
+FAST & EFFICIENT STRATEGY FOR 1800 WORDS:
+- Each H2 section: 3 focused paragraphs (5-6 sentences each)
+- Include practical examples and real scenarios
+- Add actionable tips and step-by-step guidance
+- Use clear, direct language with authority
+- FOCUS on delivering value in fewer, substantial sections
+- WRITE complete thoughts without unnecessary complexity
+- TARGET exactly 1800 words with quality content` : ''}
 
 ${contentLength.includes("3000") ? `
-🚨 MANDATORY: EXACTLY 3000 WORDS - COMPREHENSIVE CONTENT
-STRICT STRUCTURE FOR 3000 WORDS:
-- Introduction: 250 words
-- 8-10 main H2 sections: 300 words each (2400 words total)
-- FAQ section: 250 words
-- Conclusion: 200 words
-TOTAL TARGET: 3000 words maximum
+🚨 MANDATORY: EXACTLY 3000 WORDS - EFFICIENT COMPREHENSIVE APPROACH!
+SIMPLIFIED STRUCTURE FOR 3000 WORDS:
+- Introduction: 250 words (strong overview)
+- 5 main H2 sections: 500-550 words each (2500-2750 words total)
+- FAQ section: 150 words (4-5 questions)  
+- Conclusion: 100 words (clear wrap-up)
+TOTAL TARGET: 3000 words EXACTLY - MAXIMUM CONTENT!
 
-WRITING RULES FOR 3000 WORDS:
-- Each paragraph: 5-6 sentences
-- Include detailed examples and case studies
-- Add comprehensive explanations
-- Include technical details and analysis
-- STOP writing when you reach 3000 words
-- Do NOT exceed 3100 words under any circumstances` : ''}
+EFFICIENT STRATEGY FOR 3000 WORDS:
+- Each H2 section: 4-5 substantial paragraphs (6-7 sentences each)
+- Include detailed examples and practical applications
+- Add comprehensive guides and methodologies
+- Use authoritative sources and expert insights
+- FOCUS on fewer but more thorough sections
+- WRITE efficiently to deliver maximum value
+- TARGET exactly 3000 words with comprehensive coverage` : ''}
 
 ${request.contentStyleToneId 
   ? `Act as the selected copywriter: ${request.contentStyleDisplayName || toneStyle}. You are a professional content writer who specializes in writing in this specific style and tone. Embody the persona, writing patterns, and expertise of this copywriter type throughout the content creation.` 

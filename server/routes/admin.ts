@@ -1274,6 +1274,17 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
 
 // Enhanced content generation endpoint with all new parameters
 adminRouter.post("/generate-content", async (req: Request, res: Response) => {
+  // Set extended timeout for comprehensive content generation (5 minutes)
+  req.setTimeout(300000, () => {
+    console.log('⚠️ Request timeout reached for content generation');
+    if (!res.headersSent) {
+      res.status(408).json({
+        success: false,
+        error: 'Content generation timeout - please try a shorter article length'
+      });
+    }
+  });
+  
   console.log("Content generation request received with body:", JSON.stringify(req.body));
   console.log("🔍 CRITICAL DEBUG: Secondary images in request:", {
     hasSecondaryImages: !!req.body.secondaryImages,

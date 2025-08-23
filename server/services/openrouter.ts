@@ -67,7 +67,7 @@ class OpenRouterService {
             'HTTP-Referer': process.env.REPLIT_DOMAINS || 'http://localhost:5000',
             'X-Title': 'TopShop SEO Content Generator',
           },
-          timeout: 180000, // 3 minute timeout for long content generation
+          timeout: 300000, // 5 minute timeout for comprehensive content generation
         }
       );
 
