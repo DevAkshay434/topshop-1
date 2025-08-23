@@ -839,16 +839,16 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     let retryCount = 0;
     const maxRetries = 3;
     
-    // Determine max_tokens based on content length target - balanced for Claude 3.7 performance
+    // Determine max_tokens based on content length target - optimized for longer content
     let maxTokens = 6000; // Default
     if (contentLength.includes("800")) {
       maxTokens = 4500; // For 800 words - tested and working efficiently
     } else if (contentLength.includes("1200")) {
       maxTokens = 6000; // For 1200 words - proven effective  
     } else if (contentLength.includes("1800")) {
-      maxTokens = 7000; // For 1800 words - balanced approach
+      maxTokens = 8000; // For 1800 words - increased for comprehensive content
     } else if (contentLength.includes("3000")) {
-      maxTokens = 7500; // For 3000 words - efficient allocation
+      maxTokens = 8000; // For 3000 words - maximum allocation
     }
     
     while (retryCount < maxRetries) {
@@ -878,6 +878,8 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
 🔴 ANYTHING SHORTER THAN TARGET = COMPLETE FAILURE 🔴
 🔴 USER SELECTED SPECIFIC LENGTH - YOU MUST DELIVER IT 🔴
 🔴 NO EXCUSES, NO SHORTCUTS, NO CUTTING CONTENT SHORT 🔴
+🔴 WORD COUNT UNDER TARGET = UNACCEPTABLE PERFORMANCE 🔴
+🔴 EXPAND EVERY SECTION TO MEET MINIMUM REQUIREMENTS 🔴
 
 🎯 STRICT WORD COUNT ENFORCEMENT:
 ${contentLength.includes("800") ? `
@@ -920,22 +922,29 @@ EXPANSION RULES FOR 1200 WORDS:
 - KEEP WRITING until you hit exactly 1200 words` : ''}
 
 ${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - SIMPLIFIED BUT COMPREHENSIVE!
-STREAMLINED STRUCTURE FOR 1800 WORDS:
-- Introduction: 180 words (focused opening)
-- 4 main H2 sections: 350-400 words each (1400-1600 words total)  
-- FAQ section: 120 words (3-4 questions)
-- Conclusion: 100 words (strong finish)
-TOTAL TARGET: 1800 words EXACTLY - DELIVER FULL CONTENT!
+🚨 MANDATORY: EXACTLY 1800 WORDS - AGGRESSIVE EXPANSION REQUIRED!
+MANDATORY STRUCTURE FOR 1800 WORDS:
+- Introduction: 300 words MINIMUM (comprehensive opening with context, statistics, and key points)
+- 5-6 main H2 sections: 300-350 words each MINIMUM (1500-2100 words total)  
+- Each H2 must include H3 subsections for depth
+- FAQ section: 200 words MINIMUM (5-6 detailed questions with full explanations)
+- Conclusion: 150 words MINIMUM (comprehensive wrap-up with actionable takeaways)
+TOTAL TARGET: 1800 words ABSOLUTE MINIMUM - MUST EXCEED TARGET!
 
-FAST & EFFICIENT STRATEGY FOR 1800 WORDS:
-- Each H2 section: 3 focused paragraphs (5-6 sentences each)
-- Include practical examples and real scenarios
-- Add actionable tips and step-by-step guidance
-- Use clear, direct language with authority
-- FOCUS on delivering value in fewer, substantial sections
-- WRITE complete thoughts without unnecessary complexity
-- TARGET exactly 1800 words with quality content` : ''}
+ULTRA-AGGRESSIVE EXPANSION STRATEGY FOR 1800 WORDS:
+- Each H2 section: 4-5 substantial paragraphs (8-10 sentences each)
+- Include MULTIPLE detailed examples, case studies, and real-world scenarios
+- Add comprehensive step-by-step procedures with sub-steps
+- Use detailed explanations with supporting data and statistics
+- ADD specific technical details, expert insights, and industry standards
+- Include troubleshooting sections, best practices, and optimization tips
+- EXPAND every single point with thorough explanations and context
+- ADD H3 subsections within each H2 to provide more depth
+- INCLUDE comparison tables, lists, and detailed breakdowns
+- WRITE comprehensive explanations for every concept mentioned
+- NEVER use brief statements - ALWAYS elaborate extensively
+- KEEP WRITING until you reach EXACTLY 1800 words minimum
+- COUNT words continuously and expand content if under target` : ''}
 
 ${contentLength.includes("3000") ? `
 🚨 MANDATORY: EXACTLY 3000 WORDS - EFFICIENT COMPREHENSIVE APPROACH!
@@ -1091,6 +1100,10 @@ FOR 3000 WORDS ONLY:
           
           ❌ CONTENT UNDER TARGET WORD COUNT = FAILURE
           ✅ CONTENT AT EXACT TARGET WORD COUNT = SUCCESS
+          
+          🚨 FINAL REMINDER: If your content is shorter than ${contentLength}, you have failed the task!
+          📊 WORD COUNT CHECK: Before finishing, count your words and ensure you meet the target!
+          🔄 EXPANSION REQUIRED: If under target, add more sections, examples, and detailed explanations!
           
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
