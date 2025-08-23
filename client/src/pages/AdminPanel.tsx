@@ -5802,37 +5802,32 @@ export default function AdminPanel() {
                     </div>
 
                     {/* Resizable HTML-Preserving Content Editor */}
-                    <PanelGroup direction="vertical" className="min-h-[320px] border rounded-lg">
-                      <Panel defaultSize={100} minSize={20}>
-                        <SimpleHTMLEditor
-                          content={
-                            generatedContent.rawContent ||
-                            generatedContent.content ||
-                            ""
-                          }
-                          onChange={(newContent) => {
-                            console.log(
-                              "SimpleHTMLEditor content updated:",
-                              newContent.length,
-                              "characters",
-                            );
-                            // Update both the raw content and processed content
-                            setGeneratedContent((prev) => ({
-                              ...prev,
-                              rawContent: newContent,
-                              content: newContent, // Use the same content for both
-                            }));
-                            setEnhancedContentForEditor(newContent);
-                            // Trigger immediate real-time preview update
-                            setContentUpdateCounter((prev) => prev + 1);
-                          }}
-                          className="h-full border-0"
-                        />
-                      </Panel>
-                      <PanelResizeHandle className="h-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-row-resize flex items-center justify-center">
-                        <div className="w-8 h-1 bg-gray-400 rounded-full"></div>
-                      </PanelResizeHandle>
-                    </PanelGroup>
+                    <div className="border rounded-lg resize-y overflow-auto min-h-[320px] max-h-[800px]">
+                      <SimpleHTMLEditor
+                        content={
+                          generatedContent.rawContent ||
+                          generatedContent.content ||
+                          ""
+                        }
+                        onChange={(newContent) => {
+                          console.log(
+                            "SimpleHTMLEditor content updated:",
+                            newContent.length,
+                            "characters",
+                          );
+                          // Update both the raw content and processed content
+                          setGeneratedContent((prev) => ({
+                            ...prev,
+                            rawContent: newContent,
+                            content: newContent, // Use the same content for both
+                          }));
+                          setEnhancedContentForEditor(newContent);
+                          // Trigger immediate real-time preview update
+                          setContentUpdateCounter((prev) => prev + 1);
+                        }}
+                        className="h-full border-0"
+                      />
+                    </div>
                   </div>
 
                   {/* Content Tags Section */}
