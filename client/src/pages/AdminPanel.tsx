@@ -5802,31 +5802,51 @@ export default function AdminPanel() {
                     </div>
 
                     {/* Resizable HTML-Preserving Content Editor */}
-                    <div className="border rounded-lg resize-y overflow-auto min-h-[320px] max-h-[800px]">
-                      <SimpleHTMLEditor
-                        content={
-                          generatedContent.rawContent ||
-                          generatedContent.content ||
-                          ""
-                        }
-                        onChange={(newContent) => {
-                          console.log(
-                            "SimpleHTMLEditor content updated:",
-                            newContent.length,
-                            "characters",
-                          );
-                          // Update both the raw content and processed content
-                          setGeneratedContent((prev) => ({
-                            ...prev,
-                            rawContent: newContent,
-                            content: newContent, // Use the same content for both
-                          }));
-                          setEnhancedContentForEditor(newContent);
-                          // Trigger immediate real-time preview update
-                          setContentUpdateCounter((prev) => prev + 1);
-                        }}
-                        className="h-full border-0"
-                      />
+                    <div className="border rounded-lg">
+                      <PanelGroup direction="vertical" className="min-h-[320px]">
+                        <Panel defaultSize={75} minSize={30} maxSize={90}>
+                          <SimpleHTMLEditor
+                            content={
+                              generatedContent.rawContent ||
+                              generatedContent.content ||
+                              ""
+                            }
+                            onChange={(newContent) => {
+                              console.log(
+                                "SimpleHTMLEditor content updated:",
+                                newContent.length,
+                                "characters",
+                              );
+                              // Update both the raw content and processed content
+                              setGeneratedContent((prev) => ({
+                                ...prev,
+                                rawContent: newContent,
+                                content: newContent, // Use the same content for both
+                              }));
+                              setEnhancedContentForEditor(newContent);
+                              // Trigger immediate real-time preview update
+                              setContentUpdateCounter((prev) => prev + 1);
+                            }}
+                            className="h-full border-0"
+                          />
+                        </Panel>
+                        <PanelResizeHandle className="h-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-row-resize flex items-center justify-center">
+                          <div className="w-8 h-1 bg-gray-400 rounded-full"></div>
+                        </PanelResizeHandle>
+                        <Panel defaultSize={25} minSize={10} maxSize={70}>
+                          <div className="p-3 bg-gray-50 text-sm text-gray-600 h-full overflow-auto">
+                            <div className="mb-2 font-medium">Content Statistics:</div>
+                            <div className="space-y-1">
+                              <div>Characters: {(generatedContent.rawContent || generatedContent.content || "").length}</div>
+                              <div>Words: {(generatedContent.rawContent || generatedContent.content || "").split(/\s+/).filter(word => word.length > 0).length}</div>
+                              <div>Reading time: {calculateReadingTime(generatedContent.content || "")} min</div>
+                            </div>
+                            <div className="mt-3 text-xs text-gray-500">
+                              Drag the handle above to resize the editor area
+                            </div>
+                          </div>
+                        </Panel>
+                      </PanelGroup>
                     </div>
                   </div>
 
