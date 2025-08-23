@@ -7363,8 +7363,8 @@ export default function AdminPanel() {
             {imageSource === "youtube" && (
               <div className="mt-4 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <p className="text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4 text-green-500" />
+                  <p className="text-sm text-green-700">
                     Add YouTube videos to embed in your content
                   </p>
                 </div>
@@ -7453,7 +7453,7 @@ export default function AdminPanel() {
                     </h4>
                     <div className="bg-muted rounded-md p-3">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="relative w-24 h-16 rounded-md overflow-hidden border-2 border-red-500 shadow-sm">
+                        <div className="relative w-24 h-16 rounded-md overflow-hidden border-2 border-green-500 shadow-sm">
                           <img
                             src={`https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg`}
                             alt="YouTube video thumbnail"
