@@ -67,11 +67,12 @@ class OpenRouterService {
             'HTTP-Referer': process.env.REPLIT_DOMAINS || 'http://localhost:5000',
             'X-Title': 'TopShop SEO Content Generator',
           },
-          timeout: 60000, // 60 second timeout
+          timeout: 180000, // 3 minute timeout for long content generation
         }
       );
 
       console.log(`✅ OpenRouter API success - Model: ${request.model}, Tokens: ${response.data.usage?.total_tokens || 'unknown'}`);
+      console.log(`📝 Response content preview:`, response.data.choices?.[0]?.message?.content?.substring(0, 200) || 'No content');
       return response.data;
     } catch (error: any) {
       console.error('❌ OpenRouter API error:', error.response?.data || error.message);
@@ -96,9 +97,9 @@ class OpenRouterService {
     temperature?: number;
     max_tokens?: number;
   }): Promise<ChatCompletionResponse> {
-    // Use Claude Sonnet 4 for content generation - much better for long-form content
+    // Use Claude 3.5 Sonnet for content generation - confirmed working model
     return this.createChatCompletion({
-      model: 'anthropic/claude-sonnet-4',
+      model: 'anthropic/claude-3.5-sonnet-20241022',
       ...request,
     });
   }
