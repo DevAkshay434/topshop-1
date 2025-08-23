@@ -7884,6 +7884,7 @@ export default function AdminPanel() {
                             title: "Images Found",
                             description: `Found ${pexelsCount} from Pexels and ${pixabayCount} from Pixabay`,
                             variant: "default",
+                            position: "top-right",
                           });
                         } else {
                           toast({
@@ -8023,29 +8024,6 @@ export default function AdminPanel() {
                                   </Button>
                                 </div>
 
-                                {/* Source badge */}
-                                <div className="absolute top-1 right-1">
-                                  <Badge
-                                    variant={
-                                      image.source === "uploaded"
-                                        ? "default"
-                                        : "secondary"
-                                    }
-                                    className={`text-xs px-1.5 py-0.5 ${
-                                      image.source === "uploaded"
-                                        ? "bg-purple-600 text-white"
-                                        : image.source === "pixabay"
-                                          ? "bg-green-600 text-white"
-                                          : "bg-blue-600 text-white"
-                                    }`}
-                                  >
-                                    {image.source === "uploaded"
-                                      ? "Uploaded"
-                                      : image.source === "pixabay"
-                                        ? "Pixabay"
-                                        : "Pexels"}
-                                  </Badge>
-                                </div>
 
                                 {/* Primary/Secondary Selection buttons - always visible on hover */}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
