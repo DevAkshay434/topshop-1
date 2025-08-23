@@ -7310,10 +7310,7 @@ export default function AdminPanel() {
                   // Load selected product images
                   fetchProductAndVariantImages();
                 }}
-                className="flex-1 text-white border-green-600"
-                style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                className="flex-1"
               >
                 <Package className="mr-0.5 h-4 w-4" />
                 Product Images
@@ -7325,10 +7322,7 @@ export default function AdminPanel() {
                   imageSource === "uploaded_images" ? "default" : "outline"
                 }
                 onClick={() => setImageSource("uploaded_images")}
-                className="flex-1 text-white border-green-600"
-                style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                className="flex-1"
               >
                 <ImageIcon className="mr-0.5 h-4 w-4" />
                 Uploaded Images
@@ -7348,10 +7342,7 @@ export default function AdminPanel() {
                   size="sm"
                   variant={imageSource === "upload" ? "default" : "outline"}
                   onClick={() => setImageSource("upload")}
-                  className="w-full text-white border-green-600"
-                  style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                  className="w-full"
                 >
                   <Upload className="mr-0.5 h-4 w-4" />
                   Upload Image
@@ -7360,10 +7351,7 @@ export default function AdminPanel() {
                   size="sm"
                   variant={imageSource === "youtube" ? "default" : "outline"}
                   onClick={() => setImageSource("youtube")}
-                  className="w-full text-white border-green-600"
-                  style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                  className="w-full"
                 >
                   <FileText className="mr-0.5 h-4 w-4" />
                   YouTube Video
