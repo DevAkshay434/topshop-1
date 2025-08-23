@@ -854,10 +854,17 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     while (retryCount < maxRetries) {
       try {
         // Initialize Anthropic client with API key
+        if (!process.env.ANTHROPIC_API_KEY) {
+          throw new Error("ANTHROPIC_API_KEY environment variable is not set");
+        }
+        
+        console.log('🔑 Using direct Anthropic API key:', process.env.ANTHROPIC_API_KEY ? 'Available' : 'Missing');
+        
         const anthropic = new Anthropic({
           apiKey: process.env.ANTHROPIC_API_KEY,
         });
 
+        console.log('🔄 Making direct Anthropic API call...');
         response = await anthropic.messages.create({
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: maxTokens,
@@ -1089,6 +1096,9 @@ FOR 3000 WORDS ONLY:
             }
           ]
         });
+        
+        console.log('✅ Direct Anthropic API call successful');
+        console.log('🔍 Response received:', response ? 'Yes' : 'No');
     
     // If successful, break out of retry loop
     break;
@@ -1133,7 +1143,8 @@ if (!response) {
   throw new Error("Failed to get response from Claude API after all retries");
 }
 
-// Extract and parse the JSON response - fix for direct Anthropic API
+// Extract and parse the JSON response - direct Anthropic API format
+console.log('🔍 Response structure:', JSON.stringify(response, null, 2));
 const responseText = response.content?.[0]?.text || '';
     
     console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
