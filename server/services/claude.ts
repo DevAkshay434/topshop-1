@@ -857,59 +857,73 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
           messages: [
             {
               role: 'system',
-              content: `🚨🚨🚨 ABSOLUTE WORD COUNT MANDATE - NO EXCEPTIONS 🚨🚨🚨
+              content: `🚨🚨🚨 ULTIMATE WORD COUNT ENFORCEMENT - CLAUDE 3.7 🚨🚨🚨
 
-CRITICAL REQUIREMENT: You MUST generate EXACTLY ${contentLength} - NO SHORTCUTS ALLOWED!
-🔴 FAILURE TO MEET WORD COUNT = COMPLETE FAILURE 🔴
+⚠️ CRITICAL SUCCESS REQUIREMENT: GENERATE EXACTLY ${contentLength} ⚠️
+🔴 ANYTHING SHORTER THAN TARGET = COMPLETE FAILURE 🔴
+🔴 USER SELECTED SPECIFIC LENGTH - YOU MUST DELIVER IT 🔴
+🔴 NO EXCUSES, NO SHORTCUTS, NO CUTTING CONTENT SHORT 🔴
 
 🎯 STRICT WORD COUNT ENFORCEMENT:
 ${contentLength.includes("800") ? `
-🚨 MANDATORY: EXACTLY 800 WORDS - NO SHORTCUTS!
+🚨 MANDATORY: EXACTLY 800 WORDS - CLAUDE 3.7 MUST DELIVER!
 REQUIRED STRUCTURE FOR 800 WORDS:
-- Introduction: 100 words minimum
-- 4-5 main H2 sections: 140-160 words each (560-800 words total)
-- FAQ section: 100 words minimum  
-- Conclusion: 40 words minimum
-TOTAL TARGET: 800 words EXACTLY - NOT 500, NOT 600, BUT 800!
+- Introduction: 120 words minimum (with engaging hook)
+- 4-5 main H2 sections: 150-180 words each (600-900 words total)
+- FAQ section: 80 words minimum  
+- Conclusion: 60 words minimum
+TOTAL TARGET: 800 words EXACTLY - ABSOLUTELY NO LESS!
 
-WRITING RULES FOR 800 WORDS:
-- Each paragraph: 3-4 sentences (NOT 1-2!)
-- Include examples, details, explanations
-- ADD MORE CONTENT if falling short
-- Keep writing until you reach 800 words
-- Count words as you go - DO NOT STOP SHORT!` : ''}
+EXPANSION RULES FOR 800 WORDS:
+- Each paragraph: 4-5 detailed sentences
+- Include specific examples, case studies, tips
+- Add sub-points within sections (H3 if needed)
+- Include step-by-step instructions
+- ADD REAL-WORLD SCENARIOS and practical advice
+- KEEP WRITING until you hit exactly 800 words
+- Use transitional phrases to connect ideas
+- Include statistics, expert quotes, detailed explanations` : ''}
 
 ${contentLength.includes("1200") ? `
-🚨 MANDATORY: EXACTLY 1200 WORDS - NO SHORTCUTS!
+🚨 MANDATORY: EXACTLY 1200 WORDS - CLAUDE 3.7 MUST DELIVER!
 REQUIRED STRUCTURE FOR 1200 WORDS:
-- Introduction: 150 words minimum
-- 5-6 main H2 sections: 180-200 words each (900-1200 words total)
-- FAQ section: 100 words minimum
-- Conclusion: 50 words minimum
-TOTAL TARGET: 1200 words EXACTLY - NOT 800, NOT 900, BUT 1200!
+- Introduction: 180 words minimum (compelling opening)
+- 5-6 main H2 sections: 200-220 words each (1000-1320 words total)
+- FAQ section: 120 words minimum
+- Conclusion: 80 words minimum
+TOTAL TARGET: 1200 words EXACTLY - ABSOLUTELY NO LESS!
 
-WRITING RULES FOR 1200 WORDS:
-- Each paragraph: 4-5 sentences with details
-- Include examples, case studies, explanations
-- ADD MORE CONTENT if falling short of 1200
-- Keep writing until you reach 1200 words
-- Count words as you go - DO NOT STOP SHORT!` : ''}
+EXPANSION RULES FOR 1200 WORDS:
+- Each paragraph: 5-6 comprehensive sentences
+- Include detailed examples, multiple case studies
+- Add H3 subsections within main sections
+- Include step-by-step processes and procedures
+- ADD COMPREHENSIVE ANALYSIS and expert insights
+- Use bullet points and numbered lists for clarity
+- Include comparisons, pros/cons, alternatives
+- ADD TROUBLESHOOTING sections and common mistakes
+- KEEP WRITING until you hit exactly 1200 words` : ''}
 
 ${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - NO SHORTCUTS!
+🚨 MANDATORY: EXACTLY 1800 WORDS - CLAUDE 3.7 MUST DELIVER!
 REQUIRED STRUCTURE FOR 1800 WORDS:
-- Introduction: 200 words minimum
-- 6-7 main H2 sections: 220-250 words each (1320-1750 words total)
-- FAQ section: 150 words minimum
-- Conclusion: 100 words minimum
-TOTAL TARGET: 1800 words EXACTLY - NOT 1000, NOT 1200, BUT 1800!
+- Introduction: 250 words minimum (comprehensive opening)
+- 6-8 main H2 sections: 250-280 words each (1500-2240 words total)
+- FAQ section: 180 words minimum (6+ questions)
+- Conclusion: 120 words minimum
+TOTAL TARGET: 1800 words EXACTLY - ABSOLUTELY NO LESS!
 
-WRITING RULES FOR 1800 WORDS:
-- Each paragraph: 5-6 sentences with detailed content
-- Include comprehensive examples, case studies, details
-- ADD MORE SECTIONS if falling short of 1800
-- Keep writing until you reach 1800 words
-- Count words as you go - DO NOT STOP SHORT!` : ''}
+EXPANSION RULES FOR 1800 WORDS:
+- Each paragraph: 6-7 detailed, informative sentences
+- Include multiple examples, extensive case studies
+- Add H3 subsections with detailed explanations
+- Include comprehensive step-by-step guides
+- ADD ADVANCED TECHNIQUES and professional insights
+- Use detailed bullet points and comprehensive lists
+- Include charts/tables descriptions (if applicable)
+- ADD EXPERT OPINIONS and industry perspectives
+- Include troubleshooting, best practices, optimization tips
+- KEEP WRITING until you hit exactly 1800 words` : ''}
 
 ${contentLength.includes("3000") ? `
 🚨 MANDATORY: EXACTLY 3000 WORDS - COMPREHENSIVE CONTENT
@@ -1049,13 +1063,21 @@ FOR 3000 WORDS ONLY:
             "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
           }
           
-          🚨🚨🚨 FINAL WARNING: Your content MUST be EXACTLY ${contentLength}. 
+          🚨🚨🚨 CLAUDE 3.7 FINAL ULTIMATUM: EXACTLY ${contentLength} REQUIRED 🚨🚨🚨
           
-          COUNT YOUR WORDS AS YOU WRITE. DO NOT STOP SHORT. 
-          IF YOU'RE AT 500 WORDS BUT NEED 1200, KEEP WRITING!
-          ADD MORE SECTIONS, MORE EXAMPLES, MORE EXPLANATIONS!
+          ⚠️ YOUR PERFORMANCE IS BEING MEASURED BY WORD COUNT ACCURACY ⚠️
           
-          DO NOT SUBMIT CONTENT THAT IS TOO SHORT - EXPAND UNTIL YOU REACH THE TARGET!
+          EXPANSION REQUIREMENTS:
+          - COUNT EVERY WORD AS YOU WRITE
+          - IF SHORT OF TARGET, ADD MORE SECTIONS
+          - INCLUDE MORE DETAILED EXAMPLES
+          - ADD COMPREHENSIVE EXPLANATIONS  
+          - USE LONGER, MORE DESCRIPTIVE SENTENCES
+          - INCLUDE MULTIPLE PERSPECTIVES AND APPROACHES
+          - ADD PRACTICAL TIPS AND REAL-WORLD APPLICATIONS
+          
+          ❌ CONTENT UNDER TARGET WORD COUNT = FAILURE
+          ✅ CONTENT AT EXACT TARGET WORD COUNT = SUCCESS
           
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
