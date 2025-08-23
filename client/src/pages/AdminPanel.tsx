@@ -7263,31 +7263,15 @@ export default function AdminPanel() {
                         <p className="text-sm font-medium text-green-800 mb-1">
                           Selection Guidelines:
                         </p>
-                        <div className="text-xs text-green-700 space-y-0.5">
-                          {(() => {
-                            const articleLength = form.watch("articleLength");
-                            if (articleLength === "short") {
-                              return (
-                                <p>
-                                  <strong>Small article:</strong> Select 2–3 images for optimal content flow
-                                </p>
-                              );
-                            } else if (articleLength === "medium") {
-                              return (
-                                <p>
-                                  <strong>Medium article:</strong> Select 3–4 images for good visual balance
-                                </p>
-                              );
-                            } else {
-                              return (
-                                <p>
-                                  <strong>Large article:</strong> Select 5+ images for comprehensive visual support
-                                </p>
-                              );
-                            }
-                          })()}
-                          <p className="text-green-600 italic">
-                            You can select as many images as you need — these are just guidelines!
+                        <div className="text-xs text-green-700 space-y-1">
+                          <p>
+                            <strong>Small article:</strong> Select 2–3 images for optimal content flow
+                          </p>
+                          <p>
+                            <strong>Medium article:</strong> Select 3–4 images for good visual balance
+                          </p>
+                          <p>
+                            <strong>Large article:</strong> Select 5+ images for comprehensive visual support
                           </p>
                         </div>
                       </div>
