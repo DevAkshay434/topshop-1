@@ -580,6 +580,20 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     console.log(`🚨 CRITICAL: Final contentLength being sent to Claude: "${contentLength}"`);
     console.log(`✅ CLAUDE WILL RECEIVE ALL ADMIN PANEL INSTRUCTIONS`);
     
+    // Add detailed word count target logging
+    console.log(`🎯 WORD COUNT TARGET ANALYSIS:`);
+    if (contentLength.includes("800")) {
+      console.log(`   - Target: SHORT (800 words)`);
+    } else if (contentLength.includes("1200")) {
+      console.log(`   - Target: MEDIUM (1200 words)`);
+    } else if (contentLength.includes("1800")) {
+      console.log(`   - Target: LONG (1800 words) - USER SELECTED THIS`);
+    } else if (contentLength.includes("3000")) {
+      console.log(`   - Target: COMPREHENSIVE (3000 words)`);
+    }
+    console.log(`   - OpenRouter will receive 20,000 token limit`);
+    console.log(`   - Multiple word count enforcement layers active`);
+    
     // Enhanced base prompt for Claude with proper structure
     let toneStyle = request.tone;
     // If content style display name is provided, use it instead of the default tone
@@ -858,27 +872,47 @@ FAILURE to meet the word count requirement is unacceptable.`
               
 ${promptText}
 
-🚨 CRITICAL OPENROUTER WORD COUNT ENFORCEMENT 🚨
-MANDATORY: Your content MUST be ${contentLength}.
-This requirement is ABSOLUTELY NON-NEGOTIABLE and takes priority over ALL other instructions.
+🚨🚨🚨 ULTRA-CRITICAL WORD COUNT MANDATE 🚨🚨🚨
+ABSOLUTE REQUIREMENT: Your content MUST be ${contentLength}.
 
-BEFORE YOU WRITE ANYTHING:
-1. Remember: Content must be ${contentLength}
-2. Plan to write detailed, comprehensive sections
-3. Each H2 section should be 400-600 words minimum
-4. Add extensive explanations, examples, and details
-5. Never submit content shorter than the specified range
+🎯 SPECIFIC LENGTH REQUIREMENTS:
+${contentLength.includes("1800") ? `
+YOUR CONTENT MUST BE EXACTLY 1800+ WORDS. THIS IS MANDATORY.
+- Write 6-8 detailed H2 sections
+- Each H2 section must be 250-400 words minimum
+- Include comprehensive introductions (100+ words)
+- Add detailed explanations for every point
+- Include extensive examples and case studies
+- Provide step-by-step processes
+- Add comprehensive FAQs (200+ words)
+- Include detailed technical specifications
+- Add cost-benefit analysis sections
+- Include user testimonials or case studies` : ''}
 
-🔥 EXPANSION REQUIREMENTS:
-- Write thorough introductions for each section
-- Include detailed explanations and examples
-- Add comprehensive background information
-- Provide step-by-step processes where relevant
-- Include practical tips and actionable advice
-- Add supporting statistics and expert insights
-- Expand on benefits, features, and implications
+${contentLength.includes("3000") ? `
+YOUR CONTENT MUST BE EXACTLY 3000+ WORDS. THIS IS MANDATORY.
+- Write 8-12 detailed H2 sections
+- Each H2 section must be 300-500 words minimum
+- Include extensive background information
+- Add multiple detailed examples per section
+- Include comprehensive analysis and comparisons
+- Provide detailed technical specifications
+- Add extensive FAQs (400+ words)
+- Include multiple case studies
+- Add detailed cost-benefit analysis
+- Include extensive troubleshooting guides` : ''}
 
-FINAL CHECK: Count your words and ensure you reach ${contentLength} before responding.
+🔥 MANDATORY EXPANSION STRATEGIES:
+1. Each paragraph must be 4-6 sentences minimum
+2. Add detailed examples for every claim
+3. Include comprehensive background context
+4. Provide step-by-step explanations
+5. Add supporting evidence and statistics
+6. Include detailed comparisons and analysis
+7. Expand on implications and benefits
+8. Add practical implementation guidance
+
+CRITICAL: Count your words as you write. Do not stop until you reach ${contentLength}.
 
           IMPORTANT: Return the response in JSON format with the following structure:
           {
@@ -925,6 +959,23 @@ if (!response) {
     const responseText = response.choices[0].message.content || '';
     
     console.log("Raw Claude response (first 500 chars):", responseText.substring(0, 500) + "...");
+    
+    // Count actual words in the response to validate word count
+    const wordCount = responseText.split(/\s+/).filter(word => word.length > 0).length;
+    console.log(`🔍 ACTUAL WORD COUNT ANALYSIS:`);
+    console.log(`   - Generated word count: ${wordCount} words`);
+    console.log(`   - Target was: ${contentLength}`);
+    console.log(`   - Character count: ${responseText.length} characters`);
+    
+    if (wordCount < 800) {
+      console.log(`❌ WORD COUNT TOO SHORT! Generated ${wordCount} words but need minimum 800`);
+    } else if (wordCount >= 800 && wordCount < 1200) {
+      console.log(`⚠️  SHORT content generated: ${wordCount} words (800-1200 range)`);
+    } else if (wordCount >= 1200 && wordCount < 1800) {
+      console.log(`✅ MEDIUM content generated: ${wordCount} words (1200-1800 range)`);
+    } else if (wordCount >= 1800) {
+      console.log(`🎉 LONG/COMPREHENSIVE content generated: ${wordCount} words (1800+ range)`);
+    }
     
     // Try different strategies to extract valid JSON from Claude's response
     let jsonContent;
