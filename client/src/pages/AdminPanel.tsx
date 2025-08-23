@@ -7248,12 +7248,51 @@ export default function AdminPanel() {
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center mb-2">
-                  <Info className="h-4 w-4 text-green-500 mr-2" />
-                  <span className="text-green-700 text-sm">
-                    Select additional product images to appear throughout your
-                    article body
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center mb-2">
+                    <Info className="h-4 w-4 text-green-500 mr-2" />
+                    <span className="text-green-700 text-sm">
+                      Select additional product images to appear throughout your
+                      article body
+                    </span>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-green-800 mb-1">
+                          Selection Guidelines:
+                        </p>
+                        <div className="text-xs text-green-700 space-y-0.5">
+                          {(() => {
+                            const articleLength = form.watch("articleLength");
+                            if (articleLength === "short") {
+                              return (
+                                <p>
+                                  <strong>Small article:</strong> Select 2–3 images for optimal content flow
+                                </p>
+                              );
+                            } else if (articleLength === "medium") {
+                              return (
+                                <p>
+                                  <strong>Medium article:</strong> Select 3–4 images for good visual balance
+                                </p>
+                              );
+                            } else {
+                              return (
+                                <p>
+                                  <strong>Large article:</strong> Select 5+ images for comprehensive visual support
+                                </p>
+                              );
+                            }
+                          })()}
+                          <p className="text-green-600 italic">
+                            You can select as many images as you need — these are just guidelines!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </DialogDescription>
