@@ -8082,7 +8082,6 @@ export default function AdminPanel() {
                                         title: "Primary image selected",
                                         description:
                                           "This image will appear as a featured image at the top of your content",
-                                        position: "top-right",
                                       });
                                     }}
                                   >
@@ -8177,7 +8176,6 @@ export default function AdminPanel() {
                                         title: "Secondary image selected",
                                         description:
                                           "This image will appear throughout your content body",
-                                        position: "top-right",
                                       });
                                     }}
                                   >
@@ -8452,7 +8450,6 @@ export default function AdminPanel() {
                                       title: "Primary image selected",
                                       description:
                                         "Image has been set as the primary featured image",
-                                      position: "top-right",
                                     });
                                   }}
                                 >
@@ -9562,7 +9559,6 @@ export default function AdminPanel() {
                                                 title: "Primary image selected",
                                                 description:
                                                   "Image will appear as the featured image",
-                                                position: "top-right",
                                               });
                                             }}
                                           >
@@ -10074,7 +10070,6 @@ export default function AdminPanel() {
                                   toast({
                                     title: "Primary image selected",
                                     description: `${image.alt || "Uploaded image"} has been set as the primary image`,
-                                    position: "top-right",
                                   });
                                 }}
                               >
@@ -10113,7 +10108,6 @@ export default function AdminPanel() {
                                     toast({
                                       title: "Secondary image added",
                                       description: `${image.alt || "Uploaded image"} has been added to secondary images`,
-                                      position: "top-right",
                                     });
 
                                     return {
