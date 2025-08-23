@@ -866,7 +866,7 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
 
         console.log('🔄 Making direct Anthropic API call...');
         response = await anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-3-7-sonnet-20250219',
           max_tokens: maxTokens,
           temperature: 0.8,
           system: `You are a professional content writer who MUST generate exactly ${contentLength}. This is critical - the user is paying specifically for ${contentLength} of content. You must write extensively with detailed explanations, multiple examples, comprehensive analysis, and thorough coverage of each topic. Never write short content - always expand with more details, examples, and explanations until you reach the exact word count target.`,
@@ -929,36 +929,23 @@ EXPANSION RULES FOR 1200 WORDS:
 - KEEP WRITING until you hit exactly 1200 words` : ''}
 
 ${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - NO SHORTCUTS ALLOWED!
-MANDATORY 1800-WORD STRUCTURE (NO SHORTCUTS):
-- Introduction: 400-450 words (extensive background, industry context, multiple statistics, problem analysis)
-- Main Section 1 (H2): 350-400 words with 2-3 H3 subsections (detailed explanations, examples, case studies)
-- Main Section 2 (H2): 350-400 words with 2-3 H3 subsections (step-by-step processes, best practices, troubleshooting)
-- Main Section 3 (H2): 350-400 words with 2-3 H3 subsections (advanced techniques, optimization strategies, implementation guide)
-- Main Section 4 (H2): 300-350 words with 2-3 H3 subsections (industry trends, future developments, expert insights)
-- FAQ section: 300-350 words (8-10 comprehensive questions with detailed multi-sentence answers)
-- Conclusion: 250-300 words (comprehensive summary, action items, next steps, final recommendations)
-TOTAL MINIMUM: 1800 WORDS - ANYTHING LESS IS UNACCEPTABLE!
+🚨 MANDATORY: EXACTLY 1800 WORDS - CLAUDE 3.7 MUST DELIVER!
+SIMPLIFIED 1800-WORD STRUCTURE:
+- Introduction: 300 words (background, statistics, overview)
+- 3 main H2 sections: 400-500 words each (1200-1500 words total)
+- FAQ section: 200 words (comprehensive questions)
+- Conclusion: 150 words (summary and next steps)
+TOTAL TARGET: 1800 words EXACTLY
 
-ULTRA-VERBOSE WRITING STRATEGY FOR 1800 WORDS:
-- Write like a professional textbook author - extremely detailed and comprehensive
-- Every paragraph must be 8-15 sentences with extensive explanations and context
-- Include detailed real-world examples with specific names, numbers, and scenarios
-- Add comprehensive background information explaining WHY each point matters
-- Use transitional phrases and elaborate on connections between concepts
-- Include detailed comparisons between different approaches and methodologies
-- Add extensive troubleshooting sections with multiple solution pathways
-- Provide step-by-step implementation guides with detailed sub-processes
-- Include comprehensive cost-benefit analysis with specific examples and calculations
-- Add detailed regulatory and compliance information with specific standards cited
-- Include extensive industry statistics, research findings, and expert testimonials
-- Write detailed case studies with specific outcomes and lessons learned
-- Add comprehensive glossaries and detailed explanations of technical terms
-- Include detailed maintenance schedules, optimization strategies, and performance metrics
-- Write extensive conclusions that tie together all concepts with actionable next steps
-- NEVER use single-sentence paragraphs - ALWAYS expand with supporting details
-- WRITE as if explaining to both beginners and experts simultaneously
-- COUNT WORDS CONTINUOUSLY - AIM FOR 1800+ WORDS EXACTLY` : ''}
+FOCUSED WRITING STRATEGY FOR 1800 WORDS:
+- Write comprehensive but focused content
+- Each H2 section: 400-500 words with detailed explanations
+- Include 2-3 detailed examples per section
+- Add specific statistics and expert insights
+- Use 6-8 sentences per paragraph
+- Include practical applications and real-world scenarios
+- Add detailed step-by-step processes where relevant
+- COUNT WORDS CONTINUOUSLY - TARGET EXACTLY 1800 WORDS` : ''}
 
 ${contentLength.includes("3000") ? `
 🚨 MANDATORY: EXACTLY 3000 WORDS - EFFICIENT COMPREHENSIVE APPROACH!
@@ -1423,7 +1410,7 @@ export async function generateTitles(request: {
     
     // Make API call to Claude directly
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-7-sonnet-20250219',
       max_tokens: 2000,
       temperature: 0.7,
       messages: [
@@ -1517,7 +1504,7 @@ export async function testClaudeConnection(): Promise<{ success: boolean; messag
     });
     
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-7-sonnet-20250219',
       max_tokens: 50,
       temperature: 0.7,
       messages: [
