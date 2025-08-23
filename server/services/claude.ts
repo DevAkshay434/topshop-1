@@ -846,7 +846,7 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
     } else if (contentLength.includes("1200")) {
       maxTokens = 6000; // For 1200 words - proven effective  
     } else if (contentLength.includes("1800")) {
-      maxTokens = 8000; // For 1800 words - increased for comprehensive content
+      maxTokens = 12000; // For 1800 words - maximum possible allocation
     } else if (contentLength.includes("3000")) {
       maxTokens = 8000; // For 3000 words - maximum allocation
     }
@@ -868,7 +868,8 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
         response = await anthropic.messages.create({
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: maxTokens,
-          temperature: 0.7,
+          temperature: 0.8,
+          system: `You are a professional content writer who MUST generate exactly ${contentLength}. This is critical - the user is paying specifically for ${contentLength} of content. You must write extensively with detailed explanations, multiple examples, comprehensive analysis, and thorough coverage of each topic. Never write short content - always expand with more details, examples, and explanations until you reach the exact word count target.`,
           messages: [
             {
               role: 'user',
@@ -880,6 +881,12 @@ YOUR RESPONSE MUST BE ${contentLength} - This is non-negotiable!`;
 🔴 NO EXCUSES, NO SHORTCUTS, NO CUTTING CONTENT SHORT 🔴
 🔴 WORD COUNT UNDER TARGET = UNACCEPTABLE PERFORMANCE 🔴
 🔴 EXPAND EVERY SECTION TO MEET MINIMUM REQUIREMENTS 🔴
+
+🎯 WORD COUNT STRATEGY: WRITE EXTENSIVELY, COUNT CONTINUOUSLY
+🎯 EACH PARAGRAPH MUST BE 8-10 SENTENCES MINIMUM
+🎯 ADD MULTIPLE EXAMPLES AND DETAILED EXPLANATIONS
+🎯 INCLUDE EXTENSIVE BACKGROUND INFORMATION AND CONTEXT
+🎯 NEVER STOP WRITING UNTIL YOU REACH THE EXACT TARGET
 
 🎯 STRICT WORD COUNT ENFORCEMENT:
 ${contentLength.includes("800") ? `
@@ -922,29 +929,36 @@ EXPANSION RULES FOR 1200 WORDS:
 - KEEP WRITING until you hit exactly 1200 words` : ''}
 
 ${contentLength.includes("1800") ? `
-🚨 MANDATORY: EXACTLY 1800 WORDS - AGGRESSIVE EXPANSION REQUIRED!
-MANDATORY STRUCTURE FOR 1800 WORDS:
-- Introduction: 300 words MINIMUM (comprehensive opening with context, statistics, and key points)
-- 5-6 main H2 sections: 300-350 words each MINIMUM (1500-2100 words total)  
-- Each H2 must include H3 subsections for depth
-- FAQ section: 200 words MINIMUM (5-6 detailed questions with full explanations)
-- Conclusion: 150 words MINIMUM (comprehensive wrap-up with actionable takeaways)
-TOTAL TARGET: 1800 words ABSOLUTE MINIMUM - MUST EXCEED TARGET!
+🚨 MANDATORY: EXACTLY 1800 WORDS - NO SHORTCUTS ALLOWED!
+MANDATORY 1800-WORD STRUCTURE (NO SHORTCUTS):
+- Introduction: 400-450 words (extensive background, industry context, multiple statistics, problem analysis)
+- Main Section 1 (H2): 350-400 words with 2-3 H3 subsections (detailed explanations, examples, case studies)
+- Main Section 2 (H2): 350-400 words with 2-3 H3 subsections (step-by-step processes, best practices, troubleshooting)
+- Main Section 3 (H2): 350-400 words with 2-3 H3 subsections (advanced techniques, optimization strategies, implementation guide)
+- Main Section 4 (H2): 300-350 words with 2-3 H3 subsections (industry trends, future developments, expert insights)
+- FAQ section: 300-350 words (8-10 comprehensive questions with detailed multi-sentence answers)
+- Conclusion: 250-300 words (comprehensive summary, action items, next steps, final recommendations)
+TOTAL MINIMUM: 1800 WORDS - ANYTHING LESS IS UNACCEPTABLE!
 
-ULTRA-AGGRESSIVE EXPANSION STRATEGY FOR 1800 WORDS:
-- Each H2 section: 4-5 substantial paragraphs (8-10 sentences each)
-- Include MULTIPLE detailed examples, case studies, and real-world scenarios
-- Add comprehensive step-by-step procedures with sub-steps
-- Use detailed explanations with supporting data and statistics
-- ADD specific technical details, expert insights, and industry standards
-- Include troubleshooting sections, best practices, and optimization tips
-- EXPAND every single point with thorough explanations and context
-- ADD H3 subsections within each H2 to provide more depth
-- INCLUDE comparison tables, lists, and detailed breakdowns
-- WRITE comprehensive explanations for every concept mentioned
-- NEVER use brief statements - ALWAYS elaborate extensively
-- KEEP WRITING until you reach EXACTLY 1800 words minimum
-- COUNT words continuously and expand content if under target` : ''}
+ULTRA-VERBOSE WRITING STRATEGY FOR 1800 WORDS:
+- Write like a professional textbook author - extremely detailed and comprehensive
+- Every paragraph must be 8-15 sentences with extensive explanations and context
+- Include detailed real-world examples with specific names, numbers, and scenarios
+- Add comprehensive background information explaining WHY each point matters
+- Use transitional phrases and elaborate on connections between concepts
+- Include detailed comparisons between different approaches and methodologies
+- Add extensive troubleshooting sections with multiple solution pathways
+- Provide step-by-step implementation guides with detailed sub-processes
+- Include comprehensive cost-benefit analysis with specific examples and calculations
+- Add detailed regulatory and compliance information with specific standards cited
+- Include extensive industry statistics, research findings, and expert testimonials
+- Write detailed case studies with specific outcomes and lessons learned
+- Add comprehensive glossaries and detailed explanations of technical terms
+- Include detailed maintenance schedules, optimization strategies, and performance metrics
+- Write extensive conclusions that tie together all concepts with actionable next steps
+- NEVER use single-sentence paragraphs - ALWAYS expand with supporting details
+- WRITE as if explaining to both beginners and experts simultaneously
+- COUNT WORDS CONTINUOUSLY - AIM FOR 1800+ WORDS EXACTLY` : ''}
 
 ${contentLength.includes("3000") ? `
 🚨 MANDATORY: EXACTLY 3000 WORDS - EFFICIENT COMPREHENSIVE APPROACH!
@@ -1101,9 +1115,23 @@ FOR 3000 WORDS ONLY:
           ❌ CONTENT UNDER TARGET WORD COUNT = FAILURE
           ✅ CONTENT AT EXACT TARGET WORD COUNT = SUCCESS
           
-          🚨 FINAL REMINDER: If your content is shorter than ${contentLength}, you have failed the task!
-          📊 WORD COUNT CHECK: Before finishing, count your words and ensure you meet the target!
-          🔄 EXPANSION REQUIRED: If under target, add more sections, examples, and detailed explanations!
+          🚨 CRITICAL WORD COUNT ENFORCEMENT FOR ${contentLength}:
+          
+          MANDATORY SECTION TARGETS (MUST MEET EACH):
+          📊 Introduction: MINIMUM 350 words (count as you write)
+          📊 Each H2 section: MINIMUM 300 words each (5 sections = 1500 words)
+          📊 FAQ section: MINIMUM 250 words (detailed questions)
+          📊 Conclusion: MINIMUM 200 words (comprehensive wrap-up)
+          📊 TOTAL TARGET: 1800+ words MANDATORY
+          
+          🔄 EXPANSION CHECKLIST - BEFORE FINISHING:
+          ✅ Count words in each section individually
+          ✅ If ANY section is under minimum, EXPAND IT IMMEDIATELY
+          ✅ Add more paragraphs, examples, and explanations until target met
+          ✅ Include detailed comparisons, case studies, and analysis
+          ✅ NEVER submit content under 1800 words
+          
+          FAILURE TO REACH 1800 WORDS = UNACCEPTABLE PERFORMANCE!
           
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
             }
