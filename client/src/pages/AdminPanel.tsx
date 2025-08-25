@@ -4511,7 +4511,7 @@ export default function AdminPanel() {
                       <div className="mb-6">
                         <div className="p-4 bg-slate-50 rounded-md mt-2">
                           <div className="mb-4">
-                            <h4 className="text-sm font-medium mb-1">
+                            <h4 className="text-lg font-medium mb-1">
                               Featured Image
                             </h4>
                             <p className="text-xs text-slate-500 mb-3">
@@ -4523,7 +4523,7 @@ export default function AdminPanel() {
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                               <Card className="overflow-hidden">
                                 <CardHeader className="p-3 bg-slate-100">
-                                  <CardTitle className="text-xs font-medium truncate">
+                                  <CardTitle className="text-md font-medium truncate">
                                     Search Free Images
                                   </CardTitle>
                                   <CardDescription className="text-xs">
@@ -4556,7 +4556,7 @@ export default function AdminPanel() {
 
                               <Card className="overflow-hidden">
                                 <CardHeader className="p-3 bg-slate-100">
-                                  <CardTitle className="text-sm">
+                                  <CardTitle className="text-md">
                                     Shopify Images
                                   </CardTitle>
                                   <CardDescription className="text-xs">
@@ -4601,7 +4601,7 @@ export default function AdminPanel() {
 
                               <Card className="overflow-hidden">
                                 <CardHeader className="p-3 bg-slate-100">
-                                  <CardTitle className="text-sm">
+                                  <CardTitle className="text-md">
                                     Upload Image
                                   </CardTitle>
                                   <CardDescription className="text-xs">

@@ -692,7 +692,14 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
-    - Include a meta description of 155-160 characters that includes at least 2 primary keywords
+    - Include a highly SEO-optimized meta description of 155-160 characters that:
+      * Contains at least 2 primary keywords from the provided keyword list (if available)
+      * Creates compelling value proposition or urgency to encourage clicks  
+      * Uses action words and emotional triggers (discover, learn, essential, ultimate, proven, etc.)
+      * Includes benefits or outcomes users will gain from reading
+      * Avoids keyword stuffing while maintaining natural readability
+      * Ends with a call-to-action phrase when appropriate
+      * Targets search intent and user curiosity to maximize click-through rates
     - Format the introduction paragraph special: Make the first sentence bold with <strong> tags AND add an extra line break (<br><br>) after the first bold sentence, then continue with regular spacing for remaining sentences
     - DO NOT generate content that compares competitor products or prices - focus solely on the features and benefits of our products
     - HEADING FORMATTING: In ALL titles, headings (H2, H3), and subheadings, replace the word "and" with "&" where appropriate (e.g., "Benefits and Features" becomes "Benefits & Features", "Installation and Maintenance" becomes "Installation & Maintenance")
@@ -827,7 +834,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
             "title": "The title of the blog post",
             "content": "The complete HTML content of the blog post",
             "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-            "metaDescription": "A compelling meta description of 155-160 characters that summarizes the content with keywords"
+            "metaDescription": "A highly SEO-optimized meta description (155-160 chars) that includes primary keywords, creates urgency/value, and encourages clicks"
           }
           
           Ensure the content is properly formatted with HTML tags. Do not include explanation of your process, just return the JSON.`
@@ -1169,6 +1176,100 @@ export async function generateTitles(request: {
   } catch (error: any) {
     console.error("Error generating titles with Claude:", error);
     throw new Error(`Failed to generate titles with Claude: ${error.message || 'Unknown error'}`);
+  }
+}
+
+// Function to optimize meta titles and descriptions with Claude
+export async function optimizeMetaData(
+  originalMeta: string,
+  keywords: string[],
+  type: 'title' | 'description'
+): Promise<string> {
+  try {
+    console.log(`Optimizing meta ${type} with Claude:`, originalMeta);
+    console.log(`Keywords available:`, keywords);
+    
+    const isTitle = type === 'title';
+    const maxLength = isTitle ? 60 : 160;
+    const minLength = isTitle ? 30 : 155;
+    
+    // Build keyword context
+    const keywordList = keywords.join(', ');
+    const keywordInstructions = keywords.length > 0 
+      ? `CRITICAL KEYWORD REQUIREMENTS:
+        - MUST include at least ${isTitle ? '1-2' : '2-3'} of these keywords: ${keywordList}
+        - Use keywords naturally without stuffing
+        - Primary keyword should appear early in the ${type}
+        - DO NOT generate new keywords - only use provided ones`
+      : 'Focus on compelling, SEO-friendly content';
+    
+    const systemPrompt = isTitle 
+      ? `Optimize this meta title for maximum SEO impact and click-through rates.
+        
+        ${keywordInstructions}
+        
+        TITLE OPTIMIZATION REQUIREMENTS:
+        - Length: ${minLength}-${maxLength} characters (strict limit)
+        - Include primary keywords early in the title
+        - Create urgency, value, or curiosity
+        - Use power words: Ultimate, Complete, Essential, Proven, Expert, etc.
+        - Be specific and compelling
+        - Target search intent directly
+        - Avoid generic phrases and keyword stuffing
+        
+        Return ONLY the optimized title, nothing else.`
+      : `Optimize this meta description for maximum SEO impact and click-through rates.
+        
+        ${keywordInstructions}
+        
+        DESCRIPTION OPTIMIZATION REQUIREMENTS:
+        - Length: ${minLength}-${maxLength} characters (strict limit)
+        - Include 2-3 primary keywords naturally
+        - Create compelling value proposition
+        - Use action words: Discover, Learn, Get, Find, Unlock, etc.
+        - Include benefits and outcomes
+        - Add urgency or exclusivity when appropriate
+        - End with call-to-action when possible
+        - Target user search intent and curiosity
+        - Be specific and avoid generic descriptions
+        
+        Return ONLY the optimized meta description, nothing else.`;
+
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 200,
+      messages: [
+        {
+          role: 'user',
+          content: `Original meta ${type}: "${originalMeta}"
+          
+          ${systemPrompt}`
+        }
+      ],
+    });
+    
+    const optimizedMeta = response.content[0].type === 'text' 
+      ? response.content[0].text.trim()
+      : '';
+    
+    // Ensure length constraints
+    if (optimizedMeta.length > maxLength) {
+      const truncated = optimizedMeta.substring(0, maxLength - 3) + '...';
+      console.log(`✂️ Truncated meta ${type} from ${optimizedMeta.length} to ${truncated.length} characters`);
+      return truncated;
+    }
+    
+    if (optimizedMeta.length < minLength && originalMeta.length >= minLength) {
+      console.log(`⚠️ Optimized meta ${type} too short (${optimizedMeta.length} chars), keeping original`);
+      return originalMeta;
+    }
+    
+    console.log(`✅ Meta ${type} optimized successfully: "${optimizedMeta}" (${optimizedMeta.length} chars)`);
+    return optimizedMeta;
+    
+  } catch (error: any) {
+    console.error(`Error optimizing meta ${type}:`, error);
+    return originalMeta; // Return original if optimization fails
   }
 }
 
