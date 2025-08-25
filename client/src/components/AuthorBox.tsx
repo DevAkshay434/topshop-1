@@ -128,7 +128,7 @@ export function generateWrittenByHTML(author: {
     <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0; padding: 8px 0; text-align: center;" >
       ${avatarImg}
       <span style="color: #6b7280; font-size: 14px;">
-        Written by <a href="#author-${author.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
+        Written by <a href="#author-box" style="color: #2563eb; text-decoration: none; font-weight: 500;">${author.name}</a>${readingTimeText}
       </span>
     </div>
   `;
