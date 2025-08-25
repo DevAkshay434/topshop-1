@@ -2242,7 +2242,7 @@ Place this at a logical position in the content, typically after introducing a c
               const fullDescription = author.description || '';
 
               const writtenBySection = `
-                <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                <div id="author-box" style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
                   <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
                     <div style="flex-shrink: 0;">
                       ${avatarElement}
@@ -2557,7 +2557,7 @@ Place this at a logical position in the content, typically after introducing a c
               const fullDescription = author.description || '';
 
               const writtenBySection = `
-                <div style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
+                <div id="author-box" style="border-top: 1px solid #e5e7eb; margin: 40px 0 20px 0; padding: 24px 0;">
                   <div style="display: flex; align-items: flex-start; gap: 16px; max-width: 600px; margin: 0 auto;">
                     <div style="flex-shrink: 0;">
                       ${avatarElement}
