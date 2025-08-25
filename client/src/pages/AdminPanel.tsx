@@ -5850,49 +5850,51 @@ export default function AdminPanel() {
                     </div>
                   </div>
 
-                  {/* Content Tags Section */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Content Tags
-                      </h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const newTags = prompt(
-                            "Edit tags (comma-separated):",
-                            (generatedContent.tags || []).join(", "),
-                          );
-                          if (newTags !== null) {
-                            setGeneratedContent((prev) => ({
-                              ...prev,
-                              tags: newTags
-                                .split(",")
-                                .map((tag) => tag.trim())
-                                .filter((tag) => tag.length > 0),
-                            }));
-                          }
-                        }}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
+                  {/* Content Tags Section - Only show for blog posts, not pages */}
+                  {form.getValues("articleType") === "blog" && (
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Content Tags
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newTags = prompt(
+                              "Edit tags (comma-separated):",
+                              (generatedContent.tags || []).join(", "),
+                            );
+                            if (newTags !== null) {
+                              setGeneratedContent((prev) => ({
+                                ...prev,
+                                tags: newTags
+                                  .split(",")
+                                  .map((tag) => tag.trim())
+                                  .filter((tag) => tag.length > 0),
+                              }));
+                            }
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {(generatedContent.tags || []).map((tag, index) => (
+                          <Badge key={index} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {(!generatedContent.tags ||
+                          generatedContent.tags.length === 0) && (
+                          <p className="text-sm text-muted-foreground">
+                            No tags assigned
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(generatedContent.tags || []).map((tag, index) => (
-                        <Badge key={index} variant="secondary">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {(!generatedContent.tags ||
-                        generatedContent.tags.length === 0) && (
-                        <p className="text-sm text-muted-foreground">
-                          No tags assigned
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Meta Title Section */}
                   <div className="border-b border-gray-200 pb-4">
