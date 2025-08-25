@@ -176,7 +176,7 @@ export function ProjectSaveDialog({
               <div className="flex-1 space-y-3">
                 <Label htmlFor="new" className="text-base font-medium cursor-pointer flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Save as a New Project
+                  Create a New Project
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   Create a new project with your current work
@@ -217,7 +217,7 @@ export function ProjectSaveDialog({
               <div className="flex-1 space-y-3">
                 <Label htmlFor="existing" className="text-base font-medium cursor-pointer flex items-center gap-2">
                   <FolderOpen className="h-4 w-4" />
-                  Save into an Existing Project
+                  Save as Existing Project
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   Update an existing project with your current work
