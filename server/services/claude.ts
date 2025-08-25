@@ -1252,10 +1252,28 @@ export async function optimizeMetaData(
       ? response.content[0].text.trim()
       : '';
     
-    // Ensure length constraints
+    // Ensure length constraints - truncate naturally without ellipsis
     if (optimizedMeta.length > maxLength) {
-      const truncated = optimizedMeta.substring(0, maxLength - 3) + '...';
-      console.log(`✂️ Truncated meta ${type} from ${optimizedMeta.length} to ${truncated.length} characters`);
+      // Find the last complete word that fits within the limit
+      let truncated = optimizedMeta.substring(0, maxLength);
+      const lastSpaceIndex = truncated.lastIndexOf(' ');
+      
+      // If we find a space, truncate at the last complete word
+      if (lastSpaceIndex > maxLength * 0.8) { // Only if we don't lose too much content
+        truncated = truncated.substring(0, lastSpaceIndex);
+      }
+      
+      // Ensure it ends with proper punctuation
+      if (!/[.!?]$/.test(truncated)) {
+        // Remove any trailing punctuation except period, exclamation, or question mark
+        truncated = truncated.replace(/[,;:\-\s]+$/, '');
+        // Add a period if it doesn't end with punctuation
+        if (truncated.length < maxLength && !/[.!?]$/.test(truncated)) {
+          truncated += '.';
+        }
+      }
+      
+      console.log(`✂️ Truncated meta ${type} naturally from ${optimizedMeta.length} to ${truncated.length} characters`);
       return truncated;
     }
     

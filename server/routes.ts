@@ -2784,20 +2784,26 @@ Please respond with ONLY the optimized meta description, no other text or explan
 
       // CRITICAL: Enforce 160 character limit server-side as a safety measure
       if (responseText.length > 160) {
-        console.warn(`Generated meta description too long (${responseText.length} chars), truncating to 160`);
-        // Smart truncation - cut at last complete word before 157 chars to avoid ellipsis
-        const truncated = responseText.substring(0, 157);
-        const lastSpace = truncated.lastIndexOf(' ');
-        // Only add ellipsis if we're cutting mid-word, prefer complete sentences
-        responseText = lastSpace > 140 ? truncated.substring(0, lastSpace) : truncated;
+        console.warn(`Generated meta description too long (${responseText.length} chars), truncating naturally`);
         
-        // Try to end with complete word/sentence, avoid ellipsis per prompt requirements
-        if (responseText.length < 160 && !responseText.endsWith('.') && !responseText.endsWith('!')) {
-          // Only add period if there's space and it makes sense
-          if (responseText.length < 160) {
-            responseText = responseText.trim();
-          }
+        // Find the last complete word that fits within 160 characters
+        let truncated = responseText.substring(0, 160);
+        const lastSpaceIndex = truncated.lastIndexOf(' ');
+        
+        // If we find a space and it's not too far back, truncate at the last complete word
+        if (lastSpaceIndex > 160 * 0.8) { // Only if we don't lose more than 20% of content
+          truncated = truncated.substring(0, lastSpaceIndex);
         }
+        
+        // Clean up any trailing punctuation except proper sentence endings
+        truncated = truncated.replace(/[,;:\-\s]+$/, '');
+        
+        // Add proper ending if needed and space allows
+        if (truncated.length < 160 && !/[.!?]$/.test(truncated)) {
+          truncated += '.';
+        }
+        
+        responseText = truncated.trim();
       }
 
       console.log('AI meta description optimization response:', responseText);
