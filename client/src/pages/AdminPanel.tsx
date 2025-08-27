@@ -1682,10 +1682,7 @@ export default function AdminPanel() {
     if (formValues.articleType === "blog" && !formValues.blogId)
       missing.push("Blog Selection");
     
-    // Debug keyword state
-    console.log('Debug - selectedKeywords:', selectedKeywords);
-    console.log('Debug - selectedKeywords.length:', selectedKeywords.length);
-    console.log('Debug - manualKeyword:', manualKeyword);
+    // Check keyword state for validation
     
     if (!selectedKeywords || selectedKeywords.length === 0) {
       if (manualKeyword.trim()) {
