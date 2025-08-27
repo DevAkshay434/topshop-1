@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +55,24 @@ export default function PlansPage() {
 
   // Get current store ID from localStorage or context
   const storeId = localStorage.getItem('selectedStoreId') || '1';
+
+  // Check if user returned from successful Shopify payment
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      // Clear the URL parameter
+      window.history.replaceState({}, '', window.location.pathname);
+      
+      // Refresh billing data after successful payment
+      queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
+      
+      toast({
+        title: "Payment Successful!",
+        description: "Your subscription has been updated successfully.",
+      });
+    }
+  }, [queryClient, storeId]);
 
   const { data: plansData, isLoading: plansLoading } = useQuery({
     queryKey: ['/api/billing/plans'],
