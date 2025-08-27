@@ -276,4 +276,170 @@ router.put('/plan/:storeId', async (req, res) => {
   }
 });
 
+/**
+ * Get subscription status for a store - alias for /subscription/:storeId
+ */
+router.get('/status/:storeId', async (req, res) => {
+  try {
+    const storeId = parseInt(req.params.storeId);
+    if (isNaN(storeId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid store ID'
+      });
+    }
+
+    const store = await storage.getShopifyStore(storeId);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    const subscriptionStatus = await getSubscriptionStatus(store);
+    
+    res.json({
+      success: true,
+      subscription: subscriptionStatus
+    });
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch subscription status'
+    });
+  }
+});
+
+/**
+ * Create subscription without store ID in URL (gets store ID from request body)
+ */
+router.post('/subscribe', async (req, res) => {
+  try {
+    const { storeId, planType, returnUrl } = req.body;
+    
+    if (!storeId || isNaN(parseInt(storeId))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid store ID is required'
+      });
+    }
+
+    if (!Object.values(PlanType).includes(planType)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid plan type'
+      });
+    }
+
+    if (!returnUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Return URL is required'
+      });
+    }
+
+    const store = await storage.getShopifyStore(parseInt(storeId));
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Handle free plan - no Shopify subscription needed
+    if (planType === PlanType.FREE) {
+      await storage.updateShopifyStore(store.id, {
+        planName: planType,
+        chargeId: null
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Successfully switched to free plan',
+        planType: planType
+      });
+    }
+
+    // Handle custom plan - requires manual setup
+    if (planType === PlanType.CUSTOM) {
+      return res.json({
+        success: true,
+        message: 'Custom plan requires manual setup. Please contact support.',
+        requiresContact: true,
+        planType: planType
+      });
+    }
+
+    // Create Shopify subscription for paid plans
+    const subscription = await createSubscription(store, planType, returnUrl);
+    
+    res.json({
+      success: true,
+      confirmationUrl: subscription.confirmationUrl,
+      planType: planType
+    });
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create subscription'
+    });
+  }
+});
+
+/**
+ * Cancel subscription for a store
+ */
+router.post('/cancel', async (req, res) => {
+  try {
+    const { storeId } = req.body;
+    
+    if (!storeId || isNaN(parseInt(storeId))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid store ID is required'
+      });
+    }
+
+    const store = await storage.getShopifyStore(parseInt(storeId));
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Cancel the subscription
+    const subscriptionId = store.chargeId || '';
+    if (!subscriptionId) {
+      // Just update the store to free plan if no active subscription
+      await storage.updateShopifyStore(store.id, {
+        planName: PlanType.FREE,
+        chargeId: null
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Plan updated to free - no active subscription to cancel'
+      });
+    }
+    
+    const result = await cancelSubscription(store, subscriptionId);
+    
+    res.json({
+      success: true,
+      message: 'Subscription cancelled successfully',
+      result
+    });
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to cancel subscription'
+    });
+  }
+});
+
 export default router;

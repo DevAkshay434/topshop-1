@@ -47,7 +47,7 @@ export default function BillingSettings() {
 
   // Fetch plans
   const { data: plansData, isLoading: plansLoading } = useQuery({
-    queryKey: ['/api/plans'], 
+    queryKey: ['/api/billing/plans'], 
     enabled: true
   });
 
