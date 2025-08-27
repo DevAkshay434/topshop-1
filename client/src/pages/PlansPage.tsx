@@ -63,14 +63,36 @@ export default function PlansPage() {
       // Clear the URL parameter
       window.history.replaceState({}, '', window.location.pathname);
       
-      // Refresh billing data after successful payment
-      queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
+      // Sync plan from Shopify to ensure database is updated
+      const syncPlan = async () => {
+        try {
+          await apiRequest({
+            url: `/api/billing/sync-plan/${storeId}`,
+            method: 'POST'
+          });
+          
+          // Refresh billing data after successful sync
+          queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
+          queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
+          
+          toast({
+            title: "Payment Successful!",
+            description: "Your subscription has been activated successfully.",
+          });
+        } catch (error) {
+          console.error('Error syncing plan:', error);
+          // Still refresh data even if sync fails
+          queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
+          queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
+          
+          toast({
+            title: "Payment Successful!",
+            description: "Your subscription has been updated. Please refresh if you don't see changes.",
+          });
+        }
+      };
       
-      toast({
-        title: "Payment Successful!",
-        description: "Your subscription has been updated successfully.",
-      });
+      syncPlan();
     }
   }, [queryClient, storeId]);
 
@@ -82,6 +104,7 @@ export default function PlansPage() {
   const { data: usageData, isLoading: usageLoading } = useQuery({
     queryKey: [`/api/billing/usage/${storeId}`],
     enabled: !!storeId,
+    refetchInterval: 30000, // Refetch every 30 seconds to catch plan updates
   });
 
   const { data: limitData, isLoading: limitLoading } = useQuery({
@@ -109,13 +132,32 @@ export default function PlansPage() {
           description: "Please contact our support team to set up your custom plan.",
         });
       } else {
+        // For free plan updates, also sync to ensure consistency
+        if (data.planType === 'free') {
+          const syncPlan = async () => {
+            try {
+              await apiRequest({
+                url: `/api/billing/sync-plan/${storeId}`,
+                method: 'POST'
+              });
+            } catch (error) {
+              console.error('Error syncing free plan:', error);
+            }
+            // Refetch usage and limit data
+            queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
+          };
+          syncPlan();
+        } else {
+          // Refetch usage and limit data
+          queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
+          queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
+        }
+        
         toast({
           title: "Success!",
           description: data.message || "Plan updated successfully",
         });
-        // Refetch usage and limit data
-        queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
-        queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
       }
     },
     onError: (error: any) => {

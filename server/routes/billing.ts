@@ -52,6 +52,39 @@ router.get('/usage/:storeId', async (req, res) => {
 
     const usageStats = await getUsageStats(storeId);
     
+    // Optional: Auto-sync if there seems to be a discrepancy
+    // This happens when ?sync=true parameter is passed
+    if (req.query.sync === 'true') {
+      try {
+        const store = await storage.getShopifyStore(storeId);
+        if (store) {
+          const subscriptionStatus = await getSubscriptionStatus(store);
+          
+          // Check if there's a mismatch between database and Shopify
+          if (usageStats.planType !== subscriptionStatus.plan) {
+            console.log(`Plan mismatch detected for store ${storeId}: DB=${usageStats.planType}, Shopify=${subscriptionStatus.plan}. Auto-syncing...`);
+            
+            await storage.updateShopifyStore(storeId, {
+              planName: subscriptionStatus.plan
+            });
+            
+            // Get updated usage stats
+            const updatedUsage = await getUsageStats(storeId);
+            return res.json({
+              success: true,
+              usage: updatedUsage,
+              synced: true,
+              oldPlan: usageStats.planType,
+              newPlan: subscriptionStatus.plan
+            });
+          }
+        }
+      } catch (syncError) {
+        console.error('Error during auto-sync:', syncError);
+        // Continue with original usage data if sync fails
+      }
+    }
+    
     res.json({
       success: true,
       usage: usageStats
