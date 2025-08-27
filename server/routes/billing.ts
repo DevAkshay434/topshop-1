@@ -521,4 +521,121 @@ router.post('/sync-plan/:storeId', async (req, res) => {
   }
 });
 
+/**
+ * Webhook handler for Shopify subscription events
+ */
+router.post('/webhook/subscription', async (req, res) => {
+  try {
+    const { topic, shop, ...eventData } = req.body;
+    
+    console.log(`Received Shopify webhook: ${topic} for shop: ${shop}`);
+    
+    // Find the store by shop domain
+    const store = await storage.getShopifyStoreByDomain(shop);
+    if (!store) {
+      console.error(`Store not found for domain: ${shop}`);
+      return res.status(404).json({ error: 'Store not found' });
+    }
+    
+    switch (topic) {
+      case 'app_subscriptions/update':
+        // Handle subscription updates (including payment failures)
+        if (eventData.status === 'CANCELLED' || eventData.status === 'DECLINED') {
+          console.log(`Subscription ${eventData.status.toLowerCase()} for store ${store.id}. Downgrading to free plan.`);
+          
+          await storage.updateShopifyStore(store.id, {
+            planName: PlanType.FREE,
+            chargeId: null
+          });
+        }
+        break;
+        
+      case 'app/uninstalled':
+        // Handle app uninstallation
+        console.log(`App uninstalled for store ${store.id}. Setting as uninstalled.`);
+        
+        await storage.updateShopifyStore(store.id, {
+          isConnected: false,
+          uninstalledAt: new Date(),
+          planName: PlanType.FREE,
+          chargeId: null
+        });
+        break;
+        
+      default:
+        console.log(`Unhandled webhook topic: ${topic}`);
+    }
+    
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error('Error processing subscription webhook:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+/**
+ * Monthly payment verification job (can be called via cron)
+ */
+router.post('/verify-payments', async (req, res) => {
+  try {
+    const stores = await storage.getShopifyStores();
+    const results = [];
+    
+    for (const store of stores) {
+      // Skip free plans and unconnected stores
+      if (!store.isConnected || store.planName === PlanType.FREE) {
+        continue;
+      }
+      
+      try {
+        const subscriptionStatus = await getSubscriptionStatus(store);
+        
+        // Check if subscription is still active and payments are current
+        if (!subscriptionStatus.active || subscriptionStatus.plan === PlanType.FREE) {
+          console.log(`Monthly verification: Downgrading store ${store.id} due to payment failure`);
+          
+          await storage.updateShopifyStore(store.id, {
+            planName: PlanType.FREE
+          });
+          
+          results.push({
+            storeId: store.id,
+            shop: store.shopName,
+            action: 'downgraded',
+            reason: 'payment_failed'
+          });
+        } else {
+          results.push({
+            storeId: store.id,
+            shop: store.shopName,
+            action: 'verified',
+            plan: subscriptionStatus.plan
+          });
+        }
+      } catch (error) {
+        console.error(`Error verifying payments for store ${store.id}:`, error);
+        
+        results.push({
+          storeId: store.id,
+          shop: store.shopName,
+          action: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Verified ${stores.length} stores`,
+      results
+    });
+  } catch (error) {
+    console.error('Error in payment verification job:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Payment verification failed'
+    });
+  }
+});
+
 export default router;

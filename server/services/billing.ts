@@ -243,9 +243,17 @@ export async function getSubscriptionStatus(store: ShopifyStore): Promise<{
         plan = PlanType.CUSTOM;
       }
       
+      // Check if subscription is truly active and payments are current
+      const isActive = subscription.status === 'ACTIVE';
+      const currentDate = new Date();
+      const periodEnd = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null;
+      
+      // If period has ended and subscription is not renewed, consider it inactive
+      const isPastDue = periodEnd && currentDate > periodEnd;
+      
       return {
-        active: subscription.status === 'ACTIVE',
-        plan,
+        active: isActive && !isPastDue,
+        plan: (isActive && !isPastDue) ? plan : PlanType.FREE,
         trialDays: subscription.trialDays || 0,
         trialEndsAt: subscription.currentPeriodEnd || null
       };
@@ -427,7 +435,42 @@ export async function getUsageStats(storeId: number): Promise<{
       throw new Error('Store not found');
     }
 
-    const currentPlan = (store.planName as PlanType) || PlanType.FREE;
+    // Verify payment status by checking Shopify subscription
+    let currentPlan = (store.planName as PlanType) || PlanType.FREE;
+    
+    // For paid plans, verify with Shopify that payments are current
+    if (currentPlan !== PlanType.FREE) {
+      try {
+        const subscriptionStatus = await getSubscriptionStatus(store);
+        
+        // If Shopify shows inactive or payment failed, downgrade to free
+        if (!subscriptionStatus.active || subscriptionStatus.plan === PlanType.FREE) {
+          console.log(`Payment verification failed for store ${storeId}. Downgrading to free plan.`);
+          
+          // Update database to reflect payment failure
+          await storage.updateShopifyStore(storeId, {
+            planName: PlanType.FREE
+          });
+          
+          currentPlan = PlanType.FREE;
+        } else if (subscriptionStatus.plan !== currentPlan) {
+          // Sync plan if there's a mismatch
+          console.log(`Plan mismatch detected for store ${storeId}. Syncing to ${subscriptionStatus.plan}.`);
+          await storage.updateShopifyStore(storeId, {
+            planName: subscriptionStatus.plan
+          });
+          currentPlan = subscriptionStatus.plan;
+        }
+      } catch (error) {
+        console.error(`Error verifying subscription for store ${storeId}:`, error);
+        // On verification error, downgrade to free plan for safety
+        await storage.updateShopifyStore(storeId, {
+          planName: PlanType.FREE
+        });
+        currentPlan = PlanType.FREE;
+      }
+    }
+
     const planConfig = PLANS[currentPlan];
     
     // Check if we need to reset monthly usage
