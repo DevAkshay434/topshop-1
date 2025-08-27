@@ -61,12 +61,12 @@ export default function PlansPage() {
   });
 
   const { data: usageData, isLoading: usageLoading } = useQuery({
-    queryKey: ['/api/billing/usage', storeId],
+    queryKey: [`/api/billing/usage/${storeId}`],
     enabled: !!storeId,
   });
 
   const { data: limitData, isLoading: limitLoading } = useQuery({
-    queryKey: ['/api/billing/check-limits', storeId],
+    queryKey: [`/api/billing/check-limits/${storeId}`],
     enabled: !!storeId,
   });
 
@@ -95,8 +95,8 @@ export default function PlansPage() {
           description: data.message || "Plan updated successfully",
         });
         // Refetch usage and limit data
-        queryClient.invalidateQueries({ queryKey: ['/api/billing/usage', storeId] });
-        queryClient.invalidateQueries({ queryKey: ['/api/billing/check-limits', storeId] });
+        queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
       }
     },
     onError: (error: any) => {

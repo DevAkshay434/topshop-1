@@ -41,7 +41,7 @@ export default function BillingSettings() {
 
   // Fetch billing status once we have a store ID
   const { data: billingStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ['/api/billing/status', storeId],
+    queryKey: [`/api/billing/status/${storeId}`],
     enabled: !!storeId
   });
 
@@ -77,7 +77,7 @@ export default function BillingSettings() {
           title: 'Subscription Created',
           description: 'Your subscription has been created successfully.',
         });
-        queryClient.invalidateQueries({ queryKey: ['/api/billing/status', storeId] });
+        queryClient.invalidateQueries({ queryKey: [`/api/billing/status/${storeId}`] });
       }
     },
     onError: (error) => {
@@ -104,7 +104,7 @@ export default function BillingSettings() {
         title: 'Subscription Cancelled',
         description: 'Your subscription has been cancelled successfully.',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/billing/status', storeId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/billing/status/${storeId}`] });
     },
     onError: (error) => {
       toast({
