@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         // Step 2: Upload file to staged URL
         const formData = new FormData();
-        stagedTarget.parameters.forEach(param => {
+        stagedTarget.parameters.forEach((param: any) => {
           formData.append(param.name, param.value);
         });
         formData.append('file', req.file.buffer, {
@@ -375,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         console.error('Shopify upload error:', shopifyError);
         
         // Check if it's a permission error
-        const isPermissionError = shopifyError.message && shopifyError.message.includes('Access denied');
+        const isPermissionError = (shopifyError as any)?.message && (shopifyError as any).message.includes('Access denied');
         
         // Create a unique filename for local storage
         const timestamp = Date.now();
@@ -442,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         apiKey: process.env.SHOPIFY_API_KEY || ''
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -612,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const connection = await storage.getShopifyConnection();
       res.json({ connection });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -675,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const stores = await storage.getShopifyStores();
       res.json({ stores });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -696,7 +696,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ store });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -750,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -770,7 +770,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ success: true, connection: updatedConnection });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -794,7 +794,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ blogs });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ success: true, connection: updatedConnection });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -933,7 +933,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ success: true, syncedCount });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -982,7 +982,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -1018,7 +1018,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ posts: postsWithAuthors });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -1358,7 +1358,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     } catch (error) {
       console.error('Error fetching scheduled posts:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -1386,7 +1386,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -1513,7 +1513,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     } catch (error) {
       console.error('Error updating scheduled post:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -1523,7 +1523,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const posts = await storage.getPublishedPosts();
       res.json({ posts });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -1544,7 +1544,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ post });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -2186,7 +2186,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -2348,7 +2348,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -2427,7 +2427,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -2440,7 +2440,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const activities = await storage.getSyncActivities(limit);
       res.json({ activities });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -3160,7 +3160,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
         totalViews: totalViews
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -3215,7 +3215,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.json({ authors: formattedAuthors });
     } catch (error: any) {
       console.error("Error fetching authors:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -3289,7 +3289,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.json({ author: formattedAuthor });
     } catch (error: any) {
       console.error("Error creating author:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -3343,7 +3343,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.json({ author: formattedAuthor });
     } catch (error: any) {
       console.error("Error updating author:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -3386,7 +3386,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error deleting author:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -3404,7 +3404,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.json({ projects });
     } catch (error: any) {
       console.error("Error fetching projects:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -3429,7 +3429,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.json({ project });
     } catch (error: any) {
       console.error("Error fetching project:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -3470,7 +3470,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       res.status(201).json({ project });
     } catch (error: any) {
       console.error("Error creating project:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 
@@ -3517,7 +3517,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       if (error.message.includes("not found")) {
         res.status(404).json({ error: "Project not found" });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: (error as any).message });
       }
     }
   });
@@ -3542,7 +3542,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       if (error.message.includes("not found")) {
         res.status(404).json({ error: "Project not found" });
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: (error as any).message });
       }
     }
   });
@@ -3807,7 +3807,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       res.json(result);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -3832,7 +3832,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       res.json(status);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -3857,7 +3857,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       res.json({ success: result });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
   
@@ -3909,7 +3909,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       }
     } catch (error: any) {
       console.error('Image proxy error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: (error as any).message });
     }
   });
 

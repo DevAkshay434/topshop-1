@@ -1246,115 +1246,11 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  // Multi-store Shopify operations
-  async getShopifyStores(): Promise<ShopifyStore[]> {
-    return db.select().from(shopifyStores);
-  }
-
   async getShopifyStoreByDomain(shopDomain: string): Promise<ShopifyStore | undefined> {
     const [store] = await db.select()
       .from(shopifyStores)
       .where(eq(shopifyStores.shopName, shopDomain));
     return store;
-  }
-
-  async getAllStores(): Promise<ShopifyStore[]> {
-    return db.select().from(shopifyStores);
-  }
-
-  async getStoreById(id: number): Promise<ShopifyStore | undefined> {
-    const [store] = await db.select()
-      .from(shopifyStores)
-      .where(eq(shopifyStores.id, id));
-    return store;
-  }
-
-  async getStoreByShopName(shopName: string): Promise<ShopifyStore | undefined> {
-    const [store] = await db.select()
-      .from(shopifyStores)
-      .where(eq(shopifyStores.shopName, shopName));
-    return store;
-  }
-
-  async getShopifyStore(id: number): Promise<ShopifyStore | undefined> {
-    const [store] = await db.select()
-      .from(shopifyStores)
-      .where(eq(shopifyStores.id, id));
-    return store;
-  }
-
-  async createShopifyStore(store: InsertShopifyStore): Promise<ShopifyStore> {
-    const [newStore] = await db.insert(shopifyStores)
-      .values({
-        shopName: store.shopName,
-        accessToken: store.accessToken,
-        scope: store.scope,
-        defaultBlogId: store.defaultBlogId || null,
-        isConnected: store.isConnected !== undefined ? store.isConnected : true,
-        planName: store.planName || null,
-        chargeId: store.chargeId || null,
-        trialEndsAt: store.trialEndsAt || null
-      })
-      .returning();
-    return newStore;
-  }
-
-  async updateShopifyStore(id: number, store: Partial<ShopifyStore>): Promise<ShopifyStore> {
-    // Create a clean update object with only the fields that are present
-    const updateData: Record<string, any> = {};
-    
-    if (store.shopName !== undefined) updateData.shopName = store.shopName;
-    if (store.accessToken !== undefined) updateData.accessToken = store.accessToken;
-    if (store.scope !== undefined) updateData.scope = store.scope;
-    if (store.defaultBlogId !== undefined) updateData.defaultBlogId = store.defaultBlogId;
-    if (store.isConnected !== undefined) updateData.isConnected = store.isConnected;
-    if (store.lastSynced !== undefined) updateData.lastSynced = store.lastSynced;
-    if (store.uninstalledAt !== undefined) updateData.uninstalledAt = store.uninstalledAt;
-    if (store.planName !== undefined) updateData.planName = store.planName;
-    if (store.chargeId !== undefined) updateData.chargeId = store.chargeId;
-    if (store.trialEndsAt !== undefined) updateData.trialEndsAt = store.trialEndsAt;
-    
-    const [updatedStore] = await db.update(shopifyStores)
-      .set(updateData)
-      .where(eq(shopifyStores.id, id))
-      .returning();
-    
-    return updatedStore;
-  }
-
-  // User-store relationship operations
-  async getUserStores(userId: number): Promise<ShopifyStore[]> {
-    // Join user_stores with shopify_stores to get all stores for a user
-    const stores = await db.select({
-        id: shopifyStores.id,
-        shopName: shopifyStores.shopName,
-        accessToken: shopifyStores.accessToken,
-        scope: shopifyStores.scope,
-        defaultBlogId: shopifyStores.defaultBlogId,
-        isConnected: shopifyStores.isConnected,
-        lastSynced: shopifyStores.lastSynced,
-        installedAt: shopifyStores.installedAt,
-        uninstalledAt: shopifyStores.uninstalledAt,
-        planName: shopifyStores.planName,
-        chargeId: shopifyStores.chargeId,
-        trialEndsAt: shopifyStores.trialEndsAt
-      })
-      .from(shopifyStores)
-      .innerJoin(userStores, eq(userStores.storeId, shopifyStores.id))
-      .where(eq(userStores.userId, userId));
-    
-    return stores;
-  }
-
-  async createUserStore(userStore: InsertUserStore): Promise<UserStore> {
-    const [newUserStore] = await db.insert(userStores)
-      .values({
-        userId: userStore.userId,
-        storeId: userStore.storeId,
-        role: userStore.role || 'member'
-      })
-      .returning();
-    return newUserStore;
   }
 
 
@@ -1431,6 +1327,146 @@ export class DatabaseStorage implements IStorage {
     if (result.length === 0) {
       throw new Error(`Project with ID ${id} not found`);
     }
+  }
+
+  // Credit management operations
+  async getCreditPackages(): Promise<CreditPackage[]> {
+    return db.select().from(creditPackages);
+  }
+
+  async getActiveCreditPackages(): Promise<CreditPackage[]> {
+    return db.select().from(creditPackages).where(eq(creditPackages.isActive, true));
+  }
+
+  async getStoreCredits(storeId: number): Promise<StoreCredit | null> {
+    const [storeCredit] = await db.select().from(storeCredits).where(eq(storeCredits.storeId, storeId));
+    return storeCredit || null;
+  }
+
+  async createStoreCredits(storeCredit: InsertStoreCredit): Promise<StoreCredit> {
+    const [newStoreCredit] = await db.insert(storeCredits)
+      .values({
+        storeId: storeCredit.storeId,
+        availableCredits: storeCredit.availableCredits || 0,
+        totalPurchased: storeCredit.totalPurchased || 0,
+        totalUsed: storeCredit.totalUsed || 0,
+        lastUpdated: new Date()
+      })
+      .returning();
+    return newStoreCredit;
+  }
+
+  async updateStoreCredits(storeId: number, credits: Partial<StoreCredit>): Promise<StoreCredit> {
+    const updateData: Record<string, any> = { lastUpdated: new Date() };
+    
+    if (credits.availableCredits !== undefined) updateData.availableCredits = credits.availableCredits;
+    if (credits.totalPurchased !== undefined) updateData.totalPurchased = credits.totalPurchased;
+    if (credits.totalUsed !== undefined) updateData.totalUsed = credits.totalUsed;
+
+    const [updatedStoreCredit] = await db.update(storeCredits)
+      .set(updateData)
+      .where(eq(storeCredits.storeId, storeId))
+      .returning();
+    
+    if (!updatedStoreCredit) {
+      throw new Error(`Store credits not found for store ${storeId}`);
+    }
+    
+    return updatedStoreCredit;
+  }
+
+  async addCreditsToStore(storeId: number, creditsToAdd: number): Promise<StoreCredit> {
+    let storeCredit = await this.getStoreCredits(storeId);
+    if (!storeCredit) {
+      // Create new store credits record
+      storeCredit = await this.createStoreCredits({ storeId, availableCredits: 0, totalPurchased: 0, totalUsed: 0 });
+    }
+    
+    const updated = {
+      availableCredits: storeCredit.availableCredits + creditsToAdd,
+      totalPurchased: storeCredit.totalPurchased + creditsToAdd
+    };
+    
+    return this.updateStoreCredits(storeId, updated);
+  }
+
+  async useCreditsFromStore(storeId: number, creditsToUse: number): Promise<StoreCredit> {
+    const storeCredit = await this.getStoreCredits(storeId);
+    if (!storeCredit) {
+      throw new Error(`Store credits not found for store ${storeId}`);
+    }
+    
+    if (storeCredit.availableCredits < creditsToUse) {
+      throw new Error(`Insufficient credits. Available: ${storeCredit.availableCredits}, Required: ${creditsToUse}`);
+    }
+    
+    const updated = {
+      availableCredits: storeCredit.availableCredits - creditsToUse,
+      totalUsed: storeCredit.totalUsed + creditsToUse
+    };
+    
+    return this.updateStoreCredits(storeId, updated);
+  }
+
+  async createCreditPurchase(purchase: InsertCreditPurchase): Promise<CreditPurchase> {
+    const [newPurchase] = await db.insert(creditPurchases)
+      .values({
+        storeId: purchase.storeId,
+        packageId: purchase.packageId,
+        creditsAdded: purchase.creditsAdded,
+        pricePaid: purchase.pricePaid,
+        paymentIntentId: purchase.paymentIntentId || null,
+        status: purchase.status || "pending",
+        purchaseDate: new Date()
+      })
+      .returning();
+    return newPurchase;
+  }
+
+  async updateCreditPurchase(id: number, purchase: Partial<CreditPurchase>): Promise<CreditPurchase> {
+    const updateData: Record<string, any> = {};
+    
+    if (purchase.status !== undefined) updateData.status = purchase.status;
+    if (purchase.paymentIntentId !== undefined) updateData.paymentIntentId = purchase.paymentIntentId;
+
+    const [updatedPurchase] = await db.update(creditPurchases)
+      .set(updateData)
+      .where(eq(creditPurchases.id, id))
+      .returning();
+    
+    if (!updatedPurchase) {
+      throw new Error(`Credit purchase not found: ${id}`);
+    }
+    
+    return updatedPurchase;
+  }
+
+  async getCreditPurchaseHistory(storeId: number): Promise<CreditPurchase[]> {
+    return db.select()
+      .from(creditPurchases)
+      .where(eq(creditPurchases.storeId, storeId))
+      .orderBy(desc(creditPurchases.purchaseDate));
+  }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    const [newTransaction] = await db.insert(creditTransactions)
+      .values({
+        storeId: transaction.storeId,
+        postId: transaction.postId || null,
+        creditsUsed: transaction.creditsUsed,
+        transactionType: transaction.transactionType,
+        description: transaction.description || null,
+        transactionDate: new Date()
+      })
+      .returning();
+    return newTransaction;
+  }
+
+  async getCreditTransactions(storeId: number): Promise<CreditTransaction[]> {
+    return db.select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.storeId, storeId))
+      .orderBy(desc(creditTransactions.transactionDate));
   }
 }
 
@@ -1719,6 +1755,91 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.deleteProject(id, storeId),
       () => memStorage.deleteProject(id, storeId)
+    );
+  }
+
+  // Credit management operations
+  async getCreditPackages(): Promise<CreditPackage[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getCreditPackages(),
+      () => memStorage.getCreditPackages()
+    );
+  }
+
+  async getActiveCreditPackages(): Promise<CreditPackage[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getActiveCreditPackages(),
+      () => memStorage.getActiveCreditPackages()
+    );
+  }
+
+  async getStoreCredits(storeId: number): Promise<StoreCredit | null> {
+    return this.tryOrFallback(
+      () => dbStorage.getStoreCredits(storeId),
+      () => memStorage.getStoreCredits(storeId)
+    );
+  }
+
+  async createStoreCredits(storeCredit: InsertStoreCredit): Promise<StoreCredit> {
+    return this.tryOrFallback(
+      () => dbStorage.createStoreCredits(storeCredit),
+      () => memStorage.createStoreCredits(storeCredit)
+    );
+  }
+
+  async updateStoreCredits(storeId: number, credits: Partial<StoreCredit>): Promise<StoreCredit> {
+    return this.tryOrFallback(
+      () => dbStorage.updateStoreCredits(storeId, credits),
+      () => memStorage.updateStoreCredits(storeId, credits)
+    );
+  }
+
+  async addCreditsToStore(storeId: number, creditsToAdd: number): Promise<StoreCredit> {
+    return this.tryOrFallback(
+      () => dbStorage.addCreditsToStore(storeId, creditsToAdd),
+      () => memStorage.addCreditsToStore(storeId, creditsToAdd)
+    );
+  }
+
+  async useCreditsFromStore(storeId: number, creditsToUse: number): Promise<StoreCredit> {
+    return this.tryOrFallback(
+      () => dbStorage.useCreditsFromStore(storeId, creditsToUse),
+      () => memStorage.useCreditsFromStore(storeId, creditsToUse)
+    );
+  }
+
+  async createCreditPurchase(purchase: InsertCreditPurchase): Promise<CreditPurchase> {
+    return this.tryOrFallback(
+      () => dbStorage.createCreditPurchase(purchase),
+      () => memStorage.createCreditPurchase(purchase)
+    );
+  }
+
+  async updateCreditPurchase(id: number, purchase: Partial<CreditPurchase>): Promise<CreditPurchase> {
+    return this.tryOrFallback(
+      () => dbStorage.updateCreditPurchase(id, purchase),
+      () => memStorage.updateCreditPurchase(id, purchase)
+    );
+  }
+
+  async getCreditPurchaseHistory(storeId: number): Promise<CreditPurchase[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getCreditPurchaseHistory(storeId),
+      () => memStorage.getCreditPurchaseHistory(storeId)
+    );
+  }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    return this.tryOrFallback(
+      () => dbStorage.createCreditTransaction(transaction),
+      () => memStorage.createCreditTransaction(transaction)
+    );
+  }
+
+  async getCreditTransactions(storeId: number): Promise<CreditTransaction[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getCreditTransactions(storeId),
+      () => memStorage.getCreditTransactions(storeId)
     );
   }
 }
