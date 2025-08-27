@@ -4,13 +4,16 @@ import Stripe from "stripe";
 import { storage } from "../storage";
 import { canGenerateContentWithCredits, consumeUsageForContentGeneration, getStoreUsageAndCredits } from "../services/billing";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+// Initialize Stripe only if the secret key is available
+let stripe: Stripe | null = null;
+if (process.env.STRIPE_SECRET_KEY) {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2024-09-30.acacia",
+  });
+  console.log('Stripe initialized successfully for credit purchases');
+} else {
+  console.warn('STRIPE_SECRET_KEY not found - credit purchase functionality will be disabled');
 }
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-09-30.acacia",
-});
 
 const creditsRouter = Router();
 
@@ -100,6 +103,15 @@ creditsRouter.get("/status", async (req: Request, res: Response) => {
 // Create payment intent for credit purchase
 creditsRouter.post("/purchase", async (req: Request, res: Response) => {
   try {
+    // Check if Stripe is available
+    if (!stripe) {
+      return res.status(503).json({
+        success: false,
+        error: 'Credit purchases unavailable',
+        message: 'Payment processing is not configured. Please contact support.'
+      });
+    }
+
     const reqSchema = z.object({
       packageId: z.number().int().positive()
     });
@@ -181,6 +193,14 @@ creditsRouter.post("/purchase", async (req: Request, res: Response) => {
 // Webhook to handle successful credit purchase
 creditsRouter.post("/webhook", async (req: Request, res: Response) => {
   try {
+    // Check if Stripe is available
+    if (!stripe) {
+      return res.status(503).json({ 
+        error: 'Webhooks unavailable',
+        message: 'Payment processing is not configured'
+      });
+    }
+
     const sig = req.headers['stripe-signature'];
     
     if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
