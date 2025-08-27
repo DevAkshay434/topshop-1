@@ -1683,9 +1683,10 @@ export default function AdminPanel() {
       missing.push("Blog Selection");
     
     // Check keyword state for validation
+    console.log('Validation check - selectedKeywords:', selectedKeywords?.length, 'manualKeyword:', manualKeyword);
     
     if (!selectedKeywords || selectedKeywords.length === 0) {
-      if (manualKeyword.trim()) {
+      if (manualKeyword && manualKeyword.trim()) {
         missing.push("Keywords (click Add to save your typed keyword)");
       } else {
         missing.push("Keywords");
@@ -5521,7 +5522,7 @@ export default function AdminPanel() {
                                 Complete Required Steps
                               </p>
                               <p className="text-xs text-amber-700 mt-1">
-                                Missing: {getIncompleteSteps().join(", ")}
+                                Missing: {getIncompleteSteps().filter(step => step !== "0").join(", ")}
                               </p>
                             </div>
                           </div>
