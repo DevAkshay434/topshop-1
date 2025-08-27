@@ -442,4 +442,50 @@ router.post('/cancel', async (req, res) => {
   }
 });
 
+/**
+ * Sync plan from Shopify to database (resolves discrepancies)
+ */
+router.post('/sync-plan/:storeId', async (req, res) => {
+  try {
+    const storeId = parseInt(req.params.storeId);
+    if (isNaN(storeId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid store ID'
+      });
+    }
+
+    const store = await storage.getShopifyStore(storeId);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Get current subscription status from Shopify
+    const subscriptionStatus = await getSubscriptionStatus(store);
+    
+    // Update database with current Shopify plan
+    const updatedStore = await storage.updateShopifyStore(storeId, {
+      planName: subscriptionStatus.plan
+    });
+    
+    res.json({
+      success: true,
+      message: 'Plan synced successfully from Shopify',
+      oldPlan: store.planName || 'free',
+      newPlan: subscriptionStatus.plan,
+      subscriptionStatus,
+      store: updatedStore
+    });
+  } catch (error) {
+    console.error('Error syncing plan:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to sync plan'
+    });
+  }
+});
+
 export default router;
