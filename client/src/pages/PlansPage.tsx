@@ -72,13 +72,13 @@ export default function PlansPage() {
 
   const subscribeMutation = useMutation({
     mutationFn: (planType: string) => 
-      apiRequest(`/api/billing/subscribe/${storeId}`, {
+      apiRequest({
+        url: `/api/billing/subscribe/${storeId}`,
         method: 'POST',
-        body: JSON.stringify({
+        data: {
           planType,
           returnUrl: window.location.origin + '/plans?success=true'
-        }),
-        headers: { 'Content-Type': 'application/json' }
+        }
       }),
     onSuccess: (data: any) => {
       if (data.confirmationUrl) {
