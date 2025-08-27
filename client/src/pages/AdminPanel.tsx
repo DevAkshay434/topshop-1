@@ -1681,8 +1681,19 @@ export default function AdminPanel() {
     if (!formValues.articleType) missing.push("Article Type");
     if (formValues.articleType === "blog" && !formValues.blogId)
       missing.push("Blog Selection");
-    if (!selectedKeywords || selectedKeywords.length === 0)
-      missing.push("Keywords");
+    
+    // Debug keyword state
+    console.log('Debug - selectedKeywords:', selectedKeywords);
+    console.log('Debug - selectedKeywords.length:', selectedKeywords.length);
+    console.log('Debug - manualKeyword:', manualKeyword);
+    
+    if (!selectedKeywords || selectedKeywords.length === 0) {
+      if (manualKeyword.trim()) {
+        missing.push("Keywords (click Add to save your typed keyword)");
+      } else {
+        missing.push("Keywords");
+      }
+    }
     if (!primaryImages || primaryImages.length === 0)
       missing.push("Featured Image");
     if (!selectedAuthorId) missing.push("Author"); // Use selectedAuthorId state instead of form field
@@ -4284,8 +4295,17 @@ export default function AdminPanel() {
                                   addManualKeyword();
                                 }
                               }}
+                              onBlur={() => {
+                                // Auto-add keyword when user leaves field if there's content
+                                if (manualKeyword.trim() && !isAddingManualKeyword) {
+                                  addManualKeyword();
+                                }
+                              }}
                               disabled={isAddingManualKeyword}
-                              className="flex-1"
+                              className={cn(
+                                "flex-1",
+                                manualKeyword.trim() && "border-blue-300 bg-blue-50"
+                              )}
                             />
                             <Button
                               onClick={addManualKeyword}
@@ -4302,11 +4322,16 @@ export default function AdminPanel() {
                               {isAddingManualKeyword ? "Adding..." : "Add"}
                             </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Enter specific keywords exactly as you want to
-                            target them. Keywords will be added as-is without
-                            modification.
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-muted-foreground">
+                              Enter specific keywords exactly as you want to target them.
+                              {manualKeyword.trim() && (
+                                <span className="text-blue-600 font-medium ml-1">
+                                  Press Enter or click Add to save!
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         </div>
 
                         {Array.isArray(selectedKeywords) &&
