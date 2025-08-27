@@ -466,3 +466,146 @@ export async function getUsageStats(storeId: number): Promise<{
     };
   }
 }
+
+/**
+ * Enhanced content generation check that considers both plan limits and available credits
+ */
+export async function canGenerateContentWithCredits(storeId: number): Promise<{
+  canGenerate: boolean;
+  usePlanAllowance: boolean;
+  useCredits: boolean;
+  currentUsage: number;
+  planLimit: number;
+  availableCredits: number;
+  planType: PlanType;
+  message?: string;
+}> {
+  try {
+    // First check plan limits
+    const planCheck = await canGenerateContent(storeId);
+    
+    // Get store credits
+    const storeCredits = await storage.getStoreCredits(storeId);
+    const availableCredits = storeCredits?.availableCredits || 0;
+    
+    // Logic: Use plan allowance first, then fall back to credits
+    if (planCheck.canGenerate) {
+      return {
+        canGenerate: true,
+        usePlanAllowance: true,
+        useCredits: false,
+        currentUsage: planCheck.currentUsage,
+        planLimit: planCheck.limit,
+        availableCredits,
+        planType: planCheck.planType
+      };
+    } else if (availableCredits > 0) {
+      return {
+        canGenerate: true,
+        usePlanAllowance: false,
+        useCredits: true,
+        currentUsage: planCheck.currentUsage,
+        planLimit: planCheck.limit,
+        availableCredits,
+        planType: planCheck.planType,
+        message: `Plan limit reached. Using 1 credit (${availableCredits - 1} remaining after this post).`
+      };
+    } else {
+      return {
+        canGenerate: false,
+        usePlanAllowance: false,
+        useCredits: false,
+        currentUsage: planCheck.currentUsage,
+        planLimit: planCheck.limit,
+        availableCredits,
+        planType: planCheck.planType,
+        message: `You have reached your monthly limit of ${planCheck.limit} posts/pages and have no credits available. Please upgrade your plan or purchase credits to continue.`
+      };
+    }
+  } catch (error) {
+    console.error('Error checking content generation with credits:', error);
+    return {
+      canGenerate: false,
+      usePlanAllowance: false,
+      useCredits: false,
+      currentUsage: 0,
+      planLimit: 0,
+      availableCredits: 0,
+      planType: PlanType.FREE,
+      message: 'Unable to verify plan limits and credits. Please try again.'
+    };
+  }
+}
+
+/**
+ * Consume usage after successful content generation (handles both plan and credit usage)
+ */
+export async function consumeUsageForContentGeneration(storeId: number, useCredits: boolean, postId?: number): Promise<void> {
+  try {
+    if (useCredits) {
+      // Use 1 credit
+      await storage.useCreditsFromStore(storeId, 1);
+      
+      // Record credit transaction
+      await storage.createCreditTransaction({
+        storeId,
+        postId: postId || null,
+        creditsUsed: 1,
+        transactionType: 'usage',
+        description: `Used 1 credit for content generation${postId ? ` (Post ID: ${postId})` : ''}`
+      });
+    } else {
+      // Use plan allowance
+      await incrementUsage(storeId);
+    }
+  } catch (error) {
+    console.error('Error consuming usage for content generation:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get comprehensive usage and credit information for a store
+ */
+export async function getStoreUsageAndCredits(storeId: number): Promise<{
+  usage: {
+    currentUsage: number;
+    limit: number;
+    planType: PlanType;
+    percentUsed: number;
+    daysUntilReset: number;
+  };
+  credits: {
+    availableCredits: number;
+    totalPurchased: number;
+    totalUsed: number;
+  };
+  canGenerate: {
+    usePlan: boolean;
+    useCredits: boolean;
+    message?: string;
+  };
+}> {
+  try {
+    const usageStats = await getUsageStats(storeId);
+    const storeCredits = await storage.getStoreCredits(storeId);
+    const generationCheck = await canGenerateContentWithCredits(storeId);
+    
+    return {
+      usage: usageStats,
+      credits: {
+        availableCredits: storeCredits?.availableCredits || 0,
+        totalPurchased: storeCredits?.totalPurchased || 0,
+        totalUsed: storeCredits?.totalUsed || 0
+      },
+      canGenerate: {
+        usePlan: generationCheck.usePlanAllowance,
+        useCredits: generationCheck.useCredits,
+        message: generationCheck.message
+      }
+    };
+  } catch (error) {
+    console.error('Error getting store usage and credits:', error);
+    throw error;
+  }
+}

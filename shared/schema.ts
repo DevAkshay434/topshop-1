@@ -416,4 +416,124 @@ export const projectsRelations = relations(projects, ({ one }) => ({
   }),
 }));
 
+// Credit packages for purchasing additional content credits
+export const creditPackages = pgTable("credit_packages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  credits: integer("credits").notNull(), // Number of content credits
+  price: integer("price").notNull(), // Price in cents
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCreditPackageSchema = createInsertSchema(creditPackages).pick({
+  name: true,
+  description: true,
+  credits: true,
+  price: true,
+  isActive: true,
+});
+
+export type InsertCreditPackage = z.infer<typeof insertCreditPackageSchema>;
+export type CreditPackage = typeof creditPackages.$inferSelect;
+
+// Store credit balances
+export const storeCredits = pgTable("store_credits", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").notNull().references(() => shopifyStores.id),
+  availableCredits: integer("available_credits").default(0).notNull(),
+  totalPurchased: integer("total_purchased").default(0).notNull(),
+  totalUsed: integer("total_used").default(0).notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
+export const insertStoreCreditSchema = createInsertSchema(storeCredits).pick({
+  storeId: true,
+  availableCredits: true,
+  totalPurchased: true,
+  totalUsed: true,
+});
+
+export type InsertStoreCredit = z.infer<typeof insertStoreCreditSchema>;
+export type StoreCredit = typeof storeCredits.$inferSelect;
+
+// Credit purchases history
+export const creditPurchases = pgTable("credit_purchases", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").notNull().references(() => shopifyStores.id),
+  packageId: integer("package_id").notNull().references(() => creditPackages.id),
+  creditsAdded: integer("credits_added").notNull(),
+  pricePaid: integer("price_paid").notNull(), // Amount paid in cents
+  paymentIntentId: text("payment_intent_id"), // Stripe payment intent ID
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  purchaseDate: timestamp("purchase_date").defaultNow().notNull(),
+});
+
+export const insertCreditPurchaseSchema = createInsertSchema(creditPurchases).pick({
+  storeId: true,
+  packageId: true,
+  creditsAdded: true,
+  pricePaid: true,
+  paymentIntentId: true,
+  status: true,
+});
+
+export type InsertCreditPurchase = z.infer<typeof insertCreditPurchaseSchema>;
+export type CreditPurchase = typeof creditPurchases.$inferSelect;
+
+// Credit usage transactions
+export const creditTransactions = pgTable("credit_transactions", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").notNull().references(() => shopifyStores.id),
+  postId: integer("post_id").references(() => blogPosts.id),
+  creditsUsed: integer("credits_used").notNull(),
+  transactionType: text("transaction_type").notNull(), // usage, refund
+  description: text("description"),
+  transactionDate: timestamp("transaction_date").defaultNow().notNull(),
+});
+
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).pick({
+  storeId: true,
+  postId: true,
+  creditsUsed: true,
+  transactionType: true,
+  description: true,
+});
+
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+
+// Define credit relations
+export const storeCreditRelations = relations(storeCredits, ({ one, many }) => ({
+  store: one(shopifyStores, {
+    fields: [storeCredits.storeId],
+    references: [shopifyStores.id],
+  }),
+  purchases: many(creditPurchases),
+  transactions: many(creditTransactions),
+}));
+
+export const creditPurchaseRelations = relations(creditPurchases, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [creditPurchases.storeId],
+    references: [shopifyStores.id],
+  }),
+  package: one(creditPackages, {
+    fields: [creditPurchases.packageId],
+    references: [creditPackages.id],
+  }),
+}));
+
+export const creditTransactionRelations = relations(creditTransactions, ({ one }) => ({
+  store: one(shopifyStores, {
+    fields: [creditTransactions.storeId],
+    references: [shopifyStores.id],
+  }),
+  post: one(blogPosts, {
+    fields: [creditTransactions.postId],
+    references: [blogPosts.id],
+  }),
+}));
+
 

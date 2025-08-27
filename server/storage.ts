@@ -8,6 +8,10 @@ import {
   contentGenRequests,
   authors,
   projects,
+  creditPackages,
+  storeCredits,
+  creditPurchases,
+  creditTransactions,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -24,7 +28,15 @@ import {
   type InsertContentGenRequest,
   type Author,
   type Project,
-  type InsertProject
+  type InsertProject,
+  type CreditPackage,
+  type InsertCreditPackage,
+  type StoreCredit,
+  type InsertStoreCredit,
+  type CreditPurchase,
+  type InsertCreditPurchase,
+  type CreditTransaction,
+  type InsertCreditTransaction
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql, and } from "drizzle-orm";
@@ -87,6 +99,20 @@ export interface IStorage {
   updateProject(id: number, project: Partial<InsertProject>, storeId: number): Promise<Project>;
   deleteProject(id: number, storeId: number): Promise<void>;
 
+  // Credit management operations
+  getCreditPackages(): Promise<CreditPackage[]>;
+  getActiveCreditPackages(): Promise<CreditPackage[]>;
+  getStoreCredits(storeId: number): Promise<StoreCredit | null>;
+  createStoreCredits(storeCredit: InsertStoreCredit): Promise<StoreCredit>;
+  updateStoreCredits(storeId: number, credits: Partial<StoreCredit>): Promise<StoreCredit>;
+  addCreditsToStore(storeId: number, creditsToAdd: number): Promise<StoreCredit>;
+  useCreditsFromStore(storeId: number, creditsToUse: number): Promise<StoreCredit>;
+  createCreditPurchase(purchase: InsertCreditPurchase): Promise<CreditPurchase>;
+  updateCreditPurchase(id: number, purchase: Partial<CreditPurchase>): Promise<CreditPurchase>;
+  getCreditPurchaseHistory(storeId: number): Promise<CreditPurchase[]>;
+  createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
+  getCreditTransactions(storeId: number): Promise<CreditTransaction[]>;
+
 }
 
 // In-memory implementation of the storage interface
@@ -99,6 +125,10 @@ export class MemStorage implements IStorage {
   private syncActivities: SyncActivity[];
   private contentGenRequests: Map<number, ContentGenRequest>;
   private projects: Map<number, Project>;
+  private creditPackages: Map<number, CreditPackage>;
+  private storeCredits: Map<number, StoreCredit>; // Key: storeId
+  private creditPurchases: Map<number, CreditPurchase>;
+  private creditTransactions: Map<number, CreditTransaction>;
 
   
   private currentUserId: number;
@@ -107,6 +137,9 @@ export class MemStorage implements IStorage {
   private currentSyncActivityId: number;
   private currentContentGenRequestId: number;
   private currentProjectId: number;
+  private currentCreditPackageId: number;
+  private currentCreditPurchaseId: number;
+  private currentCreditTransactionId: number;
 
 
   constructor() {
@@ -117,6 +150,10 @@ export class MemStorage implements IStorage {
     this.syncActivities = [];
     this.contentGenRequests = new Map();
     this.projects = new Map();
+    this.creditPackages = new Map();
+    this.storeCredits = new Map();
+    this.creditPurchases = new Map();
+    this.creditTransactions = new Map();
 
     
     this.currentUserId = 1;
@@ -125,6 +162,9 @@ export class MemStorage implements IStorage {
     this.currentSyncActivityId = 1;
     this.currentContentGenRequestId = 1;
     this.currentProjectId = 1;
+    this.currentCreditPackageId = 1;
+    this.currentCreditPurchaseId = 1;
+    this.currentCreditTransactionId = 1;
 
     
     // Add some initial data for testing
@@ -164,7 +204,9 @@ export class MemStorage implements IStorage {
       uninstalledAt: null,
       planName: "free",
       chargeId: null,
-      trialEndsAt: null
+      trialEndsAt: null,
+      currentMonthlyUsage: 0,
+      lastUsageReset: now
     };
     this.shopifyStores.set(1, defaultStore);
     
@@ -213,6 +255,9 @@ export class MemStorage implements IStorage {
       scheduledPublishTime: null,
       shopifyPostId: "12345",
       shopifyBlogId: "116776337722",
+      shopifyHandle: "summer-fashion-trends-2023",
+      metaTitle: "Summer Fashion Trends 2023: What's Hot This Season",
+      metaDescription: "Discover the hottest summer fashion trends for 2023",
       storeId: 1,
       createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
@@ -237,6 +282,9 @@ export class MemStorage implements IStorage {
       scheduledPublishTime: null,
       shopifyPostId: "12346",
       shopifyBlogId: "116776337722",
+      shopifyHandle: "sustainable-clothing-styling",
+      metaTitle: "How to Style Sustainable Clothing for Every Occasion",
+      metaDescription: "Learn how to style sustainable clothing for any occasion",
       storeId: 1,
       createdAt: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - 9 * 24 * 60 * 60 * 1000),
@@ -261,6 +309,9 @@ export class MemStorage implements IStorage {
       featuredImage: "",
       shopifyPostId: null,
       shopifyBlogId: "116776337722",
+      shopifyHandle: "summer-accessories-must-have",
+      metaTitle: "10 Must-Have Accessories for Your Summer Wardrobe",
+      metaDescription: "Discover essential summer accessories for your wardrobe",
       storeId: 1,
       createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
@@ -286,6 +337,9 @@ export class MemStorage implements IStorage {
       featuredImage: "",
       shopifyPostId: "98765",
       shopifyBlogId: null,
+      shopifyHandle: "about-our-store",
+      metaTitle: "About Our Store",
+      metaDescription: "Learn more about our store and what we offer",
       storeId: 1,
       createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
@@ -297,6 +351,52 @@ export class MemStorage implements IStorage {
     this.blogPosts.set(post2.id, post2);
     this.blogPosts.set(post3.id, post3);
     this.blogPosts.set(page1.id, page1);
+
+    // Add sample credit packages
+    const package1: CreditPackage = {
+      id: this.currentCreditPackageId++,
+      name: "Starter Pack",
+      description: "Perfect for getting started with extra content",
+      credits: 10,
+      price: 999, // $9.99 in cents
+      isActive: true,
+      createdAt: now
+    };
+
+    const package2: CreditPackage = {
+      id: this.currentCreditPackageId++,
+      name: "Power Pack",
+      description: "Great value for regular content creators",
+      credits: 25,
+      price: 1999, // $19.99 in cents
+      isActive: true,
+      createdAt: now
+    };
+
+    const package3: CreditPackage = {
+      id: this.currentCreditPackageId++,
+      name: "Pro Pack",
+      description: "Maximum savings for high-volume creators",
+      credits: 50,
+      price: 3499, // $34.99 in cents
+      isActive: true,
+      createdAt: now
+    };
+
+    this.creditPackages.set(package1.id, package1);
+    this.creditPackages.set(package2.id, package2);
+    this.creditPackages.set(package3.id, package3);
+
+    // Initialize store credits for the default store
+    const defaultStoreCredits: StoreCredit = {
+      id: 1,
+      storeId: 1,
+      availableCredits: 0,
+      totalPurchased: 0,
+      totalUsed: 0,
+      lastUpdated: now
+    };
+    this.storeCredits.set(1, defaultStoreCredits);
   }
 
   // User operations
@@ -333,7 +433,9 @@ export class MemStorage implements IStorage {
     this.shopifyConnection = { 
       id: 1,
       ...connection,
-      lastSynced: new Date()
+      lastSynced: new Date(),
+      defaultBlogId: connection.defaultBlogId || null,
+      isConnected: connection.isConnected !== undefined ? connection.isConnected : true
     };
     return this.shopifyConnection;
   }
@@ -363,9 +465,12 @@ export class MemStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
     console.log("MemStorage.createBlogPost - Input:", JSON.stringify(post, null, 2));
     const id = this.currentBlogPostId++;
+    const now = new Date();
     const newPost: BlogPost = { 
       ...post, 
       id,
+      createdAt: now,
+      updatedAt: now,
       views: post.views || 0,
       // Explicitly handle the scheduledPublishDate and scheduledPublishTime fields
       scheduledPublishDate: post.scheduledPublishDate || null,
@@ -455,7 +560,9 @@ export class MemStorage implements IStorage {
     const newActivity: SyncActivity = {
       ...activity,
       id,
-      timestamp: new Date()
+      timestamp: new Date(),
+      storeId: activity.storeId || null,
+      details: activity.details || null
     };
     this.syncActivities.push(newActivity);
     return newActivity;
@@ -467,7 +574,10 @@ export class MemStorage implements IStorage {
     const newRequest: ContentGenRequest = {
       ...request,
       id,
-      timestamp: new Date()
+      timestamp: new Date(),
+      storeId: request.storeId || null,
+      userId: request.userId || null,
+      generatedContent: request.generatedContent || null
     };
     this.contentGenRequests.set(id, newRequest);
     return newRequest;
@@ -523,7 +633,9 @@ export class MemStorage implements IStorage {
       trialEndsAt: null,
       defaultBlogId: store.defaultBlogId || null,
       isConnected: store.isConnected !== undefined ? store.isConnected : true,
-      planName: store.planName || null
+      planName: store.planName || null,
+      currentMonthlyUsage: store.currentMonthlyUsage || 0,
+      lastUsageReset: store.lastUsageReset || new Date()
     };
     this.shopifyStores.set(id, newStore);
     return newStore;
@@ -654,6 +766,123 @@ export class MemStorage implements IStorage {
       throw new Error(`Project with ID ${id} not found`);
     }
     this.projects.delete(id);
+  }
+
+  // Credit management operations
+  async getCreditPackages(): Promise<CreditPackage[]> {
+    return Array.from(this.creditPackages.values());
+  }
+
+  async getActiveCreditPackages(): Promise<CreditPackage[]> {
+    return Array.from(this.creditPackages.values()).filter(pkg => pkg.isActive);
+  }
+
+  async getStoreCredits(storeId: number): Promise<StoreCredit | null> {
+    return this.storeCredits.get(storeId) || null;
+  }
+
+  async createStoreCredits(storeCredit: InsertStoreCredit): Promise<StoreCredit> {
+    const newStoreCredit: StoreCredit = {
+      id: storeCredit.storeId, // Use storeId as the primary key for simplicity
+      storeId: storeCredit.storeId,
+      availableCredits: storeCredit.availableCredits || 0,
+      totalPurchased: storeCredit.totalPurchased || 0,
+      totalUsed: storeCredit.totalUsed || 0,
+      lastUpdated: new Date()
+    };
+    this.storeCredits.set(storeCredit.storeId, newStoreCredit);
+    return newStoreCredit;
+  }
+
+  async updateStoreCredits(storeId: number, credits: Partial<StoreCredit>): Promise<StoreCredit> {
+    const existing = this.storeCredits.get(storeId);
+    if (!existing) {
+      throw new Error(`Store credits not found for store ${storeId}`);
+    }
+    const updated = { ...existing, ...credits, lastUpdated: new Date() };
+    this.storeCredits.set(storeId, updated);
+    return updated;
+  }
+
+  async addCreditsToStore(storeId: number, creditsToAdd: number): Promise<StoreCredit> {
+    let storeCredit = this.storeCredits.get(storeId);
+    if (!storeCredit) {
+      // Create new store credits record
+      storeCredit = await this.createStoreCredits({ storeId, availableCredits: 0, totalPurchased: 0, totalUsed: 0 });
+    }
+    
+    const updated = {
+      availableCredits: storeCredit.availableCredits + creditsToAdd,
+      totalPurchased: storeCredit.totalPurchased + creditsToAdd
+    };
+    
+    return this.updateStoreCredits(storeId, updated);
+  }
+
+  async useCreditsFromStore(storeId: number, creditsToUse: number): Promise<StoreCredit> {
+    const storeCredit = this.storeCredits.get(storeId);
+    if (!storeCredit) {
+      throw new Error(`Store credits not found for store ${storeId}`);
+    }
+    
+    if (storeCredit.availableCredits < creditsToUse) {
+      throw new Error(`Insufficient credits. Available: ${storeCredit.availableCredits}, Required: ${creditsToUse}`);
+    }
+    
+    const updated = {
+      availableCredits: storeCredit.availableCredits - creditsToUse,
+      totalUsed: storeCredit.totalUsed + creditsToUse
+    };
+    
+    return this.updateStoreCredits(storeId, updated);
+  }
+
+  async createCreditPurchase(purchase: InsertCreditPurchase): Promise<CreditPurchase> {
+    const id = this.currentCreditPurchaseId++;
+    const newPurchase: CreditPurchase = {
+      ...purchase,
+      id,
+      purchaseDate: new Date(),
+      status: purchase.status || "pending",
+      paymentIntentId: purchase.paymentIntentId || null
+    };
+    this.creditPurchases.set(id, newPurchase);
+    return newPurchase;
+  }
+
+  async updateCreditPurchase(id: number, purchase: Partial<CreditPurchase>): Promise<CreditPurchase> {
+    const existing = this.creditPurchases.get(id);
+    if (!existing) {
+      throw new Error(`Credit purchase not found: ${id}`);
+    }
+    const updated = { ...existing, ...purchase };
+    this.creditPurchases.set(id, updated);
+    return updated;
+  }
+
+  async getCreditPurchaseHistory(storeId: number): Promise<CreditPurchase[]> {
+    return Array.from(this.creditPurchases.values())
+      .filter(purchase => purchase.storeId === storeId)
+      .sort((a, b) => b.purchaseDate.getTime() - a.purchaseDate.getTime());
+  }
+
+  async createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction> {
+    const id = this.currentCreditTransactionId++;
+    const newTransaction: CreditTransaction = {
+      ...transaction,
+      id,
+      transactionDate: new Date(),
+      description: transaction.description || null,
+      postId: transaction.postId || null
+    };
+    this.creditTransactions.set(id, newTransaction);
+    return newTransaction;
+  }
+
+  async getCreditTransactions(storeId: number): Promise<CreditTransaction[]> {
+    return Array.from(this.creditTransactions.values())
+      .filter(transaction => transaction.storeId === storeId)
+      .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
   }
 }
 

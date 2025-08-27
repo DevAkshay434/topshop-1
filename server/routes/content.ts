@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { z } from "zod";
 import { insertContentGenRequestSchema } from "@shared/schema";
 import { generateBlogContentWithClaude, testClaudeConnection } from "../services/claude";
+import { canGenerateContentWithCredits, consumeUsageForContentGeneration } from "../services/billing";
 
 // Helper function to get store from request with multi-store support (copied from routes.ts)
 async function getStoreFromRequest(req: Request): Promise<any | null> {
@@ -73,8 +74,36 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
     
     console.log(`Generating content for topic: "${topic}" ${customPrompt ? 'with custom prompt' : ''}`);
     
+    // Get store context
+    const store = await getStoreFromRequest(req);
+    if (!store) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Check if user can generate content (considering both plan limits and credits)
+    const generationCheck = await canGenerateContentWithCredits(store.id);
+    
+    if (!generationCheck.canGenerate) {
+      return res.status(403).json({
+        success: false,
+        error: 'Content generation limit reached',
+        message: generationCheck.message,
+        details: {
+          currentUsage: generationCheck.currentUsage,
+          planLimit: generationCheck.planLimit,
+          availableCredits: generationCheck.availableCredits,
+          planType: generationCheck.planType
+        }
+      });
+    }
+    
     // Create a record of the content generation request
     const contentRequest = await storage.createContentGenRequest({
+      storeId: store.id,
+      userId: null, // TODO: Add user context when authentication is implemented
       topic,
       tone: customPrompt ? "custom" : "professional", // Using tone field to track if custom prompt was used
       length: "medium", // Default length
@@ -102,6 +131,10 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         generatedContent: JSON.stringify(generatedContent)
       });
       
+      // Consume the usage (either from plan limits or credits)
+      const consumeResult = await consumeUsageForContentGeneration(store.id);
+      console.log(`Content generation consumed:`, consumeResult);
+      
       // Get the Shopify connection to use as author
       const connection = await storage.getShopifyConnection();
       const storeName = connection?.storeName || "Store Owner";
@@ -122,6 +155,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         success: true, 
         requestId: updatedRequest?.id,
         postId: post.id,
+        consumeResult,
         ...generatedContent
       });
       
