@@ -3615,8 +3615,8 @@ export default function AdminPanel() {
                           </div>
                         )}
 
-                        {/* Selected Title */}
-                        {form.watch("title") && (
+                        {/* Selected Title - Only show after keywords step */}
+                        {form.watch("title") && getStepOrder(workflowStep) > getStepOrder("keyword") && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <h5 className="text-sm font-medium flex items-center">
