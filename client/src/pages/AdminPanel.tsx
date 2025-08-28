@@ -2696,6 +2696,10 @@ export default function AdminPanel() {
             // Ensure any other properties are included but properly typed
             difficulty: typeof kw.difficulty === "number" ? kw.difficulty : 0,
             cpc: typeof kw.cpc === "number" ? kw.cpc : 0,
+            // CRITICAL: Preserve manual keyword flag
+            isManual: Boolean(kw.isManual),
+            competition: kw.competition || (kw.isManual ? "MANUAL" : ""),
+            selected: Boolean(kw.selected !== false), // Default to true unless explicitly false
           }))
         : [];
 
