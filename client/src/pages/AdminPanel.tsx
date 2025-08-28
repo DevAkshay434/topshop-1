@@ -992,9 +992,13 @@ export default function AdminPanel() {
         setIsGenerating(false); // Re-enable content generation
       }, 200); // Longer timeout to ensure all state updates complete
 
+      // Navigate to keywords step after project load
+      setWorkflowStep("keyword");
+      scrollToCurrentStep();
+
       toast({
         title: "Project loaded",
-        description: `"${project.name}" has been loaded successfully. State synchronization complete.`,
+        description: `"${project.name}" has been loaded successfully. You're now in the Keywords step.`,
       });
     } catch (error) {
       console.error("Error loading project:", error);
@@ -1683,7 +1687,6 @@ export default function AdminPanel() {
       missing.push("Blog Selection");
     
     // Check keyword state for validation
-    console.log('Validation check - selectedKeywords:', selectedKeywords?.length, 'manualKeyword:', manualKeyword);
     
     if (!selectedKeywords || selectedKeywords.length === 0) {
       if (manualKeyword && manualKeyword.trim()) {
