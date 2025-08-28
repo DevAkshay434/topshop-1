@@ -1439,7 +1439,7 @@ export default function AdminPanel() {
     return stepOrder[step as keyof typeof stepOrder] || 0;
   };
 
-  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("keywords");
+  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("content-type");
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
 
   // Track completion status for Generate and Post steps
@@ -1683,6 +1683,7 @@ export default function AdminPanel() {
       missing.push("Blog Selection");
     
     // Check keyword state for validation
+    console.log('Validation check - selectedKeywords:', selectedKeywords?.length, 'manualKeyword:', manualKeyword);
     
     if (!selectedKeywords || selectedKeywords.length === 0) {
       if (manualKeyword && manualKeyword.trim()) {
