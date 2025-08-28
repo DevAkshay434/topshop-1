@@ -782,8 +782,26 @@ export default function AdminPanel() {
         setSelectedProducts(projectData.selectedProducts);
       if (projectData.selectedCollections)
         setSelectedCollections(projectData.selectedCollections);
-      if (projectData.selectedKeywords)
-        setSelectedKeywords(projectData.selectedKeywords);
+      if (projectData.selectedKeywords) {
+        console.log('🔍 Loading keywords from project:', projectData.selectedKeywords);
+        // Clean any corrupted keyword data during project loading
+        const cleanedKeywords = projectData.selectedKeywords.map((kw: any) => {
+          // If keyword contains numbers at the end that look like search volume, remove them
+          const cleanedKeyword = typeof kw === 'string' 
+            ? kw.replace(/\d+$/, '').trim() // Remove trailing numbers from string keywords
+            : {
+                ...kw,
+                keyword: typeof kw.keyword === 'string' 
+                  ? kw.keyword.replace(/\d+$/, '').trim() // Remove trailing numbers from object keywords
+                  : kw.keyword
+              };
+          
+          console.log('🧹 Cleaned keyword:', { original: kw, cleaned: cleanedKeyword });
+          return cleanedKeyword;
+        });
+        
+        setSelectedKeywords(cleanedKeywords);
+      }
       if (projectData.selectedTitle)
         setSelectedTitle(projectData.selectedTitle);
       if (projectData.selectedAuthorId)
@@ -1614,6 +1632,8 @@ export default function AdminPanel() {
         selected: true,
         isManual: true,
       };
+      
+      console.log('🔍 Creating manual keyword:', newKeyword);
 
       // Check if keyword already exists
       const exists = selectedKeywords.some(
@@ -3571,8 +3591,10 @@ export default function AdminPanel() {
                                 >
                                   <span className="text-sm font-medium">
                                     {typeof keyword === "string"
-                                      ? keyword
-                                      : keyword.keyword}
+                                      ? keyword.replace(/\d+$/, '').trim()
+                                      : (typeof keyword.keyword === 'string' 
+                                          ? keyword.keyword.replace(/\d+$/, '').trim()
+                                          : keyword.keyword)}
                                   </span>
                                   <Button
                                     type="button"
@@ -4350,7 +4372,10 @@ export default function AdminPanel() {
                                   variant="secondary"
                                   className="flex items-center gap-1"
                                 >
-                                  {keyword?.keyword || ""}
+                                  {/* Clean any trailing numbers that might be search volume concatenated to keyword */}
+                                  {typeof keyword?.keyword === 'string' 
+                                    ? keyword.keyword.replace(/\d+$/, '').trim() 
+                                    : keyword?.keyword || ""}
                                   {keyword?.searchVolume &&
                                     keyword?.searchVolume > 0 &&
                                     !keyword?.isManual && (
