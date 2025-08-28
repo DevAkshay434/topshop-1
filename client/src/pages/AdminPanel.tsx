@@ -777,13 +777,16 @@ export default function AdminPanel() {
       const projectData = JSON.parse(project.projectData);
       console.log("Loading project data:", projectData);
 
-      // 1. First restore non-form state variables (UI state that's not controlled by React Hook Form)
+      // 1. Clear any previously generated content to start fresh
+      setGeneratedContent(null);
+      setIsContentPosted(false);
+      
+      // 2. First restore non-form state variables (UI state that's not controlled by React Hook Form)
       if (projectData.selectedProducts)
         setSelectedProducts(projectData.selectedProducts);
       if (projectData.selectedCollections)
         setSelectedCollections(projectData.selectedCollections);
       if (projectData.selectedKeywords) {
-        console.log('🔍 Loading keywords from project:', projectData.selectedKeywords);
         // Clean any corrupted keyword data during project loading
         const cleanedKeywords = projectData.selectedKeywords.map((kw: any) => {
           // If keyword contains numbers at the end that look like search volume, remove them
@@ -796,7 +799,6 @@ export default function AdminPanel() {
                   : kw.keyword
               };
           
-          console.log('🧹 Cleaned keyword:', { original: kw, cleaned: cleanedKeyword });
           return cleanedKeyword;
         });
         
@@ -1632,8 +1634,6 @@ export default function AdminPanel() {
         selected: true,
         isManual: true,
       };
-      
-      console.log('🔍 Creating manual keyword:', newKeyword);
 
       // Check if keyword already exists
       const exists = selectedKeywords.some(
