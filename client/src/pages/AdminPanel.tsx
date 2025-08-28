@@ -1470,9 +1470,10 @@ export default function AdminPanel() {
   const [isContentGenerated, setIsContentGenerated] = useState(false);
   const [isContentPosted, setIsContentPosted] = useState(false);
 
-  // Auto-scroll step indicator for steps 10 and 11
+  // Auto-scroll step indicator starting from step 8 (Author)
   useEffect(() => {
-    if (workflowStep === "content" || workflowStep === "post") {
+    const stepOrder = getStepOrder(workflowStep);
+    if (stepOrder >= 8) { // Author step (8) and onwards
       const stepIndicator = document.getElementById("step-indicator");
       if (stepIndicator) {
         // Find the current step button
