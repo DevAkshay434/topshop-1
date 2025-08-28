@@ -1470,6 +1470,25 @@ export default function AdminPanel() {
   const [isContentGenerated, setIsContentGenerated] = useState(false);
   const [isContentPosted, setIsContentPosted] = useState(false);
 
+  // Auto-scroll step indicator for steps 10 and 11
+  useEffect(() => {
+    if (workflowStep === "content" || workflowStep === "post") {
+      const stepIndicator = document.getElementById("step-indicator");
+      if (stepIndicator) {
+        // Find the current step button
+        const currentStepButton = stepIndicator.querySelector(`[data-step="${workflowStep}"]`);
+        if (currentStepButton) {
+          // Scroll the current step into view within the step indicator container
+          currentStepButton.scrollIntoView({
+            behavior: "smooth",
+            inline: "center", // Center the step horizontally
+            block: "nearest"
+          });
+        }
+      }
+    }
+  }, [workflowStep]);
+
   // Title editor state
   const [showTitleEditor, setShowTitleEditor] = useState(false);
 
@@ -2547,6 +2566,21 @@ export default function AdminPanel() {
         if (isSentToShopify) {
           // Mark content as posted for workflow step indicator
           setIsContentPosted(true);
+          
+          // Auto-scroll to show the current step (Post step)
+          setTimeout(() => {
+            const stepIndicator = document.getElementById("step-indicator");
+            if (stepIndicator) {
+              const currentStepButton = stepIndicator.querySelector(`[data-step="post"]`);
+              if (currentStepButton) {
+                currentStepButton.scrollIntoView({
+                  behavior: "smooth",
+                  inline: "center",
+                  block: "nearest"
+                });
+              }
+            }
+          }, 1000); // Delay to allow posting to complete
 
           setGeneratedContent((prev) =>
             prev
@@ -3174,6 +3208,21 @@ export default function AdminPanel() {
 
         // Mark content as generated for workflow step indicator
         setIsContentGenerated(true);
+        
+        // Auto-scroll to show the current step (Generate step)
+        setTimeout(() => {
+          const stepIndicator = document.getElementById("step-indicator");
+          if (stepIndicator) {
+            const currentStepButton = stepIndicator.querySelector(`[data-step="content"]`);
+            if (currentStepButton) {
+              currentStepButton.scrollIntoView({
+                behavior: "smooth",
+                inline: "center",
+                block: "nearest"
+              });
+            }
+          }
+        }, 1000); // Delay to allow content generation to complete
 
         toast({
           title: "Content generated successfully",
@@ -3282,7 +3331,10 @@ export default function AdminPanel() {
                     </h3>
 
                     {/* Enhanced Clickable Step Indicator */}
-                    <div className="flex items-center justify-start gap-1 overflow-x-auto pb-2">
+                    <div 
+                      id="step-indicator" 
+                      className="flex items-center justify-start gap-1 overflow-x-auto pb-2"
+                    >
                       {[
                         {
                           step: "content-type",
@@ -3376,6 +3428,7 @@ export default function AdminPanel() {
                           <div key={item.step} className="flex items-center">
                             {/* Clickable Step Circle */}
                             <button
+                              data-step={item.step}
                               onClick={() => {
                                 if (isClickable) {
                                   setWorkflowStep(item.step as WorkflowStep);
