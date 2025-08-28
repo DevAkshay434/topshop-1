@@ -1690,7 +1690,7 @@ export default function AdminPanel() {
     
     if (!selectedKeywords || selectedKeywords.length === 0) {
       if (manualKeyword && manualKeyword.trim()) {
-        missing.push("Keywords (click Add to save your typed keyword)");
+        missing.push(`Keywords (save "${manualKeyword.trim()}" by clicking Add)`);
       } else {
         missing.push("Keywords");
       }
@@ -4298,9 +4298,11 @@ export default function AdminPanel() {
                               }}
                               onBlur={() => {
                                 // Auto-add keyword when user leaves field if there's content
-                                if (manualKeyword.trim() && !isAddingManualKeyword) {
-                                  addManualKeyword();
-                                }
+                                setTimeout(() => {
+                                  if (manualKeyword.trim() && !isAddingManualKeyword) {
+                                    addManualKeyword();
+                                  }
+                                }, 100);
                               }}
                               disabled={isAddingManualKeyword}
                               className={cn(
