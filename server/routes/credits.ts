@@ -317,4 +317,44 @@ creditsRouter.get("/transactions", async (req: Request, res: Response) => {
   }
 });
 
+// Demo endpoint for adding credits (bypasses Stripe for testing)
+creditsRouter.post("/add-demo-credits", async (req: Request, res: Response) => {
+  try {
+    const reqSchema = z.object({
+      storeId: z.number().int().positive(),
+      credits: z.number().int().positive(),
+      reason: z.string().optional()
+    });
+    
+    const { storeId, credits, reason } = reqSchema.parse(req.body);
+    
+    // Add credits directly to the store
+    await storage.addCreditsToStore(storeId, credits);
+    
+    // Create a transaction record
+    await storage.createCreditTransaction({
+      storeId,
+      creditsUsed: 0, // This is credits added, not used
+      transactionType: 'purchase',
+      description: reason || `Demo credit purchase: ${credits} credits added`
+    });
+    
+    console.log(`Demo: Added ${credits} credits to store ${storeId}`);
+    
+    res.json({
+      success: true,
+      message: `Successfully added ${credits} credits to your account`,
+      creditsAdded: credits
+    });
+    
+  } catch (error: any) {
+    console.error('Error adding demo credits:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add demo credits',
+      message: error.message
+    });
+  }
+});
+
 export default creditsRouter;

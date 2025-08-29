@@ -128,24 +128,37 @@ export default function PlansPage() {
   });
 
   const creditPurchaseMutation = useMutation({
-    mutationFn: (packageId: number) => 
-      apiRequest({
-        url: '/api/credits/purchase',
+    mutationFn: async (packageData: { packageId: number; credits: number }) => {
+      // For demo purposes, simulate successful credit purchase
+      // In production, this would integrate with Stripe
+      
+      // Add credits directly to the store (mock purchase)
+      const response = await apiRequest({
+        url: '/api/credits/add-demo-credits',
         method: 'POST',
-        data: { packageId }
-      }),
-    onSuccess: (data: any) => {
-      toast({
-        title: "Credit Purchase Initiated",
-        description: "Please complete your payment to add credits to your account.",
+        data: { 
+          storeId: parseInt(storeId),
+          credits: packageData.credits,
+          reason: 'Demo credit purchase'
+        }
       });
-      // Here you would redirect to Stripe payment or handle the payment flow
-      // For demo purposes, we'll show a success message
+      
+      return response;
+    },
+    onSuccess: (data: any, variables) => {
+      // Invalidate queries to refresh the usage data
+      queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
+      
+      toast({
+        title: "Credits Added Successfully!",
+        description: `${variables.credits} credits have been added to your account.`,
+      });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to initiate credit purchase",
+        description: error.message || "Failed to add credits",
         variant: "destructive",
       });
     },
@@ -319,7 +332,7 @@ export default function PlansPage() {
                   </div>
                   <Button 
                     className="w-full bg-orange-600 hover:bg-orange-700" 
-                    onClick={() => creditPurchaseMutation.mutate(pkg.id)}
+                    onClick={() => creditPurchaseMutation.mutate({ packageId: pkg.id, credits: pkg.credits })}
                     disabled={creditPurchaseMutation.isPending}
                   >
                     {creditPurchaseMutation.isPending ? 'Processing...' : 'Buy Credits'}
