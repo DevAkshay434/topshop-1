@@ -12,6 +12,7 @@ import SimpleBulkGeneration from "@/pages/SimpleBulkGeneration";
 import ShopifyConnection from "@/pages/ShopifyConnection";
 import BillingSettings from "@/pages/BillingSettings";
 import PlansPage from "@/pages/PlansPage";
+import CheckoutPage from "@/pages/CheckoutPage";
 import AppInstall from "@/pages/AppInstall";
 import PartnerInstall from "@/pages/PartnerInstall";
 import EmbeddedApp from "@/pages/EmbeddedApp";
@@ -74,6 +75,7 @@ function Router() {
           <Route path="/shopify-connection" component={ShopifyConnection} />
           <Route path="/billing-settings" component={BillingSettings} />
           <Route path="/plans" component={PlansPage} />
+          <Route path="/checkout" component={CheckoutPage} />
           <Route path="/billing-callback" component={AdminPanel} />
           <Route path="/embedded" component={EmbeddedApp} />
           <Route path="/dashboard" component={AdminPanel} />

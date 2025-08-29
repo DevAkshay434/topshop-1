@@ -481,7 +481,13 @@ export async function getUsageStats(storeId: number): Promise<{
 
     let currentUsage = store.currentMonthlyUsage || 0;
     if (shouldReset) {
+      console.log(`Resetting monthly usage for store ${storeId} - new month detected`);
       currentUsage = 0;
+      // Persist the reset to the database
+      await storage.updateShopifyStore(storeId, {
+        currentMonthlyUsage: 0,
+        lastUsageReset: currentDate
+      });
     }
 
     const limit = planConfig.blogPostsPerMonth;

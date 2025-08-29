@@ -542,7 +542,7 @@ router.post('/webhook/subscription', async (req, res) => {
     
     switch (topic) {
       case 'app_subscriptions/update':
-        // Handle subscription updates (including payment failures)
+        // Handle subscription updates (including payment failures and successes)
         if (eventData.status === 'CANCELLED' || eventData.status === 'DECLINED') {
           console.log(`Subscription ${eventData.status.toLowerCase()} for store ${store.id}. Downgrading to free plan.`);
           
@@ -550,6 +550,17 @@ router.post('/webhook/subscription', async (req, res) => {
             planName: PlanType.FREE,
             chargeId: null
           });
+        } else if (eventData.status === 'ACTIVE') {
+          console.log(`Subscription payment successful for store ${store.id}. Resetting monthly usage.`);
+          
+          // Reset usage for the new billing period
+          const currentDate = new Date();
+          await storage.updateShopifyStore(store.id, {
+            currentMonthlyUsage: 0,
+            lastUsageReset: currentDate
+          });
+          
+          console.log(`Usage reset completed for store ${store.id} - new billing cycle`);
         }
         break;
         
@@ -637,6 +648,59 @@ router.post('/verify-payments', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Payment verification failed'
+    });
+  }
+});
+
+// Webhook endpoint for handling Stripe subscription events
+router.post('/webhook', async (req, res) => {
+  try {
+    const sig = req.headers['stripe-signature'];
+    
+    if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
+      return res.status(400).json({ error: 'Missing signature or webhook secret' });
+    }
+
+    // For now, we'll handle this via Shopify's own webhook system
+    // But this endpoint is ready for direct Stripe webhooks if needed
+    res.json({ received: true, message: 'Webhook handling via Shopify subscriptions' });
+  } catch (error: any) {
+    console.error('Error processing billing webhook:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Enhanced usage reset endpoint for recurring payment success
+router.post('/reset-usage/:storeId', async (req, res) => {
+  try {
+    const storeId = parseInt(req.params.storeId);
+    if (isNaN(storeId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid store ID'
+      });
+    }
+
+    // Reset usage and update last reset date
+    const currentDate = new Date();
+    const updatedStore = await storage.updateShopifyStore(storeId, {
+      currentMonthlyUsage: 0,
+      lastUsageReset: currentDate
+    });
+
+    console.log(`Manual usage reset for store ${storeId} completed`);
+
+    res.json({
+      success: true,
+      message: 'Usage reset successfully',
+      resetDate: currentDate,
+      store: updatedStore
+    });
+  } catch (error) {
+    console.error('Error resetting usage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset usage'
     });
   }
 });

@@ -129,36 +129,14 @@ export default function PlansPage() {
 
   const creditPurchaseMutation = useMutation({
     mutationFn: async (packageData: { packageId: number; credits: number }) => {
-      // For demo purposes, simulate successful credit purchase
-      // In production, this would integrate with Stripe
-      
-      // Add credits directly to the store (mock purchase)
-      const response = await apiRequest({
-        url: '/api/credits/add-demo-credits',
-        method: 'POST',
-        data: { 
-          storeId: parseInt(storeId),
-          credits: packageData.credits,
-          reason: 'Demo credit purchase'
-        }
-      });
-      
-      return response;
-    },
-    onSuccess: (data: any, variables) => {
-      // Invalidate queries to refresh the usage data
-      queryClient.invalidateQueries({ queryKey: [`/api/billing/usage/${storeId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/billing/check-limits/${storeId}`] });
-      
-      toast({
-        title: "Credits Added Successfully!",
-        description: `${variables.credits} credits have been added to your account.`,
-      });
+      // Redirect to Stripe checkout page
+      window.location.href = `/checkout?package=${packageData.packageId}`;
+      return { redirect: true };
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add credits",
+        title: "Checkout Error",
+        description: error.message || "Failed to start checkout",
         variant: "destructive",
       });
     },
