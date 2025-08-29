@@ -1900,11 +1900,19 @@ export default function AdminPanel() {
 
   // Automatic redirection to plans page when both limits reached and no credits
   useEffect(() => {
-    if (limitData && usageData && !limitData.canGenerate) {
-      // Check if user has zero credits available
+    if (limitData && usageData) {
+      // Only redirect if plan limit is reached AND user has no credits
+      const planLimitReached = !limitData.canGenerate;
       const hasCredits = usageData.credits && usageData.credits.available > 0;
       
-      if (!hasCredits) {
+      console.log('Redirection check:', { 
+        planLimitReached, 
+        hasCredits, 
+        availableCredits: usageData.credits?.available || 0,
+        canGenerate: limitData.canGenerate 
+      });
+      
+      if (planLimitReached && !hasCredits) {
         // Both plan limit reached and no credits available - redirect to plans page
         console.log('Automatically redirecting to plans page: limit reached and no credits available');
         navigate('/plans');
