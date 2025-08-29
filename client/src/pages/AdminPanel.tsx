@@ -1906,12 +1906,12 @@ export default function AdminPanel() {
     if (limitData && usageData && !hasRedirectedRef.current) {
       // Only redirect if plan limit is reached AND user has no credits
       const planLimitReached = !limitData.canGenerate;
-      const hasCredits = usageData.credits && usageData.credits.available > 0;
+      const hasCredits = usageData.credits && usageData.credits.availableCredits > 0;
       
       console.log('Redirection check:', { 
         planLimitReached, 
         hasCredits, 
-        availableCredits: usageData.credits?.available || 0,
+        availableCredits: usageData.credits?.availableCredits || 0,
         canGenerate: limitData.canGenerate,
         hasRedirected: hasRedirectedRef.current
       });
@@ -1925,7 +1925,7 @@ export default function AdminPanel() {
     }
     
     // Reset redirect flag when user has credits
-    if (usageData && usageData.credits && usageData.credits.available > 0) {
+    if (usageData && usageData.credits && usageData.credits.availableCredits > 0) {
       hasRedirectedRef.current = false;
     }
   }, [limitData, usageData, navigate]);
