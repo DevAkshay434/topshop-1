@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 import ShopifyImageViewer from "../components/ShopifyImageViewer";
 import { useQuery } from "@tanstack/react-query";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
@@ -300,8 +301,9 @@ const predefinedCategories = [
 // AI-generated buyer persona suggestions will be defined in component state
 
 export default function AdminPanel() {
-  // Store context
+  // Store context and navigation
   const storeContext = useStore();
+  const [, navigate] = useLocation();
 
   const [selectedTab, setSelectedTab] = useState("generate");
   const [selectedContentToneId, setSelectedContentToneId] =
@@ -1884,6 +1886,31 @@ export default function AdminPanel() {
     queryKey: ["/api/admin/test-connections"],
     enabled: selectedTab === "connections",
   });
+
+  // Billing queries for automatic redirection
+  const { data: usageData } = useQuery({
+    queryKey: [`/api/billing/usage/${currentStore?.id}`],
+    enabled: !!currentStore?.id,
+  });
+
+  const { data: limitData } = useQuery({
+    queryKey: [`/api/billing/check-limits/${currentStore?.id}`],
+    enabled: !!currentStore?.id,
+  });
+
+  // Automatic redirection to plans page when both limits reached and no credits
+  useEffect(() => {
+    if (limitData && usageData && !limitData.canGenerate) {
+      // Check if user has zero credits available
+      const hasCredits = usageData.credits && usageData.credits.available > 0;
+      
+      if (!hasCredits) {
+        // Both plan limit reached and no credits available - redirect to plans page
+        console.log('Automatically redirecting to plans page: limit reached and no credits available');
+        navigate('/plans');
+      }
+    }
+  }, [limitData, usageData, navigate]);
 
   // Handle image search using Pexels API
   const handleImageSearch = async (query: string) => {
