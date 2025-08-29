@@ -34,6 +34,15 @@ interface LimitCheck {
   message?: string;
 }
 
+interface CreditPackage {
+  id: number;
+  name: string;
+  description: string;
+  credits: number;
+  price: number;
+  pricePerCredit: string;
+}
+
 const planIcons = {
   free: Star,
   silver: Zap,
@@ -112,6 +121,36 @@ export default function PlansPage() {
     enabled: !!storeId,
   });
 
+  // Get credit packages
+  const { data: creditPackagesData } = useQuery({
+    queryKey: ['/api/credits/packages'],
+    enabled: true,
+  });
+
+  const creditPurchaseMutation = useMutation({
+    mutationFn: (packageId: number) => 
+      apiRequest({
+        url: '/api/credits/purchase',
+        method: 'POST',
+        data: { packageId }
+      }),
+    onSuccess: (data: any) => {
+      toast({
+        title: "Credit Purchase Initiated",
+        description: "Please complete your payment to add credits to your account.",
+      });
+      // Here you would redirect to Stripe payment or handle the payment flow
+      // For demo purposes, we'll show a success message
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to initiate credit purchase",
+        variant: "destructive",
+      });
+    },
+  });
+
   const subscribeMutation = useMutation({
     mutationFn: (planType: string) => 
       apiRequest({
@@ -172,6 +211,7 @@ export default function PlansPage() {
   const plans: Plan[] = plansData?.plans || [];
   const usage: UsageStats | undefined = usageData?.usage;
   const limits: LimitCheck | undefined = limitData;
+  const creditPackages: CreditPackage[] = creditPackagesData?.packages || [];
 
   const currentPlan = usage?.planType || 'free';
 
@@ -246,6 +286,49 @@ export default function PlansPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Credit Packages Section - Show when limit is reached */}
+      {!limits?.canGenerate && creditPackages.length > 0 && (
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center space-y-4 mb-6">
+            <h2 className="text-3xl font-bold text-orange-600">Need More Content?</h2>
+            <p className="text-lg text-muted-foreground">
+              You've reached your monthly limit. Purchase credits to continue generating content immediately!
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {creditPackages.map((pkg) => (
+              <Card key={pkg.id} className="border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50">
+                <CardHeader className="text-center">
+                  <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <Zap className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <CardTitle className="text-xl">{pkg.name}</CardTitle>
+                  <CardDescription>{pkg.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-orange-600">
+                      ${pkg.price}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {pkg.credits} credits (${pkg.pricePerCredit}/credit)
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full bg-orange-600 hover:bg-orange-700" 
+                    onClick={() => creditPurchaseMutation.mutate(pkg.id)}
+                    disabled={creditPurchaseMutation.isPending}
+                  >
+                    {creditPurchaseMutation.isPending ? 'Processing...' : 'Buy Credits'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Plans Grid */}
