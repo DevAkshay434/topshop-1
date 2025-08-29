@@ -7,6 +7,7 @@ import {
   canGenerateContent, 
   incrementUsage, 
   getUsageStats,
+  getStoreUsageAndCredits,
   createSubscription,
   getSubscriptionStatus,
   cancelSubscription
@@ -50,7 +51,7 @@ router.get('/usage/:storeId', async (req, res) => {
       });
     }
 
-    const usageStats = await getUsageStats(storeId);
+    const storeData = await getStoreUsageAndCredits(storeId);
     
     // Optional: Auto-sync if there seems to be a discrepancy
     // This happens when ?sync=true parameter is passed
@@ -61,20 +62,21 @@ router.get('/usage/:storeId', async (req, res) => {
           const subscriptionStatus = await getSubscriptionStatus(store);
           
           // Check if there's a mismatch between database and Shopify
-          if (usageStats.planType !== subscriptionStatus.plan) {
-            console.log(`Plan mismatch detected for store ${storeId}: DB=${usageStats.planType}, Shopify=${subscriptionStatus.plan}. Auto-syncing...`);
+          if (storeData.usage.planType !== subscriptionStatus.plan) {
+            console.log(`Plan mismatch detected for store ${storeId}: DB=${storeData.usage.planType}, Shopify=${subscriptionStatus.plan}. Auto-syncing...`);
             
             await storage.updateShopifyStore(storeId, {
               planName: subscriptionStatus.plan
             });
             
             // Get updated usage stats
-            const updatedUsage = await getUsageStats(storeId);
+            const updatedStoreData = await getStoreUsageAndCredits(storeId);
             return res.json({
               success: true,
-              usage: updatedUsage,
+              usage: updatedStoreData.usage,
+              credits: updatedStoreData.credits,
               synced: true,
-              oldPlan: usageStats.planType,
+              oldPlan: storeData.usage.planType,
               newPlan: subscriptionStatus.plan
             });
           }
@@ -87,7 +89,8 @@ router.get('/usage/:storeId', async (req, res) => {
     
     res.json({
       success: true,
-      usage: usageStats
+      usage: storeData.usage,
+      credits: storeData.credits
     });
   } catch (error) {
     console.error('Error fetching usage stats:', error);

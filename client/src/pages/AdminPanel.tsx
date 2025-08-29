@@ -1899,8 +1899,11 @@ export default function AdminPanel() {
   });
 
   // Automatic redirection to plans page when both limits reached and no credits
+  // Add a ref to track if we've already redirected to prevent loops
+  const hasRedirectedRef = useRef(false);
+  
   useEffect(() => {
-    if (limitData && usageData) {
+    if (limitData && usageData && !hasRedirectedRef.current) {
       // Only redirect if plan limit is reached AND user has no credits
       const planLimitReached = !limitData.canGenerate;
       const hasCredits = usageData.credits && usageData.credits.available > 0;
@@ -1909,14 +1912,21 @@ export default function AdminPanel() {
         planLimitReached, 
         hasCredits, 
         availableCredits: usageData.credits?.available || 0,
-        canGenerate: limitData.canGenerate 
+        canGenerate: limitData.canGenerate,
+        hasRedirected: hasRedirectedRef.current
       });
       
       if (planLimitReached && !hasCredits) {
         // Both plan limit reached and no credits available - redirect to plans page
         console.log('Automatically redirecting to plans page: limit reached and no credits available');
+        hasRedirectedRef.current = true;
         navigate('/plans');
       }
+    }
+    
+    // Reset redirect flag when user has credits
+    if (usageData && usageData.credits && usageData.credits.available > 0) {
+      hasRedirectedRef.current = false;
     }
   }, [limitData, usageData, navigate]);
 
