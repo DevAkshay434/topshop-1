@@ -1650,15 +1650,14 @@ export default function AdminPanel() {
       // Add manual keyword exactly as entered by user, without DataForSEO lookup
       const newKeyword = {
         keyword: manualKeyword.trim(),
-        searchVolume: 0,
+        searchVolume: null, // Use null instead of 0 to avoid any concatenation issues
         competition: "MANUAL",
-        difficulty: 0,
+        difficulty: null, // Use null instead of 0
         selected: true,
         isManual: true,
       };
       
-      console.log("🔍 MANUAL KEYWORD DEBUG - Original input:", manualKeyword.trim());
-      console.log("🔍 MANUAL KEYWORD DEBUG - New keyword object:", newKeyword);
+      // Debug logging removed
 
       // Check if keyword already exists
       const exists = selectedKeywords.some(
@@ -1668,11 +1667,7 @@ export default function AdminPanel() {
 
       if (!exists) {
         // Add to the beginning of the array (so manual keywords appear on top)
-        setSelectedKeywords((prev) => {
-          const updatedKeywords = [newKeyword, ...prev];
-          console.log("🔍 MANUAL KEYWORD DEBUG - Updated keywords array:", updatedKeywords);
-          return updatedKeywords;
-        });
+        setSelectedKeywords((prev) => [newKeyword, ...prev]);
         toast({
           title: "Manual Keyword Added",
           description: `Added "${newKeyword.keyword}" as manual keyword`,
@@ -2799,9 +2794,9 @@ export default function AdminPanel() {
                 ? kw.keyword
                 : String(kw.keyword || ""),
             searchVolume:
-              typeof kw.searchVolume === "number" ? kw.searchVolume : 0,
+              typeof kw.searchVolume === "number" ? kw.searchVolume : (kw.isManual ? null : 0),
             // Ensure any other properties are included but properly typed
-            difficulty: typeof kw.difficulty === "number" ? kw.difficulty : 0,
+            difficulty: typeof kw.difficulty === "number" ? kw.difficulty : (kw.isManual ? null : 0),
             cpc: typeof kw.cpc === "number" ? kw.cpc : 0,
             // CRITICAL: Preserve manual keyword flag
             isManual: Boolean(kw.isManual),
@@ -4474,23 +4469,14 @@ export default function AdminPanel() {
                             <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2 mb-3">
                               {selectedKeywords.map((keyword, idx) => (
                                 <Badge
-                                  key={idx}
+                                  key={`${keyword?.keyword}-${idx}-${keyword?.isManual ? 'manual' : 'auto'}`}
                                   variant="secondary"
                                   className="flex items-center gap-1"
                                 >
                                   {/* Clean any trailing numbers that might be search volume concatenated to keyword - but preserve manual keywords exactly as entered */}
-                                  {(() => {
-                                    const displayText = typeof keyword?.keyword === 'string' 
-                                      ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
-                                      : keyword?.keyword || "";
-                                    console.log("🔍 KEYWORD DISPLAY DEBUG:", {
-                                      originalKeyword: keyword?.keyword,
-                                      isManual: keyword?.isManual,
-                                      displayText: displayText,
-                                      fullKeywordObject: keyword
-                                    });
-                                    return displayText;
-                                  })()}
+                                  {typeof keyword?.keyword === 'string' 
+                                    ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
+                                    : keyword?.keyword || ""}
                                   {keyword?.searchVolume &&
                                     keyword?.searchVolume > 0 &&
                                     !keyword?.isManual && (
