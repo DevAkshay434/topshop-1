@@ -472,7 +472,6 @@ export class MemStorage implements IStorage {
       createdAt: now,
       updatedAt: now,
       views: post.views || 0,
-      status: post.status || 'draft',
       // Explicitly handle the scheduledPublishDate and scheduledPublishTime fields
       scheduledPublishDate: post.scheduledPublishDate || null,
       scheduledPublishTime: post.scheduledPublishTime || null
@@ -721,7 +720,7 @@ export class MemStorage implements IStorage {
     const id = this.currentProjectId++;
     const newProject: Project = {
       id,
-      storeId: project.storeId || null,
+      storeId: project.storeId,
       name: project.name,
       description: project.description || null,
       projectData: project.projectData,
@@ -1020,7 +1019,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteShopifyStore(id: number): Promise<boolean> {
     const result = await db.delete(shopifyStores).where(eq(shopifyStores.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return result.rowCount > 0;
   }
 
   // User-store relationship operations
@@ -1293,7 +1292,8 @@ export class DatabaseStorage implements IStorage {
   async getProject(id: number, storeId: number): Promise<Project | null> {
     const [project] = await db.select()
       .from(projects)
-      .where(and(eq(projects.id, id), eq(projects.storeId, storeId)));
+      .where(eq(projects.id, id))
+      .where(eq(projects.storeId, storeId));
     return project || null;
   }
 
@@ -1307,7 +1307,8 @@ export class DatabaseStorage implements IStorage {
     
     const [updatedProject] = await db.update(projects)
       .set(updateData)
-      .where(and(eq(projects.id, id), eq(projects.storeId, storeId)))
+      .where(eq(projects.id, id))
+      .where(eq(projects.storeId, storeId))
       .returning();
       
     if (!updatedProject) {
@@ -1319,7 +1320,8 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProject(id: number, storeId: number): Promise<void> {
     const result = await db.delete(projects)
-      .where(and(eq(projects.id, id), eq(projects.storeId, storeId)))
+      .where(eq(projects.id, id))
+      .where(eq(projects.storeId, storeId))
       .returning({ id: projects.id });
     
     if (result.length === 0) {
