@@ -1656,6 +1656,9 @@ export default function AdminPanel() {
         selected: true,
         isManual: true,
       };
+      
+      console.log("🔍 MANUAL KEYWORD DEBUG - Original input:", manualKeyword.trim());
+      console.log("🔍 MANUAL KEYWORD DEBUG - New keyword object:", newKeyword);
 
       // Check if keyword already exists
       const exists = selectedKeywords.some(
@@ -1665,7 +1668,11 @@ export default function AdminPanel() {
 
       if (!exists) {
         // Add to the beginning of the array (so manual keywords appear on top)
-        setSelectedKeywords((prev) => [newKeyword, ...prev]);
+        setSelectedKeywords((prev) => {
+          const updatedKeywords = [newKeyword, ...prev];
+          console.log("🔍 MANUAL KEYWORD DEBUG - Updated keywords array:", updatedKeywords);
+          return updatedKeywords;
+        });
         toast({
           title: "Manual Keyword Added",
           description: `Added "${newKeyword.keyword}" as manual keyword`,
@@ -4472,9 +4479,18 @@ export default function AdminPanel() {
                                   className="flex items-center gap-1"
                                 >
                                   {/* Clean any trailing numbers that might be search volume concatenated to keyword - but preserve manual keywords exactly as entered */}
-                                  {typeof keyword?.keyword === 'string' 
-                                    ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
-                                    : keyword?.keyword || ""}
+                                  {(() => {
+                                    const displayText = typeof keyword?.keyword === 'string' 
+                                      ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
+                                      : keyword?.keyword || "";
+                                    console.log("🔍 KEYWORD DISPLAY DEBUG:", {
+                                      originalKeyword: keyword?.keyword,
+                                      isManual: keyword?.isManual,
+                                      displayText: displayText,
+                                      fullKeywordObject: keyword
+                                    });
+                                    return displayText;
+                                  })()}
                                   {keyword?.searchVolume &&
                                     keyword?.searchVolume > 0 &&
                                     !keyword?.isManual && (
