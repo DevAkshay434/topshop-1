@@ -379,7 +379,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
       console.log(`🎬 YOUTUBE PLACEMENT - Found ${markerCount} video markers in content`);
       
       processedContent = processedContent.replace('<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->', videoHtml);
-      console.log('🎬 YOUTUBE PLACEMENT - Video embedded under second H2 heading');
+      console.log('🎬 YOUTUBE PLACEMENT - Video embedded under first H2 heading');
       
       // Remove any additional video placement markers
       processedContent = processedContent.replace(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g, '');
@@ -705,19 +705,19 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - HEADING FORMATTING: In ALL titles, headings (H2, H3), and subheadings, replace the word "and" with "&" where appropriate (e.g., "Benefits and Features" becomes "Benefits & Features", "Installation and Maintenance" becomes "Installation & Maintenance")
     
     CRITICAL MEDIA PLACEMENT INSTRUCTIONS - MUST FOLLOW EXACTLY:
-    - Under the SECOND H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
+    - Under the FIRST H2 heading ONLY, add: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER --> immediately after the H2 tag (NO paragraph in between)
     - Under EVERY OTHER H2 heading (after the video), add: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     - IMPORTANT: You MUST include at least 3-4 secondary image placement markers: <!-- SECONDARY_IMAGE_PLACEMENT_MARKER -->
     - Place one marker under each major H2 section to ensure even distribution
     - These markers are REQUIRED for image functionality - do not skip them
-    - CRITICAL: Always place YouTube video marker under the SECOND H2 heading, never the first or any other
+    - CRITICAL: Always place YouTube video marker directly under the FIRST H2 heading, immediately after the H2 tag without any paragraph content in between
     - Example structure:
       <h2>First Section</h2>
+      <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
       <p>Content...</p>
       
       <h2>Second Section</h2>
       <p>Content...</p>
-      <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
       
       <h2>Third Section</h2>
       <p>Content...</p>
@@ -790,8 +790,9 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
         promptText += `
       
       YOUTUBE VIDEO: ${request.youtubeEmbed}
-      - This video MUST be embedded under the SECOND H2 heading only
+      - This video MUST be embedded under the FIRST H2 heading only, immediately after the H2 tag
       - Use the marker: <!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->
+      - Place the marker directly after the H2 heading with NO paragraph content in between
       - Reference this video content in your structure to create natural integration`;
       }
       
