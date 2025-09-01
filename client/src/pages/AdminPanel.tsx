@@ -793,11 +793,11 @@ export default function AdminPanel() {
         const cleanedKeywords = projectData.selectedKeywords.map((kw: any) => {
           // If keyword contains numbers at the end that look like search volume, remove them
           const cleanedKeyword = typeof kw === 'string' 
-            ? kw.replace(/\d+$/, '').trim() // Remove trailing numbers from string keywords
+            ? kw // Keep string keywords as-is
             : {
                 ...kw,
                 keyword: typeof kw.keyword === 'string' 
-                  ? kw.keyword.replace(/\d+$/, '').trim() // Remove trailing numbers from object keywords
+                  ? (kw.isManual ? kw.keyword : kw.keyword.replace(/\d+$/, '').trim()) // Only clean non-manual keywords
                   : kw.keyword
               };
           
@@ -3690,9 +3690,9 @@ export default function AdminPanel() {
                                 >
                                   <span className="text-sm font-medium">
                                     {typeof keyword === "string"
-                                      ? keyword.replace(/\d+$/, '').trim()
+                                      ? keyword
                                       : (typeof keyword.keyword === 'string' 
-                                          ? keyword.keyword.replace(/\d+$/, '').trim()
+                                          ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
                                           : keyword.keyword)}
                                   </span>
                                   <Button
@@ -4471,9 +4471,9 @@ export default function AdminPanel() {
                                   variant="secondary"
                                   className="flex items-center gap-1"
                                 >
-                                  {/* Clean any trailing numbers that might be search volume concatenated to keyword */}
+                                  {/* Clean any trailing numbers that might be search volume concatenated to keyword - but preserve manual keywords exactly as entered */}
                                   {typeof keyword?.keyword === 'string' 
-                                    ? keyword.keyword.replace(/\d+$/, '').trim() 
+                                    ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
                                     : keyword?.keyword || ""}
                                   {keyword?.searchVolume &&
                                     keyword?.searchVolume > 0 &&
