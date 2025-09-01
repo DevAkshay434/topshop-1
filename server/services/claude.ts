@@ -345,7 +345,7 @@ function applyContentFormatting(content: string): string {
 function processMediaPlacementsHandler(content: string, request: BlogContentRequest): string {
   let processedContent = content;
   
-  // Handle YouTube video placement under second H2 heading
+  // Handle YouTube video placement under first H2 heading
   if (request.youtubeEmbed) {
     console.log('🎬 YOUTUBE PROCESSING - Original URL:', request.youtubeEmbed);
     
@@ -374,7 +374,7 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
   </iframe>
 </div>`;
       
-      // Replace only the first occurrence (under second H2)
+      // Replace only the first occurrence (under first H2)
       const markerCount = (processedContent.match(/<!-- YOUTUBE_VIDEO_PLACEMENT_MARKER -->/g) || []).length;
       console.log(`🎬 YOUTUBE PLACEMENT - Found ${markerCount} video markers in content`);
       
@@ -617,7 +617,7 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
       mediaContext += `\n    SELECTED SECONDARY IMAGES: ${request.secondaryImages.length} additional images have been selected to support the content. These will be automatically placed under H2 headings after the video.`;
     }
     if (request.youtubeEmbed) {
-      mediaContext += `\n    SELECTED YOUTUBE VIDEO: A relevant YouTube video has been selected to enhance the content. This will be placed under the second H2 heading.`;
+      mediaContext += `\n    SELECTED YOUTUBE VIDEO: A relevant YouTube video has been selected to enhance the content. This will be placed under the first H2 heading.`;
     }
 
     // Build audience-aware context
@@ -679,7 +679,7 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
     - When mentioning statistics, studies, or facts, link to the authoritative source when possible
     
     MEDIA PLACEMENT RULES:
-    - Selected YouTube video MUST be placed under the SECOND H2 heading only
+    - Selected YouTube video MUST be placed under the FIRST H2 heading only, immediately after the H2 tag
     - Secondary images MUST be placed under H2 headings that come AFTER the video
     - Each secondary image should be placed under a different H2 heading
     - Never repeat the same secondary image multiple times

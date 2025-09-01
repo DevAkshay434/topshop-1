@@ -1884,9 +1884,9 @@ Place this at a logical position in the content, typically after introducing a c
         const h2Matches = [...finalContent.matchAll(h2Pattern)];
         
         if (h2Matches.length > 0) {
-          // Insert secondary images after H2 headings (starting from the third H2 to leave space for video)
+          // Insert secondary images after H2 headings (starting from the second H2 to leave space for video)
           let insertionOffset = 0;
-          let startingH2Index = requestData.youtubeEmbed ? 2 : 1; // Skip first 2 H2s if video present, otherwise skip first 1
+          let startingH2Index = requestData.youtubeEmbed ? 1 : 1; // Skip first 1 H2 if video present, otherwise skip first 1
           
           requestData.secondaryImages.forEach((image, imageIndex) => {
             const h2Index = startingH2Index + imageIndex;
