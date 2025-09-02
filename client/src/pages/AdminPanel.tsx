@@ -3215,6 +3215,11 @@ export default function AdminPanel() {
         "Preparing API request to /api/admin/generate-content with data:",
         submitData,
       );
+      console.log("🔍 SELECTED PRODUCTS DEBUG:", {
+        selectedProductsLength: selectedProducts.length,
+        selectedProductsData: selectedProducts,
+        productsInfoInSubmitData: submitData.productsInfo
+      });
       console.log("CRITICAL DEBUG: Secondary images being sent:", {
         count: submitData.secondaryImages.length,
         images: submitData.secondaryImages.map((img) => ({
