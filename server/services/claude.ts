@@ -588,14 +588,6 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
 export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
   try {
     console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
-    console.log("🔍 CLAUDE SERVICE - Received request data:", {
-      hasProductsInfo: !!request.productsInfo,
-      productsInfoLength: request.productsInfo?.length || 0,
-      productsInfo: request.productsInfo?.map(p => ({ id: p.id, handle: p.handle, title: p.title })) || [],
-      hasSecondaryImages: !!request.secondaryImages,
-      secondaryImagesLength: request.secondaryImages?.length || 0,
-      secondaryImagesData: request.secondaryImages?.map(img => ({ url: img.url, source: img.source, alt: img.alt })) || []
-    });
     
     // Determine content length based on request
     let contentLength = "approximately 800-1000 words";

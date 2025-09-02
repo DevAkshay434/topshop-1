@@ -2760,12 +2760,6 @@ export default function AdminPanel() {
   const handleSubmit = async (values: ContentFormValues) => {
     try {
       console.log("Form submission started with values:", values);
-      console.log("🚀 CONTENT GENERATION STARTED - Selected products check:", {
-        selectedProductsLength: selectedProducts.length,
-        selectedProductsIds: selectedProducts.map(p => p.id),
-        selectedProductsTitles: selectedProducts.map(p => p.title)
-      });
-      
       setIsGenerating(true);
       setGeneratedContent(null);
 
