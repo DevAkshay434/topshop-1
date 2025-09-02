@@ -3327,8 +3327,8 @@ export default function AdminPanel() {
           shopifyUrl: response.contentUrl, // Map contentUrl to shopifyUrl for button compatibility
         });
 
-        // No longer need client-side processing - raw content will come from server
-        // The editor will now display the unprocessed rawContent directly from the API response
+        // Clear enhanced content to ensure clean content from server is displayed
+        setEnhancedContentForEditor("");
 
         // Force content editor to re-render with new content
         setContentEditorKey((prev) => prev + 1);
@@ -6018,10 +6018,10 @@ export default function AdminPanel() {
                     <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
                       <div className="mb-2 font-medium">Content Statistics:</div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>Characters: {(enhancedContentForEditor || generatedContent.content || "").length}</div>
-                        <div>Words: {(enhancedContentForEditor || generatedContent.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length}</div>
-                        <div>Reading time: {calculateReadingTime(enhancedContentForEditor || generatedContent.content || "")} min</div>
-                        <div>Images: {((enhancedContentForEditor || generatedContent.content || "").match(/<img[^>]*>/g) || []).length}</div>
+                        <div>Characters: {((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "").length}</div>
+                        <div>Words: {((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length}</div>
+                        <div>Reading time: {calculateReadingTime((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "")} min</div>
+                        <div>Images: {(((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "").match(/<img[^>]*>/g) || []).length}</div>
                       </div>
                     </div>
                   </div>
@@ -6037,11 +6037,10 @@ export default function AdminPanel() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            // Copy raw HTML content to clipboard (unprocessed)
-                            const contentToCopy =
-                              generatedContent.rawContent ||
-                              generatedContent.content ||
-                              "";
+                            // Copy clean HTML content to clipboard
+                            const contentToCopy = (enhancedContentForEditor && enhancedContentForEditor.trim() !== "") 
+                              ? enhancedContentForEditor 
+                              : generatedContent.content || "";
                             navigator.clipboard.writeText(contentToCopy);
                             toast({
                               title: "Content copied",
@@ -6070,10 +6069,9 @@ export default function AdminPanel() {
                     >
                       <SimpleHTMLEditor
                         content={
-                          enhancedContentForEditor ||
-                          generatedContent.rawContent ||
-                          generatedContent.content ||
-                          ""
+                          (enhancedContentForEditor && enhancedContentForEditor.trim() !== "") 
+                            ? enhancedContentForEditor 
+                            : generatedContent.content || ""
                         }
                         onChange={(newContent) => {
                           console.log(
