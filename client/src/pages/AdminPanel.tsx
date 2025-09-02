@@ -1933,20 +1933,22 @@ export default function AdminPanel() {
   }, [limitData, usageData, navigate]);
 
   // Watch for featured image changes and sync with page content first image
+  const [lastSyncedFeaturedImage, setLastSyncedFeaturedImage] = useState<string>("");
+  
   useEffect(() => {
     const currentArticleType = form.watch("articleType");
     const currentFeaturedImage = form.watch("featuredImage");
     
-    console.log("🖼️ Featured image sync check:", {
-      articleType: currentArticleType,
-      featuredImage: currentFeaturedImage ? currentFeaturedImage.substring(0, 50) + "..." : "none",
-      hasContent: !!(generatedContent?.content || enhancedContentForEditor),
-      contentLength: (generatedContent?.content || enhancedContentForEditor || "").length,
-      enhancedContentExists: !!enhancedContentForEditor
-    });
-    
-    // Sync for both pages and blogs when we have both generated content and a featured image
-    if (currentFeaturedImage && (generatedContent?.content || enhancedContentForEditor)) {
+    // Only sync if the featured image actually changed (not on every content update)
+    if (currentFeaturedImage && currentFeaturedImage !== lastSyncedFeaturedImage && (generatedContent?.content || enhancedContentForEditor)) {
+      console.log("🖼️ Featured image changed - syncing:", {
+        articleType: currentArticleType,
+        newImage: currentFeaturedImage.substring(0, 50) + "...",
+        previousImage: lastSyncedFeaturedImage.substring(0, 50) + "..." || "none"
+      });
+      
+      setLastSyncedFeaturedImage(currentFeaturedImage);
+      
       console.log(`🔄 Syncing featured image with ${currentArticleType} content first image`);
       
       // Find and update the featured-image-container div specifically
@@ -2000,7 +2002,7 @@ export default function AdminPanel() {
         console.log("⚠️ No changes made - content already matches featured image");
       }
     }
-  }, [form.watch("featuredImage"), form.watch("articleType"), generatedContent?.content, enhancedContentForEditor]);
+  }, [form.watch("featuredImage"), form.watch("articleType")]);
 
   // Sync selectedMediaContent.primaryImage changes to form.featuredImage for real-time content updates
   useEffect(() => {
