@@ -5292,8 +5292,8 @@ export default function AdminPanel() {
                       onAuthorSelect={handleAuthorSelected}
                     />
 
-                    {/* Gender and Writing Perspective Fields - Moved from Content Style */}
-                    <div className="mt-6 space-y-4">
+                    {/* Gender Field - Moved from Content Style */}
+                    <div className="mt-6">
                       <FormField
                         control={form.control}
                         name="contentGender"
@@ -5319,42 +5319,6 @@ export default function AdminPanel() {
                             <FormDescription>
                               Choose the gender orientation for your content
                             </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="writingPerspective"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Writing Perspective</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              key={`writingPerspective-${formKey}-${field.value}`}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select perspective" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="first_person_singular">
-                                  First Person Singular (I, me, my, mine)
-                                </SelectItem>
-                                <SelectItem value="first_person_plural">
-                                  First Person Plural (we, us, our, ours)
-                                </SelectItem>
-                                <SelectItem value="second_person">
-                                  Second Person (you, your, yours)
-                                </SelectItem>
-                                <SelectItem value="third_person">
-                                  Third Person (he, she, it, they)
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -5503,6 +5467,42 @@ export default function AdminPanel() {
                         </div>
                       )}
                     </div>
+
+                    <FormField
+                      control={form.control}
+                      name="writingPerspective"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Writing Perspective</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            key={`writingPerspective-${formKey}-${field.value}`}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select perspective" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="first_person_singular">
+                                First Person Singular (I, me, my, mine)
+                              </SelectItem>
+                              <SelectItem value="first_person_plural">
+                                First Person Plural (we, us, our, ours)
+                              </SelectItem>
+                              <SelectItem value="second_person">
+                                Second Person (you, your, yours)
+                              </SelectItem>
+                              <SelectItem value="third_person">
+                                Third Person (he, she, it, they)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={form.control}
