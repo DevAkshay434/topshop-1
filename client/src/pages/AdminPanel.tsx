@@ -5288,6 +5288,45 @@ export default function AdminPanel() {
                       onAuthorSelect={handleAuthorSelected}
                     />
 
+                    {/* Writing Perspective Field - Moved from Content Style */}
+                    <div className="mt-6">
+                      <FormField
+                        control={form.control}
+                        name="writingPerspective"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Writing Perspective</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              key={`writingPerspective-${formKey}-${field.value}`}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select perspective" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="first_person_singular">
+                                  First Person Singular (I, me, my, mine)
+                                </SelectItem>
+                                <SelectItem value="first_person_plural">
+                                  First Person Plural (we, us, our, ours)
+                                </SelectItem>
+                                <SelectItem value="second_person">
+                                  Second Person (you, your, yours)
+                                </SelectItem>
+                                <SelectItem value="third_person">
+                                  Third Person (he, she, it, they)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     <div className="flex justify-between mt-6">
                       <Button
                         type="button"
@@ -5405,42 +5444,6 @@ export default function AdminPanel() {
                         )}
                       />
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="writingPerspective"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Writing Perspective</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                            key={`writingPerspective-${formKey}-${field.value}`}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select perspective" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="first_person_singular">
-                                First Person Singular (I, me, my, mine)
-                              </SelectItem>
-                              <SelectItem value="first_person_plural">
-                                First Person Plural (we, us, our, ours)
-                              </SelectItem>
-                              <SelectItem value="second_person">
-                                Second Person (you, your, yours)
-                              </SelectItem>
-                              <SelectItem value="third_person">
-                                Third Person (he, she, it, they)
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     {/* Content Style Selector - RESTORED */}
                     <div className="mb-6">
