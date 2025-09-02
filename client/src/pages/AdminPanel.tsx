@@ -6029,9 +6029,10 @@ export default function AdminPanel() {
                     {/* Resizable HTML-Preserving Content Editor */}
                     <div className="border rounded-lg">
                       <PanelGroup direction="vertical" className="min-h-[320px]">
-                        <Panel defaultSize={75} minSize={30} maxSize={90}>
+                        <Panel defaultSize={100} minSize={50}>
                           <SimpleHTMLEditor
                             content={
+                              enhancedContentForEditor ||
                               generatedContent.rawContent ||
                               generatedContent.content ||
                               ""
@@ -6055,9 +6056,6 @@ export default function AdminPanel() {
                             className="h-full border-0"
                           />
                         </Panel>
-                        <PanelResizeHandle className="h-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-row-resize flex items-center justify-center">
-                          <div className="w-8 h-1 bg-gray-400 rounded-full"></div>
-                        </PanelResizeHandle>
                       </PanelGroup>
                     </div>
                   </div>
