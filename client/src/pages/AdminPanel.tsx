@@ -6049,9 +6049,10 @@ export default function AdminPanel() {
                           <div className="p-3 bg-gray-50 text-sm text-gray-600 h-full overflow-auto">
                             <div className="mb-2 font-medium">Content Statistics:</div>
                             <div className="space-y-1">
-                              <div>Characters: {(generatedContent.rawContent || generatedContent.content || "").length}</div>
-                              <div>Words: {(generatedContent.rawContent || generatedContent.content || "").split(/\s+/).filter(word => word.length > 0).length}</div>
-                              <div>Reading time: {calculateReadingTime(generatedContent.content || "")} min</div>
+                              <div>Characters: {(enhancedContentForEditor || generatedContent.content || "").length}</div>
+                              <div>Words: {(enhancedContentForEditor || generatedContent.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length}</div>
+                              <div>Reading time: {calculateReadingTime(enhancedContentForEditor || generatedContent.content || "")} min</div>
+                              <div>Images: {((enhancedContentForEditor || generatedContent.content || "").match(/<img[^>]*>/g) || []).length}</div>
                             </div>
                             <div className="mt-3 text-xs text-gray-500">
                               Drag the handle above to resize the editor area
