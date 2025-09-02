@@ -7054,15 +7054,20 @@ export default function AdminPanel() {
                                 `<img style="${imageStyle}"`,
                               );
 
-                              if (matchingProduct) {
-                                // Replace the image with a linked version
-                                const linkedImg = `<a href="${matchingProduct.admin_url || "#"}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
+                              // Link ALL secondary images to the first selected product, but not featured images
+                              const isFeaturedImage = imgElement.includes("featured-image-container");
+                              const hasSelectedProduct = products.length > 0;
+                              
+                              if (isSecondaryImage && !isFeaturedImage && hasSelectedProduct) {
+                                // All secondary images link to the first selected product
+                                const firstProduct = products[0];
+                                const linkedImg = `<a href="${firstProduct.admin_url || "#"}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
                                 enhancedContent = enhancedContent.replace(
                                   imgElement,
                                   linkedImg,
                                 );
                               } else {
-                                // Still replace with styled version even without product match
+                                // Featured images and images without products remain unlinked but styled
                                 enhancedContent = enhancedContent.replace(
                                   imgElement,
                                   styledImg,
@@ -7090,7 +7095,19 @@ export default function AdminPanel() {
                           enhancedContent = enhancedContent.replace(
                             imgRegexStandalone,
                             (match, imgTag, imgSrc) => {
-                              return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
+                              // Check if this is a secondary image and we have selected products
+                              const isSecondaryImage = imgTag.includes("width: 600px") || imgTag.includes("height: 600px");
+                              const isFeaturedImage = imgTag.includes("featured-image-container");
+                              const hasSelectedProduct = products.length > 0;
+                              
+                              if (isSecondaryImage && !isFeaturedImage && hasSelectedProduct) {
+                                // Link secondary images to the first selected product
+                                const firstProduct = products[0];
+                                return `<a href="${firstProduct.admin_url || "#"}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${imgTag}</a>`;
+                              } else {
+                                // For featured images or when no products selected, link to image itself
+                                return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
+                              }
                             },
                           );
 
