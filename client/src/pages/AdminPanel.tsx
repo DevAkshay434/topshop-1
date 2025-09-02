@@ -6031,14 +6031,14 @@ export default function AdminPanel() {
 
                     {/* Draggable Resizable Content Editor */}
                     <div 
-                      className="w-full border border-gray-200 rounded-lg resize-both overflow-auto"
+                      className="w-full border border-gray-200 rounded-lg resize-both overflow-hidden"
                       style={{ 
                         resize: 'both', 
                         minHeight: '400px', 
                         height: '600px',
                         minWidth: '300px',
                         width: '100%',
-                        cursor: 'move'
+                        maxHeight: '80vh'
                       }}
                     >
                       <SimpleHTMLEditor
