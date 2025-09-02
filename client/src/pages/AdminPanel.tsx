@@ -1932,6 +1932,52 @@ export default function AdminPanel() {
     }
   }, [limitData, usageData, navigate]);
 
+  // Watch for featured image changes and sync with page content first image
+  useEffect(() => {
+    const currentArticleType = form.watch("articleType");
+    const currentFeaturedImage = form.watch("featuredImage");
+    
+    // Only sync for pages and when we have both generated content and a featured image
+    if (currentArticleType === "page" && currentFeaturedImage && generatedContent?.content) {
+      // Find the first image in the content and replace it with the featured image
+      const contentWithUpdatedFirstImage = generatedContent.content.replace(
+        /<img[^>]+src="[^"]*"[^>]*>/i,
+        (match: string) => {
+          // Extract alt text from existing image if present
+          const altMatch = match.match(/alt="([^"]*)"/i);
+          const altText = altMatch ? altMatch[1] : "Featured image";
+          
+          // Replace with new featured image
+          return `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
+        }
+      );
+      
+      // Only update if content actually changed
+      if (contentWithUpdatedFirstImage !== generatedContent.content) {
+        setGeneratedContent((prev: any) => ({
+          ...prev,
+          content: contentWithUpdatedFirstImage,
+        }));
+        
+        // Also update the enhanced content for editor if it exists
+        if (enhancedContentForEditor) {
+          const updatedEnhancedContent = enhancedContentForEditor.replace(
+            /<img[^>]+src="[^"]*"[^>]*>/i,
+            (match: string) => {
+              const altMatch = match.match(/alt="([^"]*)"/i);
+              const altText = altMatch ? altMatch[1] : "Featured image";
+              return `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
+            }
+          );
+          setEnhancedContentForEditor(updatedEnhancedContent);
+        }
+        
+        // Force content update counter to trigger re-render
+        setContentUpdateCounter((prev) => prev + 1);
+      }
+    }
+  }, [form.watch("featuredImage"), form.watch("articleType"), generatedContent?.content, enhancedContentForEditor]);
+
   // Handle image search using Pexels API
   const handleImageSearch = async (query: string) => {
     const trimmedQuery = query.trim();
