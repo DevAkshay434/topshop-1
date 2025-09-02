@@ -5983,6 +5983,19 @@ export default function AdminPanel() {
                     </div>
                   )}
 
+                  {/* Content Statistics Section */}
+                  <div className="border-b border-gray-200 pb-4">
+                    <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                      <div className="mb-2 font-medium">Content Statistics:</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>Characters: {(enhancedContentForEditor || generatedContent.content || "").length}</div>
+                        <div>Words: {(enhancedContentForEditor || generatedContent.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length}</div>
+                        <div>Reading time: {calculateReadingTime(enhancedContentForEditor || generatedContent.content || "")} min</div>
+                        <div>Images: {((enhancedContentForEditor || generatedContent.content || "").match(/<img[^>]*>/g) || []).length}</div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Shopify-Compatible Content Editor Section */}
                   <div className="border-b border-gray-200 pb-4">
                     <div className="flex items-center justify-between mb-2">
@@ -6045,20 +6058,6 @@ export default function AdminPanel() {
                         <PanelResizeHandle className="h-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-row-resize flex items-center justify-center">
                           <div className="w-8 h-1 bg-gray-400 rounded-full"></div>
                         </PanelResizeHandle>
-                        <Panel defaultSize={25} minSize={10} maxSize={70}>
-                          <div className="p-3 bg-gray-50 text-sm text-gray-600 h-full overflow-auto">
-                            <div className="mb-2 font-medium">Content Statistics:</div>
-                            <div className="space-y-1">
-                              <div>Characters: {(enhancedContentForEditor || generatedContent.content || "").length}</div>
-                              <div>Words: {(enhancedContentForEditor || generatedContent.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length}</div>
-                              <div>Reading time: {calculateReadingTime(enhancedContentForEditor || generatedContent.content || "")} min</div>
-                              <div>Images: {((enhancedContentForEditor || generatedContent.content || "").match(/<img[^>]*>/g) || []).length}</div>
-                            </div>
-                            <div className="mt-3 text-xs text-gray-500">
-                              Drag the handle above to resize the editor area
-                            </div>
-                          </div>
-                        </Panel>
                       </PanelGroup>
                     </div>
                   </div>
