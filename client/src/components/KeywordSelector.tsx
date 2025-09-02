@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Card, 
   CardContent, 
@@ -169,6 +169,7 @@ export default function KeywordSelector({
   const [sortBy, setSortBy] = useState<'searchVolume' | 'competition' | 'cpc' | 'difficulty' | 'keyword'>('searchVolume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isFetchingVolumes, setIsFetchingVolumes] = useState(false);
+  const processedKeywordsRef = useRef<Set<string>>(new Set());
   
 
 
@@ -285,11 +286,26 @@ export default function KeywordSelector({
 
   // Fetch search volumes for existing manual keywords when component mounts
   useEffect(() => {
-    const manualKeywords = initialKeywords.filter(kw => kw.isManual && kw.searchVolume === 0);
+    const manualKeywords = initialKeywords.filter(kw => kw.isManual && (kw.searchVolume === 0 || kw.searchVolume === null || kw.searchVolume === undefined));
     if (manualKeywords.length > 0) {
       fetchSearchVolumesForManualKeywords(manualKeywords);
     }
   }, [initialKeywords]);
+
+  // Fetch search volumes for newly added manual keywords 
+  useEffect(() => {
+    const manualKeywords = keywords.filter(kw => 
+      kw.isManual && 
+      (kw.searchVolume === 0 || kw.searchVolume === null || kw.searchVolume === undefined) &&
+      !processedKeywordsRef.current.has(kw.keyword)
+    );
+    
+    if (manualKeywords.length > 0 && !isFetchingVolumes) {
+      // Mark these keywords as being processed
+      manualKeywords.forEach(kw => processedKeywordsRef.current.add(kw.keyword));
+      fetchSearchVolumesForManualKeywords(manualKeywords);
+    }
+  }, [keywords, isFetchingVolumes]);
 
   // Function to fetch search volumes for manual keywords
   const fetchSearchVolumesForManualKeywords = async (manualKeywords: KeywordData[]) => {
@@ -832,11 +848,11 @@ export default function KeywordSelector({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {keyword.intent === "Manual" ? "N/A" : (keyword.searchVolume !== undefined && keyword.searchVolume !== null ? keyword.searchVolume.toLocaleString() : 'N/A')}
+                        {keyword.searchVolume !== undefined && keyword.searchVolume !== null ? keyword.searchVolume.toLocaleString() : 'N/A'}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={keyword.intent === "Manual" ? "bg-purple-100 text-purple-800 border-purple-300" : getCompetitionColor(keyword.competitionLevel)}>
-                          {keyword.intent === "Manual" ? "Manual" : (keyword.competitionLevel || 'Unknown')}
+                        <Badge variant="outline" className={keyword.isManual ? "bg-purple-100 text-purple-800 border-purple-300" : getCompetitionColor(keyword.competitionLevel)}>
+                          {keyword.isManual ? "Manual" : (keyword.competitionLevel || 'Unknown')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -853,10 +869,10 @@ export default function KeywordSelector({
                           </div>
                           <div className="flex flex-col items-end text-xs min-w-[50px]">
                             <span className={`font-medium ${getDifficultyTextColor(keyword.difficulty)}`}>
-                              {keyword.intent === "Manual" ? "N/A" : (keyword.difficulty || 0)}
+                              {keyword.isManual && !keyword.difficulty ? "N/A" : (keyword.difficulty || 0)}
                             </span>
                             <span className={`text-[10px] ${getDifficultyTextColor(keyword.difficulty)}`}>
-                              {keyword.intent === "Manual" ? "Manual" : getDifficultyLabel(keyword.difficulty)}
+                              {keyword.isManual && !keyword.difficulty ? "Manual" : getDifficultyLabel(keyword.difficulty)}
                             </span>
                           </div>
                         </div>

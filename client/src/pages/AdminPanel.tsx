@@ -1650,7 +1650,7 @@ export default function AdminPanel() {
       // Add manual keyword exactly as entered by user, without DataForSEO lookup
       const newKeyword = {
         keyword: manualKeyword.trim(),
-        searchVolume: null, // Use null instead of 0 to avoid any concatenation issues
+        searchVolume: 0, // Use 0 for consistent search volume fetching logic
         competition: "MANUAL",
         difficulty: null, // Use null instead of 0
         selected: true,
