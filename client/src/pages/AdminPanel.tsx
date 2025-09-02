@@ -1061,7 +1061,9 @@ export default function AdminPanel() {
         youtubeEmbed: youtubeEmbed || selectedMediaContent.youtubeEmbed || null,
       },
       selectedAuthorId,
-      // CRITICAL FIX: Use form values instead of state variables
+      // CRITICAL FIX: Include articleType and use form values instead of state variables
+      articleType: formValues.articleType || "blog",
+      title: formValues.title || "",
       articleLength: formValues.articleLength || articleLength,
       headingsCount: formValues.headingsCount || headingsCount,
       writingPerspective: formValues.writingPerspective || writingPerspective,
