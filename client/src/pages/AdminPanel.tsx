@@ -3962,7 +3962,7 @@ export default function AdminPanel() {
                                   form.setValue("articleType", value);
                                 }
                               }}
-                              value={field.value || "blog"}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
