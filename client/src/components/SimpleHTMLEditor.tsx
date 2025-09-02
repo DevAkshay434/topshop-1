@@ -62,7 +62,7 @@ export function SimpleHTMLEditor({
         </div>
       )}
 
-      <div className="p-2 flex-1 flex flex-col">
+      <div className="p-2 flex-1 flex flex-col overflow-hidden">
         {viewMode === 'visual' ? (
           <div 
             ref={(el) => {
@@ -70,7 +70,7 @@ export function SimpleHTMLEditor({
                 el.innerHTML = htmlContent;
               }
             }}
-            className="prose prose-sm max-w-none h-full overflow-auto p-3 border rounded bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="prose prose-sm max-w-none flex-1 overflow-y-auto overflow-x-hidden p-3 border rounded bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
             contentEditable={editable}
             suppressContentEditableWarning={true}
             onInput={(e) => {
@@ -86,7 +86,8 @@ export function SimpleHTMLEditor({
               lineHeight: '1.6',
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
-              maxWidth: '100%'
+              maxWidth: '100%',
+              minHeight: '0'
             }}
           />
         ) : (
@@ -94,10 +95,11 @@ export function SimpleHTMLEditor({
             value={htmlContent}
             onChange={(e) => handleContentChange(e.target.value)}
             disabled={!editable}
-            className="h-full font-mono text-sm resize-none overflow-auto"
+            className="flex-1 font-mono text-sm resize-none overflow-y-auto overflow-x-hidden"
             placeholder="Enter HTML content here..."
             style={{
-              fontFamily: 'Monaco, Consolas, "Courier New", monospace'
+              fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+              minHeight: '0'
             }}
           />
         )}
