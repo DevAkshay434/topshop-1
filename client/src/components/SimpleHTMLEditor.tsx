@@ -70,7 +70,7 @@ export function SimpleHTMLEditor({
                 el.innerHTML = htmlContent;
               }
             }}
-            className="prose prose-sm max-w-none h-full overflow-y-auto p-3 border rounded bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="prose prose-sm max-w-none h-full overflow-auto p-3 border rounded bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
             contentEditable={editable}
             suppressContentEditableWarning={true}
             onInput={(e) => {
@@ -83,7 +83,10 @@ export function SimpleHTMLEditor({
             }}
             style={{
               fontSize: '14px',
-              lineHeight: '1.6'
+              lineHeight: '1.6',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              maxWidth: '100%'
             }}
           />
         ) : (
@@ -91,7 +94,7 @@ export function SimpleHTMLEditor({
             value={htmlContent}
             onChange={(e) => handleContentChange(e.target.value)}
             disabled={!editable}
-            className="h-full font-mono text-sm resize-none"
+            className="h-full font-mono text-sm resize-none overflow-auto"
             placeholder="Enter HTML content here..."
             style={{
               fontFamily: 'Monaco, Consolas, "Courier New", monospace'
