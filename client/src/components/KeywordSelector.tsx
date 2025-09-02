@@ -832,7 +832,7 @@ export default function KeywordSelector({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {keyword.intent === "Manual" ? "N/A" : (keyword.searchVolume !== undefined ? keyword.searchVolume.toLocaleString() : 'N/A')}
+                        {keyword.intent === "Manual" ? "N/A" : (keyword.searchVolume !== undefined && keyword.searchVolume !== null ? keyword.searchVolume.toLocaleString() : 'N/A')}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={keyword.intent === "Manual" ? "bg-purple-100 text-purple-800 border-purple-300" : getCompetitionColor(keyword.competitionLevel)}>

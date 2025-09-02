@@ -2536,6 +2536,8 @@ export default function AdminPanel() {
           ? generatedContent.tags.join(", ")
           : generatedContent.tags || "",
         featuredImage:
+          primaryImages[0]?.url ||
+          selectedMediaContent.primaryImage?.url ||
           generatedContent.featuredImage?.url ||
           generatedContent.featuredImage ||
           "",
@@ -2557,8 +2559,8 @@ export default function AdminPanel() {
             ? formValues.scheduledPublishTime || "09:30"
             : undefined,
         authorId: selectedAuthorId,
-        // Include media content for proper Shopify sync
-        primaryImage: selectedMediaContent.primaryImage,
+        // Include media content for proper Shopify sync - prioritize current state over generated content
+        primaryImage: primaryImages[0] || selectedMediaContent.primaryImage,
         secondaryImages: selectedMediaContent.secondaryImages,
       };
 
