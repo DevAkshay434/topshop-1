@@ -916,6 +916,7 @@ export default function AdminPanel() {
       const updatedFormValues = {
         ...currentFormValues,
         // Form fields that were problematic - ensure they get the saved values
+        articleType: projectData.articleType || currentFormValues.articleType,
         articleLength:
           projectData.articleLength || currentFormValues.articleLength,
         headingsCount:
