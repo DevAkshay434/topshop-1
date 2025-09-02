@@ -1995,6 +1995,24 @@ export default function AdminPanel() {
     }
   }, [form.watch("featuredImage"), form.watch("articleType"), generatedContent?.content, enhancedContentForEditor]);
 
+  // Sync selectedMediaContent.primaryImage changes to form.featuredImage for real-time content updates
+  useEffect(() => {
+    if (selectedMediaContent.primaryImage?.url) {
+      const currentFeaturedImage = form.getValues("featuredImage");
+      if (currentFeaturedImage !== selectedMediaContent.primaryImage.url) {
+        console.log("🔄 Syncing selectedMediaContent.primaryImage to form.featuredImage:", selectedMediaContent.primaryImage.url);
+        form.setValue("featuredImage", selectedMediaContent.primaryImage.url);
+      }
+    } else if (!selectedMediaContent.primaryImage) {
+      // Clear featured image when primary image is removed
+      const currentFeaturedImage = form.getValues("featuredImage");
+      if (currentFeaturedImage) {
+        console.log("🗑️ Clearing featuredImage - primary image removed");
+        form.setValue("featuredImage", "");
+      }
+    }
+  }, [selectedMediaContent.primaryImage, form]);
+
   // Handle image search using Pexels API
   const handleImageSearch = async (query: string) => {
     const trimmedQuery = query.trim();
