@@ -31,9 +31,9 @@ export function SimpleHTMLEditor({
   }
 
   return (
-    <div className={cn("border rounded-lg", className)}>
+    <div className={cn("border rounded-lg h-full flex flex-col", className)}>
       {editable && (
-        <div className="border-b p-2 bg-muted/50 flex items-center justify-between">
+        <div className="border-b p-2 bg-muted/50 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <Button
               variant={viewMode === 'visual' ? "default" : "ghost"}
@@ -62,7 +62,7 @@ export function SimpleHTMLEditor({
         </div>
       )}
 
-      <div className="p-2">
+      <div className="p-2 flex-1 flex flex-col">
         {viewMode === 'visual' ? (
           <div 
             ref={(el) => {
@@ -70,7 +70,7 @@ export function SimpleHTMLEditor({
                 el.innerHTML = htmlContent;
               }
             }}
-            className="prose prose-sm max-w-none h-64 overflow-y-auto p-3 border rounded bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="prose prose-sm max-w-none h-full overflow-y-auto p-3 border rounded bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
             contentEditable={editable}
             suppressContentEditableWarning={true}
             onInput={(e) => {
@@ -91,7 +91,7 @@ export function SimpleHTMLEditor({
             value={htmlContent}
             onChange={(e) => handleContentChange(e.target.value)}
             disabled={!editable}
-            className="h-64 font-mono text-sm resize-none"
+            className="h-full font-mono text-sm resize-none"
             placeholder="Enter HTML content here..."
             style={{
               fontFamily: 'Monaco, Consolas, "Courier New", monospace'
