@@ -6029,33 +6029,45 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    {/* Full-Width Content Editor */}
-                    <SimpleHTMLEditor
-                      content={
-                        enhancedContentForEditor ||
-                        generatedContent.rawContent ||
-                        generatedContent.content ||
-                        ""
-                      }
-                      onChange={(newContent) => {
-                        console.log(
-                          "SimpleHTMLEditor content updated:",
-                          newContent.length,
-                          "characters",
-                        );
-                        // Update both the raw content and processed content
-                        setGeneratedContent((prev) => ({
-                          ...prev,
-                          rawContent: newContent,
-                          content: newContent, // Use the same content for both
-                        }));
-                        setEnhancedContentForEditor(newContent);
-                        // Trigger immediate real-time preview update
-                        setContentUpdateCounter((prev) => prev + 1);
+                    {/* Draggable Resizable Content Editor */}
+                    <div 
+                      className="w-full border border-gray-200 rounded-lg resize-both overflow-auto"
+                      style={{ 
+                        resize: 'both', 
+                        minHeight: '400px', 
+                        height: '600px',
+                        minWidth: '300px',
+                        width: '100%',
+                        cursor: 'move'
                       }}
-                      className="w-full border border-gray-200 rounded-lg"
-                      style={{ width: '100%', minHeight: '600px', height: '70vh', resize: 'both', overflow: 'auto' }}
-                    />
+                    >
+                      <SimpleHTMLEditor
+                        content={
+                          enhancedContentForEditor ||
+                          generatedContent.rawContent ||
+                          generatedContent.content ||
+                          ""
+                        }
+                        onChange={(newContent) => {
+                          console.log(
+                            "SimpleHTMLEditor content updated:",
+                            newContent.length,
+                            "characters",
+                          );
+                          // Update both the raw content and processed content
+                          setGeneratedContent((prev) => ({
+                            ...prev,
+                            rawContent: newContent,
+                            content: newContent, // Use the same content for both
+                          }));
+                          setEnhancedContentForEditor(newContent);
+                          // Trigger immediate real-time preview update
+                          setContentUpdateCounter((prev) => prev + 1);
+                        }}
+                        className="w-full h-full border-0"
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    </div>
                   </div>
 
                   {/* Content Tags Section - Only show for blog posts, not pages */}
