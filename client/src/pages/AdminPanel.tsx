@@ -155,6 +155,7 @@ const contentFormSchema = z.object({
   articleType: z.enum(["blog", "page"]),
   blogId: z.string().optional(),
   keywords: z.array(z.string()).optional(),
+  contentGender: z.enum(["male", "female", "neutral"]).optional(),
   writingPerspective: z.enum([
     "first_person_singular",
     "first_person_plural",
@@ -917,6 +918,7 @@ export default function AdminPanel() {
         ...currentFormValues,
         // Form fields that were problematic - ensure they get the saved values
         articleType: projectData.articleType || currentFormValues.articleType,
+        contentGender: projectData.contentGender || currentFormValues.contentGender,
         articleLength:
           projectData.articleLength || currentFormValues.articleLength,
         headingsCount:
@@ -1063,6 +1065,7 @@ export default function AdminPanel() {
       selectedAuthorId,
       // CRITICAL FIX: Include articleType and use form values instead of state variables
       articleType: formValues.articleType || "blog",
+      contentGender: formValues.contentGender || "male",
       title: formValues.title || "",
       articleLength: formValues.articleLength || articleLength,
       headingsCount: formValues.headingsCount || headingsCount,
@@ -1540,6 +1543,7 @@ export default function AdminPanel() {
   // Default form values
   const defaultValues: Partial<ContentFormValues> = {
     articleType: "blog",
+    contentGender: "male",
     writingPerspective: "first_person_plural",
     enableTables: true,
     enableLists: true,
@@ -5288,8 +5292,38 @@ export default function AdminPanel() {
                       onAuthorSelect={handleAuthorSelected}
                     />
 
-                    {/* Writing Perspective Field - Moved from Content Style */}
-                    <div className="mt-6">
+                    {/* Gender and Writing Perspective Fields - Moved from Content Style */}
+                    <div className="mt-6 space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="contentGender"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Gender</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              key={`contentGender-${formKey}-${field.value}`}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select gender" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="male">Male</SelectItem>
+                                <SelectItem value="female">Female</SelectItem>
+                                <SelectItem value="neutral">Neutral</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Choose the gender orientation for your content
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
                       <FormField
                         control={form.control}
                         name="writingPerspective"
