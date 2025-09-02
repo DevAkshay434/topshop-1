@@ -1945,11 +1945,12 @@ export default function AdminPanel() {
     });
     
     // Only sync for pages and when we have both generated content and a featured image
-    if (currentArticleType === "page" && currentFeaturedImage && generatedContent?.content) {
+    if (currentArticleType === "page" && currentFeaturedImage && (generatedContent?.content || enhancedContentForEditor)) {
       console.log("🔄 Syncing featured image with page content first image");
       
       // Find the first image in the content and replace it with the featured image
-      const contentWithUpdatedFirstImage = generatedContent.content.replace(
+      const currentContent = enhancedContentForEditor || generatedContent.content || "";
+      const contentWithUpdatedFirstImage = currentContent.replace(
         /<img[^>]+src="[^"]*"[^>]*>/i,
         (match: string) => {
           console.log("📸 Replacing first image in content:", match);
@@ -1964,25 +1965,17 @@ export default function AdminPanel() {
       );
       
       // Only update if content actually changed
-      if (contentWithUpdatedFirstImage !== generatedContent.content) {
+      if (contentWithUpdatedFirstImage !== currentContent) {
         console.log("✅ Content updated with new featured image");
+        // Update both the generated content and enhanced content
         setGeneratedContent((prev: any) => ({
           ...prev,
           content: contentWithUpdatedFirstImage,
+          rawContent: contentWithUpdatedFirstImage,
         }));
         
-        // Also update the enhanced content for editor if it exists
-        if (enhancedContentForEditor) {
-          const updatedEnhancedContent = enhancedContentForEditor.replace(
-            /<img[^>]+src="[^"]*"[^>]*>/i,
-            (match: string) => {
-              const altMatch = match.match(/alt="([^"]*)"/i);
-              const altText = altMatch ? altMatch[1] : "Featured image";
-              return `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
-            }
-          );
-          setEnhancedContentForEditor(updatedEnhancedContent);
-        }
+        // Always update the enhanced content for editor
+        setEnhancedContentForEditor(contentWithUpdatedFirstImage);
         
         // Force content update counter to trigger re-render
         setContentUpdateCounter((prev) => prev + 1);
@@ -6028,8 +6021,8 @@ export default function AdminPanel() {
 
                     {/* Resizable HTML-Preserving Content Editor */}
                     <div className="border rounded-lg">
-                      <PanelGroup direction="vertical" className="min-h-[320px]">
-                        <Panel defaultSize={100} minSize={50}>
+                      <PanelGroup direction="horizontal" className="min-h-[400px]">
+                        <Panel defaultSize={100} minSize={30}>
                           <SimpleHTMLEditor
                             content={
                               enhancedContentForEditor ||
@@ -6055,6 +6048,17 @@ export default function AdminPanel() {
                             }}
                             className="h-full border-0"
                           />
+                        </Panel>
+                        <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-col-resize flex items-center justify-center">
+                          <div className="h-8 w-1 bg-gray-400 rounded-full"></div>
+                        </PanelResizeHandle>
+                        <Panel defaultSize={0} minSize={0} maxSize={50} collapsible>
+                          <div className="p-3 bg-gray-50 text-sm text-gray-600 h-full overflow-auto">
+                            <div className="mb-2 font-medium">Editor Tools:</div>
+                            <div className="text-xs text-gray-500">
+                              Drag the handle to resize the editor area
+                            </div>
+                          </div>
                         </Panel>
                       </PanelGroup>
                     </div>
