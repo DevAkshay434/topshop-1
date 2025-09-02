@@ -1948,21 +1948,30 @@ export default function AdminPanel() {
     if (currentArticleType === "page" && currentFeaturedImage && (generatedContent?.content || enhancedContentForEditor)) {
       console.log("🔄 Syncing featured image with page content first image");
       
-      // Find the first image in the content and replace it with the featured image
+      // Find and update the featured-image-container div specifically
       const currentContent = enhancedContentForEditor || generatedContent.content || "";
-      const contentWithUpdatedFirstImage = currentContent.replace(
-        /<img[^>]+src="[^"]*"[^>]*>/i,
+      
+      // First, try to find and update the featured-image-container div
+      let contentWithUpdatedFirstImage = currentContent.replace(
+        /<div[^>]*class="[^"]*featured-image-container[^"]*"[^>]*>[\s\S]*?<\/div>/i,
         (match: string) => {
-          console.log("📸 Replacing first image in content:", match);
-          // Extract alt text from existing image if present
-          const altMatch = match.match(/alt="([^"]*)"/i);
-          const altText = altMatch ? altMatch[1] : "Featured image";
-          
-          const newImgTag = `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
-          console.log("✨ New image tag:", newImgTag);
-          return newImgTag;
+          console.log("📸 Replacing featured-image-container:", match.substring(0, 100) + "...");
+          return `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; max-width: 600px; border-radius: 8px;"></div>`;
         }
       );
+      
+      // If no featured-image-container found, fallback to replacing first img tag
+      if (contentWithUpdatedFirstImage === currentContent) {
+        contentWithUpdatedFirstImage = currentContent.replace(
+          /<img[^>]+src="[^"]*"[^>]*>/i,
+          (match: string) => {
+            console.log("📸 Fallback: Replacing first image in content:", match);
+            const altMatch = match.match(/alt="([^"]*)"/i);
+            const altText = altMatch ? altMatch[1] : "Featured image";
+            return `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
+          }
+        );
+      }
       
       // Only update if content actually changed
       if (contentWithUpdatedFirstImage !== currentContent) {
@@ -6020,47 +6029,32 @@ export default function AdminPanel() {
                     </div>
 
                     {/* Resizable HTML-Preserving Content Editor */}
-                    <div className="border rounded-lg">
-                      <PanelGroup direction="horizontal" className="min-h-[400px]">
-                        <Panel defaultSize={100} minSize={30}>
-                          <SimpleHTMLEditor
-                            content={
-                              enhancedContentForEditor ||
-                              generatedContent.rawContent ||
-                              generatedContent.content ||
-                              ""
-                            }
-                            onChange={(newContent) => {
-                              console.log(
-                                "SimpleHTMLEditor content updated:",
-                                newContent.length,
-                                "characters",
-                              );
-                              // Update both the raw content and processed content
-                              setGeneratedContent((prev) => ({
-                                ...prev,
-                                rawContent: newContent,
-                                content: newContent, // Use the same content for both
-                              }));
-                              setEnhancedContentForEditor(newContent);
-                              // Trigger immediate real-time preview update
-                              setContentUpdateCounter((prev) => prev + 1);
-                            }}
-                            className="h-full border-0"
-                          />
-                        </Panel>
-                        <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-col-resize flex items-center justify-center">
-                          <div className="h-8 w-1 bg-gray-400 rounded-full"></div>
-                        </PanelResizeHandle>
-                        <Panel defaultSize={0} minSize={0} maxSize={50} collapsible>
-                          <div className="p-3 bg-gray-50 text-sm text-gray-600 h-full overflow-auto">
-                            <div className="mb-2 font-medium">Editor Tools:</div>
-                            <div className="text-xs text-gray-500">
-                              Drag the handle to resize the editor area
-                            </div>
-                          </div>
-                        </Panel>
-                      </PanelGroup>
+                    <div className="border rounded-lg resize-both overflow-auto" style={{ resize: 'both', minHeight: '400px', minWidth: '300px' }}>
+                      <SimpleHTMLEditor
+                        content={
+                          enhancedContentForEditor ||
+                          generatedContent.rawContent ||
+                          generatedContent.content ||
+                          ""
+                        }
+                        onChange={(newContent) => {
+                          console.log(
+                            "SimpleHTMLEditor content updated:",
+                            newContent.length,
+                            "characters",
+                          );
+                          // Update both the raw content and processed content
+                          setGeneratedContent((prev) => ({
+                            ...prev,
+                            rawContent: newContent,
+                            content: newContent, // Use the same content for both
+                          }));
+                          setEnhancedContentForEditor(newContent);
+                          // Trigger immediate real-time preview update
+                          setContentUpdateCounter((prev) => prev + 1);
+                        }}
+                        className="h-full w-full border-0"
+                      />
                     </div>
                   </div>
 
