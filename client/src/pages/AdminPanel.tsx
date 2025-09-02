@@ -1939,14 +1939,15 @@ export default function AdminPanel() {
     
     console.log("🖼️ Featured image sync check:", {
       articleType: currentArticleType,
-      featuredImage: currentFeaturedImage ? "present" : "none",
-      hasContent: !!generatedContent?.content,
-      contentLength: generatedContent?.content?.length || 0
+      featuredImage: currentFeaturedImage ? currentFeaturedImage.substring(0, 50) + "..." : "none",
+      hasContent: !!(generatedContent?.content || enhancedContentForEditor),
+      contentLength: (generatedContent?.content || enhancedContentForEditor || "").length,
+      enhancedContentExists: !!enhancedContentForEditor
     });
     
-    // Only sync for pages and when we have both generated content and a featured image
-    if (currentArticleType === "page" && currentFeaturedImage && (generatedContent?.content || enhancedContentForEditor)) {
-      console.log("🔄 Syncing featured image with page content first image");
+    // Sync for both pages and blogs when we have both generated content and a featured image
+    if (currentFeaturedImage && (generatedContent?.content || enhancedContentForEditor)) {
+      console.log(`🔄 Syncing featured image with ${currentArticleType} content first image`);
       
       // Find and update the featured-image-container div specifically
       const currentContent = enhancedContentForEditor || generatedContent.content || "";
@@ -6028,8 +6029,8 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    {/* Resizable HTML-Preserving Content Editor */}
-                    <div className="border rounded-lg resize-both overflow-auto" style={{ resize: 'both', minHeight: '400px', minWidth: '300px' }}>
+                    {/* Full-Width Content Editor */}
+                    <div className="w-full" style={{ minHeight: '600px', height: '80vh' }}>
                       <SimpleHTMLEditor
                         content={
                           enhancedContentForEditor ||
@@ -6053,7 +6054,8 @@ export default function AdminPanel() {
                           // Trigger immediate real-time preview update
                           setContentUpdateCounter((prev) => prev + 1);
                         }}
-                        className="h-full w-full border-0"
+                        className="w-full h-full border border-gray-200 rounded-lg"
+                        style={{ width: '100%', height: '100%', resize: 'both', overflow: 'auto' }}
                       />
                     </div>
                   </div>
