@@ -1974,6 +1974,13 @@ export default function AdminPanel() {
         );
       }
       
+      // If still no changes and we're dealing with pages, add the featured image at the beginning
+      if (contentWithUpdatedFirstImage === currentContent && currentArticleType === "page") {
+        console.log("📸 No existing image found - adding featured image at the beginning for page");
+        const featuredImageHtml = `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; max-width: 600px; border-radius: 8px;"></div>\n\n`;
+        contentWithUpdatedFirstImage = featuredImageHtml + currentContent;
+      }
+      
       // Only update if content actually changed
       if (contentWithUpdatedFirstImage !== currentContent) {
         console.log("✅ Content updated with new featured image");
