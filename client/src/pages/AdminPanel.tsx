@@ -1937,23 +1937,35 @@ export default function AdminPanel() {
     const currentArticleType = form.watch("articleType");
     const currentFeaturedImage = form.watch("featuredImage");
     
+    console.log("🖼️ Featured image sync check:", {
+      articleType: currentArticleType,
+      featuredImage: currentFeaturedImage ? "present" : "none",
+      hasContent: !!generatedContent?.content,
+      contentLength: generatedContent?.content?.length || 0
+    });
+    
     // Only sync for pages and when we have both generated content and a featured image
     if (currentArticleType === "page" && currentFeaturedImage && generatedContent?.content) {
+      console.log("🔄 Syncing featured image with page content first image");
+      
       // Find the first image in the content and replace it with the featured image
       const contentWithUpdatedFirstImage = generatedContent.content.replace(
         /<img[^>]+src="[^"]*"[^>]*>/i,
         (match: string) => {
+          console.log("📸 Replacing first image in content:", match);
           // Extract alt text from existing image if present
           const altMatch = match.match(/alt="([^"]*)"/i);
           const altText = altMatch ? altMatch[1] : "Featured image";
           
-          // Replace with new featured image
-          return `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
+          const newImgTag = `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
+          console.log("✨ New image tag:", newImgTag);
+          return newImgTag;
         }
       );
       
       // Only update if content actually changed
       if (contentWithUpdatedFirstImage !== generatedContent.content) {
+        console.log("✅ Content updated with new featured image");
         setGeneratedContent((prev: any) => ({
           ...prev,
           content: contentWithUpdatedFirstImage,
@@ -1974,6 +1986,8 @@ export default function AdminPanel() {
         
         // Force content update counter to trigger re-render
         setContentUpdateCounter((prev) => prev + 1);
+      } else {
+        console.log("⚠️ No changes made - content already matches featured image");
       }
     }
   }, [form.watch("featuredImage"), form.watch("articleType"), generatedContent?.content, enhancedContentForEditor]);
@@ -8698,6 +8712,9 @@ export default function AdminPanel() {
                                         source: image.source || "pexels",
                                       },
                                     }));
+
+                                    // CRITICAL: Update form field to trigger synchronization for pages
+                                    form.setValue("featuredImage", image.url);
 
                                     toast({
                                       title: "Primary image selected",
