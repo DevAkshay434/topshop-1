@@ -784,8 +784,15 @@ export default function AdminPanel() {
       setIsContentPosted(false);
       
       // 2. First restore non-form state variables (UI state that's not controlled by React Hook Form)
-      if (projectData.selectedProducts)
+      if (projectData.selectedProducts) {
+        console.log("🔍 PROJECT LOAD - Restoring selected products:", {
+          savedProductsLength: projectData.selectedProducts.length,
+          savedProductsData: projectData.selectedProducts
+        });
         setSelectedProducts(projectData.selectedProducts);
+      } else {
+        console.log("⚠️ PROJECT LOAD - No selected products found in project data");
+      }
       if (projectData.selectedCollections)
         setSelectedCollections(projectData.selectedCollections);
       if (projectData.selectedKeywords) {
