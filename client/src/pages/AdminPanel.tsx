@@ -4479,14 +4479,6 @@ export default function AdminPanel() {
                                   {typeof keyword?.keyword === 'string' 
                                     ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
                                     : keyword?.keyword || ""}
-                                  {keyword?.searchVolume &&
-                                    keyword?.searchVolume > 0 &&
-                                    !keyword?.isManual && (
-                                      <span className="text-xs text-muted-foreground ml-1">
-                                        ({keyword.searchVolume.toLocaleString()}
-                                        )
-                                      </span>
-                                    )}
                                   {keyword?.isManual && (
                                     <span className="text-xs text-purple-600 ml-1">
                                       (Manual)
