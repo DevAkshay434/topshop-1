@@ -1959,7 +1959,7 @@ export default function AdminPanel() {
         /<div[^>]*class="[^"]*featured-image-container[^"]*"[^>]*>[\s\S]*?<\/div>/i,
         (match: string) => {
           console.log("📸 Replacing featured-image-container:", match.substring(0, 100) + "...");
-          return `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; max-width: 600px; border-radius: 8px;"></div>`;
+          return `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; border-radius: 8px;"></div>`;
         }
       );
       
@@ -1979,7 +1979,7 @@ export default function AdminPanel() {
       // If still no changes and we're dealing with pages, add the featured image at the beginning
       if (contentWithUpdatedFirstImage === currentContent && currentArticleType === "page") {
         console.log("📸 No existing image found - adding featured image at the beginning for page");
-        const featuredImageHtml = `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; max-width: 600px; border-radius: 8px;"></div>\n\n`;
+        const featuredImageHtml = `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; border-radius: 8px;"></div>\n\n`;
         contentWithUpdatedFirstImage = featuredImageHtml + currentContent;
       }
       
@@ -7395,7 +7395,7 @@ export default function AdminPanel() {
                           toast({
                             title: "Link copied",
                             description:
-                              "Shopify URL has been copied to clipboard",
+                              "Public URL has been copied to clipboard",
                             variant: "default",
                           });
                         }}
