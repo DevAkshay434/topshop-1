@@ -591,13 +591,13 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
     console.log(`🎯 CLAUDE SERVICE - Request length parameter: "${request.length}"`);
     
     // Determine content length based on request
-    let contentLength = "approximately 800-1000 words";
+    let contentLength = "approximately 1200 words";
     if (request.length.toLowerCase().includes("short")) {
-      contentLength = "approximately 500-700 words";
+      contentLength = "approximately 800 words";
     } else if (request.length.toLowerCase().includes("long")) {
-      contentLength = "approximately 1500-2000 words";
+      contentLength = "approximately 1800 words";
     } else if (request.length.toLowerCase().includes("comprehensive")) {
-      contentLength = "approximately 2500-3500 words";
+      contentLength = "approximately 3000 words";
     }
     
     console.log(`📏 Article length requested: "${request.length}" -> Content length: "${contentLength}"`);
