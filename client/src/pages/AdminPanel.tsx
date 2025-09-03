@@ -3462,7 +3462,7 @@ export default function AdminPanel() {
 
       <div className="content-generation-container">
         {/* Full-Screen Content Generation Interface */}
-        <div className="max-w-5xl mx-auto space-y-12 px-4">
+        <div className="w-full max-w-full mx-auto space-y-12 px-4">
           {/* Main Content Generation Card */}
           <Card className="admin-card bg-white">
             <CardHeader className="text-center py-12">
