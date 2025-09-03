@@ -1421,22 +1421,11 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
       console.log("   - This confirms secondary images aren't being sent from frontend");
     }
     
-    // Map articleLength to actual length values for Claude (moved here before use)
-    let contentLength = "medium";
-    if (requestData.articleLength === "short") {
-      contentLength = "short";
-    } else if (requestData.articleLength === "long") {
-      contentLength = "long";
-    } else if (requestData.articleLength === "comprehensive") {
-      contentLength = "comprehensive";
-    }
-    console.log(`🔍 ADMIN ROUTE - Mapped content length early: "${contentLength}" from "${requestData.articleLength}"`);
-    
     // Create a record of the content generation request
     const contentRequest = await storage.createContentGenRequest({
       topic: requestData.title,
       tone: requestData.toneOfVoice,
-      length: contentLength, // Use mapped content length from request
+      length: "medium", // Default length
       status: "pending",
       generatedContent: null
     });
@@ -1612,7 +1601,18 @@ Please suggest a meta description at the end of your response that includes at l
       console.log(`🔍 ADMIN ROUTE - Raw request body articleLength: "${requestData.articleLength}"`);
       console.log(`🔍 ADMIN ROUTE - Type of articleLength: ${typeof requestData.articleLength}`);
       console.log(`🔍 ADMIN ROUTE - Full request keys:`, Object.keys(requestData));
-      console.log(`🔍 ADMIN ROUTE - Using previously mapped content length: "${contentLength}"`);
+      
+      // Map articleLength to actual length values for Claude
+      let contentLength = "medium";
+      if (requestData.articleLength === "short") {
+        contentLength = "short";
+      } else if (requestData.articleLength === "long") {
+        contentLength = "long";
+      } else if (requestData.articleLength === "comprehensive") {
+        contentLength = "comprehensive";
+      }
+      
+      console.log(`🔍 ADMIN ROUTE - Mapped content length to send to Claude: "${contentLength}"`);
       
       // Update the prompt based on new fields
       // Add buyer profile information
