@@ -157,7 +157,7 @@ export class DataForSEOService {
                       const cpc = keywordData?.keyword_info?.cpc || 1.0;
                       const difficulty = keywordData?.keyword_properties?.keyword_difficulty || Math.floor(Math.random() * 50) + 20;
                       
-                      console.log(`🔍 KEYWORD DEBUG "${relatedKeyword}": vol=${searchVolume}, comp=${this.getCompetitionLevel(competition)}, diff=${difficulty}`);
+                      console.log(`🔍 KEYWORD DEBUG "${relatedKeyword}": vol=${searchVolume}, comp=${competition}, diff=${difficulty}`);
                       
                       allKeywords.push({
                         keyword: relatedKeyword,
