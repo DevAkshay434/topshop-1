@@ -5782,6 +5782,8 @@ export default function AdminPanel() {
                                 "Manual form submission triggered with values:",
                                 values,
                               );
+                              console.log("🔍 BUTTON CLICK - Article length from form.getValues():", values.articleLength);
+                              console.log("🔍 BUTTON CLICK - Article length state variable:", articleLength);
                               handleSubmit(values);
 
                               // Immediately scroll to Content Preview section when Generate button is clicked

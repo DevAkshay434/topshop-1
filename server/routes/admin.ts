@@ -1594,7 +1594,9 @@ Please suggest a meta description at the end of your response that includes at l
 `;
 
       console.log(`Generating content with Claude for: "${requestData.title}"`);
-      console.log(`🔍 ADMIN ROUTE - Article length from request: "${requestData.articleLength}"`);
+      console.log(`🔍 ADMIN ROUTE - Raw request body articleLength: "${requestData.articleLength}"`);
+      console.log(`🔍 ADMIN ROUTE - Type of articleLength: ${typeof requestData.articleLength}`);
+      console.log(`🔍 ADMIN ROUTE - Full request keys:`, Object.keys(requestData));
       
       // Map articleLength to actual length values for Claude
       let contentLength = "medium";
