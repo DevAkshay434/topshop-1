@@ -3413,7 +3413,7 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto pb-10">
+    <div className="w-full max-w-full mx-auto pb-10 px-4">
       {/* Project Management Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -3462,7 +3462,7 @@ export default function AdminPanel() {
 
       <div className="content-generation-container">
         {/* Full-Screen Content Generation Interface */}
-        <div className="max-w-5xl mx-auto space-y-12 px-4">
+        <div className="w-full max-w-full mx-auto space-y-12 px-4">
           {/* Main Content Generation Card */}
           <Card className="admin-card bg-white">
             <CardHeader className="text-center py-12">
