@@ -1,0 +1,82 @@
+Admin Panel Requirements:
+
+Design & Typography:
+
+Use the same fonts and design aesthetic as https://dash.autoblogging.ai/quick_wizard
+Implement clean, modern sans-serif fonts (Inter/Poppins style)
+Maintain high contrast typography with clear visual hierarchy
+Use large, bold headings for main actions and sections
+
+
+Full-Screen Content Generator:
+
+Remove the current column-based layout
+Make the content generation interface occupy the full screen width
+Content preview and generation controls should not be displayed side-by-side in columns
+Implement single-column, vertical flow design
+Use centered content area with generous white space
+
+
+User Flow:
+
+When user selects options → Show full-screen content generation interface
+During content generation → Display full-screen content preview (similar to the reference site)
+Content preview should expand to utilize the entire screen real estate
+Implement progressive disclosure - show options step by step
+Add smooth transitions between different states
+
+
+Reference Implementation: Model the layout and user experience after https://dash.autoblogging.ai/quick_wizard
+
+Key Changes:
+
+Eliminate column-based layout for content generation
+Implement full-screen content generation and preview
+Adopt the visual design language from the reference site
+Ensure seamless transition from option selection to full-screen generation view
+
+Additional Design Points to Include:
+
+Color Scheme & Visual Elements:
+
+Minimal color palette with white/light backgrounds
+Strategic use of accent colors for primary actions (blue/purple tones)
+Subtle gradients or solid colors for call-to-action buttons
+Rounded corners on buttons, cards, and input fields
+Soft drop shadows for depth and layering
+
+
+Interactive Components:
+
+Large, prominent action buttons with hover states
+Clean form inputs with clear labels and placeholders
+Toggle switches for binary options
+Modern dropdown menus for selections
+Micro-interactions and smooth hover effects
+
+
+Content Generation Experience:
+
+Step-by-step wizard approach for user guidance
+Real-time content streaming during generation
+Progress indicators with loading animations
+Full-screen preview mode with clean article formatting
+Always-accessible exit/edit options
+
+
+Modern UI Patterns:
+
+Card-based design for different sections and options
+Floating action buttons for key actions
+Sticky navigation/controls during scrolling
+Mobile-first responsive design
+Progressive web app feel with smooth performance
+
+
+Content Preview Specifications:
+
+Full-screen content preview that eliminates distractions
+Real-time content display as it's being generated
+Proper typography spacing and formatting
+Clean, readable article layout
+Seamless transition from generation to preview mode
