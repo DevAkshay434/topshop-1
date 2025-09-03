@@ -3354,18 +3354,7 @@ export default function AdminPanel() {
         // Force content editor to re-render with new content
         setContentEditorKey((prev) => prev + 1);
 
-        // Auto-scroll to content preview after successful generation
-        setTimeout(() => {
-          if (contentPreviewRef.current) {
-            contentPreviewRef.current.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-            console.log("✅ Auto-scrolled to Content Preview section");
-          } else {
-            console.log("❌ Content Preview ref not found for auto-scroll");
-          }
-        }, 1200); // Longer delay to ensure content is fully rendered and no conflicting scrolls
+        // Content Preview scroll already handled on button click
 
         // Mark content as generated for workflow step indicator
         setIsContentGenerated(true);
@@ -5788,7 +5777,16 @@ export default function AdminPanel() {
                               );
                               handleSubmit(values);
 
-                              // Don't scroll here - let the content generation success handler do the scrolling
+                              // Immediately scroll to Content Preview section when Generate button is clicked
+                              setTimeout(() => {
+                                if (contentPreviewRef.current) {
+                                  contentPreviewRef.current.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                  console.log("✅ Immediate scroll to Content Preview on button click");
+                                }
+                              }, 100);
                             }
                           }}
                           title={
