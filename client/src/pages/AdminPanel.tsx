@@ -3365,25 +3365,10 @@ export default function AdminPanel() {
           } else {
             console.log("❌ Content Preview ref not found for auto-scroll");
           }
-        }, 800); // Longer delay to allow content to fully render
+        }, 1200); // Longer delay to ensure content is fully rendered and no conflicting scrolls
 
         // Mark content as generated for workflow step indicator
         setIsContentGenerated(true);
-        
-        // Auto-scroll to show the current step (Generate step)
-        setTimeout(() => {
-          const stepIndicator = document.getElementById("step-indicator");
-          if (stepIndicator) {
-            const currentStepButton = stepIndicator.querySelector(`[data-step="content"]`);
-            if (currentStepButton) {
-              currentStepButton.scrollIntoView({
-                behavior: "smooth",
-                inline: "center",
-                block: "nearest"
-              });
-            }
-          }
-        }, 1000); // Delay to allow content generation to complete
 
         toast({
           title: "Content generated successfully",
@@ -3484,7 +3469,7 @@ export default function AdminPanel() {
                 >
                   {/* Step guidance */}
 
-                  <div className="sticky top-4 z-30 mb-12 p-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200/60 shadow-sm backdrop-blur-sm bg-opacity-95">
+                  <div className="z-30 mb-12 p-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200/60 shadow-sm backdrop-blur-sm bg-opacity-95">
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
                       Content Creation Workflow
                     </h3>
@@ -3653,7 +3638,7 @@ export default function AdminPanel() {
                       form.watch("buyerPersonas") ||
                       selectedKeywords.length > 0 ||
                       form.watch("title")) && (
-                      <div className="space-y-6 border-0 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 shadow-sm">
+                      <div className="space-y-6 border-0 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 shadow-sm  mx-auto max-w-5xl">
                         <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">
                           Current Selections
                         </h4>
@@ -5743,7 +5728,7 @@ export default function AdminPanel() {
                   </div>
 
                   {/* Sticky Generate Content button fixed to bottom of screen */}
-                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10  ">
+                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10  mx-auto max-w-5xl  ">
                     <div className="bg-white/90 backdrop-blur-sm  p-4 rounded-lg shadow-lg border border-gray-200">
                       {/* Progress indicator and validation status */}
                       {!isReadyToGenerateContent() && (
@@ -5852,7 +5837,7 @@ export default function AdminPanel() {
 
           {/* Content Preview Section - Full Width */}
           {(isGenerating || generatedContent) && (
-            <Card className="border-0 shadow-lg mt-8" ref={contentPreviewRef}>
+            <Card className="border-0 shadow-lg mt-8   mx-auto max-w-5xl" ref={contentPreviewRef}>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Content Preview</CardTitle>
                 <CardDescription className="text-base text-gray-600">
