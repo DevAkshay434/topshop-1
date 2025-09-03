@@ -654,7 +654,10 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
     - Ensure keyword usage feels natural and not forced`;
     }
 
-let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone, ${contentLength}. ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
+let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone. 
+
+CRITICAL WORD COUNT REQUIREMENT: The article MUST be ${contentLength}. This is a strict requirement - do not exceed or fall short of this word count range.
+${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
     
     CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
     
@@ -833,6 +836,8 @@ let promptText = `Generate a well-structured, SEO-optimized blog post with the E
             {
               role: 'user',
               content: `${promptText}
+          
+          FINAL REMINDER: The article MUST be exactly ${contentLength}. This is critical - count your words carefully and ensure the content meets this exact requirement.
           
           IMPORTANT: Return the response in JSON format with the following structure:
           {
