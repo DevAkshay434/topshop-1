@@ -1567,7 +1567,7 @@ export default function AdminPanel() {
     scheduleDate: undefined,
     scheduleTime: "09:30",
     // New fields
-    articleLength: "long",
+    articleLength: "medium",
     headingsCount: "3",
     // Category fields
     categories: [],
@@ -1610,7 +1610,7 @@ export default function AdminPanel() {
     publicationType: formData.publicationType || "draft",
     scheduleDate: formData.scheduleDate || undefined,
     scheduleTime: formData.scheduleTime || "09:30",
-    articleLength: formData.articleLength || "long",
+    articleLength: formData.articleLength || "medium",
     headingsCount: formData.headingsCount || "3",
     categories: formData.categories || [],
     customCategory: formData.customCategory || "",
@@ -2879,7 +2879,7 @@ export default function AdminPanel() {
           publicationType === "schedule" ? "scheduled" : values.postStatus,
 
         // Include content generation option fields
-        articleLength: values.articleLength || "long",
+        articleLength: values.articleLength || "medium",
         headingsCount: values.headingsCount || "3",
       };
 
