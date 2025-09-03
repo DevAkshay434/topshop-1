@@ -1371,7 +1371,8 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     
     // Parse the request data to verify it matches the schema
     try {
-      requestSchema.parse(req.body);
+      const validatedData = requestSchema.parse(req.body);
+      console.log("🔍 POST-VALIDATION - Article length after schema validation:", validatedData.articleLength);
     } catch (parseError) {
       console.error("Request validation failed:", parseError);
       return res.status(400).json({
@@ -1666,6 +1667,8 @@ Place this at a logical position in the content, typically after introducing a c
       }
       
       // 3. Generate content with Claude, fallback to OpenAI if Claude fails
+      console.log("🔍 FINAL CLAUDE CALL - Article length being sent:", contentLength);
+      console.log("🔍 FINAL CLAUDE CALL - Original request articleLength:", requestData.articleLength);
       let generatedContent;
       try {
         generatedContent = await generateBlogContentWithClaude({
