@@ -60,6 +60,10 @@ export class DataForSEOService {
       const cleanedKeyword = this.cleanKeywordString(keyword);
       console.log(`Cleaned keyword for API request: "${cleanedKeyword}"`);
       
+      // Handle comma-separated keywords by using the first one
+      const primaryKeyword = cleanedKeyword.split(',')[0].trim();
+      console.log(`Using primary keyword for API call: "${primaryKeyword}"`);
+      
       const auth = {
         username: this.username,
         password: this.password
@@ -68,11 +72,11 @@ export class DataForSEOService {
       let keywordData: KeywordData[] = [];
 
       try {
-        // Get keyword suggestions
-        console.log(`Getting keyword suggestions for: "${cleanedKeyword}"`);
+        // Get keyword suggestions using single keyword
+        console.log(`Getting keyword suggestions for: "${primaryKeyword}"`);
         
         const suggestionsRequestData = [{
-          keyword: cleanedKeyword,
+          keyword: primaryKeyword,
           language_code: "en", 
           location_code: 2840,
           limit: 50,
@@ -126,24 +130,36 @@ export class DataForSEOService {
           
           const allKeywords: any[] = [];
           
-          // For related_keywords endpoint, each suggestion should have keyword and search volume directly
+          // Process the response structure - check if items exist
           suggestions.forEach((item: any, index: number) => {
-            if (item.keyword && typeof item.keyword === 'string') {
-              const keywordText = item.keyword;
-              const searchVolume = item.search_volume || 0;
-              const competition = item.competition || 0;
-              const cpc = item.cpc || 0;
-              const keywordDifficulty = item.keyword_difficulty || 0;
+            console.log(`Processing suggestion ${index}:`, item);
+            
+            // Check if items array exists and has data
+            if (item.items && Array.isArray(item.items) && item.items.length > 0) {
+              console.log(`Found ${item.items.length} keyword items in suggestion ${index}`);
               
-              console.log(`🔍 KEYWORD DEBUG "${keywordText}": vol=${searchVolume}, comp=${this.getCompetitionLevel(competition)}, diff=${keywordDifficulty}`);
-              
-              allKeywords.push({
-                keyword: keywordText,
-                searchVolume: searchVolume,
-                competition: competition,
-                cpc: cpc,
-                difficulty: keywordDifficulty
+              // Process each keyword item
+              item.items.forEach((keywordItem: any) => {
+                const keywordText = keywordItem.keyword;
+                const searchVolume = keywordItem.search_volume || 0;
+                const competition = keywordItem.competition || 0;
+                const cpc = keywordItem.cpc || 0;
+                const keywordDifficulty = keywordItem.keyword_difficulty || 0;
+                
+                if (keywordText && typeof keywordText === 'string') {
+                  console.log(`🔍 KEYWORD DEBUG "${keywordText}": vol=${searchVolume}, comp=${this.getCompetitionLevel(competition)}, diff=${keywordDifficulty}`);
+                  
+                  allKeywords.push({
+                    keyword: keywordText,
+                    searchVolume: searchVolume,
+                    competition: competition,
+                    cpc: cpc,
+                    difficulty: keywordDifficulty
+                  });
+                }
               });
+            } else {
+              console.log(`No items found in suggestion ${index}, items_count: ${item.items_count}`);
             }
           });
           
