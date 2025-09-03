@@ -1410,7 +1410,7 @@ export default function AdminPanel() {
   const [youtubeUrl, setYoutubeUrl] = useState<string>("");
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>("");
   const [youtubeEmbed, setYoutubeEmbed] = useState<string | null>(null);
-  const [articleLength, setArticleLength] = useState<string>("long");
+  const [articleLength, setArticleLength] = useState<string>("medium");
   const [headingsCount, setHeadingsCount] = useState<string>("3");
   const [writingPerspective, setWritingPerspective] = useState<string>(
     "first_person_plural",
@@ -5316,7 +5316,11 @@ export default function AdminPanel() {
                           <FormItem>
                             <FormLabel>Article Length</FormLabel>
                             <Select
-                              onValueChange={field.onChange}
+                              onValueChange={(value) => {
+                                console.log("🔍 Article length changed to:", value);
+                                field.onChange(value);
+                                setArticleLength(value);
+                              }}
                               value={field.value}
                               key={`articleLength-${formKey}-${field.value}`}
                             >
