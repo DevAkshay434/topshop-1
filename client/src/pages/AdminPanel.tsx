@@ -2769,6 +2769,8 @@ export default function AdminPanel() {
   const handleSubmit = async (values: ContentFormValues) => {
     try {
       console.log("Form submission started with values:", values);
+      console.log("🔍 FORM DEBUG - Article length from form values:", values.articleLength);
+      console.log("🔍 FORM DEBUG - Article length from state variable:", articleLength);
       setIsGenerating(true);
       setGeneratedContent(null);
 

@@ -1594,6 +1594,7 @@ Please suggest a meta description at the end of your response that includes at l
 `;
 
       console.log(`Generating content with Claude for: "${requestData.title}"`);
+      console.log(`🔍 ADMIN ROUTE - Article length from request: "${requestData.articleLength}"`);
       
       // Map articleLength to actual length values for Claude
       let contentLength = "medium";
@@ -1604,6 +1605,8 @@ Please suggest a meta description at the end of your response that includes at l
       } else if (requestData.articleLength === "comprehensive") {
         contentLength = "comprehensive";
       }
+      
+      console.log(`🔍 ADMIN ROUTE - Mapped content length to send to Claude: "${contentLength}"`);
       
       // Update the prompt based on new fields
       // Add buyer profile information
