@@ -189,7 +189,7 @@ const contentFormSchema = z.object({
   // New fields for content generation
   articleLength: z
     .enum(["short", "medium", "long", "comprehensive"])
-    .default("long"),
+    .default("medium"),
   headingsCount: z.enum(["2", "3", "4", "5", "6"]).default("3"),
   // Custom category fields
   categories: z.array(z.string()).optional(),
@@ -1069,7 +1069,7 @@ export default function AdminPanel() {
       articleType: formValues.articleType || "blog",
       contentGender: formValues.contentGender || "male",
       title: formValues.title || "",
-      articleLength: formValues.articleLength || articleLength,
+      articleLength: formValues.articleLength || "medium",
       headingsCount: formValues.headingsCount || headingsCount,
       writingPerspective: formValues.writingPerspective || writingPerspective,
       toneOfVoice: formValues.toneOfVoice || toneOfVoice,
@@ -2771,6 +2771,7 @@ export default function AdminPanel() {
       console.log("Form submission started with values:", values);
       console.log("🔍 FORM DEBUG - Article length from form values:", values.articleLength);
       console.log("🔍 FORM DEBUG - Article length from state variable:", articleLength);
+      console.log("🔍 FORM DEBUG - Final processedData will use:", values.articleLength || "medium");
       setIsGenerating(true);
       setGeneratedContent(null);
 
