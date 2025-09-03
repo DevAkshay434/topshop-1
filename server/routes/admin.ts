@@ -1275,6 +1275,8 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
 // Enhanced content generation endpoint with all new parameters
 adminRouter.post("/generate-content", async (req: Request, res: Response) => {
   console.log("Content generation request received with body:", JSON.stringify(req.body));
+  console.log("🔍 ARTICLE LENGTH DEBUG - Raw from req.body:", req.body.articleLength);
+  console.log("🔍 ARTICLE LENGTH DEBUG - Type:", typeof req.body.articleLength);
   console.log("🔍 CRITICAL DEBUG: Secondary images in request:", {
     hasSecondaryImages: !!req.body.secondaryImages,
     secondaryImagesLength: req.body.secondaryImages?.length || 0,
