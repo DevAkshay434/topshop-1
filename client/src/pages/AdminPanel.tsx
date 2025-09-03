@@ -3895,7 +3895,7 @@ export default function AdminPanel() {
                   
                   {/* Step 1: Choose Content */}
                   <div
-                    className={`fade-in ${
+                    className={`max-w-5xl mx-auto fade-in ${
                       workflowStep === "content-type" ? "block" : "hidden"
                     }`}
                     data-step="content-type"
@@ -4045,7 +4045,7 @@ export default function AdminPanel() {
 
                     {/* Step 2: Choose Products (formerly Step 1) */}
                     <div
-                      className={`fade-in ${
+                      className={`max-w-5xl mx-auto fade-in ${
                         workflowStep === "product" ? "block" : "hidden"
                       }`}
                       data-step="product"
@@ -4142,7 +4142,7 @@ export default function AdminPanel() {
 
                     {/* Step 2: Related Collections Selection Section */}
                     <div
-                      className={`fade-in ${
+                      className={`max-w-5xl mx-auto fade-in ${
                         workflowStep === "related-collections"
                           ? "block"
                           : "hidden"
@@ -4201,7 +4201,7 @@ export default function AdminPanel() {
 
                     {/* Step 3: Buyer Personas Input Section */}
                     <div
-                      className={`fade-in ${
+                      className={`max-w-5xl mx-auto fade-in ${
                         workflowStep === "buying-avatars" ? "block" : "hidden"
                       }`}
                       data-step="buying-avatars"
@@ -4375,7 +4375,7 @@ export default function AdminPanel() {
 
                     {/* Step 4: Keyword Selection Section */}
                     <div
-                      className={`fade-in ${
+                      className={`max-w-5xl mx-auto fade-in ${
                         workflowStep === "keyword" ? "block" : "hidden"
                       }`}
                       data-step="keyword"
@@ -4711,7 +4711,7 @@ export default function AdminPanel() {
 
                     {/* Step 6: Media Selection Section */}
                     <div
-                      className={`fade-in ${
+                      className={`max-w-5xl mx-auto fade-in ${
                         workflowStep === "media" ? "block" : "hidden"
                       }`}
                       data-step="media"
@@ -5232,7 +5232,9 @@ export default function AdminPanel() {
 
                   {/* Step 7: Author Selection Section */}
                   <div
-                    className={workflowStep === "author" ? "block" : "hidden"}
+                    className={`max-w-5xl mx-auto ${
+                      workflowStep === "author" ? "block" : "hidden"
+                    }`}
                     data-step="author"
                   >
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
@@ -5313,7 +5315,7 @@ export default function AdminPanel() {
 
                   {/* Step 8: Style and formatting section - Only shown in content step */}
                   <div
-                    className={`space-y-4 pt-4 ${workflowStep === "content" ? "block" : "hidden"}`}
+                    className={`max-w-5xl mx-auto space-y-4 pt-4 ${workflowStep === "content" ? "block" : "hidden"}`}
                     data-step="content"
                   >
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
