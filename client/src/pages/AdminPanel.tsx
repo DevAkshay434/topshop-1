@@ -3904,7 +3904,7 @@ export default function AdminPanel() {
                         <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
                           Choose Content Type
                         </h2>
-                        <p className="text-sm text-blue-600 mb-4">
+                        <p className="text-sm text-center text-blue-600 mb-4">
                           Select the type of content you want to create and configure basic settings.
                         </p>
                       </div>
@@ -5740,8 +5740,8 @@ export default function AdminPanel() {
                   </div>
 
                   {/* Sticky Generate Content button fixed to bottom of screen */}
-                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10">
-                    <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200">
+                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10  ">
+                    <div className="bg-white/90 backdrop-blur-sm  p-4 rounded-lg shadow-lg border border-gray-200">
                       {/* Progress indicator and validation status */}
                       {!isReadyToGenerateContent() && (
                         <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
