@@ -16,7 +16,6 @@ import { ProjectCreationDialog } from "../components/ProjectCreationDialog";
 import { ProjectLoadDialog } from "../components/ProjectLoadDialog";
 import { ProjectSaveDialog } from "../components/ProjectSaveDialog";
 import { SimpleHTMLEditor } from "../components/SimpleHTMLEditor";
-import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
 import {
   Card,
   CardContent,
@@ -3461,20 +3460,18 @@ export default function AdminPanel() {
         </div>
       )}
 
-      <div className="space-y-6">
-        {/* Content Generation Section - Always visible */}
-        {/* Main Content Grid - Selection and Content Preview side by side */}
-        <PanelGroup direction="horizontal" className="min-h-[800px]">
-          {/* Selection Section - Left Panel */}
-          <Panel defaultSize={50} minSize={30} maxSize={70}>
-            <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Content Generator</CardTitle>
-              <CardDescription>
-                Generate SEO-optimized content for your Shopify store
+      <div className="content-generation-container">
+        {/* Full-Screen Content Generation Interface */}
+        <div className="max-w-5xl mx-auto space-y-12 px-4">
+          {/* Main Content Generation Card */}
+          <Card className="admin-card bg-white">
+            <CardHeader className="text-center py-12">
+              <CardTitle className="text-4xl font-bold tracking-tight text-gray-900 mb-4">Content Generator</CardTitle>
+              <CardDescription className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Generate SEO-optimized content for your Shopify store with our AI-powered content creation wizard
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-12 pb-12">
               <Form {...form} key={formKey}>
                 <form
                   onSubmit={(e) => {
@@ -3484,15 +3481,15 @@ export default function AdminPanel() {
                 >
                   {/* Step guidance */}
 
-                  <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="font-medium text-blue-700 mb-3">
+                  <div className="mb-12 p-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200/60 shadow-sm">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
                       Content Creation Workflow
                     </h3>
 
                     {/* Enhanced Clickable Step Indicator */}
                     <div 
                       id="step-indicator" 
-                      className="flex items-center justify-start gap-1 overflow-x-auto pb-2"
+                      className="flex items-center justify-center gap-2 overflow-x-auto pb-2 flex-wrap"
                     >
                       {[
                         {
@@ -3647,14 +3644,14 @@ export default function AdminPanel() {
                   </div>
 
                   {/* Selected Items Display - appears after blog selection */}
-                  <div className="space-y-4">
+                  <div className="space-y-10 fade-in">
                     {(selectedProducts.length > 0 ||
                       selectedCollections.length > 0 ||
                       form.watch("buyerPersonas") ||
                       selectedKeywords.length > 0 ||
                       form.watch("title")) && (
-                      <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
-                        <h4 className="text-sm font-medium text-slate-700 mb-3">
+                      <div className="space-y-6 border-0 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 shadow-sm">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">
                           Current Selections
                         </h4>
 
@@ -3938,15 +3935,15 @@ export default function AdminPanel() {
                   
                   {/* Step 1: Choose Content */}
                   <div
-                    className={
+                    className={`fade-in ${
                       workflowStep === "content-type" ? "block" : "hidden"
-                    }
+                    }`}
                     data-step="content-type"
                     >
-                      <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">
-                          Step 1: Choose Content
-                        </h4>
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                          Choose Content Type
+                        </h2>
                         <p className="text-sm text-blue-600 mb-4">
                           Select the type of content you want to create and configure basic settings.
                         </p>
@@ -4088,16 +4085,16 @@ export default function AdminPanel() {
 
                     {/* Step 2: Choose Products (formerly Step 1) */}
                     <div
-                      className={
+                      className={`fade-in ${
                         workflowStep === "product" ? "block" : "hidden"
-                      }
+                      }`}
                       data-step="product"
                     >
-                      <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-blue-700">
-                            Step 2: Choose Products
-                          </h4>
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                        <div className="text-center mb-4">
+                          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                            Choose Products
+                          </h2>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -4116,9 +4113,8 @@ export default function AdminPanel() {
                             </Tooltip>
                           </TooltipProvider>
                         </div>
-                        <p className="text-sm text-blue-600 mb-4">
-                          Select products to feature in your content. Products
-                          are required for content generation.
+                        <p className="text-base text-gray-600 text-center max-w-2xl mx-auto">
+                          Select products to feature in your content. Products are required for content generation.
                         </p>
                       </div>
 
@@ -4186,20 +4182,19 @@ export default function AdminPanel() {
 
                     {/* Step 2: Related Collections Selection Section */}
                     <div
-                      className={
+                      className={`fade-in ${
                         workflowStep === "related-collections"
                           ? "block"
                           : "hidden"
-                      }
+                      }`}
                       data-step="related-collections"
                     >
-                      <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">
-                          Step 2: Choose Related Collections
-                        </h4>
-                        <p className="text-sm text-blue-600 mb-4">
-                          Select collections that are related to your content to
-                          group products and categories
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                          Choose Related Collections
+                        </h2>
+                        <p className="text-base text-gray-600 text-center max-w-2xl mx-auto">
+                          Select collections that are related to your content to group products and categories
                         </p>
                       </div>
 
@@ -4246,19 +4241,17 @@ export default function AdminPanel() {
 
                     {/* Step 3: Buyer Personas Input Section */}
                     <div
-                      className={
+                      className={`fade-in ${
                         workflowStep === "buying-avatars" ? "block" : "hidden"
-                      }
+                      }`}
                       data-step="buying-avatars"
                     >
-                      <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">
-                          Step 3: Define Target Buyer Personas
-                        </h4>
-                        <p className="text-sm text-blue-600 mb-2">
-                          Describe your target audience in detail. You can type
-                          custom descriptions or use the suggestion buttons
-                          below.
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                          Define Target Buyer Personas
+                        </h2>
+                        <p className="text-base text-gray-600 text-center max-w-2xl mx-auto">
+                          Describe your target audience in detail. You can type custom descriptions or use the suggestion buttons below.
                         </p>
                       </div>
 
@@ -4422,15 +4415,15 @@ export default function AdminPanel() {
 
                     {/* Step 4: Keyword Selection Section */}
                     <div
-                      className={
+                      className={`fade-in ${
                         workflowStep === "keyword" ? "block" : "hidden"
-                      }
+                      }`}
                       data-step="keyword"
                     >
-                      <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">
-                          Step 4: Choose Keywords
-                        </h4>
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                          Choose Keywords
+                        </h2>
                         <p className="text-sm text-blue-600 mb-2">
                           Click the button below to select keywords for your
                           content. The following selected items will be used for
@@ -4674,13 +4667,15 @@ export default function AdminPanel() {
 
                     {/* Step 5: Title Selection Section */}
                     <div
-                      className={workflowStep === "title" ? "block" : "hidden"}
+                      className={`fade-in ${
+                        workflowStep === "title" ? "block" : "hidden"
+                      }`}
                       data-step="title"
                     >
-                      <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">
-                          Step 5: Select a Title
-                        </h4>
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                          Select a Title
+                        </h2>
                         <p className="text-sm text-blue-600">
                           Choose from AI-generated title suggestions based on
                           your keywords
@@ -4756,13 +4751,15 @@ export default function AdminPanel() {
 
                     {/* Step 6: Media Selection Section */}
                     <div
-                      className={workflowStep === "media" ? "block" : "hidden"}
+                      className={`fade-in ${
+                        workflowStep === "media" ? "block" : "hidden"
+                      }`}
                       data-step="media"
                     >
-                      <div className="p-4 bg-blue-50 rounded-md mb-4">
-                        <h4 className="font-medium text-blue-700 mb-1">
-                          Step 6: Choose Media
-                        </h4>
+                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                          Choose Media
+                        </h2>
                         <p className="text-sm text-blue-600">
                           Select compelling visuals to enhance your content and
                           boost engagement
@@ -5278,10 +5275,10 @@ export default function AdminPanel() {
                     className={workflowStep === "author" ? "block" : "hidden"}
                     data-step="author"
                   >
-                    <div className="p-4 bg-blue-50 rounded-md mb-4">
-                      <h4 className="font-medium text-blue-700 mb-1">
-                        Step 7: Choose Author
-                      </h4>
+                    <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                        Choose Author
+                      </h2>
                       <p className="text-sm text-blue-600">
                         Select an author for this content or create a new one
                       </p>
@@ -5359,10 +5356,10 @@ export default function AdminPanel() {
                     className={`space-y-4 pt-4 ${workflowStep === "content" ? "block" : "hidden"}`}
                     data-step="content"
                   >
-                    <div className="p-4 bg-blue-50 rounded-md mb-4">
-                      <h4 className="font-medium text-blue-700 mb-1">
-                        Step 8: Style & Formatting
-                      </h4>
+                    <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                        Style & Formatting
+                      </h2>
                       <p className="text-sm text-blue-600">
                         Customize how your content will look and feel
                       </p>
@@ -5903,20 +5900,17 @@ export default function AdminPanel() {
               </Form>
             </CardContent>
           </Card>
-          </Panel>
 
-          <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors cursor-col-resize" />
-
-          {/* Content Preview - Right Panel */}
-          <Panel defaultSize={50} minSize={30} maxSize={70}>
-            <Card className="h-full" data-content-preview>
-            <CardHeader>
-              <CardTitle>Content Preview</CardTitle>
-              <CardDescription>
-                Preview of your generated content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          {/* Content Preview Section - Full Width */}
+          {(isGenerating || generatedContent) && (
+            <Card className="border-0 shadow-lg mt-8">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Content Preview</CardTitle>
+                <CardDescription className="text-base text-gray-600">
+                  Preview of your generated content
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-8">
               {isGenerating ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="relative">
@@ -7488,8 +7482,8 @@ export default function AdminPanel() {
               )}
             </CardContent>
           </Card>
-          </Panel>
-        </PanelGroup>
+          )}
+        </div>
 
         {/* Keyword Selector Dialog */}
         <Dialog
