@@ -362,6 +362,15 @@ export class DataForSEOService {
   }
 
   /**
+   * Get competition level string from numeric value
+   */
+  private getCompetitionLevel(competition: number): string {
+    if (competition > 0.7) return 'HIGH';
+    if (competition > 0.3) return 'MEDIUM';
+    return 'LOW';
+  }
+
+  /**
    * Clean keyword string for API request
    */
   private cleanKeywordString(input: string): string {
