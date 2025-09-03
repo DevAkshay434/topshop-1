@@ -3361,8 +3361,11 @@ export default function AdminPanel() {
               behavior: "smooth",
               block: "start",
             });
+            console.log("✅ Auto-scrolled to Content Preview section");
+          } else {
+            console.log("❌ Content Preview ref not found for auto-scroll");
           }
-        }, 500); // Delay to allow content to render
+        }, 800); // Longer delay to allow content to fully render
 
         // Mark content as generated for workflow step indicator
         setIsContentGenerated(true);
@@ -5800,25 +5803,7 @@ export default function AdminPanel() {
                               );
                               handleSubmit(values);
 
-                              // Delay scroll to ensure loading state is visible
-                              setTimeout(() => {
-                                // Scroll to content preview area
-                                const contentPreview = document.querySelector(
-                                  "[data-content-preview]",
-                                );
-                                if (contentPreview) {
-                                  contentPreview.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  });
-                                } else {
-                                  // Fallback to scroll to top
-                                  window.scrollTo({
-                                    top: 0,
-                                    behavior: "smooth",
-                                  });
-                                }
-                              }, 100); // Small delay to show loading state
+                              // Don't scroll here - let the content generation success handler do the scrolling
                             }
                           }}
                           title={
