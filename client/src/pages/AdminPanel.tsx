@@ -3783,46 +3783,6 @@ export default function AdminPanel() {
                           </div>
                         )}
 
-                        {/* Selected Keywords */}
-                        {selectedKeywords.length > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex items-center">
-                              <h5 className="text-sm font-medium flex items-center">
-                                <Search className="h-4 w-4 mr-2 text-orange-500" />
-                                Selected Keywords ({selectedKeywords.length})
-                              </h5>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedKeywords.map((keyword, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center gap-2 bg-white rounded-md p-2 shadow-sm border"
-                                >
-                                  <span className="text-sm font-medium">
-                                    {typeof keyword === "string"
-                                      ? keyword
-                                      : (typeof keyword.keyword === 'string' 
-                                          ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
-                                          : keyword.keyword)}
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-5 w-5 rounded-full ml-1 hover:bg-slate-100"
-                                    onClick={() => {
-                                      setSelectedKeywords((prev) =>
-                                        prev.filter((_, i) => i !== index),
-                                      );
-                                    }}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
 
                         {/* Selected Title - Only show after keywords step */}
                         {form.watch("title") && getStepOrder(workflowStep) > getStepOrder("keyword") && (

@@ -107,122 +107,53 @@ export class DataForSEOService {
         console.log("Has result:", !!suggestionsResponse.data.tasks?.[0]?.result);
         
         if (suggestionsResponse.data?.status_code === 20000 && suggestionsResponse.data.tasks?.[0]?.result) {
-          const result = suggestionsResponse.data.tasks[0].result[0]; // Get first result item
-          const suggestions = result?.items || []; // Get the actual keywords from items array
+          const results = suggestionsResponse.data.tasks[0].result; // Get results array directly
+          console.log("DataForSEO result structure:", JSON.stringify(results.slice(0, 2), null, 2)); // Log structure
+          
+          // For keyword suggestions endpoint, results is array of items with keyword data
+          const suggestions = results || []; // Use results array directly
           
           console.log(`✅ API SUCCESS: Found ${suggestions.length} keyword items in result`);
-          console.log("Items count:", result?.items_count || 0);
+          console.log("Total suggestions found:", suggestions.length);
           
           if (suggestions.length > 0) {
-            console.log("First keyword item keys:", Object.keys(suggestions[0]));
-            console.log("First item structure:");
-            console.log("- keyword_data:", !!suggestions[0].keyword_data);
-            console.log("- related_keywords count:", suggestions[0].related_keywords?.length || 0);
-            console.log("- related_keywords sample:", suggestions[0].related_keywords?.slice(0, 3));
+            console.log("First suggestion keys:", Object.keys(suggestions[0]));
+            console.log("Sample suggestion structure:", JSON.stringify(suggestions[0], null, 2));
           }
           
-          // The API structure is different - extract keywords from related_keywords arrays
+          // Process the response from related_keywords endpoint
           console.log(`Processing ${suggestions.length} keyword items to extract related keywords`);
           
-          // Flatten all related_keywords arrays and combine with search volume data from keyword_data
           const allKeywords: any[] = [];
           
+          // For related_keywords endpoint, each suggestion should have keyword and search volume directly
           suggestions.forEach((item: any, index: number) => {
-            console.log(`\n🔍 Processing item ${index}:`);
-            console.log(`  - related_keywords count: ${item.related_keywords?.length || 0}`);
-            console.log(`  - Item keys:`, Object.keys(item));
-            
-            // Debug: Check all possible locations for search volume data
-            if (item.keyword_data) {
-              console.log(`  - keyword_data keys:`, Object.keys(item.keyword_data));
-              console.log(`  - keyword_data.search_volume: ${item.keyword_data.search_volume}`);
-            }
-            if (item.seed_keyword_data) {
-              console.log(`  - seed_keyword_data keys:`, Object.keys(item.seed_keyword_data));
-            }
-            
-            if (item.related_keywords && Array.isArray(item.related_keywords)) {
-              // Try to get search volume from various possible sources
-              let searchVolume = 0;
-              let competition = 'LOW';
-              let difficulty = 0;
+            if (item.keyword && typeof item.keyword === 'string') {
+              const keywordText = item.keyword;
+              const searchVolume = item.search_volume || 0;
+              const competition = item.competition || 0;
+              const cpc = item.cpc || 0;
+              const keywordDifficulty = item.keyword_difficulty || 0;
               
-              // Check multiple possible data sources
-              if (item.keyword_data?.search_volume) {
-                searchVolume = item.keyword_data.search_volume;
-                competition = item.keyword_data.competition_level || 'LOW';
-                difficulty = item.keyword_data.keyword_difficulty || 0;
-              } else if (item.seed_keyword_data?.search_volume) {
-                searchVolume = item.seed_keyword_data.search_volume;
-                competition = item.seed_keyword_data.competition_level || 'LOW';
-                difficulty = item.seed_keyword_data.keyword_difficulty || 0;
-              }
+              console.log(`🔍 KEYWORD DEBUG "${keywordText}": vol=${searchVolume}, comp=${this.getCompetitionLevel(competition)}, diff=${keywordDifficulty}`);
               
-              console.log(`  - Final search volume for item ${index}: ${searchVolume}`);
-              
-              // Assign realistic search volumes, competition, and difficulty based on keyword characteristics
-              item.related_keywords.forEach((keyword: string, keywordIndex: number) => {
-                // Assign descending search volumes based on position (first keywords get higher volumes)
-                let adjustedVolume;
-                if (searchVolume > 0) {
-                  // Use actual search volume as base, decrease for less relevant keywords
-                  adjustedVolume = Math.max(50, searchVolume - (keywordIndex * 50));
-                } else {
-                  // Assign realistic estimated volumes (first keywords get higher estimates)
-                  const baseVolume = Math.max(500, 1500 - (index * 100)); // Base volume decreases by item depth
-                  adjustedVolume = Math.max(50, baseVolume - (keywordIndex * 30)); // Volume decreases by keyword position
-                }
-                
-                // Assign realistic competition and difficulty based on keyword characteristics
-                let keywordCompetition = competition;
-                let keywordDifficulty = difficulty;
-                
-                // If no authentic data available, assign realistic values based on keyword patterns
-                if (competition === 'LOW' && difficulty === 0) {
-                  // Longer, more specific keywords typically have lower competition
-                  const wordCount = keyword.split(' ').length;
-                  const hasModifiers = /\b(best|top|cheap|affordable|review|guide|how to)\b/i.test(keyword);
-                  const isBrandSpecific = /\b(amazon|walmart|target|sephora|ulta|nike|apple)\b/i.test(keyword);
-                  
-                  if (wordCount >= 4 || keyword.length > 25) {
-                    keywordCompetition = 'LOW';
-                    keywordDifficulty = Math.floor(Math.random() * 30) + 10; // 10-39
-                  } else if (wordCount === 3 || hasModifiers) {
-                    keywordCompetition = 'MEDIUM';
-                    keywordDifficulty = Math.floor(Math.random() * 30) + 30; // 30-59
-                  } else if (wordCount <= 2 && !isBrandSpecific) {
-                    keywordCompetition = 'HIGH';
-                    keywordDifficulty = Math.floor(Math.random() * 40) + 60; // 60-99
-                  } else {
-                    keywordCompetition = 'MEDIUM';
-                    keywordDifficulty = Math.floor(Math.random() * 25) + 25; // 25-49
-                  }
-                  
-                  // Brand-specific terms typically have higher competition
-                  if (isBrandSpecific) {
-                    keywordCompetition = 'HIGH';
-                    keywordDifficulty = Math.min(99, keywordDifficulty + 20);
-                  }
-                }
-                
-                allKeywords.push({
-                  keyword: keyword,
-                  searchVolume: adjustedVolume,
-                  competition: keywordCompetition,
-                  difficulty: keywordDifficulty,
-                  selected: false
-                });
+              allKeywords.push({
+                keyword: keywordText,
+                searchVolume: searchVolume,
+                competition: competition,
+                cpc: cpc,
+                difficulty: keywordDifficulty
               });
             }
           });
           
-          console.log(`Extracted ${allKeywords.length} total keywords from all items`);
+          console.log(`Extracted ${allKeywords.length} total keywords from all suggestions`);
           
-          // Filter keywords with search volume > 0 and limit to reasonable amount
+          // Process and filter all keywords (include zero volume keywords too for comprehensive results)
           keywordData = allKeywords
             .filter((item: any) => {
-              console.log(`🔍 KEYWORD DEBUG "${item.keyword}": vol=${item.searchVolume}, comp=${item.competition}, diff=${item.difficulty}`);
-              return item.searchVolume > 0;
+              console.log(`🔍 KEYWORD DEBUG "${item.keyword}": vol=${item.searchVolume}, comp=${this.getCompetitionLevel(item.competition)}, diff=${item.difficulty}`);
+              return item.keyword && item.keyword.length > 0; // Just ensure keyword exists, include zero volume
             })
             .slice(0, 50); // Limit to top 50 keywords
             
