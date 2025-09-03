@@ -587,7 +587,8 @@ function processMediaPlacementsHandler(content: string, request: BlogContentRequ
 // Function to generate blog content using Claude
 export async function generateBlogContentWithClaude(request: BlogContentRequest): Promise<BlogContent> {
   try {
-    console.log(`Generating blog content with Claude for topic: "${request.topic}"`);
+    console.log(`🎯 CLAUDE SERVICE STARTED - Generating blog content with Claude for topic: "${request.topic}"`);
+    console.log(`🎯 CLAUDE SERVICE - Request length parameter: "${request.length}"`);
     
     // Determine content length based on request
     let contentLength = "approximately 800-1000 words";

@@ -1274,6 +1274,7 @@ adminRouter.post("/generate-images", async (req: Request, res: Response) => {
 
 // Enhanced content generation endpoint with all new parameters
 adminRouter.post("/generate-content", async (req: Request, res: Response) => {
+  console.log("🚀 ADMIN ROUTE HIT - Starting content generation...");
   console.log("Content generation request received with body:", JSON.stringify(req.body));
   console.log("🔍 ARTICLE LENGTH DEBUG - Raw from req.body:", req.body.articleLength);
   console.log("🔍 ARTICLE LENGTH DEBUG - Type:", typeof req.body.articleLength);
