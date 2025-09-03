@@ -5778,8 +5778,9 @@ export default function AdminPanel() {
                         }))}
                       />
 
-                      <div className="flex gap-3">
-                        {/* Generate Content Button */}
+                      <div className="max-w-5xl mx-auto">
+                        <div className="flex gap-3">
+                          {/* Generate Content Button */}
                         <Button
                           type="button"
                           className={cn(
@@ -5843,6 +5844,7 @@ export default function AdminPanel() {
                             </>
                           )}
                         </Button>
+                        </div>
                       </div>
 
                       {/* Completion checklist for ready state */}
