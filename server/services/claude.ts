@@ -595,7 +595,11 @@ export async function generateBlogContentWithClaude(request: BlogContentRequest)
       contentLength = "approximately 500-700 words";
     } else if (request.length.toLowerCase().includes("long")) {
       contentLength = "approximately 1500-2000 words";
+    } else if (request.length.toLowerCase().includes("comprehensive")) {
+      contentLength = "approximately 2500-3500 words";
     }
+    
+    console.log(`📏 Article length requested: "${request.length}" -> Content length: "${contentLength}"`);
     
     // Enhanced base prompt for Claude with proper structure
     let toneStyle = request.tone;
