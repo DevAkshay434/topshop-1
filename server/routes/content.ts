@@ -219,7 +219,7 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
         const contentRequest = await storage.createContentGenRequest({
           topic,
           tone: "custom",
-          length: "medium",
+          length: req.body.articleLength || "medium",
           status: "pending",
           generatedContent: null
         });
@@ -234,7 +234,7 @@ contentRouter.post("/generate-content/simple-bulk", async (req: Request, res: Re
           const generatedContent = await generateBlogContentWithClaude({
             topic,
             tone: "professional",
-            length: "medium",
+            length: req.body.articleLength || "medium",
             customPrompt: topicPrompt
           });
           
@@ -385,7 +385,7 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
         const contentRequest = await storage.createContentGenRequest({
           topic,
           tone: "professional",
-          length: "medium",
+          length: req.body.articleLength || "medium",
           status: "pending",
           generatedContent: null
         });
@@ -400,7 +400,7 @@ contentRouter.post("/generate-content/bulk", async (req: Request, res: Response)
           const generatedContent = await generateBlogContentWithClaude({
             topic,
             tone: "professional",
-            length: "medium",
+            length: req.body.articleLength || "medium",
             customPrompt: topicPrompt
           });
           
