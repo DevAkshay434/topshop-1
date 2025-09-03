@@ -1425,7 +1425,7 @@ adminRouter.post("/generate-content", async (req: Request, res: Response) => {
     const contentRequest = await storage.createContentGenRequest({
       topic: requestData.title,
       tone: requestData.toneOfVoice,
-      length: "medium", // Default length
+      length: requestData.articleLength, // Use dynamic length from user selection
       status: "pending",
       generatedContent: null
     });
