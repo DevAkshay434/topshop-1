@@ -361,6 +361,9 @@ export default function AdminPanel() {
   const [suggestionKey, setSuggestionKey] = useState(0); // Force re-render when suggestions change
   const [forceRerender, setForceRerender] = useState(0);
   const suggestionsRef = useRef<string[]>([]);
+  
+  // Ref for content preview section to enable auto-scroll
+  const contentPreviewRef = useRef<HTMLDivElement>(null);
 
   // Debug state changes
   useEffect(() => {
@@ -3351,13 +3354,10 @@ export default function AdminPanel() {
         // Force content editor to re-render with new content
         setContentEditorKey((prev) => prev + 1);
 
-        // Scroll to content preview area after successful generation
+        // Auto-scroll to content preview after successful generation
         setTimeout(() => {
-          const contentPreview = document.querySelector(
-            "[data-content-preview]",
-          );
-          if (contentPreview) {
-            contentPreview.scrollIntoView({
+          if (contentPreviewRef.current) {
+            contentPreviewRef.current.scrollIntoView({
               behavior: "smooth",
               block: "start",
             });
@@ -3481,7 +3481,7 @@ export default function AdminPanel() {
                 >
                   {/* Step guidance */}
 
-                  <div className="mb-12 p-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200/60 shadow-sm">
+                  <div className="sticky top-4 z-30 mb-12 p-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200/60 shadow-sm backdrop-blur-sm bg-opacity-95">
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
                       Content Creation Workflow
                     </h3>
@@ -5863,7 +5863,7 @@ export default function AdminPanel() {
 
           {/* Content Preview Section - Full Width */}
           {(isGenerating || generatedContent) && (
-            <Card className="border-0 shadow-lg mt-8">
+            <Card className="border-0 shadow-lg mt-8" ref={contentPreviewRef}>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Content Preview</CardTitle>
                 <CardDescription className="text-base text-gray-600">
