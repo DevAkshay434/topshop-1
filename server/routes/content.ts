@@ -64,6 +64,9 @@ const contentRouter = Router();
 // Generate content for a single topic with optional custom prompt
 contentRouter.post("/generate-content", async (req: Request, res: Response) => {
   try {
+    console.log("🎯 CONTENT ROUTE HIT - Article length from request:", req.body.articleLength);
+    console.log("🎯 CONTENT ROUTE - Full request body:", JSON.stringify(req.body, null, 2));
+    
     // Validate request body with custom prompt support
     const reqSchema = z.object({
       topic: z.string().min(1),
@@ -106,7 +109,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       userId: null, // TODO: Add user context when authentication is implemented
       topic,
       tone: customPrompt ? "custom" : "professional", // Using tone field to track if custom prompt was used
-      length: "medium", // Default length
+      length: req.body.articleLength || "medium", // Use provided length or default to medium
       status: "pending",
       generatedContent: null
     });
@@ -118,7 +121,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       const generatedContent = await generateBlogContentWithClaude({
         topic,
         tone: "professional",
-        length: "medium",
+        length: req.body.articleLength || "medium",
         customPrompt
       });
       
