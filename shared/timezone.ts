@@ -33,14 +33,15 @@ export function createDateInTimezone(
         console.log(`Extracted clean timezone: ${cleanTimezone} from ${timezone}`);
       }
     }
+
+    // Modern approach: Use a proper timezone-aware date creation
+    // Create a date in the store's local timezone and convert to UTC properly
     
-    // Create a date object that represents the local time in the store's timezone
-    // We need to account for the timezone offset when creating the UTC date
-    const tempDate = new Date(`${dateString}T${timeString}:00`);
-    console.log(`Temp date (local interpretation): ${tempDate.toISOString()}`);
+    // Step 1: Create a "fake" UTC date with the local time components
+    const localTimeAsUTC = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
     
-    // Get the timezone offset for the store timezone at this date
-    const formatter = new Intl.DateTimeFormat('en-CA', {
+    // Step 2: Find out what time this would be displayed as in the target timezone
+    const timeInTargetZone = new Intl.DateTimeFormat('en-CA', {
       timeZone: cleanTimezone,
       year: 'numeric',
       month: '2-digit',
@@ -49,39 +50,10 @@ export function createDateInTimezone(
       minute: '2-digit',
       second: '2-digit',
       hour12: false
-    });
+    }).format(localTimeAsUTC);
     
-    // Get what the current time looks like in the store timezone
-    const nowInStoreTimezone = formatter.format(new Date());
-    console.log(`Current time in store timezone: ${nowInStoreTimezone}`);
-    
-    // Create the scheduled date by interpreting the input time as store local time
-    // and converting to UTC for storage
-    const storeLocalTimeStr = `${dateString}T${timeString}:00`;
-    const parts = storeLocalTimeStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
-    if (!parts) {
-      throw new Error('Invalid date format');
-    }
-    
-    const [, y, m, d, h, min, s] = parts.map(Number);
-    
-    // Create date as if it's in the store timezone
-    // For Eastern Time (UTC-5), 5:30 AM Eastern = 10:30 AM UTC
-    const utcDate = new Date(Date.UTC(y, m - 1, d, h, min, s));
-    
-    // Adjust for timezone offset
-    // For Eastern Time (UTC-5), we need to add 5 hours to get the correct UTC time
-    const offsetMinutes = utcDate.getTimezoneOffset(); // This doesn't work for specific timezones
-    
-    // Robust timezone conversion using established method
-    // Convert local time in target timezone to UTC for storage
-    
-    // Create a temporary date to get the timezone offset at the target date
-    const tempDate = new Date(year, month - 1, day, hour, minute, 0);
-    
-    // Use Intl.DateTimeFormat to get the exact offset for this timezone on this date
-    // This handles daylight saving time correctly
-    const utcFormatter = new Intl.DateTimeFormat('en-CA', {
+    // Step 3: Find what time this same moment would be in UTC
+    const timeInUTC = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'UTC',
       year: 'numeric',
       month: '2-digit',
@@ -90,45 +62,35 @@ export function createDateInTimezone(
       minute: '2-digit',
       second: '2-digit',
       hour12: false
-    });
+    }).format(localTimeAsUTC);
     
-    const targetFormatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: cleanTimezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
+    console.log(`Target timezone time: ${timeInTargetZone}`);
+    console.log(`UTC time: ${timeInUTC}`);
     
-    // Create a reference date and see how it formats in both UTC and target timezone
-    const refDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
-    const utcFormatted = utcFormatter.format(refDate);
-    const targetFormatted = targetFormatter.format(refDate);
+    // Step 4: Calculate the difference and adjust
+    const targetMatch = timeInTargetZone.match(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/);
+    const utcMatch = timeInUTC.match(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/);
     
-    // Parse the formatted times to calculate offset
-    const utcParts = utcFormatted.match(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/);
-    const targetParts = targetFormatted.match(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/);
-    
-    if (utcParts && targetParts) {
-      const utcTime = new Date(`${utcParts[1]}-${utcParts[2]}-${utcParts[3]}T${utcParts[4]}:${utcParts[5]}:${utcParts[6]}Z`);
-      const targetTime = new Date(`${targetParts[1]}-${targetParts[2]}-${targetParts[3]}T${targetParts[4]}:${targetParts[5]}:${targetParts[6]}Z`);
+    if (targetMatch && utcMatch) {
+      // Parse target timezone time
+      const targetTime = new Date(`${targetMatch[1]}-${targetMatch[2]}-${targetMatch[3]}T${targetMatch[4]}:${targetMatch[5]}:${targetMatch[6]}Z`);
+      // Parse UTC time  
+      const utcTime = new Date(`${utcMatch[1]}-${utcMatch[2]}-${utcMatch[3]}T${utcMatch[4]}:${utcMatch[5]}:${utcMatch[6]}Z`);
       
+      // Calculate the timezone offset
       const offsetMs = utcTime.getTime() - targetTime.getTime();
       
-      // Apply the offset to convert from target timezone to UTC
-      const scheduledDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0) - offsetMs);
+      // Apply offset to get the correct UTC time for the desired local time
+      const correctUTCTime = new Date(localTimeAsUTC.getTime() - offsetMs);
       
-      console.log(`Created scheduled date (timezone corrected): ${scheduledDate.toISOString()}`);
-      return scheduledDate;
+      console.log(`Created scheduled date (timezone corrected): ${correctUTCTime.toISOString()}`);
+      return correctUTCTime;
     }
     
-    // Fallback: treat as UTC
-    const fallbackDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
-    console.log(`Created scheduled date (fallback): ${fallbackDate.toISOString()}`);
-    return fallbackDate;
+    // Fallback: treat input as UTC
+    console.log(`Created scheduled date (UTC fallback): ${localTimeAsUTC.toISOString()}`);
+    return localTimeAsUTC;
+    
   } catch (error) {
     console.error(`Error creating date:`, error);
     const fallbackDate = new Date();
