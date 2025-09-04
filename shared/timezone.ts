@@ -73,12 +73,62 @@ export function createDateInTimezone(
     // For Eastern Time (UTC-5), we need to add 5 hours to get the correct UTC time
     const offsetMinutes = utcDate.getTimezoneOffset(); // This doesn't work for specific timezones
     
-    // Use a different approach: create the date and let JavaScript handle timezone
-    const scheduledDate = new Date(`${dateString}T${timeString}:00`);
+    // Robust timezone conversion using established method
+    // Convert local time in target timezone to UTC for storage
     
-    console.log(`Created scheduled date (treating as local): ${scheduledDate.toISOString()}`);
+    // Create a temporary date to get the timezone offset at the target date
+    const tempDate = new Date(year, month - 1, day, hour, minute, 0);
     
-    return scheduledDate;
+    // Use Intl.DateTimeFormat to get the exact offset for this timezone on this date
+    // This handles daylight saving time correctly
+    const utcFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    const targetFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: cleanTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    // Create a reference date and see how it formats in both UTC and target timezone
+    const refDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+    const utcFormatted = utcFormatter.format(refDate);
+    const targetFormatted = targetFormatter.format(refDate);
+    
+    // Parse the formatted times to calculate offset
+    const utcParts = utcFormatted.match(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/);
+    const targetParts = targetFormatted.match(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/);
+    
+    if (utcParts && targetParts) {
+      const utcTime = new Date(`${utcParts[1]}-${utcParts[2]}-${utcParts[3]}T${utcParts[4]}:${utcParts[5]}:${utcParts[6]}Z`);
+      const targetTime = new Date(`${targetParts[1]}-${targetParts[2]}-${targetParts[3]}T${targetParts[4]}:${targetParts[5]}:${targetParts[6]}Z`);
+      
+      const offsetMs = utcTime.getTime() - targetTime.getTime();
+      
+      // Apply the offset to convert from target timezone to UTC
+      const scheduledDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0) - offsetMs);
+      
+      console.log(`Created scheduled date (timezone corrected): ${scheduledDate.toISOString()}`);
+      return scheduledDate;
+    }
+    
+    // Fallback: treat as UTC
+    const fallbackDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+    console.log(`Created scheduled date (fallback): ${fallbackDate.toISOString()}`);
+    return fallbackDate;
   } catch (error) {
     console.error(`Error creating date:`, error);
     const fallbackDate = new Date();
