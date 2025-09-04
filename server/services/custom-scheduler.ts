@@ -734,45 +734,32 @@ export async function checkScheduledPosts(): Promise<void> {
         console.log(`Current time in store timezone (${storeTimezone}): ${now.toISOString()}`);
         console.log(`Post ${post.id} scheduled time: ${scheduledDate.toISOString()}`);
         
-        // Check if the scheduled time has passed using store timezone comparison (same logic as API endpoint)
+        // Check if the scheduled time has passed using reliable UTC comparison
+        // Convert the scheduled time to UTC for consistent comparison
         let shouldPublish = false;
+        
         if (post.scheduledPublishDate && post.scheduledPublishTime) {
-          // Get current time in store timezone
-          const nowFormatted = new Date().toLocaleString("en-CA", { 
-            timeZone: storeTimezone,
-            year: 'numeric',
-            month: '2-digit', 
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-          });
-          
-          // Parse current time in store timezone
-          const [currentDate, currentTime] = nowFormatted.split(', ');
-          const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number);
-          const [currentHour, currentMinute] = currentTime.split(':').map(Number);
-          
-          // Parse scheduled time
-          const [schedYear, schedMonth, schedDay] = post.scheduledPublishDate.split('-').map(Number);
-          const [schedHour, schedMinute] = post.scheduledPublishTime.split(':').map(Number);
-          
-          // Compare dates and times within the store timezone
-          shouldPublish = (
-            schedYear < currentYear ||
-            (schedYear === currentYear && schedMonth < currentMonth) ||
-            (schedYear === currentYear && schedMonth === currentMonth && schedDay < currentDay) ||
-            (schedYear === currentYear && schedMonth === currentMonth && schedDay === currentDay && 
-             (schedHour < currentHour || (schedHour === currentHour && schedMinute <= currentMinute)))
+          // Create the scheduled date in UTC using our timezone utility
+          const scheduledDateUTC = createDateInTimezone(
+            post.scheduledPublishDate,
+            post.scheduledPublishTime,
+            storeTimezone
           );
           
+          // Get current time in UTC
+          const nowUTC = new Date();
+          
+          // Simple UTC comparison - if current time >= scheduled time
+          shouldPublish = nowUTC >= scheduledDateUTC;
+          
           console.log(`Post ${post.id} scheduled for: ${post.scheduledPublishDate} ${post.scheduledPublishTime} in ${storeTimezone}`);
-          console.log(`Current time in ${storeTimezone}: ${currentYear}-${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')} ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`);
+          console.log(`Scheduled UTC time: ${scheduledDateUTC.toISOString()}`);
+          console.log(`Current UTC time: ${nowUTC.toISOString()}`);
           console.log(`Should publish: ${shouldPublish}`);
         } else {
           // Fallback to UTC comparison if no date/time fields
           shouldPublish = scheduledDate <= now;
+          console.log(`Using fallback UTC comparison - should publish: ${shouldPublish}`);
         }
         
         // If it's time to publish
