@@ -865,21 +865,6 @@ export default function SimpleBulkGeneration() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="generateImages"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Generate Images</FormLabel>
-                          <FormDescription>Automatically include relevant images</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
                 </div>
                 
                 {/* Add topics input to setup step - only show in bulk mode */}
@@ -945,78 +930,6 @@ export default function SimpleBulkGeneration() {
                     </div>
                   )}
 
-                  {/* Batch configuration */}
-                  <div className="border rounded-lg p-4 space-y-4 bg-blue-50">
-                    <h4 className="font-medium text-sm flex items-center gap-2">
-                      <Cpu className="h-4 w-4 text-blue-600" />
-                      Batch Processing Configuration
-                    </h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="batchSize"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Batch Size</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="1"
-                                max="20"
-                                {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Number of topics to process per batch (1-20)
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="simultaneousGeneration"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox 
-                                checked={field.value} 
-                                onCheckedChange={field.onChange} 
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                Parallel Processing
-                              </FormLabel>
-                              <FormDescription>
-                                Generate content simultaneously within batches (faster but uses more resources)
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    {/* Batch info */}
-                    <div className="text-sm text-neutral-600 bg-white rounded p-3">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="font-medium">Total Topics:</span> {topicsList.length}
-                        </div>
-                        <div>
-                          <span className="font-medium">Batches:</span> {totalBatches}
-                        </div>
-                        <div>
-                          <span className="font-medium">Batch Size:</span> {form.watch('batchSize')}
-                        </div>
-                        <div>
-                          <span className="font-medium">Processing:</span> {form.watch('simultaneousGeneration') ? 'Parallel' : 'Sequential'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
             </CardContent>
           </Card>
         );
