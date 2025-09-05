@@ -540,16 +540,26 @@ export default function SimpleBulkGeneration() {
       const isClusterMode = formValues.generationMode === 'cluster';
       console.log(`Using ${isClusterMode ? 'cluster' : 'bulk'} generation mode with ${topicsList.length} topics`);
       
-      // Add progress tracking for longer operations
+      // Add progress tracking for longer operations with better increments
+      let progressCounter = 0;
       progressInterval = setInterval(() => {
+        progressCounter++;
         setProgress(prev => {
-          if (prev < 80) {
-            return prev + 5;
-          } else if (prev < 85) {
+          // More gradual progress that doesn't get stuck
+          if (prev < 50) {
+            return prev + 3;
+          } else if (prev < 80) {
             return prev + 2;
+          } else if (prev < 88) {
+            return prev + 1;
           }
           return prev;
         });
+        
+        // Stop incrementing after 4 minutes to prevent going over 90%
+        if (progressCounter > 120 && progressInterval) {
+          clearInterval(progressInterval);
+        }
       }, 2000);
       
       const response = await apiRequest({
