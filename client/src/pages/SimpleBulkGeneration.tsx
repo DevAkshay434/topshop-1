@@ -546,7 +546,7 @@ export default function SimpleBulkGeneration() {
       progressInterval = setInterval(() => {
         progressCounter++;
         setProgress(prev => {
-          // Gradual progress that goes all the way to completion (no decimals)
+          // Gradual progress that goes to 90% max, then waits for completion
           const currentProgress = Math.floor(prev);
           if (currentProgress < 30) {
             return currentProgress + 2;
@@ -554,10 +554,10 @@ export default function SimpleBulkGeneration() {
             return currentProgress + 1;
           } else if (currentProgress < 85) {
             return currentProgress + 1;
-          } else if (currentProgress < 95) {
+          } else if (currentProgress < 90) {
             return currentProgress + 1;
           }
-          return currentProgress;
+          return currentProgress; // Cap at 90% until API completes
         });
       }, 2000); // Faster updates for better user experience
       
@@ -576,7 +576,7 @@ export default function SimpleBulkGeneration() {
         console.log('✅ API call completed successfully:', response);
         
         if (progressInterval) clearInterval(progressInterval);
-        setProgress(90);
+        setProgress(100);
         
         if (response && response.success) {
         console.log(`Bulk generation results: ${response.successful} of ${response.totalTopics} successful`);
@@ -618,7 +618,46 @@ export default function SimpleBulkGeneration() {
         
         // Handle timeout by showing cluster view with processing states
         if (apiError.message?.includes('Request timeout after')) {
-          console.log('⏰ Timeout detected - showing cluster view with processing states');
+          console.log('⏰ Timeout detected - checking if articles were actually generated...');
+          
+          // Check if any articles were actually generated despite timeout
+          try {
+            const postsResponse = await apiRequest({ url: '/api/posts', method: 'GET' });
+            const currentPosts = postsResponse.posts || [];
+            const recentPosts = currentPosts.filter((post: any) => {
+              const postTime = new Date(post.createdAt).getTime();
+              const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+              return postTime > fiveMinutesAgo;
+            });
+            
+            if (recentPosts.length > 0) {
+              console.log(`✅ Found ${recentPosts.length} recently generated articles despite timeout!`);
+              setProgress(100);
+              setCurrentStep('results');
+              
+              // Show successful completion
+              const successResults = recentPosts.slice(0, 10).map((post: any, index: number) => ({
+                topic: `Article ${index + 1}`,
+                status: "success" as const,
+                title: post.title,
+                contentPreview: post.content?.substring(0, 150) + '...',
+                postId: post.id,
+                usesFallback: false
+              }));
+              
+              setResults(successResults);
+              
+              toast({
+                title: "Cluster Generation Complete!",
+                description: `Successfully generated ${recentPosts.length} articles in your cluster.`,
+                variant: "default"
+              });
+              return;
+            }
+          } catch (checkError) {
+            console.error('Error checking for generated articles:', checkError);
+          }
+          
           setProgress(100);
           setCurrentStep('results');
           
