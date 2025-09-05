@@ -534,11 +534,18 @@ export default function SimpleBulkGeneration() {
       
       setProgress(30);
       
-      // Use enhanced bulk generation endpoint
+      // Use enhanced bulk generation endpoint with cluster mode flag
+      const isClusterMode = formValues.generationMode === 'cluster';
+      console.log(`Using ${isClusterMode ? 'cluster' : 'bulk'} generation mode with ${topicsList.length} topics`);
+      
       const response = await apiRequest({
         url: "/api/generate-content/enhanced-bulk",
         method: "POST",
-        data: contentData
+        data: {
+          ...contentData,
+          isClusterMode,
+          clusterTopic: formValues.clusterTopic
+        }
       });
       
       setProgress(90);

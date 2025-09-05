@@ -555,13 +555,19 @@ contentRouter.post("/generate-content/enhanced-bulk", async (req: Request, res: 
         youtubeEmbed: z.string().nullable()
       }).optional(),
       batchSize: z.number().default(5),
-      simultaneousGeneration: z.boolean().default(false)
+      simultaneousGeneration: z.boolean().default(false),
+      isClusterMode: z.boolean().default(false),
+      clusterTopic: z.string().optional()
     });
     
-    const { topics, formData, mediaContent, batchSize, simultaneousGeneration } = reqSchema.parse(req.body);
+    const { topics, formData, mediaContent, batchSize, simultaneousGeneration, isClusterMode, clusterTopic } = reqSchema.parse(req.body);
     
     console.log(`Enhanced bulk generating content for ${topics.length} topics with advanced settings`);
-    console.log(`Batch size: ${batchSize}, Simultaneous: ${simultaneousGeneration}`);
+    console.log(`Batch size: ${batchSize}, Simultaneous: ${simultaneousGeneration}, Cluster mode: ${isClusterMode}`);
+    
+    if (isClusterMode && clusterTopic) {
+      console.log(`Generating cluster content around topic: "${clusterTopic}"`);
+    }
     
     // Get store from request
     const storeFromRequest = await getStoreFromRequest(req);
@@ -584,7 +590,7 @@ contentRouter.post("/generate-content/enhanced-bulk", async (req: Request, res: 
         console.log(`Processing batch ${Math.floor(i / batchSize) + 1} with ${batch.length} topics`);
         
         const batchPromises = batch.map(topic => 
-          processEnhancedTopic(topic, formData, mediaContent, storeFromRequest)
+          processEnhancedTopic(topic, formData, mediaContent, storeFromRequest, isClusterMode, clusterTopic, topics)
         );
         
         const batchResults = await Promise.allSettled(batchPromises);
@@ -612,7 +618,7 @@ contentRouter.post("/generate-content/enhanced-bulk", async (req: Request, res: 
       
       for (const topic of topics) {
         try {
-          const result = await processEnhancedTopic(topic, formData, mediaContent, storeFromRequest);
+          const result = await processEnhancedTopic(topic, formData, mediaContent, storeFromRequest, isClusterMode, clusterTopic, topics);
           results.push(result);
           
           // Small delay between requests
@@ -650,7 +656,10 @@ async function processEnhancedTopic(
   topic: string, 
   formData: any, 
   mediaContent: any, 
-  store: any
+  store: any,
+  isClusterMode: boolean = false,
+  clusterTopic?: string,
+  allTopics?: string[]
 ): Promise<any> {
   try {
     console.log(`Enhanced processing for topic: "${topic}"`);
@@ -664,7 +673,7 @@ async function processEnhancedTopic(
       generatedContent: null
     });
     
-    // Build enhanced prompt based on form data
+    // Build enhanced prompt based on form data and cluster mode
     let enhancedPrompt = formData.customPrompt;
     
     if (!enhancedPrompt) {
@@ -673,6 +682,16 @@ async function processEnhancedTopic(
     } else {
       // Replace topic placeholder in custom prompt
       enhancedPrompt = enhancedPrompt.replace(/\[TOPIC\]/g, topic);
+    }
+    
+    // Add cluster-specific instructions if in cluster mode
+    if (isClusterMode && clusterTopic && allTopics) {
+      const otherTopics = allTopics.filter(t => t !== topic);
+      enhancedPrompt += `\n\nCLUSTER MODE INSTRUCTIONS:
+      This article is part of a content cluster about "${clusterTopic}". 
+      Create natural internal links to these related articles in your cluster: ${otherTopics.slice(0, 3).join(', ')}.
+      Use phrases like "as we discussed in our guide to [topic]" or "learn more about [related topic] in our comprehensive guide".
+      Ensure this article complements and references the other articles in the cluster while maintaining its unique focus on "${topic}".`;
     }
     
     // Include product and collection context if available
