@@ -12,6 +12,8 @@ import { AuthorSelector } from '../components/AuthorSelector';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ClusterView } from '../components/ClusterView';
+import CreatePostModal from '../components/CreatePostModal';
+import { BlogPost } from '@shared/schema';
 
 import {
   Card,
@@ -271,6 +273,10 @@ export default function SimpleBulkGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<GenerationResult[]>([]);
+  
+  // Modal state for editing posts (same as admin panel)
+  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Content and product state
@@ -726,6 +732,12 @@ export default function SimpleBulkGeneration() {
       if (progressInterval) clearInterval(progressInterval);
       setIsGenerating(false);
     }
+  };
+
+  // Handler functions for editing posts (same as admin panel)
+  const handleEditPost = (post: BlogPost) => {
+    setSelectedPost(post);
+    setCreatePostModalOpen(true);
   };
 
   // Monitor cluster generation progress and update blocks in real-time
@@ -1440,6 +1452,7 @@ export default function SimpleBulkGeneration() {
                   description: "Content cluster has been removed. You can start a new one.",
                 });
               }}
+              onEditPost={handleEditPost}
             />
           );
         }
@@ -1623,6 +1636,13 @@ export default function SimpleBulkGeneration() {
           </div>
         </div>
       </Form>
+      
+      {/* Create Post Modal - Same as admin panel for editing cluster articles */}
+      <CreatePostModal
+        open={createPostModalOpen}
+        onOpenChange={setCreatePostModalOpen}
+        initialData={selectedPost}
+      />
     </Layout>
   );
 }

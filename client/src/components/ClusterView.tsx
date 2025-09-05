@@ -23,9 +23,10 @@ interface ClusterViewProps {
   articles: Article[];
   onRefresh?: () => void;
   onDeleteCluster?: () => void;
+  onEditPost?: (post: any) => void;
 }
 
-export function ClusterView({ clusterTopic, articles, onRefresh, onDeleteCluster }: ClusterViewProps) {
+export function ClusterView({ clusterTopic, articles, onRefresh, onDeleteCluster, onEditPost }: ClusterViewProps) {
   const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<number | null>(null);
   const { toast } = useToast();
@@ -61,20 +62,36 @@ export function ClusterView({ clusterTopic, articles, onRefresh, onDeleteCluster
     }
   };
 
-  const handleEditPost = (article: Article) => {
-    if (article.status === 'completed' && article.postId > 0) {
-      // Navigate to Shopify editor or edit page
-      window.open(`/blog-posts/edit/${article.postId}`, '_blank');
-      toast({
-        title: "Opening Editor",
-        description: `Opening "${article.title}" in the Shopify editor.`,
-      });
-    } else {
+  const handleEditPost = async (article: Article) => {
+    if (article.status !== 'completed' || article.postId <= 0) {
       toast({
         title: "Cannot Edit",
         description: "Article is still being generated or has failed.",
         variant: "destructive"
       });
+      return;
+    }
+
+    if (onEditPost) {
+      // Fetch the full post data and open the Shopify editor (same as admin panel)
+      try {
+        const response = await apiRequest('GET', `/api/posts/${article.postId}`, {});
+        if (response && response.post) {
+          // Open the same CreatePostModal used in admin panel
+          onEditPost(response.post);
+          toast({
+            title: "Opening Editor",
+            description: `Opening "${article.title}" in the Shopify editor.`,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching post for editing:', error);
+        toast({
+          title: "Error",
+          description: "Could not open editor. Please try again.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
