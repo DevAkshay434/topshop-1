@@ -113,11 +113,17 @@ import {
   Target,
   Globe,
   BookOpen,
-  Wand2
+  Wand2,
+  Network,
+  Link
 } from 'lucide-react';
 
 // Form schema for bulk generation
 const bulkFormSchema = z.object({
+  // Generation Mode
+  generationMode: z.enum(["bulk", "cluster"]).default("bulk"),
+  clusterTopic: z.string().optional(),
+  
   // Article Configuration
   articleType: z.string().default("blog"),
   articleLength: z.string().default("long"),
@@ -230,6 +236,8 @@ export default function SimpleBulkGeneration() {
   const form = useForm<BulkFormValues>({
     resolver: zodResolver(bulkFormSchema),
     defaultValues: {
+      generationMode: "bulk",
+      clusterTopic: "",
       articleType: "blog",
       articleLength: "long",
       headingsCount: "3",
@@ -297,6 +305,10 @@ export default function SimpleBulkGeneration() {
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
   
+  // Cluster-specific state
+  const [generatedClusterTitles, setGeneratedClusterTitles] = useState<string[]>([]);
+  const [isGeneratingClusterTitles, setIsGeneratingClusterTitles] = useState(false);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
@@ -324,21 +336,92 @@ export default function SimpleBulkGeneration() {
 
   // Process topics when form topics field changes
   useEffect(() => {
+    const generationMode = form.watch('generationMode');
     const topicsValue = form.watch('topics');
-    if (topicsValue) {
-      const processedTopics = topicsValue
-        .split('\n')
-        .map(topic => topic.trim())
-        .filter(Boolean);
-      setTopicsList(processedTopics);
-      
-      const batchSize = form.getValues('batchSize');
-      setTotalBatches(Math.ceil(processedTopics.length / batchSize));
+    
+    if (generationMode === 'cluster') {
+      // For cluster mode, use generated titles
+      setTopicsList(generatedClusterTitles);
+      setTotalBatches(1); // Clusters are processed as one batch
     } else {
-      setTopicsList([]);
-      setTotalBatches(0);
+      // For bulk mode, use topics from textarea
+      if (topicsValue) {
+        const processedTopics = topicsValue
+          .split('\n')
+          .map(topic => topic.trim())
+          .filter(Boolean);
+        setTopicsList(processedTopics);
+        
+        const batchSize = form.getValues('batchSize');
+        setTotalBatches(Math.ceil(processedTopics.length / batchSize));
+      } else {
+        setTopicsList([]);
+        setTotalBatches(0);
+      }
     }
-  }, [form.watch('topics'), form.watch('batchSize')]);
+  }, [form.watch('topics'), form.watch('batchSize'), form.watch('generationMode'), generatedClusterTitles]);
+
+  // Generate cluster titles using Claude AI
+  const generateClusterTitles = async () => {
+    const clusterTopic = form.getValues('clusterTopic');
+    if (!clusterTopic || clusterTopic.trim().length < 3) {
+      toast({
+        title: "Cluster Topic Required",
+        description: "Please enter a cluster topic of at least 3 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingClusterTitles(true);
+    try {
+      const response = await apiRequest({
+        url: '/api/generate-content/cluster-titles',
+        method: 'POST',
+        data: {
+          clusterTopic: clusterTopic.trim(),
+          keywords: selectedKeywords.map(k => k.keyword).filter(Boolean),
+          count: 10, // Generate 10 titles for the cluster
+          productIds: selectedProducts.map(p => p.id),
+          collectionIds: selectedCollections.map(c => c.id),
+        }
+      });
+
+      if (response.success && response.titles) {
+        setGeneratedClusterTitles(response.titles);
+        toast({
+          title: "Cluster Titles Generated",
+          description: `Generated ${response.titles.length} unique article titles for your cluster`,
+        });
+      } else {
+        throw new Error(response.error || "Failed to generate cluster titles");
+      }
+    } catch (error) {
+      console.error("Error generating cluster titles:", error);
+      // Fallback titles if API fails
+      const fallbackTitles = [
+        `Complete Guide to ${clusterTopic}`,
+        `${clusterTopic}: Tips for Beginners`,
+        `Advanced ${clusterTopic} Strategies`,
+        `Common ${clusterTopic} Mistakes to Avoid`,
+        `${clusterTopic} Best Practices`,
+        `How to Master ${clusterTopic}`,
+        `${clusterTopic} vs Alternatives`,
+        `${clusterTopic} Case Studies`,
+        `Future of ${clusterTopic}`,
+        `${clusterTopic}: Frequently Asked Questions`
+      ];
+      setGeneratedClusterTitles(fallbackTitles);
+      
+      toast({
+        title: "Using Fallback Titles",
+        description: "Generated cluster titles using fallback system due to API error",
+        variant: "default",
+      });
+    } finally {
+      setIsGeneratingClusterTitles(false);
+    }
+  };
 
   // Generate buyer persona suggestions based on selected products
   const generateBuyerPersonaSuggestions = async () => {
@@ -511,9 +594,16 @@ export default function SimpleBulkGeneration() {
 
   // Step validation
   const canProceedToNextStep = () => {
+    const generationMode = form.watch('generationMode');
+    
     switch (currentStep) {
       case 'setup':
-        return topicsList.length > 0; // Must have topics to proceed
+        if (generationMode === 'cluster') {
+          const clusterTopic = form.watch('clusterTopic');
+          return clusterTopic && clusterTopic.trim().length >= 3 && generatedClusterTitles.length > 0;
+        } else {
+          return topicsList.length > 0; // Must have topics to proceed
+        }
       case 'products':
         return true; // Products are optional
       case 'collections':
@@ -540,13 +630,117 @@ export default function SimpleBulkGeneration() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Wand2 className="h-5 w-5 text-blue-600" />
-                Bulk Generation Setup
+                Content Generation Setup
               </CardTitle>
               <CardDescription>
-                Configure your bulk content generation settings and preferences
+                Choose between bulk generation or cluster generation (inspired by Machined.ai)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+                {/* Generation Mode Toggle */}
+                <FormField
+                  control={form.control}
+                  name="generationMode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Generation Mode</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select generation mode" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="bulk">
+                            <div className="flex items-center gap-2">
+                              <Layers className="h-4 w-4" />
+                              Bulk Generation - Multiple individual topics
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="cluster">
+                            <div className="flex items-center gap-2">
+                              <Network className="h-4 w-4" />
+                              Cluster Generation - 10 interconnected articles around one topic
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        {form.watch('generationMode') === 'cluster' 
+                          ? 'Generate 10 SEO-optimized articles that interlink around a central topic'
+                          : 'Generate multiple articles from a list of individual topics'
+                        }
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Cluster Topic Input (only show in cluster mode) */}
+                {form.watch('generationMode') === 'cluster' && (
+                  <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
+                    <FormField
+                      control={form.control}
+                      name="clusterTopic"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cluster Topic</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter your main topic (e.g., 'Sustainable Fashion for Modern Consumers', 'Digital Marketing Strategies for Small Businesses')"
+                              className="min-h-[100px] bg-white"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            This will be the central theme around which all 10 articles will be created
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Generate Cluster Titles Button */}
+                    <div className="space-y-3">
+                      <Button
+                        type="button"
+                        onClick={generateClusterTitles}
+                        disabled={isGeneratingClusterTitles || !form.watch('clusterTopic')?.trim()}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        {isGeneratingClusterTitles ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating Cluster Titles...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-4 w-4 mr-2" />
+                            Generate 10 Article Titles
+                          </>
+                        )}
+                      </Button>
+
+                      {/* Show generated titles */}
+                      {generatedClusterTitles.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-blue-800 font-medium">
+                            Generated {generatedClusterTitles.length} cluster titles:
+                          </p>
+                          <div className="grid gap-1 max-h-40 overflow-y-auto bg-white rounded border p-3">
+                            {generatedClusterTitles.map((title, index) => (
+                              <div key={index} className="text-sm flex items-center gap-2">
+                                <span className="font-medium text-blue-700 w-6">{index + 1}.</span>
+                                <span>{title}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -688,30 +882,26 @@ export default function SimpleBulkGeneration() {
                   />
                 </div>
                 
-                {/* Add topics input to setup step */}
-                <div className="space-y-4 pt-6 border-t">
-                  <h4 className="font-medium text-lg flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-green-600" />
-                    Content Topics
-                  </h4>
-                  
-                  <FormField
-                    control={form.control}
-                    name="topics"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Topics (one per line)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder={`Enter topics, one per line:
-How to choose the right running shoes
-Best skincare routine for dry skin
-Sustainable fashion trends 2024
-Benefits of meal planning
-Essential kitchen tools for beginners`}
-                            className="min-h-32"
-                            rows={8}
+                {/* Add topics input to setup step - only show in bulk mode */}
+                {form.watch('generationMode') === 'bulk' && (
+                  <div className="space-y-4 pt-6 border-t">
+                    <h4 className="font-medium text-lg flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-green-600" />
+                      Content Topics
+                    </h4>
+                    
+                    <FormField
+                      control={form.control}
+                      name="topics"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Topics (one per line)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder="Enter topics, one per line:&#10;How to choose the right running shoes&#10;Best skincare routine for dry skin&#10;Sustainable fashion trends 2024&#10;Benefits of meal planning&#10;Essential kitchen tools for beginners"
+                              className="min-h-32"
+                              rows={8}
                           />
                         </FormControl>
                         <FormDescription>
@@ -722,7 +912,15 @@ Essential kitchen tools for beginners`}
                     )}
                   />
 
-                  {/* Topics preview */}
+                  <div className="text-center text-neutral-600">
+                    <p className="text-sm">
+                      💡 <strong>Tip:</strong> Be specific with your topics for better content quality
+                    </p>
+                  </div>
+                  </div>
+                )}
+
+                  {/* Topics preview - only show in bulk mode */}
                   {topicsList.length > 0 && (
                     <div className="border rounded-lg p-4 bg-neutral-50">
                       <div className="flex items-center justify-between mb-3">
@@ -819,7 +1017,6 @@ Essential kitchen tools for beginners`}
                       </div>
                     </div>
                   </div>
-                </div>
             </CardContent>
           </Card>
         );
@@ -1180,9 +1377,14 @@ Essential kitchen tools for beginners`}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-neutral-900">Bulk Content Generation</h1>
+                <h1 className="text-3xl font-bold text-neutral-900">
+                  {form.watch('generationMode') === 'cluster' ? 'Cluster Content Generation' : 'Bulk Content Generation'}
+                </h1>
                 <p className="text-neutral-600 mt-2">
-                  Create multiple high-quality blog posts using the same advanced workflow as single post generation
+                  {form.watch('generationMode') === 'cluster' 
+                    ? 'Generate 10 SEO-optimized, interconnected articles around a central topic (inspired by Machined.ai)'
+                    : 'Create multiple high-quality blog posts using the same advanced workflow as single post generation'
+                  }
                 </p>
               </div>
               <div className="flex items-center gap-2">

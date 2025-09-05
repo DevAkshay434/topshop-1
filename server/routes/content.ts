@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
 import { insertContentGenRequestSchema } from "@shared/schema";
-import { generateBlogContentWithClaude, testClaudeConnection } from "../services/claude";
+import { generateBlogContentWithClaude, testClaudeConnection, generateClusterTitles } from "../services/claude";
 import { canGenerateContentWithCredits, consumeUsageForContentGeneration } from "../services/billing";
 
 // Helper function to get store from request with multi-store support (copied from routes.ts)
@@ -873,5 +873,62 @@ async function buildProductContext(productIds: string[], collectionIds: string[]
   
   return context;
 }
+
+// Generate cluster titles endpoint
+contentRouter.post("/generate-content/cluster-titles", async (req: Request, res: Response) => {
+  try {
+    const reqSchema = z.object({
+      clusterTopic: z.string().min(3),
+      keywords: z.array(z.string()).default([]),
+      count: z.number().min(1).max(20).default(10),
+      productIds: z.array(z.string()).default([]),
+      collectionIds: z.array(z.string()).default([])
+    });
+    
+    const { clusterTopic, keywords, count } = reqSchema.parse(req.body);
+    
+    console.log(`Generating cluster titles for topic: "${clusterTopic}"`);
+    
+    // Get store from request
+    const store = await getStoreFromRequest(req);
+    if (!store) {
+      return res.status(400).json({
+        success: false,
+        error: "No connected store found. Please connect a Shopify store first."
+      });
+    }
+    
+    // Check if user can generate content
+    const { canGenerate, message, availableCredits } = await canGenerateContentWithCredits(store.id);
+    if (!canGenerate) {
+      return res.status(403).json({
+        success: false,
+        error: message || "Cannot generate content at this time",
+        availableCredits
+      });
+    }
+    
+    // Generate cluster titles using Claude
+    const titles = await generateClusterTitles(clusterTopic, keywords, count);
+    
+    // Consume credits for the title generation (minimal consumption for title generation)
+    await consumeUsageForContentGeneration(store.id, true);
+    
+    res.json({
+      success: true,
+      titles,
+      count: titles.length,
+      topic: clusterTopic
+    });
+    
+  } catch (error: any) {
+    console.error("Error generating cluster titles:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to generate cluster titles",
+      message: error?.message || String(error)
+    });
+  }
+});
 
 export default contentRouter;

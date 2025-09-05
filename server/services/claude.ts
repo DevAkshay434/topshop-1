@@ -1332,3 +1332,52 @@ export async function testClaudeConnection(): Promise<{ success: boolean; messag
     };
   }
 }
+
+// Generate cluster titles for topic cluster functionality  
+export async function generateClusterTitles(clusterTopic: string, keywords: string[] = [], count: number = 10): Promise<string[]> {
+  try {
+    console.log(`Generating ${count} cluster titles for topic: "${clusterTopic}"`);
+    
+    const keywordContext = keywords.length > 0 
+      ? `\n\nKeywords to incorporate: ${keywords.join(', ')}`
+      : '';
+      
+    const prompt = `You are an expert SEO content strategist. Generate exactly ${count} unique, compelling article titles that form a comprehensive content cluster around this central topic: "${clusterTopic}"
+
+Requirements:
+1. Each title should be unique and cover a different angle/aspect of the main topic
+2. Titles should be SEO-friendly and engaging for readers  
+3. Include a mix of: beginner guides, advanced strategies, comparisons, case studies, tips, common mistakes, best practices
+4. Each title should be 8-15 words long
+5. Use actionable language and power words when appropriate
+6. Ensure titles complement each other and could be interlinked naturally${keywordContext}
+
+Generate exactly ${count} titles, one per line, without numbers or bullet points:`;
+
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 800,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    });
+
+    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    const titles = content
+      .split('\n')
+      .map(title => title.trim())
+      .filter(title => title.length > 0)
+      .slice(0, count); // Ensure we only return the requested count
+
+    console.log(`Generated ${titles.length} cluster titles successfully`);
+    return titles;
+    
+  } catch (error) {
+    console.error('Error generating cluster titles with Claude:', error);
+    throw error;
+  }
+}
