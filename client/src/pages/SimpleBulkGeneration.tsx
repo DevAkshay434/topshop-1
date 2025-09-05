@@ -633,7 +633,7 @@ export default function SimpleBulkGeneration() {
                 Content Generation Setup
               </CardTitle>
               <CardDescription>
-                Choose between bulk generation or cluster generation (inspired by Machined.ai)
+                Choose between bulk generation or cluster generation
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1274,7 +1274,7 @@ export default function SimpleBulkGeneration() {
                 </h1>
                 <p className="text-neutral-600 mt-2">
                   {form.watch('generationMode') === 'cluster' 
-                    ? 'Generate 10 SEO-optimized, interconnected articles around a central topic (inspired by Machined.ai)'
+                    ? 'Generate 10 SEO-optimized, interconnected articles around a central topic'
                     : 'Create multiple high-quality blog posts using the same advanced workflow as single post generation'
                   }
                 </p>
