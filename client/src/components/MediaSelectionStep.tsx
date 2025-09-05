@@ -102,6 +102,9 @@ export default function MediaSelectionStep({
       loadAllProductImages();
     } else if (selectedProductId) {
       loadProductImages();
+    } else {
+      // Clear product images if no products are selected
+      setProductImages([]);
     }
   }, [selectedProductId, selectedProducts]);
   
