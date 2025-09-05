@@ -559,11 +559,20 @@ export default function SimpleBulkGeneration() {
         // Stop incrementing after 4 minutes to prevent going over 88%
         if (progressCounter > 120 && progressInterval) {
           clearInterval(progressInterval);
-          console.log('Progress capped at 88%, waiting for API response or timeout...');
+          console.log('⏱️  Progress capped at 88%, waiting for API response or timeout...');
+          
+          // Also start a backup timeout mechanism - if we're still generating after 5.5 minutes total, start polling
+          setTimeout(() => {
+            if (isGenerating) {
+              console.log('🔄 Backup timeout activated - starting polling regardless of API status...');
+              startPollingForCompletion();
+            }
+          }, 90000); // 1.5 minutes after hitting 88% (90 seconds)
         }
       }, 2000);
       
       try {
+        console.log('🚀 Starting cluster generation API call...');
         const response = await apiRequest({
           url: "/api/generate-content/enhanced-bulk",
           method: "POST",
@@ -574,6 +583,7 @@ export default function SimpleBulkGeneration() {
           },
           timeout: 300000 // 5 minute timeout, then use polling
         });
+        console.log('✅ API call completed successfully:', response);
         
         if (progressInterval) clearInterval(progressInterval);
         setProgress(90);
@@ -616,14 +626,33 @@ export default function SimpleBulkGeneration() {
       } catch (apiError: any) {
         if (progressInterval) clearInterval(progressInterval);
         
-        // Check if this is specifically a timeout error
-        if (apiError.message?.includes('timeout') || apiError.message?.includes('Request timeout') || apiError.code === 'ECONNABORTED') {
-          console.log('API timeout detected, starting polling recovery...', apiError.message);
+        // Log the full error details for debugging
+        console.error('API error details:', {
+          message: apiError.message,
+          code: apiError.code,
+          name: apiError.name,
+          stack: apiError.stack
+        });
+        
+        // For any error that might be related to timeout or long processing, start polling
+        // This includes network timeouts, request aborted, etc.
+        if (
+          apiError.message?.toLowerCase().includes('timeout') || 
+          apiError.message?.toLowerCase().includes('aborted') ||
+          apiError.message?.includes('Request timeout after') || // From our queryClient
+          apiError.name === 'AbortError' || // From AbortController
+          apiError.code === 'ECONNABORTED' ||
+          apiError.code === 'NETWORK_ERROR' ||
+          apiError.name === 'TimeoutError' ||
+          apiError.status === 408 || // Request Timeout
+          !apiError.message // Generic network error
+        ) {
+          console.log('🔄 Long processing or timeout detected, starting polling recovery...', apiError.message);
           startPollingForCompletion();
           return;
         } else {
-          // For non-timeout errors, show the actual error
-          console.error('Non-timeout API error:', apiError);
+          // For clear non-timeout errors, show the actual error
+          console.error('❌ Non-timeout API error:', apiError);
           throw apiError;
         }
       }
