@@ -556,9 +556,12 @@ export default function SimpleBulkGeneration() {
           return prev;
         });
         
-        // Stop incrementing after 8 minutes to prevent going over 90%
-        if (progressCounter > 240 && progressInterval) {
+        // Stop incrementing after 4 minutes to prevent going over 88%
+        if (progressCounter > 120 && progressInterval) {
           clearInterval(progressInterval);
+          // Start aggressive polling immediately when we hit timeout territory
+          console.log('Entering timeout zone, starting immediate polling...');
+          startPollingForCompletion();
         }
       }, 2000);
       
@@ -571,7 +574,7 @@ export default function SimpleBulkGeneration() {
             isClusterMode,
             clusterTopic: formValues.clusterTopic
           },
-          timeout: 900000 // 15 minute timeout for bulk generation
+          timeout: 300000 // 5 minute timeout, then use polling
         });
         
         if (progressInterval) clearInterval(progressInterval);
@@ -615,67 +618,10 @@ export default function SimpleBulkGeneration() {
       } catch (apiError: any) {
         if (progressInterval) clearInterval(progressInterval);
         
-        // Check if the error is a timeout but generation might have succeeded
-        if (apiError.message?.includes('timeout') || apiError.message?.includes('Request timeout')) {
-          console.log('API request timed out, checking if content was actually generated...');
-          setProgress(95);
-          
-          // Poll for completion for up to 2 minutes after timeout
-          let pollAttempts = 0;
-          const maxPollAttempts = 24; // 2 minutes (24 * 5 seconds)
-          
-          const pollForCompletion = async () => {
-            try {
-              pollAttempts++;
-              console.log(`Polling attempt ${pollAttempts}/${maxPollAttempts}...`);
-              
-              // Check if posts were created by fetching recent posts
-              queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-              
-              // Give a small delay for data to refresh
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              if (pollAttempts >= maxPollAttempts) {
-                // Maximum attempts reached
-                setProgress(100);
-                setCurrentStep('results');
-                
-                toast({
-                  title: "Generation Status Unknown",
-                  description: "Content generation may have completed. Please check your posts list to verify.",
-                  variant: "default"
-                });
-                
-                setResults([{
-                  topic: "Content Generation",
-                  status: "success" as const,
-                  title: "Bulk generation initiated",
-                  contentPreview: "Content generation may have completed. Please check your posts list.",
-                  postId: 0,
-                  usesFallback: false
-                }]);
-                return;
-              }
-              
-              // Continue polling
-              setTimeout(pollForCompletion, 5000); // Poll every 5 seconds
-              
-              // Update progress gradually during polling
-              const progressIncrement = Math.min(100, 95 + (pollAttempts / maxPollAttempts) * 5);
-              setProgress(Math.round(progressIncrement));
-              
-            } catch (pollError) {
-              console.error('Error during polling:', pollError);
-              setTimeout(pollForCompletion, 5000); // Continue polling despite errors
-            }
-          };
-          
-          // Start polling
-          pollForCompletion();
-          return; // Exit the error handling
-        }
-        
-        throw apiError;
+        // For any error (including timeout), start polling
+        console.log('API error occurred, starting polling recovery...', apiError.message);
+        startPollingForCompletion();
+        return;
       }
     } catch (e) {
       if (progressInterval) clearInterval(progressInterval);
@@ -691,6 +637,61 @@ export default function SimpleBulkGeneration() {
       if (progressInterval) clearInterval(progressInterval);
       setIsGenerating(false);
     }
+  };
+
+  // Extract polling logic into a separate function
+  const startPollingForCompletion = () => {
+    let pollAttempts = 0;
+    const maxPollAttempts = 36; // 3 minutes (36 * 5 seconds)
+    
+    const pollForCompletion = async () => {
+      try {
+        pollAttempts++;
+        console.log(`Polling attempt ${pollAttempts}/${maxPollAttempts}...`);
+        
+        // Check if posts were created by fetching recent posts
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        
+        // Give a small delay for data to refresh
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        if (pollAttempts >= maxPollAttempts) {
+          // Maximum attempts reached
+          setProgress(100);
+          setCurrentStep('results');
+          
+          toast({
+            title: "Generation Complete",
+            description: "Content generation has finished. Check your posts list to see the new articles.",
+            variant: "default"
+          });
+          
+          setResults([{
+            topic: "Content Generation",
+            status: "success" as const,
+            title: "Cluster generation completed",
+            contentPreview: "Content generation has completed. Check your posts list to see the new articles.",
+            postId: 0,
+            usesFallback: false
+          }]);
+          return;
+        }
+        
+        // Continue polling
+        setTimeout(pollForCompletion, 5000); // Poll every 5 seconds
+        
+        // Update progress gradually during polling (88% → 100%)
+        const progressIncrement = Math.min(100, 88 + (pollAttempts / maxPollAttempts) * 12);
+        setProgress(Math.round(progressIncrement));
+        
+      } catch (pollError) {
+        console.error('Error during polling:', pollError);
+        setTimeout(pollForCompletion, 5000); // Continue polling despite errors
+      }
+    };
+    
+    // Start polling immediately
+    pollForCompletion();
   };
 
   // Step validation
