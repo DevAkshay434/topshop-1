@@ -545,12 +545,12 @@ export default function SimpleBulkGeneration() {
       if (isClusterMode) {
         setCurrentStep('results');
         
-        // Create initial cluster results with all articles as processing
+        // Create initial cluster results with all articles as failed (will be updated to success when complete)
         const initialClusterResults = topicsList.map((topic, index) => ({
           topic: topic,
-          status: "processing" as const,
+          status: "failed" as const,
           title: `Generating: ${topic}`,
-          contentPreview: "Article is being generated in the background...",
+          error: "Article is being generated in the background...",
           postId: 0,
           usesFallback: false
         }));
@@ -742,59 +742,83 @@ export default function SimpleBulkGeneration() {
         });
         
         console.log(`🔍 Monitoring: Found ${recentPosts.length} recent posts`);
+        console.log('Recent posts:', recentPosts.map((p: any) => ({ id: p.id, title: p.title, created: p.createdAt })));
+        console.log('Current results:', results.map(r => ({ 
+          topic: r.topic, 
+          status: r.status, 
+          title: r.status === 'success' ? r.title : 'Processing...'
+        })));
         
-        // Update results with actual completed articles
-        const updatedResults = results.map((result, index) => {
-          if (result.status === 'processing') {
-            // Try to find a matching post by topic or partial title match
-            const matchingPost = recentPosts.find((post: any) => {
-              const postTitle = post.title?.toLowerCase() || '';
-              const resultTopic = result.topic.toLowerCase();
-              const topicWords = resultTopic.split(' ').filter(word => word.length > 3);
+        // Update results with actual completed articles - improved matching
+        setResults(prevResults => {
+          return prevResults.map((result, index) => {
+            if (result.status === 'failed' && result.error === 'Article is being generated in the background...') {
+              // Try multiple matching strategies
+              const matchingPost = recentPosts.find((post: any) => {
+                const postTitle = post.title?.toLowerCase() || '';
+                const postContent = post.content?.toLowerCase() || '';
+                const resultTopic = result.topic.toLowerCase();
+                
+                // Strategy 1: Exact topic match in title
+                if (postTitle.includes(resultTopic)) return true;
+                
+                // Strategy 2: Key words from topic in title (minimum 2 words, length > 3)
+                const topicWords = resultTopic.split(' ').filter((word: string) => word.length > 3);
+                const matchingWords = topicWords.filter((word: string) => postTitle.includes(word));
+                if (matchingWords.length >= Math.min(2, topicWords.length)) return true;
+                
+                // Strategy 3: Topic words in content
+                if (topicWords.some((word: string) => postContent.includes(word))) return true;
+                
+                // Strategy 4: Use post creation order (newest posts match first topics)
+                const postAge = Date.now() - new Date(post.createdAt).getTime();
+                if (postAge < 300000) return true; // Posts created in last 5 minutes
+                
+                return false;
+              });
               
-              return topicWords.some(word => postTitle.includes(word)) ||
-                     postTitle.includes(resultTopic.substring(0, 20));
-            });
-            
-            if (matchingPost) {
-              console.log(`✅ Found completed article: ${matchingPost.title}`);
-              return {
-                ...result,
-                status: 'completed' as const,
-                title: matchingPost.title,
-                contentPreview: matchingPost.content?.substring(0, 150) + '...',
-                postId: matchingPost.id
-              };
+              if (matchingPost) {
+                console.log(`✅ Found completed article: "${matchingPost.title}" for topic: "${result.topic}"`);
+                return {
+                  topic: result.topic,
+                  status: 'success' as const,
+                  title: matchingPost.title,
+                  contentPreview: matchingPost.content?.substring(0, 150) + '...',
+                  postId: matchingPost.id,
+                  usesFallback: false
+                };
+              }
             }
-          }
-          
-          return result;
+            
+            return result;
+          });
         });
         
-        setResults(updatedResults);
+        // Count completed articles after state update
+        setTimeout(() => {
+          const currentResults = results;
+          const completedCount = currentResults.filter(r => r.status === 'success').length;
+          const totalCount = currentResults.length;
         
-        // Count completed articles
-        const completedCount = updatedResults.filter(r => r.status === 'completed').length;
-        const totalCount = updatedResults.length;
-        
-        console.log(`📊 Progress: ${completedCount}/${totalCount} articles completed`);
-        
-        // Stop monitoring if all articles are complete
-        if (completedCount === totalCount) {
-          clearInterval(monitorInterval);
-          toast({
-            title: "🎉 Cluster Complete!",
-            description: `All ${totalCount} articles in your cluster have been generated successfully.`,
-            variant: "default"
-          });
-        } else if (completedCount > 0) {
-          // Show ongoing progress
-          toast({
-            title: "Articles Generating",
-            description: `${completedCount}/${totalCount} articles completed. Keep watching the blocks turn blue!`,
-            variant: "default"
-          });
-        }
+          console.log(`📊 Progress: ${completedCount}/${totalCount} articles completed`);
+          
+          // Stop monitoring if all articles are complete
+          if (completedCount === totalCount) {
+            clearInterval(monitorInterval);
+            toast({
+              title: "🎉 Cluster Complete!",
+              description: `All ${totalCount} articles in your cluster have been generated successfully.`,
+              variant: "default"
+            });
+          } else if (completedCount > 0) {
+            // Show ongoing progress
+            toast({
+              title: "Articles Generating",
+              description: `${completedCount}/${totalCount} articles completed. Keep watching the blocks turn blue!`,
+              variant: "default"
+            });
+          }
+        }, 100);
         
       } catch (error) {
         console.error('Error monitoring cluster progress:', error);
@@ -1397,18 +1421,20 @@ export default function SimpleBulkGeneration() {
               articles={results.map(r => ({
                 topic: r.topic,
                 status: r.status === 'success' ? 'completed' as const : 
-                        r.status === 'processing' ? 'processing' as const : 'failed' as const,
-                title: r.title || r.topic,
-                contentPreview: r.contentPreview || (r.error ? `Error: ${r.error}` : 'Content preview not available'),
-                postId: r.postId || 0,
-                usesFallback: r.usesFallback
+                        (r.status === 'failed' && r.error === 'Article is being generated in the background...') ? 'processing' as const : 'failed' as const,
+                title: r.status === 'success' ? r.title : `Generating: ${r.topic}`,
+                contentPreview: r.status === 'success' ? (r.contentPreview || 'Content preview not available') : 
+                               (r.status === 'failed' && r.error === 'Article is being generated in the background...') ? 'Article is being generated in the background...' : 
+                               `Error: ${r.error || 'Unknown error'}`,
+                postId: r.status === 'success' ? (r.postId || 0) : 0,
+                usesFallback: r.status === 'success' ? (r.usesFallback || false) : false
               }))}
               onRefresh={() => {
                 queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
               }}
               onDeleteCluster={() => {
                 setResults([]);
-                setCurrentStep('basic-info');
+                setCurrentStep('setup');
                 toast({
                   title: "Cluster Deleted",
                   description: "Content cluster has been removed. You can start a new one.",
