@@ -91,40 +91,70 @@ export function ClusterView({ clusterTopic, articles, onRefresh, onDeleteCluster
     setPublishingId(article.postId);
 
     try {
-      let updateData: any = {};
+      let response: any;
       
       switch (action) {
         case 'draft':
-          updateData = { status: 'draft' };
+          // Save as draft - update status only
+          response = await apiRequest('PUT', `/api/posts/${article.postId}`, { 
+            status: 'draft' 
+          });
           break;
+          
         case 'publish':
-          updateData = { status: 'published', publishedDate: new Date().toISOString() };
+          // Publish to Shopify using the existing publish endpoint
+          response = await apiRequest('POST', `/api/posts/publish/${article.postId}`, {});
           break;
+          
         case 'schedule':
           // For scheduling, we'd need a date picker - for now just schedule for tomorrow
           const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
-          updateData = { status: 'scheduled', scheduledDate: tomorrow.toISOString() };
+          response = await apiRequest('PUT', `/api/posts/${article.postId}`, { 
+            status: 'scheduled', 
+            scheduledDate: tomorrow.toISOString() 
+          });
           break;
       }
 
-      const response = await apiRequest('PUT', `/api/posts/${article.postId}`, updateData);
-
-      if (response) {
+      if (response && response.success !== false) {
+        let title = '';
+        let description = '';
+        
+        switch (action) {
+          case 'draft':
+            title = "Saved as Draft";
+            description = `"${article.title}" has been saved as draft.`;
+            break;
+          case 'publish':
+            title = "Published to Shopify!";
+            description = response.shopifyUrl 
+              ? `"${article.title}" has been published to your Shopify store successfully!`
+              : `"${article.title}" has been published successfully!`;
+            break;
+          case 'schedule':
+            title = "Scheduled Publication";
+            description = `"${article.title}" has been scheduled for publication.`;
+            break;
+        }
+        
         toast({
-          title: `Article ${action === 'publish' ? 'Published' : action === 'draft' ? 'Saved as Draft' : 'Scheduled'}`,
-          description: `"${article.title}" has been ${action === 'publish' ? 'published' : action === 'draft' ? 'saved as draft' : 'scheduled'} successfully.`
+          title,
+          description,
+          variant: "default"
         });
         
         // Refresh the data
         if (onRefresh) onRefresh();
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      } else {
+        throw new Error(response?.message || 'Operation failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error ${action}ing post:`, error);
       toast({
-        title: `${action} Failed`,
-        description: `There was an error ${action}ing the article. Please try again.`,
+        title: `${action === 'publish' ? 'Publish' : action === 'draft' ? 'Save' : 'Schedule'} Failed`,
+        description: error.message || `There was an error ${action}ing the article. Please try again.`,
         variant: "destructive"
       });
     } finally {
