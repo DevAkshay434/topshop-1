@@ -545,19 +545,20 @@ export default function SimpleBulkGeneration() {
       progressInterval = setInterval(() => {
         progressCounter++;
         setProgress(prev => {
-          // Gradual progress that goes all the way to completion
-          if (prev < 30) {
-            return prev + 2;
-          } else if (prev < 60) {
-            return prev + 1.5;
-          } else if (prev < 85) {
-            return prev + 0.5;
-          } else if (prev < 95) {
-            return prev + 0.2;
+          // Gradual progress that goes all the way to completion (no decimals)
+          const currentProgress = Math.floor(prev);
+          if (currentProgress < 30) {
+            return currentProgress + 2;
+          } else if (currentProgress < 60) {
+            return currentProgress + 1;
+          } else if (currentProgress < 85) {
+            return currentProgress + 1;
+          } else if (currentProgress < 95) {
+            return currentProgress + 1;
           }
-          return prev;
+          return currentProgress;
         });
-      }, 3000); // Slower updates for long operations
+      }, 2000); // Faster updates for better user experience
       
       try {
         console.log('🚀 Starting cluster generation API call...');
@@ -569,7 +570,7 @@ export default function SimpleBulkGeneration() {
             isClusterMode,
             clusterTopic: formValues.clusterTopic
           },
-          timeout: 900000 // 15 minute timeout to allow full completion
+          timeout: 600000 // 10 minute timeout - optimized for faster generation
         });
         console.log('✅ API call completed successfully:', response);
         

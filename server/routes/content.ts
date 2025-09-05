@@ -621,8 +621,8 @@ contentRouter.post("/generate-content/enhanced-bulk", async (req: Request, res: 
           const result = await processEnhancedTopic(topic, formData, mediaContent, storeFromRequest, isClusterMode, clusterTopic, topics);
           results.push(result);
           
-          // Small delay between requests
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Shorter delay for faster processing
+          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`Error processing topic "${topic}":`, error);
           results.push({
@@ -704,13 +704,47 @@ async function processEnhancedTopic(
       enhancedPrompt += `\n\nTarget audience: ${formData.buyerPersonas}`;
     }
     
+    // Prepare products info for interlinking
+    let productsInfo = [];
+    if (formData.productIds && formData.productIds.length > 0) {
+      try {
+        const productsResponse = await fetch(`http://localhost:5000/api/admin/products`, {
+          headers: { 'X-Store-ID': store.id.toString() }
+        });
+        const productsData = await productsResponse.json();
+        productsInfo = productsData.products?.filter((p: any) => formData.productIds.includes(p.id)) || [];
+        console.log(`📦 Loaded ${productsInfo.length} products for interlinking`);
+      } catch (productError) {
+        console.error('Error loading products for interlinking:', productError);
+      }
+    }
+
     try {
-      // Generate content with Claude using enhanced prompt
+      console.log(`🎯 Generating content with Claude for topic: "${topic}"`);
+      
+      // Generate content with Claude using enhanced features like admin panel
       const generatedContent = await generateBlogContentWithClaude({
         topic,
         tone: formData.toneOfVoice || "friendly",
         length: formData.articleLength || "medium",
-        customPrompt: enhancedPrompt
+        customPrompt: enhancedPrompt,
+        // Include all media content like admin panel
+        primaryImage: mediaContent?.primaryImage || null,
+        secondaryImages: mediaContent?.secondaryImages || [],
+        youtubeEmbed: mediaContent?.youtubeEmbed || null,
+        // Include product linking
+        productIds: formData.productIds || [],
+        productsInfo: productsInfo,
+        // Include keywords
+        keywords: formData.keywords || [],
+        // Include audience targeting
+        targetAudience: formData.buyerPersonas,
+        // Add cluster mode context if available
+        ...(isClusterMode && allTopics ? {
+          isClusterMode,
+          clusterTopic,
+          allTopics
+        } : {})
       });
       
       console.log(`Enhanced content generated for "${topic}". Title: "${generatedContent.title}"`);
@@ -735,18 +769,33 @@ async function processEnhancedTopic(
         }
       }
       
-      // Create blog post with enhanced settings
-      const post = await storage.createBlogPost({
+      // Create blog post with enhanced settings including featured image
+      const postData: any = {
         title: generatedContent.title,
         content: generatedContent.content || `# ${generatedContent.title}\n\nContent for ${topic}`,
         status: formData.postStatus || "draft",
         publishedDate: formData.postStatus === "published" ? new Date() : undefined,
         author: authorName,
+        authorId: formData.authorId || null,
         tags: Array.isArray(generatedContent.tags) && generatedContent.tags.length > 0 
           ? generatedContent.tags.join(",") 
           : topic,
-        category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content"
-      });
+        category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content",
+        metaTitle: generatedContent.metaTitle || null,
+        metaDescription: generatedContent.metaDescription || null
+      };
+
+      // Add featured image from primary image like admin panel
+      if (mediaContent?.primaryImage) {
+        if (typeof mediaContent.primaryImage === 'object' && mediaContent.primaryImage.url) {
+          postData.featuredImage = mediaContent.primaryImage.url;
+        } else if (typeof mediaContent.primaryImage === 'string') {
+          postData.featuredImage = mediaContent.primaryImage;
+        }
+        console.log(`📸 Added featured image: ${postData.featuredImage}`);
+      }
+
+      const post = await storage.createBlogPost(postData);
       
       console.log(`Created enhanced post: ${post.id} - "${post.title}"`);
       
