@@ -809,27 +809,6 @@ export default function SimpleBulkGeneration() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="batchSize"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Batch Size</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            max="20" 
-                            {...field} 
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Number of articles to generate simultaneously (1-20)
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
                 </div>
 
                 <div className="space-y-4">
