@@ -9,7 +9,7 @@ import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { useToast } from '../hooks/use-toast';
 import ShopifyImageViewer from './ShopifyImageViewer';
-import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye, Trash2 } from 'lucide-react';
+import { Loader2, Search, Upload, Youtube, Image as ImageIcon, X, Check, AlertCircle, Star, Plus, Minus, ArrowUp, ArrowDown, RefreshCw, Maximize, Eye, Trash2, Package } from 'lucide-react';
 import ImagePreviewDialog from './ImagePreviewDialog';
 import ImageSelectionControls from './ImageSelectionControls';
 import SimpleSelectedImagesBar from './SimpleSelectedImagesBar';
@@ -62,7 +62,7 @@ export default function MediaSelectionStep({
   clusterCount = 1
 }: MediaSelectionStepProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('pexels'); // Changed default to Pexels for better initial experience
+  const [activeTab, setActiveTab] = useState('products'); // Default to product images first
   const [primaryImage, setPrimaryImage] = useState<MediaImage | null>(initialValues?.primaryImage || null);
   const [secondaryImages, setSecondaryImages] = useState<MediaImage[]>(initialValues?.secondaryImages || []);
   const [youtubeUrl, setYoutubeUrl] = useState<string>(initialValues?.youtubeEmbed || '');
@@ -98,35 +98,45 @@ export default function MediaSelectionStep({
   
   // Load product images when component mounts or when products change
   useEffect(() => {
+    console.log('MediaSelectionStep: Products changed', { 
+      selectedProductsCount: selectedProducts.length, 
+      selectedProductId,
+      productTitles: selectedProducts.map(p => p.title)
+    });
+    
     if (selectedProducts.length > 0) {
+      console.log('Loading images for multiple products:', selectedProducts.length);
       loadAllProductImages();
     } else if (selectedProductId) {
+      console.log('Loading images for single product:', selectedProductId);
       loadProductImages();
     } else {
       // Clear product images if no products are selected
+      console.log('No products selected, clearing product images');
       setProductImages([]);
     }
   }, [selectedProductId, selectedProducts]);
   
-  // Only load Shopify media library images if no products are selected
+  // Load product images initially if products are selected, otherwise load Shopify media
   useEffect(() => {
-    if (selectedProducts.length === 0 && !selectedProductId) {
+    if (selectedProducts.length > 0) {
+      loadAllProductImages();
+    } else {
       loadShopifyMediaImages();
     }
-  }, [selectedProducts, selectedProductId]);
+  }, []);
   
   const loadProductImages = async () => {
     if (!selectedProductId) return;
     
     setIsLoadingImages(true);
     try {
-      const response = await axios.get('/api/media/product-images', {
-        params: { productId: selectedProductId }
-      });
+      const response = await axios.get(`/api/admin/product-images/${selectedProductId}`);
       
-      if (response.data.success && response.data.images) {
+      if (response.data.success && (response.data.images || response.data.files)) {
         // Process the images to match our MediaImage format
-        const formattedImages: MediaImage[] = response.data.images.map((img: any) => ({
+        const imageData = response.data.images || response.data.files;
+        const formattedImages: MediaImage[] = imageData.map((img: any) => ({
           id: img.id,
           url: img.src,
           width: img.width || 800,
@@ -167,12 +177,11 @@ export default function MediaSelectionStep({
       // Load images for each selected product
       for (const product of selectedProducts) {
         try {
-          const response = await axios.get('/api/media/product-images', {
-            params: { productId: product.id }
-          });
+          const response = await axios.get(`/api/admin/product-images/${product.id}`);
           
-          if (response.data.success && response.data.images) {
-            const formattedImages: MediaImage[] = response.data.images.map((img: any) => ({
+          if (response.data.success && (response.data.images || response.data.files)) {
+            const imageData = response.data.images || response.data.files;
+            const formattedImages: MediaImage[] = imageData.map((img: any) => ({
               id: img.id,
               url: img.src,
               width: img.width || 800,
@@ -768,12 +777,59 @@ export default function MediaSelectionStep({
       )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1 rounded-lg">
+        <TabsList className="grid w-full grid-cols-5 bg-gray-100 p-1 rounded-lg">
+          <TabsTrigger value="products" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">Product Images</TabsTrigger>
           <TabsTrigger value="primary" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">Primary Image</TabsTrigger>
           <TabsTrigger value="secondary" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">Secondary Images</TabsTrigger>
           <TabsTrigger value="uploaded" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">Uploaded Images</TabsTrigger>
           <TabsTrigger value="youtube" className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-700 hover:text-gray-900">YouTube Video</TabsTrigger>
         </TabsList>
+        
+        {/* PRODUCT IMAGES TAB */}
+        <TabsContent value="products" className="space-y-4">
+          <div className="flex flex-col space-y-4">
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+              <div className="flex items-start">
+                <Package className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-blue-700">Your Product Images</h3>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {selectedProducts.length > 0 
+                      ? `Images from your ${selectedProducts.length} selected product${selectedProducts.length > 1 ? 's' : ''}`
+                      : 'Select products in step 1 to see their images here'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {isLoadingImages ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                <span className="ml-2 text-slate-600">Loading product images...</span>
+              </div>
+            ) : productImages.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {productImages.map(image => renderImageCard(
+                  image,
+                  primaryImage?.id === image.id,
+                  secondaryImages.some(img => img.id === image.id)
+                ))}
+              </div>
+            ) : selectedProducts.length > 0 ? (
+              <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-md">
+                <AlertCircle className="h-12 w-12 mx-auto text-slate-300" />
+                <p className="mt-2">No images found for selected products</p>
+                <p className="text-xs mt-1">Try selecting products with images or use Pexels for stock photos</p>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-md">
+                <Package className="h-12 w-12 mx-auto text-slate-300" />
+                <p className="mt-2">No products selected</p>
+                <p className="text-xs mt-1">Go back to step 1 to select products first</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
         
         {/* PRIMARY IMAGE SELECTION */}
         <TabsContent value="primary" className="space-y-4">
