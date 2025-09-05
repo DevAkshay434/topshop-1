@@ -559,9 +559,7 @@ export default function SimpleBulkGeneration() {
         // Stop incrementing after 4 minutes to prevent going over 88%
         if (progressCounter > 120 && progressInterval) {
           clearInterval(progressInterval);
-          // Start aggressive polling immediately when we hit timeout territory
-          console.log('Entering timeout zone, starting immediate polling...');
-          startPollingForCompletion();
+          console.log('Progress capped at 88%, waiting for API response or timeout...');
         }
       }, 2000);
       
@@ -618,10 +616,16 @@ export default function SimpleBulkGeneration() {
       } catch (apiError: any) {
         if (progressInterval) clearInterval(progressInterval);
         
-        // For any error (including timeout), start polling
-        console.log('API error occurred, starting polling recovery...', apiError.message);
-        startPollingForCompletion();
-        return;
+        // Check if this is specifically a timeout error
+        if (apiError.message?.includes('timeout') || apiError.message?.includes('Request timeout') || apiError.code === 'ECONNABORTED') {
+          console.log('API timeout detected, starting polling recovery...', apiError.message);
+          startPollingForCompletion();
+          return;
+        } else {
+          // For non-timeout errors, show the actual error
+          console.error('Non-timeout API error:', apiError);
+          throw apiError;
+        }
       }
     } catch (e) {
       if (progressInterval) clearInterval(progressInterval);
@@ -641,39 +645,88 @@ export default function SimpleBulkGeneration() {
 
   // Extract polling logic into a separate function
   const startPollingForCompletion = () => {
+    console.log('🔄 Starting polling for completion...');
     let pollAttempts = 0;
-    const maxPollAttempts = 36; // 3 minutes (36 * 5 seconds)
+    const maxPollAttempts = 60; // 5 minutes (60 * 5 seconds)
+    let initialPostCount = 0;
+    
+    // Get initial post count to compare against
+    const getInitialPostCount = async () => {
+      try {
+        const response = await fetch('/api/posts');
+        const data = await response.json();
+        initialPostCount = data.posts?.length || 0;
+        console.log(`📊 Initial post count: ${initialPostCount}`);
+      } catch (error) {
+        console.error('Error getting initial post count:', error);
+        initialPostCount = 0;
+      }
+    };
     
     const pollForCompletion = async () => {
       try {
         pollAttempts++;
-        console.log(`Polling attempt ${pollAttempts}/${maxPollAttempts}...`);
+        console.log(`🔍 Polling attempt ${pollAttempts}/${maxPollAttempts}...`);
         
-        // Check if posts were created by fetching recent posts
-        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-        
-        // Give a small delay for data to refresh
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Check current post count
+        try {
+          const response = await fetch('/api/posts');
+          const data = await response.json();
+          const currentPostCount = data.posts?.length || 0;
+          console.log(`📈 Current post count: ${currentPostCount}, Initial: ${initialPostCount}`);
+          
+          // If we have new posts, generation likely completed
+          if (currentPostCount > initialPostCount) {
+            const newPostsCount = currentPostCount - initialPostCount;
+            console.log(`✅ Detected ${newPostsCount} new posts! Generation completed.`);
+            
+            // Invalidate cache and complete
+            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+            setProgress(100);
+            setCurrentStep('results');
+            
+            toast({
+              title: "Generation Complete",
+              description: `Successfully generated ${newPostsCount} new articles! Check your posts list to see them.`,
+              variant: "default"
+            });
+            
+            setResults([{
+              topic: "Cluster Content Generation",
+              status: "success" as const,
+              title: "Cluster generation completed successfully",
+              contentPreview: `Generated ${newPostsCount} new articles. Content is ready for review and publishing.`,
+              postId: currentPostCount,
+              usesFallback: false
+            }]);
+            setIsGenerating(false);
+            return; // Stop polling
+          }
+        } catch (fetchError) {
+          console.error('Error checking post count:', fetchError);
+        }
         
         if (pollAttempts >= maxPollAttempts) {
           // Maximum attempts reached
+          console.log('⏰ Maximum polling attempts reached');
           setProgress(100);
           setCurrentStep('results');
           
           toast({
-            title: "Generation Complete",
-            description: "Content generation has finished. Check your posts list to see the new articles.",
+            title: "Generation Status Unknown",
+            description: "Generation process completed but status unclear. Please check your posts list manually.",
             variant: "default"
           });
           
           setResults([{
             topic: "Content Generation",
             status: "success" as const,
-            title: "Cluster generation completed",
-            contentPreview: "Content generation has completed. Check your posts list to see the new articles.",
+            title: "Generation process completed",
+            contentPreview: "Generation process finished. Please check your posts list to verify results.",
             postId: 0,
             usesFallback: false
           }]);
+          setIsGenerating(false);
           return;
         }
         
@@ -690,8 +743,10 @@ export default function SimpleBulkGeneration() {
       }
     };
     
-    // Start polling immediately
-    pollForCompletion();
+    // Get initial count then start polling
+    getInitialPostCount().then(() => {
+      pollForCompletion();
+    });
   };
 
   // Step validation
