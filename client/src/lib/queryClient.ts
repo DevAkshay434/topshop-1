@@ -12,6 +12,7 @@ interface ApiRequestOptions {
   url: string;
   method: string;
   data?: unknown;
+  timeout?: number;
 }
 
 export async function apiRequest<T = any>(
@@ -26,12 +27,14 @@ export async function apiRequest<T = any>(
   let url: string;
   let method: string;
   let requestData: unknown | undefined;
+  let timeout: number | undefined;
   
   if (typeof methodOrOptions === 'object') {
     // New style: options object
     url = methodOrOptions.url;
     method = methodOrOptions.method;
     requestData = methodOrOptions.data;
+    timeout = methodOrOptions.timeout;
   } else if (typeof urlOrData === 'string') {
     // Old style: separate arguments
     method = methodOrOptions;
@@ -56,15 +59,34 @@ export async function apiRequest<T = any>(
     console.log(`Query client: No auto-detected store ID available for URL: ${url}. Value: ${autoDetectedStoreId}`);
   }
   
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: requestData ? JSON.stringify(requestData) : undefined,
-    credentials: "include",
-  });
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  let timeoutId: NodeJS.Timeout | undefined;
+  
+  if (timeout) {
+    timeoutId = setTimeout(() => controller.abort(), timeout);
+  }
+  
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: requestData ? JSON.stringify(requestData) : undefined,
+      credentials: "include",
+      signal: controller.signal,
+    });
 
-  await throwIfResNotOk(res);
-  return res.json();
+    if (timeoutId) clearTimeout(timeoutId);
+    
+    await throwIfResNotOk(res);
+    return res.json();
+  } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

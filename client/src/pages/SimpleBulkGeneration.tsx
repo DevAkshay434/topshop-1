@@ -501,6 +501,8 @@ export default function SimpleBulkGeneration() {
     setError(null);
     setCurrentStep('generation');
     
+    let progressInterval: NodeJS.Timeout | null = null;
+    
     try {
       const formValues = form.getValues();
       
@@ -539,7 +541,6 @@ export default function SimpleBulkGeneration() {
       console.log(`Using ${isClusterMode ? 'cluster' : 'bulk'} generation mode with ${topicsList.length} topics`);
       
       // Add progress tracking for longer operations
-      let progressInterval: NodeJS.Timeout | null = null;
       progressInterval = setInterval(() => {
         setProgress(prev => {
           if (prev < 80) {
@@ -558,7 +559,8 @@ export default function SimpleBulkGeneration() {
           ...contentData,
           isClusterMode,
           clusterTopic: formValues.clusterTopic
-        }
+        },
+        timeout: 300000 // 5 minute timeout for bulk generation
       });
       
       if (progressInterval) clearInterval(progressInterval);
@@ -610,6 +612,7 @@ export default function SimpleBulkGeneration() {
         variant: "destructive",
       });
     } finally {
+      if (progressInterval) clearInterval(progressInterval);
       setIsGenerating(false);
     }
   };
