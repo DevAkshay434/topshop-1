@@ -1117,13 +1117,19 @@ export default function SimpleBulkGeneration() {
                 Media Selection
               </CardTitle>
               <CardDescription>
-                Choose images and media for your content
+                {form.watch('generationMode') === 'cluster' 
+                  ? 'Choose multiple featured images to distribute across your 10 cluster articles'
+                  : 'Choose images and media for your content'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <MediaSelectionStep
                 selectedProductId={selectedProducts[0]?.id || ""}
+                selectedProducts={selectedProducts}
                 initialValues={selectedMediaContent}
+                isClusterMode={form.watch('generationMode') === 'cluster'}
+                clusterCount={form.watch('generationMode') === 'cluster' ? 10 : 1}
                 onComplete={(media) => {
                   setSelectedMediaContent(media);
                   nextStep();

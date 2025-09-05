@@ -45,7 +45,10 @@ interface MediaSelectionStepProps {
     youtubeEmbed: string | null;
   };
   selectedProductId?: string | null;
+  selectedProducts?: any[]; // Array of selected products for loading all product images
   title?: string | null; // The selected content title for context
+  isClusterMode?: boolean; // Whether we're in cluster generation mode
+  clusterCount?: number; // Number of articles in the cluster (for cluster mode)
 }
 
 export default function MediaSelectionStep({
@@ -53,7 +56,10 @@ export default function MediaSelectionStep({
   onBack,
   initialValues,
   selectedProductId,
-  title
+  selectedProducts = [],
+  title,
+  isClusterMode = false,
+  clusterCount = 1
 }: MediaSelectionStepProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('pexels'); // Changed default to Pexels for better initial experience
@@ -90,12 +96,14 @@ export default function MediaSelectionStep({
     }
   }, [title]);
   
-  // Load product images when component mounts or when productId changes
+  // Load product images when component mounts or when products change
   useEffect(() => {
-    if (selectedProductId) {
+    if (selectedProducts.length > 0) {
+      loadAllProductImages();
+    } else if (selectedProductId) {
       loadProductImages();
     }
-  }, [selectedProductId]);
+  }, [selectedProductId, selectedProducts]);
   
   // Load Shopify media library images on initial load
   useEffect(() => {
@@ -136,6 +144,65 @@ export default function MediaSelectionStep({
       toast({
         title: 'Error loading product images',
         description: 'Could not load images for this product. Please try again later.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingImages(false);
+    }
+  };
+
+  // Load images for all selected products
+  const loadAllProductImages = async () => {
+    if (selectedProducts.length === 0) return;
+    
+    setIsLoadingImages(true);
+    try {
+      const allImages: MediaImage[] = [];
+      
+      // Load images for each selected product
+      for (const product of selectedProducts) {
+        try {
+          const response = await axios.get('/api/media/product-images', {
+            params: { productId: product.id }
+          });
+          
+          if (response.data.success && response.data.images) {
+            const formattedImages: MediaImage[] = response.data.images.map((img: any) => ({
+              id: img.id,
+              url: img.src,
+              width: img.width || 800,
+              height: img.height || 600,
+              alt: img.alt || `${product.title} image`,
+              src: {
+                original: img.src,
+                large: img.src,
+                medium: img.src,
+                small: img.src,
+                thumbnail: img.src,
+              },
+              source: img.variantId ? 'variant' : 'product'
+            }));
+            allImages.push(...formattedImages);
+          }
+        } catch (productError) {
+          console.warn(`Error loading images for product ${product.id}:`, productError);
+        }
+      }
+      
+      setProductImages(allImages);
+      console.log(`Loaded ${allImages.length} product images from ${selectedProducts.length} products`);
+      
+      if (allImages.length > 0) {
+        toast({
+          title: 'Product images loaded',
+          description: `Loaded ${allImages.length} images from your selected products`
+        });
+      }
+    } catch (error) {
+      console.error('Error loading all product images:', error);
+      toast({
+        title: 'Error loading product images',
+        description: 'Could not load images for selected products. Please try again later.',
         variant: 'destructive'
       });
     } finally {
