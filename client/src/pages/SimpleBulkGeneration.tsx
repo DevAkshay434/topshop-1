@@ -651,7 +651,8 @@ export default function SimpleBulkGeneration() {
                   status: "success" as const,
                   title: "Bulk generation initiated",
                   contentPreview: "Content generation may have completed. Please check your posts list.",
-                  postId: 0
+                  postId: 0,
+                  usesFallback: false
                 }]);
                 return;
               }
