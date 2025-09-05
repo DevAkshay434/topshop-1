@@ -560,7 +560,7 @@ export default function SimpleBulkGeneration() {
           isClusterMode,
           clusterTopic: formValues.clusterTopic
         },
-        timeout: 300000 // 5 minute timeout for bulk generation
+        timeout: 600000 // 10 minute timeout for bulk generation
       });
       
       if (progressInterval) clearInterval(progressInterval);

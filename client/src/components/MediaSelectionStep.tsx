@@ -108,10 +108,12 @@ export default function MediaSelectionStep({
     }
   }, [selectedProductId, selectedProducts]);
   
-  // Load Shopify media library images on initial load
+  // Only load Shopify media library images if no products are selected
   useEffect(() => {
-    loadShopifyMediaImages();
-  }, []);
+    if (selectedProducts.length === 0 && !selectedProductId) {
+      loadShopifyMediaImages();
+    }
+  }, [selectedProducts, selectedProductId]);
   
   const loadProductImages = async () => {
     if (!selectedProductId) return;
