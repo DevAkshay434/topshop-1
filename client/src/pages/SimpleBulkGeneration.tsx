@@ -1406,6 +1406,14 @@ export default function SimpleBulkGeneration() {
               onRefresh={() => {
                 queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
               }}
+              onDeleteCluster={() => {
+                setResults([]);
+                setCurrentStep('basic-info');
+                toast({
+                  title: "Cluster Deleted",
+                  description: "Content cluster has been removed. You can start a new one.",
+                });
+              }}
             />
           );
         }

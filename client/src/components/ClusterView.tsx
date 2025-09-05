@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, Clock, CheckCircle, Eye } from 'lucide-react';
+import { ChevronRight, FileText, Clock, CheckCircle, Eye, Edit, MoreVertical, Trash2, Loader2, Calendar, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Article {
   topic: string;
@@ -18,10 +22,14 @@ interface ClusterViewProps {
   clusterTopic: string;
   articles: Article[];
   onRefresh?: () => void;
+  onDeleteCluster?: () => void;
 }
 
-export function ClusterView({ clusterTopic, articles, onRefresh }: ClusterViewProps) {
+export function ClusterView({ clusterTopic, articles, onRefresh, onDeleteCluster }: ClusterViewProps) {
   const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<number | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const completedCount = articles.filter(a => a.status === 'completed').length;
   const processingCount = articles.filter(a => a.status === 'processing').length;
@@ -50,6 +58,87 @@ export function ClusterView({ clusterTopic, articles, onRefresh }: ClusterViewPr
       case 'processing': return <Clock className="w-4 h-4 text-amber-600 animate-spin" />;
       case 'failed': return <div className="w-4 h-4 bg-red-600 rounded-full" />;
       default: return <div className="w-4 h-4 bg-gray-400 rounded-full" />;
+    }
+  };
+
+  const handleEditPost = (article: Article) => {
+    if (article.status === 'completed' && article.postId > 0) {
+      // Navigate to Shopify editor or edit page
+      window.open(`/blog-posts/edit/${article.postId}`, '_blank');
+      toast({
+        title: "Opening Editor",
+        description: `Opening "${article.title}" in the Shopify editor.`,
+      });
+    } else {
+      toast({
+        title: "Cannot Edit",
+        description: "Article is still being generated or has failed.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePublishPost = async (article: Article, action: 'draft' | 'publish' | 'schedule') => {
+    if (article.status !== 'completed' || article.postId <= 0) {
+      toast({
+        title: "Cannot Publish",
+        description: "Article is still being generated or has failed.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPublishingId(article.postId);
+
+    try {
+      let updateData: any = {};
+      
+      switch (action) {
+        case 'draft':
+          updateData = { status: 'draft' };
+          break;
+        case 'publish':
+          updateData = { status: 'published', publishedDate: new Date().toISOString() };
+          break;
+        case 'schedule':
+          // For scheduling, we'd need a date picker - for now just schedule for tomorrow
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          updateData = { status: 'scheduled', scheduledDate: tomorrow.toISOString() };
+          break;
+      }
+
+      const response = await apiRequest('PUT', `/api/posts/${article.postId}`, updateData);
+
+      if (response) {
+        toast({
+          title: `Article ${action === 'publish' ? 'Published' : action === 'draft' ? 'Saved as Draft' : 'Scheduled'}`,
+          description: `"${article.title}" has been ${action === 'publish' ? 'published' : action === 'draft' ? 'saved as draft' : 'scheduled'} successfully.`
+        });
+        
+        // Refresh the data
+        if (onRefresh) onRefresh();
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing post:`, error);
+      toast({
+        title: `${action} Failed`,
+        description: `There was an error ${action}ing the article. Please try again.`,
+        variant: "destructive"
+      });
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const handleDeleteCluster = () => {
+    if (onDeleteCluster) {
+      onDeleteCluster();
+      toast({
+        title: "Cluster Deleted",
+        description: "The content cluster has been removed.",
+      });
     }
   };
 
@@ -138,10 +227,74 @@ export function ClusterView({ clusterTopic, articles, onRefresh }: ClusterViewPr
                           </Badge>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{article.contentPreview}</p>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>Topic: {article.topic}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500">Topic: {article.topic}</span>
+                          
+                          {/* Article Actions */}
                           {article.status === 'completed' && article.postId > 0 && (
-                            <span>Post ID: {article.postId}</span>
+                            <div className="flex items-center gap-2">
+                              {/* Edit Button */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditPost(article);
+                                }}
+                                className="h-8 text-xs"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                              
+                              {/* Three Dots Menu */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="w-3 h-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePublishPost(article, 'draft');
+                                  }}>
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    Save as Draft
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePublishPost(article, 'publish');
+                                  }}>
+                                    {publishingId === article.postId ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Publishing...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Send className="w-4 h-4 mr-2" />
+                                        Publish Now
+                                      </>
+                                    )}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePublishPost(article, 'schedule');
+                                  }}>
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    Schedule Publication
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              
+                              <span className="text-xs text-gray-400">ID: {article.postId}</span>
+                            </div>
                           )}
                         </div>
                       </CardContent>
@@ -157,6 +310,19 @@ export function ClusterView({ clusterTopic, articles, onRefresh }: ClusterViewPr
                 )}
               </DialogContent>
             </Dialog>
+          </div>
+          
+          {/* Delete Cluster Button */}
+          <div className="mt-4 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleDeleteCluster}
+              className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Cluster
+            </Button>
           </div>
         </CardContent>
       </Card>
