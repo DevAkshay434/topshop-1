@@ -841,7 +841,7 @@ export default function MediaSelectionStep({
                   <h3 className="text-sm font-medium text-blue-700">Your Product Images</h3>
                   <p className="text-xs text-blue-600 mt-1">
                     {selectedProducts.length > 0 
-                      ? `Images from your ${selectedProducts.length} selected product${selectedProducts.length > 1 ? 's' : ''}`
+                      ? `Images from your ${selectedProducts.length} selected product${selectedProducts.length > 1 ? 's' : ''}. Click ⭐ for primary (featured) or ➕ for secondary images.`
                       : 'Select products in step 1 to see their images here'}
                   </p>
                 </div>

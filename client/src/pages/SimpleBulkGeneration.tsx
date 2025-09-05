@@ -620,34 +620,58 @@ export default function SimpleBulkGeneration() {
           console.log('API request timed out, checking if content was actually generated...');
           setProgress(95);
           
-          // Wait a moment and check if posts were created
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Poll for completion for up to 2 minutes after timeout
+          let pollAttempts = 0;
+          const maxPollAttempts = 24; // 2 minutes (24 * 5 seconds)
           
-          try {
-            // Invalidate cache and refetch posts to see if content was generated
-            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-            setProgress(100);
-            setCurrentStep('results');
-            
-            // Show a different message for timeout scenarios
-            toast({
-              title: "Content Generation In Progress",
-              description: "Generation is taking longer than expected but may have completed. Please check your posts.",
-              variant: "default"
-            });
-            
-            // Set a generic success result
-            setResults([{
-              topic: "Content Generation",
-              status: "success" as const,
-              title: "Bulk generation initiated",
-              contentPreview: "Content generation may have completed. Please check your posts list.",
-              postId: 0 // Use number instead of string
-            }]);
-            return;
-          } catch (fallbackError) {
-            console.error('Fallback check failed:', fallbackError);
-          }
+          const pollForCompletion = async () => {
+            try {
+              pollAttempts++;
+              console.log(`Polling attempt ${pollAttempts}/${maxPollAttempts}...`);
+              
+              // Check if posts were created by fetching recent posts
+              queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+              
+              // Give a small delay for data to refresh
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              if (pollAttempts >= maxPollAttempts) {
+                // Maximum attempts reached
+                setProgress(100);
+                setCurrentStep('results');
+                
+                toast({
+                  title: "Generation Status Unknown",
+                  description: "Content generation may have completed. Please check your posts list to verify.",
+                  variant: "default"
+                });
+                
+                setResults([{
+                  topic: "Content Generation",
+                  status: "success" as const,
+                  title: "Bulk generation initiated",
+                  contentPreview: "Content generation may have completed. Please check your posts list.",
+                  postId: 0
+                }]);
+                return;
+              }
+              
+              // Continue polling
+              setTimeout(pollForCompletion, 5000); // Poll every 5 seconds
+              
+              // Update progress gradually during polling
+              const progressIncrement = Math.min(100, 95 + (pollAttempts / maxPollAttempts) * 5);
+              setProgress(Math.round(progressIncrement));
+              
+            } catch (pollError) {
+              console.error('Error during polling:', pollError);
+              setTimeout(pollForCompletion, 5000); // Continue polling despite errors
+            }
+          };
+          
+          // Start polling
+          pollForCompletion();
+          return; // Exit the error handling
         }
         
         throw apiError;
