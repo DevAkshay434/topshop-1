@@ -11,6 +11,7 @@ import { ContentStyleSelector } from '../components/ContentStyleSelector';
 import { AuthorSelector } from '../components/AuthorSelector';
 import MediaSelectionStep from '../components/MediaSelectionStep';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
+import { ClusterView } from '../components/ClusterView';
 
 import {
   Card,
@@ -570,7 +571,7 @@ export default function SimpleBulkGeneration() {
             isClusterMode,
             clusterTopic: formValues.clusterTopic
           },
-          timeout: 600000 // 10 minute timeout - optimized for faster generation
+          timeout: 900000 // 15 minute timeout for cluster generation
         });
         console.log('✅ API call completed successfully:', response);
         
@@ -615,8 +616,37 @@ export default function SimpleBulkGeneration() {
       } catch (apiError: any) {
         if (progressInterval) clearInterval(progressInterval);
         
+        // Handle timeout by showing cluster view with processing states
+        if (apiError.message?.includes('Request timeout after')) {
+          console.log('⏰ Timeout detected - showing cluster view with processing states');
+          setProgress(100);
+          setCurrentStep('results');
+          
+          // Create cluster view with processing articles
+          const clusterResults = Array.from({length: 10}, (_, i) => ({
+            topic: `Article ${i + 1}`,
+            status: "processing" as const,
+            title: `Generating article ${i + 1}...`,
+            contentPreview: "Content is being generated in the background...",
+            postId: 0,
+            usesFallback: false
+          }));
+          
+          setResults(clusterResults);
+          
+          toast({
+            title: "Cluster Generation Started",
+            description: "Your cluster is being generated. Articles will appear as they complete.",
+            variant: "default"
+          });
+          
+          // Start monitoring for completion
+          startClusterMonitoring();
+          return;
+        }
+        
         console.error('❌ API error occurred:', apiError);
-        throw apiError; // Let it bubble up to be handled by the outer catch
+        throw apiError;
       }
     } catch (e) {
       if (progressInterval) clearInterval(progressInterval);
@@ -634,6 +664,55 @@ export default function SimpleBulkGeneration() {
     }
   };
 
+  // Monitor cluster generation progress
+  const startClusterMonitoring = () => {
+    const monitorInterval = setInterval(async () => {
+      try {
+        // Check for new posts
+        const postsResponse = await apiRequest({ url: '/api/posts', method: 'GET' });
+        const currentPosts = postsResponse.posts || [];
+        
+        // Update results with actual completed articles
+        const updatedResults = results.map((result, index) => {
+          const matchingPost = currentPosts.find((post: any) => 
+            post.title?.toLowerCase().includes(result.topic.toLowerCase()) ||
+            post.content?.toLowerCase().includes(result.topic.toLowerCase())
+          );
+          
+          if (matchingPost && result.status === 'processing') {
+            return {
+              ...result,
+              status: 'completed' as const,
+              title: matchingPost.title,
+              contentPreview: matchingPost.content?.substring(0, 150) + '...',
+              postId: matchingPost.id
+            };
+          }
+          
+          return result;
+        });
+        
+        setResults(updatedResults);
+        
+        // Stop monitoring if all articles are complete
+        const allComplete = updatedResults.every(r => r.status === 'completed');
+        if (allComplete) {
+          clearInterval(monitorInterval);
+          toast({
+            title: "Cluster Complete!",
+            description: "All articles in your cluster have been generated successfully.",
+            variant: "default"
+          });
+        }
+        
+      } catch (error) {
+        console.error('Error monitoring cluster progress:', error);
+      }
+    }, 15000); // Check every 15 seconds
+    
+    // Clean up after 10 minutes
+    setTimeout(() => clearInterval(monitorInterval), 600000);
+  };
 
   // Step validation
   const canProceedToNextStep = () => {
@@ -1220,6 +1299,26 @@ export default function SimpleBulkGeneration() {
         );
 
       case 'results':
+        if (form.watch('generationMode') === 'cluster') {
+          return (
+            <ClusterView 
+              clusterTopic={form.watch('clusterTopic') || 'Content Cluster'}
+              articles={results.map(r => ({
+                topic: r.topic,
+                status: r.status === 'success' ? 'completed' as const : 
+                        r.status === 'processing' ? 'processing' as const : 'failed' as const,
+                title: r.title || r.topic,
+                contentPreview: r.contentPreview || (r.error ? `Error: ${r.error}` : 'Content preview not available'),
+                postId: r.postId || 0,
+                usesFallback: r.usesFallback
+              }))}
+              onRefresh={() => {
+                queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+              }}
+            />
+          );
+        }
+
         return (
           <Card>
             <CardHeader>
