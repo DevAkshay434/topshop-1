@@ -177,39 +177,85 @@ export default function MediaSelectionStep({
       // Load images for each selected product
       for (const product of selectedProducts) {
         try {
+          console.log(`Loading images for product: ${product.title} (ID: ${product.id})`);
           const response = await axios.get(`/api/admin/product-images/${product.id}`);
+          
+          console.log(`Response for product ${product.id}:`, response.data);
           
           if (response.data.success && (response.data.images || response.data.files)) {
             const imageData = response.data.images || response.data.files;
+            console.log(`Found ${imageData.length} images for product ${product.title}`);
+            
             const formattedImages: MediaImage[] = imageData.map((img: any) => ({
-              id: img.id,
-              url: img.src,
+              id: img.id || `${product.id}-${img.src}`,
+              url: img.src || img.url,
               width: img.width || 800,
               height: img.height || 600,
               alt: img.alt || `${product.title} image`,
               src: {
-                original: img.src,
-                large: img.src,
-                medium: img.src,
-                small: img.src,
-                thumbnail: img.src,
+                original: img.src || img.url,
+                large: img.src || img.url,
+                medium: img.src || img.url,
+                small: img.src || img.url,
+                thumbnail: img.src || img.url,
               },
               source: img.variantId ? 'variant' : 'product'
             }));
             allImages.push(...formattedImages);
+          } else {
+            console.log(`No images found for product ${product.title} (ID: ${product.id})`);
           }
         } catch (productError) {
-          console.warn(`Error loading images for product ${product.id}:`, productError);
+          console.error(`Error loading images for product ${product.id} (${product.title}):`, productError);
         }
       }
       
       setProductImages(allImages);
       console.log(`Loaded ${allImages.length} product images from ${selectedProducts.length} products`);
       
+      // If no images from API, try to extract images from product data directly
+      if (allImages.length === 0) {
+        console.log('No images from API, checking product data directly...');
+        for (const product of selectedProducts) {
+          if (product.images && Array.isArray(product.images)) {
+            console.log(`Found ${product.images.length} images in product data for ${product.title}`);
+            const productImages: MediaImage[] = product.images.map((img: any, index: number) => ({
+              id: img.id || `product-${product.id}-image-${index}`,
+              url: img.src || img.url,
+              width: img.width || 800,
+              height: img.height || 600,
+              alt: img.alt || `${product.title} image ${index + 1}`,
+              src: {
+                original: img.src || img.url,
+                large: img.src || img.url,
+                medium: img.src || img.url,
+                small: img.src || img.url,
+                thumbnail: img.src || img.url,
+              },
+              source: 'product'
+            }));
+            allImages.push(...productImages);
+          }
+        }
+        
+        // Update the productImages state with fallback data
+        if (allImages.length > 0) {
+          setProductImages(allImages);
+          console.log(`Updated product images with ${allImages.length} images from product data fallback`);
+        }
+      }
+
       if (allImages.length > 0) {
         toast({
           title: 'Product images loaded',
           description: `Loaded ${allImages.length} images from your selected products`
+        });
+      } else if (selectedProducts.length > 0) {
+        console.log('No images found for any selected products');
+        toast({
+          title: 'No images found',
+          description: 'Selected products do not have images. Try using stock photos from other tabs.',
+          variant: 'default'
         });
       }
     } catch (error) {
