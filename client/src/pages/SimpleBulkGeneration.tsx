@@ -539,14 +539,17 @@ export default function SimpleBulkGeneration() {
       console.log(`Using ${isClusterMode ? 'cluster' : 'bulk'} generation mode with ${topicsList.length} topics`);
       
       // Add progress tracking for longer operations
-      const progressInterval = setInterval(() => {
+      let progressInterval: NodeJS.Timeout | null = null;
+      progressInterval = setInterval(() => {
         setProgress(prev => {
-          if (prev < 85) {
+          if (prev < 80) {
             return prev + 5;
+          } else if (prev < 85) {
+            return prev + 2;
           }
           return prev;
         });
-      }, 3000);
+      }, 2000);
       
       const response = await apiRequest({
         url: "/api/generate-content/enhanced-bulk",
@@ -558,7 +561,7 @@ export default function SimpleBulkGeneration() {
         }
       });
       
-      clearInterval(progressInterval);
+      if (progressInterval) clearInterval(progressInterval);
       setProgress(90);
       
       if (response && response.success) {
@@ -597,7 +600,7 @@ export default function SimpleBulkGeneration() {
         throw new Error(response?.error || "Failed to generate content");
       }
     } catch (e) {
-      clearInterval(progressInterval);
+      if (progressInterval) clearInterval(progressInterval);
       console.error("Error generating content:", e);
       setError(e instanceof Error ? e.message : "An unknown error occurred");
       
