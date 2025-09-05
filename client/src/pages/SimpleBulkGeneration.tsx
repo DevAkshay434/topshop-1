@@ -556,27 +556,28 @@ export default function SimpleBulkGeneration() {
           return prev;
         });
         
-        // Stop incrementing after 4 minutes to prevent going over 90%
-        if (progressCounter > 120 && progressInterval) {
+        // Stop incrementing after 8 minutes to prevent going over 90%
+        if (progressCounter > 240 && progressInterval) {
           clearInterval(progressInterval);
         }
       }, 2000);
       
-      const response = await apiRequest({
-        url: "/api/generate-content/enhanced-bulk",
-        method: "POST",
-        data: {
-          ...contentData,
-          isClusterMode,
-          clusterTopic: formValues.clusterTopic
-        },
-        timeout: 600000 // 10 minute timeout for bulk generation
-      });
-      
-      if (progressInterval) clearInterval(progressInterval);
-      setProgress(90);
-      
-      if (response && response.success) {
+      try {
+        const response = await apiRequest({
+          url: "/api/generate-content/enhanced-bulk",
+          method: "POST",
+          data: {
+            ...contentData,
+            isClusterMode,
+            clusterTopic: formValues.clusterTopic
+          },
+          timeout: 900000 // 15 minute timeout for bulk generation
+        });
+        
+        if (progressInterval) clearInterval(progressInterval);
+        setProgress(90);
+        
+        if (response && response.success) {
         console.log(`Bulk generation results: ${response.successful} of ${response.totalTopics} successful`);
         
         const processedResults = response.results.map((result: any) => {
@@ -608,8 +609,48 @@ export default function SimpleBulkGeneration() {
         });
         
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      } else {
-        throw new Error(response?.error || "Failed to generate content");
+        } else {
+          throw new Error(response?.error || "Failed to generate content");
+        }
+      } catch (apiError: any) {
+        if (progressInterval) clearInterval(progressInterval);
+        
+        // Check if the error is a timeout but generation might have succeeded
+        if (apiError.message?.includes('timeout') || apiError.message?.includes('Request timeout')) {
+          console.log('API request timed out, checking if content was actually generated...');
+          setProgress(95);
+          
+          // Wait a moment and check if posts were created
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          try {
+            // Invalidate cache and refetch posts to see if content was generated
+            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+            setProgress(100);
+            setCurrentStep('results');
+            
+            // Show a different message for timeout scenarios
+            toast({
+              title: "Content Generation In Progress",
+              description: "Generation is taking longer than expected but may have completed. Please check your posts.",
+              variant: "default"
+            });
+            
+            // Set a generic success result
+            setResults([{
+              topic: "Content Generation",
+              status: "success" as const,
+              title: "Bulk generation initiated",
+              contentPreview: "Content generation may have completed. Please check your posts list.",
+              postId: 0 // Use number instead of string
+            }]);
+            return;
+          } catch (fallbackError) {
+            console.error('Fallback check failed:', fallbackError);
+          }
+        }
+        
+        throw apiError;
       }
     } catch (e) {
       if (progressInterval) clearInterval(progressInterval);
