@@ -541,25 +541,50 @@ export default function SimpleBulkGeneration() {
       const isClusterMode = formValues.generationMode === 'cluster';
       console.log(`Using ${isClusterMode ? 'cluster' : 'bulk'} generation mode with ${topicsList.length} topics`);
       
-      // Add progress tracking that completes naturally without getting stuck
-      let progressCounter = 0;
-      progressInterval = setInterval(() => {
-        progressCounter++;
-        setProgress(prev => {
-          // Gradual progress that goes to 90% max, then waits for completion
-          const currentProgress = Math.floor(prev);
-          if (currentProgress < 30) {
-            return currentProgress + 2;
-          } else if (currentProgress < 60) {
-            return currentProgress + 1;
-          } else if (currentProgress < 85) {
-            return currentProgress + 1;
-          } else if (currentProgress < 90) {
-            return currentProgress + 1;
-          }
-          return currentProgress; // Cap at 90% until API completes
+      // For cluster mode, skip progress and go directly to cluster view
+      if (isClusterMode) {
+        setCurrentStep('results');
+        
+        // Create initial cluster results with all articles as processing
+        const initialClusterResults = topicsList.map((topic, index) => ({
+          topic: topic,
+          status: "processing" as const,
+          title: `Generating: ${topic}`,
+          contentPreview: "Article is being generated in the background...",
+          postId: 0,
+          usesFallback: false
+        }));
+        
+        setResults(initialClusterResults);
+        
+        toast({
+          title: "Cluster Generation Started",
+          description: `Creating ${topicsList.length} interconnected articles. Watch the blocks turn blue as articles complete!`,
+          variant: "default"
         });
-      }, 2000); // Faster updates for better user experience
+        
+        // Start monitoring for completed articles
+        startClusterMonitoring();
+      } else {
+        // For bulk mode, keep the old progress indicator
+        let progressCounter = 0;
+        progressInterval = setInterval(() => {
+          progressCounter++;
+          setProgress(prev => {
+            const currentProgress = Math.floor(prev);
+            if (currentProgress < 30) {
+              return currentProgress + 2;
+            } else if (currentProgress < 60) {
+              return currentProgress + 1;
+            } else if (currentProgress < 85) {
+              return currentProgress + 1;
+            } else if (currentProgress < 90) {
+              return currentProgress + 1;
+            }
+            return currentProgress;
+          });
+        }, 2000);
+      }
       
       try {
         console.log('🚀 Starting cluster generation API call...');
@@ -703,29 +728,44 @@ export default function SimpleBulkGeneration() {
     }
   };
 
-  // Monitor cluster generation progress
+  // Monitor cluster generation progress and update blocks in real-time
   const startClusterMonitoring = () => {
     const monitorInterval = setInterval(async () => {
       try {
-        // Check for new posts
+        // Check for new posts created in the last hour
         const postsResponse = await apiRequest({ url: '/api/posts', method: 'GET' });
         const currentPosts = postsResponse.posts || [];
+        const recentPosts = currentPosts.filter((post: any) => {
+          const postTime = new Date(post.createdAt).getTime();
+          const oneHourAgo = Date.now() - (60 * 60 * 1000);
+          return postTime > oneHourAgo;
+        });
+        
+        console.log(`🔍 Monitoring: Found ${recentPosts.length} recent posts`);
         
         // Update results with actual completed articles
         const updatedResults = results.map((result, index) => {
-          const matchingPost = currentPosts.find((post: any) => 
-            post.title?.toLowerCase().includes(result.topic.toLowerCase()) ||
-            post.content?.toLowerCase().includes(result.topic.toLowerCase())
-          );
-          
-          if (matchingPost && result.status === 'processing') {
-            return {
-              ...result,
-              status: 'completed' as const,
-              title: matchingPost.title,
-              contentPreview: matchingPost.content?.substring(0, 150) + '...',
-              postId: matchingPost.id
-            };
+          if (result.status === 'processing') {
+            // Try to find a matching post by topic or partial title match
+            const matchingPost = recentPosts.find((post: any) => {
+              const postTitle = post.title?.toLowerCase() || '';
+              const resultTopic = result.topic.toLowerCase();
+              const topicWords = resultTopic.split(' ').filter(word => word.length > 3);
+              
+              return topicWords.some(word => postTitle.includes(word)) ||
+                     postTitle.includes(resultTopic.substring(0, 20));
+            });
+            
+            if (matchingPost) {
+              console.log(`✅ Found completed article: ${matchingPost.title}`);
+              return {
+                ...result,
+                status: 'completed' as const,
+                title: matchingPost.title,
+                contentPreview: matchingPost.content?.substring(0, 150) + '...',
+                postId: matchingPost.id
+              };
+            }
           }
           
           return result;
@@ -733,13 +773,25 @@ export default function SimpleBulkGeneration() {
         
         setResults(updatedResults);
         
+        // Count completed articles
+        const completedCount = updatedResults.filter(r => r.status === 'completed').length;
+        const totalCount = updatedResults.length;
+        
+        console.log(`📊 Progress: ${completedCount}/${totalCount} articles completed`);
+        
         // Stop monitoring if all articles are complete
-        const allComplete = updatedResults.every(r => r.status === 'completed');
-        if (allComplete) {
+        if (completedCount === totalCount) {
           clearInterval(monitorInterval);
           toast({
-            title: "Cluster Complete!",
-            description: "All articles in your cluster have been generated successfully.",
+            title: "🎉 Cluster Complete!",
+            description: `All ${totalCount} articles in your cluster have been generated successfully.`,
+            variant: "default"
+          });
+        } else if (completedCount > 0) {
+          // Show ongoing progress
+          toast({
+            title: "Articles Generating",
+            description: `${completedCount}/${totalCount} articles completed. Keep watching the blocks turn blue!`,
             variant: "default"
           });
         }
@@ -747,10 +799,10 @@ export default function SimpleBulkGeneration() {
       } catch (error) {
         console.error('Error monitoring cluster progress:', error);
       }
-    }, 15000); // Check every 15 seconds
+    }, 10000); // Check every 10 seconds for faster updates
     
-    // Clean up after 10 minutes
-    setTimeout(() => clearInterval(monitorInterval), 600000);
+    // Clean up after 20 minutes
+    setTimeout(() => clearInterval(monitorInterval), 1200000);
   };
 
   // Step validation
