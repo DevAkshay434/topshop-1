@@ -43,6 +43,36 @@ const anthropic = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
+// Function to bold sentences ending with : or ?
+function boldSentencesEndingWithColonOrQuestion(content: string): string {
+  console.log('🎯 Bolding sentences ending with : or ?');
+  
+  // Match sentences ending with : or ? that are not already bold
+  const sentenceRegex = /([^<>\n]*?)([:\?])(?!\s*<\/strong>)/g;
+  
+  let processedContent = content.replace(sentenceRegex, (match, sentence, punctuation) => {
+    // Don't bold if already inside a strong tag
+    if (sentence.includes('<strong>') || sentence.includes('</strong>')) {
+      return match;
+    }
+    
+    // Don't bold if it's inside HTML attributes or tags
+    if (match.includes('<') || match.includes('>')) {
+      return match;
+    }
+    
+    // Don't bold very short content (likely fragments)
+    if (sentence.trim().length < 5) {
+      return match;
+    }
+    
+    return `<strong>${sentence.trim()}${punctuation}</strong>`;
+  });
+  
+  console.log('✅ Completed bolding sentences ending with : or ?');
+  return processedContent;
+}
+
 // Function to ensure all external links have nofollow attribute
 function addNoFollowToExternalLinks(content: string): string {
   console.log('🔗 Adding nofollow attribute to external links');
@@ -1037,11 +1067,14 @@ if (!response) {
       console.log(`✓ Cleaned meta description: "${cleanMetaDescription}"`);
     }
     
+    // Final formatting step: Bold sentences ending with : or ?
+    processedContent = boldSentencesEndingWithColonOrQuestion(processedContent);
+    
     console.log('🎉 CONTENT PROCESSING PIPELINE COMPLETED SUCCESSFULLY');
 
     return {
       title: processedTitle, // Use the processed title with "and" → "&" replacements
-      content: processedContent, // Fully processed content
+      content: processedContent, // Fully processed content with sentence bolding
       rawContent: rawContentForEditor, // Content with IDs and TOC but before media processing
       tags: jsonContent.tags,
       metaDescription: cleanMetaDescription
@@ -1245,13 +1278,14 @@ export async function optimizeMetaData(
         - Enhance the title with keywords and power words while keeping the same topic
         - Include primary keywords naturally in the beginning when possible
         - Add value indicators: "Guide", "Tips", "How to", "Best", "Complete", etc.
-        - Create urgency or curiosity: "2024", "Ultimate", "Essential", "Proven"
+        - Create urgency or curiosity: "Ultimate", "Essential", "Proven", "Expert"
         - Make it more compelling than the original while staying true to the content
         - Target search intent and click-through optimization
+        - NEVER add years (like "2024", "2025", etc.) to the title
         - NEVER completely change the topic or meaning of the original title
         
         Example: If article title is "Solar Panel Installation" 
-        Good: "Complete Solar Panel Installation Guide 2024 - Expert Tips"
+        Good: "Complete Solar Panel Installation Guide - Expert Tips"
         Bad: "Renewable Energy Solutions for Modern Homes"
         
         Return ONLY the optimized meta title, nothing else.`
