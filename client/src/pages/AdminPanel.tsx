@@ -3608,14 +3608,14 @@ export default function AdminPanel() {
                   </div>
 
                   {/* Selected Items Display - appears after blog selection */}
-                  <div className="space-y-10 fade-in">
+                  <div className="space-y-3 fade-in">
                     {(selectedProducts.length > 0 ||
                       selectedCollections.length > 0 ||
                       form.watch("buyerPersonas") ||
                       selectedKeywords.length > 0 ||
                       form.watch("title")) && (
-                      <div className="space-y-6 border-0 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 shadow-sm  mx-auto max-w-5xl">
-                        <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">
+                      <div className="space-y-3 border rounded-lg p-3 bg-gray-50/50 mx-auto max-w-5xl">
+                        <h4 className="text-base font-semibold text-gray-700 mb-2 text-center">
                           Current Selections
                         </h4>
 
