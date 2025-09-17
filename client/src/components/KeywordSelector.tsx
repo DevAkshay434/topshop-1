@@ -165,7 +165,11 @@ export default function KeywordSelector({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterIntent, setFilterIntent] = useState<string | null>(null);
   const [productUrl, setProductUrl] = useState("");
-  const [directTopic, setDirectTopic] = useState(productTitle || ""); // Pre-populate with product title if available
+  
+  // Extract manual keywords from initialKeywords and use them to autofill the search input
+  const manualKeywords = initialKeywords.filter(kw => kw.isManual).map(kw => kw.keyword);
+  const initialSearchValue = manualKeywords.length > 0 ? manualKeywords.join(', ') : (productTitle || "");
+  const [directTopic, setDirectTopic] = useState(initialSearchValue);
   const [sortBy, setSortBy] = useState<'searchVolume' | 'competition' | 'cpc' | 'difficulty' | 'keyword'>('searchVolume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isFetchingVolumes, setIsFetchingVolumes] = useState(false);
