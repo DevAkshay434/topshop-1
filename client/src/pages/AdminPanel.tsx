@@ -1028,7 +1028,6 @@ export default function AdminPanel() {
 
       // Navigate to keywords step after project load
       setWorkflowStep("keyword");
-      scrollToCurrentStep();
 
       toast({
         title: "Project loaded",
@@ -2374,7 +2373,6 @@ export default function AdminPanel() {
   const handleAuthorSelectionComplete = () => {
     // Move to content generation step
     setWorkflowStep("content");
-    scrollToCurrentStep();
 
     toast({
       title: "Setup Complete",
@@ -2387,7 +2385,6 @@ export default function AdminPanel() {
   const handleAuthorSelectionBack = () => {
     // Go back to media selection
     setWorkflowStep("media");
-    scrollToCurrentStep();
   };
 
   // Handle product selection
@@ -2431,7 +2428,6 @@ export default function AdminPanel() {
 
     // Move to related products selection step after product selection
     setWorkflowStep("related-products");
-    scrollToCurrentStep();
 
     toast({
       title: "Product selected",
@@ -2444,7 +2440,6 @@ export default function AdminPanel() {
   const handleRelatedProductsContinue = () => {
     // Move to related collections step after related products selection
     setWorkflowStep("related-collections");
-    scrollToCurrentStep();
 
     toast({
       title: "Related products saved",
@@ -2456,7 +2451,6 @@ export default function AdminPanel() {
   const handleRelatedCollectionsContinue = () => {
     // Move to buying avatars step after collections selection
     setWorkflowStep("buying-avatars");
-    scrollToCurrentStep();
 
     // Generate AI buyer persona suggestions when entering this step
     if (!suggestionsGenerated) {
@@ -2477,7 +2471,6 @@ export default function AdminPanel() {
 
     // Move to keyword selection step after buyer personas selection
     setWorkflowStep("keyword");
-    scrollToCurrentStep();
 
     const buyerPersonas = form.getValues("buyerPersonas");
     toast({
@@ -2492,7 +2485,6 @@ export default function AdminPanel() {
   // Handle back button from collections to products
   const handleBackToProducts = () => {
     setWorkflowStep("product");
-    scrollToCurrentStep();
   };
 
   // Handle collection selection
@@ -2519,7 +2511,6 @@ export default function AdminPanel() {
     if (productIds.length === 0 && collectionIds.length > 0) {
       // Just update the workflow step, don't auto-open keyword selector
       setWorkflowStep("keyword");
-      scrollToCurrentStep();
       // The user will need to click the button manually
     }
   };
@@ -3562,7 +3553,6 @@ export default function AdminPanel() {
                               onClick={() => {
                                 if (isClickable) {
                                   setWorkflowStep(item.step as WorkflowStep);
-                                  scrollToCurrentStep();
                                 }
                               }}
                               disabled={!isClickable}
@@ -3687,7 +3677,6 @@ export default function AdminPanel() {
 
                                         // Redirect back to product selection step
                                         setWorkflowStep("product");
-                                        scrollToCurrentStep();
                                       }
                                     }}
                                   >
@@ -4090,14 +4079,12 @@ export default function AdminPanel() {
                             // Redirect back to product selection step
                             if (workflowStep !== "product") {
                               setWorkflowStep("product");
-                              scrollToCurrentStep();
                             }
                           }
                         }}
                         onContinue={() => {
                           if (selectedProducts.length > 0) {
                             setWorkflowStep("related-collections");
-                            scrollToCurrentStep();
                           } else {
                             toast({
                               title: "Product Required",
@@ -4567,7 +4554,6 @@ export default function AdminPanel() {
                                 variant: "destructive",
                               });
                               setWorkflowStep("product"); // Force back to product selection
-                              scrollToCurrentStep();
                               return;
                             }
 
@@ -4647,7 +4633,6 @@ export default function AdminPanel() {
                                   variant: "destructive",
                                 });
                                 setWorkflowStep("product"); // Force back to product selection
-                                scrollToCurrentStep();
                                 return;
                               }
 
@@ -5140,7 +5125,6 @@ export default function AdminPanel() {
                           variant="outline"
                           onClick={() => {
                             setWorkflowStep("title");
-                            scrollToCurrentStep();
                           }}
                         >
                           Back to Title
@@ -5158,7 +5142,6 @@ export default function AdminPanel() {
                                 variant: "destructive",
                               });
                               setWorkflowStep("product");
-                              scrollToCurrentStep();
                               return;
                             }
 
