@@ -43,33 +43,84 @@ const anthropic = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
-// Function to bold sentences ending with : or ?
+// Function to bold sentences ending with : or ? (only visible text, not HTML)
 function boldSentencesEndingWithColonOrQuestion(content: string): string {
-  console.log('🎯 Bolding sentences ending with : or ?');
+  console.log('🎯 Bolding sentences ending with : or ? (text-only, not HTML)');
   
-  // Match sentences ending with : or ? that are not already bold
-  const sentenceRegex = /([^<>\n]*?)([:\?])(?!\s*<\/strong>)/g;
+  // Split content into segments - HTML tags and text content
+  const htmlTagRegex = /<[^>]*>/g;
+  let segments: Array<{ type: 'html' | 'text', content: string, index: number }> = [];
+  let lastIndex = 0;
+  let match;
   
-  let processedContent = content.replace(sentenceRegex, (match, sentence, punctuation) => {
-    // Don't bold if already inside a strong tag
-    if (sentence.includes('<strong>') || sentence.includes('</strong>')) {
-      return match;
+  // Parse HTML to separate tags from text
+  while ((match = htmlTagRegex.exec(content)) !== null) {
+    // Add text before the tag
+    if (match.index > lastIndex) {
+      const textContent = content.substring(lastIndex, match.index);
+      if (textContent.length > 0) {
+        segments.push({ type: 'text', content: textContent, index: lastIndex });
+      }
     }
     
-    // Don't bold if it's inside HTML attributes or tags
-    if (match.includes('<') || match.includes('>')) {
-      return match;
+    // Add the HTML tag
+    segments.push({ type: 'html', content: match[0], index: match.index });
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text after last tag
+  if (lastIndex < content.length) {
+    const textContent = content.substring(lastIndex);
+    if (textContent.length > 0) {
+      segments.push({ type: 'text', content: textContent, index: lastIndex });
     }
-    
-    // Don't bold very short content (likely fragments)
-    if (sentence.trim().length < 5) {
-      return match;
+  }
+  
+  // Process only text segments for sentence bolding
+  let processedContent = content;
+  let offset = 0;
+  
+  segments.forEach(segment => {
+    if (segment.type === 'text') {
+      // Only process text segments that end with : or ?
+      const textSentenceRegex = /([^:\?\n]{10,})([:\?])(?=\s|$)/g;
+      let segmentMatch;
+      const originalText = segment.content;
+      let processedText = originalText;
+      
+      while ((segmentMatch = textSentenceRegex.exec(originalText)) !== null) {
+        const fullMatch = segmentMatch[0];
+        const sentenceText = segmentMatch[1].trim();
+        const punctuation = segmentMatch[2];
+        
+        // Skip if sentence is too short or already contains HTML
+        if (sentenceText.length < 10 || sentenceText.includes('<') || sentenceText.includes('>')) {
+          continue;
+        }
+        
+        // Skip if already bolded
+        if (originalText.substring(Math.max(0, segmentMatch.index - 10), segmentMatch.index).includes('<strong>')) {
+          continue;
+        }
+        
+        // Replace in the processed text
+        const boldedVersion = `<strong>${sentenceText}${punctuation}</strong>`;
+        processedText = processedText.replace(fullMatch, boldedVersion);
+        
+        console.log(`   ✓ Bolded text sentence: "${sentenceText}${punctuation}"`);
+      }
+      
+      // Replace the segment in the full content if it changed
+      if (processedText !== originalText) {
+        const segmentStart = segment.index + offset;
+        const segmentEnd = segmentStart + originalText.length;
+        processedContent = processedContent.substring(0, segmentStart) + processedText + processedContent.substring(segmentEnd);
+        offset += (processedText.length - originalText.length);
+      }
     }
-    
-    return `<strong>${sentence.trim()}${punctuation}</strong>`;
   });
   
-  console.log('✅ Completed bolding sentences ending with : or ?');
+  console.log('✅ Completed bolding text sentences ending with : or ?');
   return processedContent;
 }
 
