@@ -3455,8 +3455,8 @@ export default function AdminPanel() {
                 >
                   {/* Step guidance */}
 
-                  <div className="z-30 mb-4 p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-lg border border-blue-200/60 shadow-sm">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">
+                  <div className="z-30 mb-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-lg border border-blue-200/60 shadow-sm">
+                    <h3 className="text-base font-semibold text-gray-700 mb-3 text-center">
                       Content Creation Workflow
                     </h3>
 
@@ -3566,7 +3566,7 @@ export default function AdminPanel() {
                                 }
                               }}
                               disabled={!isClickable}
-                              className={`group flex flex-col items-center justify-center min-w-[32px] max-w-[40px] px-1 py-1 rounded transition-all duration-200 ${
+                              className={`group flex flex-col items-center justify-center min-w-[40px] max-w-[50px] px-1 py-1 rounded transition-all duration-200 ${
                                 isClickable
                                   ? "hover:bg-blue-100 cursor-pointer"
                                   : "cursor-not-allowed opacity-50"
@@ -3574,7 +3574,7 @@ export default function AdminPanel() {
                               title={`Step ${item.number}: ${item.label}`}
                             >
                               <div
-                                className={`flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold transition-all duration-200 ${
+                                className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-all duration-200 ${
                                   isCompleted
                                     ? "bg-green-500 text-white group-hover:bg-green-600"
                                     : isCurrent
@@ -3589,7 +3589,7 @@ export default function AdminPanel() {
 
                               {/* Step Label */}
                               <span
-                                className={`text-[10px] mt-0.5 text-center leading-none transition-colors duration-200 ${
+                                className={`text-[11px] mt-1 text-center leading-none transition-colors duration-200 ${
                                   isCompleted
                                     ? "text-green-600 font-medium"
                                     : isCurrent
