@@ -508,9 +508,13 @@ img[style*="width: 64px"][style*="height: 64px"] {
   @apply mx-auto my-6 max-w-full rounded-md border border-gray-200;
 }
 
-/* YouTube video centering for SimpleEditor preview - highest specificity */
+/* YouTube video centering for all editor types - highest specificity */
 .ProseMirror iframe[src*="youtube.com/embed"],
-.ProseMirror iframe[src*="youtu.be"] {
+.ProseMirror iframe[src*="youtu.be"],
+.prose iframe[src*="youtube.com/embed"],
+.prose iframe[src*="youtu.be"],
+iframe[src*="youtube.com/embed"],
+iframe[src*="youtu.be"] {
   display: block !important;
   margin: 20px auto !important;
   max-width: 100% !important;
@@ -519,20 +523,46 @@ img[style*="width: 64px"][style*="height: 64px"] {
   border-radius: 8px !important;
 }
 
+/* Ensure YouTube videos in prose containers are centered */
+.prose p iframe[src*="youtube"],
+.prose div iframe[src*="youtube"] {
+  display: block !important;
+  margin: 20px auto !important;
+}
+
 /* Center YouTube videos in any container */
-.ProseMirror div[style*="text-align: center"] iframe[src*="youtube"] {
+.ProseMirror div[style*="text-align: center"] iframe[src*="youtube"],
+.prose div[style*="text-align: center"] iframe[src*="youtube"] {
   margin-left: auto !important;
   margin-right: auto !important;
+}
+
+/* Force centering for any YouTube iframe regardless of container */
+div iframe[src*="youtube.com/embed"],
+div iframe[src*="youtu.be"],
+p iframe[src*="youtube.com/embed"],
+p iframe[src*="youtu.be"] {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 20px !important;
+  margin-bottom: 20px !important;
 }
 
 /* Responsive YouTube centering */
 @media (max-width: 768px) {
   .ProseMirror iframe[src*="youtube.com/embed"],
-  .ProseMirror iframe[src*="youtu.be"] {
+  .ProseMirror iframe[src*="youtu.be"],
+  .prose iframe[src*="youtube.com/embed"],
+  .prose iframe[src*="youtu.be"],
+  iframe[src*="youtube.com/embed"],
+  iframe[src*="youtu.be"] {
     width: 100% !important;
     height: auto !important;
     aspect-ratio: 16/9 !important;
     max-width: 500px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 }
 
