@@ -15,10 +15,6 @@ build = ["npm", "run", "build"]
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 41083
-externalPort = 3001
-
 [workflows]
 runButton = "Project"
 
@@ -47,4 +43,3 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
-integrations = ["javascript_stripe:1.0.0"]
