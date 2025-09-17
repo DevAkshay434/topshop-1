@@ -4001,7 +4001,6 @@ export default function AdminPanel() {
 
                             // Proceed to Step 2: Choose Products
                             setWorkflowStep("product");
-                            scrollToCurrentStep();
                             
                             toast({
                               title: "Step Completed",
@@ -4654,7 +4653,6 @@ export default function AdminPanel() {
 
                               if (form.watch("title")) {
                                 setWorkflowStep("media");
-                                scrollToCurrentStep();
                               } else {
                                 toast({
                                   title: "Title Required",
@@ -5180,7 +5178,6 @@ export default function AdminPanel() {
 
                             // Continue to author selection step
                             setWorkflowStep("author");
-                            scrollToCurrentStep();
                           }}
                         >
                           Next
@@ -5255,7 +5252,6 @@ export default function AdminPanel() {
                         onClick={() => {
                           // Move to Style & Formatting step
                           setWorkflowStep("content");
-                          scrollToCurrentStep();
 
                           toast({
                             title: "Author Selected",
