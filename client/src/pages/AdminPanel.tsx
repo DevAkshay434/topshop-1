@@ -3819,6 +3819,114 @@ export default function AdminPanel() {
                             )}
                           </div>
                         )}
+
+                        {/* Selected Images - Show primary and secondary images */}
+                        {(primaryImages.length > 0 || secondaryImages.length > 0) && (
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <h5 className="text-sm font-medium flex items-center">
+                                <ImageIcon className="h-4 w-4 mr-2 text-orange-500" />
+                                Selected Images ({primaryImages.length + secondaryImages.length})
+                              </h5>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {/* Primary Images */}
+                              {primaryImages.map((image) => (
+                                <div
+                                  key={`primary-${image.id}`}
+                                  className="relative w-16 h-16 border-2 border-blue-500 rounded overflow-hidden group"
+                                >
+                                  <img
+                                    src={image.url || image.src?.small || image.src?.thumbnail}
+                                    alt={image.alt || "Primary image"}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute top-0 left-0 right-0 bg-blue-500 px-1 py-0.5">
+                                    <p className="text-white text-xs font-medium text-center">Primary</p>
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 bg-white/90 text-red-500"
+                                      onClick={() => {
+                                        setPrimaryImages(primaryImages.filter(img => img.id !== image.id));
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                              
+                              {/* Secondary Images */}
+                              {secondaryImages.map((image) => (
+                                <div
+                                  key={`secondary-${image.id}`}
+                                  className="relative w-16 h-16 border-2 border-green-500 rounded overflow-hidden group"
+                                >
+                                  <img
+                                    src={image.url || image.src?.small || image.src?.thumbnail}
+                                    alt={image.alt || "Secondary image"}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute top-0 left-0 right-0 bg-green-500 px-1 py-0.5">
+                                    <p className="text-white text-xs font-medium text-center">Secondary</p>
+                                  </div>
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 bg-white/90 text-red-500"
+                                      onClick={() => {
+                                        setSecondaryImages(secondaryImages.filter(img => img.id !== image.id));
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Selected Videos - Show YouTube videos */}
+                        {youtubeVideoId && (
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <h5 className="text-sm font-medium flex items-center">
+                                <FileVideo className="h-4 w-4 mr-2 text-red-500" />
+                                Selected Video
+                              </h5>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white rounded-md p-3 shadow-sm border">
+                              <div className="flex items-center gap-2 flex-1">
+                                <div className="w-16 h-12 bg-red-100 rounded flex items-center justify-center">
+                                  <FileVideo className="h-6 w-6 text-red-500" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">YouTube Video</p>
+                                  <p className="text-xs text-gray-500">ID: {youtubeVideoId}</p>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-500 hover:bg-red-50"
+                                onClick={() => {
+                                  setYoutubeVideoId("");
+                                  setYoutubeEmbed(null);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
