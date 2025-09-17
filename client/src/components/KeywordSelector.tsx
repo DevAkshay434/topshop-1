@@ -166,9 +166,10 @@ export default function KeywordSelector({
   const [filterIntent, setFilterIntent] = useState<string | null>(null);
   const [productUrl, setProductUrl] = useState("");
   
-  // Extract manual keywords from initialKeywords and use them to autofill the search input
+  // Extract only the LAST manual keyword from initialKeywords and use it to autofill the search input
   const manualKeywords = initialKeywords.filter(kw => kw.isManual).map(kw => kw.keyword);
-  const initialSearchValue = manualKeywords.length > 0 ? manualKeywords.join(', ') : (productTitle || "");
+  const lastManualKeyword = manualKeywords.length > 0 ? manualKeywords[manualKeywords.length - 1] : "";
+  const initialSearchValue = lastManualKeyword || productTitle || "";
   const [directTopic, setDirectTopic] = useState(initialSearchValue);
   const [sortBy, setSortBy] = useState<'searchVolume' | 'competition' | 'cpc' | 'difficulty' | 'keyword'>('searchVolume');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
