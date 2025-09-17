@@ -508,6 +508,34 @@ img[style*="width: 64px"][style*="height: 64px"] {
   @apply mx-auto my-6 max-w-full rounded-md border border-gray-200;
 }
 
+/* YouTube video centering for SimpleEditor preview - highest specificity */
+.ProseMirror iframe[src*="youtube.com/embed"],
+.ProseMirror iframe[src*="youtu.be"] {
+  display: block !important;
+  margin: 20px auto !important;
+  max-width: 100% !important;
+  width: 560px !important;
+  height: 315px !important;
+  border-radius: 8px !important;
+}
+
+/* Center YouTube videos in any container */
+.ProseMirror div[style*="text-align: center"] iframe[src*="youtube"] {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Responsive YouTube centering */
+@media (max-width: 768px) {
+  .ProseMirror iframe[src*="youtube.com/embed"],
+  .ProseMirror iframe[src*="youtu.be"] {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 16/9 !important;
+    max-width: 500px !important;
+  }
+}
+
 /* Make sure images in the content preview render at correct size */
 .post-content div > img,
 .post-content a > img {

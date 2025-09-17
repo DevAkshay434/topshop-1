@@ -2620,7 +2620,9 @@ Place this at a logical position in the content, typically after introducing a c
             const metaTitleOptimization = await optimizeMetaData(
               generatedContent.title, 
               availableKeywords, 
-              "title"
+              "title",
+              generatedContent.title, // Pass article title as context
+              generatedContent.content // Pass content preview for context
             );
             
             if (metaTitleOptimization && metaTitleOptimization.trim().length > 0) {
@@ -2645,7 +2647,9 @@ Place this at a logical position in the content, typically after introducing a c
             const metaDescOptimization = await optimizeMetaData(
               sourceMetaDescription, 
               availableKeywords, 
-              "description"
+              "description",
+              generatedContent.title, // Pass article title as context
+              generatedContent.content // Pass content preview for context
             );
             
             if (metaDescOptimization && metaDescOptimization.trim().length > 0) {

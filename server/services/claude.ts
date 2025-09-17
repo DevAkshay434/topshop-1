@@ -1194,15 +1194,35 @@ export async function generateTitles(request: {
 export async function optimizeMetaData(
   originalMeta: string,
   keywords: string[],
-  type: 'title' | 'description'
+  type: 'title' | 'description',
+  articleTitle?: string,
+  contentPreview?: string
 ): Promise<string> {
   try {
     console.log(`Optimizing meta ${type} with Claude:`, originalMeta);
     console.log(`Keywords available:`, keywords);
+    console.log(`Article title context:`, articleTitle);
     
     const isTitle = type === 'title';
     const maxLength = isTitle ? 60 : 160;
     const minLength = isTitle ? 30 : 155;
+    
+    // Build article context
+    let articleContext = '';
+    if (articleTitle) {
+      articleContext = `
+        ARTICLE TITLE CONTEXT: The article title is "${articleTitle}"
+        - The meta ${type} MUST be highly relevant and complementary to this article title
+        - Keep the core message and intent of the original article title
+        - Ensure semantic alignment between the article title and meta ${type}`;
+    }
+    
+    if (contentPreview) {
+      const previewText = contentPreview.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+      articleContext += `
+        CONTENT CONTEXT: ${previewText}...
+        - Use this content to understand the article's focus and tone`;
+    }
     
     // Build keyword context
     const keywordList = keywords.join(', ');
@@ -1216,33 +1236,37 @@ export async function optimizeMetaData(
     
     const systemPrompt = isTitle 
       ? `Optimize this meta title for maximum SEO impact and click-through rates.
-        
+        ${articleContext}
         ${keywordInstructions}
         
         TITLE OPTIMIZATION REQUIREMENTS:
         - Length: ${minLength}-${maxLength} characters (strict limit)
+        - MUST maintain semantic relevance to the original article title
         - Include primary keywords early in the title
-        - Create urgency, value, or curiosity
+        - Create urgency, value, or curiosity while staying true to the article content
         - Use power words: Ultimate, Complete, Essential, Proven, Expert, etc.
         - Be specific and compelling
         - Target search intent directly
         - Avoid generic phrases and keyword stuffing
+        - Ensure the optimized title enhances rather than replaces the article's core message
         
         Return ONLY the optimized title, nothing else.`
       : `Optimize this meta description for maximum SEO impact and click-through rates.
-        
+        ${articleContext}
         ${keywordInstructions}
         
         DESCRIPTION OPTIMIZATION REQUIREMENTS:
         - Length: ${minLength}-${maxLength} characters (strict limit)
+        - MUST accurately reflect the article content and title
         - Include 2-3 primary keywords naturally
-        - Create compelling value proposition
+        - Create compelling value proposition that matches the article's actual value
         - Use action words: Discover, Learn, Get, Find, Unlock, etc.
-        - Include benefits and outcomes
-        - Add urgency or exclusivity when appropriate
+        - Include benefits and outcomes mentioned in the article
+        - Add urgency or exclusivity when appropriate to the content
         - End with call-to-action when possible
         - Target user search intent and curiosity
         - Be specific and avoid generic descriptions
+        - Ensure description complements and supports the article title
         
         Return ONLY the optimized meta description, nothing else.`;
 
