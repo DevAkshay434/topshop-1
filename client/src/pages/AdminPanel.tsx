@@ -1486,25 +1486,7 @@ export default function AdminPanel() {
   const [isContentGenerated, setIsContentGenerated] = useState(false);
   const [isContentPosted, setIsContentPosted] = useState(false);
 
-  // Auto-scroll step indicator starting from step 8 (Author)
-  useEffect(() => {
-    const stepOrder = getStepOrder(workflowStep);
-    if (stepOrder >= 8) { // Author step (8) and onwards
-      const stepIndicator = document.getElementById("step-indicator");
-      if (stepIndicator) {
-        // Find the current step button
-        const currentStepButton = stepIndicator.querySelector(`[data-step="${workflowStep}"]`);
-        if (currentStepButton) {
-          // Scroll the current step into view within the step indicator container
-          currentStepButton.scrollIntoView({
-            behavior: "smooth",
-            inline: "center", // Center the step horizontally
-            block: "nearest"
-          });
-        }
-      }
-    }
-  }, [workflowStep]);
+  // Note: Auto-scroll step indicator removed to prevent unwanted scroll behavior on Next button clicks
 
   // Title editor state
   const [showTitleEditor, setShowTitleEditor] = useState(false);
