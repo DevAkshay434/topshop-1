@@ -3739,7 +3739,7 @@ export default function AdminPanel() {
                               </h5>
                             </div>
                             <div className="p-3 bg-slate-50 rounded-md border">
-                              <p className="text-sm text-gray-700">
+                              <p className="text-sm text-gray-700 line-clamp-2">
                                 {form.watch("buyerPersonas")}
                               </p>
                             </div>
