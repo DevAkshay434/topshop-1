@@ -3455,7 +3455,7 @@ export default function AdminPanel() {
                 >
                   {/* Step guidance */}
 
-                  <div className="z-30 mb-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-lg border border-blue-200/60 shadow-sm">
+                  <div className="max-w-5xl mx-auto z-30 mb-6 p-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-lg border border-blue-200/60 shadow-sm">
                     <h3 className="text-base font-semibold text-gray-700 mb-3 text-center">
                       Content Creation Workflow
                     </h3>
@@ -3874,13 +3874,10 @@ export default function AdminPanel() {
                     }`}
                     data-step="content-type"
                     >
-                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                        <h2 className="text-sm font-semibold text-gray-800 text-center">
                           Choose Content Type
                         </h2>
-                        <p className="text-sm text-center text-blue-600 mb-4">
-                          Select the type of content you want to create and configure basic settings.
-                        </p>
                       </div>
 
                       {/* Content type selection */}
@@ -4024,9 +4021,9 @@ export default function AdminPanel() {
                       }`}
                       data-step="product"
                     >
-                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                        <div className="text-center mb-4">
-                          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                        <div className="text-center">
+                          <h2 className="text-sm font-semibold text-gray-800">
                             Choose Products
                           </h2>
                           <TooltipProvider>
@@ -4123,13 +4120,10 @@ export default function AdminPanel() {
                       }`}
                       data-step="related-collections"
                     >
-                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                        <h2 className="text-sm font-semibold text-gray-800 text-center">
                           Choose Related Collections
                         </h2>
-                        <p className="text-base text-gray-600 text-center max-w-2xl mx-auto">
-                          Select collections that are related to your content to group products and categories
-                        </p>
                       </div>
 
                       <RelatedCollectionsSelector
@@ -4180,13 +4174,10 @@ export default function AdminPanel() {
                       }`}
                       data-step="buying-avatars"
                     >
-                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                        <h2 className="text-sm font-semibold text-gray-800 text-center">
                           Define Target Buyer Personas
                         </h2>
-                        <p className="text-base text-gray-600 text-center max-w-2xl mx-auto">
-                          Describe your target audience in detail. You can type custom descriptions or use the suggestion buttons below.
-                        </p>
                       </div>
 
                       {/* Flexible Buyer Personas Text Input */}
@@ -4354,11 +4345,13 @@ export default function AdminPanel() {
                       }`}
                       data-step="keyword"
                     >
-                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                        <h2 className="text-sm font-semibold text-gray-800 text-center">
                           Choose Keywords
                         </h2>
-                        <p className="text-sm text-blue-600 mb-2">
+                      </div>
+                      <div className="mb-4">
+                        <p className="text-xs text-blue-600 mb-2">
                           Click the button below to select keywords for your
                           content. The following selected items will be used for
                           keyword generation:
@@ -4606,14 +4599,10 @@ export default function AdminPanel() {
                       }`}
                       data-step="title"
                     >
-                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                        <h2 className="text-sm font-semibold text-gray-800 text-center">
                           Select a Title
                         </h2>
-                        <p className="text-sm text-blue-600">
-                          Choose from AI-generated title suggestions based on
-                          your keywords
-                        </p>
                       </div>
 
                       {form.watch("title") && (
@@ -4690,14 +4679,10 @@ export default function AdminPanel() {
                       }`}
                       data-step="media"
                     >
-                      <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                        <h2 className="text-sm font-semibold text-gray-800 text-center">
                           Choose Media
                         </h2>
-                        <p className="text-sm text-blue-600">
-                          Select compelling visuals to enhance your content and
-                          boost engagement
-                        </p>
                       </div>
 
                       <div className="mb-6">
@@ -5211,13 +5196,10 @@ export default function AdminPanel() {
                     }`}
                     data-step="author"
                   >
-                    <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                    <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                      <h2 className="text-sm font-semibold text-gray-800 text-center">
                         Choose Author
                       </h2>
-                      <p className="text-sm text-blue-600">
-                        Select an author for this content or create a new one
-                      </p>
                     </div>
 
                     <AuthorSelector
@@ -5292,13 +5274,10 @@ export default function AdminPanel() {
                     className={`max-w-5xl mx-auto space-y-4 pt-4 ${workflowStep === "content" ? "block" : "hidden"}`}
                     data-step="content"
                   >
-                    <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60 mb-6">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+                    <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
+                      <h2 className="text-sm font-semibold text-gray-800 text-center">
                         Style & Formatting
                       </h2>
-                      <p className="text-sm text-blue-600">
-                        Customize how your content will look and feel
-                      </p>
                     </div>
 
                     {/* Content Generation Options */}
