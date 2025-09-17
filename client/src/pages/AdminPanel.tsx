@@ -3875,7 +3875,7 @@ export default function AdminPanel() {
                     data-step="content-type"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-sm font-semibold text-gray-800 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 text-center">
                           Choose Content Type
                         </h2>
                       </div>
@@ -4023,7 +4023,7 @@ export default function AdminPanel() {
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
                         <div className="text-center">
-                          <h2 className="text-sm font-semibold text-gray-800">
+                          <h2 className="text-2xl font-bold text-gray-900">
                             Choose Products
                           </h2>
                           <TooltipProvider>
@@ -4121,7 +4121,7 @@ export default function AdminPanel() {
                       data-step="related-collections"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-sm font-semibold text-gray-800 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 text-center">
                           Choose Related Collections
                         </h2>
                       </div>
@@ -4175,7 +4175,7 @@ export default function AdminPanel() {
                       data-step="buying-avatars"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-sm font-semibold text-gray-800 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 text-center">
                           Define Target Buyer Personas
                         </h2>
                       </div>
@@ -4346,7 +4346,7 @@ export default function AdminPanel() {
                       data-step="keyword"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-sm font-semibold text-gray-800 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 text-center">
                           Choose Keywords
                         </h2>
                       </div>
@@ -4600,7 +4600,7 @@ export default function AdminPanel() {
                       data-step="title"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-sm font-semibold text-gray-800 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 text-center">
                           Select a Title
                         </h2>
                       </div>
@@ -4680,7 +4680,7 @@ export default function AdminPanel() {
                       data-step="media"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-sm font-semibold text-gray-800 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 text-center">
                           Choose Media
                         </h2>
                       </div>
@@ -5197,7 +5197,7 @@ export default function AdminPanel() {
                     data-step="author"
                   >
                     <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                      <h2 className="text-sm font-semibold text-gray-800 text-center">
+                      <h2 className="text-2xl font-bold text-gray-900 text-center">
                         Choose Author
                       </h2>
                     </div>
@@ -5275,7 +5275,7 @@ export default function AdminPanel() {
                     data-step="content"
                   >
                     <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                      <h2 className="text-sm font-semibold text-gray-800 text-center">
+                      <h2 className="text-2xl font-bold text-gray-900 text-center">
                         Style & Formatting
                       </h2>
                     </div>
