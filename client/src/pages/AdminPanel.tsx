@@ -3445,12 +3445,6 @@ export default function AdminPanel() {
         <div className="w-full max-w-full mx-auto space-y-12 px-4">
           {/* Main Content Generation Card */}
           <Card className="admin-card bg-white">
-            <CardHeader className="text-center py-12">
-              <CardTitle className="text-4xl font-bold tracking-tight text-gray-900 mb-4">Content Generator</CardTitle>
-              <CardDescription className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Generate SEO-optimized content for your Shopify store with our AI-powered content creation wizard
-              </CardDescription>
-            </CardHeader>
             <CardContent className="px-12 pb-12">
               <Form {...form} key={formKey}>
                 <form
@@ -3461,15 +3455,15 @@ export default function AdminPanel() {
                 >
                   {/* Step guidance */}
 
-                  <div className="z-30 mb-12 p-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-200/60 shadow-sm backdrop-blur-sm bg-opacity-95">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+                  <div className="z-30 mb-4 p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-lg border border-blue-200/60 shadow-sm">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">
                       Content Creation Workflow
                     </h3>
 
                     {/* Enhanced Clickable Step Indicator */}
                     <div 
                       id="step-indicator" 
-                      className="flex items-center justify-center gap-2 overflow-x-auto pb-2 flex-wrap"
+                      className="flex items-center justify-center gap-1 overflow-x-auto"
                     >
                       {[
                         {
@@ -3572,7 +3566,7 @@ export default function AdminPanel() {
                                 }
                               }}
                               disabled={!isClickable}
-                              className={`group flex flex-col items-center justify-center min-w-[60px] max-w-[80px] px-2 py-2 rounded-lg transition-all duration-300 ${
+                              className={`group flex flex-col items-center justify-center min-w-[32px] max-w-[40px] px-1 py-1 rounded transition-all duration-200 ${
                                 isClickable
                                   ? "hover:bg-blue-100 cursor-pointer"
                                   : "cursor-not-allowed opacity-50"
@@ -3580,13 +3574,13 @@ export default function AdminPanel() {
                               title={`Step ${item.number}: ${item.label}`}
                             >
                               <div
-                                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 ${
+                                className={`flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold transition-all duration-200 ${
                                   isCompleted
                                     ? "bg-green-500 text-white group-hover:bg-green-600"
                                     : isCurrent
-                                      ? "bg-blue-600 text-white shadow-lg ring-2 ring-blue-300 ring-offset-2"
+                                      ? "bg-blue-600 text-white shadow-sm ring-1 ring-blue-300"
                                       : isClickable
-                                        ? "bg-gray-300 text-gray-600 group-hover:bg-gray-400 group-hover:text-gray-700"
+                                        ? "bg-gray-300 text-gray-600 group-hover:bg-gray-400"
                                         : "bg-gray-200 text-gray-400"
                                 }`}
                               >
@@ -3595,7 +3589,7 @@ export default function AdminPanel() {
 
                               {/* Step Label */}
                               <span
-                                className={`text-xs mt-1 text-center leading-tight transition-colors duration-300 ${
+                                className={`text-[10px] mt-0.5 text-center leading-none transition-colors duration-200 ${
                                   isCompleted
                                     ? "text-green-600 font-medium"
                                     : isCurrent
@@ -3610,9 +3604,9 @@ export default function AdminPanel() {
                             </button>
 
                             {/* Connector Line (except for last item) */}
-                            {index < 9 && (
+                            {index < 10 && (
                               <div
-                                className={`h-0.5 w-2 mx-0.5 transition-all duration-300 ${
+                                className={`h-0.5 w-1 mx-0.5 transition-all duration-200 ${
                                   isCompleted ? "bg-green-400" : "bg-gray-300"
                                 }`}
                               />
