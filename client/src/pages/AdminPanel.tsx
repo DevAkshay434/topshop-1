@@ -3820,80 +3820,93 @@ export default function AdminPanel() {
                           </div>
                         )}
 
-                        {/* Selected Images - Show primary and secondary images */}
-                        {(primaryImages.length > 0 || secondaryImages.length > 0) && (
-                          <div className="space-y-2">
-                            <div className="flex items-center">
-                              <h5 className="text-sm font-medium flex items-center">
-                                <ImageIcon className="h-4 w-4 mr-2 text-orange-500" />
-                                Selected Images ({primaryImages.length + secondaryImages.length})
-                              </h5>
+                        {/* Selected Images - Show primary and secondary images (deduplicated) */}
+                        {(() => {
+                          // Get all images from different sources and deduplicate
+                          const allImages = [];
+                          
+                          // Add primary images (limit to 1 and mark as primary)
+                          if (primaryImages && primaryImages.length > 0) {
+                            // Only take the first primary image to prevent duplicates
+                            const primaryImg = primaryImages[0];
+                            allImages.push({ 
+                              ...primaryImg, 
+                              isPrimary: true,
+                              displayId: `primary-${primaryImg.id}` 
+                            });
+                          }
+                          
+                          // Add secondary images and remove any that might be duplicates of primary
+                          if (secondaryImages && secondaryImages.length > 0) {
+                            const primaryImageIds = primaryImages?.map(img => img.id) || [];
+                            secondaryImages.forEach((img) => {
+                              // Only add if not already a primary image
+                              if (!primaryImageIds.includes(img.id)) {
+                                allImages.push({ 
+                                  ...img, 
+                                  isPrimary: false,
+                                  displayId: `secondary-${img.id}` 
+                                });
+                              }
+                            });
+                          }
+                          
+                          // Only show if we have images
+                          if (allImages.length === 0) return null;
+                          
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-center">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <ImageIcon className="h-4 w-4 mr-2 text-orange-500" />
+                                  Selected Images ({allImages.length})
+                                </h5>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {allImages.map((image) => (
+                                  <div
+                                    key={image.displayId}
+                                    className={`relative w-16 h-16 border-2 rounded overflow-hidden group ${
+                                      image.isPrimary ? 'border-blue-500' : 'border-green-500'
+                                    }`}
+                                  >
+                                    <img
+                                      src={image.url || image.src?.small || image.src?.thumbnail}
+                                      alt={image.alt || (image.isPrimary ? "Primary image" : "Secondary image")}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className={`absolute top-0 left-0 right-0 px-1 py-0.5 ${
+                                      image.isPrimary ? 'bg-blue-500' : 'bg-green-500'
+                                    }`}>
+                                      <p className="text-white text-xs font-medium text-center">
+                                        {image.isPrimary ? 'Primary' : 'Secondary'}
+                                      </p>
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 bg-white/90 text-red-500"
+                                        onClick={() => {
+                                          if (image.isPrimary) {
+                                            setPrimaryImages(primaryImages.filter(img => img.id !== image.id));
+                                          } else {
+                                            setSecondaryImages(secondaryImages.filter(img => img.id !== image.id));
+                                          }
+                                        }}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                              {/* Primary Images */}
-                              {primaryImages.map((image) => (
-                                <div
-                                  key={`primary-${image.id}`}
-                                  className="relative w-16 h-16 border-2 border-blue-500 rounded overflow-hidden group"
-                                >
-                                  <img
-                                    src={image.url || image.src?.small || image.src?.thumbnail}
-                                    alt={image.alt || "Primary image"}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <div className="absolute top-0 left-0 right-0 bg-blue-500 px-1 py-0.5">
-                                    <p className="text-white text-xs font-medium text-center">Primary</p>
-                                  </div>
-                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-6 w-6 p-0 bg-white/90 text-red-500"
-                                      onClick={() => {
-                                        setPrimaryImages(primaryImages.filter(img => img.id !== image.id));
-                                      }}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                              
-                              {/* Secondary Images */}
-                              {secondaryImages.map((image) => (
-                                <div
-                                  key={`secondary-${image.id}`}
-                                  className="relative w-16 h-16 border-2 border-green-500 rounded overflow-hidden group"
-                                >
-                                  <img
-                                    src={image.url || image.src?.small || image.src?.thumbnail}
-                                    alt={image.alt || "Secondary image"}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <div className="absolute top-0 left-0 right-0 bg-green-500 px-1 py-0.5">
-                                    <p className="text-white text-xs font-medium text-center">Secondary</p>
-                                  </div>
-                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-6 w-6 p-0 bg-white/90 text-red-500"
-                                      onClick={() => {
-                                        setSecondaryImages(secondaryImages.filter(img => img.id !== image.id));
-                                      }}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
-                        {/* Selected Videos - Show YouTube videos */}
+                        {/* Selected Videos - Show YouTube videos with thumbnail */}
                         {youtubeVideoId && (
                           <div className="space-y-2">
                             <div className="flex items-center">
@@ -3904,8 +3917,20 @@ export default function AdminPanel() {
                             </div>
                             <div className="flex items-center gap-2 bg-white rounded-md p-3 shadow-sm border">
                               <div className="flex items-center gap-2 flex-1">
-                                <div className="w-16 h-12 bg-red-100 rounded flex items-center justify-center">
-                                  <FileVideo className="h-6 w-6 text-red-500" />
+                                <div className="w-16 h-12 rounded overflow-hidden border">
+                                  <img 
+                                    src={`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`}
+                                    alt="YouTube thumbnail"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      // Fallback to default icon if thumbnail fails to load
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement.classList.add('bg-red-100', 'flex', 'items-center', 'justify-center');
+                                      const icon = document.createElement('div');
+                                      icon.innerHTML = '<svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>';
+                                      e.currentTarget.parentElement.appendChild(icon);
+                                    }}
+                                  />
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium">YouTube Video</p>
