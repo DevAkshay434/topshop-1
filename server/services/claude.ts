@@ -1235,22 +1235,26 @@ export async function optimizeMetaData(
       : 'Focus on compelling, SEO-friendly content';
     
     const systemPrompt = isTitle 
-      ? `Optimize this meta title for maximum SEO impact and click-through rates.
+      ? `Create an SEO-optimized meta title that enhances the provided title while maintaining its core meaning.
         ${articleContext}
         ${keywordInstructions}
         
         TITLE OPTIMIZATION REQUIREMENTS:
         - Length: ${minLength}-${maxLength} characters (strict limit)
-        - MUST maintain semantic relevance to the original article title
-        - Include primary keywords early in the title
-        - Create urgency, value, or curiosity while staying true to the article content
-        - Use power words: Ultimate, Complete, Essential, Proven, Expert, etc.
-        - Be specific and compelling
-        - Target search intent directly
-        - Avoid generic phrases and keyword stuffing
-        - Ensure the optimized title enhances rather than replaces the article's core message
+        - MUST stay closely related to the article title "${articleTitle}"
+        - Enhance the title with keywords and power words while keeping the same topic
+        - Include primary keywords naturally in the beginning when possible
+        - Add value indicators: "Guide", "Tips", "How to", "Best", "Complete", etc.
+        - Create urgency or curiosity: "2024", "Ultimate", "Essential", "Proven"
+        - Make it more compelling than the original while staying true to the content
+        - Target search intent and click-through optimization
+        - NEVER completely change the topic or meaning of the original title
         
-        Return ONLY the optimized title, nothing else.`
+        Example: If article title is "Solar Panel Installation" 
+        Good: "Complete Solar Panel Installation Guide 2024 - Expert Tips"
+        Bad: "Renewable Energy Solutions for Modern Homes"
+        
+        Return ONLY the optimized meta title, nothing else.`
       : `Optimize this meta description for maximum SEO impact and click-through rates.
         ${articleContext}
         ${keywordInstructions}

@@ -2616,9 +2616,17 @@ Place this at a logical position in the content, typically after introducing a c
           
           // Optimize Meta Title
           if (generatedContent.title) {
-            console.log("Optimizing meta title with keywords:", availableKeywords);
+            console.log("🎯 META TITLE OPTIMIZATION STARTED");
+            console.log("📄 Original article title:", generatedContent.title);
+            console.log("🔑 Available keywords:", availableKeywords);
+            console.log("📏 Article title length:", generatedContent.title.length);
+            // For meta title optimization, start with a basic version and enhance it
+            const basicMetaTitle = generatedContent.title.length > 60 
+              ? generatedContent.title.substring(0, 57) + "..."
+              : generatedContent.title;
+            
             const metaTitleOptimization = await optimizeMetaData(
-              generatedContent.title, 
+              basicMetaTitle, 
               availableKeywords, 
               "title",
               generatedContent.title, // Pass article title as context
@@ -2627,9 +2635,12 @@ Place this at a logical position in the content, typically after introducing a c
             
             if (metaTitleOptimization && metaTitleOptimization.trim().length > 0) {
               optimizedMetaTitle = metaTitleOptimization;
-              console.log("✅ Meta title optimized:", optimizedMetaTitle);
+              console.log("✅ META TITLE OPTIMIZATION SUCCESS:");
+              console.log("   Original: " + generatedContent.title);
+              console.log("   Optimized: " + optimizedMetaTitle);
+              console.log("   Length: " + optimizedMetaTitle.length + " characters");
             } else {
-              console.warn("Meta title optimization returned empty result, keeping original");
+              console.warn("❌ Meta title optimization returned empty result, keeping original");
             }
           }
           
