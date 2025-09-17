@@ -1486,7 +1486,19 @@ export default function AdminPanel() {
   const [isContentGenerated, setIsContentGenerated] = useState(false);
   const [isContentPosted, setIsContentPosted] = useState(false);
 
-  // Note: Auto-scroll step indicator removed to prevent unwanted scroll behavior on Next button clicks
+  // Auto-scroll only when navigating TO Style & Formatting step
+  useEffect(() => {
+    if (workflowStep === "content") {
+      // Scroll to the Style & Formatting title section
+      const styleFormattingSection = document.querySelector(`[data-step="content"]`);
+      if (styleFormattingSection) {
+        styleFormattingSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }
+  }, [workflowStep]);
 
   // Title editor state
   const [showTitleEditor, setShowTitleEditor] = useState(false);
