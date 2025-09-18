@@ -1621,9 +1621,9 @@ Please suggest a meta description at the end of your response that includes at l
 Target this content specifically for ${requestData.buyerProfile}-level users with appropriate depth and terminology.`;
       }
       
-      // Add headings count information
+      // Add headings count information - prioritize word count over section count
       if (requestData.headingsCount) {
-        claudeUserPrompt += `\nStructure: Include exactly ${requestData.headingsCount} main sections with H2 headings.`;
+        claudeUserPrompt += `\nStructure: Include approximately ${requestData.headingsCount} main sections with H2 headings, but prioritize staying within the word count limit. Adjust section depth based on word count constraint.`;
       }
       
       // Add category information if provided

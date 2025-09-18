@@ -811,7 +811,7 @@ const copywriterPersona = request.contentStyleDisplayName ? `Write this content 
 
 let promptText = `Generate a well-structured, SEO-optimized blog post with the EXACT title "${request.topic}" in a ${toneStyle} tone. 
 
-CRITICAL WORD COUNT REQUIREMENT: The article MUST be ${contentLength}. This is a strict requirement - do not exceed or fall short of this word count range.
+CRITICAL WORD COUNT REQUIREMENT: The article MUST be ${contentLength}. This is the PRIMARY constraint - do not exceed or fall short of this word count range regardless of section count.
 ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
     
     CRITICAL TITLE REQUIREMENT: You MUST use the exact title "${request.topic}" without any modifications, variations, or improvements. Do not generate your own title - use this title exactly as provided.
@@ -820,7 +820,7 @@ ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
     1. Use the provided title "${request.topic}" exactly as given (no modifications allowed)
     2. Multiple clearly defined sections with H2 headings that incorporate important keywords
     3. Appropriate H3 subheadings within each section where needed
-    4. Well-organized paragraphs (2-4 paragraphs per section)
+    4. Well-organized paragraphs - ADJUST paragraph length based on word count constraint, not section count
     5. Proper HTML formatting throughout (h2, h3, p, ul, li, etc.)
     6. Lists and tables where appropriate to improve readability
     7. A conclusion with a clear call to action
@@ -851,7 +851,8 @@ ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
     - DO NOT include the title as H1 in the content - the title will be handled separately by the platform
     - Start the content with the Table of Contents placement marker, followed by a paragraph break, then the introduction
     - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>, <table>, etc.
-    - Create at least 3-4 H2 sections for proper structure with descriptive, SEO-friendly headings
+    - WORD COUNT IS PRIORITY: Structure your sections to fit the required word count (${contentLength}). If you have many sections, keep them concise. If you have few sections, make them more comprehensive.
+    - Create H2 sections with descriptive, SEO-friendly headings that fit within the word count constraint
     - Make sure sections flow logically and coherently
     - Include all specified keywords naturally throughout the content (especially in headings and early paragraphs)
     - Include a highly SEO-optimized meta description of 155-160 characters that:
@@ -992,7 +993,7 @@ ${copywriterPersona}${mediaContext}${audienceContext}${keywordContext}
               role: 'user',
               content: `${promptText}
           
-          FINAL REMINDER: The article MUST be exactly ${contentLength}. This is critical - count your words carefully and ensure the content meets this exact requirement.
+          FINAL REMINDER: The article MUST be exactly ${contentLength}. This is the MOST IMPORTANT requirement - count your words carefully and ensure the content meets this exact requirement regardless of how many sections you create. Quality over quantity of sections.
           
           IMPORTANT: Return the response in JSON format with the following structure:
           {

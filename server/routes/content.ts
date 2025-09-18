@@ -866,9 +866,9 @@ function buildEnhancedPrompt(topic: string, formData: any): string {
   // Tone and perspective
   prompt += `Write in a ${formData.toneOfVoice || 'friendly'} tone using ${formData.writingPerspective || 'first person plural'} perspective. `;
   
-  // Structure requirements
+  // Structure requirements - prioritize word count over section count
   const headingsCount = parseInt(formData.headingsCount) || 3;
-  prompt += `Include ${headingsCount} main headings with substantial content under each. `;
+  prompt += `Include approximately ${headingsCount} main headings, but prioritize staying within the word count limit. Adjust section depth based on word count constraint. `;
   
   if (formData.enableTables) {
     prompt += `Include helpful tables where appropriate to organize information. `;
