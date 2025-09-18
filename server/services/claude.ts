@@ -43,6 +43,77 @@ const anthropic = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const CLAUDE_MODEL = 'claude-3-7-sonnet-20250219';
 
+// Function to add line breaks after every 3-4 lines in introduction and conclusion paragraphs
+function addLineBreaksToIntroAndConclusion(content: string): string {
+  console.log('📄 Adding line breaks to introduction and conclusion paragraphs');
+  
+  let processedContent = content;
+  
+  // Process introduction paragraph (first paragraph after any initial content)
+  const introRegex = /<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]|<div|<ul|<ol|<table|<img|<iframe).)*?)<\/p>/i;
+  processedContent = processedContent.replace(introRegex, (match, introText) => {
+    if (introText.trim().length > 200) { // Only process substantial paragraphs
+      const formattedIntro = addLineBreaksToText(introText);
+      console.log('   ✓ Added line breaks to introduction paragraph');
+      return `<p>${formattedIntro}</p>`;
+    }
+    return match;
+  });
+  
+  // Process conclusion paragraph (last paragraph or paragraph in conclusion section)
+  const conclusionSectionRegex = /<h2[^>]*id="conclusion"[^>]*>.*?<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]|<div|<ul|<ol|<table|<img|<iframe).)*?)<\/p>/is;
+  processedContent = processedContent.replace(conclusionSectionRegex, (match, conclusionText) => {
+    if (conclusionText.trim().length > 200) { // Only process substantial paragraphs
+      const formattedConclusion = addLineBreaksToText(conclusionText);
+      console.log('   ✓ Added line breaks to conclusion paragraph');
+      return match.replace(conclusionText, formattedConclusion);
+    }
+    return match;
+  });
+  
+  // Also process any paragraph that comes after the last H2 heading (likely conclusion)
+  const lastParagraphRegex = /(<h2[^>]*>.*?<\/h2>(?:(?!<h2).)*?)(<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]).){200,}?)<\/p>)(?=\s*(?:<\/div>|<div[^>]*class="[^"]*author|$))/is;
+  processedContent = processedContent.replace(lastParagraphRegex, (match, beforePara, fullPara, paraText) => {
+    const formattedText = addLineBreaksToText(paraText);
+    console.log('   ✓ Added line breaks to final paragraph');
+    return beforePara + fullPara.replace(paraText, formattedText);
+  });
+  
+  console.log('✅ Completed adding line breaks to introduction and conclusion');
+  return processedContent;
+}
+
+// Helper function to add line breaks after every 3-4 lines of text
+function addLineBreaksToText(text: string): string {
+  // Split by existing breaks and sentences
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  let result = '';
+  let lineCount = 0;
+  
+  sentences.forEach((sentence, index) => {
+    result += sentence.trim();
+    
+    // Add space between sentences unless it's the last one
+    if (index < sentences.length - 1) {
+      result += ' ';
+    }
+    
+    lineCount++;
+    
+    // Add line break after every 3-4 sentences
+    if (lineCount >= 3 && lineCount <= 4 && index < sentences.length - 1) {
+      // Check if next sentence exists and isn't too short
+      const nextSentence = sentences[index + 1];
+      if (nextSentence && nextSentence.trim().length > 20) {
+        result += '<br><br>';
+        lineCount = 0;
+      }
+    }
+  });
+  
+  return result;
+}
+
 // Function to bold sentences ending with : or ? (only visible text, not HTML)
 function boldSentencesEndingWithColonOrQuestion(content: string): string {
   console.log('🎯 Bolding sentences ending with : or ? (text-only, not HTML)');
@@ -1117,6 +1188,9 @@ if (!response) {
       
       console.log(`✓ Cleaned meta description: "${cleanMetaDescription}"`);
     }
+    
+    // Add line breaks to introduction and conclusion paragraphs
+    processedContent = addLineBreaksToIntroAndConclusion(processedContent);
     
     // Final formatting step: Bold sentences ending with : or ?
     processedContent = boldSentencesEndingWithColonOrQuestion(processedContent);
