@@ -438,20 +438,37 @@ export default function KeywordSelector({
       });
 
       if (response.success && response.keywords && response.keywords.length > 0) {
-        console.log("Raw keywords from API:", response.keywords.slice(0, 3));
+        console.log("🔍 RAW API RESPONSE:", {
+          success: response.success,
+          totalKeywords: response.keywords.length,
+          firstKeyword: response.keywords[0]
+        });
         
         // Keep keywords as-is from DataForSEO API without aggressive sanitization
         const keywordsWithSelection = response.keywords.map(kw => {
-          console.log("Processing keyword:", kw.keyword, {
+          console.log("🔍 PROCESSING KEYWORD:", {
+            keyword: kw.keyword,
             competitionLevel: kw.competitionLevel,
             intent: kw.intent,
             difficulty: kw.difficulty,
-            searchVolume: kw.searchVolume
+            searchVolume: kw.searchVolume,
+            rawObject: kw
           });
-          return {
+          
+          const processed = {
             ...kw,
             selected: false
           };
+          
+          console.log("🔍 PROCESSED KEYWORD:", {
+            keyword: processed.keyword,
+            competitionLevel: processed.competitionLevel,
+            intent: processed.intent,
+            difficulty: processed.difficulty,
+            searchVolume: processed.searchVolume
+          });
+          
+          return processed;
         }); // Show all authentic DataForSEO keywords without filtering
         
         console.log("Keywords after sanitization:", keywordsWithSelection.length);
@@ -460,6 +477,18 @@ export default function KeywordSelector({
         // Merge preserved manual keywords with newly fetched keywords
         const mergedKeywords = [...existingManualKeywords, ...keywordsWithSelection];
         console.log(`Merging ${existingManualKeywords.length} manual keywords with ${keywordsWithSelection.length} fetched keywords`);
+        
+        console.log("🔍 MERGED KEYWORDS BEFORE setState:", {
+          manualCount: existingManualKeywords.length,
+          fetchedCount: keywordsWithSelection.length,
+          totalCount: mergedKeywords.length,
+          firstMerged: mergedKeywords[0],
+          sampleKeywords: mergedKeywords.slice(0, 3).map(k => ({
+            keyword: k.keyword,
+            competitionLevel: k.competitionLevel,
+            intent: k.intent
+          }))
+        });
         
         setKeywords(mergedKeywords);
         console.log(`✅ Successfully set ${keywordsWithSelection.length} keywords in state`);
