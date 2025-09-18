@@ -61,7 +61,7 @@ function addLineBreaksToIntroAndConclusion(content: string): string {
   });
   
   // Process conclusion paragraph (last paragraph or paragraph in conclusion section)
-  const conclusionSectionRegex = /<h2[^>]*id="conclusion"[^>]*>.*?<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]|<div|<ul|<ol|<table|<img|<iframe).)*?)<\/p>/is;
+  const conclusionSectionRegex = /<h2[^>]*id="conclusion"[^>]*>.*?<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]|<div|<ul|<ol|<table|<img|<iframe).)*?)<\/p>/s;
   processedContent = processedContent.replace(conclusionSectionRegex, (match, conclusionText) => {
     if (conclusionText.trim().length > 200) { // Only process substantial paragraphs
       const formattedConclusion = addLineBreaksToText(conclusionText);
@@ -72,7 +72,7 @@ function addLineBreaksToIntroAndConclusion(content: string): string {
   });
   
   // Also process any paragraph that comes after the last H2 heading (likely conclusion)
-  const lastParagraphRegex = /(<h2[^>]*>.*?<\/h2>(?:(?!<h2).)*?)(<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]).){200,}?)<\/p>)(?=\s*(?:<\/div>|<div[^>]*class="[^"]*author|$))/is;
+  const lastParagraphRegex = /(<h2[^>]*>.*?<\/h2>(?:(?!<h2).)*?)(<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]).){200,}?)<\/p>)(?=\s*(?:<\/div>|<div[^>]*class="[^"]*author|$))/s;
   processedContent = processedContent.replace(lastParagraphRegex, (match, beforePara, fullPara, paraText) => {
     const formattedText = addLineBreaksToText(paraText);
     console.log('   ✓ Added line breaks to final paragraph');
@@ -125,7 +125,9 @@ function boldSentencesEndingWithColonOrQuestion(content: string): string {
   let match;
   
   // Parse HTML to separate tags from text
-  while ((match = htmlTagRegex.exec(content)) !== null) {
+  let htmlMatch;
+  while ((htmlMatch = htmlTagRegex.exec(content)) !== null) {
+    match = htmlMatch;
     // Add text before the tag
     if (match.index > lastIndex) {
       const textContent = content.substring(lastIndex, match.index);
