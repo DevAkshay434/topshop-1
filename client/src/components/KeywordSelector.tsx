@@ -442,7 +442,12 @@ export default function KeywordSelector({
         
         // Keep keywords as-is from DataForSEO API without aggressive sanitization
         const keywordsWithSelection = response.keywords.map(kw => {
-          console.log("Processing keyword:", kw.keyword);
+          console.log("Processing keyword:", kw.keyword, {
+            competitionLevel: kw.competitionLevel,
+            intent: kw.intent,
+            difficulty: kw.difficulty,
+            searchVolume: kw.searchVolume
+          });
           return {
             ...kw,
             selected: false
