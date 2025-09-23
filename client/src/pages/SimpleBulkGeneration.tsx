@@ -1328,16 +1328,9 @@ export default function SimpleBulkGeneration() {
 
   // Step validation
   const canProceedToNextStep = () => {
-    const generationMode = form.watch('generationMode');
-    
     switch (currentStep) {
       case 'setup':
-        if (false) { // Removed cluster mode
-          const clusterTopic = form.watch('clusterTopic');
-          return clusterTopic && clusterTopic.trim().length >= 3 && generatedClusterTitles.length > 0;
-        } else {
-          return topicsList.length > 0; // Must have topics to proceed
-        }
+        return topicsList.length > 0; // Must have topics to proceed
       case 'products':
         return true; // Products are optional
       case 'collections':
@@ -1478,7 +1471,7 @@ export default function SimpleBulkGeneration() {
                             </div>
                           </FormControl>
                           <FormDescription>
-                            We'll use DataForSEO to find 5 related keywords and generate SEO-optimized titles for each
+                            We'll use Claude AI to find 5 related keywords and generate SEO-optimized titles for each
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
