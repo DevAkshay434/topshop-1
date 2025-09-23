@@ -328,6 +328,11 @@ export default function SimpleBulkGeneration() {
   const [dragOffset, setDragOffset] = useState({ x: -400, y: -200 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // Individual title positioning state
+  const [titlePositions, setTitlePositions] = useState<{[titleId: string]: {x: number, y: number}}>({});
+  const [draggingTitleId, setDraggingTitleId] = useState<string | null>(null);
+  const [titleDragStart, setTitleDragStart] = useState({ x: 0, y: 0 });
   const [isGeneratingTitles, setIsGeneratingTitles] = useState<{[keywordId: string]: boolean}>({});
   
   const { toast } = useToast();
@@ -688,6 +693,57 @@ export default function SimpleBulkGeneration() {
 
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  // Individual title drag handlers
+  const handleTitleMouseDown = (e: React.MouseEvent, title: any, initialX: number, initialY: number) => {
+    e.stopPropagation(); // Prevent diagram drag
+    setDraggingTitleId(title.id);
+    
+    const currentPos = titlePositions[title.id] || { x: initialX, y: initialY };
+    setTitleDragStart({
+      x: e.clientX - currentPos.x,
+      y: e.clientY - currentPos.y
+    });
+  };
+
+  const handleTitleMouseMove = (e: React.MouseEvent) => {
+    if (!draggingTitleId) return;
+    
+    setTitlePositions(prev => ({
+      ...prev,
+      [draggingTitleId]: {
+        x: e.clientX - titleDragStart.x,
+        y: e.clientY - titleDragStart.y
+      }
+    }));
+  };
+
+  const handleTitleMouseUp = () => {
+    setDraggingTitleId(null);
+  };
+
+  // Fixed title selection handler
+  const handleTitleClick = (e: React.MouseEvent, title: any) => {
+    e.stopPropagation();
+    if (draggingTitleId) return; // Don't select if we're dragging
+    
+    // Toggle selection immediately in UI
+    const newIsSelected = !title.isSelected;
+    
+    setGeneratedTitles(prev => ({
+      ...prev,
+      [title.keywordId]: prev[title.keywordId].map(t => 
+        t.id === title.id ? { ...t, isSelected: newIsSelected } : t
+      )
+    }));
+    
+    // Update selected titles list
+    if (newIsSelected) {
+      setSelectedTitles(prev => [...prev.filter(t => t.id !== title.id), { ...title, isSelected: true }]);
+    } else {
+      setSelectedTitles(prev => prev.filter(t => t.id !== title.id));
+    }
   };
 
   // Main bulk generation function
@@ -1256,9 +1312,18 @@ export default function SimpleBulkGeneration() {
                               transition: isDragging ? 'none' : 'transform 0.3s ease'
                             }}
                             onMouseDown={handleMouseDown}
-                            onMouseMove={handleMouseMove}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseUp}
+                            onMouseMove={(e) => {
+                              handleMouseMove(e);
+                              handleTitleMouseMove(e);
+                            }}
+                            onMouseUp={() => {
+                              handleMouseUp();
+                              handleTitleMouseUp();
+                            }}
+                            onMouseLeave={() => {
+                              handleMouseUp();
+                              handleTitleMouseUp();
+                            }}
                             data-testid="draggable-mindmap"
                           >
                             {/* Root Keyword in Center */}
@@ -1319,18 +1384,25 @@ export default function SimpleBulkGeneration() {
                                     </div>
                                   </div>
 
-                                  {/* Title branches extending from this keyword with better spacing */}
+                                  {/* Title branches extending from this keyword with anti-overlap spacing */}
                                   {keywordTitles.map((title, titleIndex) => {
-                                    // Improved spacing algorithm to prevent overlaps
+                                    // Advanced spacing algorithm to prevent overlaps
                                     const totalTitles = keywordTitles.length;
-                                    const angleSpread = Math.min(120, totalTitles * 25); // Max 120 degrees spread
-                                    const startAngle = keywordAngle - angleSpread / 2;
-                                    const titleAngle = startAngle + (titleIndex * angleSpread) / Math.max(1, totalTitles - 1);
                                     
-                                    // Vary distance based on position to create more natural layout
-                                    const baseRadius = 180;
-                                    const radiusVariation = (titleIndex % 3) * 30; // 0, 30, or 60px variation
-                                    const titleRadius = baseRadius + radiusVariation;
+                                    // Use larger angle spread and multiple rings for better distribution
+                                    const ringCount = Math.ceil(totalTitles / 8); // Max 8 titles per ring
+                                    const currentRing = Math.floor(titleIndex / 8);
+                                    const positionInRing = titleIndex % 8;
+                                    const titlesInCurrentRing = Math.min(8, totalTitles - currentRing * 8);
+                                    
+                                    // Spread titles around keyword in expanding rings
+                                    const baseRadius = 200;
+                                    const ringSpacing = 120;
+                                    const titleRadius = baseRadius + (currentRing * ringSpacing);
+                                    
+                                    // Use full 360 degrees for better spacing
+                                    const angleStep = 360 / titlesInCurrentRing;
+                                    const titleAngle = keywordAngle + (positionInRing * angleStep) + (currentRing * 22.5); // Offset each ring
                                     
                                     const titleX = keywordX + Math.cos((titleAngle * Math.PI) / 180) * titleRadius;
                                     const titleY = keywordY + Math.sin((titleAngle * Math.PI) / 180) * titleRadius;
