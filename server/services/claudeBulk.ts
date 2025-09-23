@@ -308,19 +308,51 @@ async function applyMediaPlacement(content: string, request: BulkContentRequest)
   
   try {
     console.log(`🖼️ BULK MEDIA PLACEMENT - Processing media for bulk content`);
+    console.log(`🔍 CONTENT DEBUG - First 500 chars:`, processedContent.substring(0, 500));
+    console.log(`🔍 CONTENT DEBUG - Looking for H2 patterns in content...`);
     
-    // Find all H2 headings to determine placement points
-    const h2Matches = Array.from(processedContent.matchAll(/<h2[^>]*>.*?<\/h2>/gi));
+    // First check for any heading patterns
+    const allHeadings = processedContent.match(/#{1,6}\s.*$/gm);
+    console.log(`📝 Found ${allHeadings?.length || 0} markdown headings:`, allHeadings?.slice(0, 3));
+    
+    // Check for HTML H2 tags
+    const htmlH2Matches = Array.from(processedContent.matchAll(/<h2[^>]*>.*?<\/h2>/gi));
+    console.log(`🏷️ Found ${htmlH2Matches.length} HTML H2 headings`);
+    
+    // Check for markdown H2 (##) headings
+    const markdownH2Matches = Array.from(processedContent.matchAll(/^## .+$/gm));
+    console.log(`📝 Found ${markdownH2Matches.length} Markdown H2 headings:`, markdownH2Matches.slice(0, 3).map(m => m[0]));
+    
+    // Use the appropriate format based on what we find
+    let h2Matches = htmlH2Matches;
+    if (htmlH2Matches.length === 0 && markdownH2Matches.length > 0) {
+      h2Matches = markdownH2Matches;
+      console.log(`🔄 Using Markdown H2 headings for media placement`);
+    } else if (htmlH2Matches.length > 0) {
+      console.log(`🔄 Using HTML H2 headings for media placement`);
+    }
+    
     console.log(`Found ${h2Matches.length} H2 headings for media placement`);
     
     // Place YouTube video under the first H2 heading (if available)
     if (request.youtubeEmbed && h2Matches.length > 0) {
-      const firstH2Index = h2Matches[0].index! + h2Matches[0][0].length;
+      const firstMatch = h2Matches[0];
+      let insertionPoint;
+      
+      if (htmlH2Matches.length > 0) {
+        // HTML format
+        insertionPoint = firstMatch.index! + firstMatch[0].length;
+      } else {
+        // Markdown format - find the end of the line
+        const lineEnd = processedContent.indexOf('\n', firstMatch.index! + firstMatch[0].length);
+        insertionPoint = lineEnd !== -1 ? lineEnd : firstMatch.index! + firstMatch[0].length;
+      }
+      
       const videoEmbed = `\n\n<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 20px 0;">
         <iframe src="${request.youtubeEmbed}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen></iframe>
       </div>\n\n`;
       
-      processedContent = processedContent.slice(0, firstH2Index) + videoEmbed + processedContent.slice(firstH2Index);
+      processedContent = processedContent.slice(0, insertionPoint) + videoEmbed + processedContent.slice(insertionPoint);
       console.log(`📹 Placed YouTube video under first H2 heading`);
     }
     
@@ -329,7 +361,12 @@ async function applyMediaPlacement(content: string, request: BulkContentRequest)
       console.log(`📸 Processing ${request.secondaryImages.length} secondary images`);
       
       // Re-find H2 headings after video insertion
-      const updatedH2Matches = Array.from(processedContent.matchAll(/<h2[^>]*>.*?<\/h2>/gi));
+      let updatedH2Matches;
+      if (htmlH2Matches.length > 0) {
+        updatedH2Matches = Array.from(processedContent.matchAll(/<h2[^>]*>.*?<\/h2>/gi));
+      } else {
+        updatedH2Matches = Array.from(processedContent.matchAll(/^## .+$/gm));
+      }
       
       // Start placing images from the second H2 (or first if no video)
       const startIndex = request.youtubeEmbed ? 1 : 0;
@@ -338,7 +375,16 @@ async function applyMediaPlacement(content: string, request: BulkContentRequest)
       for (let i = startIndex; i < updatedH2Matches.length && imageIndex < request.secondaryImages.length; i++) {
         const image = request.secondaryImages[imageIndex];
         const h2Match = updatedH2Matches[i];
-        const insertionPoint = h2Match.index! + h2Match[0].length;
+        let insertionPoint;
+        
+        if (htmlH2Matches.length > 0) {
+          // HTML format
+          insertionPoint = h2Match.index! + h2Match[0].length;
+        } else {
+          // Markdown format - find the end of the line
+          const lineEnd = processedContent.indexOf('\n', h2Match.index! + h2Match[0].length);
+          insertionPoint = lineEnd !== -1 ? lineEnd : h2Match.index! + h2Match[0].length;
+        }
         
         // Create image with product linking if available
         let imageHtml = `\n\n<div class="content-image" style="margin: 20px 0; text-align: center;">`;
