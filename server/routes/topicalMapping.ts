@@ -7,6 +7,82 @@ import { generateBlogContentWithClaude } from "../services/claude";
 
 const topicalMappingRouter = Router();
 
+// Fallback title generation for when APIs fail
+function generateFallbackTitles(keyword: string, count: number = 10): string[] {
+  const titleTemplates = [
+    `The Complete Guide to ${keyword}`,
+    `${keyword}: Everything You Need to Know`,
+    `${keyword} for Beginners: A Step-by-Step Guide`,
+    `${keyword}: Pros and Cons Explained`,
+    `Comparing Different ${keyword} Methods`,
+    `${keyword}: Best Practices and Tips`,
+    `${keyword}: Common Mistakes to Avoid`,
+    `How to Choose the Right ${keyword}`,
+    `${keyword}: Benefits and Drawbacks`,
+    `${keyword}: Techniques and Strategies`,
+    `${keyword}: A Comprehensive Overview`,
+    `${keyword}: What You Need to Know`,
+    `${keyword}: Effective Methods and Approaches`,
+    `${keyword}: Success Stories and Case Studies`,
+    `${keyword}: Troubleshooting Common Issues`
+  ];
+
+  return titleTemplates.slice(0, count);
+}
+
+// Generate titles for a specific keyword with multiple fallbacks
+async function generateTitlesForKeyword(keyword: string, keywordId: number, count: number = 10): Promise<any[]> {
+  console.log(`Generating ${count} titles for keyword: "${keyword}" (ID: ${keywordId})`);
+  
+  try {
+    // Try Claude API first
+    const claudeContent = await generateBlogContentWithClaude({
+      topic: keyword,
+      length: 'short',
+      requesterInfo: { storeId: 1 }
+    });
+
+    if (claudeContent && claudeContent.titles && claudeContent.titles.length > 0) {
+      const createdTitles = [];
+      
+      for (let i = 0; i < Math.min(claudeContent.titles.length, count); i++) {
+        const title = await storage.createGeneratedTitle({
+          keywordId: keywordId,
+          title: claudeContent.titles[i],
+          isSelected: false
+        });
+        createdTitles.push(title);
+      }
+      
+      console.log(`✅ Generated ${createdTitles.length} titles using Claude API`);
+      return createdTitles;
+    }
+  } catch (claudeError) {
+    console.log(`Claude API failed for keyword "${keyword}":`, claudeError.message);
+  }
+
+  // Fallback to template-based generation
+  console.log(`🔄 Using fallback title generation for "${keyword}"`);
+  const fallbackTitles = generateFallbackTitles(keyword, count);
+  const createdTitles = [];
+  
+  for (const titleText of fallbackTitles) {
+    try {
+      const title = await storage.createGeneratedTitle({
+        keywordId: keywordId,
+        title: titleText,
+        isSelected: false
+      });
+      createdTitles.push(title);
+    } catch (error) {
+      console.error(`Failed to save fallback title "${titleText}":`, error);
+    }
+  }
+  
+  console.log(`✅ Generated ${createdTitles.length} fallback titles for "${keyword}"`);
+  return createdTitles;
+}
+
 // Create a new topical mapping session and fetch related keywords
 topicalMappingRouter.post("/create-session", async (req: Request, res: Response) => {
   try {
@@ -53,15 +129,37 @@ topicalMappingRouter.post("/create-session", async (req: Request, res: Response)
         relatedKeywords.push(keyword);
       }
 
+      // Automatically generate titles for all keywords
+      console.log(`Auto-generating titles for ${relatedKeywords.length} keywords`);
+      const keywordsWithTitles = [];
+      
+      for (const keyword of relatedKeywords) {
+        try {
+          // Generate titles for this keyword
+          const titles = await generateTitlesForKeyword(keyword.keyword, keyword.id);
+          keywordsWithTitles.push({
+            ...keyword,
+            titles: titles
+          });
+        } catch (error) {
+          console.error(`Failed to generate titles for keyword "${keyword.keyword}":`, error);
+          // Add keyword without titles on error
+          keywordsWithTitles.push({
+            ...keyword,
+            titles: []
+          });
+        }
+      }
+
       // Update session status to completed
       await storage.updateTopicalMappingSession(session.id, { status: "completed" });
 
-      console.log(`Successfully created session with ${relatedKeywords.length} related keywords`);
+      console.log(`Successfully created session with ${relatedKeywords.length} related keywords and auto-generated titles`);
 
       res.json({
         success: true,
         session: { ...session, status: "completed" },
-        keywords: relatedKeywords
+        keywords: keywordsWithTitles
       });
 
     } catch (dataForSEOError: any) {

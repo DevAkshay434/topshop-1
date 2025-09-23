@@ -421,9 +421,20 @@ export default function SimpleBulkGeneration() {
       if (response.success) {
         setTopicalMappingSession(response.session);
         setRelatedKeywords(response.keywords || []);
+        
+        // Process auto-generated titles
+        const titlesMap: {[keywordId: string]: any[]} = {};
+        response.keywords?.forEach((keyword: any) => {
+          if (keyword.titles && keyword.titles.length > 0) {
+            titlesMap[keyword.id] = keyword.titles;
+          }
+        });
+        setGeneratedTitles(titlesMap);
+        
+        const totalTitles = Object.values(titlesMap).reduce((sum: number, titles: any[]) => sum + titles.length, 0);
         toast({
-          title: "Keywords Found!",
-          description: `Found ${response.keywords?.length || 0} related keywords for "${rootKeyword}"`,
+          title: "Topical Map Created!",
+          description: `Found ${response.keywords?.length || 0} related keywords with ${totalTitles} auto-generated titles for "${rootKeyword}"`,
         });
       } else {
         throw new Error(response.error || "Failed to create topical mapping session");
