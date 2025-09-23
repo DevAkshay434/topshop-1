@@ -1246,47 +1246,47 @@ export default function SimpleBulkGeneration() {
                           </Badge>
                         </div>
                         
-                        {/* Mind Map Style - Center-based with Horizontal Flow */}
+                        {/* Correct Mind Map: Left → Middle → Right Flow */}
                         <div className="w-full border rounded-lg bg-white overflow-auto relative">
-                          <div className="relative" style={{ width: '1200px', height: '800px', margin: '0 auto' }}>
+                          <div className="relative" style={{ width: '1400px', height: '800px', margin: '0 auto' }}>
                             {/* SVG Layer for Connections */}
                             <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
                               {/* Main keyword to subkeywords connections */}
                               {relatedKeywords.map((keyword, keywordIndex) => {
-                                const centerX = 600; // Center of container
-                                const centerY = 400; // Center of container
+                                const mainX = 150; // Leftmost position
+                                const mainY = 400; // Center vertically
                                 
-                                // Position subkeywords vertically distributed
-                                const totalHeight = Math.min(relatedKeywords.length * 80, 600);
-                                const startY = centerY - totalHeight / 2;
+                                // Position subkeywords vertically distributed in middle
+                                const totalHeight = Math.min(relatedKeywords.length * 100, 600);
+                                const startY = mainY - totalHeight / 2;
                                 const subkeywordY = startY + (keywordIndex * (totalHeight / relatedKeywords.length));
-                                const subkeywordX = 300; // Left side
+                                const subkeywordX = 500; // Middle position
                                 
                                 return (
                                   <g key={`main-to-${keyword.id}`}>
-                                    {/* Main to subkeyword line */}
+                                    {/* Main to subkeyword curved line */}
                                     <path
-                                      d={`M ${centerX} ${centerY} Q ${centerX - 100} ${centerY} ${subkeywordX + 80} ${subkeywordY}`}
+                                      d={`M ${mainX + 120} ${mainY} Q ${(mainX + subkeywordX) / 2} ${mainY} ${subkeywordX - 80} ${subkeywordY}`}
                                       stroke="#3b82f6"
-                                      strokeWidth="2"
+                                      strokeWidth="3"
                                       fill="none"
                                     />
                                     
                                     {/* Subkeyword to titles connections */}
                                     {(generatedTitles[keyword.id] || []).map((title, titleIndex) => {
-                                      const titleX = 800; // Right side
+                                      const titleX = 950; // Rightmost position
                                       const titlesCount = (generatedTitles[keyword.id] || []).length;
-                                      const titleSpacing = Math.min(40, 200 / titlesCount);
+                                      const titleSpacing = Math.min(25, 150 / Math.max(titlesCount, 1));
                                       const titleY = subkeywordY - (titlesCount * titleSpacing) / 2 + (titleIndex * titleSpacing);
                                       
                                       return (
                                         <path
                                           key={`${keyword.id}-to-${title.id}`}
-                                          d={`M ${subkeywordX + 160} ${subkeywordY} Q ${subkeywordX + 250} ${subkeywordY} ${titleX} ${titleY}`}
+                                          d={`M ${subkeywordX + 80} ${subkeywordY} L ${titleX - 100} ${titleY}`}
                                           stroke="#10b981"
-                                          strokeWidth="1.5"
+                                          strokeWidth="1"
                                           fill="none"
-                                          strokeDasharray="3,2"
+                                          strokeDasharray="2,2"
                                         />
                                       );
                                     })}
@@ -1295,24 +1295,24 @@ export default function SimpleBulkGeneration() {
                               })}
                             </svg>
                             
-                            {/* Main Keyword in Center */}
+                            {/* Main Keyword on LEFT */}
                             <div 
                               className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-                              style={{ left: '600px', top: '400px' }}
-                              data-testid="main-keyword-center"
+                              style={{ left: '150px', top: '400px' }}
+                              data-testid="main-keyword-left"
                             >
-                              <div className="bg-blue-600 text-white rounded-lg px-4 py-2 shadow-lg border-2 border-blue-700 text-center">
-                                <div className="text-sm font-bold">{topicalMappingSession?.rootKeyword}</div>
-                                <div className="text-xs opacity-90">Main</div>
+                              <div className="bg-blue-600 text-white rounded-lg px-6 py-4 shadow-lg border-2 border-blue-700 text-center">
+                                <div className="text-base font-bold">{topicalMappingSession?.rootKeyword}</div>
+                                <div className="text-xs opacity-90 mt-1">Main</div>
                               </div>
                             </div>
                             
-                            {/* Subkeywords positioned vertically on left */}
+                            {/* Subkeywords positioned vertically in MIDDLE */}
                             {relatedKeywords.map((keyword, keywordIndex) => {
-                              const totalHeight = Math.min(relatedKeywords.length * 80, 600);
+                              const totalHeight = Math.min(relatedKeywords.length * 100, 600);
                               const startY = 400 - totalHeight / 2;
                               const subkeywordY = startY + (keywordIndex * (totalHeight / relatedKeywords.length));
-                              const subkeywordX = 300;
+                              const subkeywordX = 500;
                               const keywordTitles = generatedTitles[keyword.id] || [];
                               
                               return (
@@ -1323,17 +1323,17 @@ export default function SimpleBulkGeneration() {
                                     style={{ left: `${subkeywordX}px`, top: `${subkeywordY}px` }}
                                     data-testid={`subkeyword-${keyword.id}`}
                                   >
-                                    <div className="bg-emerald-500 text-white rounded-lg px-3 py-2 shadow-md border border-emerald-600 text-center max-w-[160px]">
-                                      <div className="text-xs font-semibold">{keyword.keyword}</div>
-                                      <div className="text-xs opacity-80">{keywordTitles.length} titles</div>
+                                    <div className="bg-emerald-500 text-white rounded-lg px-4 py-3 shadow-md border border-emerald-600 text-center max-w-[180px]">
+                                      <div className="text-sm font-semibold">{keyword.keyword}</div>
+                                      <div className="text-xs opacity-80 mt-1">{keywordTitles.length} titles</div>
                                     </div>
                                   </div>
                                   
-                                  {/* Titles positioned to the right of subkeyword */}
+                                  {/* Titles positioned on the RIGHT */}
                                   {keywordTitles.map((title, titleIndex) => {
-                                    const titleX = 800;
+                                    const titleX = 950;
                                     const titlesCount = keywordTitles.length;
-                                    const titleSpacing = Math.min(40, 200 / titlesCount);
+                                    const titleSpacing = Math.min(25, 150 / Math.max(titlesCount, 1));
                                     const titleY = subkeywordY - (titlesCount * titleSpacing) / 2 + (titleIndex * titleSpacing);
                                     
                                     return (
@@ -1345,26 +1345,26 @@ export default function SimpleBulkGeneration() {
                                       >
                                         <div
                                           className={cn(
-                                            "cursor-pointer transition-all duration-200 rounded-md px-2 py-1 border text-center max-w-[200px]",
+                                            "cursor-pointer transition-all duration-200 rounded-md px-2 py-1 border text-left max-w-[220px] text-xs",
                                             title.isSelected
                                               ? "bg-blue-100 border-blue-500 text-blue-800"
-                                              : "bg-gray-100 border-gray-300 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50"
+                                              : "bg-gray-50 border-gray-300 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50"
                                           )}
                                           onClick={(e) => handleTitleClick(e, title)}
                                         >
-                                          {/* Selection indicator */}
-                                          <div className="flex items-center gap-1">
+                                          {/* Selection checkbox and title */}
+                                          <div className="flex items-start gap-2">
                                             <div className={cn(
-                                              "w-2 h-2 rounded-full border flex-shrink-0",
+                                              "w-3 h-3 rounded border flex-shrink-0 mt-0.5",
                                               title.isSelected 
                                                 ? "border-blue-500 bg-blue-500" 
                                                 : "border-gray-400"
                                             )}>
                                               {title.isSelected && (
-                                                <div className="w-1 h-1 bg-white rounded-full m-auto"></div>
+                                                <div className="w-1 h-1 bg-white rounded-full m-auto mt-0.5"></div>
                                               )}
                                             </div>
-                                            <div className="text-xs font-medium leading-tight">
+                                            <div className="font-medium leading-tight">
                                               {title.title}
                                             </div>
                                           </div>
