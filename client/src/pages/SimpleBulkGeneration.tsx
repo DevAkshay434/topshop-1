@@ -1124,7 +1124,7 @@ export default function SimpleBulkGeneration() {
         
         toast({
           title: "Content Generation Complete",
-          description: `Generated ${finalResults.filter(r => r.status === 'success').length} of ${topicsList.length} articles successfully`,
+          description: `Generated content for ${topicsList.length} articles successfully`,
         });
         
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
