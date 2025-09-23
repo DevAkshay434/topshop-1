@@ -30,6 +30,7 @@ import oauthRouter from './routes/oauth';
 import buyerPersonasRouter from './routes/buyer-personas';
 import billingRouter from './routes/billing';
 import creditsRouter from './routes/credits';
+import topicalMappingRouter from './routes/topicalMapping';
 import { pexelsService } from './services/pexels';
 import { shopifyAuthMiddleware, shopifyAuthOptional } from './middleware/shopify-auth';
 import { 
@@ -4121,6 +4122,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
   app.use('/api/media', mediaRouter);
   app.use('/api/buyer-personas', buyerPersonasRouter);
   app.use('/api/credits', creditsRouter);
+  app.use('/api/topical-mapping', topicalMappingRouter);
 
   // Mount API routes with /api prefix and store context
   app.use('/api', apiRouter);

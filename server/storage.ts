@@ -12,6 +12,9 @@ import {
   storeCredits,
   creditPurchases,
   creditTransactions,
+  topicalMappingSessions,
+  relatedKeywords,
+  generatedTitles,
   type User, 
   type InsertUser, 
   type ShopifyConnection, 
@@ -36,7 +39,13 @@ import {
   type CreditPurchase,
   type InsertCreditPurchase,
   type CreditTransaction,
-  type InsertCreditTransaction
+  type InsertCreditTransaction,
+  type TopicalMappingSession,
+  type InsertTopicalMappingSession,
+  type RelatedKeyword,
+  type InsertRelatedKeyword,
+  type GeneratedTitle,
+  type InsertGeneratedTitle
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, lte, gte, sql, and } from "drizzle-orm";
@@ -113,6 +122,18 @@ export interface IStorage {
   createCreditTransaction(transaction: InsertCreditTransaction): Promise<CreditTransaction>;
   getCreditTransactions(storeId: number): Promise<CreditTransaction[]>;
 
+  // Topical mapping operations
+  createTopicalMappingSession(session: InsertTopicalMappingSession): Promise<TopicalMappingSession>;
+  getTopicalMappingSession(id: number): Promise<TopicalMappingSession | null>;
+  updateTopicalMappingSession(id: number, session: Partial<TopicalMappingSession>): Promise<TopicalMappingSession>;
+  getTopicalMappingSessions(storeId: number): Promise<TopicalMappingSession[]>;
+  createRelatedKeyword(keyword: InsertRelatedKeyword): Promise<RelatedKeyword>;
+  getRelatedKeywords(sessionId: number): Promise<RelatedKeyword[]>;
+  createGeneratedTitle(title: InsertGeneratedTitle): Promise<GeneratedTitle>;
+  getGeneratedTitles(keywordId: number): Promise<GeneratedTitle[]>;
+  updateGeneratedTitle(id: number, title: Partial<GeneratedTitle>): Promise<GeneratedTitle>;
+  getSelectedTitles(sessionId: number): Promise<Array<{ keyword: string; title: string; keywordId: number; titleId: number }>>;
+
 }
 
 // In-memory implementation of the storage interface
@@ -129,6 +150,9 @@ export class MemStorage implements IStorage {
   private storeCredits: Map<number, StoreCredit>; // Key: storeId
   private creditPurchases: Map<number, CreditPurchase>;
   private creditTransactions: Map<number, CreditTransaction>;
+  private topicalMappingSessions: Map<number, TopicalMappingSession>;
+  private relatedKeywords: Map<number, RelatedKeyword>;
+  private generatedTitles: Map<number, GeneratedTitle>;
 
   
   private currentUserId: number;
@@ -140,6 +164,9 @@ export class MemStorage implements IStorage {
   private currentCreditPackageId: number;
   private currentCreditPurchaseId: number;
   private currentCreditTransactionId: number;
+  private currentTopicalMappingSessionId: number;
+  private currentRelatedKeywordId: number;
+  private currentGeneratedTitleId: number;
 
 
   constructor() {
@@ -154,6 +181,9 @@ export class MemStorage implements IStorage {
     this.storeCredits = new Map();
     this.creditPurchases = new Map();
     this.creditTransactions = new Map();
+    this.topicalMappingSessions = new Map();
+    this.relatedKeywords = new Map();
+    this.generatedTitles = new Map();
 
     
     this.currentUserId = 1;
@@ -165,6 +195,9 @@ export class MemStorage implements IStorage {
     this.currentCreditPackageId = 1;
     this.currentCreditPurchaseId = 1;
     this.currentCreditTransactionId = 1;
+    this.currentTopicalMappingSessionId = 1;
+    this.currentRelatedKeywordId = 1;
+    this.currentGeneratedTitleId = 1;
 
     
     // Add some initial data for testing
@@ -883,6 +916,112 @@ export class MemStorage implements IStorage {
     return Array.from(this.creditTransactions.values())
       .filter(transaction => transaction.storeId === storeId)
       .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
+  }
+
+  // Topical mapping operations
+  async createTopicalMappingSession(session: InsertTopicalMappingSession): Promise<TopicalMappingSession> {
+    const id = this.currentTopicalMappingSessionId++;
+    const now = new Date();
+    const newSession: TopicalMappingSession = {
+      ...session,
+      id,
+      createdAt: now,
+      updatedAt: null
+    };
+    this.topicalMappingSessions.set(id, newSession);
+    return newSession;
+  }
+
+  async getTopicalMappingSession(id: number): Promise<TopicalMappingSession | null> {
+    return this.topicalMappingSessions.get(id) || null;
+  }
+
+  async updateTopicalMappingSession(id: number, session: Partial<TopicalMappingSession>): Promise<TopicalMappingSession> {
+    const existingSession = this.topicalMappingSessions.get(id);
+    if (!existingSession) {
+      throw new Error(`Topical mapping session with ID ${id} not found`);
+    }
+    
+    const updatedSession = { ...existingSession, ...session, updatedAt: new Date() };
+    this.topicalMappingSessions.set(id, updatedSession);
+    return updatedSession;
+  }
+
+  async getTopicalMappingSessions(storeId: number): Promise<TopicalMappingSession[]> {
+    return Array.from(this.topicalMappingSessions.values())
+      .filter(session => session.storeId === storeId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async createRelatedKeyword(keyword: InsertRelatedKeyword): Promise<RelatedKeyword> {
+    const id = this.currentRelatedKeywordId++;
+    const now = new Date();
+    const newKeyword: RelatedKeyword = {
+      ...keyword,
+      id,
+      createdAt: now
+    };
+    this.relatedKeywords.set(id, newKeyword);
+    return newKeyword;
+  }
+
+  async getRelatedKeywords(sessionId: number): Promise<RelatedKeyword[]> {
+    return Array.from(this.relatedKeywords.values())
+      .filter(keyword => keyword.sessionId === sessionId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  async createGeneratedTitle(title: InsertGeneratedTitle): Promise<GeneratedTitle> {
+    const id = this.currentGeneratedTitleId++;
+    const now = new Date();
+    const newTitle: GeneratedTitle = {
+      ...title,
+      id,
+      createdAt: now
+    };
+    this.generatedTitles.set(id, newTitle);
+    return newTitle;
+  }
+
+  async getGeneratedTitles(keywordId: number): Promise<GeneratedTitle[]> {
+    return Array.from(this.generatedTitles.values())
+      .filter(title => title.keywordId === keywordId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  async updateGeneratedTitle(id: number, title: Partial<GeneratedTitle>): Promise<GeneratedTitle> {
+    const existingTitle = this.generatedTitles.get(id);
+    if (!existingTitle) {
+      throw new Error(`Generated title with ID ${id} not found`);
+    }
+    
+    const updatedTitle = { ...existingTitle, ...title };
+    this.generatedTitles.set(id, updatedTitle);
+    return updatedTitle;
+  }
+
+  async getSelectedTitles(sessionId: number): Promise<Array<{ keyword: string; title: string; keywordId: number; titleId: number }>> {
+    // Get all keywords for this session
+    const keywords = Array.from(this.relatedKeywords.values())
+      .filter(keyword => keyword.sessionId === sessionId);
+    
+    const result = [];
+    for (const keyword of keywords) {
+      // Get selected titles for this keyword
+      const selectedTitles = Array.from(this.generatedTitles.values())
+        .filter(title => title.keywordId === keyword.id && title.isSelected);
+      
+      for (const title of selectedTitles) {
+        result.push({
+          keyword: keyword.keyword,
+          title: title.title,
+          keywordId: keyword.id,
+          titleId: title.id
+        });
+      }
+    }
+    
+    return result;
   }
 }
 
