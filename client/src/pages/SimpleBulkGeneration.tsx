@@ -325,7 +325,10 @@ export default function SimpleBulkGeneration() {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   
   // Drag functionality state - start centered
-  // Clean linear layout - no dragging needed
+  // Drag state for mind map
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   // Individual title positioning state
   const [isGeneratingTitles, setIsGeneratingTitles] = useState<{[keywordId: string]: boolean}>({});
@@ -669,7 +672,29 @@ export default function SimpleBulkGeneration() {
   };
 
 
-  // Clean title selection handler for linear layout
+  // Drag handlers for mind map
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - dragOffset.x,
+      y: e.clientY - dragOffset.y
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    
+    setDragOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Clean title selection handler
   const handleTitleClick = (e: React.MouseEvent, title: any) => {
     e.stopPropagation();
     
@@ -1246,27 +1271,42 @@ export default function SimpleBulkGeneration() {
                           </Badge>
                         </div>
                         
-                        {/* Correct Mind Map: Left → Middle → Right Flow */}
-                        <div className="w-full border rounded-lg bg-white overflow-auto relative">
-                          <div className="relative" style={{ width: '1400px', height: '800px', margin: '0 auto' }}>
+                        {/* Draggable Mind Map: Main → Subkeywords → Titles */}
+                        <div className="w-full border rounded-lg bg-white overflow-hidden relative">
+                          <div 
+                            className="relative cursor-grab active:cursor-grabbing"
+                            style={{
+                              width: '1600px',
+                              height: '1000px',
+                              transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
+                              transition: isDragging ? 'none' : 'transform 0.3s ease'
+                            }}
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                            data-testid="draggable-mindmap"
+                          >
                             {/* SVG Layer for Connections */}
                             <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
                               {/* Main keyword to subkeywords connections */}
                               {relatedKeywords.map((keyword, keywordIndex) => {
-                                const mainX = 150; // Leftmost position
-                                const mainY = 400; // Center vertically
+                                const mainX = 200; // Leftmost position
+                                const mainY = 500; // Center vertically
                                 
-                                // Position subkeywords vertically distributed in middle
-                                const totalHeight = Math.min(relatedKeywords.length * 100, 600);
-                                const startY = mainY - totalHeight / 2;
-                                const subkeywordY = startY + (keywordIndex * (totalHeight / relatedKeywords.length));
-                                const subkeywordX = 500; // Middle position
+                                // Calculate subkeyword positions with proper spacing
+                                const subkeywordSpacing = 120; // Fixed spacing between subkeywords
+                                const totalSubkeywords = relatedKeywords.length;
+                                const totalSubkeywordHeight = (totalSubkeywords - 1) * subkeywordSpacing;
+                                const subkeywordStartY = mainY - totalSubkeywordHeight / 2;
+                                const subkeywordY = subkeywordStartY + (keywordIndex * subkeywordSpacing);
+                                const subkeywordX = 600; // Middle position
                                 
                                 return (
                                   <g key={`main-to-${keyword.id}`}>
                                     {/* Main to subkeyword curved line */}
                                     <path
-                                      d={`M ${mainX + 120} ${mainY} Q ${(mainX + subkeywordX) / 2} ${mainY} ${subkeywordX - 80} ${subkeywordY}`}
+                                      d={`M ${mainX + 130} ${mainY} Q ${(mainX + subkeywordX) / 2} ${(mainY + subkeywordY) / 2} ${subkeywordX - 90} ${subkeywordY}`}
                                       stroke="#3b82f6"
                                       strokeWidth="3"
                                       fill="none"
@@ -1274,19 +1314,23 @@ export default function SimpleBulkGeneration() {
                                     
                                     {/* Subkeyword to titles connections */}
                                     {(generatedTitles[keyword.id] || []).map((title, titleIndex) => {
-                                      const titleX = 950; // Rightmost position
+                                      const titleX = 1100; // Rightmost position
                                       const titlesCount = (generatedTitles[keyword.id] || []).length;
-                                      const titleSpacing = Math.min(25, 150 / Math.max(titlesCount, 1));
-                                      const titleY = subkeywordY - (titlesCount * titleSpacing) / 2 + (titleIndex * titleSpacing);
+                                      
+                                      // FIXED SPACING: Ensure minimum 35px between titles
+                                      const minTitleSpacing = 35;
+                                      const totalTitleHeight = (titlesCount - 1) * minTitleSpacing;
+                                      const titleStartY = subkeywordY - totalTitleHeight / 2;
+                                      const titleY = titleStartY + (titleIndex * minTitleSpacing);
                                       
                                       return (
                                         <path
                                           key={`${keyword.id}-to-${title.id}`}
-                                          d={`M ${subkeywordX + 80} ${subkeywordY} L ${titleX - 100} ${titleY}`}
+                                          d={`M ${subkeywordX + 90} ${subkeywordY} L ${titleX - 110} ${titleY}`}
                                           stroke="#10b981"
-                                          strokeWidth="1"
+                                          strokeWidth="1.5"
                                           fill="none"
-                                          strokeDasharray="2,2"
+                                          strokeDasharray="3,2"
                                         />
                                       );
                                     })}
@@ -1295,10 +1339,10 @@ export default function SimpleBulkGeneration() {
                               })}
                             </svg>
                             
-                            {/* Main Keyword on LEFT */}
+                            {/* Main Keyword on LEFTMOST */}
                             <div 
                               className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-                              style={{ left: '150px', top: '400px' }}
+                              style={{ left: '200px', top: '500px' }}
                               data-testid="main-keyword-left"
                             >
                               <div className="bg-blue-600 text-white rounded-lg px-6 py-4 shadow-lg border-2 border-blue-700 text-center">
@@ -1309,10 +1353,13 @@ export default function SimpleBulkGeneration() {
                             
                             {/* Subkeywords positioned vertically in MIDDLE */}
                             {relatedKeywords.map((keyword, keywordIndex) => {
-                              const totalHeight = Math.min(relatedKeywords.length * 100, 600);
-                              const startY = 400 - totalHeight / 2;
-                              const subkeywordY = startY + (keywordIndex * (totalHeight / relatedKeywords.length));
-                              const subkeywordX = 500;
+                              // Calculate subkeyword positions with proper spacing
+                              const subkeywordSpacing = 120;
+                              const totalSubkeywords = relatedKeywords.length;
+                              const totalSubkeywordHeight = (totalSubkeywords - 1) * subkeywordSpacing;
+                              const subkeywordStartY = 500 - totalSubkeywordHeight / 2;
+                              const subkeywordY = subkeywordStartY + (keywordIndex * subkeywordSpacing);
+                              const subkeywordX = 600;
                               const keywordTitles = generatedTitles[keyword.id] || [];
                               
                               return (
@@ -1329,12 +1376,16 @@ export default function SimpleBulkGeneration() {
                                     </div>
                                   </div>
                                   
-                                  {/* Titles positioned on the RIGHT */}
+                                  {/* Titles positioned on the RIGHT with PROPER SPACING */}
                                   {keywordTitles.map((title, titleIndex) => {
-                                    const titleX = 950;
+                                    const titleX = 1100;
                                     const titlesCount = keywordTitles.length;
-                                    const titleSpacing = Math.min(25, 150 / Math.max(titlesCount, 1));
-                                    const titleY = subkeywordY - (titlesCount * titleSpacing) / 2 + (titleIndex * titleSpacing);
+                                    
+                                    // FIXED SPACING: Ensure no overlaps with minimum 35px spacing
+                                    const minTitleSpacing = 35;
+                                    const totalTitleHeight = (titlesCount - 1) * minTitleSpacing;
+                                    const titleStartY = subkeywordY - totalTitleHeight / 2;
+                                    const titleY = titleStartY + (titleIndex * minTitleSpacing);
                                     
                                     return (
                                       <div
@@ -1345,7 +1396,7 @@ export default function SimpleBulkGeneration() {
                                       >
                                         <div
                                           className={cn(
-                                            "cursor-pointer transition-all duration-200 rounded-md px-2 py-1 border text-left max-w-[220px] text-xs",
+                                            "cursor-pointer transition-all duration-200 rounded-md px-2 py-1 border text-left max-w-[240px] text-xs",
                                             title.isSelected
                                               ? "bg-blue-100 border-blue-500 text-blue-800"
                                               : "bg-gray-50 border-gray-300 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50"
