@@ -189,7 +189,16 @@ type FailedResult = {
   error: string;
 };
 
-type GenerationResult = SuccessResult | FailedResult;
+type ProcessingResult = {
+  topic: string;
+  status: "processing";
+  title: string;
+  contentPreview: string;
+  postId: number;
+  usesFallback: boolean;
+};
+
+type GenerationResult = SuccessResult | FailedResult | ProcessingResult;
 
 // Interface types matching AdminPanel
 interface Product {
@@ -1960,11 +1969,13 @@ export default function SimpleBulkGeneration() {
               articles={results.map(r => ({
                 topic: r.topic,
                 status: r.status === 'success' ? 'completed' as const : 
+                        r.status === 'processing' ? 'processing' as const :
                         (r.status === 'failed' && r.error === 'Article is being generated in the background...') ? 'processing' as const : 'failed' as const,
                 title: r.status === 'success' ? r.title : `Generating: ${r.topic}`,
                 contentPreview: r.status === 'success' ? (r.contentPreview || 'Content preview not available') : 
+                               r.status === 'processing' ? r.contentPreview :
                                (r.status === 'failed' && r.error === 'Article is being generated in the background...') ? 'Article is being generated in the background...' : 
-                               `Error: ${r.error || 'Unknown error'}`,
+                               r.status === 'failed' ? `Error: ${r.error || 'Unknown error'}` : 'Unknown status',
                 postId: r.status === 'success' ? (r.postId || 0) : 0,
                 usesFallback: r.status === 'success' ? (r.usesFallback || false) : false
               }))}
@@ -2023,8 +2034,10 @@ export default function SimpleBulkGeneration() {
                                   </span>
                                 )}
                               </>
+                            ) : result.status === "processing" ? (
+                              <span className="text-blue-700">Processing: {result.contentPreview}</span>
                             ) : (
-                              <span className="text-red-700">Failed: {result.error}</span>
+                              <span className="text-red-700">Failed: {result.status === "failed" ? result.error : "Unknown error"}</span>
                             )}
                           </p>
                         </div>
@@ -2039,16 +2052,27 @@ export default function SimpleBulkGeneration() {
                                   id: result.postId,
                                   title: result.title,
                                   content: result.content, // Use full content
-                                  handle: "",
-                                  summary: "",
-                                  tags: "",
-                                  created_at: new Date().toISOString(),
-                                  updated_at: new Date().toISOString(),
-                                  published_at: null,
+                                  featuredImage: null,
+                                  category: null,
+                                  categories: null,
+                                  tags: null,
                                   status: "draft",
-                                  blog_id: 0,
-                                  author: "",
-                                  image: ""
+                                  contentType: "post",
+                                  scheduledDate: null,
+                                  scheduledPublishDate: null,
+                                  scheduledPublishTime: null,
+                                  publishedDate: null,
+                                  shopifyPostId: null,
+                                  shopifyBlogId: null,
+                                  shopifyHandle: null,
+                                  metaTitle: null,
+                                  metaDescription: null,
+                                  views: 0,
+                                  createdAt: new Date(),
+                                  updatedAt: null,
+                                  author: null,
+                                  authorId: null,
+                                  storeId: null
                                 });
                                 setCreatePostModalOpen(true);
                               }}
@@ -2085,6 +2109,16 @@ export default function SimpleBulkGeneration() {
                               editable={true}
                             />
                           </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Processing state content preview */}
+                    {result.status === "processing" && (
+                      <div className="p-4">
+                        <div className="bg-blue-50 rounded-lg border border-blue-200 p-4 text-center">
+                          <div className="text-blue-800 font-medium">Content is being generated...</div>
+                          <div className="text-blue-600 text-sm mt-1">{result.contentPreview}</div>
                         </div>
                       </div>
                     )}
