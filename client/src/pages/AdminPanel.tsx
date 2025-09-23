@@ -361,7 +361,7 @@ export default function AdminPanel() {
   const [suggestionKey, setSuggestionKey] = useState(0); // Force re-render when suggestions change
   const [forceRerender, setForceRerender] = useState(0);
   const suggestionsRef = useRef<string[]>([]);
-  
+
   // Ref for content preview section to enable auto-scroll
   const contentPreviewRef = useRef<HTMLDivElement>(null);
 
@@ -785,16 +785,18 @@ export default function AdminPanel() {
       // 1. Clear any previously generated content to start fresh
       setGeneratedContent(null);
       setIsContentPosted(false);
-      
+
       // 2. First restore non-form state variables (UI state that's not controlled by React Hook Form)
       if (projectData.selectedProducts) {
         console.log("🔍 PROJECT LOAD - Restoring selected products:", {
           savedProductsLength: projectData.selectedProducts.length,
-          savedProductsData: projectData.selectedProducts
+          savedProductsData: projectData.selectedProducts,
         });
         setSelectedProducts(projectData.selectedProducts);
       } else {
-        console.log("⚠️ PROJECT LOAD - No selected products found in project data");
+        console.log(
+          "⚠️ PROJECT LOAD - No selected products found in project data",
+        );
       }
       if (projectData.selectedCollections)
         setSelectedCollections(projectData.selectedCollections);
@@ -802,18 +804,22 @@ export default function AdminPanel() {
         // Clean any corrupted keyword data during project loading
         const cleanedKeywords = projectData.selectedKeywords.map((kw: any) => {
           // If keyword contains numbers at the end that look like search volume, remove them
-          const cleanedKeyword = typeof kw === 'string' 
-            ? kw // Keep string keywords as-is
-            : {
-                ...kw,
-                keyword: typeof kw.keyword === 'string' 
-                  ? (kw.isManual ? kw.keyword : kw.keyword.replace(/\d+$/, '').trim()) // Only clean non-manual keywords
-                  : kw.keyword
-              };
-          
+          const cleanedKeyword =
+            typeof kw === "string"
+              ? kw // Keep string keywords as-is
+              : {
+                  ...kw,
+                  keyword:
+                    typeof kw.keyword === "string"
+                      ? kw.isManual
+                        ? kw.keyword
+                        : kw.keyword.replace(/\d+$/, "").trim() // Only clean non-manual keywords
+                      : kw.keyword,
+                };
+
           return cleanedKeyword;
         });
-        
+
         setSelectedKeywords(cleanedKeywords);
       }
       if (projectData.selectedTitle)
@@ -920,7 +926,8 @@ export default function AdminPanel() {
         ...currentFormValues,
         // Form fields that were problematic - ensure they get the saved values
         articleType: projectData.articleType || currentFormValues.articleType,
-        contentGender: projectData.contentGender || currentFormValues.contentGender,
+        contentGender:
+          projectData.contentGender || currentFormValues.contentGender,
         articleLength:
           projectData.articleLength || currentFormValues.articleLength,
         headingsCount:
@@ -1479,7 +1486,8 @@ export default function AdminPanel() {
     return stepOrder[step as keyof typeof stepOrder] || 0;
   };
 
-  const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("content-type");
+  const [workflowStep, setWorkflowStep] =
+    useState<WorkflowStep>("content-type");
   const [forceUpdate, setForceUpdate] = useState(0); // Used to force UI re-renders
 
   // Track completion status for Generate and Post steps
@@ -1490,7 +1498,9 @@ export default function AdminPanel() {
   useEffect(() => {
     if (workflowStep === "content") {
       // Scroll to the Style & Formatting title section
-      const styleFormattingSection = document.querySelector(`[data-step="content"]`);
+      const styleFormattingSection = document.querySelector(
+        `[data-step="content"]`,
+      );
       if (styleFormattingSection) {
         styleFormattingSection.scrollIntoView({
           behavior: "smooth",
@@ -1665,7 +1675,7 @@ export default function AdminPanel() {
         selected: true,
         isManual: true,
       };
-      
+
       // Debug logging removed
 
       // Check if keyword already exists
@@ -1738,12 +1748,14 @@ export default function AdminPanel() {
     if (!formValues.articleType) missing.push("Article Type");
     if (formValues.articleType === "blog" && !formValues.blogId)
       missing.push("Blog Selection");
-    
+
     // Check keyword state for validation
-    
+
     if (!selectedKeywords || selectedKeywords.length === 0) {
       if (manualKeyword && manualKeyword.trim()) {
-        missing.push(`Keywords (save "${manualKeyword.trim()}" by clicking Add)`);
+        missing.push(
+          `Keywords (save "${manualKeyword.trim()}" by clicking Add)`,
+        );
       } else {
         missing.push("Keywords");
       }
@@ -1912,86 +1924,113 @@ export default function AdminPanel() {
   // Automatic redirection to plans page when both limits reached and no credits
   // Add a ref to track if we've already redirected to prevent loops
   const hasRedirectedRef = useRef(false);
-  
+
   useEffect(() => {
     if (limitData && usageData && !hasRedirectedRef.current) {
       // Only redirect if plan limit is reached AND user has no credits
       const planLimitReached = !limitData.canGenerate;
-      const hasCredits = usageData.credits && usageData.credits.availableCredits > 0;
-      
-      console.log('Redirection check:', { 
-        planLimitReached, 
-        hasCredits, 
+      const hasCredits =
+        usageData.credits && usageData.credits.availableCredits > 0;
+
+      console.log("Redirection check:", {
+        planLimitReached,
+        hasCredits,
         availableCredits: usageData.credits?.availableCredits || 0,
         canGenerate: limitData.canGenerate,
-        hasRedirected: hasRedirectedRef.current
+        hasRedirected: hasRedirectedRef.current,
       });
-      
+
       if (planLimitReached && !hasCredits) {
         // Both plan limit reached and no credits available - redirect to plans page
-        console.log('Automatically redirecting to plans page: limit reached and no credits available');
+        console.log(
+          "Automatically redirecting to plans page: limit reached and no credits available",
+        );
         hasRedirectedRef.current = true;
-        navigate('/plans');
+        navigate("/plans");
       }
     }
-    
+
     // Reset redirect flag when user has credits
-    if (usageData && usageData.credits && usageData.credits.availableCredits > 0) {
+    if (
+      usageData &&
+      usageData.credits &&
+      usageData.credits.availableCredits > 0
+    ) {
       hasRedirectedRef.current = false;
     }
   }, [limitData, usageData, navigate]);
 
   // Watch for featured image changes and sync with page content first image
-  const [lastSyncedFeaturedImage, setLastSyncedFeaturedImage] = useState<string>("");
-  
+  const [lastSyncedFeaturedImage, setLastSyncedFeaturedImage] =
+    useState<string>("");
+
   useEffect(() => {
     const currentArticleType = form.watch("articleType");
     const currentFeaturedImage = form.watch("featuredImage");
-    
+
     // Only sync if the featured image actually changed (not on every content update)
-    if (currentFeaturedImage && currentFeaturedImage !== lastSyncedFeaturedImage && (generatedContent?.content || enhancedContentForEditor)) {
+    if (
+      currentFeaturedImage &&
+      currentFeaturedImage !== lastSyncedFeaturedImage &&
+      (generatedContent?.content || enhancedContentForEditor)
+    ) {
       console.log("🖼️ Featured image changed - syncing:", {
         articleType: currentArticleType,
         newImage: currentFeaturedImage.substring(0, 50) + "...",
-        previousImage: lastSyncedFeaturedImage.substring(0, 50) + "..." || "none"
+        previousImage:
+          lastSyncedFeaturedImage.substring(0, 50) + "..." || "none",
       });
-      
+
       setLastSyncedFeaturedImage(currentFeaturedImage);
-      
-      console.log(`🔄 Syncing featured image with ${currentArticleType} content first image`);
-      
+
+      console.log(
+        `🔄 Syncing featured image with ${currentArticleType} content first image`,
+      );
+
       // Find and update the featured-image-container div specifically
-      const currentContent = enhancedContentForEditor || generatedContent.content || "";
-      
+      const currentContent =
+        enhancedContentForEditor || generatedContent.content || "";
+
       // First, try to find and update the featured-image-container div
       let contentWithUpdatedFirstImage = currentContent.replace(
         /<div[^>]*class="[^"]*featured-image-container[^"]*"[^>]*>[\s\S]*?<\/div>/i,
         (match: string) => {
-          console.log("📸 Replacing featured-image-container:", match.substring(0, 100) + "...");
+          console.log(
+            "📸 Replacing featured-image-container:",
+            match.substring(0, 100) + "...",
+          );
           return `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; border-radius: 8px;"></div>`;
-        }
+        },
       );
-      
+
       // If no featured-image-container found, fallback to replacing first img tag
       if (contentWithUpdatedFirstImage === currentContent) {
         contentWithUpdatedFirstImage = currentContent.replace(
           /<img[^>]+src="[^"]*"[^>]*>/i,
           (match: string) => {
-            console.log("📸 Fallback: Replacing first image in content:", match);
+            console.log(
+              "📸 Fallback: Replacing first image in content:",
+              match,
+            );
             const altMatch = match.match(/alt="([^"]*)"/i);
             const altText = altMatch ? altMatch[1] : "Featured image";
             return `<img src="${currentFeaturedImage}" alt="${altText}" style="width: 600px; height: 600px; object-fit: cover; margin: 20px auto; display: block; border-radius: 8px;">`;
-          }
+          },
         );
       }
-      
+
       // If still no changes and we're dealing with pages, add the featured image at the beginning
-      if (contentWithUpdatedFirstImage === currentContent && currentArticleType === "page") {
-        console.log("📸 No existing image found - adding featured image at the beginning for page");
+      if (
+        contentWithUpdatedFirstImage === currentContent &&
+        currentArticleType === "page"
+      ) {
+        console.log(
+          "📸 No existing image found - adding featured image at the beginning for page",
+        );
         const featuredImageHtml = `<div class="featured-image-container" style="text-align: center; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;"><img src="${currentFeaturedImage}" alt="Featured image" style="width: 100%; height: auto; border-radius: 8px;"></div>\n\n`;
         contentWithUpdatedFirstImage = featuredImageHtml + currentContent;
       }
-      
+
       // Only update if content actually changed
       if (contentWithUpdatedFirstImage !== currentContent) {
         console.log("✅ Content updated with new featured image");
@@ -2001,14 +2040,16 @@ export default function AdminPanel() {
           content: contentWithUpdatedFirstImage,
           rawContent: contentWithUpdatedFirstImage,
         }));
-        
+
         // Always update the enhanced content for editor
         setEnhancedContentForEditor(contentWithUpdatedFirstImage);
-        
+
         // Force content update counter to trigger re-render
         setContentUpdateCounter((prev) => prev + 1);
       } else {
-        console.log("⚠️ No changes made - content already matches featured image");
+        console.log(
+          "⚠️ No changes made - content already matches featured image",
+        );
       }
     }
   }, [form.watch("featuredImage"), form.watch("articleType")]);
@@ -2018,7 +2059,10 @@ export default function AdminPanel() {
     if (selectedMediaContent.primaryImage?.url) {
       const currentFeaturedImage = form.getValues("featuredImage");
       if (currentFeaturedImage !== selectedMediaContent.primaryImage.url) {
-        console.log("🔄 Syncing selectedMediaContent.primaryImage to form.featuredImage:", selectedMediaContent.primaryImage.url);
+        console.log(
+          "🔄 Syncing selectedMediaContent.primaryImage to form.featuredImage:",
+          selectedMediaContent.primaryImage.url,
+        );
         form.setValue("featuredImage", selectedMediaContent.primaryImage.url);
       }
     } else if (!selectedMediaContent.primaryImage) {
@@ -2707,17 +2751,18 @@ export default function AdminPanel() {
         if (isSentToShopify) {
           // Mark content as posted for workflow step indicator
           setIsContentPosted(true);
-          
+
           // Auto-scroll to show the current step (Post step)
           setTimeout(() => {
             const stepIndicator = document.getElementById("step-indicator");
             if (stepIndicator) {
-              const currentStepButton = stepIndicator.querySelector(`[data-step="post"]`);
+              const currentStepButton =
+                stepIndicator.querySelector(`[data-step="post"]`);
               if (currentStepButton) {
                 currentStepButton.scrollIntoView({
                   behavior: "smooth",
                   inline: "center",
-                  block: "nearest"
+                  block: "nearest",
                 });
               }
             }
@@ -2754,9 +2799,18 @@ export default function AdminPanel() {
   const handleSubmit = async (values: ContentFormValues) => {
     try {
       console.log("Form submission started with values:", values);
-      console.log("🔍 FORM DEBUG - Article length from form values:", values.articleLength);
-      console.log("🔍 FORM DEBUG - Article length from state variable:", articleLength);
-      console.log("🔍 FORM DEBUG - Final processedData will use:", values.articleLength || "medium");
+      console.log(
+        "🔍 FORM DEBUG - Article length from form values:",
+        values.articleLength,
+      );
+      console.log(
+        "🔍 FORM DEBUG - Article length from state variable:",
+        articleLength,
+      );
+      console.log(
+        "🔍 FORM DEBUG - Final processedData will use:",
+        values.articleLength || "medium",
+      );
       setIsGenerating(true);
       setGeneratedContent(null);
 
@@ -2890,9 +2944,18 @@ export default function AdminPanel() {
                 ? kw.keyword
                 : String(kw.keyword || ""),
             searchVolume:
-              typeof kw.searchVolume === "number" ? kw.searchVolume : (kw.isManual ? null : 0),
+              typeof kw.searchVolume === "number"
+                ? kw.searchVolume
+                : kw.isManual
+                  ? null
+                  : 0,
             // Ensure any other properties are included but properly typed
-            difficulty: typeof kw.difficulty === "number" ? kw.difficulty : (kw.isManual ? null : 0),
+            difficulty:
+              typeof kw.difficulty === "number"
+                ? kw.difficulty
+                : kw.isManual
+                  ? null
+                  : 0,
             cpc: typeof kw.cpc === "number" ? kw.cpc : 0,
             // CRITICAL: Preserve manual keyword flag
             isManual: Boolean(kw.isManual),
@@ -3222,7 +3285,7 @@ export default function AdminPanel() {
       console.log("🔍 SELECTED PRODUCTS DEBUG:", {
         selectedProductsLength: selectedProducts.length,
         selectedProductsData: selectedProducts,
-        productsInfoInSubmitData: submitData.productsInfo
+        productsInfoInSubmitData: submitData.productsInfo,
       });
       console.log("CRITICAL DEBUG: Secondary images being sent:", {
         count: submitData.secondaryImages.length,
@@ -3446,8 +3509,8 @@ export default function AdminPanel() {
                     </h3>
 
                     {/* Enhanced Clickable Step Indicator */}
-                    <div 
-                      id="step-indicator" 
+                    <div
+                      id="step-indicator"
                       className="flex items-center justify-center gap-1 overflow-x-auto"
                     >
                       {[
@@ -3740,114 +3803,116 @@ export default function AdminPanel() {
                           </div>
                         )}
 
-
                         {/* Selected Title - Only show after keywords step */}
-                        {form.watch("title") && getStepOrder(workflowStep) > getStepOrder("keyword") && (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <h5 className="text-sm font-medium flex items-center">
-                                <Type className="h-4 w-4 mr-2 text-indigo-500" />
-                                Selected Title
-                              </h5>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={() => setShowTitleEditor(true)}
-                              >
-                                <Edit2 className="w-3 h-3 mr-1" />
-                                Edit
-                              </Button>
-                            </div>
-                            {showTitleEditor ? (
-                              <div className="bg-white rounded-md p-3 shadow-sm border space-y-2">
-                                <FormField
-                                  control={form.control}
-                                  name="title"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
-                                        <Textarea
-                                          {...field}
-                                          placeholder="Enter your custom title..."
-                                          className="min-h-[60px] resize-y text-sm"
-                                          autoFocus
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => setShowTitleEditor(false)}
-                                    className="h-7 text-xs"
-                                  >
-                                    <Check className="w-3 h-3 mr-1" />
-                                    Save
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setShowTitleEditor(false);
-                                      // Reset to the original selected title if user wants to cancel
-                                    }}
-                                    className="h-7 text-xs"
-                                  >
-                                    <X className="w-3 h-3 mr-1" />
-                                    Cancel
-                                  </Button>
+                        {form.watch("title") &&
+                          getStepOrder(workflowStep) >
+                            getStepOrder("keyword") && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-medium flex items-center">
+                                  <Type className="h-4 w-4 mr-2 text-indigo-500" />
+                                  Selected Title
+                                </h5>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => setShowTitleEditor(true)}
+                                >
+                                  <Edit2 className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </div>
+                              {showTitleEditor ? (
+                                <div className="bg-white rounded-md p-3 shadow-sm border space-y-2">
+                                  <FormField
+                                    control={form.control}
+                                    name="title"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <Textarea
+                                            {...field}
+                                            placeholder="Enter your custom title..."
+                                            className="min-h-[60px] resize-y text-sm"
+                                            autoFocus
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => setShowTitleEditor(false)}
+                                      className="h-7 text-xs"
+                                    >
+                                      <Check className="w-3 h-3 mr-1" />
+                                      Save
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setShowTitleEditor(false);
+                                        // Reset to the original selected title if user wants to cancel
+                                      }}
+                                      className="h-7 text-xs"
+                                    >
+                                      <X className="w-3 h-3 mr-1" />
+                                      Cancel
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            ) : (
-                              <div className="bg-white rounded-md p-3 shadow-sm border">
-                                <p className="text-sm font-medium">
-                                  {form.watch("title")}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              ) : (
+                                <div className="bg-white rounded-md p-3 shadow-sm border">
+                                  <p className="text-sm font-medium">
+                                    {form.watch("title")}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                         {/* Selected Images - Show primary and secondary images (deduplicated) */}
                         {(() => {
                           // Get all images from different sources and deduplicate
                           const allImages = [];
-                          
+
                           // Add primary images (limit to 1 and mark as primary)
                           if (primaryImages && primaryImages.length > 0) {
                             // Only take the first primary image to prevent duplicates
                             const primaryImg = primaryImages[0];
-                            allImages.push({ 
-                              ...primaryImg, 
+                            allImages.push({
+                              ...primaryImg,
                               isPrimary: true,
-                              displayId: `primary-${primaryImg.id}` 
+                              displayId: `primary-${primaryImg.id}`,
                             });
                           }
-                          
+
                           // Add secondary images and remove any that might be duplicates of primary
                           if (secondaryImages && secondaryImages.length > 0) {
-                            const primaryImageIds = primaryImages?.map(img => img.id) || [];
+                            const primaryImageIds =
+                              primaryImages?.map((img) => img.id) || [];
                             secondaryImages.forEach((img) => {
                               // Only add if not already a primary image
                               if (!primaryImageIds.includes(img.id)) {
-                                allImages.push({ 
-                                  ...img, 
+                                allImages.push({
+                                  ...img,
                                   isPrimary: false,
-                                  displayId: `secondary-${img.id}` 
+                                  displayId: `secondary-${img.id}`,
                                 });
                               }
                             });
                           }
-                          
+
                           // Only show if we have images
                           if (allImages.length === 0) return null;
-                          
+
                           return (
                             <div className="space-y-2">
                               <div className="flex items-center">
@@ -3861,19 +3926,36 @@ export default function AdminPanel() {
                                   <div
                                     key={image.displayId}
                                     className={`relative w-16 h-16 border-2 rounded overflow-hidden group ${
-                                      image.isPrimary ? 'border-blue-500' : 'border-green-500'
+                                      image.isPrimary
+                                        ? "border-blue-500"
+                                        : "border-green-500"
                                     }`}
                                   >
                                     <img
-                                      src={image.url || image.src?.small || image.src?.thumbnail}
-                                      alt={image.alt || (image.isPrimary ? "Primary image" : "Secondary image")}
+                                      src={
+                                        image.url ||
+                                        image.src?.small ||
+                                        image.src?.thumbnail
+                                      }
+                                      alt={
+                                        image.alt ||
+                                        (image.isPrimary
+                                          ? "Primary image"
+                                          : "Secondary image")
+                                      }
                                       className="w-full h-full object-cover"
                                     />
-                                    <div className={`absolute top-0 left-0 right-0 px-1 py-0.5 ${
-                                      image.isPrimary ? 'bg-blue-500' : 'bg-green-500'
-                                    }`}>
+                                    <div
+                                      className={`absolute top-0 left-0 right-0 px-1 py-0.5 ${
+                                        image.isPrimary
+                                          ? "bg-blue-500"
+                                          : "bg-green-500"
+                                      }`}
+                                    >
                                       <p className="text-white text-xs font-medium text-center">
-                                        {image.isPrimary ? 'Primary' : 'Secondary'}
+                                        {image.isPrimary
+                                          ? "Primary"
+                                          : "Secondary"}
                                       </p>
                                     </div>
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -3884,9 +3966,17 @@ export default function AdminPanel() {
                                         className="h-6 w-6 p-0 bg-white/90 text-red-500"
                                         onClick={() => {
                                           if (image.isPrimary) {
-                                            setPrimaryImages(primaryImages.filter(img => img.id !== image.id));
+                                            setPrimaryImages(
+                                              primaryImages.filter(
+                                                (img) => img.id !== image.id,
+                                              ),
+                                            );
                                           } else {
-                                            setSecondaryImages(secondaryImages.filter(img => img.id !== image.id));
+                                            setSecondaryImages(
+                                              secondaryImages.filter(
+                                                (img) => img.id !== image.id,
+                                              ),
+                                            );
                                           }
                                         }}
                                       >
@@ -3912,23 +4002,36 @@ export default function AdminPanel() {
                             <div className="flex items-center gap-2 bg-white rounded-md p-3 shadow-sm border">
                               <div className="flex items-center gap-2 flex-1">
                                 <div className="w-16 h-12 rounded overflow-hidden border">
-                                  <img 
+                                  <img
                                     src={`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`}
                                     alt="YouTube thumbnail"
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                       // Fallback to default icon if thumbnail fails to load
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.parentElement.classList.add('bg-red-100', 'flex', 'items-center', 'justify-center');
-                                      const icon = document.createElement('div');
-                                      icon.innerHTML = '<svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>';
-                                      e.currentTarget.parentElement.appendChild(icon);
+                                      e.currentTarget.style.display = "none";
+                                      e.currentTarget.parentElement.classList.add(
+                                        "bg-red-100",
+                                        "flex",
+                                        "items-center",
+                                        "justify-center",
+                                      );
+                                      const icon =
+                                        document.createElement("div");
+                                      icon.innerHTML =
+                                        '<svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>';
+                                      e.currentTarget.parentElement.appendChild(
+                                        icon,
+                                      );
                                     }}
                                   />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium">YouTube Video</p>
-                                  <p className="text-xs text-gray-500">ID: {youtubeVideoId}</p>
+                                  <p className="text-sm font-medium">
+                                    YouTube Video
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    ID: {youtubeVideoId}
+                                  </p>
                                 </div>
                               </div>
                               <Button
@@ -3951,9 +4054,7 @@ export default function AdminPanel() {
 
                     {/* Title field (hidden initially, made visible and populated in title step) */}
                     <div
-                      className={
-                        workflowStep === "title" ? "block" : "hidden"
-                      }
+                      className={workflowStep === "title" ? "block" : "hidden"}
                     >
                       <FormField
                         control={form.control}
@@ -3982,13 +4083,13 @@ export default function AdminPanel() {
                         )}
                       />
                     </div>
-                  
-                  {/* Step 1: Choose Content */}
-                  <div
-                    className={`max-w-5xl mx-auto fade-in ${
-                      workflowStep === "content-type" ? "block" : "hidden"
-                    }`}
-                    data-step="content-type"
+
+                    {/* Step 1: Choose Content */}
+                    <div
+                      className={`max-w-5xl mx-auto fade-in ${
+                        workflowStep === "content-type" ? "block" : "hidden"
+                      }`}
+                      data-step="content-type"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
                         <h2 className="text-2xl font-bold text-gray-900 text-center">
@@ -4050,13 +4151,22 @@ export default function AdminPanel() {
                                 >
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue 
-                                        placeholder={blogsQuery.isLoading ? "Loading blogs..." : "Select blog"}
-                                      >
-                                        {field.value && blogsQuery.data?.blogs ? 
-                                          blogsQuery.data.blogs.find(blog => String(blog.id) === String(field.value))?.title || "Select blog"
-                                          : blogsQuery.isLoading ? "Loading blogs..." : "Select blog"
+                                      <SelectValue
+                                        placeholder={
+                                          blogsQuery.isLoading
+                                            ? "Loading blogs..."
+                                            : "Select blog"
                                         }
+                                      >
+                                        {field.value && blogsQuery.data?.blogs
+                                          ? blogsQuery.data.blogs.find(
+                                              (blog) =>
+                                                String(blog.id) ===
+                                                String(field.value),
+                                            )?.title || "Select blog"
+                                          : blogsQuery.isLoading
+                                            ? "Loading blogs..."
+                                            : "Select blog"}
                                       </SelectValue>
                                     </SelectTrigger>
                                   </FormControl>
@@ -4065,9 +4175,13 @@ export default function AdminPanel() {
                                       <SelectItem value="loading" disabled>
                                         Loading blogs...
                                       </SelectItem>
-                                    ) : blogsQuery.data?.blogs && blogsQuery.data.blogs.length > 0 ? (
+                                    ) : blogsQuery.data?.blogs &&
+                                      blogsQuery.data.blogs.length > 0 ? (
                                       blogsQuery.data.blogs.map((blog) => (
-                                        <SelectItem key={blog.id} value={String(blog.id)}>
+                                        <SelectItem
+                                          key={blog.id}
+                                          value={String(blog.id)}
+                                        >
                                           {blog.title}
                                         </SelectItem>
                                       ))
@@ -4092,11 +4206,12 @@ export default function AdminPanel() {
                           onClick={() => {
                             // Validate that content type is selected
                             const contentType = form.getValues("articleType");
-                            
+
                             if (!contentType) {
                               toast({
                                 title: "Content Type Required",
-                                description: "Please select a content type before continuing",
+                                description:
+                                  "Please select a content type before continuing",
                                 variant: "destructive",
                               });
                               return;
@@ -4108,7 +4223,8 @@ export default function AdminPanel() {
                               if (!blogId) {
                                 toast({
                                   title: "Blog Selection Required",
-                                  description: "Please select a blog before continuing",
+                                  description:
+                                    "Please select a blog before continuing",
                                   variant: "destructive",
                                 });
                                 return;
@@ -4117,10 +4233,11 @@ export default function AdminPanel() {
 
                             // Proceed to Step 2: Choose Products
                             setWorkflowStep("product");
-                            
+
                             toast({
                               title: "Step Completed",
-                              description: "Now select products to feature in your content",
+                              description:
+                                "Now select products to feature in your content",
                             });
                           }}
                         >
@@ -4148,11 +4265,14 @@ export default function AdminPanel() {
                               </TooltipTrigger>
                               <TooltipContent>
                                 <div className="max-w-xs">
-                                  <p className="font-medium mb-1">Products Required</p>
+                                  <p className="font-medium mb-1">
+                                    Products Required
+                                  </p>
                                   <p className="text-sm">
-                                    You must select at least one product to proceed with 
-                                    content generation. Products are essential for 
-                                    creating relevant, targeted content.
+                                    You must select at least one product to
+                                    proceed with content generation. Products
+                                    are essential for creating relevant,
+                                    targeted content.
                                   </p>
                                 </div>
                               </TooltipContent>
@@ -4160,7 +4280,8 @@ export default function AdminPanel() {
                           </TooltipProvider>
                         </div>
                         <p className="text-base text-gray-600 text-center max-w-2xl mx-auto">
-                          Select products to feature in your content. Products are required for content generation.
+                          Select products to feature in your content. Products
+                          are required for content generation.
                         </p>
                       </div>
 
@@ -4570,7 +4691,10 @@ export default function AdminPanel() {
                               onBlur={() => {
                                 // Auto-add keyword when user leaves field if there's content
                                 setTimeout(() => {
-                                  if (manualKeyword.trim() && !isAddingManualKeyword) {
+                                  if (
+                                    manualKeyword.trim() &&
+                                    !isAddingManualKeyword
+                                  ) {
                                     addManualKeyword();
                                   }
                                 }, 100);
@@ -4578,7 +4702,8 @@ export default function AdminPanel() {
                               disabled={isAddingManualKeyword}
                               className={cn(
                                 "flex-1",
-                                manualKeyword.trim() && "border-blue-300 bg-blue-50"
+                                manualKeyword.trim() &&
+                                  "border-blue-300 bg-blue-50",
                               )}
                             />
                             <Button
@@ -4598,7 +4723,8 @@ export default function AdminPanel() {
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-xs text-muted-foreground">
-                              Enter specific keywords exactly as you want to target them.
+                              Enter specific keywords exactly as you want to
+                              target them.
                               {manualKeyword.trim() && (
                                 <span className="text-blue-600 font-medium ml-1">
                                   Press Enter or click Add to save!
@@ -4613,13 +4739,17 @@ export default function AdminPanel() {
                             <div className="flex flex-wrap gap-2 min-h-[40px] border rounded-md p-2 mb-3">
                               {selectedKeywords.map((keyword, idx) => (
                                 <Badge
-                                  key={`${keyword?.keyword}-${idx}-${keyword?.isManual ? 'manual' : 'auto'}`}
+                                  key={`${keyword?.keyword}-${idx}-${keyword?.isManual ? "manual" : "auto"}`}
                                   variant="secondary"
                                   className="flex items-center gap-1"
                                 >
                                   {/* Clean any trailing numbers that might be search volume concatenated to keyword - but preserve manual keywords exactly as entered */}
-                                  {typeof keyword?.keyword === 'string' 
-                                    ? (keyword?.isManual ? keyword.keyword : keyword.keyword.replace(/\d+$/, '').trim())
+                                  {typeof keyword?.keyword === "string"
+                                    ? keyword?.isManual
+                                      ? keyword.keyword
+                                      : keyword.keyword
+                                          .replace(/\d+$/, "")
+                                          .trim()
                                     : keyword?.keyword || ""}
                                   {keyword?.isManual && (
                                     <span className="text-xs text-purple-600 ml-1">
@@ -4821,9 +4951,17 @@ export default function AdminPanel() {
                                   <Button
                                     variant="outline"
                                     className="w-full text-white border-green-600"
-                                    style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                    style={{
+                                      backgroundColor: "hsl(160 100% 25% / 1)",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "hsl(160 100% 20% / 1)")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "hsl(160 100% 25% / 1)")
+                                    }
                                     size="sm"
                                     onClick={() => {
                                       setImageSource("unified_search");
@@ -4857,9 +4995,18 @@ export default function AdminPanel() {
                                       <Button
                                         variant="outline"
                                         className="w-full text-white border-green-600"
-                                        style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                        style={{
+                                          backgroundColor:
+                                            "hsl(160 100% 25% / 1)",
+                                        }}
+                                        onMouseEnter={(e) =>
+                                          (e.currentTarget.style.backgroundColor =
+                                            "hsl(160 100% 20% / 1)")
+                                        }
+                                        onMouseLeave={(e) =>
+                                          (e.currentTarget.style.backgroundColor =
+                                            "hsl(160 100% 25% / 1)")
+                                        }
                                         size="sm"
                                         onClick={() => {
                                           setImageSource("product_images");
@@ -4899,9 +5046,17 @@ export default function AdminPanel() {
                                   <Button
                                     variant="outline"
                                     className="w-full text-white border-green-600"
-                                    style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                    style={{
+                                      backgroundColor: "hsl(160 100% 25% / 1)",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "hsl(160 100% 20% / 1)")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "hsl(160 100% 25% / 1)")
+                                    }
                                     size="sm"
                                     onClick={() => {
                                       setImageSource("upload");
@@ -5397,7 +5552,10 @@ export default function AdminPanel() {
                             <FormLabel>Article Length</FormLabel>
                             <Select
                               onValueChange={(value) => {
-                                console.log("🔍 Article length changed to:", value);
+                                console.log(
+                                  "🔍 Article length changed to:",
+                                  value,
+                                );
                                 field.onChange(value);
                                 setArticleLength(value);
                               }}
@@ -5815,7 +5973,10 @@ export default function AdminPanel() {
                                 Complete Required Steps
                               </p>
                               <p className="text-xs text-amber-700 mt-1">
-                                Missing: {getIncompleteSteps().filter(step => step !== "0").join(", ")}
+                                Missing:{" "}
+                                {getIncompleteSteps()
+                                  .filter((step) => step !== "0")
+                                  .join(", ")}
                               </p>
                             </div>
                           </div>
@@ -5844,62 +6005,72 @@ export default function AdminPanel() {
                       <div className="max-w-5xl mx-auto">
                         <div className="flex gap-3">
                           {/* Generate Content Button */}
-                        <Button
-                          type="button"
-                          className={cn(
-                            "flex-1 transition-all duration-200",
-                            !isReadyToGenerateContent() && !isGenerating
-                              ? "opacity-50 cursor-not-allowed"
-                              : "opacity-100",
-                          )}
-                          disabled={isGenerating || !isReadyToGenerateContent()}
-                          onClick={() => {
-                            if (isReadyToGenerateContent()) {
-                              // Manually trigger form submission first
-                              const values = form.getValues();
-                              console.log(
-                                "Manual form submission triggered with values:",
-                                values,
-                              );
-                              console.log("🔍 BUTTON CLICK - Article length from form.getValues():", values.articleLength);
-                              console.log("🔍 BUTTON CLICK - Article length state variable:", articleLength);
-                              handleSubmit(values);
-
-                              // Immediately scroll to Content Preview section when Generate button is clicked
-                              setTimeout(() => {
-                                if (contentPreviewRef.current) {
-                                  contentPreviewRef.current.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  });
-                                  console.log("✅ Immediate scroll to Content Preview on button click");
-                                }
-                              }, 100);
+                          <Button
+                            type="button"
+                            className={cn(
+                              "flex-1 transition-all duration-200",
+                              !isReadyToGenerateContent() && !isGenerating
+                                ? "opacity-50 cursor-not-allowed"
+                                : "opacity-100",
+                            )}
+                            disabled={
+                              isGenerating || !isReadyToGenerateContent()
                             }
-                          }}
-                          title={
-                            !isReadyToGenerateContent()
-                              ? `Please complete: ${getIncompleteSteps().join(", ")}`
-                              : "Generate content with current settings"
-                          }
-                        >
-                          {isGenerating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Generating Content...
-                            </>
-                          ) : isReadyToGenerateContent() ? (
-                            <>
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Generate Content
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle className="mr-2 h-4 w-4" />
-                              Complete All Steps
-                            </>
-                          )}
-                        </Button>
+                            onClick={() => {
+                              if (isReadyToGenerateContent()) {
+                                // Manually trigger form submission first
+                                const values = form.getValues();
+                                console.log(
+                                  "Manual form submission triggered with values:",
+                                  values,
+                                );
+                                console.log(
+                                  "🔍 BUTTON CLICK - Article length from form.getValues():",
+                                  values.articleLength,
+                                );
+                                console.log(
+                                  "🔍 BUTTON CLICK - Article length state variable:",
+                                  articleLength,
+                                );
+                                handleSubmit(values);
+
+                                // Immediately scroll to Content Preview section when Generate button is clicked
+                                setTimeout(() => {
+                                  if (contentPreviewRef.current) {
+                                    contentPreviewRef.current.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                    console.log(
+                                      "✅ Immediate scroll to Content Preview on button click",
+                                    );
+                                  }
+                                }, 100);
+                              }
+                            }}
+                            title={
+                              !isReadyToGenerateContent()
+                                ? `Please complete: ${getIncompleteSteps().join(", ")}`
+                                : "Generate content with current settings"
+                            }
+                          >
+                            {isGenerating ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating Content...
+                              </>
+                            ) : isReadyToGenerateContent() ? (
+                              <>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate Content
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="mr-2 h-4 w-4" />
+                                Complete All Steps
+                              </>
+                            )}
+                          </Button>
                         </div>
                       </div>
 
@@ -5923,266 +6094,56 @@ export default function AdminPanel() {
 
           {/* Content Preview Section - Full Width */}
           {(isGenerating || generatedContent) && (
-            <Card className="border-0 shadow-lg mt-8   mx-auto max-w-5xl" ref={contentPreviewRef}>
+            <Card
+              className="border-0 shadow-lg mt-8   mx-auto max-w-5xl"
+              ref={contentPreviewRef}
+            >
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">Content Preview</CardTitle>
+                <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">
+                  Content Preview
+                </CardTitle>
                 <CardDescription className="text-base text-gray-600">
                   Preview of your generated content
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-8">
-              {isGenerating ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="relative">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-                    <div className="absolute inset-0 rounded-full bg-blue-100 animate-pulse opacity-20"></div>
-                  </div>
-                  <p className="mt-4 text-lg font-medium text-gray-900">
-                    Creating amazing article for you...
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    We are creating something amazing for you
-                  </p>
-                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                    <div className="animate-pulse">⚡</div>
-                    <span>This usually takes 30-60 seconds</span>
-                  </div>
-                </div>
-              ) : generatedContent ? (
-                <div className="space-y-6">
-                  {/* Article/Page Title Section */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Article Title
-                      </h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const newTitle = prompt(
-                            "Edit title:",
-                            generatedContent.title || "",
-                          );
-                          if (newTitle !== null) {
-                            setGeneratedContent((prev) => ({
-                              ...prev,
-                              title: newTitle,
-                            }));
-                          }
-                        }}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
+                {isGenerating ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="relative">
+                      <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+                      <div className="absolute inset-0 rounded-full bg-blue-100 animate-pulse opacity-20"></div>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                      {generatedContent.title || "Untitled"}
-                    </h1>
+                    <p className="mt-4 text-lg font-medium text-gray-900">
+                      Creating amazing article for you...
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      We are creating something amazing for you
+                    </p>
+                    <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="animate-pulse">⚡</div>
+                      <span>This usually takes 30-60 seconds</span>
+                    </div>
                   </div>
-
-                  {/* Featured Image Section */}
-                  {(primaryImages.length > 0 ||
-                    selectedMediaContent.primaryImage) && (
+                ) : generatedContent ? (
+                  <div className="space-y-6">
+                    {/* Article/Page Title Section */}
                     <div className="border-b border-gray-200 pb-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          Featured Image
+                          Article Title
                         </h3>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setImageTab("primary");
-                            setImageSource("unified_search");
-                            setShowImageDialog(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Change
-                        </Button>
-                      </div>
-                      <div className="relative aspect-video overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-                        <img
-                          src={
-                            primaryImages[0]?.url ||
-                            selectedMediaContent.primaryImage?.url ||
-                            primaryImages[0]?.src?.medium ||
-                            primaryImages[0]?.src?.large
-                          }
-                          alt={
-                            primaryImages[0]?.alt ||
-                            selectedMediaContent.primaryImage?.alt ||
-                            "Featured image"
-                          }
-                          className="object-cover w-full h-full"
-                          onError={(e) => {
-                            // If image fails to load, try alternative sources
-                            const target = e.target as HTMLImageElement;
-                            const image =
-                              primaryImages[0] ||
-                              selectedMediaContent.primaryImage;
-                            if (
-                              image?.src?.large &&
-                              target.src !== image.src.large
-                            ) {
-                              target.src = image.src.large;
-                            } else if (
-                              image?.src?.small &&
-                              target.src !== image.src.small
-                            ) {
-                              target.src = image.src.small;
-                            }
-                          }}
-                        />
-                        <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
-                          Featured
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        This image will appear at the top of your published
-                        content
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Reading Time Section */}
-                  {generatedContent.content && (
-                    <div className="border-b border-gray-200 pb-4">
-                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
-                          <svg
-                            className="w-5 h-5 text-blue-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-blue-900">
-                            {calculateReadingTime(generatedContent.content)} min
-                            read
-                          </div>
-                          <div className="text-xs text-blue-700">
-                            Based on average reading speed of 225 words per
-                            minute
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Content Statistics Section */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
-                      <div className="mb-2 font-medium">Content Statistics:</div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>Characters: {((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "").length}</div>
-                        <div>Words: {((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(word => word.length > 0).length}</div>
-                        <div>Reading time: {calculateReadingTime((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "")} min</div>
-                        <div>Images: {(((enhancedContentForEditor && enhancedContentForEditor.trim() !== "") ? enhancedContentForEditor : generatedContent.content || "").match(/<img[^>]*>/g) || []).length}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Shopify-Compatible Content Editor Section */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Content Body
-                      </h3>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Copy clean HTML content to clipboard
-                            const contentToCopy = (enhancedContentForEditor && enhancedContentForEditor.trim() !== "") 
-                              ? enhancedContentForEditor 
-                              : generatedContent.content || "";
-                            navigator.clipboard.writeText(contentToCopy);
-                            toast({
-                              title: "Content copied",
-                              description:
-                                "Raw HTML content copied to clipboard",
-                            });
-                          }}
-                        >
-                          <Copy className="h-4 w-4 mr-1" />
-                          Copy HTML
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Draggable Resizable Content Editor */}
-                    <div 
-                      className="w-full border border-gray-200 rounded-lg resize-both overflow-hidden"
-                      style={{ 
-                        resize: 'both', 
-                        minHeight: '400px', 
-                        height: '600px',
-                        minWidth: '300px',
-                        width: '100%',
-                        maxHeight: '80vh'
-                      }}
-                    >
-                      <SimpleHTMLEditor
-                        content={
-                          (enhancedContentForEditor && enhancedContentForEditor.trim() !== "") 
-                            ? enhancedContentForEditor 
-                            : generatedContent.content || ""
-                        }
-                        onChange={(newContent) => {
-                          console.log(
-                            "SimpleHTMLEditor content updated:",
-                            newContent.length,
-                            "characters",
-                          );
-                          // Update both the raw content and processed content
-                          setGeneratedContent((prev) => ({
-                            ...prev,
-                            rawContent: newContent,
-                            content: newContent, // Use the same content for both
-                          }));
-                          setEnhancedContentForEditor(newContent);
-                          // Trigger immediate real-time preview update
-                          setContentUpdateCounter((prev) => prev + 1);
-                        }}
-                        className="w-full h-full border-0"
-                        style={{ width: '100%', height: '100%' }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Content Tags Section - Only show for blog posts, not pages */}
-                  {form.getValues("articleType") === "blog" && (
-                    <div className="border-b border-gray-200 pb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Content Tags
-                        </h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const newTags = prompt(
-                              "Edit tags (comma-separated):",
-                              (generatedContent.tags || []).join(", "),
+                            const newTitle = prompt(
+                              "Edit title:",
+                              generatedContent.title || "",
                             );
-                            if (newTags !== null) {
+                            if (newTitle !== null) {
                               setGeneratedContent((prev) => ({
                                 ...prev,
-                                tags: newTags
-                                  .split(",")
-                                  .map((tag) => tag.trim())
-                                  .filter((tag) => tag.length > 0),
+                                title: newTitle,
                               }));
                             }
                           }}
@@ -6191,1176 +6152,1349 @@ export default function AdminPanel() {
                           Edit
                         </Button>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {(generatedContent.tags || []).map((tag, index) => (
-                          <Badge key={index} variant="secondary">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {(!generatedContent.tags ||
-                          generatedContent.tags.length === 0) && (
-                          <p className="text-sm text-muted-foreground">
-                            No tags assigned
-                          </p>
-                        )}
+                      <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                        {generatedContent.title || "Untitled"}
+                      </h1>
+                    </div>
+
+                    {/* Featured Image Section */}
+                    {(primaryImages.length > 0 ||
+                      selectedMediaContent.primaryImage) && (
+                      <div className="border-b border-gray-200 pb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Featured Image
+                          </h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setImageTab("primary");
+                              setImageSource("unified_search");
+                              setShowImageDialog(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Change
+                          </Button>
+                        </div>
+                        <div className="relative aspect-video overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                          <img
+                            src={
+                              primaryImages[0]?.url ||
+                              selectedMediaContent.primaryImage?.url ||
+                              primaryImages[0]?.src?.medium ||
+                              primaryImages[0]?.src?.large
+                            }
+                            alt={
+                              primaryImages[0]?.alt ||
+                              selectedMediaContent.primaryImage?.alt ||
+                              "Featured image"
+                            }
+                            className="object-cover w-full h-full"
+                            onError={(e) => {
+                              // If image fails to load, try alternative sources
+                              const target = e.target as HTMLImageElement;
+                              const image =
+                                primaryImages[0] ||
+                                selectedMediaContent.primaryImage;
+                              if (
+                                image?.src?.large &&
+                                target.src !== image.src.large
+                              ) {
+                                target.src = image.src.large;
+                              } else if (
+                                image?.src?.small &&
+                                target.src !== image.src.small
+                              ) {
+                                target.src = image.src.small;
+                              }
+                            }}
+                          />
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                            Featured
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This image will appear at the top of your published
+                          content
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Reading Time Section */}
+                    {generatedContent.content && (
+                      <div className="border-b border-gray-200 pb-4">
+                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                            <svg
+                              className="w-5 h-5 text-blue-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-blue-900">
+                              {calculateReadingTime(generatedContent.content)}{" "}
+                              min read
+                            </div>
+                            <div className="text-xs text-blue-700">
+                              Based on average reading speed of 225 words per
+                              minute
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Content Statistics Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                        <div className="mb-2 font-medium">
+                          Content Statistics:
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            Characters:{" "}
+                            {
+                              (enhancedContentForEditor &&
+                              enhancedContentForEditor.trim() !== ""
+                                ? enhancedContentForEditor
+                                : generatedContent.content || ""
+                              ).length
+                            }
+                          </div>
+                          <div>
+                            Words:{" "}
+                            {
+                              (enhancedContentForEditor &&
+                              enhancedContentForEditor.trim() !== ""
+                                ? enhancedContentForEditor
+                                : generatedContent.content || ""
+                              )
+                                .replace(/<[^>]*>/g, "")
+                                .split(/\s+/)
+                                .filter((word) => word.length > 0).length
+                            }
+                          </div>
+                          <div>
+                            Reading time:{" "}
+                            {calculateReadingTime(
+                              enhancedContentForEditor &&
+                                enhancedContentForEditor.trim() !== ""
+                                ? enhancedContentForEditor
+                                : generatedContent.content || "",
+                            )}{" "}
+                            min
+                          </div>
+                          <div>
+                            Images:{" "}
+                            {
+                              (
+                                (enhancedContentForEditor &&
+                                enhancedContentForEditor.trim() !== ""
+                                  ? enhancedContentForEditor
+                                  : generatedContent.content || ""
+                                ).match(/<img[^>]*>/g) || []
+                              ).length
+                            }
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  )}
 
-                  {/* Meta Title Section */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Meta Title
-                      </h3>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={isOptimizingMetaTitle}
-                          onClick={async () => {
-                            try {
-                              setIsOptimizingMetaTitle(true);
+                    {/* Shopify-Compatible Content Editor Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Content Body
+                        </h3>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Copy clean HTML content to clipboard
+                              const contentToCopy =
+                                enhancedContentForEditor &&
+                                enhancedContentForEditor.trim() !== ""
+                                  ? enhancedContentForEditor
+                                  : generatedContent.content || "";
+                              navigator.clipboard.writeText(contentToCopy);
+                              toast({
+                                title: "Content copied",
+                                description:
+                                  "Raw HTML content copied to clipboard",
+                              });
+                            }}
+                          >
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy HTML
+                          </Button>
+                        </div>
+                      </div>
 
-                              // Gather context for AI optimization
-                              const formData = form.getValues();
-                              const currentTitle = generatedContent.title || "";
-                              const currentContent =
-                                generatedContent.content || "";
-                              const keywords = formData.keywords || [];
-                              const targetAudience =
-                                formData.buyerPersonas || "";
-                              const tone =
-                                formData.toneOfVoice || "professional";
-                              const region = "us"; // Default region
+                      {/* Draggable Resizable Content Editor */}
+                      <div
+                        className="w-full border border-gray-200 rounded-lg resize-both overflow-hidden"
+                        style={{
+                          resize: "both",
+                          minHeight: "400px",
+                          height: "600px",
+                          minWidth: "300px",
+                          width: "100%",
+                          maxHeight: "80vh",
+                        }}
+                      >
+                        <SimpleHTMLEditor
+                          content={
+                            enhancedContentForEditor &&
+                            enhancedContentForEditor.trim() !== ""
+                              ? enhancedContentForEditor
+                              : generatedContent.content || ""
+                          }
+                          onChange={(newContent) => {
+                            console.log(
+                              "SimpleHTMLEditor content updated:",
+                              newContent.length,
+                              "characters",
+                            );
+                            // Update both the raw content and processed content
+                            setGeneratedContent((prev) => ({
+                              ...prev,
+                              rawContent: newContent,
+                              content: newContent, // Use the same content for both
+                            }));
+                            setEnhancedContentForEditor(newContent);
+                            // Trigger immediate real-time preview update
+                            setContentUpdateCounter((prev) => prev + 1);
+                          }}
+                          className="w-full h-full border-0"
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      </div>
+                    </div>
 
-                              console.log(
-                                "Triggering AI meta title optimization...",
+                    {/* Content Tags Section - Only show for blog posts, not pages */}
+                    {form.getValues("articleType") === "blog" && (
+                      <div className="border-b border-gray-200 pb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Content Tags
+                          </h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newTags = prompt(
+                                "Edit tags (comma-separated):",
+                                (generatedContent.tags || []).join(", "),
                               );
-
-                              // Call the AI optimization endpoint for META TITLE ONLY
-                              const response = await fetch(
-                                "/api/optimize-meta-title",
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    title: currentTitle,
-                                    content: currentContent,
-                                    keywords: keywords,
-                                    targetAudience: targetAudience,
-                                    tone: tone,
-                                    region: region,
-                                  }),
-                                },
-                              );
-
-                              if (!response.ok) {
-                                throw new Error(
-                                  "Failed to optimize meta title",
-                                );
-                              }
-
-                              const result = await response.json();
-
-                              if (result.success) {
-                                // Update ONLY meta title from AI response
+                              if (newTags !== null) {
                                 setGeneratedContent((prev) => ({
                                   ...prev,
-                                  metaTitle: result.metaTitle,
+                                  tags: newTags
+                                    .split(",")
+                                    .map((tag) => tag.trim())
+                                    .filter((tag) => tag.length > 0),
                                 }));
-                                console.log("AI optimization successful");
-                              } else {
-                                throw new Error(
-                                  result.error || "Optimization failed",
-                                );
                               }
-                            } catch (error) {
-                              console.error("Meta optimization error:", error);
-                              // Fallback to simple truncation
-                              const originalTitle =
-                                generatedContent.title || "";
-                              let optimizedTitle = originalTitle;
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(generatedContent.tags || []).map((tag, index) => (
+                            <Badge key={index} variant="secondary">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {(!generatedContent.tags ||
+                            generatedContent.tags.length === 0) && (
+                            <p className="text-sm text-muted-foreground">
+                              No tags assigned
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                              if (originalTitle.length > 60) {
-                                const truncated = originalTitle.substring(
-                                  0,
-                                  57,
+                    {/* Meta Title Section */}
+                    <div className="border-b border-gray-200 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Meta Title
+                        </h3>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOptimizingMetaTitle}
+                            onClick={async () => {
+                              try {
+                                setIsOptimizingMetaTitle(true);
+
+                                // Gather context for AI optimization
+                                const formData = form.getValues();
+                                const currentTitle =
+                                  generatedContent.title || "";
+                                const currentContent =
+                                  generatedContent.content || "";
+                                const keywords = formData.keywords || [];
+                                const targetAudience =
+                                  formData.buyerPersonas || "";
+                                const tone =
+                                  formData.toneOfVoice || "professional";
+                                const region = "us"; // Default region
+
+                                console.log(
+                                  "Triggering AI meta title optimization...",
                                 );
-                                const lastSpace = truncated.lastIndexOf(" ");
-                                optimizedTitle =
-                                  lastSpace > 0
-                                    ? truncated.substring(0, lastSpace) + "..."
-                                    : truncated + "...";
-                              }
 
+                                // Call the AI optimization endpoint for META TITLE ONLY
+                                const response = await fetch(
+                                  "/api/optimize-meta-title",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      title: currentTitle,
+                                      content: currentContent,
+                                      keywords: keywords,
+                                      targetAudience: targetAudience,
+                                      tone: tone,
+                                      region: region,
+                                    }),
+                                  },
+                                );
+
+                                if (!response.ok) {
+                                  throw new Error(
+                                    "Failed to optimize meta title",
+                                  );
+                                }
+
+                                const result = await response.json();
+
+                                if (result.success) {
+                                  // Update ONLY meta title from AI response
+                                  setGeneratedContent((prev) => ({
+                                    ...prev,
+                                    metaTitle: result.metaTitle,
+                                  }));
+                                  console.log("AI optimization successful");
+                                } else {
+                                  throw new Error(
+                                    result.error || "Optimization failed",
+                                  );
+                                }
+                              } catch (error) {
+                                console.error(
+                                  "Meta optimization error:",
+                                  error,
+                                );
+                                // Fallback to simple truncation
+                                const originalTitle =
+                                  generatedContent.title || "";
+                                let optimizedTitle = originalTitle;
+
+                                if (originalTitle.length > 60) {
+                                  const truncated = originalTitle.substring(
+                                    0,
+                                    57,
+                                  );
+                                  const lastSpace = truncated.lastIndexOf(" ");
+                                  optimizedTitle =
+                                    lastSpace > 0
+                                      ? truncated.substring(0, lastSpace) +
+                                        "..."
+                                      : truncated + "...";
+                                }
+
+                                setGeneratedContent((prev) => ({
+                                  ...prev,
+                                  metaTitle: optimizedTitle,
+                                }));
+                              } finally {
+                                setIsOptimizingMetaTitle(false);
+                              }
+                            }}
+                          >
+                            {isOptimizingMetaTitle ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
+                                Optimizing...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-4 w-4 mr-1" />
+                                Auto-Optimize
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Input
+                            value={
+                              generatedContent.metaTitle ||
+                              generatedContent.title ||
+                              ""
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value.slice(0, 70); // Hard limit at 70 chars
                               setGeneratedContent((prev) => ({
                                 ...prev,
-                                metaTitle: optimizedTitle,
+                                metaTitle: value,
                               }));
-                            } finally {
-                              setIsOptimizingMetaTitle(false);
-                            }
-                          }}
-                        >
-                          {isOptimizingMetaTitle ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
-                              Optimizing...
-                            </>
-                          ) : (
-                            <>
-                              <Zap className="h-4 w-4 mr-1" />
-                              Auto-Optimize
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Input
-                          value={
-                            generatedContent.metaTitle ||
-                            generatedContent.title ||
-                            ""
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value.slice(0, 70); // Hard limit at 70 chars
-                            setGeneratedContent((prev) => ({
-                              ...prev,
-                              metaTitle: value,
-                            }));
-                          }}
-                          placeholder={
-                            isOptimizingMetaTitle
-                              ? "AI is optimizing your meta title..."
-                              : "Enter SEO-optimized meta title..."
-                          }
-                          disabled={isOptimizingMetaTitle}
-                          className={`pr-16 ${
-                            isOptimizingMetaTitle
-                              ? "bg-gray-50"
-                              : (
-                                    generatedContent.metaTitle ||
-                                    generatedContent.title ||
-                                    ""
-                                  ).length > 60
-                                ? "border-red-300 focus:border-red-500"
-                                : "border-green-300 focus:border-green-500"
-                          }`}
-                        />
-                        {isOptimizingMetaTitle && (
-                          <div className="absolute left-3 top-2.5">
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
-                          </div>
-                        )}
-                        <div
-                          className={`absolute right-3 top-2.5 text-xs font-medium ${
-                            (
-                              generatedContent.metaTitle ||
-                              generatedContent.title ||
-                              ""
-                            ).length > 60
-                              ? "text-red-500"
-                              : "text-green-600"
-                          }`}
-                        >
-                          {
-                            (
-                              generatedContent.metaTitle ||
-                              generatedContent.title ||
-                              ""
-                            ).length
-                          }
-                          /60
-                        </div>
-                      </div>
-                      <div className="text-xs space-y-1">
-                        {(
-                          generatedContent.metaTitle ||
-                          generatedContent.title ||
-                          ""
-                        ).length > 60 && (
-                          <p className="text-red-600 flex items-center">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            Too long for optimal SEO display
-                          </p>
-                        )}
-                        {(
-                          generatedContent.metaTitle ||
-                          generatedContent.title ||
-                          ""
-                        ).length >= 50 &&
-                          (
-                            generatedContent.metaTitle ||
-                            generatedContent.title ||
-                            ""
-                          ).length <= 60 && (
-                            <p className="text-green-600 flex items-center">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Perfect length for SEO
-                            </p>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Meta Description Section */}
-                  <div className="border-b border-gray-200 pb-4 mt-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Meta Description
-                      </h3>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={isOptimizingMetaDescription}
-                          onClick={async () => {
-                            try {
-                              setIsOptimizingMetaDescription(true);
-
-                              // Gather context for AI optimization
-                              const formData = form.getValues();
-                              const currentTitle = generatedContent.title || "";
-                              const currentContent =
-                                generatedContent.content || "";
-                              const keywords = formData.keywords || [];
-                              const targetAudience =
-                                formData.buyerPersonas || "";
-                              const tone =
-                                formData.toneOfVoice || "professional";
-                              const region = "us"; // Default region
-
-                              console.log(
-                                "Triggering AI meta description optimization...",
-                              );
-
-                              // Call the AI optimization endpoint for META DESCRIPTION ONLY
-                              const response = await fetch(
-                                "/api/optimize-meta-description",
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    title: currentTitle,
-                                    content: currentContent,
-                                    keywords: keywords,
-                                    targetAudience: targetAudience,
-                                    tone: tone,
-                                    region: region,
-                                  }),
-                                },
-                              );
-
-                              if (!response.ok) {
-                                throw new Error(
-                                  "Failed to optimize meta description",
-                                );
-                              }
-
-                              const result = await response.json();
-
-                              if (result.success) {
-                                // Update ONLY meta description from AI response
-                                setGeneratedContent((prev) => ({
-                                  ...prev,
-                                  metaDescription: result.metaDescription,
-                                }));
-                                console.log(
-                                  "AI meta description optimization successful",
-                                );
-                              } else {
-                                throw new Error(
-                                  result.error || "Optimization failed",
-                                );
-                              }
-                            } catch (error) {
-                              console.error(
-                                "Meta description optimization error:",
-                                error,
-                              );
-
-                              // Show user that AI optimization failed and they should try again or manually edit
-                              toast({
-                                title: "AI Optimization Failed",
-                                description:
-                                  "Unable to optimize meta description with AI. Please try again or edit manually.",
-                                variant: "destructive",
-                              });
-
-                              // Don't set a poor fallback - let user know they need to handle it manually
-                              console.log(
-                                "AI meta description optimization failed, user should try again or edit manually",
-                              );
-                            } finally {
-                              setIsOptimizingMetaDescription(false);
-                            }
-                          }}
-                        >
-                          {isOptimizingMetaDescription ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
-                              Optimizing...
-                            </>
-                          ) : (
-                            <>
-                              <Zap className="h-4 w-4 mr-1" />
-                              Auto-Optimize
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <textarea
-                          value={generatedContent.metaDescription || ""}
-                          onChange={(e) => {
-                            const value = e.target.value.slice(0, 160); // Hard limit at 160 chars
-                            setGeneratedContent((prev) => ({
-                              ...prev,
-                              metaDescription: value,
-                            }));
-                          }}
-                          placeholder={
-                            isOptimizingMetaDescription
-                              ? "AI is optimizing your meta description..."
-                              : "Enter SEO-optimized meta description..."
-                          }
-                          disabled={isOptimizingMetaDescription}
-                          rows={3}
-                          className={`w-full pr-16 resize-none ${
-                            isOptimizingMetaDescription
-                              ? "bg-gray-50"
-                              : (generatedContent.metaDescription || "")
-                                    .length > 160
-                                ? "border-red-300 focus:border-red-500"
-                                : "border-green-300 focus:border-green-500"
-                          } rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500`}
-                        />
-                        {isOptimizingMetaDescription && (
-                          <div className="absolute left-3 top-3">
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
-                          </div>
-                        )}
-                        <div
-                          className={`absolute right-3 top-3 text-xs font-medium ${
-                            (generatedContent.metaDescription || "").length >
-                            160
-                              ? "text-red-500"
-                              : "text-green-600"
-                          }`}
-                        >
-                          {(generatedContent.metaDescription || "").length}/160
-                        </div>
-                      </div>
-                      <div className="text-xs space-y-1">
-                        {(generatedContent.metaDescription || "").length >
-                          160 && (
-                          <p className="text-red-600 flex items-center">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            Too long for optimal SEO display
-                          </p>
-                        )}
-                        {(generatedContent.metaDescription || "").length <=
-                          160 &&
-                          (generatedContent.metaDescription || "").length >
-                            0 && (
-                            <p className="text-green-600 flex items-center">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Perfect length for SEO
-                            </p>
-                          )}
-                        {(generatedContent.metaDescription || "").length <
-                          120 &&
-                          (generatedContent.metaDescription || "").length >
-                            0 && (
-                            <p className="text-yellow-600 flex items-center">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              Consider adding more detail for better SEO
-                            </p>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Publication Section - Appears right after meta description */}
-                  <Card className="mt-6">
-                    <CardHeader>
-                      <CardTitle>Publication Settings</CardTitle>
-                      <CardDescription>
-                        Choose how to publish your content
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        {/* Publication Status Dropdown */}
-                        <div className="space-y-2">
-                          <Label htmlFor="publication-status">
-                            Publication Status
-                          </Label>
-                          <Select
-                            onValueChange={(
-                              value: "draft" | "publish" | "schedule",
-                            ) => {
-                              setPublicationMethod(value);
-                              // Clear scheduling fields if not scheduling
-                              if (value !== "schedule") {
-                                form.setValue("scheduledPublishDate", "");
-                                form.setValue("scheduledPublishTime", "09:30");
-                              }
-                              // Update form fields for compatibility
-                              form.setValue(
-                                "postStatus",
-                                value === "publish" ? "publish" : "draft",
-                              );
-                              form.setValue("publicationType", value);
                             }}
-                            value={publicationMethod}
+                            placeholder={
+                              isOptimizingMetaTitle
+                                ? "AI is optimizing your meta title..."
+                                : "Enter SEO-optimized meta title..."
+                            }
+                            disabled={isOptimizingMetaTitle}
+                            className={`pr-16 ${
+                              isOptimizingMetaTitle
+                                ? "bg-gray-50"
+                                : (
+                                      generatedContent.metaTitle ||
+                                      generatedContent.title ||
+                                      ""
+                                    ).length > 60
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-green-300 focus:border-green-500"
+                            }`}
+                          />
+                          {isOptimizingMetaTitle && (
+                            <div className="absolute left-3 top-2.5">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
+                            </div>
+                          )}
+                          <div
+                            className={`absolute right-3 top-2.5 text-xs font-medium ${
+                              (
+                                generatedContent.metaTitle ||
+                                generatedContent.title ||
+                                ""
+                              ).length > 60
+                                ? "text-red-500"
+                                : "text-green-600"
+                            }`}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Save as Draft" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="draft">
-                                Save as Draft
-                              </SelectItem>
-                              <SelectItem value="publish">
-                                Publish Immediately
-                              </SelectItem>
-                              <SelectItem value="schedule">
-                                Schedule Publication
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <p className="text-sm text-muted-foreground">
-                            Choose whether to publish immediately or save as
-                            draft. Use scheduling below to set a future
-                            publication date.
-                          </p>
-                        </div>
-
-                        {/* Scheduling Block - only visible when "Schedule Publication" is selected */}
-                        {publicationMethod === "schedule" && (
-                          <div className="rounded-md border border-slate-200 p-4 bg-blue-50/50">
-                            <div className="flex items-center space-x-2 mb-3">
-                              <CalendarCheck className="h-5 w-5 text-blue-600" />
-                              <Label className="text-lg font-medium">
-                                Set a Future Date/Time
-                              </Label>
-                            </div>
-                            <p className="mb-4 text-sm text-gray-600">
-                              Set a future date and time to automatically
-                              publish your content.
-                            </p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-sm">
-                                  Publication Date
-                                </Label>
-                                <Input
-                                  type="date"
-                                  value={
-                                    form.watch("scheduledPublishDate") || ""
-                                  }
-                                  onChange={(e) =>
-                                    form.setValue(
-                                      "scheduledPublishDate",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full"
-                                  min={new Date().toISOString().split("T")[0]}
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label className="text-sm">
-                                  Publication Time
-                                </Label>
-                                <Input
-                                  type="time"
-                                  value={
-                                    form.watch("scheduledPublishTime") ||
-                                    "09:30"
-                                  }
-                                  onChange={(e) =>
-                                    form.setValue(
-                                      "scheduledPublishTime",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full"
-                                />
-                              </div>
-                            </div>
+                            {
+                              (
+                                generatedContent.metaTitle ||
+                                generatedContent.title ||
+                                ""
+                              ).length
+                            }
+                            /60
                           </div>
-                        )}
+                        </div>
+                        <div className="text-xs space-y-1">
+                          {(
+                            generatedContent.metaTitle ||
+                            generatedContent.title ||
+                            ""
+                          ).length > 60 && (
+                            <p className="text-red-600 flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Too long for optimal SEO display
+                            </p>
+                          )}
+                          {(
+                            generatedContent.metaTitle ||
+                            generatedContent.title ||
+                            ""
+                          ).length >= 50 &&
+                            (
+                              generatedContent.metaTitle ||
+                              generatedContent.title ||
+                              ""
+                            ).length <= 60 && (
+                              <p className="text-green-600 flex items-center">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Perfect length for SEO
+                              </p>
+                            )}
+                        </div>
+                      </div>
+                    </div>
 
-                        {/* Single Proceed Button */}
-                        <Button
+                    {/* Meta Description Section */}
+                    <div className="border-b border-gray-200 pb-4 mt-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Meta Description
+                        </h3>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isOptimizingMetaDescription}
+                            onClick={async () => {
+                              try {
+                                setIsOptimizingMetaDescription(true);
+
+                                // Gather context for AI optimization
+                                const formData = form.getValues();
+                                const currentTitle =
+                                  generatedContent.title || "";
+                                const currentContent =
+                                  generatedContent.content || "";
+                                const keywords = formData.keywords || [];
+                                const targetAudience =
+                                  formData.buyerPersonas || "";
+                                const tone =
+                                  formData.toneOfVoice || "professional";
+                                const region = "us"; // Default region
+
+                                console.log(
+                                  "Triggering AI meta description optimization...",
+                                );
+
+                                // Call the AI optimization endpoint for META DESCRIPTION ONLY
+                                const response = await fetch(
+                                  "/api/optimize-meta-description",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      title: currentTitle,
+                                      content: currentContent,
+                                      keywords: keywords,
+                                      targetAudience: targetAudience,
+                                      tone: tone,
+                                      region: region,
+                                    }),
+                                  },
+                                );
+
+                                if (!response.ok) {
+                                  throw new Error(
+                                    "Failed to optimize meta description",
+                                  );
+                                }
+
+                                const result = await response.json();
+
+                                if (result.success) {
+                                  // Update ONLY meta description from AI response
+                                  setGeneratedContent((prev) => ({
+                                    ...prev,
+                                    metaDescription: result.metaDescription,
+                                  }));
+                                  console.log(
+                                    "AI meta description optimization successful",
+                                  );
+                                } else {
+                                  throw new Error(
+                                    result.error || "Optimization failed",
+                                  );
+                                }
+                              } catch (error) {
+                                console.error(
+                                  "Meta description optimization error:",
+                                  error,
+                                );
+
+                                // Show user that AI optimization failed and they should try again or manually edit
+                                toast({
+                                  title: "AI Optimization Failed",
+                                  description:
+                                    "Unable to optimize meta description with AI. Please try again or edit manually.",
+                                  variant: "destructive",
+                                });
+
+                                // Don't set a poor fallback - let user know they need to handle it manually
+                                console.log(
+                                  "AI meta description optimization failed, user should try again or edit manually",
+                                );
+                              } finally {
+                                setIsOptimizingMetaDescription(false);
+                              }
+                            }}
+                          >
+                            {isOptimizingMetaDescription ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600 mr-1"></div>
+                                Optimizing...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-4 w-4 mr-1" />
+                                Auto-Optimize
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <textarea
+                            value={generatedContent.metaDescription || ""}
+                            onChange={(e) => {
+                              const value = e.target.value.slice(0, 160); // Hard limit at 160 chars
+                              setGeneratedContent((prev) => ({
+                                ...prev,
+                                metaDescription: value,
+                              }));
+                            }}
+                            placeholder={
+                              isOptimizingMetaDescription
+                                ? "AI is optimizing your meta description..."
+                                : "Enter SEO-optimized meta description..."
+                            }
+                            disabled={isOptimizingMetaDescription}
+                            rows={3}
+                            className={`w-full pr-16 resize-none ${
+                              isOptimizingMetaDescription
+                                ? "bg-gray-50"
+                                : (generatedContent.metaDescription || "")
+                                      .length > 160
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-green-300 focus:border-green-500"
+                            } rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500`}
+                          />
+                          {isOptimizingMetaDescription && (
+                            <div className="absolute left-3 top-3">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
+                            </div>
+                          )}
+                          <div
+                            className={`absolute right-3 top-3 text-xs font-medium ${
+                              (generatedContent.metaDescription || "").length >
+                              160
+                                ? "text-red-500"
+                                : "text-green-600"
+                            }`}
+                          >
+                            {(generatedContent.metaDescription || "").length}
+                            /160
+                          </div>
+                        </div>
+                        <div className="text-xs space-y-1">
+                          {(generatedContent.metaDescription || "").length >
+                            160 && (
+                            <p className="text-red-600 flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Too long for optimal SEO display
+                            </p>
+                          )}
+                          {(generatedContent.metaDescription || "").length <=
+                            160 &&
+                            (generatedContent.metaDescription || "").length >
+                              0 && (
+                              <p className="text-green-600 flex items-center">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Perfect length for SEO
+                              </p>
+                            )}
+                          {(generatedContent.metaDescription || "").length <
+                            120 &&
+                            (generatedContent.metaDescription || "").length >
+                              0 && (
+                              <p className="text-yellow-600 flex items-center">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Consider adding more detail for better SEO
+                              </p>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Publication Section - Appears right after meta description */}
+                    <Card className="mt-6">
+                      <CardHeader>
+                        <CardTitle>Publication Settings</CardTitle>
+                        <CardDescription>
+                          Choose how to publish your content
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-6">
+                          {/* Publication Status Dropdown */}
+                          <div className="space-y-2">
+                            <Label htmlFor="publication-status">
+                              Publication Status
+                            </Label>
+                            <Select
+                              onValueChange={(
+                                value: "draft" | "publish" | "schedule",
+                              ) => {
+                                setPublicationMethod(value);
+                                // Clear scheduling fields if not scheduling
+                                if (value !== "schedule") {
+                                  form.setValue("scheduledPublishDate", "");
+                                  form.setValue(
+                                    "scheduledPublishTime",
+                                    "09:30",
+                                  );
+                                }
+                                // Update form fields for compatibility
+                                form.setValue(
+                                  "postStatus",
+                                  value === "publish" ? "publish" : "draft",
+                                );
+                                form.setValue("publicationType", value);
+                              }}
+                              value={publicationMethod}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Save as Draft" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="draft">
+                                  Save as Draft
+                                </SelectItem>
+                                <SelectItem value="publish">
+                                  Publish Immediately
+                                </SelectItem>
+                                <SelectItem value="schedule">
+                                  Schedule Publication
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-sm text-muted-foreground">
+                              Choose whether to publish immediately or save as
+                              draft. Use scheduling below to set a future
+                              publication date.
+                            </p>
+                          </div>
+
+                          {/* Scheduling Block - only visible when "Schedule Publication" is selected */}
+                          {publicationMethod === "schedule" && (
+                            <div className="rounded-md border border-slate-200 p-4 bg-blue-50/50">
+                              <div className="flex items-center space-x-2 mb-3">
+                                <CalendarCheck className="h-5 w-5 text-blue-600" />
+                                <Label className="text-lg font-medium">
+                                  Set a Future Date/Time
+                                </Label>
+                              </div>
+                              <p className="mb-4 text-sm text-gray-600">
+                                Set a future date and time to automatically
+                                publish your content.
+                              </p>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label className="text-sm">
+                                    Publication Date
+                                  </Label>
+                                  <Input
+                                    type="date"
+                                    value={
+                                      form.watch("scheduledPublishDate") || ""
+                                    }
+                                    onChange={(e) =>
+                                      form.setValue(
+                                        "scheduledPublishDate",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full"
+                                    min={new Date().toISOString().split("T")[0]}
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label className="text-sm">
+                                    Publication Time
+                                  </Label>
+                                  <Input
+                                    type="time"
+                                    value={
+                                      form.watch("scheduledPublishTime") ||
+                                      "09:30"
+                                    }
+                                    onChange={(e) =>
+                                      form.setValue(
+                                        "scheduledPublishTime",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Single Proceed Button */}
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                publicationMethod === "schedule" &&
+                                !form.getValues("scheduledPublishDate")
+                              ) {
+                                toast({
+                                  title: "Date Required",
+                                  description:
+                                    "Please select a publication date for scheduling.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              handlePublishContent(publicationMethod);
+                            }}
+                            disabled={isPublishing || isGenerating}
+                            className="w-full"
+                          >
+                            {isPublishing ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white mr-2"></div>
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                {publicationMethod === "draft" && (
+                                  <>
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Proceed (Save as Draft)
+                                  </>
+                                )}
+                                {publicationMethod === "publish" && (
+                                  <>
+                                    <Send className="mr-2 h-4 w-4" />
+                                    Proceed (Publish Immediately)
+                                  </>
+                                )}
+                                {publicationMethod === "schedule" && (
+                                  <>
+                                    <CalendarCheck className="mr-2 h-4 w-4" />
+                                    Proceed (Schedule Publication)
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </Button>
+
+                          {/* Save Project Button - Always enabled */}
+                          <Button
+                            variant="outline"
+                            onClick={handleSaveProject}
+                            disabled={saveProjectMutation.isPending}
+                            className="w-full flex items-center gap-2 mt-3"
+                          >
+                            {saveProjectMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-4 w-4" />
+                            )}
+                            Save as Project
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Legacy Content Editor Section - Hidden for Rich Editing */}
+                    <div className="space-y-4" style={{ display: "none" }}>
+                      <label className="text-sm font-medium text-gray-700">
+                        Content Body
+                      </label>
+
+                      {/* Visual Editor Toolbar */}
+                      <div className="border border-gray-200 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand("bold", false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 font-bold"
+                          title="Bold"
+                        >
+                          B
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => document.execCommand("italic", false)}
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 italic"
+                          title="Italic"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document.execCommand("underline", false)
+                          }
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 underline"
+                          title="Underline"
+                        >
+                          U
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document.execCommand("formatBlock", false, "h1")
+                          }
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 1"
+                        >
+                          H1
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document.execCommand("formatBlock", false, "h2")
+                          }
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 2"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document.execCommand("formatBlock", false, "h3")
+                          }
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Heading 3"
+                        >
+                          H3
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document.execCommand("insertUnorderedList", false)
+                          }
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Bullet List"
+                        >
+                          • List
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            document.execCommand("insertOrderedList", false)
+                          }
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Numbered List"
+                        >
+                          1. List
+                        </button>
+                        <div className="border-l border-gray-300 mx-1"></div>
+                        <button
                           type="button"
                           onClick={() => {
-                            if (
-                              publicationMethod === "schedule" &&
-                              !form.getValues("scheduledPublishDate")
-                            ) {
-                              toast({
-                                title: "Date Required",
-                                description:
-                                  "Please select a publication date for scheduling.",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            handlePublishContent(publicationMethod);
+                            const input = document.createElement("input");
+                            input.type = "file";
+                            input.accept = "image/*";
+                            input.onchange = async (e) => {
+                              const file = (e.target as HTMLInputElement)
+                                .files?.[0];
+                              if (file) {
+                                await handleImageUpload(file);
+                              }
+                            };
+                            input.click();
                           }}
-                          disabled={isPublishing || isGenerating}
-                          className="w-full"
+                          className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+                          title="Insert Image"
                         >
-                          {isPublishing ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white mr-2"></div>
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              {publicationMethod === "draft" && (
-                                <>
-                                  <Save className="mr-2 h-4 w-4" />
-                                  Proceed (Save as Draft)
-                                </>
-                              )}
-                              {publicationMethod === "publish" && (
-                                <>
-                                  <Send className="mr-2 h-4 w-4" />
-                                  Proceed (Publish Immediately)
-                                </>
-                              )}
-                              {publicationMethod === "schedule" && (
-                                <>
-                                  <CalendarCheck className="mr-2 h-4 w-4" />
-                                  Proceed (Schedule Publication)
-                                </>
-                              )}
-                            </>
-                          )}
-                        </Button>
-
-                        {/* Save Project Button - Always enabled */}
-                        <Button
-                          variant="outline"
-                          onClick={handleSaveProject}
-                          disabled={saveProjectMutation.isPending}
-                          className="w-full flex items-center gap-2 mt-3"
-                        >
-                          {saveProjectMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <CheckCircle className="h-4 w-4" />
-                          )}
-                          Save as Project
-                        </Button>
+                          📷 Image
+                        </button>
                       </div>
-                    </CardContent>
-                  </Card>
 
-                  {/* Legacy Content Editor Section - Hidden for Rich Editing */}
-                  <div className="space-y-4" style={{ display: "none" }}>
-                    <label className="text-sm font-medium text-gray-700">
-                      Content Body
-                    </label>
+                      {/* HTML-Preserving Content Editor */}
+                      <SimpleHTMLEditor
+                        key={contentEditorKey}
+                        content={generatedContent.content || ""}
+                        onChange={(newContent) => {
+                          console.log("SimpleHTMLEditor content updated:", {
+                            contentLength: newContent?.length || 0,
+                            hasImages: newContent.includes("<img"),
+                            hasIframes: newContent.includes("<iframe"),
+                            hasTOC: newContent.includes("Table of Contents"),
+                          });
 
-                    {/* Visual Editor Toolbar */}
-                    <div className="border border-gray-200 rounded-t-md bg-gray-50 p-2 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => document.execCommand("bold", false)}
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 font-bold"
-                        title="Bold"
-                      >
-                        B
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => document.execCommand("italic", false)}
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 italic"
-                        title="Italic"
-                      >
-                        I
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => document.execCommand("underline", false)}
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 underline"
-                        title="Underline"
-                      >
-                        U
-                      </button>
-                      <div className="border-l border-gray-300 mx-1"></div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          document.execCommand("formatBlock", false, "h1")
-                        }
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-                        title="Heading 1"
-                      >
-                        H1
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          document.execCommand("formatBlock", false, "h2")
-                        }
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-                        title="Heading 2"
-                      >
-                        H2
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          document.execCommand("formatBlock", false, "h3")
-                        }
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-                        title="Heading 3"
-                      >
-                        H3
-                      </button>
-                      <div className="border-l border-gray-300 mx-1"></div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          document.execCommand("insertUnorderedList", false)
-                        }
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-                        title="Bullet List"
-                      >
-                        • List
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          document.execCommand("insertOrderedList", false)
-                        }
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-                        title="Numbered List"
-                      >
-                        1. List
-                      </button>
-                      <div className="border-l border-gray-300 mx-1"></div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const input = document.createElement("input");
-                          input.type = "file";
-                          input.accept = "image/*";
-                          input.onchange = async (e) => {
-                            const file = (e.target as HTMLInputElement)
-                              .files?.[0];
-                            if (file) {
-                              await handleImageUpload(file);
-                            }
-                          };
-                          input.click();
+                          setGeneratedContent((prev) => ({
+                            ...prev,
+                            content: newContent,
+                          }));
+
+                          // Force preview re-render
+                          setContentUpdateCounter((prev) => prev + 1);
                         }}
-                        className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
-                        title="Insert Image"
-                      >
-                        📷 Image
-                      </button>
+                        className="border-t-0 rounded-t-none max-h-80"
+                      />
+
+                      {/* Word Count */}
+                      <div className="text-xs text-gray-500 text-right">
+                        Words:{" "}
+                        {enhancedContentForEditor || generatedContent.content
+                          ? (
+                              enhancedContentForEditor ||
+                              generatedContent.content
+                            )
+                              .replace(/<[^>]*>/g, "")
+                              .split(/\s+/)
+                              .filter((word) => word.length > 0).length
+                          : 0}
+                      </div>
                     </div>
 
-                    {/* HTML-Preserving Content Editor */}
-                    <SimpleHTMLEditor
-                      key={contentEditorKey}
-                      content={generatedContent.content || ""}
-                      onChange={(newContent) => {
-                        console.log("SimpleHTMLEditor content updated:", {
-                          contentLength: newContent?.length || 0,
-                          hasImages: newContent.includes("<img"),
-                          hasIframes: newContent.includes("<iframe"),
-                          hasTOC: newContent.includes("Table of Contents"),
-                        });
+                    <div className="hidden">
+                      {(() => {
+                        // Get content
+                        const content = generatedContent.content;
+                        if (!content) return <p>No content available</p>;
 
-                        setGeneratedContent((prev) => ({
-                          ...prev,
-                          content: newContent,
-                        }));
+                        // Get YouTube data if exists
+                        const youtubeUrl = form.watch("youtubeUrl");
+                        let youtubeVideoId: string | null = null;
+                        if (youtubeUrl) {
+                          youtubeVideoId =
+                            youtubeUrl.match(
+                              /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/,
+                            )?.[1] || null;
+                        }
 
-                        // Force preview re-render
-                        setContentUpdateCounter((prev) => prev + 1);
-                      }}
-                      className="border-t-0 rounded-t-none max-h-80"
-                    />
-
-                    {/* Word Count */}
-                    <div className="text-xs text-gray-500 text-right">
-                      Words:{" "}
-                      {enhancedContentForEditor || generatedContent.content
-                        ? (enhancedContentForEditor || generatedContent.content)
-                            .replace(/<[^>]*>/g, "")
-                            .split(/\s+/)
-                            .filter((word) => word.length > 0).length
-                        : 0}
-                    </div>
-                  </div>
-
-                  <div className="hidden">
-                    {(() => {
-                      // Get content
-                      const content = generatedContent.content;
-                      if (!content) return <p>No content available</p>;
-
-                      // Get YouTube data if exists
-                      const youtubeUrl = form.watch("youtubeUrl");
-                      let youtubeVideoId: string | null = null;
-                      if (youtubeUrl) {
-                        youtubeVideoId =
-                          youtubeUrl.match(
-                            /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/,
-                          )?.[1] || null;
-                      }
-
-                      // Create YouTube embed component
-                      const YouTubeEmbed = () => (
-                        <div className="my-8 flex justify-center">
-                          <iframe
-                            width="560"
-                            height="315"
-                            src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                            title="YouTube video"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="rounded-md border border-gray-200"
-                          />
-                        </div>
-                      );
-
-                      // Check if content has YouTube placeholder
-                      const hasYoutubePlaceholder = content.includes(
-                        "[YOUTUBE_EMBED_PLACEHOLDER]",
-                      );
-
-                      // If content has placeholder, split and insert YouTube
-                      if (youtubeVideoId && hasYoutubePlaceholder) {
-                        const parts = content.split(
-                          "[YOUTUBE_EMBED_PLACEHOLDER]",
-                        );
-                        return (
-                          <div className="content-preview prose prose-blue max-w-none">
-                            {parts[0] && (
-                              <div
-                                dangerouslySetInnerHTML={{ __html: parts[0] }}
-                              />
-                            )}
-                            <YouTubeEmbed />
-                            {parts[1] && (
-                              <div
-                                dangerouslySetInnerHTML={{ __html: parts[1] }}
-                              />
-                            )}
+                        // Create YouTube embed component
+                        const YouTubeEmbed = () => (
+                          <div className="my-8 flex justify-center">
+                            <iframe
+                              width="560"
+                              height="315"
+                              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                              title="YouTube video"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="rounded-md border border-gray-200"
+                            />
                           </div>
                         );
-                      }
 
-                      // Get secondary images, excluding any that match the primary image to prevent duplication
-                      const primaryImageId =
-                        selectedMediaContent.primaryImage?.id ||
-                        primaryImages[0]?.id;
-                      const secondaryImages = (
-                        generatedContent.secondaryImages || []
-                      ).filter((img) => img.id !== primaryImageId);
+                        // Check if content has YouTube placeholder
+                        const hasYoutubePlaceholder = content.includes(
+                          "[YOUTUBE_EMBED_PLACEHOLDER]",
+                        );
 
-                      // Check for image tags in content
-                      const hasImageTags = content.includes("<img");
-
-                      // If content has no YouTube placeholder but has secondary images or image tags
-                      if (secondaryImages.length > 0 || hasImageTags) {
-                        // Always consider content as having proper images
-                        // This ensures embedded images are always preserved
-                        const hasProperImages = true;
-
-                        if (hasProperImages) {
-                          // Enhanced processing for all content with images
-                          let enhancedContent = content;
-
-                          // Process all <a> tags with embedded images to ensure they display properly and are clickable
-                          enhancedContent = enhancedContent.replace(
-                            /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
-                            (
-                              match,
-                              href,
-                              prespace,
-                              imgAttr,
-                              src,
-                              imgAttrEnd,
-                              postspace,
-                            ) => {
-                              // Ensure src is absolute URL
-                              let fixedSrc = src;
-                              if (!src.startsWith("http")) {
-                                fixedSrc = "https://" + src;
-                              } else if (src.startsWith("//")) {
-                                fixedSrc = "https:" + src;
-                              }
-
-                              // Make sure the image is inside an <a> tag and properly styled - preserve 600x600 for secondary images
-                              const isSecondaryImage =
-                                imgAttr.includes("width: 600px") ||
-                                imgAttr.includes("height: 600px");
-                              const imageStyle = isSecondaryImage
-                                ? "width: 600px; height: 600px; object-fit: cover; margin: 0 auto; display: block; border-radius: 8px; cursor: pointer;"
-                                : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;";
-                              return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="${imageStyle}">${postspace}</a>`;
-                            },
+                        // If content has placeholder, split and insert YouTube
+                        if (youtubeVideoId && hasYoutubePlaceholder) {
+                          const parts = content.split(
+                            "[YOUTUBE_EMBED_PLACEHOLDER]",
                           );
-
-                          // Convert standalone images to be wrapped in product links when possible
-                          // First find images without surrounding <a> tags
-                          const imgRegex =
-                            /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
-                          const matches = Array.from(
-                            enhancedContent.matchAll(imgRegex),
-                          );
-
-                          // Get products if available
-                          const products = selectedProducts || [];
-
-                          // Process each standalone image
-                          matches.forEach((match) => {
-                            // Skip if the image is already inside an <a> tag
-                            const fullMatch = match[0];
-                            const beforeMatch = enhancedContent.substring(
-                              0,
-                              match.index,
-                            );
-                            const afterMatch = enhancedContent.substring(
-                              match.index + fullMatch.length,
-                            );
-
-                            // Check if this image is already in an <a> tag
-                            const isInLink =
-                              beforeMatch.lastIndexOf("<a") >
-                                beforeMatch.lastIndexOf("</a>") &&
-                              (afterMatch.indexOf("</a>") <
-                                afterMatch.indexOf("<a") ||
-                                afterMatch.indexOf("<a") === -1);
-
-                            if (!isInLink) {
-                              // This is a standalone image, try to wrap it in a product link
-                              const imgElement = fullMatch;
-                              const imgSrc = match[2];
-
-                              // Normalize the img source for comparison
-                              let normalizedImgSrc = imgSrc;
-                              // Remove http/https and domain for comparison
-                              if (
-                                typeof normalizedImgSrc === "string" &&
-                                normalizedImgSrc.startsWith("http")
-                              ) {
-                                try {
-                                  // Try to get just the path portion for more flexible matching
-                                  const url = new URL(normalizedImgSrc);
-                                  normalizedImgSrc = url.pathname;
-                                } catch (e) {
-                                  // If URL parsing fails, continue with the original
-                                  console.log("Failed to parse URL:", imgSrc);
-                                }
-                              }
-
-                              // Find a matching product if possible - with more flexible matching
-                              const matchingProduct = products.find((p) => {
-                                if (!p.image) return false;
-
-                                // Try to normalize product image as well
-                                let normalizedProductImg = p.image;
-                                if (
-                                  typeof normalizedProductImg === "string" &&
-                                  normalizedProductImg.startsWith("http")
-                                ) {
-                                  try {
-                                    const url = new URL(normalizedProductImg);
-                                    normalizedProductImg = url.pathname;
-                                  } catch (e) {
-                                    // If URL parsing fails, continue with the original
-                                  }
-                                }
-
-                                // Check if either image includes parts of the other
-                                return (
-                                  (typeof normalizedProductImg === "string" &&
-                                    normalizedProductImg.includes(
-                                      normalizedImgSrc,
-                                    )) ||
-                                  (typeof normalizedImgSrc === "string" &&
-                                    normalizedImgSrc.includes(
-                                      normalizedProductImg,
-                                    ))
-                                );
-                              });
-
-                              // Style the image regardless of product match - preserve 600x600 for secondary images
-                              const isSecondaryImage =
-                                imgElement.includes("width: 600px") ||
-                                imgElement.includes("height: 600px");
-                              const imageStyle = isSecondaryImage
-                                ? "width: 600px; height: 600px; object-fit: cover; margin: 0 auto; display: block; border-radius: 8px; cursor: pointer;"
-                                : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;";
-                              const styledImg = imgElement.replace(
-                                /<img/,
-                                `<img style="${imageStyle}"`,
-                              );
-
-                              // Link ALL secondary images to the first selected product, but not featured images
-                              const isFeaturedImage = imgElement.includes("featured-image-container");
-                              const hasSelectedProduct = products.length > 0;
-                              
-                              if (isSecondaryImage && !isFeaturedImage && hasSelectedProduct) {
-                                // All secondary images link to the first selected product
-                                const firstProduct = products[0];
-                                const linkedImg = `<a href="${firstProduct.admin_url || "#"}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
-                                enhancedContent = enhancedContent.replace(
-                                  imgElement,
-                                  linkedImg,
-                                );
-                              } else {
-                                // Featured images and images without products remain unlinked but styled
-                                enhancedContent = enhancedContent.replace(
-                                  imgElement,
-                                  styledImg,
-                                );
-                              }
-                            }
-                          });
-
-                          // Then process any remaining standalone images
-                          enhancedContent = enhancedContent
-                            // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                            .replace(
-                              /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                              '<img$1src="https://$2"$3>',
-                            )
-                            // Fix image URLs that might be missing domain (starting with //)
-                            .replace(
-                              /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                              '<img$1src="https://$3"$4>',
-                            );
-
-                          // Wrap standalone images (those not in an <a> tag) with clickable links
-                          const imgRegexStandalone =
-                            /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
-                          enhancedContent = enhancedContent.replace(
-                            imgRegexStandalone,
-                            (match, imgTag, imgSrc) => {
-                              // Check if this is a secondary image and we have selected products
-                              const isSecondaryImage = imgTag.includes("width: 600px") || imgTag.includes("height: 600px");
-                              const isFeaturedImage = imgTag.includes("featured-image-container");
-                              const hasSelectedProduct = products.length > 0;
-                              
-                              if (isSecondaryImage && !isFeaturedImage && hasSelectedProduct) {
-                                // Link secondary images to the first selected product
-                                const firstProduct = products[0];
-                                return `<a href="${firstProduct.admin_url || "#"}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${imgTag}</a>`;
-                              } else {
-                                // For featured images or when no products selected, link to image itself
-                                return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
-                              }
-                            },
-                          );
-
-                          // Log for debugging - DO NOT set state here to avoid infinite re-renders
-                          console.log(
-                            "Content before final processing:",
-                            enhancedContent,
-                          );
-
-                          // Add styling to all remaining images that don't already have style - preserve 600×600 for secondary images
-                          enhancedContent = enhancedContent.replace(
-                            /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi,
-                            (match, imgAttrs) => {
-                              const isSecondaryImage =
-                                imgAttrs.includes('width="600"') ||
-                                imgAttrs.includes('height="600"');
-                              const imageStyle = isSecondaryImage
-                                ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block; cursor: pointer;"
-                                : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;";
-                              return `<img${imgAttrs} style="${imageStyle}">`;
-                            },
-                          );
-
-                          // Ensure all images have cursor pointer
-                          enhancedContent = enhancedContent.replace(
-                            /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
-                            (match, before, style, after) => {
-                              // Add cursor: pointer if it's not already there
-                              const updatedStyle = style.includes("cursor:")
-                                ? style
-                                : style + "; cursor: pointer;";
-                              return `<img${before}style="${updatedStyle}"${after}>`;
-                            },
-                          );
-
-                          // Store enhanced content for potential editor use (but don't set state during render)
-                          // The enhanced content is already set in the API response handler
-
-                          // Return the enhanced content with proper image styling
-                          return (
-                            <div
-                              className="content-preview prose prose-blue max-w-none"
-                              dangerouslySetInnerHTML={{
-                                __html: enhancedContent,
-                              }}
-                            />
-                          );
-                        } else {
-                          // Remove any img tags without proper src
-                          let cleanedContent = content;
-                          if (hasImageTags) {
-                            cleanedContent = content.replace(
-                              /<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi,
-                              "",
-                            );
-                          }
-
-                          // Split into paragraphs
-                          const paragraphs = cleanedContent.split(/\n\n+/);
-                          const result: React.ReactNode[] = [];
-                          let imageIndex = 0;
-
-                          // Process each paragraph, inserting images occasionally
-                          paragraphs.forEach((para: string, i: number) => {
-                            // Check if paragraph already has image tags
-                            const hasImageInParagraph = para.includes("<img");
-
-                            if (para.trim()) {
-                              // Process paragraph to ensure proper image handling
-                              const processedPara = para
-                                // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                                .replace(
-                                  /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                                  '<img$1src="https://$2"$3>',
-                                )
-                                // Fix image URLs that might be missing domain (starting with //)
-                                .replace(
-                                  /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                                  '<img$1src="https://$3"$4>',
-                                )
-                                // Add styling to all images for proper display
-                                .replace(
-                                  /<img([^>]*?)>/gi,
-                                  '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">',
-                                );
-
-                              result.push(
-                                <div
-                                  key={`p-${i}`}
-                                  dangerouslySetInnerHTML={{
-                                    __html: processedPara,
-                                  }}
-                                />,
-                              );
-                            }
-
-                            // Only insert secondary images if the paragraph doesn't already have images
-                            // And do it after every 2-3 paragraphs for optimal spacing
-                            if (
-                              !hasImageInParagraph &&
-                              (i + 1) % 2 === 0 &&
-                              imageIndex < secondaryImages.length
-                            ) {
-                              const image = secondaryImages[imageIndex];
-
-                              // Try to find a matching product for this image
-                              let productUrl = image.productUrl || "#";
-
-                              // Check if this image belongs to a selected product
-                              const products = selectedProducts || [];
-                              if (products.length > 0 && image.url) {
-                                const matchingProduct = products.find(
-                                  (p) =>
-                                    p.image &&
-                                    (p.image === image.url ||
-                                      image.url?.includes(p.id)),
-                                );
-
-                                if (matchingProduct) {
-                                  productUrl =
-                                    matchingProduct.admin_url || productUrl;
-                                }
-                              }
-
-                              result.push(
-                                <div
-                                  key={`img-${i}`}
-                                  className="my-6 flex justify-center"
-                                >
-                                  <a
-                                    href={productUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="product-link"
-                                  >
-                                    <img
-                                      src={
-                                        image.url || (image.src?.medium ?? "")
-                                      }
-                                      alt={
-                                        image.alt ||
-                                        `Product image ${imageIndex + 1}`
-                                      }
-                                      style={{
-                                        maxWidth: "100%",
-                                        maxHeight: "400px",
-                                        cursor: "pointer",
-                                        objectFit: "contain",
-                                        margin: "1rem auto",
-                                        display: "block",
-                                        borderRadius: "0.375rem",
-                                      }}
-                                    />
-                                  </a>
-                                </div>,
-                              );
-                              imageIndex++;
-                            }
-
-                            // Insert YouTube after first or second paragraph if not already inserted via placeholder
-                            if (
-                              youtubeVideoId &&
-                              !hasYoutubePlaceholder &&
-                              (i === 0 || i === 1)
-                            ) {
-                              result.push(<YouTubeEmbed key="youtube" />);
-                              // Prevent multiple inserts
-                              youtubeVideoId = null;
-                            }
-                          });
-
                           return (
                             <div className="content-preview prose prose-blue max-w-none">
-                              {result}
+                              {parts[0] && (
+                                <div
+                                  dangerouslySetInnerHTML={{ __html: parts[0] }}
+                                />
+                              )}
+                              <YouTubeEmbed />
+                              {parts[1] && (
+                                <div
+                                  dangerouslySetInnerHTML={{ __html: parts[1] }}
+                                />
+                              )}
                             </div>
                           );
                         }
-                      }
 
-                      // If no secondary images or YouTube placeholder, handle YouTube separately
-                      if (youtubeVideoId && !hasYoutubePlaceholder) {
-                        return (
-                          <div className="content-preview prose prose-blue max-w-none">
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: content
-                                  .substring(0, content.length / 3)
+                        // Get secondary images, excluding any that match the primary image to prevent duplication
+                        const primaryImageId =
+                          selectedMediaContent.primaryImage?.id ||
+                          primaryImages[0]?.id;
+                        const secondaryImages = (
+                          generatedContent.secondaryImages || []
+                        ).filter((img) => img.id !== primaryImageId);
+
+                        // Check for image tags in content
+                        const hasImageTags = content.includes("<img");
+
+                        // If content has no YouTube placeholder but has secondary images or image tags
+                        if (secondaryImages.length > 0 || hasImageTags) {
+                          // Always consider content as having proper images
+                          // This ensures embedded images are always preserved
+                          const hasProperImages = true;
+
+                          if (hasProperImages) {
+                            // Enhanced processing for all content with images
+                            let enhancedContent = content;
+
+                            // Process all <a> tags with embedded images to ensure they display properly and are clickable
+                            enhancedContent = enhancedContent.replace(
+                              /<a\s+[^>]*?href=["']([^"']+)["'][^>]*?>(\s*)<img([^>]*?)src=["']([^"']+)["']([^>]*?)>(\s*)<\/a>/gi,
+                              (
+                                match,
+                                href,
+                                prespace,
+                                imgAttr,
+                                src,
+                                imgAttrEnd,
+                                postspace,
+                              ) => {
+                                // Ensure src is absolute URL
+                                let fixedSrc = src;
+                                if (!src.startsWith("http")) {
+                                  fixedSrc = "https://" + src;
+                                } else if (src.startsWith("//")) {
+                                  fixedSrc = "https:" + src;
+                                }
+
+                                // Make sure the image is inside an <a> tag and properly styled - preserve 600x600 for secondary images
+                                const isSecondaryImage =
+                                  imgAttr.includes("width: 600px") ||
+                                  imgAttr.includes("height: 600px");
+                                const imageStyle = isSecondaryImage
+                                  ? "width: 600px; height: 600px; object-fit: cover; margin: 0 auto; display: block; border-radius: 8px; cursor: pointer;"
+                                  : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;";
+                                return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${prespace}<img${imgAttr}src="${fixedSrc}"${imgAttrEnd} style="${imageStyle}">${postspace}</a>`;
+                              },
+                            );
+
+                            // Convert standalone images to be wrapped in product links when possible
+                            // First find images without surrounding <a> tags
+                            const imgRegex =
+                              /<img([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi;
+                            const matches = Array.from(
+                              enhancedContent.matchAll(imgRegex),
+                            );
+
+                            // Get products if available
+                            const products = selectedProducts || [];
+
+                            // Process each standalone image
+                            matches.forEach((match) => {
+                              // Skip if the image is already inside an <a> tag
+                              const fullMatch = match[0];
+                              const beforeMatch = enhancedContent.substring(
+                                0,
+                                match.index,
+                              );
+                              const afterMatch = enhancedContent.substring(
+                                match.index + fullMatch.length,
+                              );
+
+                              // Check if this image is already in an <a> tag
+                              const isInLink =
+                                beforeMatch.lastIndexOf("<a") >
+                                  beforeMatch.lastIndexOf("</a>") &&
+                                (afterMatch.indexOf("</a>") <
+                                  afterMatch.indexOf("<a") ||
+                                  afterMatch.indexOf("<a") === -1);
+
+                              if (!isInLink) {
+                                // This is a standalone image, try to wrap it in a product link
+                                const imgElement = fullMatch;
+                                const imgSrc = match[2];
+
+                                // Normalize the img source for comparison
+                                let normalizedImgSrc = imgSrc;
+                                // Remove http/https and domain for comparison
+                                if (
+                                  typeof normalizedImgSrc === "string" &&
+                                  normalizedImgSrc.startsWith("http")
+                                ) {
+                                  try {
+                                    // Try to get just the path portion for more flexible matching
+                                    const url = new URL(normalizedImgSrc);
+                                    normalizedImgSrc = url.pathname;
+                                  } catch (e) {
+                                    // If URL parsing fails, continue with the original
+                                    console.log("Failed to parse URL:", imgSrc);
+                                  }
+                                }
+
+                                // Find a matching product if possible - with more flexible matching
+                                const matchingProduct = products.find((p) => {
+                                  if (!p.image) return false;
+
+                                  // Try to normalize product image as well
+                                  let normalizedProductImg = p.image;
+                                  if (
+                                    typeof normalizedProductImg === "string" &&
+                                    normalizedProductImg.startsWith("http")
+                                  ) {
+                                    try {
+                                      const url = new URL(normalizedProductImg);
+                                      normalizedProductImg = url.pathname;
+                                    } catch (e) {
+                                      // If URL parsing fails, continue with the original
+                                    }
+                                  }
+
+                                  // Check if either image includes parts of the other
+                                  return (
+                                    (typeof normalizedProductImg === "string" &&
+                                      normalizedProductImg.includes(
+                                        normalizedImgSrc,
+                                      )) ||
+                                    (typeof normalizedImgSrc === "string" &&
+                                      normalizedImgSrc.includes(
+                                        normalizedProductImg,
+                                      ))
+                                  );
+                                });
+
+                                // Style the image regardless of product match - preserve 600x600 for secondary images
+                                const isSecondaryImage =
+                                  imgElement.includes("width: 600px") ||
+                                  imgElement.includes("height: 600px");
+                                const imageStyle = isSecondaryImage
+                                  ? "width: 600px; height: 600px; object-fit: cover; margin: 0 auto; display: block; border-radius: 8px; cursor: pointer;"
+                                  : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;";
+                                const styledImg = imgElement.replace(
+                                  /<img/,
+                                  `<img style="${imageStyle}"`,
+                                );
+
+                                // Link ALL secondary images to the first selected product, but not featured images
+                                const isFeaturedImage = imgElement.includes(
+                                  "featured-image-container",
+                                );
+                                const hasSelectedProduct = products.length > 0;
+
+                                if (
+                                  isSecondaryImage &&
+                                  !isFeaturedImage &&
+                                  hasSelectedProduct
+                                ) {
+                                  // All secondary images link to the first selected product
+                                  const firstProduct = products[0];
+                                  const linkedImg = `<a href="${firstProduct.admin_url || "#"}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${styledImg}</a>`;
+                                  enhancedContent = enhancedContent.replace(
+                                    imgElement,
+                                    linkedImg,
+                                  );
+                                } else {
+                                  // Featured images and images without products remain unlinked but styled
+                                  enhancedContent = enhancedContent.replace(
+                                    imgElement,
+                                    styledImg,
+                                  );
+                                }
+                              }
+                            });
+
+                            // Then process any remaining standalone images
+                            enhancedContent = enhancedContent
+                              // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                              .replace(
+                                /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$2"$3>',
+                              )
+                              // Fix image URLs that might be missing domain (starting with //)
+                              .replace(
+                                /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                '<img$1src="https://$3"$4>',
+                              );
+
+                            // Wrap standalone images (those not in an <a> tag) with clickable links
+                            const imgRegexStandalone =
+                              /(?<!<a[^>]*?>)(<img[^>]*?src=["']([^"']+)["'][^>]*?>)(?!<\/a>)/gi;
+                            enhancedContent = enhancedContent.replace(
+                              imgRegexStandalone,
+                              (match, imgTag, imgSrc) => {
+                                // Check if this is a secondary image and we have selected products
+                                const isSecondaryImage =
+                                  imgTag.includes("width: 600px") ||
+                                  imgTag.includes("height: 600px");
+                                const isFeaturedImage = imgTag.includes(
+                                  "featured-image-container",
+                                );
+                                const hasSelectedProduct = products.length > 0;
+
+                                if (
+                                  isSecondaryImage &&
+                                  !isFeaturedImage &&
+                                  hasSelectedProduct
+                                ) {
+                                  // Link secondary images to the first selected product
+                                  const firstProduct = products[0];
+                                  return `<a href="${firstProduct.admin_url || "#"}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="product-link">${imgTag}</a>`;
+                                } else {
+                                  // For featured images or when no products selected, link to image itself
+                                  return `<a href="${imgSrc}" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; margin: 1.5rem 0;" class="image-link">${imgTag}</a>`;
+                                }
+                              },
+                            );
+
+                            // Log for debugging - DO NOT set state here to avoid infinite re-renders
+                            console.log(
+                              "Content before final processing:",
+                              enhancedContent,
+                            );
+
+                            // Add styling to all remaining images that don't already have style - preserve 600×600 for secondary images
+                            enhancedContent = enhancedContent.replace(
+                              /<img((?![^>]*?style=["'][^"']*)[^>]*?)>/gi,
+                              (match, imgAttrs) => {
+                                const isSecondaryImage =
+                                  imgAttrs.includes('width="600"') ||
+                                  imgAttrs.includes('height="600"');
+                                const imageStyle = isSecondaryImage
+                                  ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block; cursor: pointer;"
+                                  : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block; cursor: pointer;";
+                                return `<img${imgAttrs} style="${imageStyle}">`;
+                              },
+                            );
+
+                            // Ensure all images have cursor pointer
+                            enhancedContent = enhancedContent.replace(
+                              /<img([^>]*?)style=["']([^"']*)["']([^>]*?)>/gi,
+                              (match, before, style, after) => {
+                                // Add cursor: pointer if it's not already there
+                                const updatedStyle = style.includes("cursor:")
+                                  ? style
+                                  : style + "; cursor: pointer;";
+                                return `<img${before}style="${updatedStyle}"${after}>`;
+                              },
+                            );
+
+                            // Store enhanced content for potential editor use (but don't set state during render)
+                            // The enhanced content is already set in the API response handler
+
+                            // Return the enhanced content with proper image styling
+                            return (
+                              <div
+                                className="content-preview prose prose-blue max-w-none"
+                                dangerouslySetInnerHTML={{
+                                  __html: enhancedContent,
+                                }}
+                              />
+                            );
+                          } else {
+                            // Remove any img tags without proper src
+                            let cleanedContent = content;
+                            if (hasImageTags) {
+                              cleanedContent = content.replace(
+                                /<img[^>]*?(?!src=["'][^"']+["'])[^>]*?>/gi,
+                                "",
+                              );
+                            }
+
+                            // Split into paragraphs
+                            const paragraphs = cleanedContent.split(/\n\n+/);
+                            const result: React.ReactNode[] = [];
+                            let imageIndex = 0;
+
+                            // Process each paragraph, inserting images occasionally
+                            paragraphs.forEach((para: string, i: number) => {
+                              // Check if paragraph already has image tags
+                              const hasImageInParagraph = para.includes("<img");
+
+                              if (para.trim()) {
+                                // Process paragraph to ensure proper image handling
+                                const processedPara = para
                                   // Fix relative image URLs to absolute URLs (adding https:// if missing)
                                   .replace(
                                     /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
@@ -7371,137 +7505,256 @@ export default function AdminPanel() {
                                     /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
                                     '<img$1src="https://$3"$4>',
                                   )
-                                  // Add styling to all images for proper display - preserve 600×600 for secondary images
+                                  // Add styling to all images for proper display
                                   .replace(
                                     /<img([^>]*?)>/gi,
-                                    (match, imgAttrs) => {
-                                      const isSecondaryImage =
-                                        imgAttrs.includes("width: 600px") ||
-                                        imgAttrs.includes("height: 600px");
-                                      const imageStyle = isSecondaryImage
-                                        ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
-                                        : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
-                                      return `<img${imgAttrs} style="${imageStyle}">`;
-                                    },
-                                  ),
-                              }}
-                            />
-                            <YouTubeEmbed />
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: content
-                                  .substring(content.length / 3)
-                                  // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                                  .replace(
-                                    /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                                    '<img$1src="https://$2"$3>',
-                                  )
-                                  // Fix image URLs that might be missing domain (starting with //)
-                                  .replace(
-                                    /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                                    '<img$1src="https://$3"$4>',
-                                  )
-                                  // Add styling to all images for proper display - preserve 600×600 for secondary images
-                                  .replace(
-                                    /<img([^>]*?)>/gi,
-                                    (match, imgAttrs) => {
-                                      const isSecondaryImage =
-                                        imgAttrs.includes("width: 600px") ||
-                                        imgAttrs.includes("height: 600px");
-                                      const imageStyle = isSecondaryImage
-                                        ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
-                                        : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
-                                      return `<img${imgAttrs} style="${imageStyle}">`;
-                                    },
-                                  ),
-                              }}
-                            />
-                          </div>
-                        );
-                      }
+                                    '<img$1 style="max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;">',
+                                  );
 
-                      // Default: ensure content displays correctly with embedded images
-                      const processedContent = content
-                        // Fix relative image URLs to absolute URLs (adding https:// if missing)
-                        .replace(
-                          /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
-                          '<img$1src="https://$2"$3>',
-                        )
-                        // Fix image URLs that might be missing domain (starting with //)
-                        .replace(
-                          /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
-                          '<img$1src="https://$3"$4>',
-                        )
-                        // Add styling to all images for proper display - preserve 600×600 for secondary images
-                        .replace(/<img([^>]*?)>/gi, (match, imgAttrs) => {
-                          const isSecondaryImage =
-                            imgAttrs.includes("width: 600px") ||
-                            imgAttrs.includes("height: 600px");
-                          const imageStyle = isSecondaryImage
-                            ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
-                            : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
-                          return `<img${imgAttrs} style="${imageStyle}">`;
-                        });
+                                result.push(
+                                  <div
+                                    key={`p-${i}`}
+                                    dangerouslySetInnerHTML={{
+                                      __html: processedPara,
+                                    }}
+                                  />,
+                                );
+                              }
 
-                      // Return enhanced content with all embedded images properly displayed
-                      return (
-                        <div
-                          className="content-preview prose prose-blue max-w-none"
-                          dangerouslySetInnerHTML={{ __html: processedContent }}
-                        />
-                      );
-                    })()}
-                  </div>
+                              // Only insert secondary images if the paragraph doesn't already have images
+                              // And do it after every 2-3 paragraphs for optimal spacing
+                              if (
+                                !hasImageInParagraph &&
+                                (i + 1) % 2 === 0 &&
+                                imageIndex < secondaryImages.length
+                              ) {
+                                const image = secondaryImages[imageIndex];
 
-                  {(generatedContent.contentUrl ||
-                    generatedContent.shopifyUrl) && (
-                    <div className="grid grid-cols-2 gap-2 mt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const url =
-                            generatedContent.shopifyUrl ||
-                            generatedContent.contentUrl;
-                          window.open(url, "_blank");
-                        }}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        View in Shopify
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const url =
-                            generatedContent.shopifyUrl ||
-                            generatedContent.contentUrl;
-                          navigator.clipboard.writeText(url);
-                          toast({
-                            title: "Link copied",
-                            description:
-                              "Public URL has been copied to clipboard",
-                            variant: "default",
+                                // Try to find a matching product for this image
+                                let productUrl = image.productUrl || "#";
+
+                                // Check if this image belongs to a selected product
+                                const products = selectedProducts || [];
+                                if (products.length > 0 && image.url) {
+                                  const matchingProduct = products.find(
+                                    (p) =>
+                                      p.image &&
+                                      (p.image === image.url ||
+                                        image.url?.includes(p.id)),
+                                  );
+
+                                  if (matchingProduct) {
+                                    productUrl =
+                                      matchingProduct.admin_url || productUrl;
+                                  }
+                                }
+
+                                result.push(
+                                  <div
+                                    key={`img-${i}`}
+                                    className="my-6 flex justify-center"
+                                  >
+                                    <a
+                                      href={productUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="product-link"
+                                    >
+                                      <img
+                                        src={
+                                          image.url || (image.src?.medium ?? "")
+                                        }
+                                        alt={
+                                          image.alt ||
+                                          `Product image ${imageIndex + 1}`
+                                        }
+                                        style={{
+                                          maxWidth: "100%",
+                                          maxHeight: "400px",
+                                          cursor: "pointer",
+                                          objectFit: "contain",
+                                          margin: "1rem auto",
+                                          display: "block",
+                                          borderRadius: "0.375rem",
+                                        }}
+                                      />
+                                    </a>
+                                  </div>,
+                                );
+                                imageIndex++;
+                              }
+
+                              // Insert YouTube after first or second paragraph if not already inserted via placeholder
+                              if (
+                                youtubeVideoId &&
+                                !hasYoutubePlaceholder &&
+                                (i === 0 || i === 1)
+                              ) {
+                                result.push(<YouTubeEmbed key="youtube" />);
+                                // Prevent multiple inserts
+                                youtubeVideoId = null;
+                              }
+                            });
+
+                            return (
+                              <div className="content-preview prose prose-blue max-w-none">
+                                {result}
+                              </div>
+                            );
+                          }
+                        }
+
+                        // If no secondary images or YouTube placeholder, handle YouTube separately
+                        if (youtubeVideoId && !hasYoutubePlaceholder) {
+                          return (
+                            <div className="content-preview prose prose-blue max-w-none">
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: content
+                                    .substring(0, content.length / 3)
+                                    // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                    .replace(
+                                      /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                      '<img$1src="https://$2"$3>',
+                                    )
+                                    // Fix image URLs that might be missing domain (starting with //)
+                                    .replace(
+                                      /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                      '<img$1src="https://$3"$4>',
+                                    )
+                                    // Add styling to all images for proper display - preserve 600×600 for secondary images
+                                    .replace(
+                                      /<img([^>]*?)>/gi,
+                                      (match, imgAttrs) => {
+                                        const isSecondaryImage =
+                                          imgAttrs.includes("width: 600px") ||
+                                          imgAttrs.includes("height: 600px");
+                                        const imageStyle = isSecondaryImage
+                                          ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
+                                          : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
+                                        return `<img${imgAttrs} style="${imageStyle}">`;
+                                      },
+                                    ),
+                                }}
+                              />
+                              <YouTubeEmbed />
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: content
+                                    .substring(content.length / 3)
+                                    // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                                    .replace(
+                                      /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                                      '<img$1src="https://$2"$3>',
+                                    )
+                                    // Fix image URLs that might be missing domain (starting with //)
+                                    .replace(
+                                      /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                                      '<img$1src="https://$3"$4>',
+                                    )
+                                    // Add styling to all images for proper display - preserve 600×600 for secondary images
+                                    .replace(
+                                      /<img([^>]*?)>/gi,
+                                      (match, imgAttrs) => {
+                                        const isSecondaryImage =
+                                          imgAttrs.includes("width: 600px") ||
+                                          imgAttrs.includes("height: 600px");
+                                        const imageStyle = isSecondaryImage
+                                          ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
+                                          : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
+                                        return `<img${imgAttrs} style="${imageStyle}">`;
+                                      },
+                                    ),
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+
+                        // Default: ensure content displays correctly with embedded images
+                        const processedContent = content
+                          // Fix relative image URLs to absolute URLs (adding https:// if missing)
+                          .replace(
+                            /<img([^>]*?)src=["'](?!http)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$2"$3>',
+                          )
+                          // Fix image URLs that might be missing domain (starting with //)
+                          .replace(
+                            /<img([^>]*?)src=["'](\/\/)([^"']+)["']([^>]*?)>/gi,
+                            '<img$1src="https://$3"$4>',
+                          )
+                          // Add styling to all images for proper display - preserve 600×600 for secondary images
+                          .replace(/<img([^>]*?)>/gi, (match, imgAttrs) => {
+                            const isSecondaryImage =
+                              imgAttrs.includes("width: 600px") ||
+                              imgAttrs.includes("height: 600px");
+                            const imageStyle = isSecondaryImage
+                              ? "width: 600px; height: 600px; object-fit: cover; margin: 1rem auto; display: block;"
+                              : "max-width: 100%; max-height: 400px; object-fit: contain; margin: 1rem auto; display: block;";
+                            return `<img${imgAttrs} style="${imageStyle}">`;
                           });
-                        }}
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copy Link
-                      </Button>
+
+                        // Return enhanced content with all embedded images properly displayed
+                        return (
+                          <div
+                            className="content-preview prose prose-blue max-w-none"
+                            dangerouslySetInnerHTML={{
+                              __html: processedContent,
+                            }}
+                          />
+                        );
+                      })()}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <p className="text-muted-foreground">
-                    Content will appear here after generation.
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Fill out the form and click "Generate Content" to create new
-                    content.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+
+                    {(generatedContent.contentUrl ||
+                      generatedContent.shopifyUrl) && (
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const url =
+                              generatedContent.shopifyUrl ||
+                              generatedContent.contentUrl;
+                            window.open(url, "_blank");
+                          }}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View in Shopify
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const url =
+                              generatedContent.shopifyUrl ||
+                              generatedContent.contentUrl;
+                            navigator.clipboard.writeText(url);
+                            toast({
+                              title: "Link copied",
+                              description:
+                                "Public URL has been copied to clipboard",
+                              variant: "default",
+                            });
+                          }}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy Link
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <p className="text-muted-foreground">
+                      Content will appear here after generation.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Fill out the form and click "Generate Content" to create
+                      new content.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
 
@@ -7625,13 +7878,16 @@ export default function AdminPanel() {
                         </p>
                         <div className="text-xs text-green-700 space-y-1">
                           <p>
-                            <strong>Small article:</strong> Select 2–3 images for optimal content flow
+                            <strong>Small article:</strong> Select 2–3 images
+                            for optimal content flow
                           </p>
                           <p>
-                            <strong>Medium article:</strong> Select 3–4 images for good visual balance
+                            <strong>Medium article:</strong> Select 3–4 images
+                            for good visual balance
                           </p>
                           <p>
-                            <strong>Large article:</strong> Select 5+ images for comprehensive visual support
+                            <strong>Large article:</strong> Select 5+ images for
+                            comprehensive visual support
                           </p>
                         </div>
                       </div>
@@ -8407,7 +8663,6 @@ export default function AdminPanel() {
                                   </Button>
                                 </div>
 
-
                                 {/* Primary/Secondary Selection buttons - always visible on hover */}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                                   <Button
@@ -8475,9 +8730,17 @@ export default function AdminPanel() {
                                   <Button
                                     size="sm"
                                     className="w-3/4 text-white border-green-600"
-                                    style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                    style={{
+                                      backgroundColor: "hsl(160 100% 25% / 1)",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "hsl(160 100% 20% / 1)")
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.backgroundColor =
+                                        "hsl(160 100% 25% / 1)")
+                                    }
                                     onClick={() => {
                                       // Mark as secondary image
                                       const updatedImages = searchedImages.map(
@@ -8851,9 +9114,17 @@ export default function AdminPanel() {
                                       ? "opacity-100"
                                       : "opacity-90 hover:opacity-100",
                                   )}
-                                  style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                  style={{
+                                    backgroundColor: "hsl(160 100% 25% / 1)",
+                                  }}
+                                  onMouseEnter={(e) =>
+                                    (e.currentTarget.style.backgroundColor =
+                                      "hsl(160 100% 20% / 1)")
+                                  }
+                                  onMouseLeave={(e) =>
+                                    (e.currentTarget.style.backgroundColor =
+                                      "hsl(160 100% 25% / 1)")
+                                  }
                                   onClick={() => {
                                     // FIXED: Only update selectedMediaContent to prevent duplication - remove setSecondaryImages call
                                     setSelectedMediaContent((prev) => {
@@ -9543,9 +9814,18 @@ export default function AdminPanel() {
                                         });
                                       }}
                                       className="w-4/5 text-white border-green-600"
-                                      style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                      style={{
+                                        backgroundColor:
+                                          "hsl(160 100% 25% / 1)",
+                                      }}
+                                      onMouseEnter={(e) =>
+                                        (e.currentTarget.style.backgroundColor =
+                                          "hsl(160 100% 20% / 1)")
+                                      }
+                                      onMouseLeave={(e) =>
+                                        (e.currentTarget.style.backgroundColor =
+                                          "hsl(160 100% 25% / 1)")
+                                      }
                                     >
                                       <LayoutGrid className="mr-2 h-4 w-4" />
                                       Add to Content
@@ -9792,9 +10072,17 @@ export default function AdminPanel() {
                                 size="sm"
                                 onClick={() => setShopifyMediaType("products")}
                                 className="text-white border-green-600"
-                                style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                style={{
+                                  backgroundColor: "hsl(160 100% 25% / 1)",
+                                }}
+                                onMouseEnter={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "hsl(160 100% 20% / 1)")
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "hsl(160 100% 25% / 1)")
+                                }
                               >
                                 <ArrowLeft className="mr-0.5 h-3 w-3" />
                                 Switch to Product Images
@@ -9965,9 +10253,18 @@ export default function AdminPanel() {
                                                 ? "opacity-100"
                                                 : "opacity-90 hover:opacity-100",
                                             )}
-                                            style={{backgroundColor: 'hsl(160 100% 25% / 1)'}}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 20% / 1)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(160 100% 25% / 1)'}
+                                            style={{
+                                              backgroundColor:
+                                                "hsl(160 100% 25% / 1)",
+                                            }}
+                                            onMouseEnter={(e) =>
+                                              (e.currentTarget.style.backgroundColor =
+                                                "hsl(160 100% 20% / 1)")
+                                            }
+                                            onMouseLeave={(e) =>
+                                              (e.currentTarget.style.backgroundColor =
+                                                "hsl(160 100% 25% / 1)")
+                                            }
                                             onClick={() => {
                                               // Create a Pexels-compatible image object
                                               const imageForSelection: PexelsImage =
