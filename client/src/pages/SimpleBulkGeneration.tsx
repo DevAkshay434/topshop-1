@@ -2340,11 +2340,10 @@ export default function SimpleBulkGeneration() {
                         });
 
                         if (draftResponse.success) {
-                          // Now publish to Shopify
+                          // Now publish to Shopify using the correct endpoint
                           const publishResponse = await apiRequest({
-                            url: '/api/content/publish-to-shopify',
-                            method: 'POST',
-                            data: { postId: draftResponse.post.id }
+                            url: `/api/posts/${draftResponse.post.id}/publish`,
+                            method: 'POST'
                           });
 
                           if (publishResponse.success) {
