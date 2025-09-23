@@ -902,7 +902,7 @@ async function processEnhancedTopic(
           let blogId = formData.blogId;
           if (!blogId) {
             try {
-              const blogs = await shopifyService.getBlogs(store, 50, 1);
+              const blogs = await shopifyService.getBlogs(store);
               if (blogs && blogs.length > 0) {
                 blogId = blogs[0].id.toString();
                 console.log(`Using default blog ID: ${blogId}`);
@@ -918,11 +918,10 @@ async function processEnhancedTopic(
             content: post.content,
             author: post.author || authorName,
             tags: post.tags || topic,
-            blogId: blogId,
             published: formData.postStatus === "published",
             publishedDate: formData.postStatus === "published" ? new Date() : undefined,
             featuredImage: postData.featuredImage
-          });
+          }, blogId);
           
           // Update local post with Shopify details
           await storage.updateBlogPost(post.id, {
