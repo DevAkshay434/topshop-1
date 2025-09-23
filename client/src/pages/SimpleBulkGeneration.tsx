@@ -1064,58 +1064,114 @@ export default function SimpleBulkGeneration() {
       }
       
       try {
-        console.log('🚀 Starting cluster generation API call...');
-        const response = await apiRequest({
-          url: "/api/generate-content/enhanced-bulk",
-          method: "POST",
-          data: {
-            ...contentData,
-            isClusterMode,
-            clusterTopic: formValues.clusterTopic
-          },
-          timeout: 900000 // 15 minute timeout for cluster generation
-        });
-        console.log('✅ API call completed successfully:', response);
+        console.log('🚀 Starting progressive generation...');
         
-        if (progressInterval) clearInterval(progressInterval);
-        setProgress(100);
+        // Initialize results with processing status
+        const initialResults = topicsList.map(topic => ({
+          topic,
+          status: "processing" as const,
+          title: topic,
+          contentPreview: `Generating content for ${topic}...`,
+          postId: Date.now() + Math.random(),
+          usesFallback: false
+        }));
         
-        if (response && response.success) {
-        console.log(`Bulk generation results: ${response.successful} of ${response.totalTopics} successful`);
-        
-        const processedResults = response.results.map((result: any) => {
-          if (result.status === "success") {
-            return {
-              topic: result.topic,
-              postId: result.postId,
-              title: result.title,
-              content: result.content || "No content available", // Full content for SimpleHTMLEditor
-              contentPreview: result.content ? result.content.substring(0, 100) + "..." : "No content preview available",
-              status: "success" as const,
-              usesFallback: result.usesFallback
-            };
-          } else {
-            return {
-              topic: result.topic,
-              status: "failed" as const,
-              error: result.error || "Unknown error"
-            };
-          }
-        });
-        
-        setResults(processedResults);
-        setProgress(100);
+        setResults(initialResults);
         setCurrentStep('results');
         
+        if (progressInterval) clearInterval(progressInterval);
+        
+        // Process topics one by one for real-time updates
+        const finalResults = [];
+        let successful = 0;
+        
+        for (let i = 0; i < topicsList.length; i++) {
+          const topic = topicsList[i];
+          
+          try {
+            console.log(`🔄 Processing topic ${i + 1}/${topicsList.length}: "${topic}"`);
+            
+            const response = await apiRequest({
+              url: "/api/generate-content/single-enhanced",
+              method: "POST",
+              data: {
+                topic,
+                formData: contentData.formData,
+                mediaContent: selectedMediaContent,
+                isClusterMode,
+                clusterTopic: formValues.clusterTopic,
+                allTopics: topicsList
+              },
+              timeout: 300000 // 5 minute timeout per topic
+            });
+            
+            if (response && response.success && response.result) {
+              const result = response.result;
+              if (result.status === "success") {
+                const processedResult = {
+                  topic: result.topic,
+                  postId: result.postId,
+                  title: result.title,
+                  content: result.content || "No content available",
+                  contentPreview: result.content ? result.content.substring(0, 100) + "..." : "No content preview available",
+                  status: "success" as const,
+                  usesFallback: result.usesFallback
+                };
+                finalResults.push(processedResult);
+                successful++;
+                
+                // Update results immediately
+                setResults(prev => prev.map((prevResult, index) => 
+                  index === i ? processedResult : prevResult
+                ));
+                
+                console.log(`✅ Completed topic ${i + 1}/${topicsList.length}: "${topic}"`);
+              } else {
+                const failedResult = {
+                  topic: result.topic,
+                  status: "failed" as const,
+                  error: result.error || "Unknown error"
+                };
+                finalResults.push(failedResult);
+                
+                // Update results immediately
+                setResults(prev => prev.map((prevResult, index) => 
+                  index === i ? failedResult : prevResult
+                ));
+                
+                console.error(`❌ Failed topic ${i + 1}/${topicsList.length}: "${topic}" - ${result.error}`);
+              }
+            } else {
+              throw new Error(response?.error || "Failed to generate content");
+            }
+          } catch (error: any) {
+            console.error(`❌ Error processing topic "${topic}":`, error);
+            const failedResult = {
+              topic,
+              status: "failed" as const,
+              error: error.message || "Unknown error"
+            };
+            finalResults.push(failedResult);
+            
+            // Update results immediately
+            setResults(prev => prev.map((prevResult, index) => 
+              index === i ? failedResult : prevResult
+            ));
+          }
+          
+          // Update progress
+          const progressPercentage = Math.round(((i + 1) / topicsList.length) * 100);
+          setProgress(progressPercentage);
+        }
+        
+        setProgress(100);
+        
         toast({
-          title: "Bulk Content Generation Complete",
-          description: `Generated ${response.successful} of ${response.totalTopics} articles successfully`,
+          title: "Content Generation Complete",
+          description: `Generated ${successful} of ${topicsList.length} articles successfully`,
         });
         
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-        } else {
-          throw new Error(response?.error || "Failed to generate content");
-        }
       } catch (apiError: any) {
         if (progressInterval) clearInterval(progressInterval);
         

@@ -651,6 +651,80 @@ contentRouter.post("/generate-content/enhanced-bulk", async (req: Request, res: 
   }
 });
 
+// Single topic generation endpoint for progressive updates
+contentRouter.post("/generate-content/single-enhanced", async (req: Request, res: Response) => {
+  try {
+    const reqSchema = z.object({
+      topic: z.string().min(1),
+      formData: z.object({
+        articleType: z.string().default("blog"),
+        articleLength: z.string().default("medium"),
+        headingsCount: z.string().default("3"),
+        writingPerspective: z.string().default("first_person_plural"),
+        toneOfVoice: z.string().default("friendly"),
+        introType: z.string().default("search_intent"),
+        faqType: z.string().default("short"),
+        enableTables: z.boolean().default(true),
+        enableLists: z.boolean().default(true),
+        enableH3s: z.boolean().default(true),
+        enableCitations: z.boolean().default(true),
+        generateImages: z.boolean().default(true),
+        postStatus: z.string().default("draft"),
+        blogId: z.string().optional(),
+        productIds: z.array(z.string()).default([]),
+        collectionIds: z.array(z.string()).default([]),
+        keywords: z.array(z.any()).default([]),
+        buyerPersonas: z.string().optional(),
+        authorId: z.string().optional(),
+        categories: z.union([z.array(z.string()), z.string()]).default([]).transform((val) => 
+          Array.isArray(val) ? val : [val]
+        ),
+        contentStyle: z.object({
+          toneId: z.string().optional(),
+          displayName: z.string().optional()
+        }).optional(),
+        customPrompt: z.string().optional()
+      }),
+      mediaContent: z.object({
+        primaryImage: z.any().nullable(),
+        secondaryImages: z.array(z.any()).default([]),
+        youtubeEmbed: z.string().nullable()
+      }).optional(),
+      isClusterMode: z.boolean().default(false),
+      clusterTopic: z.string().optional(),
+      allTopics: z.array(z.string()).default([])
+    });
+    
+    const { topic, formData, mediaContent, isClusterMode, clusterTopic, allTopics } = reqSchema.parse(req.body);
+    
+    console.log(`Single enhanced generating content for topic: "${topic}"`);
+    
+    // Get store from request
+    const storeFromRequest = await getStoreFromRequest(req);
+    if (!storeFromRequest) {
+      return res.status(400).json({
+        success: false,
+        error: "No connected Shopify store found"
+      });
+    }
+    
+    // Process the single topic
+    const result = await processEnhancedTopic(topic, formData, mediaContent, storeFromRequest, isClusterMode, clusterTopic, allTopics);
+    
+    res.json({
+      success: true,
+      result
+    });
+    
+  } catch (error: any) {
+    console.error("Error in single enhanced generation endpoint:", error);
+    res.status(400).json({
+      success: false,
+      error: error.message || "Invalid request"
+    });
+  }
+});
+
 // Helper function to process a single topic with enhanced features
 async function processEnhancedTopic(
   topic: string, 
