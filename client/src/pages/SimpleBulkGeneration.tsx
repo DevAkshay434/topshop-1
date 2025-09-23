@@ -1038,6 +1038,9 @@ export default function SimpleBulkGeneration() {
         
         // Process all topics in one enhanced bulk request for proper formatting and media placement
         console.log(`🚀 Using enhanced bulk generation with ${topicsList.length} topics`);
+        console.log(`🔍 BULK DEBUG - selectedMediaContent before API call:`, JSON.stringify(selectedMediaContent, null, 2));
+        console.log(`🔍 BULK DEBUG - primaryImages count:`, selectedMediaContent.primaryImages?.length || 0);
+        console.log(`🔍 BULK DEBUG - secondaryImages count:`, selectedMediaContent.secondaryImages?.length || 0);
         
         try {
           const response = await apiRequest({
