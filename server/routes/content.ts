@@ -913,15 +913,12 @@ async function processEnhancedTopic(
           }
           
           // Create article in Shopify
-          const shopifyArticle = await shopifyService.createArticle(store, {
-            title: post.title,
-            content: post.content,
-            author: post.author || authorName,
-            tags: post.tags || topic,
-            published: formData.postStatus === "published",
-            publishedDate: formData.postStatus === "published" ? new Date() : undefined,
-            featuredImage: postData.featuredImage
-          }, blogId);
+          const shopifyArticle = await shopifyService.createArticle(
+            store, 
+            blogId, 
+            post,
+            formData.postStatus === "published" ? new Date() : undefined
+          );
           
           // Update local post with Shopify details
           await storage.updateBlogPost(post.id, {
