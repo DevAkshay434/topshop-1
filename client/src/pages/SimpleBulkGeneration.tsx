@@ -177,6 +177,7 @@ type SuccessResult = {
   topic: string;
   postId: number;
   title: string;
+  content: string; // Full content for SimpleHTMLEditor
   contentPreview: string;
   status: "success";
   usesFallback: boolean;
@@ -846,6 +847,7 @@ export default function SimpleBulkGeneration() {
               topic: result.topic,
               postId: result.postId,
               title: result.title,
+              content: result.content || "No content available", // Full content for SimpleHTMLEditor
               contentPreview: result.content ? result.content.substring(0, 100) + "..." : "No content preview available",
               status: "success" as const,
               usesFallback: result.usesFallback
@@ -1023,6 +1025,7 @@ export default function SimpleBulkGeneration() {
                   topic: result.topic,
                   status: 'success' as const,
                   title: matchingPost.title,
+                  content: matchingPost.content || "No content available", // Full content for SimpleHTMLEditor
                   contentPreview: matchingPost.content?.substring(0, 150) + '...',
                   postId: matchingPost.id,
                   usesFallback: false
@@ -1993,45 +1996,98 @@ export default function SimpleBulkGeneration() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4 max-h-[500px] overflow-y-auto">
+              <div className="space-y-6 max-h-[800px] overflow-y-auto">
                 {results.map((result, index) => (
                   <div 
                     key={index}
-                    className={`p-4 rounded-lg border ${
+                    className={`rounded-lg border ${
                       result.status === "success" 
                         ? "bg-green-50 border-green-200" 
                         : "bg-red-50 border-red-200"
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-neutral-900">
-                          {result.status === "success" ? result.title : result.topic}
-                        </h4>
-                        <p className="text-sm mt-1 text-neutral-600">
-                          {result.status === "success" ? (
-                            <>
-                              <span className="text-green-700 font-medium">Successfully generated</span>
-                              {result.usesFallback && (
-                                <span className="ml-2 text-amber-600 text-xs px-2 py-0.5 bg-amber-50 rounded-full border border-amber-200">
-                                  Fallback model used
-                                </span>
-                              )}
-                              {result.contentPreview && (
-                                <span className="block mt-1">{result.contentPreview}</span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-red-700">Failed: {result.error}</span>
-                          )}
-                        </p>
-                      </div>
-                      {result.status === "success" && (
-                        <div className="ml-4">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                    {/* Header Section */}
+                    <div className="p-4 border-b bg-white rounded-t-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-neutral-900 text-lg">
+                            {result.status === "success" ? result.title : result.topic}
+                          </h4>
+                          <p className="text-sm mt-1 text-neutral-600">
+                            {result.status === "success" ? (
+                              <>
+                                <span className="text-green-700 font-medium">Successfully generated</span>
+                                {result.usesFallback && (
+                                  <span className="ml-2 text-amber-600 text-xs px-2 py-0.5 bg-amber-50 rounded-full border border-amber-200">
+                                    Fallback model used
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-red-700">Failed: {result.error}</span>
+                            )}
+                          </p>
                         </div>
-                      )}
+                        
+                        {result.status === "success" && (
+                          <div className="flex gap-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedPost({
+                                  id: result.postId,
+                                  title: result.title,
+                                  content: result.content, // Use full content
+                                  handle: "",
+                                  summary: "",
+                                  tags: "",
+                                  created_at: new Date().toISOString(),
+                                  updated_at: new Date().toISOString(),
+                                  published_at: null,
+                                  status: "draft",
+                                  blog_id: 0,
+                                  author: "",
+                                  image: ""
+                                });
+                                setCreatePostModalOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit in Shopify
+                            </Button>
+                            <div className="ml-2">
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Content Editor Section - Only for successful results */}
+                    {result.status === "success" && (
+                      <div className="p-4">
+                        <div className="bg-white rounded-lg border border-gray-200">
+                          <div className="h-96">
+                            <SimpleHTMLEditor
+                              content={result.content}
+                              onChange={(newContent) => {
+                                // Update the content in the result
+                                setResults(prevResults => 
+                                  prevResults.map((r, i) => 
+                                    i === index && r.status === "success" 
+                                      ? { ...r, content: newContent }
+                                      : r
+                                  )
+                                );
+                              }}
+                              className="h-full"
+                              editable={true}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
