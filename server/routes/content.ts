@@ -869,9 +869,7 @@ async function processEnhancedTopic(
         tags: Array.isArray(generatedContent.tags) && generatedContent.tags.length > 0 
           ? generatedContent.tags.join(",") 
           : topic,
-        category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content",
-        metaTitle: generatedContent.metaTitle || null,
-        metaDescription: generatedContent.metaDescription || null
+        category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content"
       };
 
       // Add featured image from primary image like admin panel
@@ -888,12 +886,68 @@ async function processEnhancedTopic(
       
       console.log(`Created enhanced post: ${post.id} - "${post.title}"`);
       
+      // Publish to Shopify if status is published or draft (for immediate publishing)
+      if (formData.postStatus === "published" || formData.postStatus === "draft") {
+        try {
+          console.log(`🚀 Publishing post "${post.title}" to Shopify...`);
+          
+          // Import ShopifyService 
+          const { ShopifyService } = await import('../services/shopify');
+          const shopifyService = new ShopifyService();
+          
+          // Initialize client for this store
+          shopifyService.initializeClient(store);
+          
+          // Determine blog ID - use from formData or get default blog
+          let blogId = formData.blogId;
+          if (!blogId) {
+            try {
+              const blogs = await shopifyService.getBlogs(store, 50, 1);
+              if (blogs && blogs.length > 0) {
+                blogId = blogs[0].id.toString();
+                console.log(`Using default blog ID: ${blogId}`);
+              }
+            } catch (blogError) {
+              console.warn('Could not get blogs, will try without blog ID');
+            }
+          }
+          
+          // Create article in Shopify
+          const shopifyArticle = await shopifyService.createArticle(store, {
+            title: post.title,
+            content: post.content,
+            author: post.author || authorName,
+            tags: post.tags || topic,
+            blogId: blogId,
+            published: formData.postStatus === "published",
+            publishedDate: formData.postStatus === "published" ? new Date() : undefined,
+            featuredImage: postData.featuredImage
+          });
+          
+          // Update local post with Shopify details
+          await storage.updateBlogPost(post.id, {
+            shopifyPostId: shopifyArticle.id?.toString(),
+            shopifyBlogId: blogId,
+            shopifyHandle: shopifyArticle.handle || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            status: formData.postStatus === "published" ? "published" : "draft"
+          });
+          
+          console.log(`✅ Successfully published to Shopify: ${shopifyArticle.id}`);
+          
+        } catch (shopifyError: any) {
+          console.error(`❌ Failed to publish to Shopify for "${post.title}":`, shopifyError);
+          // Don't fail the entire operation, just log the error
+          console.warn('Post created locally but not published to Shopify');
+        }
+      }
+      
       return {
         topic,
         postId: post.id,
         title: generatedContent.title,
         content: generatedContent.content,
-        status: "success"
+        status: "success",
+        usesFallback: false
       };
       
     } catch (aiError: any) {
