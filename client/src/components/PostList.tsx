@@ -69,7 +69,7 @@ export default function PostList({
         publishedDate: new Date().toISOString()
       });
       
-      if (response) {
+      if (response && response.post) {
         toast({
           title: "Post Published",
           description: `"${post.title}" has been published successfully.`
@@ -80,14 +80,34 @@ export default function PostList({
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
         queryClient.invalidateQueries({ queryKey: ['/api/posts/recent'] });
         queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      } else {
+        console.warn('Publish response missing post data:', response);
+        toast({
+          title: "Publication Warning",
+          description: "Post updated but response was incomplete. Please refresh to verify status.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      console.error('Error publishing post:', error);
-      toast({
-        title: "Publication Failed",
-        description: "There was an error publishing the post. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Publish error:', error);
+      
+      // Check if it's a response parsing error vs actual failure
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isParseError = errorMessage.includes('Unexpected') || errorMessage.includes('JSON');
+      
+      if (isParseError) {
+        toast({
+          title: "Publication Status Unclear",
+          description: "Post may have been published. Please refresh the page to verify.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Publication Failed",
+          description: "There was an error publishing the post. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setPublishingId(null);
     }
