@@ -294,11 +294,11 @@ export default function SimpleBulkGeneration() {
   
   // Media state
   const [selectedMediaContent, setSelectedMediaContent] = useState<{
-    primaryImage: any | null;
+    primaryImages: any[];
     secondaryImages: any[];
     youtubeEmbed: string | null;
   }>({
-    primaryImage: null,
+    primaryImages: [],
     secondaryImages: [],
     youtubeEmbed: null
   });
@@ -736,7 +736,7 @@ export default function SimpleBulkGeneration() {
       console.log(`Generating content for ${topicsList.length} topics`);
       setProgress(10);
       
-      // Build comprehensive content data like AdminPanel
+      // Build comprehensive content data like AdminPanel with distributed primary images
       const contentData = {
         topics: topicsList,
         formData: {
@@ -752,7 +752,18 @@ export default function SimpleBulkGeneration() {
             displayName: selectedContentDisplayName
           }
         },
-        mediaContent: selectedMediaContent,
+        // Create individual media content for each topic/article
+        topicMediaContent: topicsList.map((topic, index) => ({
+          topic,
+          mediaContent: {
+            // Distribute different primary images across articles (cycle through if more articles than images)
+            primaryImage: selectedMediaContent.primaryImages.length > 0 
+              ? selectedMediaContent.primaryImages[index % selectedMediaContent.primaryImages.length]
+              : null,
+            secondaryImages: selectedMediaContent.secondaryImages,
+            youtubeEmbed: selectedMediaContent.youtubeEmbed
+          }
+        })),
         batchSize: formValues.batchSize,
         simultaneousGeneration: formValues.simultaneousGeneration
       };
