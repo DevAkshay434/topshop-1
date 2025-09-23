@@ -1671,8 +1671,8 @@ export async function registerRoutes(app: Express): Promise<void> {
             }
           }
           
-          // Also check for very similar titles (exact match) for new content without shopifyPostId
-          if (postData.title) {
+          // Also check for very similar titles (exact match) for NEW content only
+          if (postData.title && !req.body.id) { // Only check for duplicates on new posts, not updates
             const titleDuplicate = existingPosts.find(p => 
               p.title && 
               p.title.toLowerCase().trim() === postData.title.toLowerCase().trim() &&
@@ -1681,12 +1681,14 @@ export async function registerRoutes(app: Express): Promise<void> {
             );
             
             if (titleDuplicate) {
-              console.log(`Title duplicate found: Post ${titleDuplicate.id} with same title "${postData.title}"`);
+              console.log(`Title duplicate found: Post ${titleDuplicate.id} with same title "${postData.title}" - blocking NEW post creation`);
               return res.status(400).json({ 
                 error: "Similar content already scheduled",
                 details: `Content with the same title is already scheduled. Please check your scheduled content.`
               });
             }
+          } else if (req.body.id) {
+            console.log(`Skipping duplicate check - this is an update to existing post ${req.body.id}`);
           }
         }
       }
