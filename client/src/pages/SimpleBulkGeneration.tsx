@@ -2225,38 +2225,12 @@ export default function SimpleBulkGeneration() {
                     }}
                     onPublish={async (postData) => {
                       try {
-                        // Check if we have an existing post ID from bulk generation
+                        // Since bulk generation now creates articles as drafts in Shopify with proper IDs,
+                        // we can directly publish them without additional sync steps
                         if (postData.postId) {
-                          // Update the existing post with any content changes, then publish
-                          const updateData = {
-                            title: postData.title,
-                            content: postData.content,
-                            status: 'draft' // Keep as draft for now
-                          };
-
-                          // First update the post content if it was edited
-                          const updateResponse = await apiRequest({
-                            url: `/api/posts/${postData.postId}`,
-                            method: 'PUT',
-                            data: updateData
-                          });
-
-                          if (!updateResponse.success) {
-                            throw new Error(updateResponse.error || 'Failed to update post');
-                          }
-
-                          // First sync to Shopify to create the draft there
-                          const syncResponse = await apiRequest({
-                            url: '/api/shopify/sync',
-                            method: 'POST',
-                            data: { postIds: [postData.postId] }
-                          });
-
-                          if (!syncResponse.success) {
-                            throw new Error(syncResponse.error || 'Failed to sync to Shopify');
-                          }
-
-                          // Now publish to Shopify using the existing post ID
+                          console.log(`Publishing post ${postData.postId}: "${postData.title}"`);
+                          
+                          // Directly publish to Shopify using the existing post ID
                           const publishResponse = await apiRequest({
                             url: `/api/posts/${postData.postId}/publish`,
                             method: 'POST'
@@ -2272,60 +2246,13 @@ export default function SimpleBulkGeneration() {
                             throw new Error(publishResponse.error || 'Failed to publish to Shopify');
                           }
                         } else {
-                          // Fallback: Create a new post if no existing post ID
-                          const draftData = {
-                            title: postData.title,
-                            content: postData.content,
-                            contentType: 'post',
-                            status: 'draft',
-                            blogId: form.getValues('blogId') || 'default',
-                            authorId: selectedAuthorId || '1',
-                            tags: 'bulk generated content',
-                            category: 'Generated Content'
-                          };
-
-                          const draftResponse = await apiRequest({
-                            url: '/api/posts',
-                            method: 'POST',
-                            data: draftData
-                          });
-
-                          if (draftResponse.success) {
-                            // Sync to Shopify first
-                            const syncResponse = await apiRequest({
-                              url: '/api/shopify/sync',
-                              method: 'POST',
-                              data: { postIds: [draftResponse.post.id] }
-                            });
-
-                            if (!syncResponse.success) {
-                              throw new Error(syncResponse.error || 'Failed to sync to Shopify');
-                            }
-
-                            // Now publish to Shopify
-                            const publishResponse = await apiRequest({
-                              url: `/api/posts/${draftResponse.post.id}/publish`,
-                              method: 'POST'
-                            });
-
-                            if (publishResponse.success) {
-                              toast({
-                                title: "Published Successfully",
-                                description: `"${postData.title}" has been published to Shopify!`,
-                              });
-                              queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-                            } else {
-                              throw new Error(publishResponse.error || 'Failed to publish to Shopify');
-                            }
-                          } else {
-                            throw new Error(draftResponse.error || 'Failed to create draft');
-                          }
+                          throw new Error('No post ID found - cannot publish');
                         }
                       } catch (error: any) {
                         console.error('Publish error:', error);
                         toast({
                           title: "Publishing Failed",
-                          description: error.message || "Failed to create draft",
+                          description: error.message || "Failed to publish post",
                           variant: "destructive"
                         });
                       }
