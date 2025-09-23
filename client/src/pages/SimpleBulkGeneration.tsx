@@ -810,7 +810,7 @@ export default function SimpleBulkGeneration() {
         // Start monitoring for completed articles
         startClusterMonitoring();
       } else {
-        // For bulk mode, keep the old progress indicator
+        // For bulk mode, keep the old progress indicator but allow it to reach 100%
         let progressCounter = 0;
         progressInterval = setInterval(() => {
           progressCounter++;
@@ -822,10 +822,12 @@ export default function SimpleBulkGeneration() {
               return currentProgress + 1;
             } else if (currentProgress < 85) {
               return currentProgress + 1;
-            } else if (currentProgress < 90) {
+            } else if (currentProgress < 95) {
               return currentProgress + 1;
+            } else if (currentProgress < 100) {
+              return currentProgress + 0.5; // Slow down but still allow progress toward 100%
             }
-            return currentProgress;
+            return Math.min(100, currentProgress);
           });
         }, 2000);
       }
@@ -1046,7 +1048,7 @@ export default function SimpleBulkGeneration() {
           });
         });
         
-        // Count completed articles after state update
+        // Count completed articles after state update and update progress
         setTimeout(() => {
           const currentResults = results;
           const completedCount = currentResults.filter(r => r.status === 'success').length;
@@ -1054,9 +1056,15 @@ export default function SimpleBulkGeneration() {
         
           console.log(`📊 Progress: ${completedCount}/${totalCount} articles completed`);
           
+          // Update progress based on completed articles (90% base + 10% for completion)
+          const completionProgress = totalCount > 0 ? (completedCount / totalCount) * 10 : 0;
+          setProgress(90 + completionProgress);
+          
           // Stop monitoring if all articles are complete
           if (completedCount === totalCount) {
             clearInterval(monitorInterval);
+            setProgress(100);
+            setIsGenerating(false);
             toast({
               title: "🎉 Cluster Complete!",
               description: `All ${totalCount} articles in your cluster have been generated successfully.`,
