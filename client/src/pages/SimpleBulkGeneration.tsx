@@ -1197,72 +1197,156 @@ export default function SimpleBulkGeneration() {
                       )}
                     />
 
-                    {/* Related Keywords Grid */}
+                    {/* Topical Mapping Diagram */}
                     {relatedKeywords.length > 0 && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Related Keywords Found ({relatedKeywords.length})</Label>
+                          <Label className="text-sm font-medium">Topical Map ({relatedKeywords.length + 1} keywords)</Label>
                           <Badge variant="outline" className="text-xs" data-testid="badge-selected-count">
                             {selectedTitles.length} titles selected
                           </Badge>
                         </div>
                         
-                        <div className="grid gap-4">
-                          {relatedKeywords.map((keyword) => (
-                            <Card key={keyword.id} className="bg-white" data-testid={`card-keyword-${keyword.id}`}>
-                              <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Target className="h-4 w-4 text-green-600" />
-                                    <CardTitle className="text-sm">{keyword.keyword}</CardTitle>
-                                  </div>
-                                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                                    {keyword.searchVolume && (
-                                      <div className="flex items-center gap-1" data-testid={`text-search-volume-${keyword.id}`}>
-                                        <BarChart className="h-3 w-3" />
-                                        {keyword.searchVolume?.toLocaleString()}
+                        {/* Visual Diagram Container */}
+                        <div className="relative bg-white rounded-lg border p-8 min-h-[400px] overflow-hidden">
+                          {/* Root Keyword in Center */}
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                            <div className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium text-center shadow-lg">
+                              <div className="text-sm font-bold">{topicalMappingSession?.rootKeyword}</div>
+                              <div className="text-xs opacity-90">Root Keyword</div>
+                            </div>
+                          </div>
+
+                          {/* Related Keywords Arranged in Circle */}
+                          {relatedKeywords.map((keyword, index) => {
+                            const angle = (index * 360) / relatedKeywords.length;
+                            const radius = 140;
+                            const x = Math.cos((angle * Math.PI) / 180) * radius;
+                            const y = Math.sin((angle * Math.PI) / 180) * radius;
+                            
+                            const hasGeneratedTitles = generatedTitles[keyword.id];
+                            const selectedCount = hasGeneratedTitles ? 
+                              generatedTitles[keyword.id]?.filter(t => t.isSelected).length || 0 : 0;
+
+                            return (
+                              <div key={keyword.id}>
+                                {/* Connection Line */}
+                                <svg className="absolute top-1/2 left-1/2 pointer-events-none" style={{ zIndex: 1 }}>
+                                  <line
+                                    x1="0"
+                                    y1="0"
+                                    x2={x}
+                                    y2={y}
+                                    stroke="#e5e7eb"
+                                    strokeWidth="2"
+                                    strokeDasharray="5,5"
+                                  />
+                                </svg>
+
+                                {/* Keyword Node */}
+                                <div
+                                  className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                                  style={{
+                                    left: `calc(50% + ${x}px)`,
+                                    top: `calc(50% + ${y}px)`,
+                                    zIndex: 2
+                                  }}
+                                  data-testid={`keyword-node-${keyword.id}`}
+                                >
+                                  <div className={cn(
+                                    "bg-white border-2 rounded-lg p-3 shadow-md hover:shadow-lg transition-all duration-200 min-w-[160px]",
+                                    hasGeneratedTitles 
+                                      ? "border-green-500 bg-green-50" 
+                                      : "border-gray-300 hover:border-blue-400"
+                                  )}>
+                                    <div className="text-center">
+                                      <div className="font-medium text-sm text-gray-900 mb-1 line-clamp-2">
+                                        {keyword.keyword}
                                       </div>
-                                    )}
-                                    {keyword.difficulty && (
-                                      <div className="flex items-center gap-1" data-testid={`text-difficulty-${keyword.id}`}>
-                                        <Zap className="h-3 w-3" />
-                                        {keyword.difficulty}%
+                                      
+                                      {/* Keyword Metrics */}
+                                      <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mb-2">
+                                        {keyword.searchVolume && (
+                                          <span className="flex items-center gap-1">
+                                            <BarChart className="h-3 w-3" />
+                                            {keyword.searchVolume > 1000 ? 
+                                              `${Math.round(keyword.searchVolume / 1000)}k` : 
+                                              keyword.searchVolume.toLocaleString()
+                                            }
+                                          </span>
+                                        )}
+                                        {keyword.difficulty && (
+                                          <span className="flex items-center gap-1">
+                                            <Zap className="h-3 w-3" />
+                                            {keyword.difficulty}%
+                                          </span>
+                                        )}
                                       </div>
-                                    )}
+
+                                      {/* Action Button */}
+                                      {!hasGeneratedTitles ? (
+                                        <Button 
+                                          onClick={() => generateTitlesForKeyword(keyword)}
+                                          disabled={isGeneratingTitles[keyword.id]}
+                                          variant="outline"
+                                          size="sm"
+                                          className="w-full h-7 text-xs"
+                                          data-testid={`button-generate-titles-${keyword.id}`}
+                                        >
+                                          {isGeneratingTitles[keyword.id] ? (
+                                            <>
+                                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                              Generating...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Sparkles className="mr-1 h-3 w-3" />
+                                              Generate Titles
+                                            </>
+                                          )}
+                                        </Button>
+                                      ) : (
+                                        <div className="space-y-1">
+                                          <div className="flex items-center justify-center gap-1 text-xs text-green-600">
+                                            <CheckCircle className="h-3 w-3" />
+                                            {generatedTitles[keyword.id]?.length || 0} titles
+                                          </div>
+                                          {selectedCount > 0 && (
+                                            <Badge variant="secondary" className="text-xs">
+                                              {selectedCount} selected
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </CardHeader>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Generated Titles Panel (Collapsible) */}
+                        {Object.keys(generatedTitles).length > 0 && (
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium">Generated Titles</Label>
+                            {relatedKeywords.map((keyword) => {
+                              if (!generatedTitles[keyword.id]) return null;
                               
-                              <CardContent className="pt-0">
-                                {!generatedTitles[keyword.id] ? (
-                                  <Button 
-                                    onClick={() => generateTitlesForKeyword(keyword)}
-                                    disabled={isGeneratingTitles[keyword.id]}
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full"
-                                    data-testid={`button-generate-titles-${keyword.id}`}
-                                  >
-                                    {isGeneratingTitles[keyword.id] ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                                        Generating...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Sparkles className="mr-2 h-3 w-3" />
-                                        Generate 10 Titles
-                                      </>
-                                    )}
-                                  </Button>
-                                ) : (
-                                  <div className="space-y-2">
+                              return (
+                                <Card key={keyword.id} className="bg-white">
+                                  <CardHeader className="pb-2">
                                     <div className="flex items-center justify-between">
-                                      <Label className="text-xs">Generated Titles</Label>
-                                      <span className="text-xs text-gray-500" data-testid={`text-selected-count-${keyword.id}`}>
-                                        {generatedTitles[keyword.id]?.filter(t => t.isSelected).length || 0} selected
+                                      <CardTitle className="text-sm flex items-center gap-2">
+                                        <Target className="h-3 w-3 text-green-600" />
+                                        {keyword.keyword}
+                                      </CardTitle>
+                                      <span className="text-xs text-gray-500">
+                                        {generatedTitles[keyword.id]?.filter(t => t.isSelected).length || 0} / {generatedTitles[keyword.id]?.length || 0} selected
                                       </span>
                                     </div>
+                                  </CardHeader>
+                                  <CardContent className="pt-0">
                                     <div className="grid gap-1 max-h-32 overflow-y-auto">
                                       {generatedTitles[keyword.id]?.map((title) => (
                                         <div
@@ -1290,12 +1374,12 @@ export default function SimpleBulkGeneration() {
                                         </div>
                                       ))}
                                     </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
 
