@@ -133,8 +133,8 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       });
       
       // Consume the usage (either from plan limits or credits)
-      const consumeResult = await consumeUsageForContentGeneration(store.id);
-      console.log(`Content generation consumed:`, consumeResult);
+      await consumeUsageForContentGeneration(store.id, false);
+      console.log(`Content generation consumed for store ${store.id}`);
       
       // Get the Shopify connection to use as author
       const connection = await storage.getShopifyConnection();
@@ -156,7 +156,6 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         success: true, 
         requestId: updatedRequest?.id,
         postId: post.id,
-        consumeResult,
         ...generatedContent
       });
       
@@ -805,11 +804,11 @@ async function processEnhancedTopic(
           const author = authors.find(a => a.id === formData.authorId);
           if (author) {
             authorData = {
-              id: author.id,
+              id: author.id.toString(),
               name: author.name || "Store Owner",
-              description: author.description,
-              profileImage: author.profileImage,
-              linkedinUrl: author.linkedinUrl
+              description: author.description || undefined,
+              profileImage: author.avatarUrl || undefined,
+              linkedinUrl: author.linkedinUrl || undefined
             };
             console.log(`👤 BULK ROUTE - Found author for attribution: ${authorData.name}`);
           }
@@ -857,7 +856,7 @@ async function processEnhancedTopic(
         enableCitations: formData.enableCitations,
         // CRITICAL: Include author attribution (matching AdminPanel functionality)
         authorId: formData.authorId,
-        author: authorData
+        author: authorData || undefined
       });
       
       console.log(`Enhanced content generated for "${topic}". Title: "${generatedContent.title}"`);
@@ -943,7 +942,7 @@ async function processEnhancedTopic(
           await storage.updateBlogPost(post.id, {
             shopifyPostId: shopifyArticle.id?.toString(),
             shopifyBlogId: blogId,
-            shopifyHandle: shopifyArticle.handle || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            shopifyHandle: (shopifyArticle as any).handle || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
             status: formData.postStatus === "published" ? "published" : "draft"
           });
           
