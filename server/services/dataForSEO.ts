@@ -77,7 +77,7 @@ export class DataForSEOService {
 
   /**
    * Get keyword suggestions based on a seed keyword
-   * This uses the Keywords Data API to get related keywords
+   * This uses the DataForSEO Labs API to get related keywords
    */
   async getKeywordSuggestions(seedKeyword: string, locationCode: string = '2840', languageCode: string = 'en', limit: number = 5): Promise<KeywordData[]> {
     try {
@@ -87,20 +87,18 @@ export class DataForSEOService {
         {
           keyword: seedKeyword,
           location_code: parseInt(locationCode),
-          language_code: languageCode,
-          include_serp_info: false,
-          include_seed_keyword: false,
-          include_clickstream_data: true,
-          limit: limit * 3, // Get more keywords to filter and return the best ones
+          language_name: languageCode === 'en' ? 'English' : languageCode,
+          limit: limit * 2, // Get more keywords to filter and return the best ones
+          offset: 0,
           filters: [
-            ["search_volume", ">", 100] // Only keywords with decent search volume
+            ["keyword_data.keyword_info.search_volume", ">", 100] // Only keywords with decent search volume
           ],
-          order_by: ["search_volume,desc"] // Order by search volume descending
+          order_by: ["keyword_data.keyword_info.search_volume,desc"] // Order by search volume descending
         }
       ];
 
       const response = await axios.post(
-        `${this.baseUrl}/keywords_data/google_ads/keywords_for_keywords/live`,
+        `${this.baseUrl}/dataforseo_labs/google/related_keywords/live`,
         requestData,
         {
           headers: {
@@ -132,14 +130,25 @@ export class DataForSEOService {
         return [];
       }
 
-      // Filter and sort the results to get the best keywords
+      // Transform DataForSEO Labs response to match our KeywordData interface
       const filteredKeywords = task.data.items
-        .filter(item => 
-          item.search_volume && item.search_volume > 100 && // Must have decent search volume
-          item.keyword && 
-          item.keyword.toLowerCase() !== seedKeyword.toLowerCase() && // Don't include the seed keyword
-          item.keyword.length <= 100 // Reasonable keyword length
+        .filter((item: any) => 
+          item.keyword_data?.keyword_info?.search_volume && 
+          item.keyword_data.keyword_info.search_volume > 100 && // Must have decent search volume
+          item.keyword_data?.keyword && 
+          item.keyword_data.keyword.toLowerCase() !== seedKeyword.toLowerCase() && // Don't include the seed keyword
+          item.keyword_data.keyword.length <= 100 // Reasonable keyword length
         )
+        .map((item: any) => ({
+          keyword: item.keyword_data.keyword,
+          location_code: parseInt(locationCode),
+          language_code: languageCode,
+          search_partners: false,
+          search_volume: item.keyword_data.keyword_info.search_volume,
+          competition: item.keyword_data.keyword_info.competition || null,
+          cpc: item.keyword_data.keyword_info.cpc || null,
+          competition_level: item.keyword_data.keyword_info.competition_level || null
+        }))
         .sort((a, b) => {
           // Sort by search volume first, then by competition level (lower is better)
           const volumeDiff = (b.search_volume || 0) - (a.search_volume || 0);
