@@ -1409,30 +1409,29 @@ export default function SimpleBulkGeneration() {
 
                                     return (
                                       <div key={title.id}>
-                                        {/* Line from keyword to title */}
+                                        {/* Dynamic Line from keyword to title (follows dragged position) */}
                                         <svg className="absolute top-0 left-0 pointer-events-none w-full h-full" style={{ zIndex: 5 }}>
                                           <line
                                             x1={keywordX}
                                             y1={keywordY}
-                                            x2={titleX}
-                                            y2={titleY}
+                                            x2={titlePositions[title.id]?.x || titleX}
+                                            y2={titlePositions[title.id]?.y || titleY}
                                             stroke="#10b981"
                                             strokeWidth="2"
                                             strokeDasharray="4,2"
                                           />
                                         </svg>
 
-                                        {/* Title Node */}
+                                        {/* Title Node - Individually Draggable */}
                                         <div
-                                          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-15"
+                                          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move group z-15"
                                           style={{
-                                            left: `${titleX}px`,
-                                            top: `${titleY}px`,
+                                            left: `${titlePositions[title.id]?.x || titleX}px`,
+                                            top: `${titlePositions[title.id]?.y || titleY}px`,
+                                            transition: draggingTitleId === title.id ? 'none' : 'all 0.2s ease',
                                           }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleTitleSelection(title);
-                                          }}
+                                          onMouseDown={(e) => handleTitleMouseDown(e, title, titleX, titleY)}
+                                          onClick={(e) => handleTitleClick(e, title)}
                                           data-testid={`title-branch-${title.id}`}
                                         >
                                           <div className={cn(
