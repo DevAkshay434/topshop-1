@@ -817,6 +817,13 @@ async function processEnhancedTopic(
         }
       }
 
+      // Debug media content before passing to Claude service
+      console.log(`🔍 MEDIA DEBUG - Topic: "${topic}"`);
+      console.log(`🔍 MEDIA DEBUG - mediaContent:`, JSON.stringify(mediaContent, null, 2));
+      console.log(`🔍 MEDIA DEBUG - primaryImage:`, mediaContent?.primaryImage);
+      console.log(`🔍 MEDIA DEBUG - secondaryImages count:`, mediaContent?.secondaryImages?.length || 0);
+      console.log(`🔍 MEDIA DEBUG - youtubeEmbed:`, mediaContent?.youtubeEmbed);
+
       // Generate content with dedicated bulk Claude service (same as admin panel)
       const generatedContent = await generateBulkContentWithClaude({
         topic,

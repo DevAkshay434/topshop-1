@@ -530,6 +530,9 @@ async function applyMediaPlacement(content: string, request: BulkContentRequest)
   
   try {
     console.log(`🖼️ BULK MEDIA PLACEMENT - Processing media for bulk content`);
+    console.log(`🔍 MEDIA REQUEST DEBUG - primaryImage:`, request.primaryImage ? 'EXISTS' : 'NULL');
+    console.log(`🔍 MEDIA REQUEST DEBUG - secondaryImages:`, request.secondaryImages?.length || 0);
+    console.log(`🔍 MEDIA REQUEST DEBUG - youtubeEmbed:`, request.youtubeEmbed ? 'EXISTS' : 'NULL');
     console.log(`🔍 CONTENT DEBUG - First 500 chars:`, processedContent.substring(0, 500));
     console.log(`🔍 CONTENT DEBUG - Looking for H2 patterns in content...`);
     
