@@ -955,7 +955,7 @@ async function processEnhancedTopic(
             await shopifyService.updateArticle(store, blogId, shopifyArticle.id.toString(), {
               published: true,
               published_at: new Date().toISOString()
-            });
+            } as any);
             
             // Update local status to published
             await storage.updateBlogPost(post.id, {

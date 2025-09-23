@@ -3971,8 +3971,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       const post = await storage.getBlogPost(postId);
       if (!post) {
         return res.status(404).json({
-          status: "error",
-          message: `Post with ID ${postId} not found`
+          success: false,
+          error: `Post with ID ${postId} not found`
         });
       }
       
@@ -3982,8 +3982,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       if (!post.shopifyPostId || (!isPage && !post.shopifyBlogId)) {
         return res.status(400).json({
-          status: "error",
-          message: `${isPage ? 'Page' : 'Post'} is missing required Shopify IDs and cannot be published. Has shopifyPostId: ${!!post.shopifyPostId}, Has shopifyBlogId: ${!!post.shopifyBlogId}`
+          success: false,
+          error: `${isPage ? 'Page' : 'Post'} is missing required Shopify IDs and cannot be published. Has shopifyPostId: ${!!post.shopifyPostId}, Has shopifyBlogId: ${!!post.shopifyBlogId}`
         });
       }
       
@@ -3998,8 +3998,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       if (!store) {
         return res.status(400).json({
-          status: "error",
-          message: "Could not find associated store for this post"
+          success: false,
+          error: "Could not find associated store for this post"
         });
       }
       
@@ -4022,7 +4022,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       });
       
       return res.json({
-        status: "success",
+        success: true,
         message: `${isPage ? 'Page' : 'Post'} published successfully`,
         post: {
           id: postId,
@@ -4035,9 +4035,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     } catch (error) {
       console.error("Error publishing post:", error);
       return res.status(500).json({
-        status: "error",
-        message: "Failed to publish post",
-        error: String(error)
+        success: false,
+        error: "Failed to publish post: " + String(error)
       });
     }
   });
