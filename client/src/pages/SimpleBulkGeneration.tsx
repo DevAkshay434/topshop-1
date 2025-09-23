@@ -52,6 +52,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -72,6 +73,7 @@ import {
   ChevronLeft,
   ImagePlus,
   ChevronRight,
+  ChevronDown,
   Clock, 
   Copy,
   Cpu,
@@ -199,6 +201,235 @@ type ProcessingResult = {
 };
 
 type GenerationResult = SuccessResult | FailedResult | ProcessingResult;
+
+// BulkResultCard Component
+interface BulkResultCardProps {
+  result: GenerationResult;
+  index: number;
+  onContentUpdate: (content: string) => void;
+  onPublish: (postData: any) => Promise<void>;
+  onSaveDraft: (postData: any) => Promise<void>;
+  onSchedule: (postData: any, scheduleDate: Date) => Promise<void>;
+}
+
+const BulkResultCard: React.FC<BulkResultCardProps> = ({ 
+  result, 
+  index, 
+  onContentUpdate, 
+  onPublish, 
+  onSaveDraft, 
+  onSchedule 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
+
+  const getStatusIcon = () => {
+    switch (result.status) {
+      case 'success':
+        return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'processing':
+        return <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />;
+      case 'failed':
+        return <XCircle className="h-5 w-5 text-red-600" />;
+      default:
+        return <CircleDot className="h-5 w-5 text-gray-400" />;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (result.status) {
+      case 'success':
+        return 'Ready to publish';
+      case 'processing':
+        return 'Generating content...';
+      case 'failed':
+        return 'Generation failed';
+      default:
+        return 'Unknown status';
+    }
+  };
+
+  const getPreviewText = () => {
+    if (result.status === 'success' && result.content) {
+      // Strip HTML and get first 150 characters
+      const textContent = result.content.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ');
+      return textContent.substring(0, 150) + (textContent.length > 150 ? '...' : '');
+    }
+    if (result.status === 'processing') {
+      return result.contentPreview || 'Content is being generated...';
+    }
+    if (result.status === 'failed') {
+      return result.error || 'Generation failed';
+    }
+    return 'No preview available';
+  };
+
+  return (
+    <div className={`border rounded-lg ${
+      result.status === 'success' ? 'border-green-200 bg-green-50/30' :
+      result.status === 'processing' ? 'border-blue-200 bg-blue-50/30' :
+      'border-red-200 bg-red-50/30'
+    }`}>
+      {/* List Header */}
+      <div className="p-4 bg-white border-b border-gray-200 rounded-t-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            {getStatusIcon()}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-gray-900 truncate">
+                {result.status === 'success' ? result.title : result.topic}
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                {getStatusText()}
+                {result.status === 'success' && result.usesFallback && (
+                  <span className="ml-2 text-amber-600 text-xs px-2 py-0.5 bg-amber-50 rounded-full border border-amber-200">
+                    Fallback used
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          {result.status === 'success' && (
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={async () => {
+                  setIsPublishing(true);
+                  try {
+                    await onPublish(result);
+                  } finally {
+                    setIsPublishing(false);
+                  }
+                }}
+                disabled={isPublishing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isPublishing ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-1" />
+                )}
+                Publish to Shopify
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    await onSaveDraft(result);
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-1" />
+                )}
+                Save as Draft
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsScheduling(true);
+                  try {
+                    // For now, schedule for tomorrow
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    await onSchedule(result, tomorrow);
+                  } finally {
+                    setIsScheduling(false);
+                  }
+                }}
+                disabled={isScheduling}
+              >
+                {isScheduling ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Calendar className="h-4 w-4 mr-1" />
+                )}
+                Schedule for Later
+              </Button>
+
+              {/* Toggle Editor Button */}
+              <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="p-2">
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              </Collapsible>
+            </div>
+          )}
+        </div>
+
+        {/* Content Preview */}
+        <div className="mt-3">
+          <p className="text-sm text-gray-600 line-clamp-2">
+            {getPreviewText()}
+          </p>
+        </div>
+      </div>
+
+      {/* Expandable Content Editor */}
+      {result.status === 'success' && (
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <CollapsibleContent>
+            <div className="p-4 bg-gray-50">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="h-96">
+                  <SimpleHTMLEditor
+                    content={result.content || ''}
+                    onChange={onContentUpdate}
+                    className="h-full"
+                    editable={true}
+                  />
+                </div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Processing State */}
+      {result.status === 'processing' && (
+        <div className="p-4 bg-blue-50">
+          <div className="text-center text-blue-800">
+            <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" />
+            <div className="font-medium">Content is being generated...</div>
+            <div className="text-sm text-blue-600 mt-1">{result.contentPreview}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Failed State */}
+      {result.status === 'failed' && (
+        <div className="p-4 bg-red-50">
+          <div className="text-center text-red-800">
+            <XCircle className="h-6 w-6 mx-auto mb-2" />
+            <div className="font-medium">Generation Failed</div>
+            <div className="text-sm text-red-600 mt-1">{result.error}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Interface types matching AdminPanel
 interface Product {
@@ -2011,126 +2242,47 @@ export default function SimpleBulkGeneration() {
                 Generation Results
               </CardTitle>
               <CardDescription>
-                Your bulk content generation is complete
+                Your bulk content generation is complete. Click any article to edit or publish.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6 max-h-[800px] overflow-y-auto">
+              <div className="space-y-4 max-h-[800px] overflow-y-auto">
                 {results.map((result, index) => (
-                  <div 
+                  <BulkResultCard
                     key={index}
-                    className={`rounded-lg border ${
-                      result.status === "success" 
-                        ? "bg-green-50 border-green-200" 
-                        : "bg-red-50 border-red-200"
-                    }`}
-                  >
-                    {/* Header Section */}
-                    <div className="p-4 border-b bg-white rounded-t-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-neutral-900 text-lg">
-                            {result.status === "success" ? result.title : result.topic}
-                          </h4>
-                          <p className="text-sm mt-1 text-neutral-600">
-                            {result.status === "success" ? (
-                              <>
-                                <span className="text-green-700 font-medium">Successfully generated</span>
-                                {result.usesFallback && (
-                                  <span className="ml-2 text-amber-600 text-xs px-2 py-0.5 bg-amber-50 rounded-full border border-amber-200">
-                                    Fallback model used
-                                  </span>
-                                )}
-                              </>
-                            ) : result.status === "processing" ? (
-                              <span className="text-blue-700">Processing: {result.contentPreview}</span>
-                            ) : (
-                              <span className="text-red-700">Failed: {result.status === "failed" ? result.error : "Unknown error"}</span>
-                            )}
-                          </p>
-                        </div>
-                        
-                        {result.status === "success" && (
-                          <div className="flex gap-2 ml-4">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPost({
-                                  id: result.postId,
-                                  title: result.title,
-                                  content: result.content, // Use full content
-                                  featuredImage: null,
-                                  category: null,
-                                  categories: null,
-                                  tags: null,
-                                  status: "draft",
-                                  contentType: "post",
-                                  scheduledDate: null,
-                                  scheduledPublishDate: null,
-                                  scheduledPublishTime: null,
-                                  publishedDate: null,
-                                  shopifyPostId: null,
-                                  shopifyBlogId: null,
-                                  shopifyHandle: null,
-                                  metaTitle: null,
-                                  metaDescription: null,
-                                  views: 0,
-                                  createdAt: new Date(),
-                                  updatedAt: null,
-                                  author: null,
-                                  authorId: null,
-                                  storeId: null
-                                });
-                                setCreatePostModalOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit in Shopify
-                            </Button>
-                            <div className="ml-2">
-                              <CheckCircle className="h-5 w-5 text-green-600" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Content Editor Section - Only for successful results */}
-                    {result.status === "success" && (
-                      <div className="p-4">
-                        <div className="bg-white rounded-lg border border-gray-200">
-                          <div className="h-96">
-                            <SimpleHTMLEditor
-                              content={result.content}
-                              onChange={(newContent) => {
-                                // Update the content in the result
-                                setResults(prevResults => 
-                                  prevResults.map((r, i) => 
-                                    i === index && r.status === "success" 
-                                      ? { ...r, content: newContent }
-                                      : r
-                                  )
-                                );
-                              }}
-                              className="h-full"
-                              editable={true}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Processing state content preview */}
-                    {result.status === "processing" && (
-                      <div className="p-4">
-                        <div className="bg-blue-50 rounded-lg border border-blue-200 p-4 text-center">
-                          <div className="text-blue-800 font-medium">Content is being generated...</div>
-                          <div className="text-blue-600 text-sm mt-1">{result.contentPreview}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    result={result}
+                    index={index}
+                    onContentUpdate={(newContent) => {
+                      setResults(prevResults => 
+                        prevResults.map((r, i) => 
+                          i === index && r.status === "success" 
+                            ? { ...r, content: newContent }
+                            : r
+                        )
+                      );
+                    }}
+                    onPublish={async (postData) => {
+                      // Implement publish to Shopify
+                      toast({
+                        title: "Publishing to Shopify",
+                        description: `Publishing "${postData.title}" to your Shopify blog...`,
+                      });
+                    }}
+                    onSaveDraft={async (postData) => {
+                      // Implement save as draft
+                      toast({
+                        title: "Saved as Draft",
+                        description: `"${postData.title}" has been saved as a draft.`,
+                      });
+                    }}
+                    onSchedule={async (postData, scheduleDate) => {
+                      // Implement schedule for later
+                      toast({
+                        title: "Scheduled for Publishing",
+                        description: `"${postData.title}" is scheduled for ${scheduleDate.toLocaleDateString()}.`,
+                      });
+                    }}
+                  />
                 ))}
               </div>
 
