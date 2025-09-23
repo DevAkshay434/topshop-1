@@ -905,8 +905,8 @@ async function processEnhancedTopic(
       
       console.log(`Created enhanced post: ${post.id} - "${post.title}"`);
       
-      // Publish to Shopify if status is published or draft (for immediate publishing)
-      if (formData.postStatus === "published" || formData.postStatus === "draft") {
+      // Publish to Shopify only if status is published (drafts stay local for manual publishing)
+      if (formData.postStatus === "published") {
         try {
           console.log(`🚀 Publishing post "${post.title}" to Shopify...`);
           
