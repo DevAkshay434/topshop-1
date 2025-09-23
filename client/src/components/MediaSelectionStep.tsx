@@ -34,13 +34,13 @@ export interface MediaImage {
 
 interface MediaSelectionStepProps {
   onComplete: (media: {
-    primaryImage: MediaImage | null;
+    primaryImages: MediaImage[];
     secondaryImages: MediaImage[];
     youtubeEmbed: string | null;
   }) => void;
   onBack: () => void;
   initialValues?: {
-    primaryImage: MediaImage | null;
+    primaryImages: MediaImage[];
     secondaryImages: MediaImage[];
     youtubeEmbed: string | null;
   };
@@ -63,7 +63,7 @@ export default function MediaSelectionStep({
 }: MediaSelectionStepProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('products'); // Default to product images first
-  const [primaryImage, setPrimaryImage] = useState<MediaImage | null>(initialValues?.primaryImage || null);
+  const [primaryImages, setPrimaryImages] = useState<MediaImage[]>(initialValues?.primaryImages || []);
   const [secondaryImages, setSecondaryImages] = useState<MediaImage[]>(initialValues?.secondaryImages || []);
   const [youtubeUrl, setYoutubeUrl] = useState<string>(initialValues?.youtubeEmbed || '');
   const [youtubePreviewUrl, setYoutubePreviewUrl] = useState<string>('');
@@ -565,25 +565,46 @@ export default function MediaSelectionStep({
     }
   };
   
-  const setPrimaryImageHandler = (image: MediaImage) => {
-    console.log('Setting primary image:', image);
-    setPrimaryImage(image);
+  const addPrimaryImageHandler = (image: MediaImage) => {
+    console.log('Adding primary image:', image);
+    
+    // Check if image is already selected as primary
+    if (primaryImages.some(img => img.id === image.id)) {
+      toast({
+        title: 'Already selected',
+        description: 'This image is already selected as a primary image.',
+        variant: 'default'
+      });
+      return;
+    }
+    
+    setPrimaryImages(prev => [...prev, image]);
     
     toast({
-      title: 'Primary image set',
-      description: 'This image will be used as the featured image for your content.',
+      title: 'Primary image added',
+      description: `You now have ${primaryImages.length + 1} primary images for bulk generation.`,
+    });
+  };
+  
+  const removePrimaryImageHandler = (image: MediaImage) => {
+    console.log('Removing primary image:', image);
+    setPrimaryImages(prev => prev.filter(img => img.id !== image.id));
+    
+    toast({
+      title: 'Primary image removed',
+      description: 'Image removed from primary images.',
     });
   };
   
   // Function to toggle between primary and secondary
   const toggleImageStatus = (image: MediaImage) => {
     // Check current status
-    const isPrimary = primaryImage?.id === image.id;
+    const isPrimary = primaryImages.some(img => img.id === image.id);
     const isSecondary = secondaryImages.some(img => img.id === image.id);
     
     if (isPrimary) {
-      // If it's the primary image, change to secondary
-      setPrimaryImage(null);
+      // If it's a primary image, remove from primary and add to secondary
+      setPrimaryImages(prev => prev.filter(img => img.id !== image.id));
       
       // Add to secondary images if not already there
       if (!isSecondary) {
@@ -597,19 +618,19 @@ export default function MediaSelectionStep({
     } else if (isSecondary) {
       // If it's a secondary image, make it primary
       setSecondaryImages(prev => prev.filter(img => img.id !== image.id));
-      setPrimaryImage(image);
+      setPrimaryImages(prev => [...prev, image]);
       
       toast({
         title: 'Image promoted to primary',
-        description: 'Image has been set as the primary (featured) image.',
+        description: 'Image has been added to primary images for bulk generation.',
       });
     } else {
-      // If neither, set as primary by default
-      setPrimaryImage(image);
+      // If neither, add as primary by default
+      setPrimaryImages(prev => [...prev, image]);
       
       toast({
         title: 'Image set as primary',
-        description: 'Image has been set as the primary (featured) image.',
+        description: 'Image has been added to primary images for bulk generation.',
       });
     }
   };
@@ -680,8 +701,8 @@ export default function MediaSelectionStep({
               size="sm" 
               variant="secondary"
               className={`p-1 h-7 w-7 rounded-full ${isPrimary ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-white/80 hover:bg-white'}`}
-              onClick={() => setPrimaryImageHandler(image)}
-              title="Set as primary image"
+              onClick={() => isPrimary ? removePrimaryImageHandler(image) : addPrimaryImageHandler(image)}
+              title={isPrimary ? 'Remove from primary images' : 'Add to primary images'}
             >
               <Star className="h-4 w-4" />
             </Button>
@@ -707,7 +728,7 @@ export default function MediaSelectionStep({
                   size="sm" 
                   variant={isPrimary ? "default" : "outline"} 
                   className={isPrimary ? "bg-blue-600 hover:bg-blue-700 w-full" : "bg-white text-blue-700 hover:bg-blue-50 w-full"}
-                  onClick={() => setPrimaryImageHandler(image)}
+                  onClick={() => isPrimary ? removePrimaryImageHandler(image) : addPrimaryImageHandler(image)}
                 >
                   {isPrimary ? (
                     <div className="flex items-center justify-center gap-1">
@@ -740,7 +761,7 @@ export default function MediaSelectionStep({
                 className="bg-white/90 text-red-600 hover:bg-white hover:text-red-700 w-full mt-1"
                 onClick={() => {
                   if (isPrimary) {
-                    setPrimaryImage(null);
+                    removePrimaryImageHandler(image);
                   } 
                   if (isSecondary) {
                     toggleSecondaryImage(image);
@@ -758,7 +779,7 @@ export default function MediaSelectionStep({
   
   const handleComplete = () => {
     onComplete({
-      primaryImage,
+      primaryImages,
       secondaryImages,
       youtubeEmbed: youtubePreviewUrl || null
     });
@@ -785,7 +806,7 @@ export default function MediaSelectionStep({
         image={previewImage}
         isOpen={isPreviewOpen}
         setIsOpen={setIsPreviewOpen}
-        setPrimaryImage={setPrimaryImageHandler}
+        setPrimaryImage={addPrimaryImageHandler}
         toggleSecondaryImage={toggleSecondaryImage}
         isSecondary={previewImage ? secondaryImages.some(img => img.id === previewImage.id) : false}
       />
@@ -798,7 +819,7 @@ export default function MediaSelectionStep({
         <div>
           <h3 className="text-sm font-medium text-blue-700">How to select images</h3>
           <ul className="text-xs text-blue-600 list-disc ml-4 mt-1">
-            <li>Choose <strong>one primary (featured) image</strong> that will appear at the top of your content</li>
+            <li>Choose <strong>multiple primary (featured) images</strong> for bulk generation - each article will use a different primary image</li>
             <li>Select <strong>multiple secondary images</strong> that will appear throughout the content</li>
             <li>Hover over any image to see selection options</li>
             <li>Use the <strong>eye icon</strong> to preview images at full size</li>
@@ -808,9 +829,15 @@ export default function MediaSelectionStep({
       
       {/* Display simple selected images bar */}
       <SimpleSelectedImagesBar
-        primaryImage={primaryImage}
+        primaryImage={primaryImages[0] || null} // For compatibility with SimpleSelectedImagesBar
         secondaryImages={secondaryImages}
-        setPrimaryImage={setPrimaryImage}
+        setPrimaryImage={(image: MediaImage | null) => {
+          if (image) {
+            addPrimaryImageHandler(image);
+          } else {
+            setPrimaryImages([]);
+          }
+        }}
         setSecondaryImages={setSecondaryImages}
         onPreviewImage={openImagePreview}
       />
@@ -818,7 +845,7 @@ export default function MediaSelectionStep({
       {/* Debug info - remove when fixed */}
       {process.env.NODE_ENV === 'development' && (
         <div className="bg-gray-100 p-2 text-xs border">
-          <strong>Debug:</strong> Primary: {primaryImage?.id || 'none'}, Secondary: {secondaryImages.length}, Uploaded: {uploadedImages.length}
+          <strong>Debug:</strong> Primary: {primaryImages.length}, Secondary: {secondaryImages.length}, Uploaded: {uploadedImages.length}
         </div>
       )}
       
@@ -857,7 +884,7 @@ export default function MediaSelectionStep({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {productImages.map(image => renderImageCard(
                   image,
-                  primaryImage?.id === image.id,
+                  primaryImages.some(img => img.id === image.id),
                   secondaryImages.some(img => img.id === image.id)
                 ))}
               </div>
@@ -893,13 +920,13 @@ export default function MediaSelectionStep({
               </Button>
             </div>
             
-            {primaryImage && (
+            {primaryImages.length > 0 && (
               <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
                 <h3 className="text-sm font-medium text-blue-700 mb-2">Selected Primary Image</h3>
                 <div className="aspect-video relative w-full max-w-md mx-auto">
                   <ShopifyImageViewer
-                    src={primaryImage.url}
-                    alt={primaryImage.alt || ''}
+                    src={primaryImages[0].url}
+                    alt={primaryImages[0].alt || ''}
                     className="w-full h-full rounded-md"
                     objectFit="cover"
                     selected={true}
@@ -909,7 +936,7 @@ export default function MediaSelectionStep({
                     variant="destructive"
                     size="sm"
                     className="absolute top-2 right-2"
-                    onClick={() => setPrimaryImage(null)}
+                    onClick={() => setPrimaryImages([])}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -941,7 +968,7 @@ export default function MediaSelectionStep({
                 <h3 className="text-sm font-medium">Pexels Stock Images</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pexelsImages.map(image => {
-                    const isPrimary = primaryImage?.id === image.id;
+                    const isPrimary = primaryImages.some(img => img.id === image.id);
                     const isSecondary = secondaryImages.some(img => img.id === image.id);
                     
                     return (
@@ -980,7 +1007,7 @@ export default function MediaSelectionStep({
                             <Button 
                               variant="default"
                               className="bg-blue-600 text-white text-xs w-full"
-                              onClick={() => setPrimaryImageHandler(image)}
+                              onClick={() => addPrimaryImageHandler(image)}
                             >
                               Set Primary
                             </Button>
@@ -1010,7 +1037,7 @@ export default function MediaSelectionStep({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {productImages.map(image => renderImageCard(
                   image,
-                  primaryImage?.id === image.id,
+                  primaryImages.some(img => img.id === image.id),
                   secondaryImages.some(img => img.id === image.id)
                 ))}
               </div>
@@ -1050,7 +1077,7 @@ export default function MediaSelectionStep({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                   {uploadedImages.map(image => renderImageCard(
                     image,
-                    primaryImage?.id === image.id,
+                    primaryImages.some(img => img.id === image.id),
                     secondaryImages.some(img => img.id === image.id)
                   ))}
                 </div>
@@ -1121,7 +1148,7 @@ export default function MediaSelectionStep({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {shopifyMediaImages.map(image => renderImageCard(
                   image,
-                  primaryImage?.id === image.id, 
+                  primaryImages.some(img => img.id === image.id), 
                   secondaryImages.some(img => img.id === image.id)
                 ))}
               </div>
@@ -1173,7 +1200,7 @@ export default function MediaSelectionStep({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {uploadedImages.map(image => renderImageCard(
                   image,
-                  primaryImage?.id === image.id,
+                  primaryImages.some(img => img.id === image.id),
                   secondaryImages.some(img => img.id === image.id)
                 ))}
               </div>
