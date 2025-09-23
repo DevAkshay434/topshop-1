@@ -1,24 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-
-// Simple types for this service
-interface BlogContent {
-  title: string;
-  content: string;
-  tags: string[];
-}
-
-interface BlogContentRequest {
-  topic: string;
-  length: string;
-  tone: string;
-  contentStyleDisplayName?: string;
-  contentStyleToneId?: string;
-  primaryImage?: any;
-  secondaryImages?: any[];
-  youtubeEmbed?: any;
-  targetAudience?: string;
-  buyerPersona?: string;
-}
+import { BlogContent, BlogContentRequest } from "@shared/schema";
 
 // Initialize Claude with API key
 const anthropic = new Anthropic({

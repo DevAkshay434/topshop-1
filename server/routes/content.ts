@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { z } from "zod";
 import { insertContentGenRequestSchema } from "@shared/schema";
 import { generateBlogContentWithClaude, testClaudeConnection, generateClusterTitles } from "../services/claude";
+import { generateBulkContentWithClaude } from "../services/claudeBulk";
 import { canGenerateContentWithCredits, consumeUsageForContentGeneration } from "../services/billing";
 
 // Helper function to get store from request with multi-store support (copied from routes.ts)
@@ -796,29 +797,43 @@ async function processEnhancedTopic(
     try {
       console.log(`🎯 Generating content with Claude for topic: "${topic}"`);
       
-      // Generate content with Claude using enhanced features like admin panel
-      const generatedContent = await generateBlogContentWithClaude({
+      // Generate content with dedicated bulk Claude service (same as admin panel)
+      const generatedContent = await generateBulkContentWithClaude({
         topic,
         tone: formData.toneOfVoice || "friendly",
         length: formData.articleLength || "medium",
         customPrompt: enhancedPrompt,
+        contentStyleDisplayName: formData.contentStyle?.displayName,
+        contentStyleToneId: formData.contentStyle?.toneId,
         // Include all media content like admin panel
         primaryImage: mediaContent?.primaryImage || null,
         secondaryImages: mediaContent?.secondaryImages || [],
         youtubeEmbed: mediaContent?.youtubeEmbed || null,
-        // Include product linking
-        productIds: formData.productIds || [],
-        productsInfo: productsInfo,
+        // Include product linking (convert productsInfo to the expected format)
+        selectedProducts: productsInfo?.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          handle: p.handle,
+          url: `https://${store.shopName}/products/${p.handle}`,
+          imageUrl: p.image?.url
+        })) || [],
+        // Include collection context
+        selectedCollections: [], // TODO: Map collections if needed
         // Include keywords
         keywords: formData.keywords || [],
         // Include audience targeting
         targetAudience: formData.buyerPersonas,
-        // Add cluster mode context if available
-        ...(isClusterMode && allTopics ? {
-          isClusterMode,
-          clusterTopic,
-          allTopics
-        } : {})
+        buyerPersona: formData.buyerPersonas,
+        // Include form-based settings
+        articleType: formData.articleType,
+        headingsCount: formData.headingsCount,
+        writingPerspective: formData.writingPerspective,
+        introType: formData.introType,
+        faqType: formData.faqType,
+        enableTables: formData.enableTables,
+        enableLists: formData.enableLists,
+        enableH3s: formData.enableH3s,
+        enableCitations: formData.enableCitations
       });
       
       console.log(`Enhanced content generated for "${topic}". Title: "${generatedContent.title}"`);
