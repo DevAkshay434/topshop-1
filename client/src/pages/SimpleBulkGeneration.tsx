@@ -2149,7 +2149,11 @@ export default function SimpleBulkGeneration() {
                 clusterCount={1}
                 onComplete={(media) => {
                   setSelectedMediaContent(media);
-                  nextStep();
+                  // Don't advance to next step - let user click "Generate Articles" button
+                  toast({
+                    title: "Images Saved",
+                    description: "Your selected images have been saved. Click 'Generate Articles' below to start generation.",
+                  });
                 }}
                 onBack={previousStep}
               />
