@@ -904,55 +904,76 @@ async function processEnhancedTopic(
       
       console.log(`Created enhanced post: ${post.id} - "${post.title}"`);
       
-      // Publish to Shopify only if status is published (drafts stay local for manual publishing)
-      if (formData.postStatus === "published") {
-        try {
-          console.log(`🚀 Publishing post "${post.title}" to Shopify...`);
-          
-          // Import ShopifyService 
-          const { ShopifyService } = await import('../services/shopify');
-          const shopifyService = new ShopifyService();
-          
-          // Initialize client for this store
-          shopifyService.initializeClient(store);
-          
-          // Determine blog ID - use from formData or get default blog
-          let blogId = formData.blogId;
-          if (!blogId) {
-            try {
-              const blogs = await shopifyService.getBlogs(store);
-              if (blogs && blogs.length > 0) {
-                blogId = blogs[0].id.toString();
-                console.log(`Using default blog ID: ${blogId}`);
-              }
-            } catch (blogError) {
-              console.warn('Could not get blogs, will try without blog ID');
+      // ALWAYS create the article in Shopify (as draft) so it gets required IDs for manual publishing
+      try {
+        console.log(`🚀 Creating post "${post.title}" in Shopify as draft...`);
+        
+        // Import ShopifyService 
+        const { ShopifyService } = await import('../services/shopify');
+        const shopifyService = new ShopifyService();
+        
+        // Initialize client for this store
+        shopifyService.initializeClient(store);
+        
+        // Determine blog ID - use from formData or get default blog
+        let blogId = formData.blogId;
+        if (!blogId) {
+          try {
+            const blogs = await shopifyService.getBlogs(store);
+            if (blogs && blogs.length > 0) {
+              blogId = blogs[0].id.toString();
+              console.log(`Using default blog ID: ${blogId}`);
             }
+          } catch (blogError) {
+            console.warn('Could not get blogs, will try without blog ID');
           }
-          
-          // Create article in Shopify
-          const shopifyArticle = await shopifyService.createArticle(
-            store, 
-            blogId, 
-            post,
-            formData.postStatus === "published" ? new Date() : undefined
-          );
-          
-          // Update local post with Shopify details
-          await storage.updateBlogPost(post.id, {
-            shopifyPostId: shopifyArticle.id?.toString(),
-            shopifyBlogId: blogId,
-            shopifyHandle: (shopifyArticle as any).handle || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            status: formData.postStatus === "published" ? "published" : "draft"
-          });
-          
-          console.log(`✅ Successfully published to Shopify: ${shopifyArticle.id}`);
-          
-        } catch (shopifyError: any) {
-          console.error(`❌ Failed to publish to Shopify for "${post.title}":`, shopifyError);
-          // Don't fail the entire operation, just log the error
-          console.warn('Post created locally but not published to Shopify');
         }
+        
+        // Create article in Shopify as draft initially (regardless of intended status)
+        const shopifyArticle = await shopifyService.createArticle(
+          store, 
+          blogId, 
+          post,
+          undefined // Always create as draft first
+        );
+        
+        // Update local post with Shopify details
+        await storage.updateBlogPost(post.id, {
+          shopifyPostId: shopifyArticle.id?.toString(),
+          shopifyBlogId: blogId,
+          shopifyHandle: (shopifyArticle as any).handle || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          status: formData.postStatus || "draft"
+        });
+        
+        console.log(`✅ Successfully created in Shopify as draft: ${shopifyArticle.id}`);
+        
+        // If the intended status was published, update the Shopify article to published
+        if (formData.postStatus === "published") {
+          console.log(`📤 Updating article ${shopifyArticle.id} to published status...`);
+          
+          try {
+            await shopifyService.updateArticle(store, blogId, shopifyArticle.id.toString(), {
+              published: true,
+              published_at: new Date().toISOString()
+            });
+            
+            // Update local status to published
+            await storage.updateBlogPost(post.id, {
+              status: "published",
+              publishedDate: new Date()
+            });
+            
+            console.log(`✅ Successfully published article: ${shopifyArticle.id}`);
+          } catch (publishError: any) {
+            console.error(`❌ Failed to publish article ${shopifyArticle.id}:`, publishError);
+            console.warn('Article created as draft in Shopify but not published');
+          }
+        }
+        
+      } catch (shopifyError: any) {
+        console.error(`❌ Failed to create in Shopify for "${post.title}":`, shopifyError);
+        // Don't fail the entire operation, just log the error
+        console.warn('Post created locally but not in Shopify - manual publishing will not work');
       }
       
       return {
