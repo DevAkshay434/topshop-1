@@ -53,6 +53,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -344,10 +345,7 @@ const BulkResultCard: React.FC<BulkResultCardProps> = ({
                 onClick={async () => {
                   setIsScheduling(true);
                   try {
-                    // For now, schedule for tomorrow
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    await onSchedule(result, tomorrow);
+                    await onSchedule(result, new Date()); // Pass dummy date, modal will handle real scheduling
                   } finally {
                     setIsScheduling(false);
                   }
@@ -574,6 +572,10 @@ export default function SimpleBulkGeneration() {
   
   // Individual title positioning state
   const [isGeneratingTitles, setIsGeneratingTitles] = useState<{[keywordId: string]: boolean}>({});
+  
+  // Scheduling modal state
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [schedulingPost, setSchedulingPost] = useState<any>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -2318,25 +2320,94 @@ export default function SimpleBulkGeneration() {
                       );
                     }}
                     onPublish={async (postData) => {
-                      // Implement publish to Shopify
-                      toast({
-                        title: "Publishing to Shopify",
-                        description: `Publishing "${postData.title}" to your Shopify blog...`,
-                      });
+                      try {
+                        // Create a draft first with the updated content
+                        const draftData = {
+                          title: postData.title,
+                          content: postData.content,
+                          contentType: 'post',
+                          status: 'draft',
+                          blogId: form.getValues('blogId') || 'default',
+                          authorId: selectedAuthorId || '1',
+                          tags: 'bulk generated content',
+                          category: 'Generated Content'
+                        };
+
+                        const draftResponse = await apiRequest({
+                          url: '/api/posts',
+                          method: 'POST',
+                          data: draftData
+                        });
+
+                        if (draftResponse.success) {
+                          // Now publish to Shopify
+                          const publishResponse = await apiRequest({
+                            url: '/api/content/publish-to-shopify',
+                            method: 'POST',
+                            data: { postId: draftResponse.post.id }
+                          });
+
+                          if (publishResponse.success) {
+                            toast({
+                              title: "Published Successfully",
+                              description: `"${postData.title}" has been published to Shopify!`,
+                            });
+                            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+                          } else {
+                            throw new Error(publishResponse.error || 'Failed to publish to Shopify');
+                          }
+                        } else {
+                          throw new Error(draftResponse.error || 'Failed to create draft');
+                        }
+                      } catch (error: any) {
+                        console.error('Publish error:', error);
+                        toast({
+                          title: "Publishing Failed",
+                          description: error.message || "Failed to publish to Shopify",
+                          variant: "destructive"
+                        });
+                      }
                     }}
                     onSaveDraft={async (postData) => {
-                      // Implement save as draft
-                      toast({
-                        title: "Saved as Draft",
-                        description: `"${postData.title}" has been saved as a draft.`,
-                      });
+                      try {
+                        const draftData = {
+                          title: postData.title,
+                          content: postData.content,
+                          contentType: 'post',
+                          status: 'draft',
+                          blogId: form.getValues('blogId') || 'default',
+                          authorId: selectedAuthorId || '1',
+                          tags: 'bulk generated content',
+                          category: 'Generated Content'
+                        };
+
+                        const response = await apiRequest({
+                          url: '/api/posts',
+                          method: 'POST',
+                          data: draftData
+                        });
+
+                        if (response.success) {
+                          toast({
+                            title: "Saved as Draft",
+                            description: `"${postData.title}" has been saved as a draft.`,
+                          });
+                          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+                        } else {
+                          throw new Error(response.error || 'Failed to save draft');
+                        }
+                      } catch (error: any) {
+                        console.error('Save draft error:', error);
+                        toast({
+                          title: "Save Failed",
+                          description: error.message || "Failed to save as draft",
+                          variant: "destructive"
+                        });
+                      }
                     }}
                     onSchedule={async (postData, scheduleDate) => {
-                      // Implement schedule for later
-                      toast({
-                        title: "Scheduled for Publishing",
-                        description: `"${postData.title}" is scheduled for ${scheduleDate.toLocaleDateString()}.`,
-                      });
+                      setSchedulingPost(postData);
+                      setShowScheduleModal(true);
                     }}
                   />
                 ))}
@@ -2473,6 +2544,111 @@ export default function SimpleBulkGeneration() {
         onOpenChange={setCreatePostModalOpen}
         initialData={selectedPost}
       />
+
+      {/* Schedule Modal */}
+      <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Schedule for Publication</DialogTitle>
+            <DialogDescription>
+              Choose when to publish "{schedulingPost?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="scheduleDate">Publication Date</Label>
+              <Input
+                id="scheduleDate"
+                type="date"
+                min={new Date().toISOString().split('T')[0]}
+                defaultValue={new Date(Date.now() + 86400000).toISOString().split('T')[0]} // Tomorrow
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="scheduleTime">Publication Time</Label>
+              <Input
+                id="scheduleTime"
+                type="time"
+                defaultValue="09:00"
+              />
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  setSchedulingPost(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              
+              <Button
+                onClick={async () => {
+                  try {
+                    const dateInput = document.getElementById('scheduleDate') as HTMLInputElement;
+                    const timeInput = document.getElementById('scheduleTime') as HTMLInputElement;
+                    
+                    const scheduleDate = new Date(dateInput.value);
+                    const scheduleTime = timeInput.value;
+                    
+                    // Combine date and time
+                    const [hours, minutes] = scheduleTime.split(':').map(Number);
+                    const scheduledDateTime = new Date(scheduleDate);
+                    scheduledDateTime.setHours(hours, minutes, 0, 0);
+
+                    // Create draft with scheduling
+                    const draftData = {
+                      title: schedulingPost.title,
+                      content: schedulingPost.content,
+                      contentType: 'post',
+                      status: 'scheduled',
+                      blogId: form.getValues('blogId') || 'default',
+                      authorId: selectedAuthorId || '1',
+                      tags: 'bulk generated content',
+                      category: 'Generated Content',
+                      scheduledPublishDate: scheduledDateTime.toISOString().split('T')[0],
+                      scheduledPublishTime: scheduleTime
+                    };
+
+                    const response = await apiRequest({
+                      url: '/api/posts',
+                      method: 'POST',
+                      data: draftData
+                    });
+
+                    if (response.success) {
+                      toast({
+                        title: "Scheduled Successfully",
+                        description: `"${schedulingPost.title}" is scheduled for ${scheduledDateTime.toLocaleDateString()} at ${scheduleTime}`,
+                      });
+                      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+                      setShowScheduleModal(false);
+                      setSchedulingPost(null);
+                    } else {
+                      throw new Error(response.error || 'Failed to schedule post');
+                    }
+                  } catch (error: any) {
+                    console.error('Schedule error:', error);
+                    toast({
+                      title: "Scheduling Failed",
+                      description: error.message || "Failed to schedule post",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                className="flex-1"
+              >
+                Schedule Post
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
