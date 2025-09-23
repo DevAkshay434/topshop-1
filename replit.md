@@ -42,6 +42,7 @@ The application employs a modern full-stack, client-server architecture with mul
 - **Blog Posts vs Pages Author Handling**: Both blog posts and pages receive top "Written by" section and bottom author box with full description. Enhanced duplicate prevention ensures author boxes are only added when not already present in content.
 - **Project Management System**: Complete project save/load functionality with proper database storage and popup-driven workflow. Supports saving complete project configurations including content settings, selected products, collections, keywords, and media.
 - **Workflow Step Validation**: Requires completion of preceding steps before content generation, enhancing workflow progression.
+- **Complete Bulk Generation Feature Parity**: Enhanced Bulk Generation feature with complete feature parity to AdminPanel, including proper image integration, author attribution with "Written by" sections, meta optimization for SEO using Claude AI, proper content structure preservation, Shopify publishing integration, and Claude-powered bulk generation with evergreen titles and proper HTML formatting. Fixed workflow step issues to ensure images are properly saved and included in generated articles.
 
 ## External Dependencies
 

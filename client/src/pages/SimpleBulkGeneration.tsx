@@ -946,15 +946,10 @@ export default function SimpleBulkGeneration() {
 
   // Function to handle generation from media step button  
   const handleBulkGenerationFromMediaStep = async () => {
-    console.log("🔄 Triggering generation from media step - checking for selected images...");
-    console.log("🔍 Current selectedMediaContent state:", JSON.stringify(selectedMediaContent, null, 2));
-    
     // Check if we have images in selectedMediaContent
     const hasImages = selectedMediaContent.primaryImages?.length > 0 || selectedMediaContent.secondaryImages?.length > 0;
     
     if (!hasImages) {
-      console.log("⚠️ No images found in selectedMediaContent - checking for visually selected images...");
-      
       // If no images in state but user may have selected images in UI,
       // prompt them to use the Continue button in MediaSelectionStep first
       toast({
@@ -965,7 +960,6 @@ export default function SimpleBulkGeneration() {
       return;
     }
     
-    console.log("✅ Images found in selectedMediaContent, proceeding with generation...");
     handleBulkGeneration();
   };
 
