@@ -614,8 +614,6 @@ For each keyword, also generate 8 SEO-optimized blog post titles that:
 2. Are engaging and clickable
 3. Follow proven title formats (How-to, Lists, Questions, Comparisons, etc.)
 4. Are 50-60 characters long for optimal SEO
-5. MUST be evergreen - NO dates, years, months, or time-specific references (avoid "2024", "2025", "this year", "latest", "current", etc.)
-6. Focus on timeless value and relevance that will remain useful over time
 
 Format your response as valid JSON:
 {
@@ -720,7 +718,7 @@ function generateFallbackTopicalMapping(rootKeyword: string): {
       { title: `Complete Guide to ${kw.keyword.charAt(0).toUpperCase() + kw.keyword.slice(1)}` },
       { title: `${kw.keyword.charAt(0).toUpperCase() + kw.keyword.slice(1)}: Everything You Need to Know` },
       { title: `5 Essential ${kw.keyword.charAt(0).toUpperCase() + kw.keyword.slice(1)} Strategies` },
-      { title: `Why ${kw.keyword.charAt(0).toUpperCase() + kw.keyword.slice(1)} Matters for Your Business` }
+      { title: `Why ${kw.keyword.charAt(0).toUpperCase() + kw.keyword.slice(1)} Matters in 2025` }
     ];
   });
   
