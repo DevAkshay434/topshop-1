@@ -325,14 +325,9 @@ export default function SimpleBulkGeneration() {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   
   // Drag functionality state - start centered
-  const [dragOffset, setDragOffset] = useState({ x: -400, y: -200 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  // Clean linear layout - no dragging needed
   
   // Individual title positioning state
-  const [titlePositions, setTitlePositions] = useState<{[titleId: string]: {x: number, y: number}}>({});
-  const [draggingTitleId, setDraggingTitleId] = useState<string | null>(null);
-  const [titleDragStart, setTitleDragStart] = useState({ x: 0, y: 0 });
   const [isGeneratingTitles, setIsGeneratingTitles] = useState<{[keywordId: string]: boolean}>({});
   
   const { toast } = useToast();
@@ -673,60 +668,10 @@ export default function SimpleBulkGeneration() {
     }
   };
 
-  // Drag functionality handlers for mind map
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - dragOffset.x,
-      y: e.clientY - dragOffset.y
-    });
-  };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    setDragOffset({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Individual title drag handlers
-  const handleTitleMouseDown = (e: React.MouseEvent, title: any, initialX: number, initialY: number) => {
-    e.stopPropagation(); // Prevent diagram drag
-    setDraggingTitleId(title.id);
-    
-    const currentPos = titlePositions[title.id] || { x: initialX, y: initialY };
-    setTitleDragStart({
-      x: e.clientX - currentPos.x,
-      y: e.clientY - currentPos.y
-    });
-  };
-
-  const handleTitleMouseMove = (e: React.MouseEvent) => {
-    if (!draggingTitleId) return;
-    
-    setTitlePositions(prev => ({
-      ...prev,
-      [draggingTitleId]: {
-        x: e.clientX - titleDragStart.x,
-        y: e.clientY - titleDragStart.y
-      }
-    }));
-  };
-
-  const handleTitleMouseUp = () => {
-    setDraggingTitleId(null);
-  };
-
-  // Fixed title selection handler
+  // Clean title selection handler for linear layout
   const handleTitleClick = (e: React.MouseEvent, title: any) => {
     e.stopPropagation();
-    if (draggingTitleId) return; // Don't select if we're dragging
     
     // Toggle selection immediately in UI
     const newIsSelected = !title.isSelected;
@@ -1301,171 +1246,93 @@ export default function SimpleBulkGeneration() {
                           </Badge>
                         </div>
                         
-                        {/* Draggable Hierarchical Mind Map Diagram */}
-                        <div className="relative bg-white rounded-lg border p-4 h-[800px] overflow-auto">
-                          <div 
-                            className="relative cursor-move select-none"
-                            style={{
-                              width: '2000px',
-                              height: '1400px',
-                              transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
-                              transition: isDragging ? 'none' : 'transform 0.3s ease'
-                            }}
-                            onMouseDown={handleMouseDown}
-                            onMouseMove={(e) => {
-                              handleMouseMove(e);
-                              handleTitleMouseMove(e);
-                            }}
-                            onMouseUp={() => {
-                              handleMouseUp();
-                              handleTitleMouseUp();
-                            }}
-                            onMouseLeave={() => {
-                              handleMouseUp();
-                              handleTitleMouseUp();
-                            }}
-                            data-testid="draggable-mindmap"
-                          >
-                            {/* Root Keyword in Center */}
-                            <div className="absolute" style={{ left: '1000px', top: '700px', transform: 'translate(-50%, -50%)' }}>
-                              <div className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-center shadow-xl border-2 border-blue-700">
-                                <div className="text-lg">{topicalMappingSession?.rootKeyword}</div>
-                                <div className="text-xs opacity-90 mt-1">Main Keyword</div>
+                        {/* Clean Linear Diagram - SearchAtlas Style */}
+                        <div className="w-full border rounded-lg bg-white overflow-hidden">
+                          {/* Two-Column Layout */}
+                          <div className="grid grid-cols-12 gap-8 p-6 min-h-[600px]">
+                            {/* Left Column: Main Topic (Fixed) */}
+                            <div className="col-span-3">
+                              <div className="sticky top-6">
+                                <div 
+                                  className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl px-6 py-4 shadow-xl border border-blue-500"
+                                  data-testid="main-topic-node"
+                                >
+                                  <h3 className="text-lg font-semibold text-center leading-tight">
+                                    {topicalMappingSession?.rootKeyword}
+                                  </h3>
+                                  <p className="text-xs opacity-90 text-center mt-2">Main Keyword</p>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Related Keywords and Their Title Branches */}
-                            {relatedKeywords.map((keyword, keywordIndex) => {
-                              // Position keywords in a circle around center with better spacing
-                              const keywordAngle = (keywordIndex * 360) / relatedKeywords.length;
-                              const keywordRadius = 280;
-                              const centerX = 1000;
-                              const centerY = 700;
-                              const keywordX = centerX + Math.cos((keywordAngle * Math.PI) / 180) * keywordRadius;
-                              const keywordY = centerY + Math.sin((keywordAngle * Math.PI) / 180) * keywordRadius;
-                              
-                              const keywordTitles = generatedTitles[keyword.id] || [];
-                              
-                              return (
-                                <div key={keyword.id}>
-                                  {/* Line from center to keyword */}
-                                  <svg className="absolute top-0 left-0 pointer-events-none w-full h-full" style={{ zIndex: 1 }}>
-                                    <line
-                                      x1={centerX}
-                                      y1={centerY}
-                                      x2={keywordX}
-                                      y2={keywordY}
-                                      stroke="#2563eb"
-                                      strokeWidth="4"
-                                      strokeDasharray="8,4"
-                                    />
-                                  </svg>
-
-                                  {/* Keyword Node */}
-                                  <div
-                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-                                    style={{
-                                      left: `${keywordX}px`,
-                                      top: `${keywordY}px`,
-                                    }}
-                                    data-testid={`keyword-node-${keyword.id}`}
-                                  >
-                                    <div className="bg-emerald-500 text-white px-5 py-3 rounded-xl font-semibold text-center shadow-lg border-2 border-emerald-600 max-w-[200px]">
-                                      <div className="text-sm font-bold">{keyword.keyword}</div>
-                                      {keyword.searchVolume && (
-                                        <div className="text-xs opacity-90 mt-1">
-                                          {keyword.searchVolume > 1000 ? 
-                                            `${Math.round(keyword.searchVolume / 1000)}k searches` : 
-                                            `${keyword.searchVolume} searches`
-                                          }
-                                        </div>
-                                      )}
-                                      <div className="text-xs opacity-80 mt-1">{keywordTitles.length} titles</div>
-                                    </div>
-                                  </div>
-
-                                  {/* Title branches extending from this keyword with anti-overlap spacing */}
-                                  {keywordTitles.map((title, titleIndex) => {
-                                    // Advanced spacing algorithm to prevent overlaps
-                                    const totalTitles = keywordTitles.length;
-                                    
-                                    // Use larger angle spread and multiple rings for better distribution
-                                    const ringCount = Math.ceil(totalTitles / 8); // Max 8 titles per ring
-                                    const currentRing = Math.floor(titleIndex / 8);
-                                    const positionInRing = titleIndex % 8;
-                                    const titlesInCurrentRing = Math.min(8, totalTitles - currentRing * 8);
-                                    
-                                    // Spread titles around keyword in expanding rings
-                                    const baseRadius = 200;
-                                    const ringSpacing = 120;
-                                    const titleRadius = baseRadius + (currentRing * ringSpacing);
-                                    
-                                    // Use full 360 degrees for better spacing
-                                    const angleStep = 360 / titlesInCurrentRing;
-                                    const titleAngle = keywordAngle + (positionInRing * angleStep) + (currentRing * 22.5); // Offset each ring
-                                    
-                                    const titleX = keywordX + Math.cos((titleAngle * Math.PI) / 180) * titleRadius;
-                                    const titleY = keywordY + Math.sin((titleAngle * Math.PI) / 180) * titleRadius;
-
-                                    return (
-                                      <div key={title.id}>
-                                        {/* Dynamic Line from keyword to title (follows dragged position) */}
-                                        <svg className="absolute top-0 left-0 pointer-events-none w-full h-full" style={{ zIndex: 5 }}>
-                                          <line
-                                            x1={keywordX}
-                                            y1={keywordY}
-                                            x2={titlePositions[title.id]?.x || titleX}
-                                            y2={titlePositions[title.id]?.y || titleY}
-                                            stroke="#10b981"
-                                            strokeWidth="2"
-                                            strokeDasharray="4,2"
-                                          />
-                                        </svg>
-
-                                        {/* Title Node - Individually Draggable */}
-                                        <div
-                                          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move group z-15"
-                                          style={{
-                                            left: `${titlePositions[title.id]?.x || titleX}px`,
-                                            top: `${titlePositions[title.id]?.y || titleY}px`,
-                                            transition: draggingTitleId === title.id ? 'none' : 'all 0.2s ease',
-                                          }}
-                                          onMouseDown={(e) => handleTitleMouseDown(e, title, titleX, titleY)}
-                                          onClick={(e) => handleTitleClick(e, title)}
-                                          data-testid={`title-branch-${title.id}`}
-                                        >
-                                          <div className={cn(
-                                            "bg-white border-2 rounded-lg px-3 py-2 shadow-lg hover:shadow-xl transition-all duration-200 max-w-[240px]",
-                                            title.isSelected 
-                                              ? "border-blue-500 bg-blue-50 shadow-blue-200" 
-                                              : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
-                                          )}>
-                                            {/* Selection indicator and title */}
-                                            <div className="flex items-start gap-2">
-                                              <div className={cn(
-                                                "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                                                title.isSelected 
-                                                  ? "border-blue-500 bg-blue-500" 
-                                                  : "border-gray-400 group-hover:border-blue-500"
-                                              )}>
-                                                {title.isSelected && (
-                                                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                                                )}
-                                              </div>
-                                              
-                                              {/* Title Text */}
-                                              <div className="text-xs text-gray-800 leading-snug font-medium">
-                                                {title.title}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
+                            {/* Right Column: Keyword Groups */}
+                            <div className="col-span-9">
+                              <div className="space-y-6">
+                                {relatedKeywords.map((keyword, keywordIndex) => {
+                                  const keywordTitles = generatedTitles[keyword.id] || [];
+                                  
+                                  return (
+                                    <div 
+                                      key={keyword.id} 
+                                      className="keyword-group"
+                                      data-testid={`keyword-group-${keyword.id}`}
+                                    >
+                                      {/* Keyword Header */}
+                                      <div 
+                                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg px-4 py-3 mb-3 shadow-lg border border-emerald-400"
+                                        data-testid={`keyword-header-${keyword.id}`}
+                                      >
+                                        <h4 className="font-semibold text-base">
+                                          {keyword.keyword}
+                                        </h4>
+                                        {keyword.searchVolume && (
+                                          <p className="text-xs opacity-90 mt-1">
+                                            {keyword.searchVolume > 1000 ? 
+                                              `${Math.round(keyword.searchVolume / 1000)}k searches` : 
+                                              `${keyword.searchVolume} searches`
+                                            } • {keywordTitles.length} titles
+                                          </p>
+                                        )}
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })}
+
+                                      {/* Titles List */}
+                                      <div className="pl-4 space-y-2">
+                                        {keywordTitles.map((title, titleIndex) => (
+                                          <div
+                                            key={title.id}
+                                            className={cn(
+                                              "cursor-pointer transition-all duration-200 rounded-lg px-3 py-2 border-2 flex items-start gap-3",
+                                              title.isSelected
+                                                ? "bg-blue-50 border-blue-500 shadow-md"
+                                                : "bg-gray-50 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"
+                                            )}
+                                            onClick={(e) => handleTitleClick(e, title)}
+                                            data-testid={`title-item-${title.id}`}
+                                          >
+                                            {/* Selection indicator */}
+                                            <div className={cn(
+                                              "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                                              title.isSelected 
+                                                ? "border-blue-500 bg-blue-500" 
+                                                : "border-gray-400"
+                                            )}>
+                                              {title.isSelected && (
+                                                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                              )}
+                                            </div>
+                                            
+                                            {/* Title Text */}
+                                            <p className="text-sm text-gray-800 leading-relaxed flex-1">
+                                              {title.title}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
                         </div>
 
