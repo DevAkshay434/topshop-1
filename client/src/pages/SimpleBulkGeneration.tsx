@@ -938,6 +938,12 @@ export default function SimpleBulkGeneration() {
 
   // Main bulk generation function
   const handleBulkGeneration = async () => {
+    console.log("🚀 handleBulkGeneration function called!");
+    console.log("📋 Current topicsList:", topicsList);
+    console.log("📋 topicsList.length:", topicsList.length);
+    console.log("📋 selectedTitles:", selectedTitles);
+    console.log("📋 selectedTitles.length:", selectedTitles.length);
+    
     setIsGenerating(true);
     setProgress(0);
     setResults([]);
@@ -948,12 +954,14 @@ export default function SimpleBulkGeneration() {
     
     try {
       const formValues = form.getValues();
+      console.log("📋 formValues:", formValues);
       
       if (topicsList.length === 0) {
+        console.error("❌ No topics in topicsList - throwing error");
         throw new Error("Please enter at least one topic");
       }
       
-      console.log(`Generating content for ${topicsList.length} topics`);
+      console.log(`✅ Generating content for ${topicsList.length} topics`);
       setProgress(10);
       
       // Build comprehensive content data like AdminPanel with distributed primary images
