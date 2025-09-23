@@ -829,15 +829,9 @@ export default function MediaSelectionStep({
       
       {/* Display simple selected images bar */}
       <SimpleSelectedImagesBar
-        primaryImage={primaryImages[0] || null} // For compatibility with SimpleSelectedImagesBar
+        primaryImages={primaryImages}
         secondaryImages={secondaryImages}
-        setPrimaryImage={(image: MediaImage | null) => {
-          if (image) {
-            addPrimaryImageHandler(image);
-          } else {
-            setPrimaryImages([]);
-          }
-        }}
+        setPrimaryImages={setPrimaryImages}
         setSecondaryImages={setSecondaryImages}
         onPreviewImage={openImagePreview}
       />
