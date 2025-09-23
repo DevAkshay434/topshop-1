@@ -166,6 +166,9 @@ const bulkFormSchema = z.object({
   // Buyer personas
   buyerPersonas: z.string().optional(),
   
+  // Author Attribution (CRITICAL for feature parity with AdminPanel)
+  authorId: z.string().optional(),
+  
   // Bulk specific
   topics: z.string().min(1, "Please enter at least one topic"),
   customPrompt: z.string().optional(),

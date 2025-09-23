@@ -797,6 +797,27 @@ async function processEnhancedTopic(
     try {
       console.log(`🎯 Generating content with Claude for topic: "${topic}"`);
       
+      // Determine author before generation for attribution
+      let authorData = null;
+      if (formData.authorId) {
+        try {
+          const authors = await storage.getAuthors();
+          const author = authors.find(a => a.id === formData.authorId);
+          if (author) {
+            authorData = {
+              id: author.id,
+              name: author.name || "Store Owner",
+              description: author.description,
+              profileImage: author.profileImage,
+              linkedinUrl: author.linkedinUrl
+            };
+            console.log(`👤 BULK ROUTE - Found author for attribution: ${authorData.name}`);
+          }
+        } catch (error) {
+          console.warn(`Could not fetch author ${formData.authorId}:`, error);
+        }
+      }
+
       // Generate content with dedicated bulk Claude service (same as admin panel)
       const generatedContent = await generateBulkContentWithClaude({
         topic,
@@ -833,7 +854,10 @@ async function processEnhancedTopic(
         enableTables: formData.enableTables,
         enableLists: formData.enableLists,
         enableH3s: formData.enableH3s,
-        enableCitations: formData.enableCitations
+        enableCitations: formData.enableCitations,
+        // CRITICAL: Include author attribution (matching AdminPanel functionality)
+        authorId: formData.authorId,
+        author: authorData
       });
       
       console.log(`Enhanced content generated for "${topic}". Title: "${generatedContent.title}"`);
@@ -844,21 +868,10 @@ async function processEnhancedTopic(
         generatedContent: JSON.stringify(generatedContent)
       });
       
-      // Determine author
-      let authorName = "Store Owner";
-      if (formData.authorId) {
-        try {
-          const authors = await storage.getAuthors();
-          const author = authors.find(a => a.id === formData.authorId);
-          if (author) {
-            authorName = author.name || authorName;
-          }
-        } catch (error) {
-          console.warn(`Could not fetch author ${formData.authorId}:`, error);
-        }
-      }
+      // Use author name from previously fetched authorData
+      const authorName = authorData?.name || "Store Owner";
       
-      // Create blog post with enhanced settings including featured image
+      // Create blog post with enhanced settings including featured image and meta optimization
       const postData: any = {
         title: generatedContent.title,
         content: generatedContent.content || `# ${generatedContent.title}\n\nContent for ${topic}`,
@@ -869,8 +882,14 @@ async function processEnhancedTopic(
         tags: Array.isArray(generatedContent.tags) && generatedContent.tags.length > 0 
           ? generatedContent.tags.join(",") 
           : topic,
-        category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content"
+        category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content",
+        // Include optimized meta fields (matching AdminPanel functionality)
+        metaTitle: generatedContent.metaTitle || generatedContent.title,
+        metaDescription: generatedContent.metaDescription || `Learn about ${topic} with this comprehensive guide.`
       };
+      
+      console.log(`📝 BULK META - Added optimized meta title: "${postData.metaTitle.substring(0, 50)}..."`);
+      console.log(`📝 BULK META - Added optimized meta description: "${postData.metaDescription.substring(0, 50)}..."`);
 
       // Add featured image from primary image like admin panel
       if (mediaContent?.primaryImage) {
