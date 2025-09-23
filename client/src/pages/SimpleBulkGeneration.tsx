@@ -1218,123 +1218,91 @@ export default function SimpleBulkGeneration() {
                           </Badge>
                         </div>
                         
-                        {/* Visual Diagram Container */}
-                        <div className="relative bg-white rounded-lg border p-8 min-h-[400px] overflow-hidden">
+                        {/* Mind Map Diagram - SearchAtlas Style */}
+                        <div className="relative bg-white rounded-lg border p-8 min-h-[600px] overflow-hidden">
                           {/* Root Keyword in Center */}
-                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                            <div className="bg-blue-500 text-white px-6 py-3 rounded-lg font-medium text-center shadow-lg">
-                              <div className="text-sm font-bold">{topicalMappingSession?.rootKeyword}</div>
-                              <div className="text-xs opacity-90">Root Keyword</div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                            <div className="bg-gray-100 border-2 border-gray-300 px-4 py-2 rounded-lg font-medium text-center shadow-sm">
+                              <div className="text-sm font-bold text-gray-800">{topicalMappingSession?.rootKeyword}</div>
                             </div>
                           </div>
 
-                          {/* Related Keywords Arranged in Circle */}
-                          {relatedKeywords.map((keyword, index) => {
-                            const angle = (index * 360) / relatedKeywords.length;
-                            const radius = 140;
-                            const x = Math.cos((angle * Math.PI) / 180) * radius;
-                            const y = Math.sin((angle * Math.PI) / 180) * radius;
-                            
-                            const hasGeneratedTitles = generatedTitles[keyword.id];
-                            const selectedCount = hasGeneratedTitles ? 
-                              generatedTitles[keyword.id]?.filter(t => t.isSelected).length || 0 : 0;
+                          {/* All Generated Titles as Branches */}
+                          {(() => {
+                            const allTitles: any[] = [];
+                            Object.values(generatedTitles).forEach((titles: any[]) => {
+                              allTitles.push(...titles);
+                            });
 
-                            return (
-                              <div key={keyword.id}>
-                                {/* Connection Line */}
-                                <svg className="absolute top-1/2 left-1/2 pointer-events-none" style={{ zIndex: 1 }}>
-                                  <line
-                                    x1="0"
-                                    y1="0"
-                                    x2={x}
-                                    y2={y}
-                                    stroke="#e5e7eb"
-                                    strokeWidth="2"
-                                    strokeDasharray="5,5"
-                                  />
-                                </svg>
+                            return allTitles.map((title, index) => {
+                              const angle = (index * 360) / allTitles.length;
+                              const radius = 180 + Math.random() * 60; // Varying distances for natural look
+                              const x = Math.cos((angle * Math.PI) / 180) * radius;
+                              const y = Math.sin((angle * Math.PI) / 180) * radius;
 
-                                {/* Keyword Node */}
-                                <div
-                                  className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-                                  style={{
-                                    left: `calc(50% + ${x}px)`,
-                                    top: `calc(50% + ${y}px)`,
-                                    zIndex: 2
-                                  }}
-                                  data-testid={`keyword-node-${keyword.id}`}
-                                >
-                                  <div className={cn(
-                                    "bg-white border-2 rounded-lg p-3 shadow-md hover:shadow-lg transition-all duration-200 min-w-[160px]",
-                                    hasGeneratedTitles 
-                                      ? "border-green-500 bg-green-50" 
-                                      : "border-gray-300 hover:border-blue-400"
-                                  )}>
-                                    <div className="text-center">
-                                      <div className="font-medium text-sm text-gray-900 mb-1 line-clamp-2">
-                                        {keyword.keyword}
-                                      </div>
-                                      
-                                      {/* Keyword Metrics */}
-                                      <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mb-2">
-                                        {keyword.searchVolume && (
-                                          <span className="flex items-center gap-1">
-                                            <BarChart className="h-3 w-3" />
-                                            {keyword.searchVolume > 1000 ? 
-                                              `${Math.round(keyword.searchVolume / 1000)}k` : 
-                                              keyword.searchVolume.toLocaleString()
-                                            }
-                                          </span>
-                                        )}
-                                        {keyword.difficulty && (
-                                          <span className="flex items-center gap-1">
-                                            <Zap className="h-3 w-3" />
-                                            {keyword.difficulty}%
-                                          </span>
-                                        )}
-                                      </div>
+                              return (
+                                <div key={title.id}>
+                                  {/* Connection Line from Center to Title */}
+                                  <svg 
+                                    className="absolute top-1/2 left-1/2 pointer-events-none" 
+                                    style={{ 
+                                      zIndex: 1,
+                                      width: '100%',
+                                      height: '100%',
+                                      transform: 'translate(-50%, -50%)'
+                                    }}
+                                  >
+                                    <line
+                                      x1="50%"
+                                      y1="50%"
+                                      x2={`calc(50% + ${x}px)`}
+                                      y2={`calc(50% + ${y}px)`}
+                                      stroke="#e5e7eb"
+                                      strokeWidth="1"
+                                    />
+                                  </svg>
 
-                                      {/* Action Button */}
-                                      {!hasGeneratedTitles ? (
-                                        <Button 
-                                          onClick={() => generateTitlesForKeyword(keyword)}
-                                          disabled={isGeneratingTitles[keyword.id]}
-                                          variant="outline"
-                                          size="sm"
-                                          className="w-full h-7 text-xs"
-                                          data-testid={`button-generate-titles-${keyword.id}`}
-                                        >
-                                          {isGeneratingTitles[keyword.id] ? (
-                                            <>
-                                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                              Generating...
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Sparkles className="mr-1 h-3 w-3" />
-                                              Generate Titles
-                                            </>
-                                          )}
-                                        </Button>
-                                      ) : (
-                                        <div className="space-y-1">
-                                          <div className="flex items-center justify-center gap-1 text-xs text-green-600">
-                                            <CheckCircle className="h-3 w-3" />
-                                            {generatedTitles[keyword.id]?.length || 0} titles
-                                          </div>
-                                          {selectedCount > 0 && (
-                                            <Badge variant="secondary" className="text-xs">
-                                              {selectedCount} selected
-                                            </Badge>
+                                  {/* Title Branch */}
+                                  <div
+                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                                    style={{
+                                      left: `calc(50% + ${x}px)`,
+                                      top: `calc(50% + ${y}px)`,
+                                      zIndex: 2
+                                    }}
+                                    onClick={() => toggleTitleSelection(title)}
+                                    data-testid={`title-branch-${title.id}`}
+                                  >
+                                    <div className={cn(
+                                      "bg-white border rounded-md px-3 py-2 shadow-sm hover:shadow-md transition-all duration-200 max-w-[250px]",
+                                      title.isSelected 
+                                        ? "border-blue-500 bg-blue-50" 
+                                        : "border-gray-200 hover:border-gray-300"
+                                    )}>
+                                      {/* Selection indicator */}
+                                      <div className="flex items-start gap-2">
+                                        <div className={cn(
+                                          "w-3 h-3 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1",
+                                          title.isSelected 
+                                            ? "border-blue-500 bg-blue-500" 
+                                            : "border-gray-300 group-hover:border-blue-400"
+                                        )}>
+                                          {title.isSelected && (
+                                            <div className="w-1 h-1 bg-white rounded-full"></div>
                                           )}
                                         </div>
-                                      )}
+                                        
+                                        {/* Title Text */}
+                                        <div className="text-xs text-gray-700 leading-tight font-medium">
+                                          {title.title}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            });
+                          })()}
                         </div>
 
                         {/* Generated Titles Panel (Collapsible) */}
