@@ -923,8 +923,12 @@ export class MemStorage implements IStorage {
     const id = this.currentTopicalMappingSessionId++;
     const now = new Date();
     const newSession: TopicalMappingSession = {
-      ...session,
       id,
+      storeId: session.storeId,
+      rootKeyword: session.rootKeyword,
+      status: session.status || 'pending',
+      languageCode: session.languageCode || null,
+      locationCode: session.locationCode || null,
       createdAt: now,
       updatedAt: null
     };
@@ -1607,6 +1611,125 @@ export class DatabaseStorage implements IStorage {
       .where(eq(creditTransactions.storeId, storeId))
       .orderBy(desc(creditTransactions.transactionDate));
   }
+
+  // Topical mapping operations
+  async createTopicalMappingSession(session: InsertTopicalMappingSession): Promise<TopicalMappingSession> {
+    const [newSession] = await db.insert(topicalMappingSessions)
+      .values({
+        storeId: session.storeId,
+        rootKeyword: session.rootKeyword,
+        status: session.status || 'pending',
+        languageCode: session.languageCode || null,
+        locationCode: session.locationCode || null,
+        createdAt: new Date(),
+        updatedAt: null
+      })
+      .returning();
+    return newSession;
+  }
+
+  async getTopicalMappingSession(id: number): Promise<TopicalMappingSession | null> {
+    const sessions = await db.select()
+      .from(topicalMappingSessions)
+      .where(eq(topicalMappingSessions.id, id))
+      .limit(1);
+    return sessions[0] || null;
+  }
+
+  async updateTopicalMappingSession(id: number, session: Partial<TopicalMappingSession>): Promise<TopicalMappingSession> {
+    const [updatedSession] = await db.update(topicalMappingSessions)
+      .set({
+        ...session,
+        updatedAt: new Date()
+      })
+      .where(eq(topicalMappingSessions.id, id))
+      .returning();
+    
+    if (!updatedSession) {
+      throw new Error(`Topical mapping session not found: ${id}`);
+    }
+    
+    return updatedSession;
+  }
+
+  async getTopicalMappingSessions(storeId: number): Promise<TopicalMappingSession[]> {
+    return db.select()
+      .from(topicalMappingSessions)
+      .where(eq(topicalMappingSessions.storeId, storeId))
+      .orderBy(desc(topicalMappingSessions.createdAt));
+  }
+
+  async createRelatedKeyword(keyword: InsertRelatedKeyword): Promise<RelatedKeyword> {
+    const [newKeyword] = await db.insert(relatedKeywords)
+      .values({
+        sessionId: keyword.sessionId,
+        keyword: keyword.keyword,
+        searchVolume: keyword.searchVolume || null,
+        difficulty: keyword.difficulty || null,
+        cpcCents: keyword.cpcCents || null,
+        createdAt: new Date()
+      })
+      .returning();
+    return newKeyword;
+  }
+
+  async getRelatedKeywords(sessionId: number): Promise<RelatedKeyword[]> {
+    return db.select()
+      .from(relatedKeywords)
+      .where(eq(relatedKeywords.sessionId, sessionId))
+      .orderBy(asc(relatedKeywords.createdAt));
+  }
+
+  async createGeneratedTitle(title: InsertGeneratedTitle): Promise<GeneratedTitle> {
+    const [newTitle] = await db.insert(generatedTitles)
+      .values({
+        keywordId: title.keywordId,
+        title: title.title,
+        isSelected: title.isSelected || null,
+        createdAt: new Date()
+      })
+      .returning();
+    return newTitle;
+  }
+
+  async getGeneratedTitles(keywordId: number): Promise<GeneratedTitle[]> {
+    return db.select()
+      .from(generatedTitles)
+      .where(eq(generatedTitles.keywordId, keywordId))
+      .orderBy(asc(generatedTitles.createdAt));
+  }
+
+  async updateGeneratedTitle(id: number, title: Partial<GeneratedTitle>): Promise<GeneratedTitle> {
+    const [updatedTitle] = await db.update(generatedTitles)
+      .set(title)
+      .where(eq(generatedTitles.id, id))
+      .returning();
+    
+    if (!updatedTitle) {
+      throw new Error(`Generated title not found: ${id}`);
+    }
+    
+    return updatedTitle;
+  }
+
+  async getSelectedTitles(sessionId: number): Promise<Array<{ keyword: string; title: string; keywordId: number; titleId: number }>> {
+    const result = await db.select({
+      keyword: relatedKeywords.keyword,
+      title: generatedTitles.title,
+      keywordId: relatedKeywords.id,
+      titleId: generatedTitles.id
+    })
+      .from(generatedTitles)
+      .innerJoin(relatedKeywords, eq(generatedTitles.keywordId, relatedKeywords.id))
+      .innerJoin(topicalMappingSessions, eq(relatedKeywords.sessionId, topicalMappingSessions.id))
+      .where(and(
+        eq(topicalMappingSessions.id, sessionId),
+        eq(generatedTitles.isSelected, true)
+      ))
+      .orderBy(asc(relatedKeywords.createdAt), asc(generatedTitles.createdAt));
+    
+    return result;
+  }
 }
 
 // Use MemStorage as the database connection is having issues
@@ -1979,6 +2102,77 @@ class FallbackStorage implements IStorage {
     return this.tryOrFallback(
       () => dbStorage.getCreditTransactions(storeId),
       () => memStorage.getCreditTransactions(storeId)
+    );
+  }
+
+  // Topical mapping operations
+  async createTopicalMappingSession(session: InsertTopicalMappingSession): Promise<TopicalMappingSession> {
+    return this.tryOrFallback(
+      () => dbStorage.createTopicalMappingSession(session),
+      () => memStorage.createTopicalMappingSession(session)
+    );
+  }
+
+  async getTopicalMappingSession(id: number): Promise<TopicalMappingSession | null> {
+    return this.tryOrFallback(
+      () => dbStorage.getTopicalMappingSession(id),
+      () => memStorage.getTopicalMappingSession(id)
+    );
+  }
+
+  async updateTopicalMappingSession(id: number, session: Partial<TopicalMappingSession>): Promise<TopicalMappingSession> {
+    return this.tryOrFallback(
+      () => dbStorage.updateTopicalMappingSession(id, session),
+      () => memStorage.updateTopicalMappingSession(id, session)
+    );
+  }
+
+  async getTopicalMappingSessions(storeId: number): Promise<TopicalMappingSession[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getTopicalMappingSessions(storeId),
+      () => memStorage.getTopicalMappingSessions(storeId)
+    );
+  }
+
+  async createRelatedKeyword(keyword: InsertRelatedKeyword): Promise<RelatedKeyword> {
+    return this.tryOrFallback(
+      () => dbStorage.createRelatedKeyword(keyword),
+      () => memStorage.createRelatedKeyword(keyword)
+    );
+  }
+
+  async getRelatedKeywords(sessionId: number): Promise<RelatedKeyword[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getRelatedKeywords(sessionId),
+      () => memStorage.getRelatedKeywords(sessionId)
+    );
+  }
+
+  async createGeneratedTitle(title: InsertGeneratedTitle): Promise<GeneratedTitle> {
+    return this.tryOrFallback(
+      () => dbStorage.createGeneratedTitle(title),
+      () => memStorage.createGeneratedTitle(title)
+    );
+  }
+
+  async getGeneratedTitles(keywordId: number): Promise<GeneratedTitle[]> {
+    return this.tryOrFallback(
+      () => dbStorage.getGeneratedTitles(keywordId),
+      () => memStorage.getGeneratedTitles(keywordId)
+    );
+  }
+
+  async updateGeneratedTitle(id: number, title: Partial<GeneratedTitle>): Promise<GeneratedTitle> {
+    return this.tryOrFallback(
+      () => dbStorage.updateGeneratedTitle(id, title),
+      () => memStorage.updateGeneratedTitle(id, title)
+    );
+  }
+
+  async getSelectedTitles(sessionId: number): Promise<Array<{ keyword: string; title: string; keywordId: number; titleId: number }>> {
+    return this.tryOrFallback(
+      () => dbStorage.getSelectedTitles(sessionId),
+      () => memStorage.getSelectedTitles(sessionId)
     );
   }
 }
