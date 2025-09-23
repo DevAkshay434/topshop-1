@@ -2220,28 +2220,40 @@ export default function SimpleBulkGeneration() {
                     }}
                     onPublish={async (postData) => {
                       try {
-                        // Create a draft first with the updated content
-                        const draftData = {
-                          title: postData.title,
-                          content: postData.content,
-                          contentType: 'post',
-                          status: 'draft',
-                          blogId: form.getValues('blogId') || 'default',
-                          authorId: selectedAuthorId || '1',
-                          tags: 'bulk generated content',
-                          category: 'Generated Content'
-                        };
+                        // Check if we have an existing post ID from bulk generation
+                        if (postData.postId) {
+                          // Update the existing post with any content changes, then publish
+                          const updateData = {
+                            title: postData.title,
+                            content: postData.content,
+                            status: 'draft' // Keep as draft for now
+                          };
 
-                        const draftResponse = await apiRequest({
-                          url: '/api/posts',
-                          method: 'POST',
-                          data: draftData
-                        });
+                          // First update the post content if it was edited
+                          const updateResponse = await apiRequest({
+                            url: `/api/posts/${postData.postId}`,
+                            method: 'PUT',
+                            data: updateData
+                          });
 
-                        if (draftResponse.success) {
-                          // Now publish to Shopify using the correct endpoint
+                          if (!updateResponse.success) {
+                            throw new Error(updateResponse.error || 'Failed to update post');
+                          }
+
+                          // First sync to Shopify to create the draft there
+                          const syncResponse = await apiRequest({
+                            url: '/api/shopify/sync',
+                            method: 'POST',
+                            data: { postIds: [postData.postId] }
+                          });
+
+                          if (!syncResponse.success) {
+                            throw new Error(syncResponse.error || 'Failed to sync to Shopify');
+                          }
+
+                          // Now publish to Shopify using the existing post ID
                           const publishResponse = await apiRequest({
-                            url: `/api/posts/${draftResponse.post.id}/publish`,
+                            url: `/api/posts/${postData.postId}/publish`,
                             method: 'POST'
                           });
 
@@ -2255,44 +2267,129 @@ export default function SimpleBulkGeneration() {
                             throw new Error(publishResponse.error || 'Failed to publish to Shopify');
                           }
                         } else {
-                          throw new Error(draftResponse.error || 'Failed to create draft');
+                          // Fallback: Create a new post if no existing post ID
+                          const draftData = {
+                            title: postData.title,
+                            content: postData.content,
+                            contentType: 'post',
+                            status: 'draft',
+                            blogId: form.getValues('blogId') || 'default',
+                            authorId: selectedAuthorId || '1',
+                            tags: 'bulk generated content',
+                            category: 'Generated Content'
+                          };
+
+                          const draftResponse = await apiRequest({
+                            url: '/api/posts',
+                            method: 'POST',
+                            data: draftData
+                          });
+
+                          if (draftResponse.success) {
+                            // Sync to Shopify first
+                            const syncResponse = await apiRequest({
+                              url: '/api/shopify/sync',
+                              method: 'POST',
+                              data: { postIds: [draftResponse.post.id] }
+                            });
+
+                            if (!syncResponse.success) {
+                              throw new Error(syncResponse.error || 'Failed to sync to Shopify');
+                            }
+
+                            // Now publish to Shopify
+                            const publishResponse = await apiRequest({
+                              url: `/api/posts/${draftResponse.post.id}/publish`,
+                              method: 'POST'
+                            });
+
+                            if (publishResponse.success) {
+                              toast({
+                                title: "Published Successfully",
+                                description: `"${postData.title}" has been published to Shopify!`,
+                              });
+                              queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+                            } else {
+                              throw new Error(publishResponse.error || 'Failed to publish to Shopify');
+                            }
+                          } else {
+                            throw new Error(draftResponse.error || 'Failed to create draft');
+                          }
                         }
                       } catch (error: any) {
                         console.error('Publish error:', error);
                         toast({
                           title: "Publishing Failed",
-                          description: error.message || "Failed to publish to Shopify",
+                          description: error.message || "Failed to create draft",
                           variant: "destructive"
                         });
                       }
                     }}
                     onSaveDraft={async (postData) => {
                       try {
-                        const draftData = {
-                          title: postData.title,
-                          content: postData.content,
-                          contentType: 'post',
-                          status: 'draft',
-                          blogId: form.getValues('blogId') || 'default',
-                          authorId: selectedAuthorId || '1',
-                          tags: 'bulk generated content',
-                          category: 'Generated Content'
-                        };
+                        // Check if we have an existing post ID from bulk generation
+                        if (postData.postId) {
+                          // Update the existing post content
+                          const updateData = {
+                            title: postData.title,
+                            content: postData.content,
+                            status: 'draft'
+                          };
 
-                        const response = await apiRequest({
-                          url: '/api/posts',
-                          method: 'POST',
-                          data: draftData
-                        });
-
-                        if (response.success) {
-                          toast({
-                            title: "Saved as Draft",
-                            description: `"${postData.title}" has been saved as a draft.`,
+                          const response = await apiRequest({
+                            url: `/api/posts/${postData.postId}`,
+                            method: 'PUT',
+                            data: updateData
                           });
-                          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+
+                          if (response.success) {
+                            // Optionally sync to Shopify as a draft
+                            try {
+                              await apiRequest({
+                                url: '/api/shopify/sync',
+                                method: 'POST',
+                                data: { postIds: [postData.postId] }
+                              });
+                            } catch (syncError) {
+                              console.log('Sync to Shopify failed (non-critical for draft):', syncError);
+                            }
+
+                            toast({
+                              title: "Draft Updated",
+                              description: `"${postData.title}" has been updated and saved as a draft.`,
+                            });
+                            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+                          } else {
+                            throw new Error(response.error || 'Failed to update draft');
+                          }
                         } else {
-                          throw new Error(response.error || 'Failed to save draft');
+                          // Fallback: Create a new draft if no existing post ID
+                          const draftData = {
+                            title: postData.title,
+                            content: postData.content,
+                            contentType: 'post',
+                            status: 'draft',
+                            blogId: form.getValues('blogId') || 'default',
+                            authorId: selectedAuthorId || '1',
+                            tags: 'bulk generated content',
+                            category: 'Generated Content'
+                          };
+
+                          const response = await apiRequest({
+                            url: '/api/posts',
+                            method: 'POST',
+                            data: draftData
+                          });
+
+                          if (response.success) {
+                            toast({
+                              title: "Saved as Draft",
+                              description: `"${postData.title}" has been saved as a draft.`,
+                            });
+                            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+                          } else {
+                            throw new Error(response.error || 'Failed to save draft');
+                          }
                         }
                       } catch (error: any) {
                         console.error('Save draft error:', error);
