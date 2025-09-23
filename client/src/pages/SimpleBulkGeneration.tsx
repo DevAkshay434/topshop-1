@@ -124,8 +124,9 @@ import {
 // Form schema for bulk generation
 const bulkFormSchema = z.object({
   // Generation Mode
-  generationMode: z.enum(["bulk", "cluster"]).default("bulk"),
+  generationMode: z.enum(["bulk", "cluster", "topical"]).default("bulk"),
   clusterTopic: z.string().optional(),
+  rootKeyword: z.string().optional(),
   
   // Article Configuration
   articleType: z.string().default("blog"),
@@ -316,6 +317,14 @@ export default function SimpleBulkGeneration() {
   const [generatedClusterTitles, setGeneratedClusterTitles] = useState<string[]>([]);
   const [isGeneratingClusterTitles, setIsGeneratingClusterTitles] = useState(false);
   
+  // Topical mapping state
+  const [topicalMappingSession, setTopicalMappingSession] = useState<any>(null);
+  const [relatedKeywords, setRelatedKeywords] = useState<any[]>([]);
+  const [generatedTitles, setGeneratedTitles] = useState<{[keywordId: string]: any[]}>({});
+  const [selectedTitles, setSelectedTitles] = useState<any[]>([]);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [isGeneratingTitles, setIsGeneratingTitles] = useState<{[keywordId: string]: boolean}>({});
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
@@ -350,6 +359,13 @@ export default function SimpleBulkGeneration() {
       // For cluster mode, use generated titles
       setTopicsList(generatedClusterTitles);
       setTotalBatches(1); // Clusters are processed as one batch
+    } else if (generationMode === 'topical') {
+      // For topical mapping mode, use selected titles
+      const selectedTitlesList = selectedTitles.map(title => title.title);
+      setTopicsList(selectedTitlesList);
+      
+      const batchSize = form.getValues('batchSize');
+      setTotalBatches(Math.ceil(selectedTitlesList.length / batchSize));
     } else {
       // For bulk mode, use topics from textarea
       if (topicsValue) {
@@ -366,7 +382,143 @@ export default function SimpleBulkGeneration() {
         setTotalBatches(0);
       }
     }
-  }, [form.watch('topics'), form.watch('batchSize'), form.watch('generationMode'), generatedClusterTitles]);
+  }, [form.watch('topics'), form.watch('batchSize'), form.watch('generationMode'), generatedClusterTitles, selectedTitles]);
+
+  // Create topical mapping session and fetch related keywords
+  const createTopicalMappingSession = async () => {
+    const rootKeyword = form.getValues('rootKeyword');
+    if (!rootKeyword || rootKeyword.trim().length < 3) {
+      toast({
+        title: "Root Keyword Required",
+        description: "Please enter a root keyword of at least 3 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!storeContext.currentStore?.id) {
+      toast({
+        title: "Store Required",
+        description: "Please select a store first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingSession(true);
+    try {
+      const response = await apiRequest({
+        url: '/api/topical-mapping/create-session',
+        method: 'POST',
+        data: {
+          rootKeyword: rootKeyword.trim(),
+          storeId: storeContext.currentStore.id,
+          languageCode: 'en',
+          locationCode: '2840' // USA
+        }
+      });
+
+      if (response.success) {
+        setTopicalMappingSession(response.session);
+        setRelatedKeywords(response.keywords || []);
+        toast({
+          title: "Keywords Found!",
+          description: `Found ${response.keywords?.length || 0} related keywords for "${rootKeyword}"`,
+        });
+      } else {
+        throw new Error(response.error || "Failed to create topical mapping session");
+      }
+    } catch (error: any) {
+      console.error("Error creating topical mapping session:", error);
+      toast({
+        title: "Keyword Research Failed",
+        description: error.message || "Failed to fetch related keywords",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
+
+  // Generate titles for a specific keyword
+  const generateTitlesForKeyword = async (keyword: any) => {
+    setIsGeneratingTitles(prev => ({ ...prev, [keyword.id]: true }));
+    
+    try {
+      const response = await apiRequest({
+        url: '/api/topical-mapping/generate-titles',
+        method: 'POST',
+        data: {
+          keywordId: keyword.id,
+          keyword: keyword.keyword,
+          count: 10
+        }
+      });
+
+      if (response.success) {
+        setGeneratedTitles(prev => ({
+          ...prev,
+          [keyword.id]: response.titles || []
+        }));
+        toast({
+          title: "Titles Generated!",
+          description: `Generated ${response.titles?.length || 0} titles for "${keyword.keyword}"`,
+        });
+      } else {
+        throw new Error(response.error || "Failed to generate titles");
+      }
+    } catch (error: any) {
+      console.error("Error generating titles:", error);
+      toast({
+        title: "Title Generation Failed",
+        description: error.message || "Failed to generate titles",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingTitles(prev => ({ ...prev, [keyword.id]: false }));
+    }
+  };
+
+  // Toggle title selection
+  const toggleTitleSelection = async (title: any) => {
+    try {
+      const response = await apiRequest({
+        url: '/api/topical-mapping/toggle-title',
+        method: 'POST',
+        data: {
+          titleId: title.id,
+          isSelected: !title.isSelected
+        }
+      });
+
+      if (response.success) {
+        // Update the title in the generated titles state
+        setGeneratedTitles(prev => {
+          const newTitles = { ...prev };
+          Object.keys(newTitles).forEach(keywordId => {
+            newTitles[keywordId] = newTitles[keywordId].map(t => 
+              t.id === title.id ? { ...t, isSelected: !title.isSelected } : t
+            );
+          });
+          return newTitles;
+        });
+
+        // Update selected titles list
+        if (!title.isSelected) {
+          setSelectedTitles(prev => [...prev, { ...title, isSelected: true }]);
+        } else {
+          setSelectedTitles(prev => prev.filter(t => t.id !== title.id));
+        }
+      }
+    } catch (error: any) {
+      console.error("Error toggling title selection:", error);
+      toast({
+        title: "Selection Failed",
+        description: "Failed to update title selection",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Generate cluster titles using Claude AI
   const generateClusterTitles = async () => {
@@ -912,11 +1064,19 @@ export default function SimpleBulkGeneration() {
                               Cluster Generation - 10 interconnected articles around one topic
                             </div>
                           </SelectItem>
+                          <SelectItem value="topical">
+                            <div className="flex items-center gap-2">
+                              <Target className="h-4 w-4" />
+                              Topical Mapping - Keyword research with AI title generation
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
                         {form.watch('generationMode') === 'cluster' 
                           ? 'Generate 10 SEO-optimized articles that interlink around a central topic'
+                          : form.watch('generationMode') === 'topical'
+                          ? 'Use keyword research to find related topics and generate AI-powered titles for SEO optimization'
                           : 'Generate multiple articles from a list of individual topics'
                         }
                       </FormDescription>
@@ -987,6 +1147,171 @@ export default function SimpleBulkGeneration() {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Topical Mapping Interface (only show in topical mode) */}
+                {form.watch('generationMode') === 'topical' && (
+                  <div className="space-y-6 p-4 bg-green-50 rounded-lg">
+                    {/* Root Keyword Input */}
+                    <FormField
+                      control={form.control}
+                      name="rootKeyword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Root Keyword</FormLabel>
+                          <FormControl>
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Enter your root keyword (e.g., 'sustainable fashion', 'digital marketing')"
+                                className="bg-white"
+                                {...field}
+                                data-testid="input-root-keyword"
+                              />
+                              <Button 
+                                type="button" 
+                                onClick={createTopicalMappingSession}
+                                disabled={isCreatingSession || !field.value?.trim()}
+                                className="whitespace-nowrap"
+                                data-testid="button-find-keywords"
+                              >
+                                {isCreatingSession ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Research...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Search className="mr-2 h-4 w-4" />
+                                    Find Keywords
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            We'll use DataForSEO to find 5 related keywords and generate SEO-optimized titles for each
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Related Keywords Grid */}
+                    {relatedKeywords.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Related Keywords Found ({relatedKeywords.length})</Label>
+                          <Badge variant="outline" className="text-xs" data-testid="badge-selected-count">
+                            {selectedTitles.length} titles selected
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid gap-4">
+                          {relatedKeywords.map((keyword) => (
+                            <Card key={keyword.id} className="bg-white" data-testid={`card-keyword-${keyword.id}`}>
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4 text-green-600" />
+                                    <CardTitle className="text-sm">{keyword.keyword}</CardTitle>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                                    {keyword.searchVolume && (
+                                      <div className="flex items-center gap-1" data-testid={`text-search-volume-${keyword.id}`}>
+                                        <BarChart className="h-3 w-3" />
+                                        {keyword.searchVolume?.toLocaleString()}
+                                      </div>
+                                    )}
+                                    {keyword.difficulty && (
+                                      <div className="flex items-center gap-1" data-testid={`text-difficulty-${keyword.id}`}>
+                                        <Zap className="h-3 w-3" />
+                                        {keyword.difficulty}%
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              
+                              <CardContent className="pt-0">
+                                {!generatedTitles[keyword.id] ? (
+                                  <Button 
+                                    onClick={() => generateTitlesForKeyword(keyword)}
+                                    disabled={isGeneratingTitles[keyword.id]}
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    data-testid={`button-generate-titles-${keyword.id}`}
+                                  >
+                                    {isGeneratingTitles[keyword.id] ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                        Generating...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Sparkles className="mr-2 h-3 w-3" />
+                                        Generate 10 Titles
+                                      </>
+                                    )}
+                                  </Button>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-xs">Generated Titles</Label>
+                                      <span className="text-xs text-gray-500" data-testid={`text-selected-count-${keyword.id}`}>
+                                        {generatedTitles[keyword.id]?.filter(t => t.isSelected).length || 0} selected
+                                      </span>
+                                    </div>
+                                    <div className="grid gap-1 max-h-32 overflow-y-auto">
+                                      {generatedTitles[keyword.id]?.map((title) => (
+                                        <div
+                                          key={title.id}
+                                          className={cn(
+                                            "p-2 rounded text-xs cursor-pointer transition-colors flex items-center gap-2",
+                                            title.isSelected 
+                                              ? "bg-green-100 border border-green-300" 
+                                              : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                                          )}
+                                          onClick={() => toggleTitleSelection(title)}
+                                          data-testid={`title-${title.id}`}
+                                        >
+                                          <div className={cn(
+                                            "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                                            title.isSelected 
+                                              ? "border-green-500 bg-green-500" 
+                                              : "border-gray-300"
+                                          )}>
+                                            {title.isSelected && (
+                                              <Plus className="h-2 w-2 text-white" />
+                                            )}
+                                          </div>
+                                          <span className="flex-1 line-clamp-2">{title.title}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Selected Titles Summary */}
+                    {selectedTitles.length > 0 && (
+                      <div className="mt-4 p-3 bg-white rounded border" data-testid="summary-selected-titles">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <Label className="text-sm font-medium">Ready for Generation</Label>
+                          <Badge variant="secondary">{selectedTitles.length} titles</Badge>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          Selected titles will be used for bulk content generation. Proceed to the next step when ready.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
