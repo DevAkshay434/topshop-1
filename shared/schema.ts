@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -533,6 +533,97 @@ export const creditTransactionRelations = relations(creditTransactions, ({ one }
   post: one(blogPosts, {
     fields: [creditTransactions.postId],
     references: [blogPosts.id],
+  }),
+}));
+
+// Topical mapping session schema for keyword research
+export const topicalMappingSessions = pgTable("topical_mapping_sessions", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").notNull().references(() => shopifyStores.id),
+  rootKeyword: text("root_keyword").notNull(),
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  languageCode: text("language_code").default("en"), // For DataForSEO API consistency
+  locationCode: text("location_code").default("2840"), // US location code by default
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertTopicalMappingSessionSchema = createInsertSchema(topicalMappingSessions).pick({
+  storeId: true,
+  rootKeyword: true,
+  status: true,
+  languageCode: true,
+  locationCode: true,
+});
+
+export type InsertTopicalMappingSession = z.infer<typeof insertTopicalMappingSessionSchema>;
+export type TopicalMappingSession = typeof topicalMappingSessions.$inferSelect;
+
+// Related keywords discovered from DataForSEO API
+export const relatedKeywords = pgTable("related_keywords", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull().references(() => topicalMappingSessions.id, { onDelete: "cascade" }),
+  keyword: text("keyword").notNull(),
+  searchVolume: integer("search_volume"),
+  difficulty: integer("difficulty"),
+  cpcCents: integer("cpc_cents"), // Cost per click in cents for consistent handling
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueSessionKeyword: unique().on(table.sessionId, table.keyword),
+}));
+
+export const insertRelatedKeywordSchema = createInsertSchema(relatedKeywords).pick({
+  sessionId: true,
+  keyword: true,
+  searchVolume: true,
+  difficulty: true,
+  cpcCents: true,
+});
+
+export type InsertRelatedKeyword = z.infer<typeof insertRelatedKeywordSchema>;
+export type RelatedKeyword = typeof relatedKeywords.$inferSelect;
+
+// Generated titles for each keyword
+export const generatedTitles = pgTable("generated_titles", {
+  id: serial("id").primaryKey(),
+  keywordId: integer("keyword_id").notNull().references(() => relatedKeywords.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  isSelected: boolean("is_selected").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueKeywordTitle: unique().on(table.keywordId, table.title),
+}));
+
+export const insertGeneratedTitleSchema = createInsertSchema(generatedTitles).pick({
+  keywordId: true,
+  title: true,
+  isSelected: true,
+});
+
+export type InsertGeneratedTitle = z.infer<typeof insertGeneratedTitleSchema>;
+export type GeneratedTitle = typeof generatedTitles.$inferSelect;
+
+// Define topical mapping relations
+export const topicalMappingSessionsRelations = relations(topicalMappingSessions, ({ one, many }) => ({
+  store: one(shopifyStores, {
+    fields: [topicalMappingSessions.storeId],
+    references: [shopifyStores.id],
+  }),
+  relatedKeywords: many(relatedKeywords),
+}));
+
+export const relatedKeywordsRelations = relations(relatedKeywords, ({ one, many }) => ({
+  session: one(topicalMappingSessions, {
+    fields: [relatedKeywords.sessionId],
+    references: [topicalMappingSessions.id],
+  }),
+  generatedTitles: many(generatedTitles),
+}));
+
+export const generatedTitlesRelations = relations(generatedTitles, ({ one }) => ({
+  keyword: one(relatedKeywords, {
+    fields: [generatedTitles.keywordId],
+    references: [relatedKeywords.id],
   }),
 }));
 
