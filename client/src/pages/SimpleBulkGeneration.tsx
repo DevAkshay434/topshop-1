@@ -1031,32 +1031,39 @@ export default function SimpleBulkGeneration() {
         
         if (progressInterval) clearInterval(progressInterval);
         
-        // Process topics one by one for real-time updates
-        const finalResults = [];
-        let successful = 0;
+        // Process all topics in one enhanced bulk request for proper formatting and media placement
+        console.log(`🚀 Using enhanced bulk generation with ${topicsList.length} topics`);
         
-        for (let i = 0; i < topicsList.length; i++) {
-          const topic = topicsList[i];
-          
-          try {
-            console.log(`🔄 Processing topic ${i + 1}/${topicsList.length}: "${topic}"`);
-            
-            const response = await apiRequest({
-              url: "/api/generate-content/single-enhanced",
-              method: "POST",
-              data: {
-                topic,
-                formData: contentData.formData,
-                mediaContent: selectedMediaContent,
-                isClusterMode: false,
-                clusterTopic: formValues.clusterTopic,
-                allTopics: topicsList
+        try {
+          const response = await apiRequest({
+            url: "/api/generate-content/enhanced-bulk",
+            method: "POST",
+            data: {
+              topics: topicsList,
+              formData: contentData.formData,
+              mediaContent: {
+                primaryImage: selectedMediaContent.primaryImages?.[0] || null,
+                secondaryImages: selectedMediaContent.secondaryImages || [],
+                youtubeEmbed: selectedMediaContent.youtubeEmbed || null
               },
-              timeout: 300000 // 5 minute timeout per topic
-            });
+              batchSize: contentData.batchSize || 5,
+              simultaneousGeneration: contentData.simultaneousGeneration || false,
+              isClusterMode: false,
+              clusterTopic: formValues.clusterTopic
+            },
+            timeout: 600000 // 10 minute timeout for bulk
+          });
+          
+          console.log(`✅ Enhanced bulk generation response received:`, response);
+          
+          const finalResults = [];
+          let successful = 0;
+          
+          // Process the bulk results
+          if (response && response.success && response.results) {
+            for (let i = 0; i < response.results.length; i++) {
+              const result = response.results[i];
             
-            if (response && response.success && response.result) {
-              const result = response.result;
               if (result.status === "success") {
                 const processedResult = {
                   topic: result.topic,
@@ -1075,7 +1082,7 @@ export default function SimpleBulkGeneration() {
                   index === i ? processedResult : prevResult
                 ));
                 
-                console.log(`✅ Completed topic ${i + 1}/${topicsList.length}: "${topic}"`);
+                console.log(`✅ Completed topic ${i + 1}/${topicsList.length}: "${result.topic}"`);
               } else {
                 const failedResult = {
                   topic: result.topic,
@@ -1089,36 +1096,35 @@ export default function SimpleBulkGeneration() {
                   index === i ? failedResult : prevResult
                 ));
                 
-                console.error(`❌ Failed topic ${i + 1}/${topicsList.length}: "${topic}" - ${result.error}`);
+                console.error(`❌ Failed topic ${i + 1}/${topicsList.length}: "${result.topic}" - ${result.error}`);
               }
-            } else {
-              throw new Error(response?.error || "Failed to generate content");
+              
+              // Update progress as we process each result
+              const progressPercentage = Math.round(((i + 1) / topicsList.length) * 100);
+              setProgress(progressPercentage);
             }
-          } catch (error: any) {
-            console.error(`❌ Error processing topic "${topic}":`, error);
-            const failedResult = {
-              topic,
-              status: "failed" as const,
-              error: error.message || "Unknown error"
-            };
-            finalResults.push(failedResult);
-            
-            // Update results immediately
-            setResults(prev => prev.map((prevResult, index) => 
-              index === i ? failedResult : prevResult
-            ));
+          } else {
+            throw new Error(response?.error || "No results returned from bulk generation");
           }
+        } catch (error: any) {
+          console.error('❌ Enhanced bulk generation error:', error);
           
-          // Update progress
-          const progressPercentage = Math.round(((i + 1) / topicsList.length) * 100);
-          setProgress(progressPercentage);
+          // Set all topics as failed
+          const failedResults = topicsList.map((topic, index) => ({
+            topic,
+            status: "failed" as const,
+            error: error.message || "Bulk generation failed"
+          }));
+          
+          setResults(failedResults);
+          throw error;
         }
         
         setProgress(100);
         
         toast({
           title: "Content Generation Complete",
-          description: `Generated ${successful} of ${topicsList.length} articles successfully`,
+          description: `Generated ${finalResults.filter(r => r.status === 'success').length} of ${topicsList.length} articles successfully`,
         });
         
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
