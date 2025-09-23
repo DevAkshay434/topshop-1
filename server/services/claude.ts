@@ -1,5 +1,24 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { BlogContent, BlogContentRequest } from "@shared/schema";
+
+// Simple types for this service
+interface BlogContent {
+  title: string;
+  content: string;
+  tags: string[];
+}
+
+interface BlogContentRequest {
+  topic: string;
+  length: string;
+  tone: string;
+  contentStyleDisplayName?: string;
+  contentStyleToneId?: string;
+  primaryImage?: any;
+  secondaryImages?: any[];
+  youtubeEmbed?: any;
+  targetAudience?: string;
+  buyerPersona?: string;
+}
 
 // Initialize Claude with API key
 const anthropic = new Anthropic({
@@ -614,6 +633,8 @@ For each keyword, also generate 8 SEO-optimized blog post titles that:
 2. Are engaging and clickable
 3. Follow proven title formats (How-to, Lists, Questions, Comparisons, etc.)
 4. Are 50-60 characters long for optimal SEO
+5. MUST be evergreen (NO years, dates, "2023", "2024", "2025", or time-specific references)
+6. Focus on timeless value and guidance
 
 Format your response as valid JSON:
 {
@@ -633,6 +654,12 @@ Format your response as valid JSON:
   }
 }
 
+CRITICAL REQUIREMENTS:
+- NO years, dates, or time-specific references in titles (no "2023", "2024", "2025", "this year", "latest", "new", etc.)
+- Create evergreen content that remains valuable over time
+- Focus on timeless benefits, strategies, and guidance
+- Avoid trend-based or time-sensitive language
+
 Focus on quality over quantity. Make sure all keywords are highly relevant and the titles are genuinely helpful and searchable.`;
 
     const claudeResponse = await anthropic.messages.create({
@@ -645,7 +672,7 @@ Focus on quality over quantity. Make sure all keywords are highly relevant and t
       }]
     });
 
-    const responseText = claudeResponse.content[0]?.text || '';
+    const responseText = claudeResponse.content[0]?.type === 'text' ? claudeResponse.content[0].text : '';
     console.log('Claude topical mapping response received');
     
     try {
