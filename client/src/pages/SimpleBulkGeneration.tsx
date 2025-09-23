@@ -507,6 +507,7 @@ export default function SimpleBulkGeneration() {
       categories: [],
       customCategory: "",
       authorId: "",
+      rootKeyword: "",
       topics: "",
       batchSize: 5,
       simultaneousGeneration: false

@@ -1,0 +1,36 @@
+Warning: A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://reactjs.org/link/controlled-components
+    at input
+    at _c (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ui/input.tsx:20:11)
+    at div
+    at https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=eae71d5b:52:11
+    at https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DKHUMOWT.js?v=eae71d5b:33:11
+    at https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ui/form.tsx:129:9
+    at div
+    at https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ui/form.tsx:71:6
+    at Controller (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-YABUFNLM.js?v=eae71d5b:313:35)
+    at FormField (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ui/form.tsx:32:6)
+    at div
+    at div
+    at _c9 (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at div
+    at FormProvider (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-YABUFNLM.js?v=eae71d5b:102:11)
+    at main
+    at div
+    at div
+    at Layout (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/Layout.tsx:19:34)
+    at SimpleBulkGeneration (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/pages/SimpleBulkGeneration.tsx?t=1758659582630:507:24)
+    at Route (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=eae71d5b:265:16)
+    at Switch (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=eae71d5b:321:17)
+    at main
+    at Router (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/App.tsx?t=1758659582630&v=UHdOHnsNbhtN9_ZnvXiRg:46:22)
+    at div
+    at DialogProvider (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/DialogManager.tsx:20:34)
+    at StoreProvider (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/contexts/StoreContext.tsx:30:33)
+    at ShopifyProvider (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ShopifyProvider.tsx:21:35)
+    at QueryClientProvider (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=eae71d5b:2805:3)
+    at App
+    at ErrorBoundary (https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/src/components/ErrorBoundary.tsx?v=UHdOHnsNbhtN9_ZnvXiRg:9:5)
+Query client: Adding X
