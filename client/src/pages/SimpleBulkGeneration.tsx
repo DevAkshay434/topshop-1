@@ -13,6 +13,7 @@ import MediaSelectionStep from '../components/MediaSelectionStep';
 import { SchedulingPermissionNotice } from '../components/SchedulingPermissionNotice';
 import { ClusterView } from '../components/ClusterView';
 import CreatePostModal from '../components/CreatePostModal';
+import { SimpleHTMLEditor } from '../components/SimpleHTMLEditor';
 import { BlogPost } from '@shared/schema';
 
 import {
