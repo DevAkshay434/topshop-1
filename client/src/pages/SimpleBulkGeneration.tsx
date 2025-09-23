@@ -941,6 +941,34 @@ export default function SimpleBulkGeneration() {
     }
   };
 
+  // Create a ref to access MediaSelectionStep's current selections
+  const mediaStepRef = useRef<any>(null);
+
+  // Function to handle generation from media step button  
+  const handleBulkGenerationFromMediaStep = async () => {
+    console.log("🔄 Triggering generation from media step - checking for selected images...");
+    console.log("🔍 Current selectedMediaContent state:", JSON.stringify(selectedMediaContent, null, 2));
+    
+    // Check if we have images in selectedMediaContent
+    const hasImages = selectedMediaContent.primaryImages?.length > 0 || selectedMediaContent.secondaryImages?.length > 0;
+    
+    if (!hasImages) {
+      console.log("⚠️ No images found in selectedMediaContent - checking for visually selected images...");
+      
+      // If no images in state but user may have selected images in UI,
+      // prompt them to use the Continue button in MediaSelectionStep first
+      toast({
+        title: "Save your image selections first",
+        description: "Please click the 'Continue' button in the media selection area above to save your selected images, then try generating again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("✅ Images found in selectedMediaContent, proceeding with generation...");
+    handleBulkGeneration();
+  };
+
   // Main bulk generation function
   const handleBulkGeneration = async () => {
     setIsGenerating(true);
@@ -2437,7 +2465,7 @@ export default function SimpleBulkGeneration() {
 
             {currentStep === 'media' ? (
               <Button
-                onClick={handleBulkGeneration}
+                onClick={handleBulkGenerationFromMediaStep}
                 disabled={!canProceedToNextStep() || isGenerating || topicsList.length === 0}
                 className="bg-green-600 hover:bg-green-700"
               >
