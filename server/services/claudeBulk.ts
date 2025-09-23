@@ -194,12 +194,15 @@ function buildBulkClaudePrompt(request: BulkContentRequest): string {
   - Writing Style: Clear, engaging, and informative${audienceContext}${mediaContext}${productContext}${collectionContext}${keywordContext}${structuralContext}${customPromptContext}
   
   STRUCTURAL REQUIREMENTS:
-  - Create a compelling title (H1)
-  - Use clear heading structure (H2, H3 as needed)
+  - Create a compelling title using <h1> tags
+  - Use clear heading structure with <h2> and <h3> HTML tags (NOT markdown)
   - Include an engaging introduction that hooks the reader
   - Provide valuable, actionable content
   - End with a strong conclusion
-  - Write in HTML format with proper tags
+  - IMPORTANT: Write ONLY in HTML format with proper tags - NO MARKDOWN allowed
+  - Use <h1>, <h2>, <h3> tags instead of #, ##, ### 
+  - Use <p> tags for paragraphs
+  - Use proper HTML structure throughout
   
   SEO REQUIREMENTS:
   - Naturally include relevant keywords for "${request.topic}"
@@ -256,14 +259,17 @@ export async function generateBulkContentWithClaude(request: BulkContentRequest)
 
     console.log(`📊 BULK CLAUDE SERVICE - Generated content length: ${content.length} characters`);
 
-    // Extract title from the generated content
-    const titleMatch = content.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    // Convert any Markdown to HTML first (safety measure)
+    const htmlContent = convertMarkdownToHtml(content);
+
+    // Extract title from the HTML content
+    const titleMatch = htmlContent.match(/<h1[^>]*>(.*?)<\/h1>/i);
     const generatedTitle = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '').trim() : request.topic;
 
     console.log(`📝 BULK CLAUDE SERVICE - Extracted title: "${generatedTitle}"`);
 
     // Process and clean the content
-    let cleanedContent = content
+    let cleanedContent = htmlContent
       .replace(/<h1[^>]*>.*?<\/h1>/i, '') // Remove the H1 since we'll use the title separately
       .trim();
 
@@ -300,6 +306,21 @@ export async function generateBulkContentWithClaude(request: BulkContentRequest)
     
     return result;
   }
+}
+
+// Convert any remaining Markdown to HTML
+function convertMarkdownToHtml(content: string): string {
+  let processedContent = content;
+  
+  // Convert markdown headers to HTML (safety conversion)
+  processedContent = processedContent.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  processedContent = processedContent.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  processedContent = processedContent.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  processedContent = processedContent.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  
+  console.log(`🔄 MARKDOWN CONVERSION - Applied safety HTML conversion`);
+  
+  return processedContent;
 }
 
 // Apply media placement logic matching AdminPanel behavior
