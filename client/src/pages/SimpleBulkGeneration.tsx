@@ -1246,93 +1246,135 @@ export default function SimpleBulkGeneration() {
                           </Badge>
                         </div>
                         
-                        {/* Clean Linear Diagram - SearchAtlas Style */}
-                        <div className="w-full border rounded-lg bg-white overflow-hidden">
-                          {/* Two-Column Layout */}
-                          <div className="grid grid-cols-12 gap-8 p-6 min-h-[600px]">
-                            {/* Left Column: Main Topic (Fixed) */}
-                            <div className="col-span-3">
-                              <div className="sticky top-6">
-                                <div 
-                                  className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl px-6 py-4 shadow-xl border border-blue-500"
-                                  data-testid="main-topic-node"
-                                >
-                                  <h3 className="text-lg font-semibold text-center leading-tight">
-                                    {topicalMappingSession?.rootKeyword}
-                                  </h3>
-                                  <p className="text-xs opacity-90 text-center mt-2">Main Keyword</p>
-                                </div>
+                        {/* Mind Map Style - Center-based with Horizontal Flow */}
+                        <div className="w-full border rounded-lg bg-white overflow-auto relative">
+                          <div className="relative" style={{ width: '1200px', height: '800px', margin: '0 auto' }}>
+                            {/* SVG Layer for Connections */}
+                            <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+                              {/* Main keyword to subkeywords connections */}
+                              {relatedKeywords.map((keyword, keywordIndex) => {
+                                const centerX = 600; // Center of container
+                                const centerY = 400; // Center of container
+                                
+                                // Position subkeywords vertically distributed
+                                const totalHeight = Math.min(relatedKeywords.length * 80, 600);
+                                const startY = centerY - totalHeight / 2;
+                                const subkeywordY = startY + (keywordIndex * (totalHeight / relatedKeywords.length));
+                                const subkeywordX = 300; // Left side
+                                
+                                return (
+                                  <g key={`main-to-${keyword.id}`}>
+                                    {/* Main to subkeyword line */}
+                                    <path
+                                      d={`M ${centerX} ${centerY} Q ${centerX - 100} ${centerY} ${subkeywordX + 80} ${subkeywordY}`}
+                                      stroke="#3b82f6"
+                                      strokeWidth="2"
+                                      fill="none"
+                                    />
+                                    
+                                    {/* Subkeyword to titles connections */}
+                                    {(generatedTitles[keyword.id] || []).map((title, titleIndex) => {
+                                      const titleX = 800; // Right side
+                                      const titlesCount = (generatedTitles[keyword.id] || []).length;
+                                      const titleSpacing = Math.min(40, 200 / titlesCount);
+                                      const titleY = subkeywordY - (titlesCount * titleSpacing) / 2 + (titleIndex * titleSpacing);
+                                      
+                                      return (
+                                        <path
+                                          key={`${keyword.id}-to-${title.id}`}
+                                          d={`M ${subkeywordX + 160} ${subkeywordY} Q ${subkeywordX + 250} ${subkeywordY} ${titleX} ${titleY}`}
+                                          stroke="#10b981"
+                                          strokeWidth="1.5"
+                                          fill="none"
+                                          strokeDasharray="3,2"
+                                        />
+                                      );
+                                    })}
+                                  </g>
+                                );
+                              })}
+                            </svg>
+                            
+                            {/* Main Keyword in Center */}
+                            <div 
+                              className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
+                              style={{ left: '600px', top: '400px' }}
+                              data-testid="main-keyword-center"
+                            >
+                              <div className="bg-blue-600 text-white rounded-lg px-4 py-2 shadow-lg border-2 border-blue-700 text-center">
+                                <div className="text-sm font-bold">{topicalMappingSession?.rootKeyword}</div>
+                                <div className="text-xs opacity-90">Main</div>
                               </div>
                             </div>
-
-                            {/* Right Column: Keyword Groups */}
-                            <div className="col-span-9">
-                              <div className="space-y-6">
-                                {relatedKeywords.map((keyword, keywordIndex) => {
-                                  const keywordTitles = generatedTitles[keyword.id] || [];
+                            
+                            {/* Subkeywords positioned vertically on left */}
+                            {relatedKeywords.map((keyword, keywordIndex) => {
+                              const totalHeight = Math.min(relatedKeywords.length * 80, 600);
+                              const startY = 400 - totalHeight / 2;
+                              const subkeywordY = startY + (keywordIndex * (totalHeight / relatedKeywords.length));
+                              const subkeywordX = 300;
+                              const keywordTitles = generatedTitles[keyword.id] || [];
+                              
+                              return (
+                                <div key={keyword.id}>
+                                  {/* Subkeyword Node */}
+                                  <div
+                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
+                                    style={{ left: `${subkeywordX}px`, top: `${subkeywordY}px` }}
+                                    data-testid={`subkeyword-${keyword.id}`}
+                                  >
+                                    <div className="bg-emerald-500 text-white rounded-lg px-3 py-2 shadow-md border border-emerald-600 text-center max-w-[160px]">
+                                      <div className="text-xs font-semibold">{keyword.keyword}</div>
+                                      <div className="text-xs opacity-80">{keywordTitles.length} titles</div>
+                                    </div>
+                                  </div>
                                   
-                                  return (
-                                    <div 
-                                      key={keyword.id} 
-                                      className="keyword-group"
-                                      data-testid={`keyword-group-${keyword.id}`}
-                                    >
-                                      {/* Keyword Header */}
-                                      <div 
-                                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg px-4 py-3 mb-3 shadow-lg border border-emerald-400"
-                                        data-testid={`keyword-header-${keyword.id}`}
+                                  {/* Titles positioned to the right of subkeyword */}
+                                  {keywordTitles.map((title, titleIndex) => {
+                                    const titleX = 800;
+                                    const titlesCount = keywordTitles.length;
+                                    const titleSpacing = Math.min(40, 200 / titlesCount);
+                                    const titleY = subkeywordY - (titlesCount * titleSpacing) / 2 + (titleIndex * titleSpacing);
+                                    
+                                    return (
+                                      <div
+                                        key={title.id}
+                                        className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
+                                        style={{ left: `${titleX}px`, top: `${titleY}px` }}
+                                        data-testid={`title-${title.id}`}
                                       >
-                                        <h4 className="font-semibold text-base">
-                                          {keyword.keyword}
-                                        </h4>
-                                        {keyword.searchVolume && (
-                                          <p className="text-xs opacity-90 mt-1">
-                                            {keyword.searchVolume > 1000 ? 
-                                              `${Math.round(keyword.searchVolume / 1000)}k searches` : 
-                                              `${keyword.searchVolume} searches`
-                                            } • {keywordTitles.length} titles
-                                          </p>
-                                        )}
-                                      </div>
-
-                                      {/* Titles List */}
-                                      <div className="pl-4 space-y-2">
-                                        {keywordTitles.map((title, titleIndex) => (
-                                          <div
-                                            key={title.id}
-                                            className={cn(
-                                              "cursor-pointer transition-all duration-200 rounded-lg px-3 py-2 border-2 flex items-start gap-3",
-                                              title.isSelected
-                                                ? "bg-blue-50 border-blue-500 shadow-md"
-                                                : "bg-gray-50 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50"
-                                            )}
-                                            onClick={(e) => handleTitleClick(e, title)}
-                                            data-testid={`title-item-${title.id}`}
-                                          >
-                                            {/* Selection indicator */}
+                                        <div
+                                          className={cn(
+                                            "cursor-pointer transition-all duration-200 rounded-md px-2 py-1 border text-center max-w-[200px]",
+                                            title.isSelected
+                                              ? "bg-blue-100 border-blue-500 text-blue-800"
+                                              : "bg-gray-100 border-gray-300 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50"
+                                          )}
+                                          onClick={(e) => handleTitleClick(e, title)}
+                                        >
+                                          {/* Selection indicator */}
+                                          <div className="flex items-center gap-1">
                                             <div className={cn(
-                                              "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                                              "w-2 h-2 rounded-full border flex-shrink-0",
                                               title.isSelected 
                                                 ? "border-blue-500 bg-blue-500" 
                                                 : "border-gray-400"
                                             )}>
                                               {title.isSelected && (
-                                                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                                <div className="w-1 h-1 bg-white rounded-full m-auto"></div>
                                               )}
                                             </div>
-                                            
-                                            {/* Title Text */}
-                                            <p className="text-sm text-gray-800 leading-relaxed flex-1">
+                                            <div className="text-xs font-medium leading-tight">
                                               {title.title}
-                                            </p>
+                                            </div>
                                           </div>
-                                        ))}
+                                        </div>
                                       </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
 
