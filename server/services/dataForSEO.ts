@@ -111,6 +111,8 @@ export class DataForSEOService {
 
       const dataForSEOResponse = response.data as DataForSEOResponse;
       
+      console.log('DataForSEO Full Response:', JSON.stringify(dataForSEOResponse, null, 2));
+      
       if (dataForSEOResponse.status_code !== 20000) {
         throw new Error(`DataForSEO API error: ${dataForSEOResponse.status_message}`);
       }
@@ -121,12 +123,15 @@ export class DataForSEOService {
       }
 
       const task = dataForSEOResponse.tasks[0];
+      console.log('DataForSEO Task Response:', JSON.stringify(task, null, 2));
+      
       if (task.status_code !== 20000) {
         throw new Error(`DataForSEO task error: ${task.status_message}`);
       }
 
       if (!task.data || !task.data.items) {
         console.log('DataForSEO: No items in task data');
+        console.log('Task data:', task.data);
         return [];
       }
 
