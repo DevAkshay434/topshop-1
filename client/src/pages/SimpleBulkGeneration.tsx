@@ -127,8 +127,8 @@ import {
 
 // Form schema for bulk generation
 const bulkFormSchema = z.object({
-  // Generation Mode
-  generationMode: z.enum(["bulk", "cluster", "topical"]).default("bulk"),
+  // Generation Mode (fixed to topical mapping)
+  generationMode: z.literal("topical").default("topical"),
   clusterTopic: z.string().optional(),
   rootKeyword: z.string().optional(),
   
@@ -480,7 +480,7 @@ export default function SimpleBulkGeneration() {
   const form = useForm<BulkFormValues>({
     resolver: zodResolver(bulkFormSchema),
     defaultValues: {
-      generationMode: "bulk",
+      generationMode: "topical",
       clusterTopic: "",
       articleType: "blog",
       articleLength: "long",
@@ -604,37 +604,13 @@ export default function SimpleBulkGeneration() {
 
   // Process topics when form topics field changes
   useEffect(() => {
-    const generationMode = form.watch('generationMode');
-    const topicsValue = form.watch('topics');
+    // For topical mapping mode, use selected titles
+    const selectedTitlesList = selectedTitles.map(title => title.title);
+    setTopicsList(selectedTitlesList);
     
-    if (generationMode === 'cluster') {
-      // For cluster mode, use generated titles
-      setTopicsList(generatedClusterTitles);
-      setTotalBatches(1); // Clusters are processed as one batch
-    } else if (generationMode === 'topical') {
-      // For topical mapping mode, use selected titles
-      const selectedTitlesList = selectedTitles.map(title => title.title);
-      setTopicsList(selectedTitlesList);
-      
-      const batchSize = form.getValues('batchSize');
-      setTotalBatches(Math.ceil(selectedTitlesList.length / batchSize));
-    } else {
-      // For bulk mode, use topics from textarea
-      if (topicsValue) {
-        const processedTopics = topicsValue
-          .split('\n')
-          .map(topic => topic.trim())
-          .filter(Boolean);
-        setTopicsList(processedTopics);
-        
-        const batchSize = form.getValues('batchSize');
-        setTotalBatches(Math.ceil(processedTopics.length / batchSize));
-      } else {
-        setTopicsList([]);
-        setTotalBatches(0);
-      }
-    }
-  }, [form.watch('topics'), form.watch('batchSize'), form.watch('generationMode'), generatedClusterTitles, selectedTitles]);
+    const batchSize = form.getValues('batchSize');
+    setTotalBatches(Math.ceil(selectedTitlesList.length / batchSize));
+  }, [form.watch('batchSize'), selectedTitles]);
 
   // Create topical mapping session and fetch related keywords
   const createTopicalMappingSession = async () => {
@@ -1014,56 +990,28 @@ export default function SimpleBulkGeneration() {
       
       setProgress(30);
       
-      // Use enhanced bulk generation endpoint with cluster mode flag
-      const isClusterMode = formValues.generationMode === 'cluster';
-      console.log(`Using ${isClusterMode ? 'cluster' : 'bulk'} generation mode with ${topicsList.length} topics`);
+      console.log(`Using topical mapping generation mode with ${topicsList.length} topics`);
       
-      // For cluster mode, skip progress and go directly to cluster view
-      if (isClusterMode) {
-        setCurrentStep('results');
-        
-        // Create initial cluster results with all articles as failed (will be updated to success when complete)
-        const initialClusterResults = topicsList.map((topic, index) => ({
-          topic: topic,
-          status: "failed" as const,
-          title: `Generating: ${topic}`,
-          error: "Article is being generated in the background...",
-          postId: 0,
-          usesFallback: false
-        }));
-        
-        setResults(initialClusterResults);
-        
-        toast({
-          title: "Cluster Generation Started",
-          description: `Creating ${topicsList.length} interconnected articles. Watch the blocks turn blue as articles complete!`,
-          variant: "default"
+      // For topical mapping mode, keep the progress indicator
+      let progressCounter = 0;
+      progressInterval = setInterval(() => {
+        progressCounter++;
+        setProgress(prev => {
+          const currentProgress = Math.floor(prev);
+          if (currentProgress < 30) {
+            return currentProgress + 2;
+          } else if (currentProgress < 60) {
+            return currentProgress + 1;
+          } else if (currentProgress < 85) {
+            return currentProgress + 1;
+          } else if (currentProgress < 95) {
+            return currentProgress + 1;
+          } else if (currentProgress < 100) {
+            return currentProgress + 0.5; // Slow down but still allow progress toward 100%
+          }
+          return Math.min(100, currentProgress);
         });
-        
-        // Start monitoring for completed articles
-        startClusterMonitoring();
-      } else {
-        // For bulk mode, keep the old progress indicator but allow it to reach 100%
-        let progressCounter = 0;
-        progressInterval = setInterval(() => {
-          progressCounter++;
-          setProgress(prev => {
-            const currentProgress = Math.floor(prev);
-            if (currentProgress < 30) {
-              return currentProgress + 2;
-            } else if (currentProgress < 60) {
-              return currentProgress + 1;
-            } else if (currentProgress < 85) {
-              return currentProgress + 1;
-            } else if (currentProgress < 95) {
-              return currentProgress + 1;
-            } else if (currentProgress < 100) {
-              return currentProgress + 0.5; // Slow down but still allow progress toward 100%
-            }
-            return Math.min(100, currentProgress);
-          });
-        }, 2000);
-      }
+      }, 2000);
       
       try {
         console.log('🚀 Starting progressive generation...');
@@ -1100,7 +1048,7 @@ export default function SimpleBulkGeneration() {
                 topic,
                 formData: contentData.formData,
                 mediaContent: selectedMediaContent,
-                isClusterMode,
+                isClusterMode: false,
                 clusterTopic: formValues.clusterTopic,
                 allTopics: topicsList
               },
@@ -1384,7 +1332,7 @@ export default function SimpleBulkGeneration() {
     
     switch (currentStep) {
       case 'setup':
-        if (generationMode === 'cluster') {
+        if (false) { // Removed cluster mode
           const clusterTopic = form.watch('clusterTopic');
           return clusterTopic && clusterTopic.trim().length >= 3 && generatedClusterTitles.length > 0;
         } else {
@@ -1423,54 +1371,9 @@ export default function SimpleBulkGeneration() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                {/* Generation Mode Toggle */}
-                <FormField
-                  control={form.control}
-                  name="generationMode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Generation Mode</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select generation mode" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="bulk">
-                            <div className="flex items-center gap-2">
-                              <Layers className="h-4 w-4" />
-                              Bulk Generation - Multiple individual topics
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="cluster">
-                            <div className="flex items-center gap-2">
-                              <Network className="h-4 w-4" />
-                              Cluster Generation - 10 interconnected articles around one topic
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="topical">
-                            <div className="flex items-center gap-2">
-                              <Target className="h-4 w-4" />
-                              Topical Mapping - Keyword research with AI title generation
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        {form.watch('generationMode') === 'cluster' 
-                          ? 'Generate 10 SEO-optimized articles that interlink around a central topic'
-                          : form.watch('generationMode') === 'topical'
-                          ? 'Use keyword research to find related topics and generate AI-powered titles for SEO optimization'
-                          : 'Generate multiple articles from a list of individual topics'
-                        }
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
 
                 {/* Cluster Topic Input (only show in cluster mode) */}
-                {form.watch('generationMode') === 'cluster' && (
+                {false && ( // Removed cluster mode
                   <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
                     <FormField
                       control={form.control}
@@ -1929,7 +1832,7 @@ export default function SimpleBulkGeneration() {
                 </div>
                 
                 {/* Add topics input to setup step - only show in bulk mode */}
-                {form.watch('generationMode') === 'bulk' && (
+                {false && ( // Removed bulk mode
                   <div className="space-y-4 pt-6 border-t">
                     <h4 className="font-medium text-lg flex items-center gap-2">
                       <BookOpen className="h-5 w-5 text-green-600" />
@@ -2199,10 +2102,7 @@ export default function SimpleBulkGeneration() {
                 Media Selection
               </CardTitle>
               <CardDescription>
-                {form.watch('generationMode') === 'cluster' 
-                  ? 'Choose multiple featured images to distribute across your 10 cluster articles'
-                  : 'Choose images and media for your content'
-                }
+                Choose images and media for your content
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2210,8 +2110,8 @@ export default function SimpleBulkGeneration() {
                 selectedProductId={selectedProducts[0]?.id || ""}
                 selectedProducts={selectedProducts}
                 initialValues={selectedMediaContent}
-                isClusterMode={form.watch('generationMode') === 'cluster'}
-                clusterCount={form.watch('generationMode') === 'cluster' ? 10 : 1}
+                isClusterMode={false}
+                clusterCount={1}
                 onComplete={(media) => {
                   setSelectedMediaContent(media);
                   nextStep();
@@ -2259,7 +2159,7 @@ export default function SimpleBulkGeneration() {
         );
 
       case 'results':
-        if (form.watch('generationMode') === 'cluster') {
+        if (false) { // Removed cluster mode
           return (
             <ClusterView 
               clusterTopic={form.watch('clusterTopic') || 'Content Cluster'}
@@ -2456,13 +2356,10 @@ export default function SimpleBulkGeneration() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-3xl font-bold text-neutral-900">
-                  {form.watch('generationMode') === 'cluster' ? 'Cluster Content Generation' : 'Bulk Content Generation'}
+                  Topical Mapping Content Generation
                 </h1>
                 <p className="text-neutral-600 mt-2">
-                  {form.watch('generationMode') === 'cluster' 
-                    ? 'Generate 10 SEO-optimized, interconnected articles around a central topic'
-                    : 'Create multiple high-quality blog posts using the same advanced workflow as single post generation'
-                  }
+                  Use keyword research to find related topics and generate AI-powered titles for SEO optimization
                 </p>
               </div>
               <div className="flex items-center gap-2">
