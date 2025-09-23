@@ -1266,8 +1266,8 @@ export async function registerRoutes(app: Express): Promise<void> {
               try {
                 const blogs = await shopifyService.getBlogs(store);
                 const targetBlog = blogs.find(blog => blog.id.toString() === post.shopifyBlogId?.toString());
-                if (targetBlog && targetBlog.handle) {
-                  blogHandle = targetBlog.handle;
+                if (targetBlog && (targetBlog as any).handle) {
+                  blogHandle = (targetBlog as any).handle;
                 }
               } catch (error) {
                 console.error('Error fetching blog handle:', error);
@@ -1289,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                         const articleResponse = await shopifyService.makeApiRequest(store, 'GET', `blogs/${blog.id}/articles/${post.shopifyPostId}.json`);
                         if (articleResponse.article && articleResponse.article.handle) {
                           articleIdentifier = articleResponse.article.handle;
-                          blogHandle = blog.handle; // Update blog handle too
+                          blogHandle = (blog as any).handle; // Update blog handle too
                           
                           // Update local database with both handles for future use
                           try {
@@ -2310,12 +2310,15 @@ export async function registerRoutes(app: Express): Promise<void> {
               }
             }
             
-            const shopifyArticle = await createArticle(
-              tempStore, 
-              connection.defaultBlogId, 
-              post,
-              scheduledPublishDate
-            );
+            const shopifyArticle = await shopifyService.createArticle(tempStore, {
+              title: post.title,
+              content: post.content,
+              author: post.author || 'Admin',
+              tags: post.tags || '',
+              published: post.status === 'published',
+              publishedDate: scheduledPublishDate,
+              featuredImage: post.featuredImage
+            }, connection.defaultBlogId);
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
@@ -2377,11 +2380,21 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            // Get function references
-            const { setConnection, deleteArticle } = shopifyService;
-            
-            // Set connection first
-            setConnection(connection);
+            // Initialize the Shopify client for this connection
+            shopifyService.initializeClient({
+              id: connection.id,
+              shopName: connection.storeName,
+              accessToken: connection.accessToken,
+              scope: '',
+              defaultBlogId: connection.defaultBlogId,
+              isConnected: connection.isConnected || true,
+              lastSynced: connection.lastSynced,
+              installedAt: new Date(),
+              uninstalledAt: null,
+              planName: null,
+              chargeId: null,
+              trialEndsAt: null
+            } as any);
             
             // Create a temporary store object for using with the new API
             const tempStore = {
@@ -2399,7 +2412,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               trialEndsAt: null
             };
             
-            await deleteArticle(tempStore, connection.defaultBlogId, post.shopifyPostId);
+            await shopifyService.deleteArticle(tempStore, connection.defaultBlogId, post.shopifyPostId);
             
             // Create sync activity
             await storage.createSyncActivity({
