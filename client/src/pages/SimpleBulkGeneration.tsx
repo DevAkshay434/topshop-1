@@ -1218,31 +1218,29 @@ export default function SimpleBulkGeneration() {
                           </Badge>
                         </div>
                         
-                        {/* Mind Map Diagram - SearchAtlas Style */}
-                        <div className="relative bg-white rounded-lg border p-8 min-h-[600px] overflow-hidden">
-                          {/* Root Keyword in Center */}
-                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-                            <div className="bg-gray-100 border-2 border-gray-300 px-4 py-2 rounded-lg font-medium text-center shadow-sm">
-                              <div className="text-sm font-bold text-gray-800">{topicalMappingSession?.rootKeyword}</div>
+                        {/* Hierarchical Mind Map Diagram with Scrolling */}
+                        <div className="relative bg-white rounded-lg border p-4 h-[800px] overflow-auto">
+                          <div className="relative min-w-[1200px] min-h-[1000px]">
+                            {/* Root Keyword in Center */}
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                              <div className="bg-blue-500 text-white px-6 py-3 rounded-lg font-bold text-center shadow-lg">
+                                <div className="text-base">{topicalMappingSession?.rootKeyword}</div>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* All Generated Titles as Branches */}
-                          {(() => {
-                            const allTitles: any[] = [];
-                            Object.values(generatedTitles).forEach((titles: any[]) => {
-                              allTitles.push(...titles);
-                            });
-
-                            return allTitles.map((title, index) => {
-                              const angle = (index * 360) / allTitles.length;
-                              const radius = 180 + Math.random() * 60; // Varying distances for natural look
-                              const x = Math.cos((angle * Math.PI) / 180) * radius;
-                              const y = Math.sin((angle * Math.PI) / 180) * radius;
-
+                            {/* Related Keywords and Their Title Branches */}
+                            {relatedKeywords.map((keyword, keywordIndex) => {
+                              // Position keywords in a circle around center
+                              const keywordAngle = (keywordIndex * 360) / relatedKeywords.length;
+                              const keywordRadius = 200;
+                              const keywordX = Math.cos((keywordAngle * Math.PI) / 180) * keywordRadius;
+                              const keywordY = Math.sin((keywordAngle * Math.PI) / 180) * keywordRadius;
+                              
+                              const keywordTitles = generatedTitles[keyword.id] || [];
+                              
                               return (
-                                <div key={title.id}>
-                                  {/* Connection Line from Center to Title */}
+                                <div key={keyword.id}>
+                                  {/* Line from center to keyword */}
                                   <svg 
                                     className="absolute top-1/2 left-1/2 pointer-events-none" 
                                     style={{ 
@@ -1255,54 +1253,108 @@ export default function SimpleBulkGeneration() {
                                     <line
                                       x1="50%"
                                       y1="50%"
-                                      x2={`calc(50% + ${x}px)`}
-                                      y2={`calc(50% + ${y}px)`}
-                                      stroke="#e5e7eb"
-                                      strokeWidth="1"
+                                      x2={`calc(50% + ${keywordX}px)`}
+                                      y2={`calc(50% + ${keywordY}px)`}
+                                      stroke="#3b82f6"
+                                      strokeWidth="3"
                                     />
                                   </svg>
 
-                                  {/* Title Branch */}
+                                  {/* Keyword Node */}
                                   <div
-                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
                                     style={{
-                                      left: `calc(50% + ${x}px)`,
-                                      top: `calc(50% + ${y}px)`,
-                                      zIndex: 2
+                                      left: `calc(50% + ${keywordX}px)`,
+                                      top: `calc(50% + ${keywordY}px)`,
                                     }}
-                                    onClick={() => toggleTitleSelection(title)}
-                                    data-testid={`title-branch-${title.id}`}
+                                    data-testid={`keyword-node-${keyword.id}`}
                                   >
-                                    <div className={cn(
-                                      "bg-white border rounded-md px-3 py-2 shadow-sm hover:shadow-md transition-all duration-200 max-w-[250px]",
-                                      title.isSelected 
-                                        ? "border-blue-500 bg-blue-50" 
-                                        : "border-gray-200 hover:border-gray-300"
-                                    )}>
-                                      {/* Selection indicator */}
-                                      <div className="flex items-start gap-2">
-                                        <div className={cn(
-                                          "w-3 h-3 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1",
-                                          title.isSelected 
-                                            ? "border-blue-500 bg-blue-500" 
-                                            : "border-gray-300 group-hover:border-blue-400"
-                                        )}>
-                                          {title.isSelected && (
-                                            <div className="w-1 h-1 bg-white rounded-full"></div>
-                                          )}
+                                    <div className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold text-center shadow-md max-w-[180px]">
+                                      <div className="text-sm">{keyword.keyword}</div>
+                                      {keyword.searchVolume && (
+                                        <div className="text-xs opacity-90 mt-1">
+                                          {keyword.searchVolume > 1000 ? 
+                                            `${Math.round(keyword.searchVolume / 1000)}k vol` : 
+                                            `${keyword.searchVolume} vol`
+                                          }
                                         </div>
-                                        
-                                        {/* Title Text */}
-                                        <div className="text-xs text-gray-700 leading-tight font-medium">
-                                          {title.title}
-                                        </div>
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
+
+                                  {/* Title branches extending from this keyword */}
+                                  {keywordTitles.map((title, titleIndex) => {
+                                    // Calculate title position extending from keyword
+                                    const titleAngle = keywordAngle + ((titleIndex - (keywordTitles.length - 1) / 2) * 60 / keywordTitles.length);
+                                    const titleRadius = 120;
+                                    const titleX = keywordX + Math.cos((titleAngle * Math.PI) / 180) * titleRadius;
+                                    const titleY = keywordY + Math.sin((titleAngle * Math.PI) / 180) * titleRadius;
+
+                                    return (
+                                      <div key={title.id}>
+                                        {/* Line from keyword to title */}
+                                        <svg 
+                                          className="absolute top-1/2 left-1/2 pointer-events-none" 
+                                          style={{ 
+                                            zIndex: 5,
+                                            width: '100%',
+                                            height: '100%',
+                                            transform: 'translate(-50%, -50%)'
+                                          }}
+                                        >
+                                          <line
+                                            x1={`calc(50% + ${keywordX}px)`}
+                                            y1={`calc(50% + ${keywordY}px)`}
+                                            x2={`calc(50% + ${titleX}px)`}
+                                            y2={`calc(50% + ${titleY}px)`}
+                                            stroke="#10b981"
+                                            strokeWidth="2"
+                                          />
+                                        </svg>
+
+                                        {/* Title Node */}
+                                        <div
+                                          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-15"
+                                          style={{
+                                            left: `calc(50% + ${titleX}px)`,
+                                            top: `calc(50% + ${titleY}px)`,
+                                          }}
+                                          onClick={() => toggleTitleSelection(title)}
+                                          data-testid={`title-branch-${title.id}`}
+                                        >
+                                          <div className={cn(
+                                            "bg-white border-2 rounded-lg px-3 py-2 shadow-md hover:shadow-lg transition-all duration-200 max-w-[220px]",
+                                            title.isSelected 
+                                              ? "border-blue-500 bg-blue-50" 
+                                              : "border-gray-300 hover:border-blue-400"
+                                          )}>
+                                            {/* Selection indicator and title */}
+                                            <div className="flex items-start gap-2">
+                                              <div className={cn(
+                                                "w-3 h-3 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1",
+                                                title.isSelected 
+                                                  ? "border-blue-500 bg-blue-500" 
+                                                  : "border-gray-400 group-hover:border-blue-500"
+                                              )}>
+                                                {title.isSelected && (
+                                                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                                                )}
+                                              </div>
+                                              
+                                              {/* Title Text */}
+                                              <div className="text-xs text-gray-800 leading-tight font-medium">
+                                                {title.title}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               );
-                            });
-                          })()}
+                            })}
+                          </div>
                         </div>
 
                         {/* Generated Titles Panel (Collapsible) */}
