@@ -777,7 +777,9 @@ export default function MediaSelectionStep({
     );
   };
   
-  const handleComplete = () => {
+  const handleComplete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     onComplete({
       primaryImages,
       secondaryImages,
@@ -797,7 +799,7 @@ export default function MediaSelectionStep({
         <h2 className="text-xl font-semibold">Select Images for Your Content</h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={onBack}>Back</Button>
-          <Button onClick={handleComplete}>Continue</Button>
+          <Button type="button" onClick={handleComplete}>Continue</Button>
         </div>
       </div>
       
