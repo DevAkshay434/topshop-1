@@ -1277,7 +1277,7 @@ export default function SimpleBulkGeneration() {
                             className="relative cursor-grab active:cursor-grabbing"
                             style={{
                               width: '1600px',
-                              height: '1000px',
+                              height: '1400px',
                               transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
                               transition: isDragging ? 'none' : 'transform 0.3s ease'
                             }}
@@ -1317,8 +1317,8 @@ export default function SimpleBulkGeneration() {
                                       const titleX = 1100; // Rightmost position
                                       const titlesCount = (generatedTitles[keyword.id] || []).length;
                                       
-                                      // FIXED SPACING: Ensure minimum 35px between titles
-                                      const minTitleSpacing = 35;
+                                      // MAXIMUM SPACING: Ensure minimum 60px between titles to completely prevent overlapping
+                                      const minTitleSpacing = 60;
                                       const totalTitleHeight = (titlesCount - 1) * minTitleSpacing;
                                       const titleStartY = subkeywordY - totalTitleHeight / 2;
                                       const titleY = titleStartY + (titleIndex * minTitleSpacing);
@@ -1381,8 +1381,8 @@ export default function SimpleBulkGeneration() {
                                     const titleX = 1100;
                                     const titlesCount = keywordTitles.length;
                                     
-                                    // FIXED SPACING: Ensure no overlaps with minimum 35px spacing
-                                    const minTitleSpacing = 35;
+                                    // MAXIMUM SPACING: Ensure no overlaps with minimum 60px spacing
+                                    const minTitleSpacing = 60;
                                     const totalTitleHeight = (titlesCount - 1) * minTitleSpacing;
                                     const titleStartY = subkeywordY - totalTitleHeight / 2;
                                     const titleY = titleStartY + (titleIndex * minTitleSpacing);
