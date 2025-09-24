@@ -1670,44 +1670,85 @@ export default function AdminPanel() {
 
   // Manual keyword addition with DataForSEO lookup
   const addManualKeyword = async () => {
-    if (!manualKeyword.trim() || isAddingManualKeyword) return;
+    const trimmedKeyword = manualKeyword.trim();
+    if (!trimmedKeyword || isAddingManualKeyword) return;
+
+    // Early duplication check before setting loading state
+    const exists = selectedKeywords.some(
+      (kw: any) => kw.keyword.toLowerCase() === trimmedKeyword.toLowerCase(),
+    );
+
+    if (exists) {
+      toast({
+        title: "Keyword Already Added",
+        description: `"${trimmedKeyword}" is already in your selection`,
+        variant: "destructive",
+      });
+      setManualKeyword(""); // Clear input even for duplicates
+      return;
+    }
 
     setIsAddingManualKeyword(true);
 
     try {
-      // Add manual keyword exactly as entered by user, without DataForSEO lookup
-      const newKeyword = {
-        keyword: manualKeyword.trim(),
-        searchVolume: 0, // Use 0 for consistent search volume fetching logic
-        competition: "MANUAL",
-        difficulty: null, // Use null instead of 0
-        selected: true,
-        isManual: true,
-      };
+      // Fetch search volume data from DataForSEO
+      console.log(`Fetching search volume for manual keyword: "${trimmedKeyword}"`);
+      
+      const response = await apiRequest({
+        url: '/api/admin/manual-keyword-lookup',
+        method: 'POST',
+        data: { keyword: trimmedKeyword }
+      });
 
-      // Debug logging removed
+      if (response.success && response.keywordData) {
+        const keywordData = response.keywordData;
+        const newKeyword = {
+          keyword: keywordData.keyword,
+          searchVolume: keywordData.searchVolume || 0,
+          competition: keywordData.competition || "UNKNOWN",
+          competitionLevel: keywordData.competitionLevel || "UNKNOWN",
+          difficulty: keywordData.difficulty || 0,
+          selected: true,
+          isManual: true,
+        };
 
-      // Check if keyword already exists
-      const exists = selectedKeywords.some(
-        (kw: any) =>
-          kw.keyword.toLowerCase() === newKeyword.keyword.toLowerCase(),
-      );
+        // Double-check for duplicates after API call (in case of race condition)
+        const stillExists = selectedKeywords.some(
+          (kw: any) => kw.keyword.toLowerCase() === newKeyword.keyword.toLowerCase(),
+        );
 
-      if (!exists) {
-        // Add to the beginning of the array (so manual keywords appear on top)
+        if (!stillExists) {
+          setSelectedKeywords((prev) => [newKeyword, ...prev]);
+          toast({
+            title: "Manual Keyword Added",
+            description: `Added "${newKeyword.keyword}" with ${newKeyword.searchVolume} monthly searches`,
+          });
+        } else {
+          toast({
+            title: "Keyword Already Added",
+            description: `"${newKeyword.keyword}" is already in your selection`,
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Fallback to basic keyword if API fails
+        const newKeyword = {
+          keyword: trimmedKeyword,
+          searchVolume: 0,
+          competition: "MANUAL",
+          difficulty: null,
+          selected: true,
+          isManual: true,
+        };
+
         setSelectedKeywords((prev) => [newKeyword, ...prev]);
         toast({
           title: "Manual Keyword Added",
-          description: `Added "${newKeyword.keyword}" as manual keyword`,
-        });
-      } else {
-        toast({
-          title: "Keyword Already Added",
-          description: `"${newKeyword.keyword}" is already in your selection`,
-          variant: "destructive",
+          description: `Added "${newKeyword.keyword}" (search volume unavailable)`,
         });
       }
 
+      // Clear the input field after successful addition
       setManualKeyword("");
     } catch (error) {
       console.error("Error adding manual keyword:", error);
@@ -4757,15 +4798,8 @@ export default function AdminPanel() {
                                 }
                               }}
                               onBlur={() => {
-                                // Auto-add keyword when user leaves field if there's content
-                                setTimeout(() => {
-                                  if (
-                                    manualKeyword.trim() &&
-                                    !isAddingManualKeyword
-                                  ) {
-                                    addManualKeyword();
-                                  }
-                                }, 100);
+                                // Removed auto-add on blur to prevent duplication conflicts
+                                // Users can add manually via Enter key or Add button
                               }}
                               disabled={isAddingManualKeyword}
                               className={cn(
