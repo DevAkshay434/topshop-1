@@ -75,10 +75,7 @@ export function ClusterView({ clusterTopic, articles, onRefresh, onDeleteCluster
     if (onEditPost) {
       // Fetch the full post data and open the Shopify editor (same as admin panel)
       try {
-        const response = await apiRequest({
-          url: `/api/posts/${article.postId}`,
-          method: 'GET'
-        });
+        const response = await apiRequest('GET', `/api/posts/${article.postId}`, {});
         if (response && response.post) {
           // Open the same CreatePostModal used in admin panel
           onEditPost(response.post);
@@ -116,32 +113,23 @@ export function ClusterView({ clusterTopic, articles, onRefresh, onDeleteCluster
       switch (action) {
         case 'draft':
           // Save as draft - update status only
-          response = await apiRequest({
-            url: `/api/posts/${article.postId}`,
-            method: 'PUT',
-            data: { status: 'draft' }
+          response = await apiRequest('PUT', `/api/posts/${article.postId}`, { 
+            status: 'draft' 
           });
           break;
           
         case 'publish':
           // Publish to Shopify using the existing publish endpoint
-          response = await apiRequest({
-            url: `/api/posts/publish/${article.postId}`,
-            method: 'POST'
-          });
+          response = await apiRequest('POST', `/api/posts/publish/${article.postId}`, {});
           break;
           
         case 'schedule':
           // For scheduling, we'd need a date picker - for now just schedule for tomorrow
           const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
-          response = await apiRequest({
-            url: `/api/posts/${article.postId}`,
-            method: 'PUT',
-            data: {
-              status: 'scheduled',
-              scheduledDate: tomorrow.toISOString()
-            }
+          response = await apiRequest('PUT', `/api/posts/${article.postId}`, { 
+            status: 'scheduled', 
+            scheduledDate: tomorrow.toISOString() 
           });
           break;
       }

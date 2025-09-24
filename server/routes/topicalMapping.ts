@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
+import { dataForSEOService } from "../services/dataForSEO";
 import { insertTopicalMappingSessionSchema, insertRelatedKeywordSchema, insertGeneratedTitleSchema } from "@shared/schema";
-import { generateTopicalMapping } from "../services/claude";
+import { generateBlogContentWithClaude } from "../services/claude";
 
 const topicalMappingRouter = Router();
 
@@ -105,52 +106,43 @@ topicalMappingRouter.post("/create-session", async (req: Request, res: Response)
       locationCode
     });
 
-    // Generate related keywords and titles using Claude AI
+    // Fetch related keywords from DataForSEO API
     try {
-      console.log(`Generating related keywords and titles for "${rootKeyword}" using Claude AI`);
-      const claudeResult = await generateTopicalMapping(rootKeyword);
+      console.log(`Fetching related keywords for "${rootKeyword}" using DataForSEO`);
+      const keywordSuggestions = await dataForSEOService.getKeywordSuggestions(
+        rootKeyword,
+        locationCode,
+        languageCode,
+        5 // Get top 5 related keywords
+      );
 
       // Store the related keywords in the database
       const relatedKeywords = [];
-      for (const suggestion of claudeResult.keywords) {
+      for (const suggestion of keywordSuggestions) {
         const keyword = await storage.createRelatedKeyword({
           sessionId: session.id,
           keyword: suggestion.keyword,
-          searchVolume: suggestion.searchVolume,
-          difficulty: suggestion.difficulty,
-          cpcCents: suggestion.cpcCents
+          searchVolume: suggestion.search_volume || null,
+          difficulty: Math.round((suggestion.competition || 0) * 100), // Convert to 0-100 scale
+          cpcCents: suggestion.cpc ? Math.round(suggestion.cpc * 100) : null // Convert to cents
         });
         relatedKeywords.push(keyword);
       }
 
-      // Store the auto-generated titles for all keywords
-      console.log(`Storing auto-generated titles for ${relatedKeywords.length} keywords`);
+      // Automatically generate titles for all keywords
+      console.log(`Auto-generating titles for ${relatedKeywords.length} keywords`);
       const keywordsWithTitles = [];
       
       for (const keyword of relatedKeywords) {
         try {
-          // Get titles from Claude response
-          const claudeTitles = claudeResult.titles[keyword.keyword] || [];
-          const titles = [];
-          
-          // Store each title in the database
-          for (const titleObj of claudeTitles) {
-            const title = await storage.createGeneratedTitle({
-              keywordId: keyword.id,
-              title: titleObj.title,
-              seoScore: Math.floor(Math.random() * 30) + 70, // Random score 70-100
-              readabilityScore: Math.floor(Math.random() * 30) + 70,
-              isSelected: false
-            });
-            titles.push(title);
-          }
-          
+          // Generate titles for this keyword
+          const titles = await generateTitlesForKeyword(keyword.keyword, keyword.id);
           keywordsWithTitles.push({
             ...keyword,
             titles: titles
           });
         } catch (error) {
-          console.error(`Failed to store titles for keyword "${keyword.keyword}":`, error);
+          console.error(`Failed to generate titles for keyword "${keyword.keyword}":`, error);
           // Add keyword without titles on error
           keywordsWithTitles.push({
             ...keyword,
@@ -170,16 +162,16 @@ topicalMappingRouter.post("/create-session", async (req: Request, res: Response)
         keywords: keywordsWithTitles
       });
 
-    } catch (claudeError: any) {
-      console.error("Claude AI error:", claudeError);
+    } catch (dataForSEOError: any) {
+      console.error("DataForSEO API error:", dataForSEOError);
       
       // Update session status to failed
       await storage.updateTopicalMappingSession(session.id, { status: "failed" });
 
       res.status(500).json({
         success: false,
-        error: "Failed to generate keyword suggestions and titles",
-        details: claudeError.message,
+        error: "Failed to fetch keyword suggestions",
+        details: dataForSEOError.message,
         session: { ...session, status: "failed" }
       });
     }
