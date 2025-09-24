@@ -818,22 +818,7 @@ export function ChooseMediaDialog({
             </div>
             
             <div className="space-y-4">
-              <div className="grid w-full gap-2">
-                <Input
-                  type="url"
-                  placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
-                  value={youtubeUrl}
-                  onChange={e => {
-                    const url = e.target.value;
-                    setYoutubeUrl(url);
-                    // Extract YouTube video ID from URL
-                    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-                    const extractedVideoId = match ? match[1] : null;
-                    setYoutubeVideoId(extractedVideoId);
-                  }}
-                  className="w-full"
-                />
-                
+              <div className="flex gap-3 items-end">
                 <Button 
                   type="button"
                   onClick={() => {
@@ -883,10 +868,25 @@ export function ChooseMediaDialog({
                     });
                   }}
                   disabled={!youtubeVideoId}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0 min-w-[100px]"
                 >
                   Add Video
                 </Button>
+                
+                <Input
+                  type="url"
+                  placeholder="Enter YouTube URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+                  value={youtubeUrl}
+                  onChange={e => {
+                    const url = e.target.value;
+                    setYoutubeUrl(url);
+                    // Extract YouTube video ID from URL
+                    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+                    const extractedVideoId = match ? match[1] : null;
+                    setYoutubeVideoId(extractedVideoId);
+                  }}
+                  className="flex-1"
+                />
               </div>
               
               {youtubeVideoId && (
