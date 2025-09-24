@@ -8102,16 +8102,7 @@ export default function AdminPanel() {
                 )}
               </Button>
 
-              <div className="flex-1 flex flex-col gap-1">
-                <Button
-                  size="sm"
-                  variant={imageSource === "upload" ? "default" : "outline"}
-                  onClick={() => setImageSource("upload")}
-                  className="w-full"
-                >
-                  <Upload className="mr-0.5 h-4 w-4" />
-                  Upload Image
-                </Button>
+              <div className="flex-1 flex flex-col gap-3">
                 <Button
                   size="sm"
                   variant={imageSource === "youtube" ? "default" : "outline"}
@@ -8120,6 +8111,15 @@ export default function AdminPanel() {
                 >
                   <FileText className="mr-0.5 h-4 w-4" />
                   YouTube Video
+                </Button>
+                <Button
+                  size="sm"
+                  variant={imageSource === "upload" ? "default" : "outline"}
+                  onClick={() => setImageSource("upload")}
+                  className="w-full"
+                >
+                  <Upload className="mr-0.5 h-4 w-4" />
+                  Upload Image
                 </Button>
               </div>
             </div>
