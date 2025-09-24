@@ -291,9 +291,31 @@ export default function KeywordSelector({
 
   // Fetch search volumes for existing manual keywords when component mounts
   useEffect(() => {
-    const manualKeywords = initialKeywords.filter(kw => kw.isManual && (kw.searchVolume === 0 || kw.searchVolume === null || kw.searchVolume === undefined));
+    // Only fetch search volumes for manual keywords that genuinely don't have search volume data
+    // Exclude keywords that have searchVolume > 0 (already fetched in AdminPanel)
+    const manualKeywords = initialKeywords.filter(kw => 
+      kw.isManual && 
+      (kw.searchVolume === 0 || kw.searchVolume === null || kw.searchVolume === undefined) &&
+      // Don't re-fetch if we already have valid search volume data
+      !(kw.searchVolume && kw.searchVolume > 0)
+    );
+    
+    console.log(`KeywordSelector: Found ${manualKeywords.length} manual keywords needing search volume lookup`);
+    console.log('Manual keywords to fetch:', manualKeywords.map(kw => ({ keyword: kw.keyword, currentVolume: kw.searchVolume })));
+    
     if (manualKeywords.length > 0) {
       fetchSearchVolumesForManualKeywords(manualKeywords);
+    }
+    
+    // Ensure manual keywords with existing search volume data are preserved
+    const keywordsWithValidVolumes = initialKeywords.filter(kw => 
+      kw.isManual && kw.searchVolume && kw.searchVolume > 0
+    );
+    
+    if (keywordsWithValidVolumes.length > 0) {
+      console.log(`KeywordSelector: Preserving ${keywordsWithValidVolumes.length} manual keywords with existing search volumes:`, 
+        keywordsWithValidVolumes.map(kw => ({ keyword: kw.keyword, searchVolume: kw.searchVolume }))
+      );
     }
   }, [initialKeywords]);
 
