@@ -5,6 +5,15 @@ import ShopifyImageViewer from "../components/ShopifyImageViewer";
 import { useQuery } from "@tanstack/react-query";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
 import { ContentStyleSelector } from "../components/ContentStyleSelector";
+import { 
+  Product, 
+  Collection, 
+  MediaItem, 
+  BillingStatus, 
+  normalizeProduct, 
+  normalizeCollection, 
+  ensureMediaItem 
+} from "../types/shopify";
 
 import { RelatedProductsSelector } from "../components/RelatedProductsSelector";
 import { RelatedCollectionsSelector } from "../components/RelatedCollectionsSelector";
@@ -56,7 +65,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -200,36 +209,7 @@ const contentFormSchema = z.object({
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
 
-interface ProductVariant {
-  id: string;
-  title: string;
-  price: string;
-  image?: string;
-  inventory_quantity?: number;
-}
-
-interface Product {
-  id: string;
-  title: string;
-  handle: string;
-  image?: string;
-  body_html?: string;
-  admin_url?: string;
-  images?: {
-    id: string;
-    src: string;
-    alt?: string;
-    position?: number;
-  }[];
-  variants?: ProductVariant[];
-}
-
-interface Collection {
-  id: string;
-  title: string;
-  handle: string;
-  image?: string;
-}
+// Product, Collection, and ProductVariant types are now imported from ../types/shopify
 
 interface Blog {
   id: string;
