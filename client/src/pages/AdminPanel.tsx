@@ -5984,12 +5984,13 @@ export default function AdminPanel() {
                       />
 
                       <div className="max-w-5xl mx-auto">
-                        <div className="flex gap-3">
+                        <div className="flex justify-center gap-3">
                           {/* Generate Content Button */}
                           <Button
                             type="button"
+                            size="lg"
                             className={cn(
-                              "flex-1 transition-all duration-200",
+                              "px-8 py-3 h-12 min-w-[200px] transition-all duration-200",
                               !isReadyToGenerateContent() && !isGenerating
                                 ? "opacity-50 cursor-not-allowed"
                                 : "opacity-100",
