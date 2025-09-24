@@ -365,6 +365,15 @@ export default function AdminPanel() {
   // Ref for content preview section to enable auto-scroll
   const contentPreviewRef = useRef<HTMLDivElement>(null);
 
+  // Refs for step titles to enable smooth navigation
+  const productsStepRef = useRef<HTMLDivElement>(null);
+  const collectionsStepRef = useRef<HTMLDivElement>(null);
+  const personasStepRef = useRef<HTMLDivElement>(null);
+  const keywordsStepRef = useRef<HTMLDivElement>(null);
+  const mediaStepRef = useRef<HTMLDivElement>(null);
+  const authorStepRef = useRef<HTMLDivElement>(null);
+  const styleStepRef = useRef<HTMLDivElement>(null);
+
   // Debug state changes
   useEffect(() => {
     console.log(
@@ -2333,6 +2342,16 @@ export default function AdminPanel() {
 
     // Move to media selection step
     setWorkflowStep("media");
+
+    // Scroll to the media step title
+    setTimeout(() => {
+      if (mediaStepRef.current) {
+        mediaStepRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 100);
   };
 
   // Handle media selection step completion
@@ -2377,6 +2396,16 @@ export default function AdminPanel() {
       title: "Media Selection Complete",
       description: `Selected ${mediaContent.primaryImage ? "a primary image" : "no primary image"}, ${mediaContent.secondaryImages.length} secondary images${mediaContent.youtubeEmbed ? ", and 1 video" : ""}.`,
     });
+
+    // Scroll to the author step title
+    setTimeout(() => {
+      if (authorStepRef.current) {
+        authorStepRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 100);
   };
 
   // Handle media selection back button
@@ -2499,6 +2528,16 @@ export default function AdminPanel() {
       title: "Related collections saved",
       description: "Now let's select your target buyer personas",
     });
+
+    // Scroll to the personas step title
+    setTimeout(() => {
+      if (personasStepRef.current) {
+        personasStepRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 100);
   };
 
   // Handle buying avatars continue action
@@ -2518,6 +2557,16 @@ export default function AdminPanel() {
           ? "Content will be tailored to your defined audience"
           : "Using automatic audience detection",
     });
+
+    // Scroll to the keywords step title
+    setTimeout(() => {
+      if (keywordsStepRef.current) {
+        keywordsStepRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 100);
   };
 
   // Handle back button from collections to products
@@ -4255,7 +4304,7 @@ export default function AdminPanel() {
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
                         <div className="text-center">
-                          <h2 className="text-2xl font-bold text-gray-900">
+                          <h2 ref={productsStepRef} className="text-2xl font-bold text-gray-900">
                             Choose Products
                           </h2>
                           <TooltipProvider>
@@ -4333,6 +4382,15 @@ export default function AdminPanel() {
                         onContinue={() => {
                           if (selectedProducts.length > 0) {
                             setWorkflowStep("related-collections");
+                            // Scroll to the collections step title
+                            setTimeout(() => {
+                              if (collectionsStepRef.current) {
+                                collectionsStepRef.current.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                              }
+                            }, 100);
                           } else {
                             toast({
                               title: "Product Required",
@@ -4355,7 +4413,7 @@ export default function AdminPanel() {
                       data-step="related-collections"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 text-center">
+                        <h2 ref={collectionsStepRef} className="text-2xl font-bold text-gray-900 text-center">
                           Choose Related Collections
                         </h2>
                       </div>
@@ -4409,7 +4467,7 @@ export default function AdminPanel() {
                       data-step="buying-avatars"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 text-center">
+                        <h2 ref={personasStepRef} className="text-2xl font-bold text-gray-900 text-center">
                           Define Target Buyer Personas
                         </h2>
                       </div>
@@ -4580,7 +4638,7 @@ export default function AdminPanel() {
                       data-step="keyword"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 text-center">
+                        <h2 ref={keywordsStepRef} className="text-2xl font-bold text-gray-900 text-center">
                           Choose Keywords
                         </h2>
                       </div>
@@ -4920,7 +4978,7 @@ export default function AdminPanel() {
                       data-step="media"
                     >
                       <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 text-center">
+                        <h2 ref={mediaStepRef} className="text-2xl font-bold text-gray-900 text-center">
                           Choose Media
                         </h2>
                       </div>
@@ -5443,6 +5501,16 @@ export default function AdminPanel() {
 
                             // Continue to author selection step
                             setWorkflowStep("author");
+
+                            // Scroll to the author step title
+                            setTimeout(() => {
+                              if (authorStepRef.current) {
+                                authorStepRef.current.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                              }
+                            }, 100);
                           }}
                         >
                           Next
@@ -5459,7 +5527,7 @@ export default function AdminPanel() {
                     data-step="author"
                   >
                     <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                      <h2 className="text-2xl font-bold text-gray-900 text-center">
+                      <h2 ref={authorStepRef} className="text-2xl font-bold text-gray-900 text-center">
                         Choose Author
                       </h2>
                     </div>
@@ -5523,6 +5591,16 @@ export default function AdminPanel() {
                             description:
                               "Now review and customize your style and formatting options.",
                           });
+
+                          // Scroll to the style step title
+                          setTimeout(() => {
+                            if (styleStepRef.current) {
+                              styleStepRef.current.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              });
+                            }
+                          }, 100);
                         }}
                       >
                         Next to Style & Formatting
@@ -5536,7 +5614,7 @@ export default function AdminPanel() {
                     data-step="content"
                   >
                     <div className="p-2 bg-blue-50 rounded border border-blue-200/40 mb-3">
-                      <h2 className="text-2xl font-bold text-gray-900 text-center">
+                      <h2 ref={styleStepRef} className="text-2xl font-bold text-gray-900 text-center">
                         Style & Formatting
                       </h2>
                     </div>
@@ -5961,8 +6039,8 @@ export default function AdminPanel() {
                   </div>
 
                   {/* Sticky Generate Content button fixed to bottom of screen */}
-                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10 flex justify-center">
-                    <div className="bg-white/90 backdrop-blur-sm px-6 py-2 rounded-lg shadow-lg border border-gray-200 w-fit">
+                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10  mx-auto max-w-5xl  ">
+                    <div className="bg-white/90 backdrop-blur-sm  p-4 rounded-lg shadow-lg border border-gray-200">
 
                       {/* Image Selection Dialog */}
                       <ImageSearchDialog
@@ -5984,13 +6062,12 @@ export default function AdminPanel() {
                       />
 
                       <div className="max-w-5xl mx-auto">
-                        <div className="flex justify-center gap-3">
+                        <div className="flex gap-3">
                           {/* Generate Content Button */}
                           <Button
                             type="button"
-                            size="lg"
                             className={cn(
-                              "px-8 py-3 h-12 min-w-[200px] transition-all duration-200",
+                              "flex-1 transition-all duration-200",
                               !isReadyToGenerateContent() && !isGenerating
                                 ? "opacity-50 cursor-not-allowed"
                                 : "opacity-100",
