@@ -6071,8 +6071,8 @@ export default function AdminPanel() {
                   </div>
 
                   {/* Sticky Generate Content button fixed to bottom of screen */}
-                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10  mx-auto max-w-5xl  ">
-                    <div className="bg-white/90 backdrop-blur-sm  p-4 rounded-lg shadow-lg border border-gray-200">
+                  <div className="sticky bottom-6 left-0 right-0 mt-8 z-10 flex justify-center">
+                    <div className="bg-white/90 backdrop-blur-sm px-6 py-2 rounded-lg shadow-lg border border-gray-200 w-fit">
 
                       {/* Image Selection Dialog */}
                       <ImageSearchDialog
@@ -6093,13 +6093,14 @@ export default function AdminPanel() {
                         }))}
                       />
 
-                      <div className="max-w-5xl mx-auto">
+                      <div className="flex justify-center">
                         <div className="flex gap-3">
                           {/* Generate Content Button */}
                           <Button
                             type="button"
+                            size="lg"
                             className={cn(
-                              "flex-1 transition-all duration-200",
+                              "px-8 py-3 h-12 min-w-[240px] transition-all duration-200",
                               !isReadyToGenerateContent() && !isGenerating
                                 ? "opacity-50 cursor-not-allowed"
                                 : "opacity-100",
