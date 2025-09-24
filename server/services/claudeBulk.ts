@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { optimizeMetaData } from "./claude";
 
 // Initialize Claude with API key
 const anthropic = new Anthropic({
@@ -53,15 +52,6 @@ interface BulkContentRequest {
   enableLists?: boolean;
   enableH3s?: boolean;
   enableCitations?: boolean;
-  // Author attribution (matching AdminPanel functionality)
-  authorId?: string;
-  author?: {
-    id: string;
-    name: string;
-    description?: string;
-    profileImage?: string;
-    linkedinUrl?: string;
-  };
 }
 
 // Bulk content result
@@ -70,9 +60,6 @@ interface BulkContentResult {
   content: string;
   tags: string[];
   usesFallback?: boolean;
-  // Meta optimization (matching AdminPanel functionality)
-  metaTitle?: string;
-  metaDescription?: string;
 }
 
 // Build enhanced prompt for bulk generation with media and product context
@@ -207,15 +194,12 @@ function buildBulkClaudePrompt(request: BulkContentRequest): string {
   - Writing Style: Clear, engaging, and informative${audienceContext}${mediaContext}${productContext}${collectionContext}${keywordContext}${structuralContext}${customPromptContext}
   
   STRUCTURAL REQUIREMENTS:
-  - Create a compelling title using <h1> tags
-  - Use clear heading structure with <h2> and <h3> HTML tags (NOT markdown)
+  - Create a compelling title (H1)
+  - Use clear heading structure (H2, H3 as needed)
   - Include an engaging introduction that hooks the reader
   - Provide valuable, actionable content
   - End with a strong conclusion
-  - IMPORTANT: Write ONLY in HTML format with proper tags - NO MARKDOWN allowed
-  - Use <h1>, <h2>, <h3> tags instead of #, ##, ### 
-  - Use <p> tags for paragraphs
-  - Use proper HTML structure throughout
+  - Write in HTML format with proper tags
   
   SEO REQUIREMENTS:
   - Naturally include relevant keywords for "${request.topic}"
@@ -272,113 +256,19 @@ export async function generateBulkContentWithClaude(request: BulkContentRequest)
 
     console.log(`📊 BULK CLAUDE SERVICE - Generated content length: ${content.length} characters`);
 
-    // Convert any Markdown to HTML first (safety measure)
-    const htmlContent = convertMarkdownToHtml(content);
-
-    // Extract title from the HTML content
-    const titleMatch = htmlContent.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    // Extract title from the generated content
+    const titleMatch = content.match(/<h1[^>]*>(.*?)<\/h1>/i);
     const generatedTitle = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '').trim() : request.topic;
 
     console.log(`📝 BULK CLAUDE SERVICE - Extracted title: "${generatedTitle}"`);
 
     // Process and clean the content
-    let cleanedContent = htmlContent
+    let cleanedContent = content
       .replace(/<h1[^>]*>.*?<\/h1>/i, '') // Remove the H1 since we'll use the title separately
       .trim();
 
     // Apply media placement logic (same as AdminPanel)
     cleanedContent = await applyMediaPlacement(cleanedContent, request);
-
-    // Add author attribution (matching AdminPanel functionality)
-    if (request.author) {
-      console.log(`👤 BULK CLAUDE SERVICE - Adding author attribution for: ${request.author.name}`);
-      
-      // Add "Written by" section after any featured image
-      const writtenByHTML = generateWrittenByHTML(request.author, cleanedContent);
-      
-      // Position "Written by" section - check if content starts with an image
-      if (cleanedContent.includes('<img') || cleanedContent.includes('<div class="content-image"')) {
-        // Find the first image and add "Written by" after it
-        const imageMatch = cleanedContent.match(/(<img[^>]*>|<div[^>]*class="[^"]*image[^"]*"[^>]*>[\s\S]*?<\/div>)/);
-        if (imageMatch) {
-          const imageEnd = imageMatch.index! + imageMatch[0].length;
-          cleanedContent = cleanedContent.slice(0, imageEnd) + writtenByHTML + cleanedContent.slice(imageEnd);
-        } else {
-          // Fallback: add at the beginning
-          cleanedContent = writtenByHTML + cleanedContent;
-        }
-      } else {
-        // No featured image found, add at the beginning
-        cleanedContent = writtenByHTML + cleanedContent;
-      }
-      
-      // Add author box at the bottom (before any existing author boxes to prevent duplicates)
-      if (!cleanedContent.includes('id="author-box"')) {
-        const authorBoxHTML = generateAuthorBoxHTML(request.author);
-        cleanedContent = cleanedContent + authorBoxHTML;
-        console.log(`✅ BULK CLAUDE SERVICE - Added author box for: ${request.author.name}`);
-      } else {
-        console.log(`⚠️ BULK CLAUDE SERVICE - Author box already exists, skipping duplicate`);
-      }
-      
-      console.log(`✅ BULK CLAUDE SERVICE - Author attribution completed for: ${request.author.name}`);
-    }
-
-    // Add meta optimization (matching AdminPanel functionality)
-    let optimizedMetaTitle = '';
-    let optimizedMetaDescription = '';
-    
-    try {
-      console.log(`🔍 BULK CLAUDE SERVICE - Starting meta optimization for: ${generatedTitle}`);
-      
-      // Extract keywords for meta optimization
-      const keywords = request.keywords && request.keywords.length > 0 
-        ? request.keywords 
-        : [request.topic.toLowerCase()];
-      
-      // Get content preview for context (first 300 chars without HTML)
-      const contentPreview = cleanedContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 300);
-      
-      // Optimize meta title
-      console.log(`📝 BULK CLAUDE SERVICE - Optimizing meta title...`);
-      optimizedMetaTitle = await optimizeMetaData(
-        generatedTitle,
-        keywords,
-        'title',
-        generatedTitle,
-        contentPreview
-      );
-      console.log(`✅ BULK CLAUDE SERVICE - Meta title optimized: "${optimizedMetaTitle.substring(0, 50)}..."`);
-      
-      // Optimize meta description
-      console.log(`📝 BULK CLAUDE SERVICE - Optimizing meta description...`);
-      const baseDescription = contentPreview.length > 140 
-        ? contentPreview.substring(0, 140) + "..." 
-        : contentPreview;
-      
-      optimizedMetaDescription = await optimizeMetaData(
-        baseDescription,
-        keywords,
-        'description',
-        generatedTitle,
-        contentPreview
-      );
-      console.log(`✅ BULK CLAUDE SERVICE - Meta description optimized: "${optimizedMetaDescription.substring(0, 50)}..."`);
-      
-    } catch (metaError) {
-      console.warn(`⚠️ BULK CLAUDE SERVICE - Meta optimization failed, using fallbacks:`, metaError);
-      
-      // Fallback meta title
-      optimizedMetaTitle = generatedTitle.length <= 60 
-        ? generatedTitle 
-        : generatedTitle.substring(0, 57) + '...';
-      
-      // Fallback meta description
-      const contentPreview = cleanedContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      optimizedMetaDescription = contentPreview.length <= 160 
-        ? contentPreview 
-        : contentPreview.substring(0, 157) + '...';
-    }
 
     console.log(`✨ BULK CLAUDE SERVICE - Content processing completed successfully`);
     console.log(`🎯 BULK CLAUDE SERVICE COMPLETED - Successfully generated bulk content for topic: "${request.topic}"`);
@@ -386,9 +276,7 @@ export async function generateBulkContentWithClaude(request: BulkContentRequest)
     return {
       title: generatedTitle,
       content: cleanedContent,
-      tags: [request.topic.toLowerCase().replace(/\s+/g, '-')],
-      metaTitle: optimizedMetaTitle,
-      metaDescription: optimizedMetaDescription
+      tags: [request.topic.toLowerCase().replace(/\s+/g, '-')]
     };
 
   } catch (error: any) {
@@ -414,125 +302,12 @@ export async function generateBulkContentWithClaude(request: BulkContentRequest)
   }
 }
 
-// Calculate reading time for content (matching AdminPanel functionality)
-function calculateReadingTime(content: string): { minutes: number; seconds: number; display: string } {
-  if (!content || typeof content !== 'string') {
-    return { minutes: 0, seconds: 0, display: '1 min read' };
-  }
-
-  // Remove HTML tags and get plain text
-  const plainText = content.replace(/<[^>]*>/g, '').trim();
-  
-  // Count words (split by whitespace and filter out empty strings)
-  const words = plainText.split(/\s+/).filter(word => word.length > 0);
-  const wordCount = words.length;
-  
-  // Average reading speed is 200-250 words per minute, we'll use 225
-  const wordsPerMinute = 225;
-  
-  // Calculate total minutes as decimal
-  const totalMinutes = wordCount / wordsPerMinute;
-  
-  // Convert to minutes and seconds
-  const minutes = Math.floor(totalMinutes);
-  const seconds = Math.round((totalMinutes - minutes) * 60);
-  
-  // Create display string
-  let display: string;
-  if (minutes === 0) {
-    display = '1 min read'; // Minimum 1 minute for very short content
-  } else if (minutes === 1 && seconds < 30) {
-    display = '1 min read';
-  } else if (minutes > 0 && seconds >= 30) {
-    display = `${minutes + 1} min read`; // Round up if seconds >= 30
-  } else {
-    display = `${minutes} min read`;
-  }
-  
-  return { minutes, seconds, display };
-}
-
-// Generate "Written by" HTML for inclusion in Shopify content (matching AdminPanel)
-function generateWrittenByHTML(author: {
-  id: string;
-  name: string;
-  profileImage?: string;
-}, content?: string): string {
-  const avatarInitials = author.name.split(' ').map(n => n[0]).join('').toUpperCase();
-  const avatarImg = author.profileImage 
-    ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important; max-width: 32px !important; max-height: 32px !important; border-radius: 50% !important; object-fit: cover !important; flex-shrink: 0 !important; box-sizing: border-box !important;" />`
-    : `<div style="width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important; max-width: 32px !important; max-height: 32px !important; border-radius: 50% !important; background: #e5e7eb !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; color: #374151 !important; font-size: 12px !important; flex-shrink: 0 !important; box-sizing: border-box !important;">${avatarInitials}</div>`;
-
-  // Calculate reading time if content is provided
-  const readingTime = content ? calculateReadingTime(content) : null;
-  const readingTimeText = readingTime ? ` • ${readingTime.display}` : '';
-
-  return `
-    <div style="display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; margin: 16px 0 !important; padding: 8px 0 !important; text-align: center !important;">
-      ${avatarImg}
-      <span style="color: #6b7280 !important; font-size: 14px !important;">
-        Written by <a href="#author-box" style="color: #2563eb !important; text-decoration: none !important; font-weight: 500 !important; border-bottom: 1px solid transparent !important; transition: all 0.2s !important;" onmouseover="this.style.borderBottomColor='#2563eb'; this.style.color='#1d4ed8'" onmouseout="this.style.borderBottomColor='transparent'; this.style.color='#2563eb'">${author.name}</a>${readingTimeText}
-      </span>
-    </div>
-  `;
-}
-
-// Generate full author box HTML for inclusion at bottom of content (matching AdminPanel)
-function generateAuthorBoxHTML(author: {
-  id: string;
-  name: string;
-  description?: string;
-  profileImage?: string;
-  linkedinUrl?: string;
-}): string {
-  const avatarInitials = author.name.split(' ').map(n => n[0]).join('').toUpperCase();
-  const avatarImg = author.profileImage 
-    ? `<img src="${author.profileImage}" alt="${author.name}" style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; object-fit: cover !important; flex-shrink: 0 !important; box-sizing: border-box !important;" />`
-    : `<div style="width: 64px !important; height: 64px !important; min-width: 64px !important; min-height: 64px !important; max-width: 64px !important; max-height: 64px !important; border-radius: 50% !important; background: #e5e7eb !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; color: #374151 !important; font-size: 18px !important; flex-shrink: 0 !important; box-sizing: border-box !important;">${avatarInitials}</div>`;
-
-  // LinkedIn "Learn More" button if LinkedIn URL is available
-  const linkedinButton = author.linkedinUrl 
-    ? `<a href="${author.linkedinUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block !important; margin-top: 12px !important; padding: 8px 16px !important; background: #0077b5 !important; color: white !important; text-decoration: none !important; border-radius: 4px !important; font-size: 14px !important; font-weight: 500 !important;">Learn More</a>`
-    : '';
-
-  return `
-    <div id="author-box" style="border: 1px solid #e5e7eb !important; border-radius: 8px !important; padding: 24px !important; margin: 24px 0 !important; background: #ffffff !important; box-sizing: border-box !important;">
-      <div style="display: flex !important; gap: 16px !important; align-items: flex-start !important;">
-        ${avatarImg}
-        <div style="flex: 1 !important;">
-          <h3 style="font-size: 18px !important; font-weight: 600 !important; color: #111827 !important; margin: 0 0 8px 0 !important;">${author.name}</h3>
-          ${author.description ? `<p style="color: #4b5563 !important; line-height: 1.6 !important; margin: 0 0 12px 0 !important;">${author.description}</p>` : ''}
-          ${linkedinButton}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// Convert any remaining Markdown to HTML
-function convertMarkdownToHtml(content: string): string {
-  let processedContent = content;
-  
-  // Convert markdown headers to HTML (safety conversion)
-  processedContent = processedContent.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  processedContent = processedContent.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  processedContent = processedContent.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  processedContent = processedContent.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
-  
-  console.log(`🔄 MARKDOWN CONVERSION - Applied safety HTML conversion`);
-  
-  return processedContent;
-}
-
 // Apply media placement logic matching AdminPanel behavior
 async function applyMediaPlacement(content: string, request: BulkContentRequest): Promise<string> {
   let processedContent = content;
   
   try {
     console.log(`🖼️ BULK MEDIA PLACEMENT - Processing media for bulk content`);
-    console.log(`🔍 MEDIA REQUEST DEBUG - primaryImage:`, request.primaryImage ? 'EXISTS' : 'NULL');
-    console.log(`🔍 MEDIA REQUEST DEBUG - secondaryImages:`, request.secondaryImages?.length || 0);
-    console.log(`🔍 MEDIA REQUEST DEBUG - youtubeEmbed:`, request.youtubeEmbed ? 'EXISTS' : 'NULL');
     console.log(`🔍 CONTENT DEBUG - First 500 chars:`, processedContent.substring(0, 500));
     console.log(`🔍 CONTENT DEBUG - Looking for H2 patterns in content...`);
     

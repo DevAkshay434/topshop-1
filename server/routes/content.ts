@@ -133,8 +133,8 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
       });
       
       // Consume the usage (either from plan limits or credits)
-      await consumeUsageForContentGeneration(store.id, false);
-      console.log(`Content generation consumed for store ${store.id}`);
+      const consumeResult = await consumeUsageForContentGeneration(store.id);
+      console.log(`Content generation consumed:`, consumeResult);
       
       // Get the Shopify connection to use as author
       const connection = await storage.getShopifyConnection();
@@ -156,6 +156,7 @@ contentRouter.post("/generate-content", async (req: Request, res: Response) => {
         success: true, 
         requestId: updatedRequest?.id,
         postId: post.id,
+        consumeResult,
         ...generatedContent
       });
       
@@ -796,34 +797,6 @@ async function processEnhancedTopic(
     try {
       console.log(`🎯 Generating content with Claude for topic: "${topic}"`);
       
-      // Determine author before generation for attribution
-      let authorData = null;
-      if (formData.authorId) {
-        try {
-          const authors = await storage.getAuthors();
-          const author = authors.find(a => a.id === formData.authorId);
-          if (author) {
-            authorData = {
-              id: author.id.toString(),
-              name: author.name || "Store Owner",
-              description: author.description || undefined,
-              profileImage: author.avatarUrl || undefined,
-              linkedinUrl: author.linkedinUrl || undefined
-            };
-            console.log(`👤 BULK ROUTE - Found author for attribution: ${authorData.name}`);
-          }
-        } catch (error) {
-          console.warn(`Could not fetch author ${formData.authorId}:`, error);
-        }
-      }
-
-      // Debug media content before passing to Claude service
-      console.log(`🔍 MEDIA DEBUG - Topic: "${topic}"`);
-      console.log(`🔍 MEDIA DEBUG - mediaContent:`, JSON.stringify(mediaContent, null, 2));
-      console.log(`🔍 MEDIA DEBUG - primaryImage:`, mediaContent?.primaryImage);
-      console.log(`🔍 MEDIA DEBUG - secondaryImages count:`, mediaContent?.secondaryImages?.length || 0);
-      console.log(`🔍 MEDIA DEBUG - youtubeEmbed:`, mediaContent?.youtubeEmbed);
-
       // Generate content with dedicated bulk Claude service (same as admin panel)
       const generatedContent = await generateBulkContentWithClaude({
         topic,
@@ -860,10 +833,7 @@ async function processEnhancedTopic(
         enableTables: formData.enableTables,
         enableLists: formData.enableLists,
         enableH3s: formData.enableH3s,
-        enableCitations: formData.enableCitations,
-        // CRITICAL: Include author attribution (matching AdminPanel functionality)
-        authorId: formData.authorId,
-        author: authorData || undefined
+        enableCitations: formData.enableCitations
       });
       
       console.log(`Enhanced content generated for "${topic}". Title: "${generatedContent.title}"`);
@@ -874,10 +844,21 @@ async function processEnhancedTopic(
         generatedContent: JSON.stringify(generatedContent)
       });
       
-      // Use author name from previously fetched authorData
-      const authorName = authorData?.name || "Store Owner";
+      // Determine author
+      let authorName = "Store Owner";
+      if (formData.authorId) {
+        try {
+          const authors = await storage.getAuthors();
+          const author = authors.find(a => a.id === formData.authorId);
+          if (author) {
+            authorName = author.name || authorName;
+          }
+        } catch (error) {
+          console.warn(`Could not fetch author ${formData.authorId}:`, error);
+        }
+      }
       
-      // Create blog post with enhanced settings including featured image and meta optimization
+      // Create blog post with enhanced settings including featured image
       const postData: any = {
         title: generatedContent.title,
         content: generatedContent.content || `# ${generatedContent.title}\n\nContent for ${topic}`,
@@ -889,13 +870,9 @@ async function processEnhancedTopic(
           ? generatedContent.tags.join(",") 
           : topic,
         category: formData.categories?.length > 0 ? formData.categories[0] : "Generated Content",
-        // Include optimized meta fields (matching AdminPanel functionality)
-        metaTitle: generatedContent.metaTitle || generatedContent.title,
-        metaDescription: generatedContent.metaDescription || `Learn about ${topic} with this comprehensive guide.`
+        metaTitle: generatedContent.metaTitle || null,
+        metaDescription: generatedContent.metaDescription || null
       };
-      
-      console.log(`📝 BULK META - Added optimized meta title: "${postData.metaTitle.substring(0, 50)}..."`);
-      console.log(`📝 BULK META - Added optimized meta description: "${postData.metaDescription.substring(0, 50)}..."`);
 
       // Add featured image from primary image like admin panel
       if (mediaContent?.primaryImage) {
@@ -911,85 +888,12 @@ async function processEnhancedTopic(
       
       console.log(`Created enhanced post: ${post.id} - "${post.title}"`);
       
-      // ALWAYS create the article in Shopify (as draft) so it gets required IDs for manual publishing
-      try {
-        console.log(`🚀 Creating post "${post.title}" in Shopify as draft...`);
-        
-        // Import ShopifyService 
-        const { ShopifyService } = await import('../services/shopify');
-        const shopifyService = new ShopifyService();
-        
-        // Initialize client for this store
-        shopifyService.initializeClient(store);
-        
-        // Determine blog ID - use from formData or get default blog
-        let blogId = formData.blogId;
-        if (!blogId) {
-          try {
-            const blogs = await shopifyService.getBlogs(store);
-            if (blogs && blogs.length > 0) {
-              blogId = blogs[0].id.toString();
-              console.log(`Using default blog ID: ${blogId}`);
-            }
-          } catch (blogError) {
-            console.warn('Could not get blogs, will try without blog ID');
-          }
-        }
-        
-        // Create article in Shopify as draft initially (regardless of intended status)
-        const shopifyArticle = await shopifyService.createArticle(
-          store, 
-          blogId, 
-          post,
-          undefined // Always create as draft first
-        );
-        
-        // Update local post with Shopify details
-        await storage.updateBlogPost(post.id, {
-          shopifyPostId: shopifyArticle.id?.toString(),
-          shopifyBlogId: blogId,
-          shopifyHandle: (shopifyArticle as any).handle || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          status: formData.postStatus || "draft"
-        });
-        
-        console.log(`✅ Successfully created in Shopify as draft: ${shopifyArticle.id}`);
-        
-        // If the intended status was published, update the Shopify article to published
-        if (formData.postStatus === "published") {
-          console.log(`📤 Updating article ${shopifyArticle.id} to published status...`);
-          
-          try {
-            await shopifyService.updateArticle(store, blogId, shopifyArticle.id.toString(), {
-              published: true,
-              published_at: new Date().toISOString()
-            } as any);
-            
-            // Update local status to published
-            await storage.updateBlogPost(post.id, {
-              status: "published",
-              publishedDate: new Date()
-            });
-            
-            console.log(`✅ Successfully published article: ${shopifyArticle.id}`);
-          } catch (publishError: any) {
-            console.error(`❌ Failed to publish article ${shopifyArticle.id}:`, publishError);
-            console.warn('Article created as draft in Shopify but not published');
-          }
-        }
-        
-      } catch (shopifyError: any) {
-        console.error(`❌ Failed to create in Shopify for "${post.title}":`, shopifyError);
-        // Don't fail the entire operation, just log the error
-        console.warn('Post created locally but not in Shopify - manual publishing will not work');
-      }
-      
       return {
         topic,
         postId: post.id,
         title: generatedContent.title,
         content: generatedContent.content,
-        status: "success",
-        usesFallback: false
+        status: "success"
       };
       
     } catch (aiError: any) {

@@ -1266,8 +1266,8 @@ export async function registerRoutes(app: Express): Promise<void> {
               try {
                 const blogs = await shopifyService.getBlogs(store);
                 const targetBlog = blogs.find(blog => blog.id.toString() === post.shopifyBlogId?.toString());
-                if (targetBlog && (targetBlog as any).handle) {
-                  blogHandle = (targetBlog as any).handle;
+                if (targetBlog && targetBlog.handle) {
+                  blogHandle = targetBlog.handle;
                 }
               } catch (error) {
                 console.error('Error fetching blog handle:', error);
@@ -1289,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<void> {
                         const articleResponse = await shopifyService.makeApiRequest(store, 'GET', `blogs/${blog.id}/articles/${post.shopifyPostId}.json`);
                         if (articleResponse.article && articleResponse.article.handle) {
                           articleIdentifier = articleResponse.article.handle;
-                          blogHandle = (blog as any).handle; // Update blog handle too
+                          blogHandle = blog.handle; // Update blog handle too
                           
                           // Update local database with both handles for future use
                           try {
@@ -1671,8 +1671,8 @@ export async function registerRoutes(app: Express): Promise<void> {
             }
           }
           
-          // Also check for very similar titles (exact match) for NEW content only
-          if (postData.title && !req.body.id) { // Only check for duplicates on new posts, not updates
+          // Also check for very similar titles (exact match) for new content without shopifyPostId
+          if (postData.title) {
             const titleDuplicate = existingPosts.find(p => 
               p.title && 
               p.title.toLowerCase().trim() === postData.title.toLowerCase().trim() &&
@@ -1681,14 +1681,12 @@ export async function registerRoutes(app: Express): Promise<void> {
             );
             
             if (titleDuplicate) {
-              console.log(`Title duplicate found: Post ${titleDuplicate.id} with same title "${postData.title}" - blocking NEW post creation`);
+              console.log(`Title duplicate found: Post ${titleDuplicate.id} with same title "${postData.title}"`);
               return res.status(400).json({ 
                 error: "Similar content already scheduled",
                 details: `Content with the same title is already scheduled. Please check your scheduled content.`
               });
             }
-          } else if (req.body.id) {
-            console.log(`Skipping duplicate check - this is an update to existing post ${req.body.id}`);
           }
         }
       }
@@ -2310,15 +2308,12 @@ export async function registerRoutes(app: Express): Promise<void> {
               }
             }
             
-            const shopifyArticle = await shopifyService.createArticle(tempStore, {
-              title: post.title,
-              content: post.content,
-              author: post.author || 'Admin',
-              tags: post.tags || '',
-              published: post.status === 'published',
-              publishedDate: scheduledPublishDate,
-              featuredImage: post.featuredImage
-            }, connection.defaultBlogId);
+            const shopifyArticle = await createArticle(
+              tempStore, 
+              connection.defaultBlogId, 
+              post,
+              scheduledPublishDate
+            );
             
             // Update post with Shopify ID
             const updatedPost = await storage.updateBlogPost(post.id, {
@@ -2380,21 +2375,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         if (connection && connection.isConnected && connection.defaultBlogId) {
           try {
-            // Initialize the Shopify client for this connection
-            shopifyService.initializeClient({
-              id: connection.id,
-              shopName: connection.storeName,
-              accessToken: connection.accessToken,
-              scope: '',
-              defaultBlogId: connection.defaultBlogId,
-              isConnected: connection.isConnected || true,
-              lastSynced: connection.lastSynced,
-              installedAt: new Date(),
-              uninstalledAt: null,
-              planName: null,
-              chargeId: null,
-              trialEndsAt: null
-            } as any);
+            // Get function references
+            const { setConnection, deleteArticle } = shopifyService;
+            
+            // Set connection first
+            setConnection(connection);
             
             // Create a temporary store object for using with the new API
             const tempStore = {
@@ -2412,7 +2397,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               trialEndsAt: null
             };
             
-            await shopifyService.deleteArticle(tempStore, connection.defaultBlogId, post.shopifyPostId);
+            await deleteArticle(tempStore, connection.defaultBlogId, post.shopifyPostId);
             
             // Create sync activity
             await storage.createSyncActivity({
@@ -3971,8 +3956,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       const post = await storage.getBlogPost(postId);
       if (!post) {
         return res.status(404).json({
-          success: false,
-          error: `Post with ID ${postId} not found`
+          status: "error",
+          message: `Post with ID ${postId} not found`
         });
       }
       
@@ -3982,8 +3967,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       if (!post.shopifyPostId || (!isPage && !post.shopifyBlogId)) {
         return res.status(400).json({
-          success: false,
-          error: `${isPage ? 'Page' : 'Post'} is missing required Shopify IDs and cannot be published. Has shopifyPostId: ${!!post.shopifyPostId}, Has shopifyBlogId: ${!!post.shopifyBlogId}`
+          status: "error",
+          message: `${isPage ? 'Page' : 'Post'} is missing required Shopify IDs and cannot be published. Has shopifyPostId: ${!!post.shopifyPostId}, Has shopifyBlogId: ${!!post.shopifyBlogId}`
         });
       }
       
@@ -3998,8 +3983,8 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       
       if (!store) {
         return res.status(400).json({
-          success: false,
-          error: "Could not find associated store for this post"
+          status: "error",
+          message: "Could not find associated store for this post"
         });
       }
       
@@ -4022,7 +4007,7 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
       });
       
       return res.json({
-        success: true,
+        status: "success",
         message: `${isPage ? 'Page' : 'Post'} published successfully`,
         post: {
           id: postId,
@@ -4035,8 +4020,9 @@ Return ONLY a valid JSON object with "metaTitle" and "metaDescription" fields. N
     } catch (error) {
       console.error("Error publishing post:", error);
       return res.status(500).json({
-        success: false,
-        error: "Failed to publish post: " + String(error)
+        status: "error",
+        message: "Failed to publish post",
+        error: String(error)
       });
     }
   });

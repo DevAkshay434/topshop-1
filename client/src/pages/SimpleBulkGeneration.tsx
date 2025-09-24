@@ -166,9 +166,6 @@ const bulkFormSchema = z.object({
   // Buyer personas
   buyerPersonas: z.string().optional(),
   
-  // Author Attribution (CRITICAL for feature parity with AdminPanel)
-  authorId: z.string().optional(),
-  
   // Bulk specific
   topics: z.string().min(1, "Please enter at least one topic"),
   customPrompt: z.string().optional(),
@@ -506,8 +503,6 @@ export default function SimpleBulkGeneration() {
       collectionIds: [],
       categories: [],
       customCategory: "",
-      authorId: "",
-      rootKeyword: "",
       topics: "",
       batchSize: 5,
       simultaneousGeneration: false
@@ -941,28 +936,6 @@ export default function SimpleBulkGeneration() {
     }
   };
 
-  // Create a ref to access MediaSelectionStep's current selections
-  const mediaStepRef = useRef<any>(null);
-
-  // Function to handle generation from media step button  
-  const handleBulkGenerationFromMediaStep = async () => {
-    // Check if we have images in selectedMediaContent
-    const hasImages = selectedMediaContent.primaryImages?.length > 0 || selectedMediaContent.secondaryImages?.length > 0;
-    
-    if (!hasImages) {
-      // If no images in state but user may have selected images in UI,
-      // prompt them to use the Continue button in MediaSelectionStep first
-      toast({
-        title: "Save your image selections first",
-        description: "Please click the 'Continue' button in the media selection area above to save your selected images, then try generating again.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    handleBulkGeneration();
-  };
-
   // Main bulk generation function
   const handleBulkGeneration = async () => {
     setIsGenerating(true);
@@ -1058,42 +1031,32 @@ export default function SimpleBulkGeneration() {
         
         if (progressInterval) clearInterval(progressInterval);
         
-        // Process all topics in one enhanced bulk request for proper formatting and media placement
-        console.log(`🚀 Using enhanced bulk generation with ${topicsList.length} topics`);
-        console.log(`🔍 BULK DEBUG - selectedMediaContent before API call:`, JSON.stringify(selectedMediaContent, null, 2));
-        console.log(`🔍 BULK DEBUG - primaryImages count:`, selectedMediaContent.primaryImages?.length || 0);
-        console.log(`🔍 BULK DEBUG - secondaryImages count:`, selectedMediaContent.secondaryImages?.length || 0);
+        // Process topics one by one for real-time updates
+        const finalResults = [];
+        let successful = 0;
         
-        try {
-          const response = await apiRequest({
-            url: "/api/generate-content/enhanced-bulk",
-            method: "POST",
-            data: {
-              topics: topicsList,
-              formData: contentData.formData,
-              mediaContent: {
-                primaryImage: selectedMediaContent.primaryImages?.[0] || null,
-                secondaryImages: selectedMediaContent.secondaryImages || [],
-                youtubeEmbed: selectedMediaContent.youtubeEmbed || null
-              },
-              batchSize: contentData.batchSize || 5,
-              simultaneousGeneration: contentData.simultaneousGeneration || false,
-              isClusterMode: false,
-              clusterTopic: formValues.clusterTopic
-            },
-            timeout: 600000 // 10 minute timeout for bulk
-          });
+        for (let i = 0; i < topicsList.length; i++) {
+          const topic = topicsList[i];
           
-          console.log(`✅ Enhanced bulk generation response received:`, response);
-          
-          const finalResults = [];
-          let successful = 0;
-          
-          // Process the bulk results
-          if (response && response.success && response.results) {
-            for (let i = 0; i < response.results.length; i++) {
-              const result = response.results[i];
+          try {
+            console.log(`🔄 Processing topic ${i + 1}/${topicsList.length}: "${topic}"`);
             
+            const response = await apiRequest({
+              url: "/api/generate-content/single-enhanced",
+              method: "POST",
+              data: {
+                topic,
+                formData: contentData.formData,
+                mediaContent: selectedMediaContent,
+                isClusterMode: false,
+                clusterTopic: formValues.clusterTopic,
+                allTopics: topicsList
+              },
+              timeout: 300000 // 5 minute timeout per topic
+            });
+            
+            if (response && response.success && response.result) {
+              const result = response.result;
               if (result.status === "success") {
                 const processedResult = {
                   topic: result.topic,
@@ -1112,7 +1075,7 @@ export default function SimpleBulkGeneration() {
                   index === i ? processedResult : prevResult
                 ));
                 
-                console.log(`✅ Completed topic ${i + 1}/${topicsList.length}: "${result.topic}"`);
+                console.log(`✅ Completed topic ${i + 1}/${topicsList.length}: "${topic}"`);
               } else {
                 const failedResult = {
                   topic: result.topic,
@@ -1126,35 +1089,36 @@ export default function SimpleBulkGeneration() {
                   index === i ? failedResult : prevResult
                 ));
                 
-                console.error(`❌ Failed topic ${i + 1}/${topicsList.length}: "${result.topic}" - ${result.error}`);
+                console.error(`❌ Failed topic ${i + 1}/${topicsList.length}: "${topic}" - ${result.error}`);
               }
-              
-              // Update progress as we process each result
-              const progressPercentage = Math.round(((i + 1) / topicsList.length) * 100);
-              setProgress(progressPercentage);
+            } else {
+              throw new Error(response?.error || "Failed to generate content");
             }
-          } else {
-            throw new Error(response?.error || "No results returned from bulk generation");
+          } catch (error: any) {
+            console.error(`❌ Error processing topic "${topic}":`, error);
+            const failedResult = {
+              topic,
+              status: "failed" as const,
+              error: error.message || "Unknown error"
+            };
+            finalResults.push(failedResult);
+            
+            // Update results immediately
+            setResults(prev => prev.map((prevResult, index) => 
+              index === i ? failedResult : prevResult
+            ));
           }
-        } catch (error: any) {
-          console.error('❌ Enhanced bulk generation error:', error);
           
-          // Set all topics as failed
-          const failedResults = topicsList.map((topic, index) => ({
-            topic,
-            status: "failed" as const,
-            error: error.message || "Bulk generation failed"
-          }));
-          
-          setResults(failedResults);
-          throw error;
+          // Update progress
+          const progressPercentage = Math.round(((i + 1) / topicsList.length) * 100);
+          setProgress(progressPercentage);
         }
         
         setProgress(100);
         
         toast({
           title: "Content Generation Complete",
-          description: `Generated content for ${topicsList.length} articles successfully`,
+          description: `Generated ${successful} of ${topicsList.length} articles successfully`,
         });
         
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
@@ -2143,11 +2107,7 @@ export default function SimpleBulkGeneration() {
                 clusterCount={1}
                 onComplete={(media) => {
                   setSelectedMediaContent(media);
-                  // Don't advance to next step - let user click "Generate Articles" button
-                  toast({
-                    title: "Images Saved",
-                    description: "Your selected images have been saved. Click 'Generate Articles' below to start generation.",
-                  });
+                  nextStep();
                 }}
                 onBack={previousStep}
               />
@@ -2254,14 +2214,28 @@ export default function SimpleBulkGeneration() {
                     }}
                     onPublish={async (postData) => {
                       try {
-                        // Since bulk generation now creates articles as drafts in Shopify with proper IDs,
-                        // we can directly publish them without additional sync steps
-                        if (postData.postId) {
-                          console.log(`Publishing post ${postData.postId}: "${postData.title}"`);
-                          
-                          // Directly publish to Shopify using the existing post ID
+                        // Create a draft first with the updated content
+                        const draftData = {
+                          title: postData.title,
+                          content: postData.content,
+                          contentType: 'post',
+                          status: 'draft',
+                          blogId: form.getValues('blogId') || 'default',
+                          authorId: selectedAuthorId || '1',
+                          tags: 'bulk generated content',
+                          category: 'Generated Content'
+                        };
+
+                        const draftResponse = await apiRequest({
+                          url: '/api/posts',
+                          method: 'POST',
+                          data: draftData
+                        });
+
+                        if (draftResponse.success) {
+                          // Now publish to Shopify using the correct endpoint
                           const publishResponse = await apiRequest({
-                            url: `/api/posts/${postData.postId}/publish`,
+                            url: `/api/posts/${draftResponse.post.id}/publish`,
                             method: 'POST'
                           });
 
@@ -2275,82 +2249,44 @@ export default function SimpleBulkGeneration() {
                             throw new Error(publishResponse.error || 'Failed to publish to Shopify');
                           }
                         } else {
-                          throw new Error('No post ID found - cannot publish');
+                          throw new Error(draftResponse.error || 'Failed to create draft');
                         }
                       } catch (error: any) {
                         console.error('Publish error:', error);
                         toast({
                           title: "Publishing Failed",
-                          description: error.message || "Failed to publish post",
+                          description: error.message || "Failed to publish to Shopify",
                           variant: "destructive"
                         });
                       }
                     }}
                     onSaveDraft={async (postData) => {
                       try {
-                        // Check if we have an existing post ID from bulk generation
-                        if (postData.postId) {
-                          // Update the existing post content
-                          const updateData = {
-                            title: postData.title,
-                            content: postData.content,
-                            status: 'draft'
-                          };
+                        const draftData = {
+                          title: postData.title,
+                          content: postData.content,
+                          contentType: 'post',
+                          status: 'draft',
+                          blogId: form.getValues('blogId') || 'default',
+                          authorId: selectedAuthorId || '1',
+                          tags: 'bulk generated content',
+                          category: 'Generated Content'
+                        };
 
-                          const response = await apiRequest({
-                            url: `/api/posts/${postData.postId}`,
-                            method: 'PUT',
-                            data: updateData
+                        const response = await apiRequest({
+                          url: '/api/posts',
+                          method: 'POST',
+                          data: draftData
+                        });
+
+                        if (response.success) {
+                          toast({
+                            title: "Saved as Draft",
+                            description: `"${postData.title}" has been saved as a draft.`,
                           });
-
-                          if (response.success) {
-                            // Optionally sync to Shopify as a draft
-                            try {
-                              await apiRequest({
-                                url: '/api/shopify/sync',
-                                method: 'POST',
-                                data: { postIds: [postData.postId] }
-                              });
-                            } catch (syncError) {
-                              console.log('Sync to Shopify failed (non-critical for draft):', syncError);
-                            }
-
-                            toast({
-                              title: "Draft Updated",
-                              description: `"${postData.title}" has been updated and saved as a draft.`,
-                            });
-                            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-                          } else {
-                            throw new Error(response.error || 'Failed to update draft');
-                          }
+                          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
                         } else {
-                          // Fallback: Create a new draft if no existing post ID
-                          const draftData = {
-                            title: postData.title,
-                            content: postData.content,
-                            contentType: 'post',
-                            status: 'draft',
-                            blogId: form.getValues('blogId') || 'default',
-                            authorId: selectedAuthorId || '1',
-                            tags: 'bulk generated content',
-                            category: 'Generated Content'
-                          };
-
-                          const response = await apiRequest({
-                            url: '/api/posts',
-                            method: 'POST',
-                            data: draftData
-                          });
-
-                          if (response.success) {
-                            toast({
-                              title: "Saved as Draft",
-                              description: `"${postData.title}" has been saved as a draft.`,
-                            });
-                            queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-                          } else {
-                            throw new Error(response.error || 'Failed to save draft');
-                          }
+                          throw new Error(response.error || 'Failed to save draft');
                         }
                       } catch (error: any) {
                         console.error('Save draft error:', error);
@@ -2463,7 +2399,7 @@ export default function SimpleBulkGeneration() {
 
             {currentStep === 'media' ? (
               <Button
-                onClick={handleBulkGenerationFromMediaStep}
+                onClick={handleBulkGeneration}
                 disabled={!canProceedToNextStep() || isGenerating || topicsList.length === 0}
                 className="bg-green-600 hover:bg-green-700"
               >

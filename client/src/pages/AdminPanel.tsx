@@ -5,15 +5,6 @@ import ShopifyImageViewer from "../components/ShopifyImageViewer";
 import { useQuery } from "@tanstack/react-query";
 import { SchedulingPermissionNotice } from "../components/SchedulingPermissionNotice";
 import { ContentStyleSelector } from "../components/ContentStyleSelector";
-import { 
-  Product, 
-  Collection, 
-  MediaItem, 
-  BillingStatus, 
-  normalizeProduct, 
-  normalizeCollection, 
-  ensureMediaItem 
-} from "../types/shopify";
 
 import { RelatedProductsSelector } from "../components/RelatedProductsSelector";
 import { RelatedCollectionsSelector } from "../components/RelatedCollectionsSelector";
@@ -65,7 +56,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -209,7 +200,36 @@ const contentFormSchema = z.object({
 
 type ContentFormValues = z.infer<typeof contentFormSchema>;
 
-// Product, Collection, and ProductVariant types are now imported from ../types/shopify
+interface ProductVariant {
+  id: string;
+  title: string;
+  price: string;
+  image?: string;
+  inventory_quantity?: number;
+}
+
+interface Product {
+  id: string;
+  title: string;
+  handle: string;
+  image?: string;
+  body_html?: string;
+  admin_url?: string;
+  images?: {
+    id: string;
+    src: string;
+    alt?: string;
+    position?: number;
+  }[];
+  variants?: ProductVariant[];
+}
+
+interface Collection {
+  id: string;
+  title: string;
+  handle: string;
+  image?: string;
+}
 
 interface Blog {
   id: string;
@@ -5943,6 +5963,25 @@ export default function AdminPanel() {
                   {/* Sticky Generate Content button fixed to bottom of screen */}
                   <div className="sticky bottom-6 left-0 right-0 mt-8 z-10  mx-auto max-w-5xl  ">
                     <div className="bg-white/90 backdrop-blur-sm  p-4 rounded-lg shadow-lg border border-gray-200">
+                      {/* Progress indicator and validation status */}
+                      {!isReadyToGenerateContent() && (
+                        <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-amber-800">
+                                Complete Required Steps
+                              </p>
+                              <p className="text-xs text-amber-700 mt-1">
+                                Missing:{" "}
+                                {getIncompleteSteps()
+                                  .filter((step) => step !== "0")
+                                  .join(", ")}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Image Selection Dialog */}
                       <ImageSearchDialog
