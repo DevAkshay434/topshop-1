@@ -850,7 +850,6 @@ export default function KeywordSelector({
                     <TableHead className="w-[40px]"></TableHead>
                     <TableHead>Keyword</TableHead>
                     <TableHead>Search Volume</TableHead>
-                    <TableHead>Competition</TableHead>
                     <TableHead>Difficulty</TableHead>
                     <TableHead>Intent</TableHead>
                   </TableRow>
@@ -888,11 +887,6 @@ export default function KeywordSelector({
                       </TableCell>
                       <TableCell>
                         {keyword.searchVolume !== undefined && keyword.searchVolume !== null ? keyword.searchVolume.toLocaleString() : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={keyword.isManual ? "bg-purple-100 text-purple-800 border-purple-300" : getCompetitionColor(keyword.competitionLevel)}>
-                          {keyword.isManual ? "Manual" : (keyword.competitionLevel || 'Unknown')}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
