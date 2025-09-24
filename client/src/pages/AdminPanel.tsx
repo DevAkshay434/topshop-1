@@ -4288,6 +4288,16 @@ export default function AdminPanel() {
                               description:
                                 "Now select products to feature in your content",
                             });
+
+                            // Scroll to the products step title
+                            setTimeout(() => {
+                              if (productsStepRef.current) {
+                                productsStepRef.current.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                              }
+                            }, 100);
                           }}
                         >
                           Next <ChevronRight className="ml-2 h-4 w-4" />
@@ -4876,6 +4886,18 @@ export default function AdminPanel() {
                             if (selectedKeywords.length > 0) {
                               setWorkflowStep("title");
                               setShowTitleSelector(true);
+                              
+                              // Note: Scroll behavior won't be visible since dialog opens immediately
+                              // But included for consistency and potential future use
+                              setTimeout(() => {
+                                const titleSection = document.querySelector('[data-step="title"]');
+                                if (titleSection) {
+                                  titleSection.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                }
+                              }, 100);
                             } else {
                               toast({
                                 title: "Keywords Required",
@@ -4953,6 +4975,16 @@ export default function AdminPanel() {
 
                               if (form.watch("title")) {
                                 setWorkflowStep("media");
+                                
+                                // Scroll to the media step title
+                                setTimeout(() => {
+                                  if (mediaStepRef.current) {
+                                    mediaStepRef.current.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  }
+                                }, 100);
                               } else {
                                 toast({
                                   title: "Title Required",
