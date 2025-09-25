@@ -491,6 +491,53 @@ function applyContentFormatting(content: string): string {
     }
   );
   
+  // Rule 3: Add line breaks after bold sentences (except in FAQ sections)
+  console.log('📝 Rule 3: Add line breaks after bold sentences (except FAQ)');
+  
+  // First, identify FAQ sections by looking for consecutive Q: and A: patterns
+  const faqSectionRegex = /<h[2-6][^>]*>.*?(?:FAQ|Frequently Asked Questions).*?<\/h[2-6]>/gi;
+  const faqSections: Array<{start: number, end: number}> = [];
+  
+  let faqMatch;
+  while ((faqMatch = faqSectionRegex.exec(formattedContent)) !== null) {
+    const faqStart = faqMatch.index;
+    // Find the end of the FAQ section by looking for the next heading or end of content
+    const nextHeadingRegex = /<h[1-6][^>]*>/gi;
+    nextHeadingRegex.lastIndex = faqStart + faqMatch[0].length;
+    const nextHeading = nextHeadingRegex.exec(formattedContent);
+    const faqEnd = nextHeading ? nextHeading.index : formattedContent.length;
+    faqSections.push({start: faqStart, end: faqEnd});
+  }
+  
+  // Add line breaks after bold sentences, but skip FAQ sections
+  formattedContent = formattedContent.replace(
+    /<p>([^<]*?<strong>[^<]*?<\/strong>[^<]*?)<\/p>/gi,
+    (match, content, offset) => {
+      // Check if this match is within any FAQ section
+      const isInFAQ = faqSections.some(section => 
+        offset >= section.start && offset < section.end
+      );
+      
+      if (isInFAQ) {
+        return match; // Don't add extra line breaks in FAQ sections
+      }
+      
+      // Add extra line break after bold sentences
+      return `<p>${content}</p><br>`;
+    }
+  );
+  
+  // Rule 4: Format FAQ sections - add spaces after Q: and A:
+  console.log('📝 Rule 4: Format FAQ sections - add spaces after Q: and A:');
+  formattedContent = formattedContent.replace(
+    /<p>([^<]*?)\b(Q:|A:)([^<]*?)<\/p>/gi,
+    (match, before, qOrA, after) => {
+      // Add space after Q: or A: if not already present
+      const spaceAfter = after.startsWith(' ') ? after : ` ${after}`;
+      return `<p>${before}${qOrA}${spaceAfter}</p>`;
+    }
+  );
+  
   console.log('✅ Content formatting rules applied');
   return formattedContent;
 }
