@@ -453,10 +453,137 @@ function replaceAndWithAmpersand(content: string, title: string): { content: str
   return { content: processedContent, title: processedTitle };
 }
 
+// Function to apply bulletproof FAQ Q: and A: spacing (runs BEFORE any BR tags are added)
+function applyBulletproofFAQFormatting(content: string): string {
+  console.log('🔥 BULLETPROOF Q: AND A: SPACING - Running aggressive spacing fixes');
+  
+  let formattedContent = content;
+  
+  // DEBUGGING: First, let's see what Q: and A: patterns actually exist
+  console.log('🔍 DEBUGGING: Searching for existing Q: and A: patterns in content');
+  const existingQPatterns = formattedContent.match(/Q:[^\s\n\r]*/g);
+  const existingAPatterns = formattedContent.match(/A:[^\s\n\r]*/g);
+  const allQPatterns = formattedContent.match(/Q:.*?(?=\n|$|<)/g);
+  const allAPatterns = formattedContent.match(/A:.*?(?=\n|$|<)/g);
+  
+  if (existingQPatterns) {
+    console.log('🔍 Found Q: patterns without space:', existingQPatterns.length, existingQPatterns);
+  } else {
+    console.log('🔍 No Q: patterns without space found');
+  }
+  
+  if (existingAPatterns) {
+    console.log('🔍 Found A: patterns without space:', existingAPatterns.length, existingAPatterns);
+  } else {
+    console.log('🔍 No A: patterns without space found');
+  }
+  
+  if (allQPatterns) {
+    console.log('🔍 All Q: patterns found:', allQPatterns.length, allQPatterns.slice(0, 3));
+  }
+  
+  if (allAPatterns) {
+    console.log('🔍 All A: patterns found:', allAPatterns.length, allAPatterns.slice(0, 3));
+  }
+  
+  // Pass 1-3: Ultra-aggressive global replacement (catches 99% of cases)
+  for (let pass = 1; pass <= 3; pass++) {
+    console.log(`🔧 FAQ SPACING PASS ${pass}: Global Q: and A: spacing fixes`);
+    
+    // Fix Q: patterns - multiple comprehensive patterns
+    let qFixCount = 0;
+    formattedContent = formattedContent.replace(/Q:([^\s])/g, (match, afterChar) => {
+      qFixCount++;
+      console.log(`📝 FAQ Pass ${pass}: Fixed Q: spacing (global): "${match}" -> "Q: ${afterChar}"`);
+      return `Q: ${afterChar}`;
+    });
+    
+    let aFixCount = 0;
+    formattedContent = formattedContent.replace(/A:([^\s])/g, (match, afterChar) => {
+      aFixCount++;
+      console.log(`📝 FAQ Pass ${pass}: Fixed A: spacing (global): "${match}" -> "A: ${afterChar}"`);
+      return `A: ${afterChar}`;
+    });
+    
+    console.log(`📝 FAQ Pass ${pass} results: ${qFixCount} Q: fixes, ${aFixCount} A: fixes`);
+  }
+  
+  // Pass 4: HTML tag-specific fixes (strong, p, h1-h6)
+  console.log('🔧 FAQ SPACING PASS 4: HTML tag-specific Q: and A: fixes');
+  
+  // Fix inside ALL strong tags (comprehensive)
+  formattedContent = formattedContent.replace(
+    /<strong>([\s\S]*?)Q:([^\s])([\s\S]*?)<\/strong>/gi,
+    (match, before, afterChar, rest) => {
+      console.log('📝 FAQ: Fixed Q: spacing in strong tag');
+      return `<strong>${before}Q: ${afterChar}${rest}</strong>`;
+    }
+  );
+  
+  formattedContent = formattedContent.replace(
+    /<strong>([\s\S]*?)A:([^\s])([\s\S]*?)<\/strong>/gi,
+    (match, before, afterChar, rest) => {
+      console.log('📝 FAQ: Fixed A: spacing in strong tag');
+      return `<strong>${before}A: ${afterChar}${rest}</strong>`;
+    }
+  );
+  
+  // Fix in ALL paragraph tags (comprehensive)
+  formattedContent = formattedContent.replace(
+    /<p([^>]*)>([\s\S]*?)Q:([^\s])([\s\S]*?)<\/p>/gi,
+    (match, attrs, before, afterChar, rest) => {
+      console.log('📝 FAQ: Fixed Q: spacing in P tag');
+      return `<p${attrs}>${before}Q: ${afterChar}${rest}</p>`;
+    }
+  );
+  
+  formattedContent = formattedContent.replace(
+    /<p([^>]*)>([\s\S]*?)A:([^\s])([\s\S]*?)<\/p>/gi,
+    (match, attrs, before, afterChar, rest) => {
+      console.log('📝 FAQ: Fixed A: spacing in P tag');
+      return `<p${attrs}>${before}A: ${afterChar}${rest}</p>`;
+    }
+  );
+  
+  // Pass 5: Final ultra-aggressive catch-all
+  console.log('🔧 FAQ SPACING PASS 5: Final ultra-aggressive Q: and A: spacing');
+  
+  let finalQFixes = 0;
+  formattedContent = formattedContent.replace(/([^\s])Q:([^\s])/g, (match, beforeChar, afterChar) => {
+    finalQFixes++;
+    console.log('📝 FAQ: Final Q: spacing fix (ultra-aggressive)');
+    return `${beforeChar}Q: ${afterChar}`;
+  });
+  
+  let finalAFixes = 0;
+  formattedContent = formattedContent.replace(/([^\s])A:([^\s])/g, (match, beforeChar, afterChar) => {
+    finalAFixes++;
+    console.log('📝 FAQ: Final A: spacing fix (ultra-aggressive)');
+    return `${beforeChar}A: ${afterChar}`;
+  });
+  
+  console.log(`📝 FAQ: Final pass results: ${finalQFixes} Q: fixes, ${finalAFixes} A: fixes`);
+  
+  // FINAL VERIFICATION
+  const remainingQAIssues = formattedContent.match(/[QA]:[^\s]/g);
+  if (remainingQAIssues && remainingQAIssues.length > 0) {
+    console.log('⚠️ FAQ WARNING: Found Q: or A: without space after Rule 0:', remainingQAIssues);
+  } else {
+    console.log('✅ FAQ SUCCESS: All Q: and A: patterns have proper spacing after Rule 0');
+  }
+  
+  console.log('✅ BULLETPROOF FAQ Q: AND A: SPACING COMPLETED (Rule 0)');
+  return formattedContent;
+}
+
 // Function to apply content formatting rules
 function applyContentFormatting(content: string): string {
   console.log('🎨 APPLYING CONTENT FORMATTING RULES');
   let formattedContent = content;
+  
+  // Rule 0: BULLETPROOF FAQ FORMATTING - Q: spacing (RUN FIRST before any BR tags are added)
+  console.log('📝 Rule 0: BULLETPROOF FAQ FORMATTING - Q: spacing (PRE-PROCESSING)');
+  formattedContent = applyBulletproofFAQFormatting(formattedContent);
   
   // Rule 1: Make the first line after any heading bold and add line break
   console.log('📝 Rule 1: Bold first line after headings + line break');
