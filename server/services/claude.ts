@@ -576,38 +576,58 @@ function applyContentFormatting(content: string): string {
   // Rule 4: Format FAQ sections - add spaces after Q: and A: (ENHANCED)
   console.log('📝 Rule 4: Format FAQ sections - add spaces after Q: and A:');
   
-  // ENHANCED Q: formatting - handle all variations including bold tags
+  // COMPREHENSIVE Q: and A: formatting - handle ALL variations
+  console.log('🔧 COMPREHENSIVE Q: and A: SPACING FIX');
+  
+  // Method 1: Global replacement of Q: without space (most comprehensive)
   formattedContent = formattedContent.replace(
     /Q:(?!\s)/g,
-    (match, offset) => {
-      console.log('📝 Found Q: without space at position:', offset);
+    (match) => {
+      console.log('📝 Fixed Q: spacing (global)');
       return 'Q: '; // Always ensure space after Q:
     }
   );
   
-  // ENHANCED A: formatting - handle all variations including bold tags  
+  // Method 2: Global replacement of A: without space  
   formattedContent = formattedContent.replace(
     /A:(?!\s)/g,
-    (match, offset) => {
-      console.log('📝 Found A: without space at position:', offset);
+    (match) => {
+      console.log('📝 Fixed A: spacing (global)');
       return 'A: '; // Always ensure space after A:
     }
   );
   
-  // Additional pass for Q: and A: inside bold tags or other HTML elements
+  // Method 3: Handle Q: and A: specifically in headings (H1-H6)
   formattedContent = formattedContent.replace(
-    /<([^>]+)>([^<]*?)Q:([^<\s])([^<]*?)<\/\1>/gi,
-    (match, tag, beforeQ, afterQ, rest) => {
-      console.log('📝 Fixing Q: spacing inside HTML tags:', match.substring(0, 50) + '...');
-      return `<${tag}>${beforeQ}Q: ${afterQ}${rest}</${tag}>`;
+    /<h([1-6])[^>]*>([^<]*?)Q:([^<\s])([^<]*?)<\/h\1>/gi,
+    (match, level, before, after, rest) => {
+      console.log('📝 Fixed Q: spacing in H' + level + ' tag');
+      return `<h${level}>${before}Q: ${after}${rest}</h${level}>`;
     }
   );
   
   formattedContent = formattedContent.replace(
-    /<([^>]+)>([^<]*?)A:([^<\s])([^<]*?)<\/\1>/gi,
-    (match, tag, beforeA, afterA, rest) => {
-      console.log('📝 Fixing A: spacing inside HTML tags:', match.substring(0, 50) + '...');
-      return `<${tag}>${beforeA}A: ${afterA}${rest}</${tag}>`;
+    /<h([1-6])[^>]*>([^<]*?)A:([^<\s])([^<]*?)<\/h\1>/gi,
+    (match, level, before, after, rest) => {
+      console.log('📝 Fixed A: spacing in H' + level + ' tag');
+      return `<h${level}>${before}A: ${after}${rest}</h${level}>`;
+    }
+  );
+  
+  // Method 4: Handle Q: and A: in paragraphs
+  formattedContent = formattedContent.replace(
+    /<p[^>]*>([^<]*?)Q:([^<\s])([^<]*?)<\/p>/gi,
+    (match, before, after, rest) => {
+      console.log('📝 Fixed Q: spacing in P tag');
+      return `<p>${before}Q: ${after}${rest}</p>`;
+    }
+  );
+  
+  formattedContent = formattedContent.replace(
+    /<p[^>]*>([^<]*?)A:([^<\s])([^<]*?)<\/p>/gi,
+    (match, before, after, rest) => {
+      console.log('📝 Fixed A: spacing in P tag');
+      return `<p>${before}A: ${after}${rest}</p>`;
     }
   );
   
