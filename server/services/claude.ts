@@ -475,13 +475,22 @@ function applyContentFormatting(content: string): string {
     }
   );
   
-  // Rule 2: Make sentences ending with : or ? bold (only within paragraphs)
-  console.log('📝 Rule 2: Bold sentences ending with : or ?');
+  // Rule 2: Make sentences ending with : or ? bold (only within paragraphs) - ENHANCED NESTED STRONG TAG PREVENTION
+  console.log('📝 Rule 2: Bold sentences ending with : or ? (with nested strong tag prevention)');
   formattedContent = formattedContent.replace(
     /<p>([^<]*?[?:])([^<]*?)<\/p>/gi,
     (match, questionOrColon, remaining) => {
-      // Don't apply if already has strong tags
-      if (match.includes('<strong>')) return match;
+      // ENHANCED: Don't apply if already has ANY strong tags (prevents nesting)
+      if (match.includes('<strong>') || match.includes('<\/strong>') || questionOrColon.includes('<strong>') || questionOrColon.includes('<\/strong>')) {
+        console.log('🚫 PREVENTED NESTED STRONG TAG:', match.substring(0, 50) + '...');
+        return match;
+      }
+      
+      // Also check if we're in an FAQ section (additional protection)
+      if (/Q:|A:/.test(match)) {
+        console.log('🚫 PREVENTED STRONG TAG IN FAQ:', match.substring(0, 50) + '...');
+        return match;
+      }
       
       if (remaining.trim()) {
         return `<p><strong>${questionOrColon}</strong>${remaining}</p>`;
@@ -494,8 +503,9 @@ function applyContentFormatting(content: string): string {
   // Rule 3: Add line breaks after bold sentences (except in FAQ sections)
   console.log('📝 Rule 3: Add line breaks after bold sentences (except FAQ)');
   
-  // More comprehensive FAQ section detection - look for FAQ headings and Q:/A: patterns
+  // More comprehensive FAQ section detection - ENHANCED to include ID-based sections
   const faqHeadingRegex = /<h[2-6][^>]*>.*?(?:FAQ|Frequently Asked Questions|Questions and Answers|Q&A).*?<\/h[2-6]>/gi;
+  const faqIdRegex = /<[^>]*id=['"].*?(?:frequently-asked-questions|faq|questions).*?['"][^>]*>/gi;
   const qAndAPatternRegex = /(<p[^>]*>\s*<strong>\s*Q:\s*[^<]*<\/strong>[^<]*<\/p>[\s\S]*?<p[^>]*>\s*<strong>\s*A:\s*[^<]*<\/strong>)/gi;
   
   // Split content into sections and identify FAQ areas
@@ -512,6 +522,20 @@ function applyContentFormatting(content: string): string {
     const faqEnd = nextHeading ? nextHeading.index : formattedContent.length;
     const faqSection = formattedContent.slice(faqStart, faqEnd);
     faqAreas.push(faqSection);
+  }
+  
+  // Method 1.5: Find sections with FAQ IDs (like id="frequently-asked-questions")
+  let faqIdMatch;
+  while ((faqIdMatch = faqIdRegex.exec(formattedContent)) !== null) {
+    const faqStart = faqIdMatch.index;
+    // Look for the next major section (heading or end of content)
+    const nextHeadingRegex = /<h[1-6][^>]*>/gi;
+    nextHeadingRegex.lastIndex = faqStart + faqIdMatch[0].length;
+    const nextHeading = nextHeadingRegex.exec(formattedContent);
+    const faqEnd = nextHeading ? nextHeading.index : formattedContent.length;
+    const faqSection = formattedContent.slice(faqStart, faqEnd);
+    faqAreas.push(faqSection);
+    console.log('🔍 FOUND FAQ SECTION BY ID:', faqIdMatch[0].substring(0, 50) + '...');
   }
   
   // Method 2: Also detect areas with Q: and A: patterns (even without FAQ heading)
@@ -538,13 +562,19 @@ function applyContentFormatting(content: string): string {
     '<!-- FAQ_ANSWER_START -->$&<!-- FAQ_ANSWER_END -->'
   );
   
-  // Protect entire FAQ sections with markers
+  // Protect entire FAQ sections with markers (including ID-based)
   protectedContent = protectedContent.replace(
     /<h[2-6][^>]*>.*?(?:FAQ|Frequently Asked|Questions?).*?<\/h[2-6]>/gi,
     '<!-- FAQ_SECTION_START -->$&<!-- FAQ_SECTION_END -->'
   );
   
-  // Step 2: Add line breaks to bold sentences ONLY if NOT in protected FAQ areas
+  // Protect FAQ sections identified by ID attributes
+  protectedContent = protectedContent.replace(
+    /<([^>]*id=['"].*?(?:frequently-asked-questions|faq|questions).*?['"][^>]*)>/gi,
+    '<!-- FAQ_SECTION_START --><$1><!-- FAQ_SECTION_END -->'
+  );
+  
+  // Step 2: Add line breaks to bold sentences ONLY if NOT in protected FAQ areas - ENHANCED BR TAG PLACEMENT
   protectedContent = protectedContent.replace(
     /<p>([^<]*?<strong>[^<]*?<\/strong>[^<]*?)<\/p>/gi,
     (match, content, offset) => {
@@ -559,14 +589,27 @@ function applyContentFormatting(content: string): string {
       // Also check direct Q: or A: patterns in the match itself
       const hasDirectQA = /Q:|A:/.test(match);
       
-      if (faqStartsBefore > faqEndsAfter || hasDirectQA) {
+      // ENHANCED: Check if we're near FAQ ID elements
+      const nearFaqId = /id=['"].*?(?:frequently-asked-questions|faq|questions).*?['"]/.test(beforeMatch.substring(Math.max(0, beforeMatch.length - 500)));
+      
+      if (faqStartsBefore > faqEndsAfter || hasDirectQA || nearFaqId) {
         console.log('🛡️ PROTECTED FAQ BOLD SENTENCE - No line break:', match.substring(0, 50) + '...');
         return match; // Don't add line break - this is FAQ content
       }
       
-      // Add line break for regular content bold sentences
-      console.log('📝 ADDING line break for regular bold sentence:', match.substring(0, 50) + '...');
-      return `${match}<br>`;
+      // ENHANCED: Only add BR within P tags, never outside
+      const pEndIndex = match.lastIndexOf('</p>');
+      if (pEndIndex > -1) {
+        // Insert BR before closing P tag
+        const beforeClosingP = match.substring(0, pEndIndex);
+        const closingP = match.substring(pEndIndex);
+        console.log('📝 ADDING line break INSIDE P tag for regular bold sentence:', match.substring(0, 50) + '...');
+        return `${beforeClosingP}<br>${closingP}`;
+      } else {
+        // If no closing P tag found, don't add BR
+        console.log('⚠️ NO CLOSING P TAG FOUND - Not adding BR:', match.substring(0, 50) + '...');
+        return match;
+      }
     }
   );
   
