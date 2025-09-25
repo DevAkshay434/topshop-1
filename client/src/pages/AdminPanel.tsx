@@ -2844,12 +2844,9 @@ export default function AdminPanel() {
 
           const shopifyUrl = response.shopifyUrl || response.post.shopifyUrl;
           
-          // Auto-redirect to Shopify when content is published (not drafted or scheduled)
+          // Auto-scroll when content is published (not drafted or scheduled)
           if (isPublishedToShopify && shopifyUrl) {
             setTimeout(() => {
-              // Open Shopify article/page in new tab
-              window.open(shopifyUrl, '_blank');
-              
               // Auto-scroll directly to the Shopify buttons section (View in Shopify & Copy Link)
               const shopifyButtonsSection = document.getElementById("shopify-buttons-section");
               if (shopifyButtonsSection) {
