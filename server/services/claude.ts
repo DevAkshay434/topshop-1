@@ -61,7 +61,7 @@ function addLineBreaksToIntroAndConclusion(content: string): string {
   });
   
   // Process conclusion paragraph (last paragraph or paragraph in conclusion section)
-  const conclusionSectionRegex = /<h2[^>]*id="conclusion"[^>]*>.*?<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]|<div|<ul|<ol|<table|<img|<iframe).)*?)<\/p>/s;
+  const conclusionSectionRegex = /<h2[^>]*id="conclusion"[^>]*>[\s\S]*?<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]|<div|<ul|<ol|<table|<img|<iframe)[\s\S])*?)<\/p>/;
   processedContent = processedContent.replace(conclusionSectionRegex, (match, conclusionText) => {
     if (conclusionText.trim().length > 200) { // Only process substantial paragraphs
       const formattedConclusion = addLineBreaksToText(conclusionText);
@@ -72,7 +72,7 @@ function addLineBreaksToIntroAndConclusion(content: string): string {
   });
   
   // Also process any paragraph that comes after the last H2 heading (likely conclusion)
-  const lastParagraphRegex = /(<h2[^>]*>.*?<\/h2>(?:(?!<h2).)*?)(<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6]).){200,}?)<\/p>)(?=\s*(?:<\/div>|<div[^>]*class="[^"]*author|$))/s;
+  const lastParagraphRegex = /(<h2[^>]*>[\s\S]*?<\/h2>(?:(?!<h2)[\s\S])*?)(<p(?:[^>]*)>((?:(?!<\/p>|<h[1-6])[\s\S]){200,}?)<\/p>)(?=\s*(?:<\/div>|<div[^>]*class="[^"]*author|$))/;
   processedContent = processedContent.replace(lastParagraphRegex, (match, beforePara, fullPara, paraText) => {
     const formattedText = addLineBreaksToText(paraText);
     console.log('   ✓ Added line breaks to final paragraph');
@@ -622,6 +622,33 @@ function applyContentFormatting(content: string): string {
   // STEP 1: AGGRESSIVE Q: AND A: SPACING FIX (Multiple Passes)
   console.log('🔥 BULLETPROOF Q: AND A: SPACING - Running 5 aggressive passes');
   
+  // DEBUGGING: First, let's see what Q: and A: patterns actually exist
+  console.log('🔍 DEBUGGING: Searching for existing Q: and A: patterns in content');
+  const existingQPatterns = formattedContent.match(/Q:[^\s\n\r]*/g);
+  const existingAPatterns = formattedContent.match(/A:[^\s\n\r]*/g);
+  const allQPatterns = formattedContent.match(/Q:.*?(?=\n|$|<)/g);
+  const allAPatterns = formattedContent.match(/A:.*?(?=\n|$|<)/g);
+  
+  if (existingQPatterns) {
+    console.log('🔍 Found Q: patterns without space:', existingQPatterns.length, existingQPatterns);
+  } else {
+    console.log('🔍 No Q: patterns without space found');
+  }
+  
+  if (existingAPatterns) {
+    console.log('🔍 Found A: patterns without space:', existingAPatterns.length, existingAPatterns);
+  } else {
+    console.log('🔍 No A: patterns without space found');
+  }
+  
+  if (allQPatterns) {
+    console.log('🔍 All Q: patterns found:', allQPatterns.length, allQPatterns.slice(0, 3));
+  }
+  
+  if (allAPatterns) {
+    console.log('🔍 All A: patterns found:', allAPatterns.length, allAPatterns.slice(0, 3));
+  }
+  
   // Pass 1-3: Ultra-aggressive global replacement (catches 99% of cases)
   for (let pass = 1; pass <= 3; pass++) {
     console.log(`🔧 PASS ${pass}: Global Q: and A: spacing fixes`);
@@ -630,14 +657,14 @@ function applyContentFormatting(content: string): string {
     let qFixCount = 0;
     formattedContent = formattedContent.replace(/Q:([^\s])/g, (match, afterChar) => {
       qFixCount++;
-      console.log(`📝 Pass ${pass}: Fixed Q: spacing (global)`);
+      console.log(`📝 Pass ${pass}: Fixed Q: spacing (global): "${match}" -> "Q: ${afterChar}"`);
       return `Q: ${afterChar}`;
     });
     
     let aFixCount = 0;
     formattedContent = formattedContent.replace(/A:([^\s])/g, (match, afterChar) => {
       aFixCount++;
-      console.log(`📝 Pass ${pass}: Fixed A: spacing (global)`);
+      console.log(`📝 Pass ${pass}: Fixed A: spacing (global): "${match}" -> "A: ${afterChar}"`);
       return `A: ${afterChar}`;
     });
     
@@ -715,89 +742,96 @@ function applyContentFormatting(content: string): string {
   
   console.log(`📝 Final pass results: ${finalQFixes} Q: fixes, ${finalAFixes} A: fixes`);
   
-  // STEP 2: BULLETPROOF BR TAG ELIMINATION FROM FAQ ANSWERS
-  console.log('📝 STEP 2: BULLETPROOF BR TAG ELIMINATION FROM FAQ ANSWERS');
+  // STEP 2: PRECISE FAQ BR TAG ELIMINATION (PRESERVE REGULAR CONTENT)
+  console.log('📝 STEP 2: PRECISE FAQ BR TAG ELIMINATION (PRESERVE REGULAR CONTENT)');
   
-  // Method 1: Remove ALL <br> tags from any content containing Q: or A:
-  console.log('🧹 Removing ALL <br> tags from Q: and A: content');
+  // CRITICAL: Only remove BR tags from actual FAQ sections, preserve regular content
+  console.log('🎯 TARGETING ONLY FAQ SECTIONS - Preserving regular strong tag formatting');
   
-  // Remove <br> tags from Q: paragraphs (all variants)
-  let qBrRemovalCount = 0;
-  formattedContent = formattedContent.replace(
-    /<p([^>]*)>([\s\S]*?Q:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
-    (match, attrs, beforeBr, afterBr) => {
-      qBrRemovalCount++;
-      console.log('🧹 Removed <br> from Q: paragraph');
-      return `<p${attrs}>${beforeBr}${afterBr}</p>`;
-    }
-  );
+  // Method 1: Find FAQ sections by ID and heading text
+  const faqSectionMarkers = [];
   
-  // Remove <br> tags from A: paragraphs (all variants)
-  let aBrRemovalCount = 0;
-  formattedContent = formattedContent.replace(
-    /<p([^>]*)>([\s\S]*?A:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
-    (match, attrs, beforeBr, afterBr) => {
-      aBrRemovalCount++;
-      console.log('🧹 Removed <br> from A: paragraph');
-      return `<p${attrs}>${beforeBr}${afterBr}</p>`;
-    }
-  );
-  
-  // Method 2: Multiple passes to catch nested <br> tags
-  for (let brPass = 1; brPass <= 3; brPass++) {
-    console.log(`🧹 BR REMOVAL PASS ${brPass}`);
-    
-    const beforeLength = formattedContent.length;
-    
-    // Remove multiple <br> tags in Q: content
-    formattedContent = formattedContent.replace(
-      /<p([^>]*)>([\s\S]*?Q:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
-      '<p$1>$2$3</p>'
-    );
-    
-    // Remove multiple <br> tags in A: content  
-    formattedContent = formattedContent.replace(
-      /<p([^>]*)>([\s\S]*?A:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
-      '<p$1>$2$3</p>'
-    );
-    
-    // Remove <br> tags in strong Q: and A: content
-    formattedContent = formattedContent.replace(
-      /<strong>([\s\S]*?(?:Q:|A:)[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/strong>/gi,
-      '<strong>$1$2</strong>'
-    );
-    
-    const afterLength = formattedContent.length;
-    const removedChars = beforeLength - afterLength;
-    console.log(`🧹 BR REMOVAL PASS ${brPass}: Removed ${removedChars} characters`);
-    
-    // If no changes, break early
-    if (removedChars === 0) {
-      console.log('🧹 No more <br> tags to remove - breaking early');
-      break;
-    }
+  // Find FAQ section by ID
+  const faqIdSection = formattedContent.match(/<h[1-6][^>]*id=["']faq["'][^>]*>/i);
+  if (faqIdSection && faqIdSection.index !== undefined) {
+    const faqStart = faqIdSection.index;
+    faqSectionMarkers.push({start: faqStart, type: 'id'});
+    console.log('🎯 Found FAQ section by ID at position:', faqStart);
   }
   
-  // Method 3: Ultra-aggressive final cleanup - Remove ALL <br> from FAQ sections
-  console.log('🧹 Method 3: Ultra-aggressive FAQ section <br> cleanup');
+  // Find FAQ section by heading text
+  const faqHeadingMatch = formattedContent.match(/<h[1-6][^>]*>[\s\S]*?(?:frequently asked|questions?|faq)[\s\S]*?<\/h[1-6]>/gi);
+  if (faqHeadingMatch) {
+    faqHeadingMatch.forEach((match, index) => {
+      const matchStart = formattedContent.indexOf(match);
+      faqSectionMarkers.push({start: matchStart, type: 'heading'});
+      console.log(`🎯 Found FAQ section by heading ${index + 1} at position:`, matchStart);
+    });
+  }
   
-  // Find and clean entire FAQ sections
-  const faqSectionRegex = /<h[1-6][^>]*>[\s\S]*?(?:faq|frequently asked|questions?)[\s\S]*?<\/h[1-6]>[\s\S]*?(?=<h[1-6]|$)/gi;
+  // Method 2: Process only identified FAQ sections
+  let qBrRemovalCount = 0;
+  let aBrRemovalCount = 0;
   
-  formattedContent = formattedContent.replace(faqSectionRegex, (faqSection) => {
-    const originalLength = faqSection.length;
-    // Remove ALL <br> tags from this entire FAQ section
-    const cleanedSection = faqSection.replace(/<br[^>]*>/gi, '');
-    const removedLength = originalLength - cleanedSection.length;
+  if (faqSectionMarkers.length > 0) {
+    console.log(`🎯 Processing ${faqSectionMarkers.length} FAQ sections for BR removal`);
     
-    if (removedLength > 0) {
-      console.log(`🧹 Cleaned FAQ section: Removed ${removedLength} characters from <br> tags`);
-    }
+    // For each FAQ section, extract and clean it
+    faqSectionMarkers.forEach((marker, index) => {
+      console.log(`🧹 PROCESSING FAQ SECTION ${index + 1}`);
+      
+      // Find the start and end of this FAQ section
+      const faqStart = marker.start;
+      const nextHeadingRegex = /<h[1-6][^>]*>/gi;
+      nextHeadingRegex.lastIndex = faqStart + 50; // Skip current heading
+      const nextHeading = nextHeadingRegex.exec(formattedContent);
+      const faqEnd = nextHeading ? nextHeading.index : formattedContent.length;
+      
+      const faqSection = formattedContent.slice(faqStart, faqEnd);
+      console.log(`🎯 FAQ Section ${index + 1} length:`, faqSection.length);
+      
+      // Clean ONLY this FAQ section
+      let cleanedSection = faqSection;
+      
+      // Remove <br> tags from Q: paragraphs in this section
+      cleanedSection = cleanedSection.replace(
+        /<p([^>]*)>([\s\S]*?Q:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
+        (match, attrs, beforeBr, afterBr) => {
+          qBrRemovalCount++;
+          console.log('🧹 Removed <br> from Q: paragraph in FAQ section');
+          return `<p${attrs}>${beforeBr}${afterBr}</p>`;
+        }
+      );
+      
+      // Remove <br> tags from A: paragraphs in this section
+      cleanedSection = cleanedSection.replace(
+        /<p([^>]*)>([\s\S]*?A:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
+        (match, attrs, beforeBr, afterBr) => {
+          aBrRemovalCount++;
+          console.log('🧹 Removed <br> from A: paragraph in FAQ section');
+          return `<p${attrs}>${beforeBr}${afterBr}</p>`;
+        }
+      );
+      
+      // Remove ALL remaining <br> tags from this FAQ section
+      const originalSectionLength = cleanedSection.length;
+      cleanedSection = cleanedSection.replace(/<br[^>]*>/gi, '');
+      const brRemovedLength = originalSectionLength - cleanedSection.length;
+      
+      if (brRemovedLength > 0) {
+        console.log(`🧹 FAQ Section ${index + 1}: Removed ${brRemovedLength} characters from remaining <br> tags`);
+      }
+      
+      // Replace the section in the main content
+      formattedContent = formattedContent.slice(0, faqStart) + cleanedSection + formattedContent.slice(faqEnd);
+    });
     
-    return cleanedSection;
-  });
+  } else {
+    console.log('🎯 No FAQ sections found - skipping BR removal');
+  }
   
-  console.log(`🧹 BR REMOVAL SUMMARY: Q: paragraphs: ${qBrRemovalCount}, A: paragraphs: ${aBrRemovalCount}`);
+  console.log(`🧹 PRECISE BR REMOVAL SUMMARY: Q: paragraphs: ${qBrRemovalCount}, A: paragraphs: ${aBrRemovalCount}`);
+  console.log('✅ PRESERVED: Regular strong tag formatting outside FAQ sections');
   
   // Rule 5: Clean up excessive line breaks (but NOT in FAQ sections)
   console.log('📝 Rule 5: Cleaning up excessive line breaks (preserving FAQ)');
