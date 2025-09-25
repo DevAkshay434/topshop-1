@@ -311,6 +311,7 @@ export default function AdminPanel() {
   const [selectedContentDisplayName, setSelectedContentDisplayName] =
     useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [currentGenerationStep, setCurrentGenerationStep] = useState(0);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isOptimizingMetaTitle, setIsOptimizingMetaTitle] = useState(false);
   const [isOptimizingMetaDescription, setIsOptimizingMetaDescription] =
@@ -361,6 +362,72 @@ export default function AdminPanel() {
   const [suggestionKey, setSuggestionKey] = useState(0); // Force re-render when suggestions change
   const [forceRerender, setForceRerender] = useState(0);
   const suggestionsRef = useRef<string[]>([]);
+
+  // Dynamic generation step descriptions
+  const generationSteps = [
+    {
+      emoji: "🧙",
+      title: "Casting research spells…",
+      description: "Normally you'd slog through competitor blogs for half an hour. We summon insights in seconds."
+    },
+    {
+      emoji: "🛒", 
+      title: "Peeking at your Shopify shelves…",
+      description: "It would take ages to match products and collections by hand. Top Shop does it with a snap."
+    },
+    {
+      emoji: "🎭",
+      title: "Teaching the AI your brand's voice…", 
+      description: "Imagine briefing a writer for 20 minutes. Our AI picks it up instantly."
+    },
+    {
+      emoji: "🚀",
+      title: "Unleashing 12 SEO robots at once…",
+      description: "One by one, SEO audits can eat an hour. Our swarm of bots wraps it up in seconds."
+    },
+    {
+      emoji: "🧩",
+      title: "Magically formatting for Shopify…",
+      description: "No need to copy-paste and re-style. Your article arrives perfectly page-ready."
+    },
+    {
+      emoji: "💫",
+      title: "Sprinkling engagement dust…",
+      description: "Polishing headlines, CTAs, and structure for max clicks — all in a blink."
+    },
+    {
+      emoji: "🌈",
+      title: "✨Boom. You just gained ~3 extra hours of your day.✨",
+      description: ""
+    }
+  ];
+
+  // Cycle through generation steps during content generation
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isGenerating) {
+      // Reset to first step when generation starts
+      setCurrentGenerationStep(0);
+      
+      // Cycle through steps every 4-5 seconds
+      interval = setInterval(() => {
+        setCurrentGenerationStep((prevStep) => {
+          const nextStep = (prevStep + 1) % generationSteps.length;
+          return nextStep;
+        });
+      }, 4500); // Show each step for 4.5 seconds
+    } else {
+      // Reset step when not generating
+      setCurrentGenerationStep(0);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isGenerating, generationSteps.length]);
 
   // Ref for content preview section to enable auto-scroll
   const contentPreviewRef = useRef<HTMLDivElement>(null);
@@ -6229,12 +6296,19 @@ export default function AdminPanel() {
                       <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
                       <div className="absolute inset-0 rounded-full bg-blue-100 animate-pulse opacity-20"></div>
                     </div>
-                    <p className="mt-4 text-lg font-medium text-gray-900">
-                      Creating amazing article for you...
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      We are creating something amazing for you
-                    </p>
+                    <div className="mt-4 flex items-center gap-3">
+                      <span className="text-3xl animate-bounce">
+                        {generationSteps[currentGenerationStep]?.emoji}
+                      </span>
+                      <p className="text-lg font-medium text-gray-900">
+                        {generationSteps[currentGenerationStep]?.title}
+                      </p>
+                    </div>
+                    {generationSteps[currentGenerationStep]?.description && (
+                      <p className="mt-3 text-sm text-muted-foreground max-w-md text-center leading-relaxed">
+                        {generationSteps[currentGenerationStep]?.description}
+                      </p>
+                    )}
                     <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                       <div className="animate-pulse">⚡</div>
                       <span>This usually takes 30-60 seconds</span>
