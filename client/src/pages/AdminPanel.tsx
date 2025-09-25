@@ -5624,7 +5624,6 @@ export default function AdminPanel() {
                               <SelectContent>
                                 <SelectItem value="male">Male</SelectItem>
                                 <SelectItem value="female">Female</SelectItem>
-                                <SelectItem value="neutral">Neutral</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormDescription>

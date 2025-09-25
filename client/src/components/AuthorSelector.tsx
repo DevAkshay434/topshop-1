@@ -349,14 +349,16 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
           </div>
         </div>
 
-        {/* Create New Author Button */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Create New Author
-            </Button>
-          </DialogTrigger>
+        {/* Centered Author Buttons Stack */}
+        <div className="flex flex-col items-center gap-3 mt-6">
+          {/* Create New Author Button */}
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Author
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Create New Author</DialogTitle>
@@ -562,14 +564,14 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
           </div>
         )}
 
-        {/* Skip Author Option */}
-        <Button 
-          variant="ghost" 
-          className="mt-4"
-          onClick={() => onAuthorSelect(null)}
-        >
-          Skip - No Author
-        </Button>
+          {/* Skip Author Option */}
+          <Button 
+            variant="ghost" 
+            onClick={() => onAuthorSelect(null)}
+          >
+            Skip - No Author
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
