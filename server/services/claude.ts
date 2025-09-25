@@ -622,21 +622,63 @@ function applyContentFormatting(content: string): string {
   // COMPREHENSIVE Q: and A: formatting - handle ALL variations
   console.log('🔧 COMPREHENSIVE Q: and A: SPACING FIX');
   
-  // Method 1: Global replacement of Q: without space (most comprehensive)
+  // Method 1: ENHANCED Global replacement of Q: without space (comprehensive)
+  console.log('🔧 ENHANCED Q: SPACING FIX - Multiple patterns');
+  
+  // Pattern 1a: Q: directly followed by non-whitespace (most common case)
   formattedContent = formattedContent.replace(
     /Q:(?!\s)/g,
     (match) => {
-      console.log('📝 Fixed Q: spacing (global)');
+      console.log('📝 Fixed Q: spacing (direct)');
       return 'Q: '; // Always ensure space after Q:
     }
   );
   
-  // Method 2: Global replacement of A: without space  
+  // Pattern 1b: Q: inside strong tags without space  
+  formattedContent = formattedContent.replace(
+    /<strong>([^<]*?)Q:([^\s<][^<]*?)<\/strong>/gi,
+    (match, before, after) => {
+      console.log('📝 Fixed Q: spacing inside strong tag');
+      return `<strong>${before}Q: ${after}</strong>`;
+    }
+  );
+  
+  // Pattern 1c: Q: at start of strong tags without space
+  formattedContent = formattedContent.replace(
+    /<strong>Q:([^\s<][^<]*?)<\/strong>/gi,
+    (match, after) => {
+      console.log('📝 Fixed Q: spacing at start of strong tag');
+      return `<strong>Q: ${after}</strong>`;
+    }
+  );
+  
+  // Method 2: ENHANCED Global replacement of A: without space
+  console.log('🔧 ENHANCED A: SPACING FIX - Multiple patterns');
+  
+  // Pattern 2a: A: directly followed by non-whitespace (most common case)
   formattedContent = formattedContent.replace(
     /A:(?!\s)/g,
     (match) => {
-      console.log('📝 Fixed A: spacing (global)');
+      console.log('📝 Fixed A: spacing (direct)');
       return 'A: '; // Always ensure space after A:
+    }
+  );
+  
+  // Pattern 2b: A: inside strong tags without space
+  formattedContent = formattedContent.replace(
+    /<strong>([^<]*?)A:([^\s<][^<]*?)<\/strong>/gi,
+    (match, before, after) => {
+      console.log('📝 Fixed A: spacing inside strong tag');
+      return `<strong>${before}A: ${after}</strong>`;
+    }
+  );
+  
+  // Pattern 2c: A: at start of strong tags without space
+  formattedContent = formattedContent.replace(
+    /<strong>A:([^\s<][^<]*?)<\/strong>/gi,
+    (match, after) => {
+      console.log('📝 Fixed A: spacing at start of strong tag');
+      return `<strong>A: ${after}</strong>`;
     }
   );
   
@@ -657,20 +699,52 @@ function applyContentFormatting(content: string): string {
     }
   );
   
-  // Method 4: Handle Q: and A: in paragraphs
+  // Method 4: ENHANCED Handle Q: and A: in paragraphs (with strong tag support)
+  
+  // Pattern 4a: Q: in paragraphs (basic case)
   formattedContent = formattedContent.replace(
     /<p[^>]*>([^<]*?)Q:([^<\s])([^<]*?)<\/p>/gi,
     (match, before, after, rest) => {
-      console.log('📝 Fixed Q: spacing in P tag');
+      console.log('📝 Fixed Q: spacing in P tag (basic)');
+      return `<p>${before}Q: ${after}${rest}</p>`;
+    }
+  );
+  
+  // Pattern 4b: A: in paragraphs (basic case)
+  formattedContent = formattedContent.replace(
+    /<p[^>]*>([^<]*?)A:([^<\s])([^<]*?)<\/p>/gi,
+    (match, before, after, rest) => {
+      console.log('📝 Fixed A: spacing in P tag (basic)');
+      return `<p>${before}A: ${after}${rest}</p>`;
+    }
+  );
+  
+  // Pattern 4c: Q: and A: in paragraphs with complex HTML (multiple passes)
+  formattedContent = formattedContent.replace(
+    /<p[^>]*>([\s\S]*?)Q:([^\s])([\s\S]*?)<\/p>/gi,
+    (match, before, after, rest) => {
+      console.log('📝 Fixed Q: spacing in P tag (complex)');
       return `<p>${before}Q: ${after}${rest}</p>`;
     }
   );
   
   formattedContent = formattedContent.replace(
-    /<p[^>]*>([^<]*?)A:([^<\s])([^<]*?)<\/p>/gi,
+    /<p[^>]*>([\s\S]*?)A:([^\s])([\s\S]*?)<\/p>/gi,
     (match, before, after, rest) => {
-      console.log('📝 Fixed A: spacing in P tag');
+      console.log('📝 Fixed A: spacing in P tag (complex)');
       return `<p>${before}A: ${after}${rest}</p>`;
+    }
+  );
+  
+  // Final comprehensive pass - catch any remaining Q: and A: without space
+  console.log('🔍 FINAL Q: and A: SPACING PASS');
+  
+  // Ultra-comprehensive final check
+  formattedContent = formattedContent.replace(
+    /([QA]):([^\s])/g,
+    (match, letter, afterChar) => {
+      console.log(`📝 FINAL FIX: ${letter}: spacing`);
+      return `${letter}: ${afterChar}`;
     }
   );
   
@@ -727,6 +801,14 @@ function applyContentFormatting(content: string): string {
   });
   
   console.log('🧹 COMPREHENSIVE FAQ CLEANUP - After:', formattedContent.length);
+  
+  // FINAL VERIFICATION: Log any remaining Q: or A: without space for debugging
+  const remainingQA = formattedContent.match(/[QA]:[^\s]/g);
+  if (remainingQA && remainingQA.length > 0) {
+    console.log('⚠️ WARNING: Found remaining Q: or A: without space:', remainingQA);
+  } else {
+    console.log('✅ SUCCESS: All Q: and A: patterns have proper spacing');
+  }
   
   console.log('✅ Content formatting rules applied');
   return formattedContent;
