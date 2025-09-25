@@ -576,6 +576,42 @@ function applyContentFormatting(content: string): string {
     }
   );
   
+  // Rule 5: Clean up excessive line breaks - limit to maximum 2 consecutive
+  console.log('📝 Rule 5: Cleaning up excessive line breaks');
+  formattedContent = formattedContent.replace(/<br>\s*<br>\s*<br>(\s*<br>)*/gi, '<br><br>');
+  
+  // Rule 6: Remove ALL <br> tags from FAQ sections (complete cleanup)
+  console.log('📝 Rule 6: Remove ALL <br> tags from FAQ sections');
+  
+  // Find all FAQ sections again for final cleanup
+  const finalFaqSections: Array<{start: number, end: number, content: string}> = [];
+  
+  // Method 1: FAQ headings
+  formattedContent.replace(faqHeadingRegex, (match, offset) => {
+    const faqStart = offset;
+    const nextHeadingRegex = /<h[1-6][^>]*>/gi;
+    nextHeadingRegex.lastIndex = faqStart + match.length;
+    const nextHeading = nextHeadingRegex.exec(formattedContent);
+    const faqEnd = nextHeading ? nextHeading.index : formattedContent.length;
+    const sectionContent = formattedContent.slice(faqStart, faqEnd);
+    finalFaqSections.push({start: faqStart, end: faqEnd, content: sectionContent});
+    return match;
+  });
+  
+  // Clean FAQ sections by removing ALL <br> tags
+  finalFaqSections.forEach(section => {
+    const cleanedContent = section.content.replace(/<br\s*\/?>/gi, '');
+    formattedContent = formattedContent.substring(0, section.start) + 
+                      cleanedContent + 
+                      formattedContent.substring(section.end);
+  });
+  
+  // Also clean any remaining Q: and A: paragraphs that might have <br> tags
+  formattedContent = formattedContent.replace(
+    /<p>([^<]*?(?:Q:|A:)[^<]*?)<br[^>]*>([^<]*?)<\/p>/gi,
+    '<p>$1$2</p>'
+  );
+  
   console.log('✅ Content formatting rules applied');
   return formattedContent;
 }
