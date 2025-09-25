@@ -5601,39 +5601,10 @@ export default function AdminPanel() {
                     <AuthorSelector
                       selectedAuthorId={selectedAuthorId}
                       onAuthorSelect={handleAuthorSelected}
+                      contentGender={form.watch("contentGender")}
+                      onGenderChange={(gender) => form.setValue("contentGender", gender)}
                     />
 
-                    {/* Gender Field - Moved from Content Style */}
-                    <div className="mt-6">
-                      <FormField
-                        control={form.control}
-                        name="contentGender"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Choose a Gender</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              key={`contentGender-${formKey}-${field.value}`}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="w-60">
-                                  <SelectValue placeholder="Choose a Gender" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="male">Male</SelectItem>
-                                <SelectItem value="female">Female</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Choose the gender orientation for your content
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
 
                     <div className="flex justify-between mt-6">
                       <Button

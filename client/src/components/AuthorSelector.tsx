@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, User, Edit3, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +28,9 @@ export interface Author {
 interface AuthorSelectorProps {
   selectedAuthorId?: string;
   onAuthorSelect: (authorId: string | null) => void;
+  // Gender field props
+  contentGender?: string;
+  onGenderChange?: (gender: string) => void;
 }
 
 const createAuthorSchema = z.object({
@@ -38,7 +42,7 @@ const createAuthorSchema = z.object({
 
 type CreateAuthorForm = z.infer<typeof createAuthorSchema>;
 
-export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelectorProps) {
+export function AuthorSelector({ selectedAuthorId, onAuthorSelect, contentGender, onGenderChange }: AuthorSelectorProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
   const { toast } = useToast();
@@ -348,6 +352,32 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
             ))}
           </div>
         </div>
+
+        {/* Gender Selection - Integrated with Author Selection */}
+        {onGenderChange && (
+          <div className="mt-6 p-4 border rounded-lg bg-gray-50">
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Choose a Gender</label>
+                <Select
+                  value={contentGender || ""}
+                  onValueChange={onGenderChange}
+                >
+                  <SelectTrigger className="w-60">
+                    <SelectValue placeholder="Choose a Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-600 mt-2">
+                  Choose the gender orientation for your content
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Centered Author Buttons Stack */}
         <div className="flex flex-col items-center gap-3 mt-6">
