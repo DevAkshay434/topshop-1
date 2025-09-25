@@ -1721,7 +1721,7 @@ export default function AdminPanel() {
           setSelectedKeywords((prev) => [newKeyword, ...prev]);
           toast({
             title: "Manual Keyword Added",
-            description: `Added "${newKeyword.keyword}" with ${newKeyword.searchVolume} monthly searches`,
+            description: `Added "${newKeyword.keyword}"`,
           });
         } else {
           toast({
@@ -1744,7 +1744,7 @@ export default function AdminPanel() {
         setSelectedKeywords((prev) => [newKeyword, ...prev]);
         toast({
           title: "Manual Keyword Added",
-          description: `Added "${newKeyword.keyword}" (search volume unavailable)`,
+          description: `Added "${newKeyword.keyword}"`,
         });
       }
 
