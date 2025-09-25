@@ -494,36 +494,49 @@ function applyContentFormatting(content: string): string {
   // Rule 3: Add line breaks after bold sentences (except in FAQ sections)
   console.log('📝 Rule 3: Add line breaks after bold sentences (except FAQ)');
   
-  // First, identify FAQ sections by looking for consecutive Q: and A: patterns
-  const faqSectionRegex = /<h[2-6][^>]*>.*?(?:FAQ|Frequently Asked Questions).*?<\/h[2-6]>/gi;
-  const faqSections: Array<{start: number, end: number}> = [];
+  // More comprehensive FAQ section detection - look for FAQ headings and Q:/A: patterns
+  const faqHeadingRegex = /<h[2-6][^>]*>.*?(?:FAQ|Frequently Asked Questions|Questions and Answers|Q&A).*?<\/h[2-6]>/gi;
+  const qAndAPatternRegex = /(<p[^>]*>\s*<strong>\s*Q:\s*[^<]*<\/strong>[^<]*<\/p>[\s\S]*?<p[^>]*>\s*<strong>\s*A:\s*[^<]*<\/strong>)/gi;
   
+  // Split content into sections and identify FAQ areas
+  let faqAreas: string[] = [];
+  
+  // Method 1: Find sections with FAQ headings
+  let tempContent = formattedContent;
   let faqMatch;
-  while ((faqMatch = faqSectionRegex.exec(formattedContent)) !== null) {
+  while ((faqMatch = faqHeadingRegex.exec(formattedContent)) !== null) {
     const faqStart = faqMatch.index;
-    // Find the end of the FAQ section by looking for the next heading or end of content
     const nextHeadingRegex = /<h[1-6][^>]*>/gi;
     nextHeadingRegex.lastIndex = faqStart + faqMatch[0].length;
     const nextHeading = nextHeadingRegex.exec(formattedContent);
     const faqEnd = nextHeading ? nextHeading.index : formattedContent.length;
-    faqSections.push({start: faqStart, end: faqEnd});
+    const faqSection = formattedContent.slice(faqStart, faqEnd);
+    faqAreas.push(faqSection);
   }
   
-  // Add line breaks after bold sentences, but skip FAQ sections
+  // Method 2: Also detect areas with Q: and A: patterns (even without FAQ heading)
+  let qaMatch;
+  while ((qaMatch = qAndAPatternRegex.exec(formattedContent)) !== null) {
+    faqAreas.push(qaMatch[0]);
+  }
+  
+  // Add line breaks after bold sentences, but exclude FAQ areas completely
   formattedContent = formattedContent.replace(
     /<p>([^<]*?<strong>[^<]*?<\/strong>[^<]*?)<\/p>/gi,
-    (match, content, offset) => {
-      // Check if this match is within any FAQ section
-      const isInFAQ = faqSections.some(section => 
-        offset >= section.start && offset < section.end
-      );
+    (match) => {
+      // Check if this paragraph is within any FAQ area
+      const isInFAQ = faqAreas.some(faqArea => faqArea.includes(match));
       
-      if (isInFAQ) {
+      // Also check if this paragraph contains Q: or A: patterns (additional FAQ detection)
+      const hasQAPattern = /Q:|A:/.test(match);
+      
+      if (isInFAQ || hasQAPattern) {
+        console.log('📝 Skipping line break for FAQ content:', match.substring(0, 50) + '...');
         return match; // Don't add extra line breaks in FAQ sections
       }
       
-      // Add extra line break after bold sentences
-      return `<p>${content}</p><br>`;
+      // Add extra line break after bold sentences in regular content
+      return `${match}<br>`;
     }
   );
   
