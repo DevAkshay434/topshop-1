@@ -4174,6 +4174,7 @@ export default function AdminPanel() {
                       />
                     </div>
 
+                    <>
                     {/* Step 1: Choose Content */}
                     <div
                       className={`max-w-5xl mx-auto fade-in ${
@@ -5583,7 +5584,6 @@ export default function AdminPanel() {
                         </Button>
                       </div>
                     </div>
-                  </div>
 
                   {/* Step 7: Author Selection Section */}
                   <div
@@ -5605,7 +5605,7 @@ export default function AdminPanel() {
                       onGenderChange={(gender) => form.setValue("contentGender", gender)}
                     />
 
-                    {/* Gender Field now integrated into AuthorSelector component above */
+                    {/* Gender Field now integrated into AuthorSelector component above */}
 
                     <div className="flex justify-between mt-6">
                       <Button
@@ -7854,6 +7854,7 @@ export default function AdminPanel() {
             </Card>
           )}
         </div>
+        </> {/* end: workflow steps wrapper */}
 
         {/* Keyword Selector Dialog */}
         <Dialog
