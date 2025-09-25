@@ -524,30 +524,55 @@ function applyContentFormatting(content: string): string {
   formattedContent = formattedContent.replace(
     /<p>([^<]*?<strong>[^<]*?<\/strong>[^<]*?)<\/p>/gi,
     (match) => {
-      // Check if this paragraph is within any FAQ area
+      // Multiple layers of FAQ detection to ensure no FAQ content gets line breaks
+      
+      // Layer 1: Check if this paragraph is within any FAQ area
       const isInFAQ = faqAreas.some(faqArea => faqArea.includes(match));
       
-      // Also check if this paragraph contains Q: or A: patterns (additional FAQ detection)
+      // Layer 2: Check if this paragraph contains Q: or A: patterns 
       const hasQAPattern = /Q:|A:/.test(match);
       
-      if (isInFAQ || hasQAPattern) {
-        console.log('📝 Skipping line break for FAQ content:', match.substring(0, 50) + '...');
+      // Layer 3: Check if content around this match suggests it's FAQ
+      const contextBefore = formattedContent.substring(Math.max(0, formattedContent.indexOf(match) - 200), formattedContent.indexOf(match));
+      const contextAfter = formattedContent.substring(formattedContent.indexOf(match) + match.length, Math.min(formattedContent.length, formattedContent.indexOf(match) + match.length + 200));
+      const contextHasQA = /Q:|A:|FAQ|Frequently Asked/gi.test(contextBefore + contextAfter);
+      
+      // Layer 4: Check if the match itself has question/answer structure
+      const isQuestionAnswer = /^<p>.*?<strong>.*(Q:|A:|questions?|answers?).*<\/strong>.*<\/p>$/gi.test(match);
+      
+      if (isInFAQ || hasQAPattern || contextHasQA || isQuestionAnswer) {
+        console.log('📝 PROTECTED FAQ CONTENT - Skipping line break for:', match.substring(0, 50) + '...');
         return match; // Don't add extra line breaks in FAQ sections
       }
       
-      // Add extra line break after bold sentences in regular content
+      // Add extra line break after bold sentences in regular content only
+      console.log('📝 ADDING line break for regular content:', match.substring(0, 50) + '...');
       return `${match}<br>`;
     }
   );
   
   // Rule 4: Format FAQ sections - add spaces after Q: and A:
   console.log('📝 Rule 4: Format FAQ sections - add spaces after Q: and A:');
+  
+  // Handle Q: formatting - ensure space after Q:
   formattedContent = formattedContent.replace(
-    /<p>([^<]*?)\b(Q:|A:)([^<]*?)<\/p>/gi,
-    (match, before, qOrA, after) => {
-      // Add space after Q: or A: if not already present
+    /<p>([^<]*?)Q:([^<]*?)<\/p>/gi,
+    (match, before, after) => {
+      console.log('📝 Fixing Q: spacing:', match.substring(0, 50) + '...');
+      // Add space after Q: if not already present
       const spaceAfter = after.startsWith(' ') ? after : ` ${after}`;
-      return `<p>${before}${qOrA}${spaceAfter}</p>`;
+      return `<p>${before}Q:${spaceAfter}</p>`;
+    }
+  );
+  
+  // Handle A: formatting - ensure space after A:
+  formattedContent = formattedContent.replace(
+    /<p>([^<]*?)A:([^<]*?)<\/p>/gi,
+    (match, before, after) => {
+      console.log('📝 Fixing A: spacing:', match.substring(0, 50) + '...');
+      // Add space after A: if not already present
+      const spaceAfter = after.startsWith(' ') ? after : ` ${after}`;
+      return `<p>${before}A:${spaceAfter}</p>`;
     }
   );
   
