@@ -573,28 +573,41 @@ function applyContentFormatting(content: string): string {
   // Step 3: Remove all FAQ protection markers
   formattedContent = protectedContent.replace(/<!-- FAQ_(QUESTION|ANSWER|SECTION)_(START|END) -->/g, '');
   
-  // Rule 4: Format FAQ sections - add spaces after Q: and A:
+  // Rule 4: Format FAQ sections - add spaces after Q: and A: (ENHANCED)
   console.log('📝 Rule 4: Format FAQ sections - add spaces after Q: and A:');
   
-  // Handle Q: formatting - ensure space after Q:
+  // ENHANCED Q: formatting - handle all variations including bold tags
   formattedContent = formattedContent.replace(
-    /<p>([^<]*?)Q:([^<]*?)<\/p>/gi,
-    (match, before, after) => {
-      console.log('📝 Fixing Q: spacing:', match.substring(0, 50) + '...');
-      // Add space after Q: if not already present
-      const spaceAfter = after.startsWith(' ') ? after : ` ${after}`;
-      return `<p>${before}Q:${spaceAfter}</p>`;
+    /Q:(?!\s)/g,
+    (match, offset) => {
+      console.log('📝 Found Q: without space at position:', offset);
+      return 'Q: '; // Always ensure space after Q:
     }
   );
   
-  // Handle A: formatting - ensure space after A:
+  // ENHANCED A: formatting - handle all variations including bold tags  
   formattedContent = formattedContent.replace(
-    /<p>([^<]*?)A:([^<]*?)<\/p>/gi,
-    (match, before, after) => {
-      console.log('📝 Fixing A: spacing:', match.substring(0, 50) + '...');
-      // Add space after A: if not already present
-      const spaceAfter = after.startsWith(' ') ? after : ` ${after}`;
-      return `<p>${before}A:${spaceAfter}</p>`;
+    /A:(?!\s)/g,
+    (match, offset) => {
+      console.log('📝 Found A: without space at position:', offset);
+      return 'A: '; // Always ensure space after A:
+    }
+  );
+  
+  // Additional pass for Q: and A: inside bold tags or other HTML elements
+  formattedContent = formattedContent.replace(
+    /<([^>]+)>([^<]*?)Q:([^<\s])([^<]*?)<\/\1>/gi,
+    (match, tag, beforeQ, afterQ, rest) => {
+      console.log('📝 Fixing Q: spacing inside HTML tags:', match.substring(0, 50) + '...');
+      return `<${tag}>${beforeQ}Q: ${afterQ}${rest}</${tag}>`;
+    }
+  );
+  
+  formattedContent = formattedContent.replace(
+    /<([^>]+)>([^<]*?)A:([^<\s])([^<]*?)<\/\1>/gi,
+    (match, tag, beforeA, afterA, rest) => {
+      console.log('📝 Fixing A: spacing inside HTML tags:', match.substring(0, 50) + '...');
+      return `<${tag}>${beforeA}A: ${afterA}${rest}</${tag}>`;
     }
   );
   
