@@ -6,8 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Plus, User, Edit3, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,8 +27,6 @@ export interface Author {
 interface AuthorSelectorProps {
   selectedAuthorId?: string;
   onAuthorSelect: (authorId: string | null) => void;
-  contentGender?: string;
-  onGenderChange?: (gender: string) => void;
 }
 
 const createAuthorSchema = z.object({
@@ -41,7 +38,7 @@ const createAuthorSchema = z.object({
 
 type CreateAuthorForm = z.infer<typeof createAuthorSchema>;
 
-export function AuthorSelector({ selectedAuthorId, onAuthorSelect, contentGender, onGenderChange }: AuthorSelectorProps) {
+export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelectorProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
   const { toast } = useToast();
@@ -352,38 +349,14 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect, contentGender
           </div>
         </div>
 
-        {/* Gender Field */}
-        {onGenderChange && (
-          <div className="mt-6">
-            <FormLabel>Choose a Gender</FormLabel>
-            <Select
-              onValueChange={onGenderChange}
-              value={contentGender || ""}
-            >
-              <SelectTrigger className="w-60">
-                <SelectValue placeholder="Choose a Gender" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">Male</SelectItem>
-                <SelectItem value="female">Female</SelectItem>
-                <SelectItem value="neutral">Neutral</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground mt-1">
-              Choose the gender orientation for your content
-            </p>
-          </div>
-        )}
-
-        {/* Centered Button Stack */}
-        <div className="flex flex-col items-center gap-3 mt-6">
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Create New Author
-              </Button>
-            </DialogTrigger>
+        {/* Create New Author Button */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Author
+            </Button>
+          </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Create New Author</DialogTitle>
@@ -589,14 +562,14 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect, contentGender
           </div>
         )}
 
-          {/* Skip Author Option */}
-          <Button 
-            variant="ghost" 
-            onClick={() => onAuthorSelect(null)}
-          >
-            Skip - No Author
-          </Button>
-        </div>
+        {/* Skip Author Option */}
+        <Button 
+          variant="ghost" 
+          className="mt-4"
+          onClick={() => onAuthorSelect(null)}
+        >
+          Skip - No Author
+        </Button>
       </CardContent>
     </Card>
   );
