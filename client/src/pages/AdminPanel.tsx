@@ -317,7 +317,7 @@ export default function AdminPanel() {
     useState(false);
   const [publicationMethod, setPublicationMethod] = useState<
     "draft" | "publish" | "schedule"
-  >("draft");
+  >("publish");
   const [generatedContent, setGeneratedContent] = useState<any>(null);
   const [enhancedContentForEditor, setEnhancedContentForEditor] =
     useState<string>(""); // Store enhanced content with YouTube and images
@@ -6973,7 +6973,7 @@ export default function AdminPanel() {
                               value={publicationMethod}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Save as Draft" />
+                                <SelectValue placeholder="Publish Immediately" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="draft">
@@ -7071,7 +7071,7 @@ export default function AdminPanel() {
                               handlePublishContent(publicationMethod);
                             }}
                             disabled={isPublishing || isGenerating}
-                            className="w-full"
+                            className="px-8"
                           >
                             {isPublishing ? (
                               <>
@@ -7107,7 +7107,7 @@ export default function AdminPanel() {
                             variant="outline"
                             onClick={handleSaveProject}
                             disabled={saveProjectMutation.isPending}
-                            className="w-full flex items-center gap-2 mt-3"
+                            className="flex items-center gap-2 mt-3 px-6"
                           >
                             {saveProjectMutation.isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
