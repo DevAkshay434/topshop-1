@@ -8356,11 +8356,11 @@ export default function AdminPanel() {
                     >
                       <div className="relative w-24 h-24 rounded-md overflow-hidden border-2 border-blue-500 shadow-sm">
                         {img.type === "youtube" ? (
-                          <div className="w-full h-full relative">
+                          <div className="w-full h-full relative bg-black">
                             <ShopifyImageViewer
                               src={img.url}
                               alt={img.alt || "YouTube video thumbnail"}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain"
                             />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="bg-blue-600 text-white rounded-full p-1 shadow-lg opacity-90">
@@ -8382,7 +8382,7 @@ export default function AdminPanel() {
                           <ShopifyImageViewer
                             src={img.src?.medium || img.url}
                             alt={img.alt || "Featured image"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                           />
                         )}
                         <div className="absolute top-0 left-0 bg-green-600 text-white px-1 py-0.5 text-xs font-medium">
