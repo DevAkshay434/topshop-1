@@ -520,36 +520,58 @@ function applyContentFormatting(content: string): string {
     faqAreas.push(qaMatch[0]);
   }
   
-  // Add line breaks after bold sentences, but exclude FAQ areas completely
-  formattedContent = formattedContent.replace(
+  // CRITICAL: Do NOT add line breaks to FAQ content - enhanced protection
+  console.log('🛡️ ENHANCED FAQ PROTECTION - Preventing line breaks in ALL FAQ content');
+  
+  // Step 1: Mark all FAQ content with special markers for protection
+  let protectedContent = formattedContent;
+  
+  // Protect Q: paragraphs with markers
+  protectedContent = protectedContent.replace(
+    /<p>([^<]*?Q:[^<]*?)<\/p>/gi,
+    '<!-- FAQ_QUESTION_START -->$&<!-- FAQ_QUESTION_END -->'
+  );
+  
+  // Protect A: paragraphs with markers  
+  protectedContent = protectedContent.replace(
+    /<p>([^<]*?A:[^<]*?)<\/p>/gi,
+    '<!-- FAQ_ANSWER_START -->$&<!-- FAQ_ANSWER_END -->'
+  );
+  
+  // Protect entire FAQ sections with markers
+  protectedContent = protectedContent.replace(
+    /<h[2-6][^>]*>.*?(?:FAQ|Frequently Asked|Questions?).*?<\/h[2-6]>/gi,
+    '<!-- FAQ_SECTION_START -->$&<!-- FAQ_SECTION_END -->'
+  );
+  
+  // Step 2: Add line breaks to bold sentences ONLY if NOT in protected FAQ areas
+  protectedContent = protectedContent.replace(
     /<p>([^<]*?<strong>[^<]*?<\/strong>[^<]*?)<\/p>/gi,
-    (match) => {
-      // Multiple layers of FAQ detection to ensure no FAQ content gets line breaks
+    (match, content, offset) => {
+      // Check if this bold sentence is within any FAQ protection markers
+      const beforeMatch = protectedContent.substring(0, offset);
+      const afterMatch = protectedContent.substring(offset + match.length);
       
-      // Layer 1: Check if this paragraph is within any FAQ area
-      const isInFAQ = faqAreas.some(faqArea => faqArea.includes(match));
+      // Count FAQ protection markers before and after this match
+      const faqStartsBefore = (beforeMatch.match(/<!-- FAQ_(QUESTION|ANSWER|SECTION)_START -->/g) || []).length;
+      const faqEndsAfter = (afterMatch.match(/<!-- FAQ_(QUESTION|ANSWER|SECTION)_END -->/g) || []).length;
       
-      // Layer 2: Check if this paragraph contains Q: or A: patterns 
-      const hasQAPattern = /Q:|A:/.test(match);
+      // Also check direct Q: or A: patterns in the match itself
+      const hasDirectQA = /Q:|A:/.test(match);
       
-      // Layer 3: Check if content around this match suggests it's FAQ
-      const contextBefore = formattedContent.substring(Math.max(0, formattedContent.indexOf(match) - 200), formattedContent.indexOf(match));
-      const contextAfter = formattedContent.substring(formattedContent.indexOf(match) + match.length, Math.min(formattedContent.length, formattedContent.indexOf(match) + match.length + 200));
-      const contextHasQA = /Q:|A:|FAQ|Frequently Asked/gi.test(contextBefore + contextAfter);
-      
-      // Layer 4: Check if the match itself has question/answer structure
-      const isQuestionAnswer = /^<p>.*?<strong>.*(Q:|A:|questions?|answers?).*<\/strong>.*<\/p>$/gi.test(match);
-      
-      if (isInFAQ || hasQAPattern || contextHasQA || isQuestionAnswer) {
-        console.log('📝 PROTECTED FAQ CONTENT - Skipping line break for:', match.substring(0, 50) + '...');
-        return match; // Don't add extra line breaks in FAQ sections
+      if (faqStartsBefore > faqEndsAfter || hasDirectQA) {
+        console.log('🛡️ PROTECTED FAQ BOLD SENTENCE - No line break:', match.substring(0, 50) + '...');
+        return match; // Don't add line break - this is FAQ content
       }
       
-      // Add extra line break after bold sentences in regular content only
-      console.log('📝 ADDING line break for regular content:', match.substring(0, 50) + '...');
+      // Add line break for regular content bold sentences
+      console.log('📝 ADDING line break for regular bold sentence:', match.substring(0, 50) + '...');
       return `${match}<br>`;
     }
   );
+  
+  // Step 3: Remove all FAQ protection markers
+  formattedContent = protectedContent.replace(/<!-- FAQ_(QUESTION|ANSWER|SECTION)_(START|END) -->/g, '');
   
   // Rule 4: Format FAQ sections - add spaces after Q: and A:
   console.log('📝 Rule 4: Format FAQ sections - add spaces after Q: and A:');
