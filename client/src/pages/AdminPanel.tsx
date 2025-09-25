@@ -1435,7 +1435,7 @@ export default function AdminPanel() {
   const [introType, setIntroType] = useState<string>("search_intent");
   const [faqType, setFaqType] = useState<string>("short");
   const [categories, setCategories] = useState<string[]>([]);
-  const [postStatus, setPostStatus] = useState<string>("draft");
+  const [postStatus, setPostStatus] = useState<string>("publish");
   const [publicationType, setPublicationType] = useState<string>("blog");
   const [scheduledPublishTime, setScheduledPublishTime] =
     useState<string>("09:30");
@@ -1566,7 +1566,7 @@ export default function AdminPanel() {
     faqType: "short",
     enableCitations: true,
     toneOfVoice: "friendly",
-    postStatus: "draft",
+    postStatus: "publish",
     generateImages: true,
 
     keywords: [],
@@ -1611,7 +1611,7 @@ export default function AdminPanel() {
     enableCitations:
       formData.enableCitations !== undefined ? formData.enableCitations : true,
     toneOfVoice: formData.toneOfVoice || "friendly",
-    postStatus: formData.postStatus || "draft",
+    postStatus: formData.postStatus || "publish",
     generateImages:
       formData.generateImages !== undefined ? formData.generateImages : true,
     keywords: formData.keywords || [],
@@ -2842,6 +2842,25 @@ export default function AdminPanel() {
           // Mark content as posted for workflow step indicator
           setIsContentPosted(true);
 
+          const shopifyUrl = response.shopifyUrl || response.post.shopifyUrl;
+          
+          // Auto-redirect to Shopify when content is published (not drafted or scheduled)
+          if (isPublishedToShopify && shopifyUrl) {
+            setTimeout(() => {
+              // Open Shopify article/page in new tab
+              window.open(shopifyUrl, '_blank');
+              
+              // Auto-scroll to show the published content section
+              const publishedSection = document.getElementById("published-content-section");
+              if (publishedSection) {
+                publishedSection.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }
+            }, 1500); // Delay to show success message first
+          }
+
           // Auto-scroll to show the current step (Post step)
           setTimeout(() => {
             const stepIndicator = document.getElementById("step-indicator");
@@ -2864,7 +2883,7 @@ export default function AdminPanel() {
                   ...prev,
                   shopifyPostId: response.post.shopifyPostId,
                   shopifyBlogId: response.post.shopifyBlogId,
-                  shopifyUrl: response.shopifyUrl || response.post.shopifyUrl, // Use handle-based URL from API
+                  shopifyUrl: shopifyUrl,
                 }
               : null,
           );
@@ -6191,6 +6210,7 @@ export default function AdminPanel() {
           {/* Content Preview Section - Full Width */}
           {(isGenerating || generatedContent) && (
             <Card
+              id="published-content-section"
               className="border-0 shadow-lg mt-8   mx-auto max-w-5xl"
               ref={contentPreviewRef}
             >
