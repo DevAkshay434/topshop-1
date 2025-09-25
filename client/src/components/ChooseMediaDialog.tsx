@@ -671,8 +671,8 @@ export function ChooseMediaDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-4 bg-gray-100 p-1 rounded-lg gap-1">
-            <TabsTrigger value="youtube" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white py-2" data-active-color="dark-green">
-              YouTube Video
+            <TabsTrigger value="upload" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white py-2" data-active-color="dark-green">
+              Upload Image
             </TabsTrigger>
             <TabsTrigger value="pexels-pixabay" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white py-2" data-active-color="dark-green">
               Search Free Images
@@ -683,8 +683,8 @@ export function ChooseMediaDialog({
             <TabsTrigger value="uploaded" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white py-2" data-active-color="dark-green">
               Uploaded Images
             </TabsTrigger>
-            <TabsTrigger value="upload" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white py-2" data-active-color="dark-green">
-              Upload Image
+            <TabsTrigger value="youtube" className="text-gray-700 hover:text-gray-900 data-[state=active]:text-white py-2" data-active-color="dark-green">
+              YouTube Video
             </TabsTrigger>
           </TabsList>
 
