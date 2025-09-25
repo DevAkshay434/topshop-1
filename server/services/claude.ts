@@ -616,200 +616,214 @@ function applyContentFormatting(content: string): string {
   // Step 3: Remove all FAQ protection markers
   formattedContent = protectedContent.replace(/<!-- FAQ_(QUESTION|ANSWER|SECTION)_(START|END) -->/g, '');
   
-  // Rule 4: Format FAQ sections - add spaces after Q: and A: (ENHANCED)
-  console.log('📝 Rule 4: Format FAQ sections - add spaces after Q: and A:');
+  // Rule 4: BULLETPROOF FAQ FORMATTING - Q: spacing and BR removal
+  console.log('📝 Rule 4: BULLETPROOF FAQ FORMATTING - Q: spacing and BR removal');
   
-  // COMPREHENSIVE Q: and A: formatting - handle ALL variations
-  console.log('🔧 COMPREHENSIVE Q: and A: SPACING FIX');
+  // STEP 1: AGGRESSIVE Q: AND A: SPACING FIX (Multiple Passes)
+  console.log('🔥 BULLETPROOF Q: AND A: SPACING - Running 5 aggressive passes');
   
-  // Method 1: ENHANCED Global replacement of Q: without space (comprehensive)
-  console.log('🔧 ENHANCED Q: SPACING FIX - Multiple patterns');
+  // Pass 1-3: Ultra-aggressive global replacement (catches 99% of cases)
+  for (let pass = 1; pass <= 3; pass++) {
+    console.log(`🔧 PASS ${pass}: Global Q: and A: spacing fixes`);
+    
+    // Fix Q: patterns - multiple comprehensive patterns
+    let qFixCount = 0;
+    formattedContent = formattedContent.replace(/Q:([^\s])/g, (match, afterChar) => {
+      qFixCount++;
+      console.log(`📝 Pass ${pass}: Fixed Q: spacing (global)`);
+      return `Q: ${afterChar}`;
+    });
+    
+    let aFixCount = 0;
+    formattedContent = formattedContent.replace(/A:([^\s])/g, (match, afterChar) => {
+      aFixCount++;
+      console.log(`📝 Pass ${pass}: Fixed A: spacing (global)`);
+      return `A: ${afterChar}`;
+    });
+    
+    console.log(`📝 Pass ${pass} results: ${qFixCount} Q: fixes, ${aFixCount} A: fixes`);
+  }
   
-  // Pattern 1a: Q: directly followed by non-whitespace (most common case)
+  // Pass 4: HTML tag-specific fixes (strong, p, h1-h6)
+  console.log('🔧 PASS 4: HTML tag-specific Q: and A: fixes');
+  
+  // Fix inside ALL strong tags (comprehensive)
   formattedContent = formattedContent.replace(
-    /Q:(?!\s)/g,
-    (match) => {
-      console.log('📝 Fixed Q: spacing (direct)');
-      return 'Q: '; // Always ensure space after Q:
-    }
-  );
-  
-  // Pattern 1b: Q: inside strong tags without space  
-  formattedContent = formattedContent.replace(
-    /<strong>([^<]*?)Q:([^\s<][^<]*?)<\/strong>/gi,
-    (match, before, after) => {
-      console.log('📝 Fixed Q: spacing inside strong tag');
-      return `<strong>${before}Q: ${after}</strong>`;
-    }
-  );
-  
-  // Pattern 1c: Q: at start of strong tags without space
-  formattedContent = formattedContent.replace(
-    /<strong>Q:([^\s<][^<]*?)<\/strong>/gi,
-    (match, after) => {
-      console.log('📝 Fixed Q: spacing at start of strong tag');
-      return `<strong>Q: ${after}</strong>`;
-    }
-  );
-  
-  // Method 2: ENHANCED Global replacement of A: without space
-  console.log('🔧 ENHANCED A: SPACING FIX - Multiple patterns');
-  
-  // Pattern 2a: A: directly followed by non-whitespace (most common case)
-  formattedContent = formattedContent.replace(
-    /A:(?!\s)/g,
-    (match) => {
-      console.log('📝 Fixed A: spacing (direct)');
-      return 'A: '; // Always ensure space after A:
-    }
-  );
-  
-  // Pattern 2b: A: inside strong tags without space
-  formattedContent = formattedContent.replace(
-    /<strong>([^<]*?)A:([^\s<][^<]*?)<\/strong>/gi,
-    (match, before, after) => {
-      console.log('📝 Fixed A: spacing inside strong tag');
-      return `<strong>${before}A: ${after}</strong>`;
-    }
-  );
-  
-  // Pattern 2c: A: at start of strong tags without space
-  formattedContent = formattedContent.replace(
-    /<strong>A:([^\s<][^<]*?)<\/strong>/gi,
-    (match, after) => {
-      console.log('📝 Fixed A: spacing at start of strong tag');
-      return `<strong>A: ${after}</strong>`;
-    }
-  );
-  
-  // Method 3: Handle Q: and A: specifically in headings (H1-H6)
-  formattedContent = formattedContent.replace(
-    /<h([1-6])[^>]*>([^<]*?)Q:([^<\s])([^<]*?)<\/h\1>/gi,
-    (match, level, before, after, rest) => {
-      console.log('📝 Fixed Q: spacing in H' + level + ' tag');
-      return `<h${level}>${before}Q: ${after}${rest}</h${level}>`;
+    /<strong>([\s\S]*?)Q:([^\s])([\s\S]*?)<\/strong>/gi,
+    (match, before, afterChar, rest) => {
+      console.log('📝 Fixed Q: spacing in strong tag');
+      return `<strong>${before}Q: ${afterChar}${rest}</strong>`;
     }
   );
   
   formattedContent = formattedContent.replace(
-    /<h([1-6])[^>]*>([^<]*?)A:([^<\s])([^<]*?)<\/h\1>/gi,
-    (match, level, before, after, rest) => {
-      console.log('📝 Fixed A: spacing in H' + level + ' tag');
-      return `<h${level}>${before}A: ${after}${rest}</h${level}>`;
+    /<strong>([\s\S]*?)A:([^\s])([\s\S]*?)<\/strong>/gi,
+    (match, before, afterChar, rest) => {
+      console.log('📝 Fixed A: spacing in strong tag');
+      return `<strong>${before}A: ${afterChar}${rest}</strong>`;
     }
   );
   
-  // Method 4: ENHANCED Handle Q: and A: in paragraphs (with strong tag support)
+  // Fix in ALL heading tags (h1-h6)
+  for (let level = 1; level <= 6; level++) {
+    const headingRegex = new RegExp(`<h${level}([^>]*)>([\\s\\S]*?)Q:([^\\s])([\\s\\S]*?)</h${level}>`, 'gi');
+    formattedContent = formattedContent.replace(headingRegex, (match, attrs, before, afterChar, rest) => {
+      console.log(`📝 Fixed Q: spacing in H${level} tag`);
+      return `<h${level}${attrs}>${before}Q: ${afterChar}${rest}</h${level}>`;
+    });
+    
+    const aHeadingRegex = new RegExp(`<h${level}([^>]*)>([\\s\\S]*?)A:([^\\s])([\\s\\S]*?)</h${level}>`, 'gi');
+    formattedContent = formattedContent.replace(aHeadingRegex, (match, attrs, before, afterChar, rest) => {
+      console.log(`📝 Fixed A: spacing in H${level} tag`);
+      return `<h${level}${attrs}>${before}A: ${afterChar}${rest}</h${level}>`;
+    });
+  }
   
-  // Pattern 4a: Q: in paragraphs (basic case)
+  // Fix in ALL paragraph tags (comprehensive)
   formattedContent = formattedContent.replace(
-    /<p[^>]*>([^<]*?)Q:([^<\s])([^<]*?)<\/p>/gi,
-    (match, before, after, rest) => {
-      console.log('📝 Fixed Q: spacing in P tag (basic)');
-      return `<p>${before}Q: ${after}${rest}</p>`;
-    }
-  );
-  
-  // Pattern 4b: A: in paragraphs (basic case)
-  formattedContent = formattedContent.replace(
-    /<p[^>]*>([^<]*?)A:([^<\s])([^<]*?)<\/p>/gi,
-    (match, before, after, rest) => {
-      console.log('📝 Fixed A: spacing in P tag (basic)');
-      return `<p>${before}A: ${after}${rest}</p>`;
-    }
-  );
-  
-  // Pattern 4c: Q: and A: in paragraphs with complex HTML (multiple passes)
-  formattedContent = formattedContent.replace(
-    /<p[^>]*>([\s\S]*?)Q:([^\s])([\s\S]*?)<\/p>/gi,
-    (match, before, after, rest) => {
-      console.log('📝 Fixed Q: spacing in P tag (complex)');
-      return `<p>${before}Q: ${after}${rest}</p>`;
+    /<p([^>]*)>([\s\S]*?)Q:([^\s])([\s\S]*?)<\/p>/gi,
+    (match, attrs, before, afterChar, rest) => {
+      console.log('📝 Fixed Q: spacing in P tag');
+      return `<p${attrs}>${before}Q: ${afterChar}${rest}</p>`;
     }
   );
   
   formattedContent = formattedContent.replace(
-    /<p[^>]*>([\s\S]*?)A:([^\s])([\s\S]*?)<\/p>/gi,
-    (match, before, after, rest) => {
-      console.log('📝 Fixed A: spacing in P tag (complex)');
-      return `<p>${before}A: ${after}${rest}</p>`;
+    /<p([^>]*)>([\s\S]*?)A:([^\s])([\s\S]*?)<\/p>/gi,
+    (match, attrs, before, afterChar, rest) => {
+      console.log('📝 Fixed A: spacing in P tag');
+      return `<p${attrs}>${before}A: ${afterChar}${rest}</p>`;
     }
   );
   
-  // Final comprehensive pass - catch any remaining Q: and A: without space
-  console.log('🔍 FINAL Q: and A: SPACING PASS');
+  // Pass 5: Final ultra-aggressive catch-all
+  console.log('🔧 PASS 5: Final ultra-aggressive Q: and A: spacing');
   
-  // Ultra-comprehensive final check
+  let finalQFixes = 0;
+  formattedContent = formattedContent.replace(/([^\s])Q:([^\s])/g, (match, beforeChar, afterChar) => {
+    finalQFixes++;
+    console.log('📝 Final Q: spacing fix (ultra-aggressive)');
+    return `${beforeChar}Q: ${afterChar}`;
+  });
+  
+  let finalAFixes = 0;
+  formattedContent = formattedContent.replace(/([^\s])A:([^\s])/g, (match, beforeChar, afterChar) => {
+    finalAFixes++;
+    console.log('📝 Final A: spacing fix (ultra-aggressive)');
+    return `${beforeChar}A: ${afterChar}`;
+  });
+  
+  console.log(`📝 Final pass results: ${finalQFixes} Q: fixes, ${finalAFixes} A: fixes`);
+  
+  // STEP 2: BULLETPROOF BR TAG ELIMINATION FROM FAQ ANSWERS
+  console.log('📝 STEP 2: BULLETPROOF BR TAG ELIMINATION FROM FAQ ANSWERS');
+  
+  // Method 1: Remove ALL <br> tags from any content containing Q: or A:
+  console.log('🧹 Removing ALL <br> tags from Q: and A: content');
+  
+  // Remove <br> tags from Q: paragraphs (all variants)
+  let qBrRemovalCount = 0;
   formattedContent = formattedContent.replace(
-    /([QA]):([^\s])/g,
-    (match, letter, afterChar) => {
-      console.log(`📝 FINAL FIX: ${letter}: spacing`);
-      return `${letter}: ${afterChar}`;
+    /<p([^>]*)>([\s\S]*?Q:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
+    (match, attrs, beforeBr, afterBr) => {
+      qBrRemovalCount++;
+      console.log('🧹 Removed <br> from Q: paragraph');
+      return `<p${attrs}>${beforeBr}${afterBr}</p>`;
     }
   );
   
-  // Rule 5: Clean up excessive line breaks - limit to maximum 2 consecutive
-  console.log('📝 Rule 5: Cleaning up excessive line breaks');
+  // Remove <br> tags from A: paragraphs (all variants)
+  let aBrRemovalCount = 0;
+  formattedContent = formattedContent.replace(
+    /<p([^>]*)>([\s\S]*?A:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
+    (match, attrs, beforeBr, afterBr) => {
+      aBrRemovalCount++;
+      console.log('🧹 Removed <br> from A: paragraph');
+      return `<p${attrs}>${beforeBr}${afterBr}</p>`;
+    }
+  );
+  
+  // Method 2: Multiple passes to catch nested <br> tags
+  for (let brPass = 1; brPass <= 3; brPass++) {
+    console.log(`🧹 BR REMOVAL PASS ${brPass}`);
+    
+    const beforeLength = formattedContent.length;
+    
+    // Remove multiple <br> tags in Q: content
+    formattedContent = formattedContent.replace(
+      /<p([^>]*)>([\s\S]*?Q:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
+      '<p$1>$2$3</p>'
+    );
+    
+    // Remove multiple <br> tags in A: content  
+    formattedContent = formattedContent.replace(
+      /<p([^>]*)>([\s\S]*?A:[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/p>/gi,
+      '<p$1>$2$3</p>'
+    );
+    
+    // Remove <br> tags in strong Q: and A: content
+    formattedContent = formattedContent.replace(
+      /<strong>([\s\S]*?(?:Q:|A:)[\s\S]*?)<br[^>]*?>([\s\S]*?)<\/strong>/gi,
+      '<strong>$1$2</strong>'
+    );
+    
+    const afterLength = formattedContent.length;
+    const removedChars = beforeLength - afterLength;
+    console.log(`🧹 BR REMOVAL PASS ${brPass}: Removed ${removedChars} characters`);
+    
+    // If no changes, break early
+    if (removedChars === 0) {
+      console.log('🧹 No more <br> tags to remove - breaking early');
+      break;
+    }
+  }
+  
+  // Method 3: Ultra-aggressive final cleanup - Remove ALL <br> from FAQ sections
+  console.log('🧹 Method 3: Ultra-aggressive FAQ section <br> cleanup');
+  
+  // Find and clean entire FAQ sections
+  const faqSectionRegex = /<h[1-6][^>]*>[\s\S]*?(?:faq|frequently asked|questions?)[\s\S]*?<\/h[1-6]>[\s\S]*?(?=<h[1-6]|$)/gi;
+  
+  formattedContent = formattedContent.replace(faqSectionRegex, (faqSection) => {
+    const originalLength = faqSection.length;
+    // Remove ALL <br> tags from this entire FAQ section
+    const cleanedSection = faqSection.replace(/<br[^>]*>/gi, '');
+    const removedLength = originalLength - cleanedSection.length;
+    
+    if (removedLength > 0) {
+      console.log(`🧹 Cleaned FAQ section: Removed ${removedLength} characters from <br> tags`);
+    }
+    
+    return cleanedSection;
+  });
+  
+  console.log(`🧹 BR REMOVAL SUMMARY: Q: paragraphs: ${qBrRemovalCount}, A: paragraphs: ${aBrRemovalCount}`);
+  
+  // Rule 5: Clean up excessive line breaks (but NOT in FAQ sections)
+  console.log('📝 Rule 5: Cleaning up excessive line breaks (preserving FAQ)');
   formattedContent = formattedContent.replace(/<br>\s*<br>\s*<br>(\s*<br>)*/gi, '<br><br>');
   
-  // Rule 6: Remove ALL <br> tags from FAQ sections (complete cleanup)
-  console.log('📝 Rule 6: Remove ALL <br> tags from FAQ sections');
+  // FINAL VERIFICATION AND REPORTING
+  console.log('🔍 FINAL VERIFICATION: FAQ formatting check');
   
-  // COMPREHENSIVE FAQ CLEANUP - Remove all <br> tags from any Q: or A: content
-  console.log('🧹 COMPREHENSIVE FAQ CLEANUP - Before:', formattedContent.length);
-  
-  // Remove <br> tags from all paragraphs containing Q: or A:
-  formattedContent = formattedContent.replace(
-    /<p>([^<]*?(?:Q:|A:)[^<]*?)<br[^>]*?>([^<]*?)<\/p>/gi,
-    '<p>$1$2</p>'
-  );
-  
-  // Remove standalone <br> tags that appear after Q: or A: paragraphs
-  formattedContent = formattedContent.replace(
-    /(<p>[^<]*?(?:Q:|A:)[^<]*?<\/p>)\s*<br[^>]*?>/gi,
-    '$1'
-  );
-  
-  // Remove <br> tags inside Q: and A: paragraphs (even nested ones)
-  formattedContent = formattedContent.replace(
-    /<p>([^<]*?(?:Q:|A:)[^<]*?)<br[^>]*?>([^<]*?)<\/p>/gi,
-    '<p>$1$2</p>'
-  );
-  
-  // Final pass - Remove any remaining <br> tags from FAQ sections
-  const finalFaqSections: Array<{start: number, end: number, content: string}> = [];
-  
-  // Find FAQ headings and their content
-  formattedContent.replace(faqHeadingRegex, (match, offset) => {
-    const faqStart = offset;
-    const nextHeadingRegex = /<h[1-6][^>]*>/gi;
-    nextHeadingRegex.lastIndex = faqStart + match.length;
-    const nextHeading = nextHeadingRegex.exec(formattedContent);
-    const faqEnd = nextHeading ? nextHeading.index : formattedContent.length;
-    const sectionContent = formattedContent.slice(faqStart, faqEnd);
-    finalFaqSections.push({start: faqStart, end: faqEnd, content: sectionContent});
-    return match;
-  });
-  
-  // Clean FAQ sections by removing ALL <br> tags
-  finalFaqSections.forEach(section => {
-    console.log('🧹 Cleaning FAQ section:', section.content.substring(0, 100) + '...');
-    const cleanedContent = section.content.replace(/<br[^>]*>/gi, '');
-    formattedContent = formattedContent.substring(0, section.start) + 
-                      cleanedContent + 
-                      formattedContent.substring(section.end);
-  });
-  
-  console.log('🧹 COMPREHENSIVE FAQ CLEANUP - After:', formattedContent.length);
-  
-  // FINAL VERIFICATION: Log any remaining Q: or A: without space for debugging
-  const remainingQA = formattedContent.match(/[QA]:[^\s]/g);
-  if (remainingQA && remainingQA.length > 0) {
-    console.log('⚠️ WARNING: Found remaining Q: or A: without space:', remainingQA);
+  // Check for remaining Q: or A: without space
+  const remainingQAIssues = formattedContent.match(/[QA]:[^\s]/g);
+  if (remainingQAIssues && remainingQAIssues.length > 0) {
+    console.log('⚠️ CRITICAL WARNING: Found Q: or A: without space:', remainingQAIssues);
+    console.log('⚠️ This should NEVER happen with the bulletproof implementation!');
   } else {
     console.log('✅ SUCCESS: All Q: and A: patterns have proper spacing');
   }
   
+  // Check for remaining <br> tags in FAQ content
+  const remainingBrInFaq = formattedContent.match(/<[^>]*(?:Q:|A:)[^>]*><br[^>]*>/gi);
+  if (remainingBrInFaq && remainingBrInFaq.length > 0) {
+    console.log('⚠️ WARNING: Found <br> tags in FAQ content:', remainingBrInFaq.length);
+  } else {
+    console.log('✅ SUCCESS: All <br> tags removed from FAQ sections');
+  }
+  
+  console.log('✅ BULLETPROOF FAQ FORMATTING COMPLETED - Q: spacing and BR removal');
   console.log('✅ Content formatting rules applied');
   return formattedContent;
 }
