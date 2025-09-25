@@ -2850,32 +2850,35 @@ export default function AdminPanel() {
               // Open Shopify article/page in new tab
               window.open(shopifyUrl, '_blank');
               
-              // Auto-scroll to show the Shopify buttons section (View in Shopify & Copy Link)
+              // Auto-scroll directly to the Shopify buttons section (View in Shopify & Copy Link)
               const shopifyButtonsSection = document.getElementById("shopify-buttons-section");
               if (shopifyButtonsSection) {
                 shopifyButtonsSection.scrollIntoView({
                   behavior: "smooth",
                   block: "center",
                 });
+                console.log('🎯 Auto-scrolled to Shopify buttons after publication');
+              } else {
+                console.warn('⚠️ Shopify buttons section not found for auto-scroll');
               }
             }, 1500); // Delay to show success message first
-          }
-
-          // Auto-scroll to show the current step (Post step)
-          setTimeout(() => {
-            const stepIndicator = document.getElementById("step-indicator");
-            if (stepIndicator) {
-              const currentStepButton =
-                stepIndicator.querySelector(`[data-step="post"]`);
-              if (currentStepButton) {
-                currentStepButton.scrollIntoView({
-                  behavior: "smooth",
-                  inline: "center",
-                  block: "nearest",
-                });
+          } else {
+            // For non-published content (drafts/scheduled), scroll to step indicator
+            setTimeout(() => {
+              const stepIndicator = document.getElementById("step-indicator");
+              if (stepIndicator) {
+                const currentStepButton =
+                  stepIndicator.querySelector(`[data-step="post"]`);
+                if (currentStepButton) {
+                  currentStepButton.scrollIntoView({
+                    behavior: "smooth",
+                    inline: "center",
+                    block: "nearest",
+                  });
+                }
               }
-            }
-          }, 1000); // Delay to allow posting to complete
+            }, 1000); // Delay to allow posting to complete
+          }
 
           setGeneratedContent((prev) =>
             prev
