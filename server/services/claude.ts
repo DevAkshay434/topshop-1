@@ -583,10 +583,31 @@ function applyContentFormatting(content: string): string {
   // Rule 6: Remove ALL <br> tags from FAQ sections (complete cleanup)
   console.log('📝 Rule 6: Remove ALL <br> tags from FAQ sections');
   
-  // Find all FAQ sections again for final cleanup
+  // COMPREHENSIVE FAQ CLEANUP - Remove all <br> tags from any Q: or A: content
+  console.log('🧹 COMPREHENSIVE FAQ CLEANUP - Before:', formattedContent.length);
+  
+  // Remove <br> tags from all paragraphs containing Q: or A:
+  formattedContent = formattedContent.replace(
+    /<p>([^<]*?(?:Q:|A:)[^<]*?)<br[^>]*?>([^<]*?)<\/p>/gi,
+    '<p>$1$2</p>'
+  );
+  
+  // Remove standalone <br> tags that appear after Q: or A: paragraphs
+  formattedContent = formattedContent.replace(
+    /(<p>[^<]*?(?:Q:|A:)[^<]*?<\/p>)\s*<br[^>]*?>/gi,
+    '$1'
+  );
+  
+  // Remove <br> tags inside Q: and A: paragraphs (even nested ones)
+  formattedContent = formattedContent.replace(
+    /<p>([^<]*?(?:Q:|A:)[^<]*?)<br[^>]*?>([^<]*?)<\/p>/gi,
+    '<p>$1$2</p>'
+  );
+  
+  // Final pass - Remove any remaining <br> tags from FAQ sections
   const finalFaqSections: Array<{start: number, end: number, content: string}> = [];
   
-  // Method 1: FAQ headings
+  // Find FAQ headings and their content
   formattedContent.replace(faqHeadingRegex, (match, offset) => {
     const faqStart = offset;
     const nextHeadingRegex = /<h[1-6][^>]*>/gi;
@@ -600,17 +621,14 @@ function applyContentFormatting(content: string): string {
   
   // Clean FAQ sections by removing ALL <br> tags
   finalFaqSections.forEach(section => {
-    const cleanedContent = section.content.replace(/<br\s*\/?>/gi, '');
+    console.log('🧹 Cleaning FAQ section:', section.content.substring(0, 100) + '...');
+    const cleanedContent = section.content.replace(/<br[^>]*>/gi, '');
     formattedContent = formattedContent.substring(0, section.start) + 
                       cleanedContent + 
                       formattedContent.substring(section.end);
   });
   
-  // Also clean any remaining Q: and A: paragraphs that might have <br> tags
-  formattedContent = formattedContent.replace(
-    /<p>([^<]*?(?:Q:|A:)[^<]*?)<br[^>]*>([^<]*?)<\/p>/gi,
-    '<p>$1$2</p>'
-  );
+  console.log('🧹 COMPREHENSIVE FAQ CLEANUP - After:', formattedContent.length);
   
   console.log('✅ Content formatting rules applied');
   return formattedContent;

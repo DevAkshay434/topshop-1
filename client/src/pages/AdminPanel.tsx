@@ -7052,70 +7052,73 @@ export default function AdminPanel() {
                             </div>
                           )}
 
-                          {/* Single Proceed Button */}
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              if (
-                                publicationMethod === "schedule" &&
-                                !form.getValues("scheduledPublishDate")
-                              ) {
-                                toast({
-                                  title: "Date Required",
-                                  description:
-                                    "Please select a publication date for scheduling.",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-                              handlePublishContent(publicationMethod);
-                            }}
-                            disabled={isPublishing || isGenerating}
-                            className="px-8"
-                          >
-                            {isPublishing ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white mr-2"></div>
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                {publicationMethod === "draft" && (
-                                  <>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Proceed (Save as Draft)
-                                  </>
-                                )}
-                                {publicationMethod === "publish" && (
-                                  <>
-                                    <Send className="mr-2 h-4 w-4" />
-                                    Proceed (Publish Immediately)
-                                  </>
-                                )}
-                                {publicationMethod === "schedule" && (
-                                  <>
-                                    <CalendarCheck className="mr-2 h-4 w-4" />
-                                    Proceed (Schedule Publication)
-                                  </>
-                                )}
-                              </>
-                            )}
-                          </Button>
+                          {/* Centered Button Container */}
+                          <div className="flex flex-col items-center space-y-3">
+                            {/* Single Proceed Button */}
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  publicationMethod === "schedule" &&
+                                  !form.getValues("scheduledPublishDate")
+                                ) {
+                                  toast({
+                                    title: "Date Required",
+                                    description:
+                                      "Please select a publication date for scheduling.",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+                                handlePublishContent(publicationMethod);
+                              }}
+                              disabled={isPublishing || isGenerating}
+                              className="px-8"
+                            >
+                              {isPublishing ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-white mr-2"></div>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  {publicationMethod === "draft" && (
+                                    <>
+                                      <Save className="mr-2 h-4 w-4" />
+                                      Proceed (Save as Draft)
+                                    </>
+                                  )}
+                                  {publicationMethod === "publish" && (
+                                    <>
+                                      <Send className="mr-2 h-4 w-4" />
+                                      Proceed (Publish Immediately)
+                                    </>
+                                  )}
+                                  {publicationMethod === "schedule" && (
+                                    <>
+                                      <CalendarCheck className="mr-2 h-4 w-4" />
+                                      Proceed (Schedule Publication)
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </Button>
 
-                          {/* Save Project Button - Always enabled */}
-                          <Button
-                            variant="outline"
-                            onClick={handleSaveProject}
-                            disabled={saveProjectMutation.isPending}
-                            className="flex items-center gap-2 mt-3 px-6"
-                          >
-                            {saveProjectMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <CheckCircle className="h-4 w-4" />
-                            )}
-                            Save as Project
-                          </Button>
+                            {/* Save Project Button - Always enabled */}
+                            <Button
+                              variant="outline"
+                              onClick={handleSaveProject}
+                              disabled={saveProjectMutation.isPending}
+                              className="flex items-center gap-2 px-6"
+                            >
+                              {saveProjectMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4" />
+                              )}
+                              Save as Project
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
