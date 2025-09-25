@@ -1082,7 +1082,7 @@ export default function AdminPanel() {
       selectedAuthorId,
       // CRITICAL FIX: Include articleType and use form values instead of state variables
       articleType: formValues.articleType || "blog",
-      contentGender: formValues.contentGender || "male",
+      contentGender: formValues.contentGender || "",
       title: formValues.title || "",
       articleLength: formValues.articleLength || "medium",
       headingsCount: formValues.headingsCount || headingsCount,
@@ -1557,7 +1557,7 @@ export default function AdminPanel() {
   // Default form values
   const defaultValues: Partial<ContentFormValues> = {
     articleType: "blog",
-    contentGender: "male",
+    contentGender: "",
     writingPerspective: "first_person_plural",
     enableTables: true,
     enableLists: true,
@@ -5405,8 +5405,8 @@ export default function AdminPanel() {
 
                                       {/* YouTube Video - Using youtubeEmbed state instead of selectedMediaContent */}
                                       {youtubeEmbed && (
-                                        <div className="relative group">
-                                          <div className="w-full h-24 border-2 border-green-300 rounded-md overflow-hidden shadow-sm relative">
+                                        <div className="relative group h-fit">
+                                          <div className="w-full  border-2 border-green-300 rounded-md overflow-hidden shadow-sm relative">
                                             {(() => {
                                               // Extract video ID from YouTube URL and construct thumbnail URL
                                               const videoIdMatch =
@@ -5610,18 +5610,19 @@ export default function AdminPanel() {
                         name="contentGender"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Gender</FormLabel>
+                            <FormLabel>Choose a Gender</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               value={field.value}
                               key={`contentGender-${formKey}-${field.value}`}
                             >
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select gender" />
+                                <SelectTrigger className="w-60">
+                                  <SelectValue placeholder="Choose a Gender" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="">Choose a Gender</SelectItem>
                                 <SelectItem value="male">Male</SelectItem>
                                 <SelectItem value="female">Female</SelectItem>
                                 <SelectItem value="neutral">Neutral</SelectItem>

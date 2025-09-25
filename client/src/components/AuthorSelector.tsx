@@ -352,7 +352,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
         {/* Create New Author Button */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline">
               <Plus className="h-4 w-4 mr-2" />
               Create New Author
             </Button>
@@ -565,7 +565,7 @@ export function AuthorSelector({ selectedAuthorId, onAuthorSelect }: AuthorSelec
         {/* Skip Author Option */}
         <Button 
           variant="ghost" 
-          className="w-full mt-4"
+          className="mt-4"
           onClick={() => onAuthorSelect(null)}
         >
           Skip - No Author
