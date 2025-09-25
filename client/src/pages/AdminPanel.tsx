@@ -5622,7 +5622,6 @@ export default function AdminPanel() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">Choose a Gender</SelectItem>
                                 <SelectItem value="male">Male</SelectItem>
                                 <SelectItem value="female">Female</SelectItem>
                                 <SelectItem value="neutral">Neutral</SelectItem>
