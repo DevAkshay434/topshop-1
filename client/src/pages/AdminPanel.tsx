@@ -8098,21 +8098,21 @@ export default function AdminPanel() {
               <div className="flex-1 flex flex-col gap-3">
                 <Button
                   size="sm"
-                  variant={imageSource === "youtube" ? "default" : "outline"}
-                  onClick={() => setImageSource("youtube")}
-                  className="w-full"
-                >
-                  <FileText className="mr-0.5 h-4 w-4" />
-                  YouTube Video
-                </Button>
-                <Button
-                  size="sm"
                   variant={imageSource === "upload" ? "default" : "outline"}
                   onClick={() => setImageSource("upload")}
                   className="w-full"
                 >
                   <Upload className="mr-0.5 h-4 w-4" />
                   Upload Image
+                </Button>
+                <Button
+                  size="sm"
+                  variant={imageSource === "youtube" ? "default" : "outline"}
+                  onClick={() => setImageSource("youtube")}
+                  className="w-full"
+                >
+                  <FileText className="mr-0.5 h-4 w-4" />
+                  YouTube Video
                 </Button>
               </div>
             </div>
