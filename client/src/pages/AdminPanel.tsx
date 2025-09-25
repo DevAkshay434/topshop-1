@@ -2850,12 +2850,12 @@ export default function AdminPanel() {
               // Open Shopify article/page in new tab
               window.open(shopifyUrl, '_blank');
               
-              // Auto-scroll to show the published content section
-              const publishedSection = document.getElementById("published-content-section");
-              if (publishedSection) {
-                publishedSection.scrollIntoView({
+              // Auto-scroll to show the Shopify buttons section (View in Shopify & Copy Link)
+              const shopifyButtonsSection = document.getElementById("shopify-buttons-section");
+              if (shopifyButtonsSection) {
+                shopifyButtonsSection.scrollIntoView({
                   behavior: "smooth",
-                  block: "start",
+                  block: "center",
                 });
               }
             }, 1500); // Delay to show success message first
@@ -7827,7 +7827,7 @@ export default function AdminPanel() {
 
                     {(generatedContent.contentUrl ||
                       generatedContent.shopifyUrl) && (
-                      <div className="grid grid-cols-2 gap-2 mt-4">
+                      <div id="shopify-buttons-section" className="grid grid-cols-2 gap-2 mt-4">
                         <Button
                           variant="outline"
                           onClick={() => {
