@@ -8360,7 +8360,8 @@ export default function AdminPanel() {
                             <ShopifyImageViewer
                               src={img.url}
                               alt={img.alt || "YouTube video thumbnail"}
-                              className="w-full h-full object-contain"
+                              className="w-full h-full"
+                              objectFit="contain"
                             />
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="bg-blue-600 text-white rounded-full p-1 shadow-lg opacity-90">
@@ -8382,7 +8383,8 @@ export default function AdminPanel() {
                           <ShopifyImageViewer
                             src={img.src?.medium || img.url}
                             alt={img.alt || "Featured image"}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full"
+                            objectFit="cover"
                           />
                         )}
                         <div className="absolute top-0 left-0 bg-green-600 text-white px-1 py-0.5 text-xs font-medium">
