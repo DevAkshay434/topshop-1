@@ -390,5 +390,6 @@ export class DataForSEOService {
     return cleaned || input.toLowerCase().trim();
   }
 }
+export const dataForSEOService = new DataForSEOService(); // ✅ add this
 
 export { KeywordData };
